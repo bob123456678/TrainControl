@@ -118,6 +118,10 @@ public class Layout
 
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
+
+    // This instance's version, fixed at construction.  Compared against layoutVersion to answer "am I
+    // still the current Layout?" - see isCurrentLayout
+    private final int version;
     
     // The last error message - useful for debugging the JSON parse result
     private static String lastError = "";
@@ -186,6 +190,7 @@ public class Layout
         this.activateRouteIDs = new LinkedList<>();
         
         Layout.layoutVersion += 1;
+        this.version = Layout.layoutVersion;
         Layout.lastError = "";
     }
     
@@ -446,6 +451,25 @@ public class Layout
      * Marks the layout state as invalid
      * Used to show error message in UI
      */
+    /**
+     * Whether this Layout is still the one in use, or has been superseded by a newer one.
+     *
+     * executePath used to answer this by capturing layoutVersion when a run began and comparing the
+     * capture at each milestone.  That capture happened *after* configureAndLockPath, which waits for
+     * the Central Station to confirm every accessory on the path - seconds, on a path with several.  A
+     * reload landing in that window was captured as the new version, so the comparison matched at every
+     * milestone and the locomotive drove the entire path against a graph that had already been retired.
+     *
+     * Asking whether this instance is the newest has no window to land in: the answer does not depend on
+     * when it is asked.
+     *
+     * @return 
+     */
+    public boolean isCurrentLayout()
+    {
+        return this.version == Layout.layoutVersion;
+    }
+
     public void invalidate()
     {
         this.isValid = false;
@@ -2352,6 +2376,64 @@ public class Layout
      * @return  
      */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
+    {
+        try
+        {
+            return executePathInternal(path, loc, speed, ttp);
+        }
+        catch (RuntimeException e)
+        {
+            // An unexpected failure part way through a path used to leave the locomotive registered in
+            // activeLocomotives for the rest of the session.  Nothing else clears that map, so
+            // isRunning() - which is "running || !activeLocomotives.isEmpty()" - stayed true forever,
+            // and with it every guard built on it: autonomy could not be started, simulation could not
+            // be toggled, and locomotives could not be edited or deleted.  Only reloading the graph, or
+            // restarting, recovered.
+            //
+            // Three things this deliberately does NOT do:
+            //
+            //  - It does not use finally.  The version fence returns normally when a path is abandoned
+            //    after the layout is replaced, and that path leaves the entry in place on purpose - it
+            //    belongs to a Layout that is being discarded.  A finally would fire there too.
+            //  - It does not swallow the exception.  executeTimetable catches around executePath and
+            //    responds by stopping the run; returning false instead would feed its retry loop, which
+            //    would spin on a permanent fault rather than halting.
+            //  - It does not unlock the path.  The locomotive may be physically standing on those edges,
+            //    and releasing them would let another train be routed into occupied track.  Leaving them
+            //    locked is degraded but safe, and a graph reload resets them.
+            synchronized (this.activeLocomotives)
+            {
+                this.activeLocomotives.remove(loc);
+                this.locomotiveMilestones.remove(loc);
+            }
+
+            // Stopping matters more than the bookkeeping: the locomotive is somewhere on the path with
+            // nothing left tracking it.  Guarded so that a second failure here cannot replace the
+            // exception that actually explains what went wrong.
+            try
+            {
+                loc.setSpeed(0);
+            }
+            catch (RuntimeException stopFailure)
+            {
+                this.control.log(stopFailure);
+            }
+
+            this.control.log(e);
+
+            throw e;
+        }
+    }
+
+    /**
+     * The body of executePath.  Call executePath, which adds the cleanup this cannot do for itself.
+     * @param path
+     * @param loc
+     * @param speed
+     * @param ttp
+     * @return 
+     */
+    private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
     {    
         // Sanity check
         if (!this.isValid())
@@ -2430,8 +2512,6 @@ public class Layout
             this.addTimetableEntry(loc, path);
         }
         
-        // Check to see if the layout class has been re-created since this run
-        int currentLayoutVersion = Layout.layoutVersion;
                     
         if (loc.hasCallback(CB_ROUTE_START))
         {
@@ -2455,7 +2535,7 @@ public class Layout
             if (i != path.size() - 1)
             {
                 // Adjust speed based on multiplier
-                if (currentLayoutVersion == Layout.layoutVersion)
+                if (isCurrentLayout())
                 {
                     int calculatedSpeed = (int) Math.ceil((double) speed * current.getSpeedMultiplier());
                     calculatedSpeed = Math.min(calculatedSpeed, 100);
@@ -2472,7 +2552,7 @@ public class Layout
                 }
                 
                 // Intermediate points - wait for feedback to be triggered and to clear
-                if (current.hasS88() && currentLayoutVersion == Layout.layoutVersion)
+                if (current.hasS88() && isCurrentLayout())
                 {
                     if (this.simulate)
                     {
@@ -2494,7 +2574,7 @@ public class Layout
                 }    
                 
                 // Reverse the locomotive if this is a reversing station
-                if (current.isReversing() && currentLayoutVersion == Layout.layoutVersion)
+                if (current.isReversing() && isCurrentLayout())
                 {
                         this.control.logf(
                             "autolayout.infoIntermediateReversingForLocomotive",
@@ -2512,7 +2592,7 @@ public class Layout
                 // This can be useful, but extra care needs to be taken if any paths cross over
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
-                if (!this.atomicRoutes && currentLayoutVersion == Layout.layoutVersion)
+                if (!this.atomicRoutes && isCurrentLayout())
                 {
                     if (i > 0)
                     {       
@@ -2566,7 +2646,7 @@ public class Layout
             else
             {           
                 // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
-                if (currentLayoutVersion == Layout.layoutVersion)
+                if (isCurrentLayout())
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
                     loc.setSpeed((int) Math.ceil((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
@@ -2609,7 +2689,7 @@ public class Layout
             }  
             
             // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
-            if (currentLayoutVersion != Layout.layoutVersion)
+            if (!isCurrentLayout())
             {
                 // Stop before abandoning the path.  The layout that owned this run has been retired,
                 // and stopLocomotives() only clears the dispatch flag - it never commands anything, so

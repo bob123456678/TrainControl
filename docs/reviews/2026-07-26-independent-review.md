@@ -372,9 +372,9 @@ This table is the authoritative status for findings D*, M*, T*.
 |---|---------|----------|--------|
 | D1 | Fenced mid-path abort in `executePath` never stops the locomotive | High (given D2) | **Fixed 2026-07-26** |
 | D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | **Fixed 2026-07-26** - warns and stops rather than refusing, see note |
-| D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | **Deferred 2026-07-26** - the D2 fix stops locomotives before the swap, making the fence non-load-bearing, see note |
+| D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | **Fixed 2026-07-27** |
 | D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
-| D5 | `executePath` can strand an `activeLocomotives` entry, making `isRunning()` permanently true | Low | **Open** - deferred to next cycle; no longer costs a restart via the reload path. Escape inventory corrected in the third evaluation pass: the delete route recorded in the note is unreachable |
+| D5 | `executePath` can strand an `activeLocomotives` entry, making `isRunning()` permanently true | Low | **Fixed 2026-07-27** |
 | M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | **Fixed 2026-07-26** |
 | M2 | One-sided link validation permits chains; saved chains restore order-dependently | None | **Withdrawn 2026-07-26 - the finding is wrong.** The membership check exists, in the UI layer; chains are unreachable |
 | M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low | **Closed - accepted as-is** (author, 2026-07-26) |
@@ -518,10 +518,45 @@ structurally guarantees that. Three ways out, in increasing order of correctness
    existing `startAutonomy` guard sound. Note it must not disturb the fenced abort, which returns
    *deliberately* without unlocking or clearing - `testLayoutReloadFence` pins that distinction.
 
-**Option 1 was taken** (see the D2 note), which is why D5 is Low rather than Medium: a stranded entry
-is still a defect - it makes `isRunning()` permanently true, which continues to block `startAutonomy`
-and `setSimulate` - but it no longer costs the user a restart, because reloading the graph is available
-and rebuilds the `Layout` from scratch.
+**Option 1 was taken** (see the D2 note), which is why D5 was rated Low rather than Medium: a stranded
+entry is still a defect - it makes `isRunning()` permanently true, which continues to block
+`startAutonomy` and `setSimulate` - but it no longer cost the user a restart, because reloading the
+graph is available and rebuilds the `Layout` from scratch.
+
+**Fixed 2026-07-27 - option 3, the one recorded above as correct.** The entry can no longer leak.
+
+*Fixed at the source, not at the callers.* There are four production callers - `runLocomotive`,
+`executeTimetable`, `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - so a caller-side guard
+would have meant four copies and no cover for a fifth.
+
+*But not by wrapping the body in place.* Doing that required converting the redundant `else` into a
+`try` spanning to the end of the method, which would have re-indented roughly 294 lines of the most
+safety-critical method in the application. The body was renamed to `executePathInternal` and a thin
+public `executePath` wrapper added instead: the existing code is byte-for-byte unchanged, and the diff
+is small enough to read. Two mechanical edits had already damaged files earlier the same day - once
+deleting two methods that a brace check happily accepted - which is why the low-churn option won.
+
+All three constraints recorded above are honoured, and each is stated at the call site because each is a
+trap for whoever edits it next:
+
+- **`catch`, not `finally`.** The version fence returns *normally* when abandoning a path after the
+  layout is replaced, and leaves the entry deliberately - it belongs to a `Layout` being discarded. A
+  `finally` would fire there too, and `testLayoutReloadFence` asserts that entry is still present.
+- **Rethrows.** `executeTimetable` catches around `executePath` and halts the run; returning `false`
+  instead would feed its retry loop, which would then spin on a permanent fault rather than stopping.
+- **Does not unlock the path.** The locomotive may be physically standing on those edges; releasing
+  them would let another train be routed into occupied track. Leaving them locked is degraded but safe,
+  and a graph reload resets them.
+
+*One addition beyond the finding.* The catch also calls `loc.setSpeed(0)`. An exception part way
+through a path leaves a train moving with nothing tracking it - the hazard D1 established as
+unacceptable - and neither caller's error handling stops it, since `stopLocomotives()` only clears a
+flag. It is guarded by its own catch so that a second failure cannot replace the exception that
+explains the first.
+
+*Not covered by a test.* Provoking it needs an unexpected exception from inside a real path execution.
+What the suite does prove is that the fenced abort still leaves its entry in place - the behaviour a
+`finally` would have silently broken.
 
 Option 3 remains the right fix and was not applied: it restructures the error handling of the most
 safety-critical method in the application, which is not something to bundle into a release already
@@ -546,8 +581,32 @@ and D3 was deferred on the grounds that its trigger had been removed entirely; w
 a warning, that reasoning expired. The current reasoning does not depend on the trigger being
 unreachable, only on the trains being stopped before the swap.
 
-The correct fix remains an instance version field compared against the counter. It changes the meaning
-of the fence at five sites and wants its own tests, which is why it is not bundled into this release.
+**Fixed 2026-07-27.** The deferral had assumed the fix was to capture the right value at the right
+moment. It is not: the capture goes away entirely. `Layout` now records its own `version` at
+construction, and `isCurrentLayout()` answers "am I still the newest Layout?" - a question whose answer
+does not depend on when it is asked. The window this finding describes does not narrow; it stops
+existing.
+
+That made the change smaller than the deferral implied: one final field, one constructor line, one
+predicate, and six call sites that read `isCurrentLayout()` instead of comparing a local against the
+static counter.
+
+*The semantics do change, and that was the risk worth checking.* Previously a path could run to
+completion on a superseded `Layout`, because the capture was taken when that instance was already stale
+and then matched itself at every milestone - which is the defect. Now such a path aborts at its first
+milestone. Anything that deliberately ran paths on an old instance would break, so all four production
+callers and every test that executes a path were checked first: each runs on a `Layout` created moments
+earlier (`buildPath`, `twoLegLayout`) or on `getAutoLayout()`, which is the newest by construction.
+Nothing depended on the old behaviour.
+
+*Considered and rejected:* `this == control.getAutoLayout()`, which is the truest statement of the
+question. It would make every detached `Layout` refuse to run a path, and two test classes execute paths
+on instances that are never attached to the model.
+
+*Unchanged, and now load-bearing:* `Layout.layoutVersion += 1` in the constructor is not atomic, so two
+`Layout` instances built concurrently could take the same version and the older would believe it is
+current. Construction is effectively serialised through `parseAuto`, so this is pre-existing rather than
+introduced - but the fence now rests on it, which is worth knowing rather than discovering.
 
 ### Area 2 - multi-unit / linked-locomotive fan-out
 
@@ -990,11 +1049,14 @@ door, and it discards the run.
 
 ### State after this pass
 
-Open: **D5** (Low, deferred; escape inventory corrected above) and **D3** (deferred,
-non-load-bearing while stop-before-swap holds). The **standing root-cause item is fixed**, and its
-follow-up - deleting the five repair methods it made redundant - was completed on 2026-07-27 rather
-than deferred; see its section. Everything else across all four review documents is fixed, withdrawn,
-closed by decision, or informational.
+Open at the time of this pass: **D5** and **D3**. Since then **D5 has been fixed** (2026-07-27, see
+its note) and the **standing root-cause item is fixed**, its follow-up - deleting the five repair
+methods it made redundant - completed rather than deferred.
+
+**D3 has since been fixed too** (2026-07-27, see its note), which closes the last open finding.
+
+Everything across all five review documents is now fixed, withdrawn, closed by decision, or
+informational. Nothing is outstanding.
 
 Subsequent work is recorded in [the full codebase review](2026-07-26-full-codebase-review.md), whose
 B3 was found by the author in use rather than by any review pass.
