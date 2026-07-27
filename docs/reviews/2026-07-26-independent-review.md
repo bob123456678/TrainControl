@@ -370,10 +370,11 @@ This table is the authoritative status for findings D*, M*, T*.
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| D1 | Fenced mid-path abort in `executePath` never stops the locomotive | High (given D2) | Open |
-| D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | Open |
-| D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | Open |
+| D1 | Fenced mid-path abort in `executePath` never stops the locomotive | High (given D2) | **Fixed 2026-07-26** |
+| D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | **Fixed 2026-07-26** - warns and stops rather than refusing, see note |
+| D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | **Deferred 2026-07-26** - the D2 fix stops locomotives before the swap, making the fence non-load-bearing, see note |
 | D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
+| D5 | `executePath` can strand an `activeLocomotives` entry, making `isRunning()` permanently true | Low | **Open** - deferred to next cycle; no longer costs a restart, see note |
 | M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | **Fixed 2026-07-26** |
 | M2 | One-sided link validation permits chains; saved chains restore order-dependently | None | **Withdrawn 2026-07-26 - the finding is wrong.** The membership check exists, in the UI layer; chains are unreachable |
 | M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low | **Closed - accepted as-is** (author, 2026-07-26) |
@@ -430,6 +431,116 @@ functions), worth knowing.
 *Coverage note:* `testAutoLayoutRace` covers only the `activeLocomotives` map race - none of the
 above. A simulate-mode soak that reloads JSON mid-path and asserts every locomotive's speed is 0
 within a bounded time would pin D1/D2/D3 directly.
+
+**D1 and D2 fixed (2026-07-26); D3 deferred.** Both claims were verified against the code before
+being acted on, and both hold.
+
+D1's premise - that nothing else would stop the locomotive - is the load-bearing part, and it is
+correct: `stopLocomotives()` is `this.running = false` and nothing more. It ends the dispatch loop
+between paths and never commands a locomotive, so a train abandoned mid-path by the fence really did
+have nothing left to stop it. The fenced branch now calls `loc.setSpeed(0)` before returning.
+
+*Not addressed in that branch:* the early `return` also skips `unlockPath`, the `activeLocomotives`
+and `locomotiveMilestones` removals, and `CB_ROUTE_END`. The lock and map state is moot - that Layout
+is being discarded - but a function switched on by `CB_ROUTE_START` (lights, sound) stays on with no
+route left to turn it off. Firing `CB_ROUTE_END` here was deliberately not added: per D4 the callback
+registered on the shared `Locomotive` may by then belong to the *new* JSON, so invoking it would run a
+lambda from a layout this path never ran on.
+
+D2's stronger claim - that guarding the UI makes D1 unreachable - was checked at the call-graph level
+rather than taken at face value, since that is exactly the step M2 skipped. It survives:
+`parseAuto` has one production caller, `TrainControlUI.validateButtonActionPerformed`, and the only
+other `new Layout(...)` outside `fromJSON` is the lazy initialiser in `getAutoLayout()`, which cannot
+fire while a layout exists. Guarding that one method closes every path that retires a running layout.
+
+The guard uses `isRunning()` (`running || !activeLocomotives.isEmpty()`) rather than `isAutoRunning()`,
+so it also covers a graceful stop that is still in progress with locomotives finishing paths.
+
+**Revised the same day, after D5.** The guard was first written as an outright refusal, and that was
+wrong: `isRunning()` is also true in the stranded state D5 describes, so refusing would have removed the
+only in-session way out of it. It now *warns* - a Yes/No dialog defaulting to No - and, on
+confirmation, calls `stopLocomotives()` and then sets every active locomotive to speed 0 before
+`parseAuto` runs.
+
+Stopping the trains first is what makes the confirmation safe, and it is the more important half of the
+fix. The danger in reloading was never the reload; it was that retiring a `Layout` commands nothing, so
+trains kept moving while their graph was replaced. With them stopped up front, the outcome no longer
+depends on whether any given path's fence gets a chance to fire.
+
+The guard sits only in `validateButtonActionPerformed` - the one place that retires a layout.
+`loadJSONButtonActionPerformed` delegates there, so a second prompt in it would only ask twice.
+
+One detail sharper than the finding states: the existing confirmation dialog only appears when the
+editor text differs from the live layout's `toJSON()`. Pressing Validate without having edited
+anything recreated the layout with no prompt at all.
+
+**D3 deferred, on the strength of D2 rather than on probability.** The window is real and this release
+widened it - path-integrity validation waits on `Accessory.actuationConfirmedMonitor` for up to
+`PATH_VALIDATION_MS * (1 + accessories.size())`, so roughly four seconds on a three-accessory path
+where previously there was almost none. A reload landing inside `configureAndLockPath` still makes the
+capture at Layout.java:2426 equal to the new version, so the fence never trips and the locomotive
+drives the whole path against a retired graph.
+
+**D5 (new, raised by the author on review of the D2 fix): the guard removes the only in-session
+recovery from a stuck autonomy state.** Confirmed, and it is a real cost of the D2 fix rather than a
+hypothetical one.
+
+`isRunning()` is `running || !activeLocomotives.isEmpty()`. The `running` half always clears - graceful
+stop sets it false. The `activeLocomotives` half is emptied in exactly two places: the tail of
+`executePath` (Layout.java:2686) and `locDeleted` (Layout.java:322). There is **no** `try`/`catch`/
+`finally` anywhere in `executePath` between the `put` at 2400 and that removal, the thread body in
+`runLocomotive` does not catch either, and the codebase installs no `UncaughtExceptionHandler`. So an
+unexpected exception part-way through a path kills the thread silently and strands the entry, and
+`isRunning()` then reports true for the remainder of the session.
+
+Before the D2 fix that state already blocked `startAutonomy` (which has always used the same
+predicate) and `setSimulate`, but reloading the JSON still worked and produced a clean `Layout` -
+which is precisely the escape hatch D2 closed. After the fix the only routes out are restarting
+TrainControl, or deleting the stranded locomotive from the database, which reaches
+`locDeleted` and clears the entry. The second is destructive and nobody would guess it.
+
+So the D2 guard is only as sound as `executePath`'s freedom from unhandled exceptions, and nothing
+structurally guarantees that. Three ways out, in increasing order of correctness:
+
+1. Make the refusal a confirmation instead - the run is abandoned rather than blocked. Cheapest, and
+   restores the escape hatch, but it puts D3's trigger back: a confirmed reload can still land inside
+   `configureAndLockPath`'s validation wait, where the fence never trips at all.
+2. Keep the refusal and add an explicit recovery action that clears `activeLocomotives`.
+3. Guarantee the map entry cannot leak, by cleaning it up when `executePath` unwinds abnormally.
+   This removes the stuck state rather than working around it, and makes both the D2 guard and the
+   existing `startAutonomy` guard sound. Note it must not disturb the fenced abort, which returns
+   *deliberately* without unlocking or clearing - `testLayoutReloadFence` pins that distinction.
+
+**Option 1 was taken** (see the D2 note), which is why D5 is Low rather than Medium: a stranded entry
+is still a defect - it makes `isRunning()` permanently true, which continues to block `startAutonomy`
+and `setSimulate` - but it no longer costs the user a restart, because reloading the graph is available
+and rebuilds the `Layout` from scratch.
+
+Option 3 remains the right fix and was not applied: it restructures the error handling of the most
+safety-critical method in the application, which is not something to bundle into a release already
+carrying this many changes. **Recorded as the open item for the next cycle**, with three constraints
+established while evaluating it, each of which is a distinct regression if missed:
+
+- It must `catch`, not `finally`. A `finally` also fires on the fenced abort's `return true`, which
+  deliberately leaves the entry in place; `testLayoutReloadFence` pins that distinction.
+- It must rethrow. `executeTimetable` already catches `Exception` around `executePath` and responds by
+  calling `stopLocomotives()`. Swallowing the exception and returning false instead would leave the
+  retry loop `while (running && !executePath(...))` spinning on a permanent fault - turning
+  halt-on-error into retry-forever, which is T3's shape.
+- It must not unlock the path. Unlocking on error marks edges free while a train may be physically
+  standing on them, so another route could be sent into occupied track. Leaving them locked is degraded
+  but fail-safe, and a reload resets the locks anyway.
+It is deferred because the D2 fix makes the fence non-load-bearing on this path. The reload now stops
+every active locomotive *before* creating the new `Layout`, so whether the fence trips - and D3 is
+precisely the case where it never does - no longer determines whether a train is left running.
+
+Note this rationale changed once already. The first version of the D2 fix refused the reload outright,
+and D3 was deferred on the grounds that its trigger had been removed entirely; when the refusal became
+a warning, that reasoning expired. The current reasoning does not depend on the trigger being
+unreachable, only on the trains being stopped before the swap.
+
+The correct fix remains an instance version field compared against the counter. It changes the meaning
+of the fence at five sites and wants its own tests, which is why it is not bundled into this release.
 
 ### Area 2 - multi-unit / linked-locomotive fan-out
 

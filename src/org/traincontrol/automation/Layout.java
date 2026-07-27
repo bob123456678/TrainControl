@@ -2603,6 +2603,14 @@ public class Layout
             // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
             if (currentLayoutVersion != Layout.layoutVersion)
             {
+                // Stop before abandoning the path.  The layout that owned this run has been retired,
+                // and stopLocomotives() only clears the dispatch flag - it never commands anything, so
+                // returning here would leave a locomotive running between stations with nothing left
+                // that will ever stop it, and a new graph that knows nothing about it.  It is standing
+                // at a known milestone point right now, which is exactly where a graceful stop would
+                // have put it.
+                loc.setSpeed(0);
+
                 if (control.isDebug())
                 {
                     this.control.logf(

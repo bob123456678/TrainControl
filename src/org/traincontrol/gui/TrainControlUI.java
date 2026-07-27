@@ -12655,6 +12655,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
+            // Retiring a Layout does not stop anything: parseAuto calls stopLocomotives(), which only
+            // clears the dispatch flag.  Trains already under way would keep running with no graph
+            // tracking them, so everything moving is stopped here, before the swap.  That also makes it
+            // irrelevant whether each running path's version fence gets a chance to fire - the fence
+            // stops the locomotive at its next milestone, but only if it is reached and only if the
+            // capture happened before the reload.
+            //
+            // This warns rather than refuses deliberately.  isRunning() is also true when an
+            // activeLocomotives entry has been stranded - executePath has no handler between adding one
+            // and removing it, and nothing else clears the map - so refusing outright would leave a
+            // stuck layout unrecoverable without restarting TrainControl.  Reloading builds a fresh
+            // Layout and is the only in-session way out of that state.
+            if (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
+            {
+                int stillRunningResult = JOptionPane.showOptionDialog(
+                    this,
+                    I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives"),
+                    I18n.t("loc.ui.dialogConfirmReset"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+                    null,
+                    YES_NO_OPTS,
+                    YES_NO_OPTS[1] // default to leaving the running layout alone
+                );
+
+                if (stillRunningResult != JOptionPane.YES_OPTION)
+                {
+                    return;
+                }
+
+                // Order matters: clear the dispatch flag first, so no locomotive thread can pick up a
+                // new path in between, then stop everything that is currently moving.
+                this.model.getAutoLayout().stopLocomotives();
+
+                for (Locomotive active : this.model.getAutoLayout().getActiveLocomotives().keySet())
+                {
+                    active.setSpeed(0);
+                }
+            }
+
             resetLayoutStationLabels();
             
             // If valid, confirm before we overwrite
