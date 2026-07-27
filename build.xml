@@ -137,6 +137,7 @@
         <test-one-class class="testParseCS3Loks"/>
         <test-one-class class="testParseCS3Routes"/>
         <test-one-class class="testParseWebServer"/>
+        <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
     </target>
     <target name="package-for-store" depends="jar">

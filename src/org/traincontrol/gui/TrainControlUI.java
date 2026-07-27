@@ -10672,7 +10672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 : this.model.getLocomotives().stream().map(ll -> (Locomotive) ll).collect(Collectors.toList());
 
             // Narrow to what's on the graph
-            if (this.getModel().getAutoLayout() != null && autonomyOrder.isSelected() 
+            if (this.getModel().hasAutoLayout() && autonomyOrder.isSelected() 
                     && !this.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
             {
                 sourceLocs.retainAll(this.getModel().getAutoLayout().getLocomotivesToRun());
@@ -12605,7 +12605,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void applyAutoRouteListSelections()
     {
-        if (this.model.getAutoLayout() != null)
+        if (this.model.hasAutoLayout())
         {
             List<Integer> activeIDs = this.model.getAutoLayout().getActivateRouteIDs();
 
@@ -12634,7 +12634,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void updateAutoRouteList()
     {
-        if (this.getModel().getAutoLayout() != null)
+        if (this.getModel().hasAutoLayout())
         {
             DefaultListModel<Route> listModel = new DefaultListModel<>();
 
@@ -14040,7 +14040,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
         javax.swing.SwingUtilities.invokeLater(new Thread(() ->
         {
-            if (this.model.getAutoLayout() != null)
+            if (this.model.hasAutoLayout())
             {
                 if (this.getModel().getAutoLayout().isRunning())
                 {

@@ -2529,7 +2529,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.routeDB.add(r, name, newId);
         
         // Update auto layout route selections
-        if (this.getAutoLayout() != null)
+        if (this.hasAutoLayout())
         {
             if (this.getAutoLayout().getActivateRouteIDs().contains(oldId))
             {

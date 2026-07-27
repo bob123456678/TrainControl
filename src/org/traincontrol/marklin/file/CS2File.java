@@ -3,6 +3,7 @@ package org.traincontrol.marklin.file;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1673,7 +1674,14 @@ public final class CS2File
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
         try (BufferedReader reader = fetchURL(gleisbild);
         
-        BufferedWriter writer = new BufferedWriter(new FileWriter(masterLayoutFile)))
+        // Files.newBufferedWriter, not FileWriter: FileWriter encodes in the platform default charset
+        // (Cp1252 on the Windows/Java 8 configuration this targets), while the only reader of these
+        // files - CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains
+        // a non-ASCII character was written in one encoding and read back in another, so the name came
+        // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
+        // silently clearing the local-layout override.  LayoutDiagram.saveChanges already wrote page
+        // content this way; these three writers did not.
+        BufferedWriter writer = Files.newBufferedWriter(masterLayoutFile.toPath()))
         {
             String line;
             while ((line = reader.readLine()) != null)
@@ -1694,7 +1702,7 @@ public final class CS2File
         {
             File layoutFile = new File(layoutsDir, layoutName + ".cs2");
             try (BufferedReader reader = fetchURL(getLayoutURL(layoutName));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(layoutFile)))
+            BufferedWriter writer = Files.newBufferedWriter(layoutFile.toPath()))
             {
                 String line;
                 while ((line = reader.readLine()) != null)
@@ -1710,7 +1718,7 @@ public final class CS2File
 
         try (BufferedReader reader = fetchURL(this.getMagURL(false));
         
-        BufferedWriter writer = new BufferedWriter(new FileWriter(magsFile)))
+        BufferedWriter writer = Files.newBufferedWriter(magsFile.toPath()))
         {
             String line;
             while ((line = reader.readLine()) != null)

@@ -28,10 +28,10 @@ document; findings from other documents are cited with their document name.
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| B1 | Local layout files are written in the platform-default charset but always read back as UTF-8; non-ASCII page names break local layouts and silently clear the override | B | Open |
-| B2 | `RouteCommand.toLine` omits the newline for feedback commands; a route-editor round-trip then silently deletes the following command | B | Open |
-| C1 | `changeRouteId` still uses `getAutoLayout() != null` - the always-true creating check C12 fixed in `deleteRoute` - and seven more UI sites share the pattern | C | Open |
-| C2 | `MarklinRoute.toCSV` pretty-prints through `getAccessoryByAddress`, a creating lookup - opening the route editor can register phantom accessories | C | Open |
+| B1 | Local layout files are written in the platform-default charset but always read back as UTF-8; non-ASCII page names break local layouts and silently clear the override | B | **Fixed 2026-07-27** |
+| B2 | `RouteCommand.toLine` omits the newline for feedback commands; a route-editor round-trip then silently deletes the following command | B | **Fixed 2026-07-27** |
+| C1 | `changeRouteId` still uses `getAutoLayout() != null` - the always-true creating check C12 fixed in `deleteRoute` - and seven more UI sites share the pattern | C | **Fixed 2026-07-27** - all eight sites |
+| C2 | `MarklinRoute.toCSV` pretty-prints through `getAccessoryByAddress`, a creating lookup - opening the route editor can register phantom accessories | C | **Closed** - a new trigger for the already-accepted B6, see note |
 | C3 | The CS2 import parsers abort the entire sync on one malformed record; the CS3 parsers catch per-record | C | Open - no real file in evidence triggers it |
 | C4 | `editRoute` deletes the route before knowing the re-add will succeed; a name collision would silently drop the route | C | Open - unreachable from current callers |
 | D1 | Checks that came back clean (see section) | - | Recorded |
@@ -97,6 +97,17 @@ assert the name survives - it will fail today on any JRE whose default charset i
 should pin the charset rather than rely on the platform (e.g. by asserting bytes on disk are the
 UTF-8 encoding).
 
+**Fixed 2026-07-27.** Every claim was checked against the code first: the four `FileWriter` sites, the
+single `StandardCharsets.UTF_8` decode in `fetchURL`, and the catch block that ends the chain -
+`TrainControlUI.getPrefs().put(LAYOUT_OVERRIDE_PATH_PREF, "")`. All four writers now use
+`Files.newBufferedWriter`, matching `LayoutDiagram.saveChanges`, which was already correct in the same
+file. No `FileWriter` remains in `src/`, and the import it left unused was removed.
+
+**No regression test, deliberately deferred.** A round-trip test would pass vacuously on any JVM whose
+default charset is already UTF-8 - including, quite possibly, the one running CI - so it has to assert
+the bytes on disk rather than the round trip. That is worth writing and was not bundled into this
+batch. Until it exists, this fix is verified by reading only.
+
 ## B2. Feedback commands break the route editor's round-trip and silently delete a neighbour
 
 `RouteCommand.toLine`
@@ -141,11 +152,42 @@ so the conditions rendering is unaffected; verify the other two `toLine` display
 way. Separately worth considering: have `RouteCallback` warn on (or reject) command types that
 `execRoute` will never execute - that closes the "does nothing silently" half.
 
+**Fixed 2026-07-27.** The whole chain was re-verified before changing anything, including the part that
+makes it silent: `fromLine` reads the address from `split(",")[0]` and evaluates the state as
+`"1".equals("1locspeed")`, so the merged line parses without an exception. `Route.evaluate` handles
+feedback for *conditions*; `execRoute` has no such branch, so a feedback command in the command list
+does nothing until it corrupts its neighbour.
+
+**All seven `toLine` callers were checked, not just the reported one, and that found a second instance.**
+`Route.toCSV` (Route.java:202) has the identical concatenation, so the one-line fix repairs two call
+paths rather than one. Of the rest: `NodeExpression` collapses repeated newlines, and both `RouteEditor`
+sites `trim()` the result, so nothing gains a blank line.
+
+**Tests.** [`test/testRouteRoundTrip.java`](../../test/testRouteRoundTrip.java) - three. Two hand-built
+(feedback last, and feedback between two other commands so the failure cannot hide at the end of the
+list), plus the same invariant over `cs2_sample_layout/config/gleisbilder/routes.json`: all 83 routes,
+asserting each renders and re-parses to the same command count. That file ships with the repository and
+was read by no test at all, which is part of why a round-trip defect could survive here.
+
+*Not done:* the second suggestion - warning on command types `execRoute` will never run. That closes the
+"accepted silently, then does nothing" half of the finding and is a UI change rather than a data-loss
+fix.
+
 ---
 
 ## C. Low
 
 ### C1. `changeRouteId` kept the check that C12 removed from `deleteRoute`
+
+**Fixed 2026-07-27.** All eight sites now use `hasAutoLayout()`: `changeRouteId`, four in
+`TrainControlUI`, and one each in `LayoutGrid`, `LayoutLabel` and `LayoutRightclickAutonomyMenu`.
+`changeRouteId` was the exact twin of the `deleteRoute` block C12 fixed - same silent `Layout`
+instantiation, and with it a bump of the static `layoutVersion` that the reload fence in `executePath`
+compares against.
+
+No changelog entry, matching how C12 was handled: the effect is internal, and the user-visible
+consequence (a spurious `Layout` on a setup with no autonomy) is not something anyone would recognise
+in a release note.
 
 [MarklinControlStation.java:2532](../../src/org/traincontrol/marklin/MarklinControlStation.java):
 `if (this.getAutoLayout() != null)` - `getAutoLayout()` *creates* a `Layout` when none exists (and
@@ -170,6 +212,14 @@ fix demonstrates the project already decided this pattern is a trap, and seven c
 survive.
 
 ### C2. `MarklinRoute.toCSV` invents accessories on a display path
+
+**Closed 2026-07-27 - not separately actioned.** The mechanism is real and was verified:
+`getAccessoryByAddress` falls through to `newSwitch(address, decoderType, false)`, so the lookup
+creates. But this is a new *trigger* for behaviour the July cycle already ruled on, not a new
+consequence: B6 in [the July review](2026-07-code-review.md) - "Read-only lookups create accessories,
+filling the database with phantoms" - is recorded as **"Accepted, no change. Tolerable because the
+keyboard returns an existing signal rather than replacing it."** That reasoning is about the
+consequence, which this shares. Reopening it would mean revisiting B6, not fixing this site.
 
 [MarklinRoute.java:788](../../src/org/traincontrol/marklin/MarklinRoute.java): the pretty-printer
 resolves each accessory command through `network.getAccessoryByAddress(...)`, which **creates a

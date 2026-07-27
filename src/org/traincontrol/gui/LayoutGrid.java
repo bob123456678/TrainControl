@@ -185,7 +185,7 @@ public class LayoutGrid
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    if (ui.getModel().getAutoLayout() != null &&
+                                    if (ui.getModel().hasAutoLayout() &&
                                             ui.getModel().getAutoLayout().getPoint(text.getToolTipText()) != null)
                                     {
                                         Locomotive atStation = ui.getModel().getAutoLayout().getPoint(text.getToolTipText()).getCurrentLocomotive();

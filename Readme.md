@@ -386,6 +386,8 @@ Tab icons provided by Freepik.
         - Autonomy: changing a locomotive's address, or having the Central Station report a new one, no longer stops its station exclusions from applying
         - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
         - Autonomy: deleting a locomotive now also removes it from any station exclusion lists it was on
+        - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
+        - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
         - Autonomy: reloading or re-validating the graph while locomotives are still running now warns first, and stops them before the new graph takes over.  Previously the layout was replaced underneath them and any train already under way kept going, untracked
         - Autonomy: a locomotive part way through a route when the graph is reloaded now stops at its next point.  Previously it kept running with nothing left to stop it, and the new graph had no record of it
         - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct

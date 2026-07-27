@@ -2,7 +2,6 @@ package org.traincontrol.base;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -561,7 +560,10 @@ public class LayoutDiagram
         // Construct the file path
         String filePath = Paths.get(path, "config", "gleisbild.cs2").toString();
         
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath)))
+        // Files.newBufferedWriter for UTF-8, matching saveChanges above and the encoding
+        // CS2File.fetchURL reads these files back in.  FileWriter used the platform default charset,
+        // so a page name with a non-ASCII character did not survive the round trip.
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath)))
         {
             // Write header and static content
             writer.write("[gleisbild]\n");

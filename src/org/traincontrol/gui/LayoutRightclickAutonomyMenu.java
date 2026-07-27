@@ -21,7 +21,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {        
         JMenuItem menuItem;
         
-        if (ui.getModel().getAutoLayout() != null)
+        if (ui.getModel().hasAutoLayout())
         {     
             if (!ui.getModel().getAutoLayout().isAutoRunning())
             {

@@ -219,7 +219,7 @@ public final class LayoutLabel extends JLabel
                                         }
                                     }
                                     // Warn user of switching accessories along active routes
-                                    else if (tcUI.getModel().getAutoLayout() != null && tcUI.getModel().isAutonomyRunning())
+                                    else if (tcUI.getModel().hasAutoLayout() && tcUI.getModel().isAutonomyRunning())
                                     {
                                         Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
                                         

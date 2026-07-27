@@ -568,7 +568,15 @@ public class RouteCommand implements java.io.Serializable
     {
         if (this.isFeedback())
         {
-            return RouteCommand.FEEDBACK_PREFIX + " " + Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0");
+            // Newline, like every other branch.  Without it MarklinRoute.toCSV - which concatenates
+            // toLine output with no separator - glued a feedback command to the one after it, and the
+            // merged line still parsed: fromLine read the address from the first field and evaluated
+            // the state as "1".equals("1locspeed"), so no error was raised and the following command
+            // was silently dropped from the route on the next save.
+            //
+            // Conditions are unaffected: NodeExpression.toTextRepresentation collapses repeated
+            // newlines and trims, so it absorbs this one.
+            return RouteCommand.FEEDBACK_PREFIX + " " + Integer.toString(this.getAddress()) + "," + (this.getSetting() ? "1" : "0") + "\n";
         }
         else if (this.isRoute())
         {
