@@ -332,6 +332,99 @@ public class testAccessory
     }
     
     /**
+     * A full 13-byte accessory echo, as it arrives off the wire.
+     *
+     * The short accessoryEcho below is enough to drive parseMessage directly, but receiveMessage only
+     * routes a message whose RESPONSE bit is set - the low bit of the second byte - and that bit cannot
+     * be set through the outgoing constructor. So this one is assembled by hand.
+     */
+    private static CS2Message rawAccessoryEcho(int uid, int setting)
+    {
+        byte[] raw = new byte[CS2Message.MESSAGE_LENGTH];
+
+        // Command in the top seven bits of byte 1, response flag in its low bit
+        raw[1] = (byte) ((CS2Message.CMD_ACC_SWITCH << 1) | 1);
+        raw[2] = 0x47;
+        raw[3] = 0x11;
+        raw[4] = 6;
+
+        raw[5] = (byte) (uid >> 24);
+        raw[6] = (byte) (uid >> 16);
+        raw[7] = (byte) (uid >> 8);
+        raw[8] = (byte) uid;
+        raw[9] = (byte) setting;
+        raw[10] = 1;
+
+        return new CS2Message(raw);
+    }
+
+    /**
+     * receiveMessage hands accessory work to an executor, so state changes arrive asynchronously.
+     */
+    private static boolean waitUntil(java.util.function.BooleanSupplier condition) throws Exception
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            if (condition.getAsBoolean())
+            {
+                return true;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return false;
+    }
+
+    /**
+     * An accessory echo for an accessory that has been removed from the database must be ignored.
+     *
+     * receiveMessage used to test `hasId` and then call `getById` three separate times; an accessory
+     * deleted in between - `restoreState` drops any with an invalid address, while the CAN listener is
+     * already running - made the third lookup return null and threw inside the executor.
+     *
+     * **What this test can and cannot show.** The executor captures that exception in its `Future`,
+     * which nobody reads, so the failure is invisible from outside and the pre-fix code would NOT have
+     * failed the middle assertion here. What it does pin is the surrounding behaviour: the echo reaches
+     * a live accessory, an echo for a deleted one does not throw *synchronously* on the caller's thread,
+     * and the pipeline keeps working afterwards. The synchronous part matters - if this handling is ever
+     * made synchronous, that exception lands on the CAN reader thread, which is exactly how A8 killed
+     * the listener.
+     */
+    @Test(timeOut = 30000)
+    public void testEchoForADeletedAccessoryIsIgnored() throws Exception
+    {
+        clearAccessoryAddress(291);
+
+        MarklinAccessory acc = model.newSwitch(291, MarklinAccessory.accessoryDecoderType.MM2, false);
+        int uid = acc.getUID();
+
+        assertFalse(acc.isSwitched(), "created straight");
+
+        // The echo really does reach a live accessory through receiveMessage.  Setting 0 means turned.
+        // Each message below uses a different setting from the one before it, because receiveMessage
+        // discards a packet identical to the previous one.
+        model.receiveMessage(rawAccessoryEcho(uid, 0));
+
+        assertTrue(waitUntil(() -> acc.isSwitched()), "the echo must reach the accessory");
+
+        // Now remove it and echo again.  This is the state the guard exists for.
+        accDb().delete(acc.getName());
+
+        assertNull(model.getAccessoryByName(acc.getName()), "precondition: the accessory is gone");
+
+        model.receiveMessage(rawAccessoryEcho(uid, 1));
+
+        // And the pipeline is still alive afterwards
+        MarklinAccessory replacement = model.newSwitch(291, MarklinAccessory.accessoryDecoderType.MM2, false);
+
+        model.receiveMessage(rawAccessoryEcho(replacement.getUID(), 0));
+
+        assertTrue(waitUntil(() -> replacement.isSwitched()),
+            "a later echo must still be delivered after one arrived for a deleted accessory");
+    }
+
+    /**
      * Builds the CAN accessory echo the Central Station sends back for an accessory command.
      * Setting 0 means turned, 1 means straight (see MarklinAccessory.parseMessage).
      */

@@ -1671,14 +1671,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 int id = message.extractUID();
 
-                if (this.accDB.hasId(id))
+                // Resolved once into a local, as the locomotive branch above does.  This was hasId
+                // followed by three separate getById calls, so the accessory could disappear between
+                // them - restoreState deletes accessories with an invalid address while the CAN
+                // listener is already running - and the resulting NPE would be swallowed by the
+                // executor's Future, dropping the update in silence.
+                MarklinAccessory accessory = this.accDB.getById(id);
+
+                if (accessory != null)
                 {
-                    this.accDB.getById(id).parseMessage(message);
+                    accessory.parseMessage(message);
 
                     if (this.view != null)
                     {
                         // repaintSwitch() already marshals to the EDT via invokeLater internally.
-                        this.view.repaintSwitch(this.accDB.getById(id).getAddress() + 1, this.accDB.getById(id).getDecoderType());
+                        this.view.repaintSwitch(accessory.getAddress() + 1, accessory.getDecoderType());
                         //this.view.repaintSwitches();
                     }
                 }

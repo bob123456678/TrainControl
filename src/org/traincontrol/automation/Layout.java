@@ -2743,8 +2743,22 @@ public class Layout
                 this.locomotivesToRun.add(l);
             }
             
+            // Resolved once and null-checked, as the locomotive == null branch below already does.
+            // An unknown point name used to be dereferenced straight away and thrown, rather than
+            // reported - the two branches of this method disagreed about that.
+            Point target = this.getPoint(targetPoint);
+
+            if (target == null)
+            {
+                this.control.logf(
+                    "autolayout.errorPointDoesNotExist",
+                    targetPoint
+                );
+                return result;
+            }
+
             // Can only place loc on a station
-            if (!this.getPoint(targetPoint).isDestination())
+            if (!target.isDestination())
             {
                 this.control.logf(
                     "autolayout.errorPointIsNotStation",
@@ -2774,8 +2788,8 @@ public class Layout
             this.sanitizeMultiUnits(l);
                         
             // Set new location
-            this.getPoint(targetPoint).setLocomotive(l);
-            
+            target.setLocomotive(l);
+
             result = true;
         }
         
