@@ -186,6 +186,11 @@ fix.
 the log showed a sync running. Confirmed with a Central Station connected, so it is not an artefact of
 connection timeouts on a disconnected setup.
 
+A second symptom turned out to share this cause: cycling between track diagram pages while editing had
+been slow, which had been treated as a separate annoyance. The author confirmed after the fix that it
+was the same full sync, reached through the same method. Worth noting because it went unattributed for
+some time - a performance symptom is easy to accept as "how it is" rather than to trace.
+
 [TrainControlUI.java](../../src/org/traincontrol/gui/TrainControlUI.java) `layoutEditingComplete`
 called `this.model.syncWithCS2()` directly. Six paths reach it: saving a diagram edit, saving a route
 that is drawn on a diagram, renaming, duplicating, adding and deleting a page.
@@ -233,6 +238,46 @@ takes a continuation for it; the other five callers use the unchanged no-arg ove
 
 **Not tested.** Nothing in the suite exercises the editor flows, and an EDT freeze is not something it
 could observe. Verified by the author in the UI.
+
+### B3 follow-up: the fix removed a mutual exclusion nobody had written down
+
+Found by a pass specifically looking for regressions from this cycle's own changes, prompted by the
+author observing that earlier changes had broken UI paths without anyone noticing for a while. Both
+items below are consequences of the fix above, not of the original defect.
+
+While the sync ran on the EDT it was, accidentally, mutually exclusive with everything else on the EDT.
+Moving it to a background thread removed that guarantee - and nothing had ever stated it, because it
+was never a decision.
+
+**A repaint can now land mid-rebuild.** `refreshLayouts` empties the layout database and repopulates
+it. `repaintLayout` dereferences the selected layout without a null check:
+
+```java
+this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(...)
+```
+
+`LayoutList` still holds the previous page names until the continuation runs, so a repaint queued on
+the EDT can look up a page that is not back in the database yet. Previously such a repaint simply
+waited behind the sync. Guarded: a null selection or a missing layout skips that repaint pass, and the
+refresh repaints again when it completes. This would have presented as an intermittent failure on
+diagram and route saves with no obvious trigger - the shape of defect this pass existed to find.
+
+**Two refreshes can now interleave.** Nothing serialised `refreshLayouts`, so two diagram edits saved
+in quick succession could run two clear-and-repopulate cycles against one database, leaving pages
+missing until the next refresh. On the EDT they serialised for free. Now serialised on a dedicated
+lock - deliberately not the station's own monitor, because several methods that synchronize on `this`
+are called from the EDT, and holding it for a whole parse would reintroduce the freeze through a
+different door.
+
+**Checked and clear in the same pass:** `AutoLocomotiveStatus` captures a `Layout` at construction, so
+D3's fence change could have broken its manual path execution - but `parseAuto` invalidates the retired
+layout and `executePath` tests `isValid()` first, so a stale layout was already refused. Keyboard
+locomotive mappings persist by name, not by object, so the identity `equals` change cannot affect them.
+`ViewListener` has a single implementor, so the interface additions cannot silently break another
+class. `toLine`'s fallback preserves the protocol, so DCC accessories still round-trip after the
+non-creating lookup change.
+
+**Verified in use, not by tests.** Neither item is observable by the suite.
 
 ---
 

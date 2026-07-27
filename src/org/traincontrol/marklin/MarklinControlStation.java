@@ -129,6 +129,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // File parser class
     private CS2File fileParser;
+
+    // Serialises layout refreshes.  Deliberately not the station's own monitor - see refreshLayouts
+    private final Object layoutRefreshLock = new Object();
     
     // GUI reference
     private final View view;
@@ -369,13 +372,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.fileParser == null) return;
 
-        try
+        // Serialised on its own lock, not the station's monitor.  The refresh empties the layout
+        // database and repopulates it, so two overlapping refreshes - two diagram edits saved in quick
+        // succession - could interleave and leave pages missing until the next one.  A dedicated lock
+        // keeps them in order without blocking the unrelated station operations that synchronize on
+        // `this`, several of which are called from the EDT and would then freeze for a whole parse.
+        synchronized (this.layoutRefreshLock)
         {
-            this.syncLayoutsFromConfiguredSource();
-        }
-        catch (Exception e)
-        {
-            this.log(e);
+            try
+            {
+                this.syncLayoutsFromConfiguredSource();
+            }
+            catch (Exception e)
+            {
+                this.log(e);
+            }
         }
     }
 

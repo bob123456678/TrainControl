@@ -15936,8 +15936,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.KeyboardTab.setTitleAt(1, "Track Diagram");     
                     };*/
 
+                    // The layout database is emptied and repopulated by refreshLayouts, which runs on a
+                    // background thread after a diagram or route edit.  A repaint queued on the EDT can
+                    // therefore land mid-rebuild, and LayoutList still holds the previous page names -
+                    // so the selected one may not be back in the database yet.  Skip this pass instead of
+                    // dereferencing null; layoutEditingComplete repaints again once the rebuild finishes.
+                    Object selectedLayout = this.LayoutList.getSelectedItem();
+
+                    if (selectedLayout == null || this.model.getLayout(selectedLayout.toString()) == null)
+                    {
+                        return;
+                    }
+
                     //InnerLayoutPanel.setVisible(false);
-                    String cacheKey = this.LayoutList.getSelectedItem().toString() + " " + this.SizeList.getSelectedItem().toString();
+                    String cacheKey = selectedLayout.toString() + " " + this.SizeList.getSelectedItem().toString();
 
                     if (useCache && this.layoutCache.containsKey(cacheKey))
                     {

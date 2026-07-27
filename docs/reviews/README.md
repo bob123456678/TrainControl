@@ -124,6 +124,13 @@ keeps them balanced - and the non-ASCII check passed too. Both "verifications" w
 missing two methods. Diffing the method names against HEAD takes one command and catches it
 immediately.*
 
+**Moving work off a single thread removes an exclusion nobody wrote down.** Before making something
+asynchronous, enumerate what that thread was serialising for free. *Taking a Central Station sync off
+the EDT - correctly, it froze the UI for seconds - removed the guarantee that no repaint could run
+while the layout database was empty mid-rebuild, and that two rebuilds could not overlap. Neither had
+ever been stated, because neither was a decision: they were properties of everything happening on one
+thread. Both had to be reintroduced explicitly, one as a null check and one as a lock.*
+
 **Before mutating shared state, find out who else reads it and under which lock.** Verifying the
 function you are changing is not enough; the hazard lives in its call graph. *A fix that unlinked a
 deleted locomotive from every consist did exactly the right thing to the data - and did it by mutating

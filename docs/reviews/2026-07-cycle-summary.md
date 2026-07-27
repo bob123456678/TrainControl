@@ -58,7 +58,7 @@ findings, all fixed.
 
 ## What the cycle actually taught
 
-Three patterns recurred often enough to be worth more than the individual fixes.
+Four patterns recurred often enough to be worth more than the individual fixes.
 
 ### A mutable hash key produced six findings before anyone fixed the cause
 
@@ -82,6 +82,14 @@ was withdrawn because renames are guarded - and `INT-A2` then reached the same s
 unguarded sync.
 
 The rule this produced: verifying the function is not enough; the hazard lives in its call graph.
+
+### Making something faster removed a guarantee nobody had written down
+
+`FCR-B3` moved a Central Station sync off the EDT because it froze the UI for seconds. Correct fix -
+but while it ran on the EDT it was accidentally mutually exclusive with every repaint, and nothing had
+ever recorded that, because it was never a decision. Two defects followed: a repaint could land while
+the layout database was empty mid-rebuild, and two rebuilds could overlap. Both were found only by a
+pass that asked specifically what the single thread had been serialising for free.
 
 ### Reading found less than using and testing did
 

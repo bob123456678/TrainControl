@@ -393,6 +393,7 @@ Tab icons provided by Freepik.
         - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
         - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
+        - Editing a track diagram, or saving a route that appears on one, no longer freezes TrainControl for several seconds.  Cycling between pages while editing is faster for the same reason: these actions re-read the track diagrams only, instead of reloading the entire Central Station database
     - Accessories
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
     - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
