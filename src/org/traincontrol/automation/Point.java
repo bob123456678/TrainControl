@@ -179,15 +179,9 @@ public class Point
     /**
      * Removes a locomotive from the exclusion set, if it is in it.
      *
-     * Rebuilds the set rather than removing from it.  A locomotive whose name or address changed after
-     * it was excluded sits under a stale hash, and every hash-based removal misses it - including
-     * removeIf, which is not the escape it looks like: Collection.removeIf iterates and calls
-     * Iterator.remove(), and HashMap's iterator implements that as removeNode(hash(key), key, ...),
-     * recomputing the hash from the key's current state.  On a drifted key that searches the wrong
-     * bucket and silently removes nothing.
-     *
-     * Copying the survivors out and refilling avoids the lookup entirely, and re-keys them as a side
-     * effect.
+     * A plain removal is safe: MarklinLocomotive hashes by identity, so a locomotive's hash cannot
+     * move while it sits in this set.  That was not always true - see the hash-identity note on
+     * MarklinLocomotive.hashCode.
      *
      * @param l the locomotive to stop excluding
      * @return true if it was excluded and no longer is
@@ -196,31 +190,9 @@ public class Point
     {
         if (l == null) return false;
 
-        return Locomotive.removeFrom(this.excludedLocs, l);
+        return this.excludedLocs.remove(l);
     }
 
-    /**
-     * Re-keys the exclusion set after a locomotive's identity has changed.
-     *
-     * excludedLocs holds Locomotive references, and a locomotive's hashCode is built from its name,
-     * address and decoder type - all mutable in place.  Renaming an excluded locomotive therefore
-     * leaves it in this set under a hash that no longer matches, and the contains() checks in
-     * isPathClear and pickPath stop finding it: the exclusion silently stops applying and the
-     * locomotive can be routed into a station it was excluded from.  Re-inserting recomputes the
-     * buckets from the members' current values.
-     *
-     * Export is unaffected either way - toJSON iterates and reads the live name.
-     */
-    synchronized public void rehashExcludedLocs()
-    {
-        if (this.excludedLocs.isEmpty()) return;
-
-        Set<Locomotive> current = new HashSet<>(this.excludedLocs);
-
-        this.excludedLocs.clear();
-        this.excludedLocs.addAll(current);
-    }
-    
     /**
      * Returns the point's priority
      * @return 

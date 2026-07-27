@@ -12305,10 +12305,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void layoutEditingComplete()
     {
+        layoutEditingComplete(null);
+    }
+
+    /**
+     * Re-reads the layout after an edit and refreshes the page list.
+     *
+     * syncWithCS2 runs on a background thread: it fetches and re-parses the Central Station's config
+     * files, which takes seconds against real hardware and, with no station reachable, spends that long
+     * in connection timeouts instead.  Called directly this froze the whole UI after every track-diagram
+     * edit and after saving any route that appears on a diagram.  The route flows in this class already
+     * did it this way - see BulkEnableOrDisable and enableOrDisableRoute.
+     *
+     * Everything after the sync touches Swing and is therefore posted back to the EDT.
+     *
+     * @param after optional, run on the EDT once the refresh has finished.  Callers that act on the
+     *              rebuilt page list need this, because the method now returns before that exists.
+     */
+    public void layoutEditingComplete(Runnable after)
+    {
         this.editLayoutButton.setEnabled(false);
 
-        this.model.syncWithCS2();
-        
+        new Thread(() ->
+        {
+            this.model.syncWithCS2();
+
+            javax.swing.SwingUtilities.invokeLater(() -> layoutRefreshComplete(after));
+        }).start();
+    }
+
+    /**
+     * The EDT half of layoutEditingComplete.
+     */
+    private void layoutRefreshComplete(Runnable after)
+    {
         // Store previously selected page
         int oldIndex = this.LayoutList.getSelectedIndex();
 
@@ -12335,6 +12365,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Revert preference for graph UI
         if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(this.isAlwaysOnTop());
+
+        if (after != null) after.run();
     }
     
     /**
@@ -13547,10 +13579,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
-                this.layoutEditingComplete();
-
-                this.LayoutList.setSelectedItem(newLayoutName);
-                this.repaintLayout();
+                // Selecting the new page has to wait for the page list to be rebuilt, which now
+                // happens after the background sync rather than before this line
+                this.layoutEditingComplete(() ->
+                {
+                    this.LayoutList.setSelectedItem(newLayoutName);
+                    this.repaintLayout();
+                });
             }
             catch (Exception ex)
             {

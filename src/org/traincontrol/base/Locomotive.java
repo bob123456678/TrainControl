@@ -3,11 +3,9 @@ package org.traincontrol.base;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1001,90 +999,6 @@ public abstract class Locomotive
         this.name = newName;
     }
 
-    /**
-     * Removes a locomotive from a collection keyed on locomotive objects, by rebuilding it.
-     *
-     * hashCode is built from the name, address and decoder type, and all three are mutable in place -
-     * rename assigns the name, setAddress the other two.  A locomotive renamed or re-addressed since it
-     * was added therefore sits under a hash that no longer matches it, and every hash-based removal
-     * misses it.
-     *
-     * removeIf is not the escape it looks like: Collection.removeIf iterates and calls
-     * Iterator.remove(), and the hash-based collections implement that by recomputing the hash from the
-     * key's current state - so on a drifted key it searches the wrong bucket and silently removes
-     * nothing.  Rebuilding sidesteps the lookup entirely, and re-keys the survivors as a side effect.
-     *
-     * NOT atomic - the collection is briefly emptied.  Only call it where no unsynchronised reader can
-     * observe the collection mid-rebuild.
-     *
-     * @param collection the collection to remove from
-     * @param l the locomotive to remove
-     * @return true if it was present and no longer is
-     */
-    public static boolean removeFrom(Collection<Locomotive> collection, Locomotive l)
-    {
-        if (collection == null || l == null) return false;
-
-        List<Locomotive> kept = new ArrayList<>();
-        boolean removed = false;
-
-        for (Locomotive other : collection)
-        {
-            if (other == l || l.equals(other))
-            {
-                removed = true;
-            }
-            else
-            {
-                kept.add(other);
-            }
-        }
-
-        if (removed)
-        {
-            collection.clear();
-            collection.addAll(kept);
-        }
-
-        return removed;
-    }
-
-    /**
-     * The map equivalent of removeFrom - same hazard, same caveats.  Insertion order is preserved.
-     *
-     * @param <V> the map's value type
-     * @param map the map to remove from
-     * @param l the locomotive key to remove
-     * @return true if it was present and no longer is
-     */
-    public static <V> boolean removeKey(Map<Locomotive, V> map, Locomotive l)
-    {
-        if (map == null || l == null) return false;
-
-        Map<Locomotive, V> kept = new LinkedHashMap<>();
-        boolean removed = false;
-
-        for (Map.Entry<Locomotive, V> entry : map.entrySet())
-        {
-            if (entry.getKey() == l || l.equals(entry.getKey()))
-            {
-                removed = true;
-            }
-            else
-            {
-                kept.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        if (removed)
-        {
-            map.clear();
-            map.putAll(kept);
-        }
-
-        return removed;
-    }
-    
     /**
      * Returns the current direction
      * @return 

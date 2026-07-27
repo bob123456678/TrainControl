@@ -1202,33 +1202,7 @@ public class MarklinLocomotive extends Locomotive
      */
     synchronized public boolean unlinkLocomotive(Locomotive member)
     {
-        // removeKey rather than remove(): a member renamed or re-addressed since it was linked sits
-        // under a stale hash that a lookup cannot find.  Every path that re-keys a locomotive now
-        // repairs the consists immediately, so this should not arise - but that is an argument from
-        // every caller behaving, which is exactly the reasoning that produced this class of defect.
-        return Locomotive.removeKey(this.linkedLocomotives, member);
-    }
-    
-    /**
-     * Re-keys the multi-unit membership map after a member's identity has changed.
-     *
-     * hashCode is built from the name, address and decoder type, and all three are mutable in place,
-     * so renaming a member leaves it in this map under a hash that no longer matches it: the fan-out
-     * still finds it, because that iterates, but containsKey and remove do not - meaning isLinkedTo
-     * stops recognising it and unlinkLocomotive stops removing it.  Re-inserting every entry
-     * recomputes the buckets from the members' current values.
-     *
-     * synchronized for the same reason unlinkLocomotive is - setSpeed and setDirection iterate this
-     * map under this lock.
-     */
-    synchronized public void rehashLinkedLocomotives()
-    {
-        if (this.linkedLocomotives.isEmpty()) return;
-        
-        Map<Locomotive, Double> current = new LinkedHashMap<>(this.linkedLocomotives);
-        
-        this.linkedLocomotives.clear();
-        this.linkedLocomotives.putAll(current);
+        return this.linkedLocomotives.remove(member) != null;
     }
     
     /**

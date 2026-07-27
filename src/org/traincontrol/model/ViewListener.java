@@ -58,7 +58,7 @@ public interface ViewListener
     public boolean isCS3();
     public String getCS3AppUrl();
     public boolean newRoute(String name, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
-    public void editRoute(String name, String newName, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
+    public boolean editRoute(String name, String newName, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public Route getRoute(String name);
     public Route getRoute(int id);
     public int getRouteId(String name);

@@ -942,11 +942,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 other.setLinkedLocomotives();
                             }
                         }
-
-                        if (this.hasAutoLayout())
-                        {
-                            this.getAutoLayout().rehashLocomotiveKeys();
-                        }
                     }
                 }
                 
@@ -1210,23 +1205,51 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param conditions
      */
     @Override
-    public final void editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
+    public final boolean editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
             NodeExpression conditions)
     {
-        Integer id = this.routeDB.getByName(name).getId();
+        MarklinRoute existing = this.routeDB.getByName(name);
+
+        if (existing == null)
+        {
+            this.logf("route.warningRouteNotExistCalledFrom", name, "editRoute");
+            return false;
+        }
+
+        String trimmedNewName = newName.trim();
+
+        // Checked before anything is deleted.  This method edits by delete-then-re-add, and newRoute
+        // refuses a name that already belongs to another route - so a rename onto an existing name
+        // used to delete the original and then decline to add it back, losing the route entirely.
+        //
+        // The only caller that can rename already checks this (RouteEditor), which is exactly why the
+        // check belongs here too: the model should not depend on one dialog to protect its data.
+        if (!name.equals(trimmedNewName) && this.routeDB.hasName(trimmedNewName))
+        {
+            this.logf("route.notAdded", trimmedNewName);
+            return false;
+        }
+
+        Integer id = existing.getId();
         
         // Disable the route so that the s88 condition stops firing
-        this.routeDB.getByName(name).disable();
+        existing.disable();
         
         this.deleteRoute(name);
         
-        this.newRoute(newName.trim(), id, route, s88, s88Trigger, routeEnabled, conditions);
+        if (!this.newRoute(trimmedNewName, id, route, s88, s88Trigger, routeEnabled, conditions))
+        {
+            this.logf("route.notAdded", trimmedNewName);
+            return false;
+        }
         
         // Let other routes know this has been renamed
         for (MarklinRoute r : this.getRoutes())
         {
-            r.otherRouteRenamed(name, newName.trim());
+            r.otherRouteRenamed(name, trimmedNewName);
         }
+
+        return true;
     }
     
     /**
@@ -2217,14 +2240,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 other.setLinkedLocomotives();
             }
         }
-
-        // An address change drifts the locomotive's hash exactly as a rename does - address and
-        // decoder type are both hashCode inputs - so the graph's object-keyed collections need the
-        // same repair renameLoc performs.
-        if (this.hasAutoLayout())
-        {
-            this.getAutoLayout().rehashLocomotiveKeys();
-        }
     }
     
     /**
@@ -2368,27 +2383,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.rebuildLocIdCache();
             
-            // A member's hash is built partly from its name, so renaming one leaves it in its
-            // consist under a stale hash - still driven, because the fan-out iterates, but no longer
-            // findable by isLinkedTo or unlinkLocomotive.  That silently defeats both the guard
-            // against nesting multi-units and the unlink-on-delete sweep.  Re-key every consist that
-            // might hold it; we cannot ask which ones do, because that lookup is the broken thing.
-            //
-            // A full rebuild, as changeLocAddress does, is not needed here: a rename cannot create an
-            // address conflict, and setLinkedLocomotives would put a direction command on the track
-            // for every consist on every rename.
-            for (MarklinLocomotive other : this.locDB.getItems())
-            {
-                other.rehashLinkedLocomotives();
-            }
-
-            // Same hazard, different owner: the auto layout keys locomotivesToRun and every point's
-            // excludedLocs on the locomotive object too, and a stale exclusion is not a bookkeeping
-            // problem - it routes the locomotive into a station it was excluded from.
-            if (this.hasAutoLayout())
-            {
-                this.getAutoLayout().rehashLocomotiveKeys();
-            }
+            // Nothing else to repair: a locomotive hashes by identity, so renaming one cannot move it
+            // out of the consists, exclusion sets or run lists that hold it.  This used to need a
+            // sweep - see the note on MarklinLocomotive.hashCode.
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())
