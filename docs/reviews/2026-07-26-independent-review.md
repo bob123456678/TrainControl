@@ -383,6 +383,7 @@ This table is the authoritative status for findings D*, M*, T*.
 | T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | **Fixed 2026-07-26** - stated trigger corrected, see note |
 | T3 | Timetable entry that can never execute retries forever with log spam | Low | **Closed - accepted as-is** (author, 2026-07-26); the invalidation trigger is effectively unreachable, see note |
 | T4 | `executeTimetable` returns when the last entry is dispatched, not completed | Informational | Recorded |
+| D6 | Rename re-keys a locomotive out of the Layout's hash-keyed collections (`excludedLocs`, `locomotivesToRun`) - sibling of integration-review A1, which repaired consists only | Medium | **Fixed 2026-07-26** (trigger A). Trigger B **withdrawn - wrong**; see note |
 
 ### Area 1 - `executePath` and forceful-restart fencing
 
@@ -734,6 +735,131 @@ stories and surrounding-machinery claims.
 
 ### Remaining open items
 
-D1 (fenced abort leaves the locomotive at speed), D2 (unguarded JSON reload - the cheap fix that
-makes D1 unreachable), and D3 (instance-version fence). Everything else in this report is fixed,
-withdrawn, closed by decision, or informational.
+*(Stale as of the second evaluation pass below - the deep-dive status table is authoritative. At
+the time this was written: D1-D3 open. Since then D1 and D2 were fixed, D3 deferred with recorded
+reasoning, and D5/D6 opened.)*
+
+---
+
+## Second evaluation pass (2026-07-26): the D-fix / integration-review batch
+
+Re-verification of commits `e772486..5fd1a54` (D1/D2 fixes, integration-review finding A1, tests),
+conducted after the author's own verification notes were added to this document.
+
+### Verified against the code
+
+- **D1** - `loc.setSpeed(0)` in the fenced-abort branch, before the return; pinned by
+  `testLayoutReloadFence.testFencedAbortStopsTheLocomotive`, with
+  `testPathRunsToCompletionWhenNoLayoutReplacesIt` guarding the non-reload path. The deliberate
+  omission of `CB_ROUTE_END`/`unlockPath` in that branch is correctly reasoned (D4: the callback
+  may belong to the new JSON by then).
+- **D2** - warn-and-stop guard in `validateButtonActionPerformed`; stop ordering (dispatch flag
+  first, then speed-0 sweep) is right, and the residual race - a locomotive thread already past
+  its `while(running)` check dispatching one more path after the sweep - is closed by the D1 fix
+  at that path's first milestone. The "one production caller of `parseAuto`" claim was
+  re-verified independently: confirmed (TrainControlUI.java:12744 only, plus the lazy
+  `getAutoLayout()` initialiser which cannot fire while a layout exists). `loadJSONButton`
+  inherits the guard by delegation, as stated.
+- **Integration A1 (rename vs. consists)** - `rehashLinkedLocomotives` is correct (copy
+  re-buckets under current hashes), `synchronized` on the fan-out lock, swept across all
+  locomotives in `renameLoc`; the rehash-not-rebuild rationale (a rebuild would put a direction
+  command on the track per consist per rename) is verified against `setLinkedLocomotives`.
+  Failing-test-first discipline confirmed by the test names in `testMultiUnitMembership`.
+- **D5** - the strand analysis (no catch between `activeLocomotives.put` and its removal, no
+  `UncaughtExceptionHandler`) matches the code; the three constraints recorded for the next-cycle
+  option-3 fix are all genuine regression risks.
+- **Bundles** - `confirmReloadJsonStopsRunningLocomotives` present in all eight; changelog gained
+  three user-facing entries (rename/MU, reload warn-and-stop, mid-route stop on reload).
+
+### D6 (new) - rename re-keys a locomotive out of the Layout's hash-keyed collections (Medium)
+
+The integration review's A1 established the mechanism - `MarklinLocomotive.hashCode` is built from
+mutable fields, so an in-place rename strands the object in any hash container holding it - and
+repaired **consists**. The `Layout` holds the same object as a hash key in containers A1's sweep
+does not touch, and the rename guard does not prevent the overlap:
+
+- The rename/address dialog is gated on `isAutonomyRunning()`
+  ([TrainControlUI.java:10093](src/org/traincontrol/gui/TrainControlUI.java:10093)) - the
+  `running` flag alone - while the D2 reload guard deliberately uses the stronger `isRunning()`.
+  Renames are therefore permitted with a graph loaded but idle, and during a graceful stop whose
+  locomotives are still finishing paths.
+- **Trigger A - idle rename loses exclusions.** `Point.excludedLocs` is a `HashSet<Locomotive>`
+  populated with object references at JSON load ([Layout.java:3475](src/org/traincontrol/automation/Layout.java:3475));
+  `isPathClear` (952) and `pickPath` (1931) probe it with `contains(loc)`. Rename an excluded
+  locomotive while the graph is idle, start autonomy: the exclusion silently stops applying and
+  the locomotive can be routed into stations it was excluded from. `locomotivesToRun`
+  (`ConcurrentHashMap` key set, populated at load) has the same exposure: `contains` at
+  moveLocomotive can duplicate-add, and `locDeleted`'s `remove` misses.
+- ~~**Trigger B - rename during a graceful stop manufactures D5's stuck state.**~~ **Withdrawn
+  2026-07-26 - the finding is wrong.** Its premise, that the rename guard is weaker than D2's,
+  does not hold. `MarklinControlStation.isAutonomyRunning` is not the `running` flag:
+
+  ```java
+  public boolean isAutonomyRunning()
+  {
+      return this.hasAutoLayout() && this.getAutoLayout().isRunning();
+  }
+  ```
+
+  It delegates to `Layout.isRunning()` - `running || !activeLocomotives.isEmpty()` - the *same*
+  predicate D2 uses, not `isAutoRunning()`. Both rename entry points carry that guard
+  (TrainControlUI.java:10093 and :13873), so a rename during a graceful stop with paths still
+  finishing is refused: `activeLocomotives` is non-empty, so the guard fires. `activeLocomotives`
+  and `locomotiveMilestones` cannot be stranded this way, and D5's escape hatch is not defeated.
+- ~~Adjacent, pre-existing: after any rename the autonomy JSON text still carries the old name, so
+  a subsequent reload silently drops the locomotive from the graph.~~ **Overstated - corrected
+  2026-07-26.** `Point.toJSON` builds `excludedLocs` by *iterating* the set and reading
+  `l.getName()` on each live object, and iteration is immune to hash drift, so regenerated and
+  exported JSON always carry the current name. The stale name exists only in the editor pane if it
+  has not been re-validated since the rename - visible, and recoverable.
+  `testLayoutRenameKeys.testExportUsesTheNewNameAfterARename` pins this.
+
+**Trigger A fixed (2026-07-26).** `Layout.rehashLocomotiveKeys` rebuilds `locomotivesToRun` and,
+through `Point.rehashExcludedLocs`, every point's exclusion set. `renameLoc` calls it when the model
+has an auto layout, alongside the consist sweep A1 added. Same shape as `rehashLinkedLocomotives`.
+
+`activeLocomotives` and `locomotiveMilestones` are deliberately *not* re-keyed, and the withdrawal of
+trigger B is what makes that safe: renaming is refused while `isRunning()` is true, so both are
+necessarily empty whenever the re-key can run. Re-keying a live map would have been the racy choice,
+not the thorough one.
+
+Blocking renames outright was considered first, at the author's suggestion, and does not work: the
+reachable trigger is the *idle* case - graph loaded, nothing moving - where renaming is permitted and
+correct to permit. Blocking it would have meant refusing renames whenever a graph exists at all,
+which is a real usability cost to avoid a bookkeeping bug with a 40-line fix.
+
+Tests: [`test/testLayoutRenameKeys.java`](../../test/testLayoutRenameKeys.java).
+
+### Reviewer-error tally, addendum
+
+| Finding | What this report got wrong |
+|---|---|
+| Area 2 "verified clean" list | "Rename is persistence-safe" was true but gave rename a clean bill while its in-memory keying was broken - the integration review's A1, which this report's area-2 deep dive missed despite reading `hashCode` adjacent code. The mutable-key hazard was found by the author writing test coverage, not by either review's reading |
+| D6 trigger B | Asserted the rename guard was "the `running` flag alone" and built a stuck-state scenario on it. `isAutonomyRunning` delegates to `Layout.isRunning()` - the same predicate D2 uses. Inferred from the method *name* rather than read: the same error as M2, in the same document |
+| D6 JSON bullet | Claimed a rename leaves the old name in exported JSON. `Point.toJSON` iterates rather than looks up, so export was never affected |
+
+### State after this pass
+
+Open: **D5** (Low, deferred to next cycle with constraints recorded), **D3** (deferred,
+non-load-bearing while the D2 stop-before-swap holds), and the standing root cause below.
+Everything else across all documents is fixed, withdrawn, closed by decision, or informational.
+
+### Standing item: MarklinLocomotive is a mutable hash key
+
+Three findings now trace to one cause, and each was fixed where it surfaced rather than at the root:
+
+| Finding | Container | Repaired by |
+|---|---|---|
+| A1 (integration review) | `MarklinLocomotive.linkedLocomotives` | `rehashLinkedLocomotives` |
+| M4 follow-up | the same consist map, on the delete path | `unlinkLocomotive` |
+| D6 trigger A | `Point.excludedLocs`, `Layout.locomotivesToRun` | `rehashLocomotiveKeys` |
+
+`hashCode` is built from the name, address and decoder type, and `rename` and `setAddress` assign all
+three in place. Every hash container holding a locomotive is therefore one rename away from silently
+losing it, and each repair is a call some future author has to know to make. A fourth container will
+reproduce this exactly, and nothing in the type system will say so.
+
+The root fixes are to exclude the mutable fields from `hashCode`, or to key these containers by name.
+Both are wide - `equals` and `hashCode` are load-bearing across the locomotive database - and neither
+was attempted this cycle. The note now on `hashCode` is the only thing pointing a future author at the
+hazard.

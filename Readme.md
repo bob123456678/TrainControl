@@ -382,6 +382,7 @@ Tab icons provided by Freepik.
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
         - Fixed bug where renaming a locomotive that was part of a multi-unit stopped TrainControl from recognizing it as linked.  It could then be set up as a second multi-unit of its own, and deleting it left it being driven by the lead locomotive
+        - Autonomy: fixed bug where renaming a locomotive stopped its station exclusions from applying, so it could be sent to a station it was set never to visit
         - Autonomy: reloading or re-validating the graph while locomotives are still running now warns first, and stops them before the new graph takes over.  Previously the layout was replaced underneath them and any train already under way kept going, untracked
         - Autonomy: a locomotive part way through a route when the graph is reloaded now stops at its next point.  Previously it kept running with nothing left to stop it, and the new graph had no record of it
         - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct

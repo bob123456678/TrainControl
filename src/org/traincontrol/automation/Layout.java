@@ -2858,6 +2858,31 @@ public class Layout
     }
     
     /**
+     * Re-keys every collection here that is keyed on a Locomotive object, after one of them has been
+     * renamed or re-addressed.
+     *
+     * Locomotive.hashCode is built from mutable fields, so an in-place rename strands the object in
+     * any hash container holding it.  locomotivesToRun and each Point's excludedLocs both hold
+     * references loaded from the JSON, and both are probed with contains() while routing.
+     *
+     * activeLocomotives and locomotiveMilestones are deliberately not touched: renaming is refused
+     * while isRunning() is true, and that covers a graceful stop with paths still finishing, so both
+     * are necessarily empty whenever this can be called.
+     */
+    public void rehashLocomotiveKeys()
+    {
+        Set<Locomotive> toRun = new HashSet<>(this.locomotivesToRun);
+
+        this.locomotivesToRun.clear();
+        this.locomotivesToRun.addAll(toRun);
+
+        for (Point p : this.getPoints())
+        {
+            p.rehashExcludedLocs();
+        }
+    }
+
+    /**
      * Returns all points in the graph
      * @return 
      */

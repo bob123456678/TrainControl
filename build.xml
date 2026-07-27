@@ -7,7 +7,7 @@
 <!-- the Compile on Save feature is turned off for the project. -->
 <!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
 <!-- in the project's Project Properties dialog box.-->
-<project name="TrainControl" default="default" basedir=".">
+<project name="TrainControl" default="default" basedir="." xmlns:j2seproject3="http://www.netbeans.org/ns/j2se-project/3">
     <description>Builds, tests, and runs the project TrainControl.</description>
     <import file="nbproject/build-impl.xml"/>
     <!--
@@ -72,6 +72,72 @@
     To exclude certain icons:
     , **/*_i_gr*.png
     -->
+    <!--
+      Run every test with the project-level Test action (Alt+F6) and with "ant test".
+
+      Two separate things were wrong.
+
+      1. build-impl.xml hardcodes testincludes="**/*Test.java" in -do-test-run.  Every test class here
+         is named test<Something>.java - prefix, not suffix - so that pattern matched nothing, TestNG
+         was handed no classes at all, and it responded by printing its usage and failing.
+
+      2. Only one MarklinControlStation can exist per JVM.  NetworkProxy binds a fixed UDP port
+         (15730) and neither it nor MarklinControlStation exposes any way to close it, so the station
+         built by the first test class holds that port until the JVM exits, and every later class
+         fails to start one.  Running all classes in a single TestNG process cannot work, however the
+         includes are written - which is why the run kept dying a few seconds in, having completed one
+         class, with an empty results directory.
+
+      So each class is run as its own invocation below.  The TestNG Ant task forks a JVM per
+      invocation, which gives every class the clean process it needs - the same isolation it gets when
+      run as a single test file from the IDE.  They run one after another, and -post-test-run still
+      fails the build at the end if any of them failed.
+
+      Running a single test file from the IDE is unaffected: that goes through -do-test-run-single.
+
+      Not in the list: testAutoDetect, which probes the network for a real Central Station at a
+      hardcoded address.  It is an integration test against hardware and cannot pass unless the layout
+      is connected.
+
+      Adding a test class means adding a line here.  That is the price of the per-class isolation; the
+      alternative is a shutdown path on MarklinControlStation that releases the socket, which would
+      let the whole suite share one JVM and make this list unnecessary.
+    -->
+    <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">
+        <macrodef name="test-one-class">
+            <attribute name="class"/>
+            <sequential>
+                <echo message="---------- @{class} ----------"/>
+                <j2seproject3:test includes="${includes}" testincludes="**/@{class}.java"/>
+            </sequential>
+        </macrodef>
+
+        <test-one-class class="testAccessory"/>
+        <test-one-class class="testAutoLayout"/>
+        <test-one-class class="testAutoLayoutRace"/>
+        <test-one-class class="testAutonomyPathValidation"/>
+        <test-one-class class="testAutonomySimulationSanity"/>
+        <test-one-class class="testCS2Message"/>
+        <test-one-class class="testLayoutBfs"/>
+        <test-one-class class="testLayoutBfsEquivalence"/>
+        <test-one-class class="testLayoutPickPath"/>
+        <test-one-class class="testLayoutRenameKeys"/>
+        <test-one-class class="testLayoutReloadFence"/>
+        <test-one-class class="testLayoutTiles"/>
+        <test-one-class class="testLayoutTimetable"/>
+        <test-one-class class="testLoadData"/>
+        <test-one-class class="testLocDB"/>
+        <test-one-class class="testLocomotive"/>
+        <test-one-class class="testMessageBundles"/>
+        <test-one-class class="testMultiUnitMembership"/>
+        <test-one-class class="testNetworkProxy"/>
+        <test-one-class class="testParseCS2Layout"/>
+        <test-one-class class="testParseCS2Routes"/>
+        <test-one-class class="testParseCS3Loks"/>
+        <test-one-class class="testParseCS3Routes"/>
+        <test-one-class class="testParseWebServer"/>
+        <test-one-class class="testRoutes"/>
+    </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
         <property name="store.dir" value="store"/>

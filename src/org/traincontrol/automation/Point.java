@@ -175,6 +175,28 @@ public class Point
             this.excludedLocs = excludedLocs;
         }
     }
+
+    /**
+     * Re-keys the exclusion set after a locomotive's identity has changed.
+     *
+     * excludedLocs holds Locomotive references, and a locomotive's hashCode is built from its name,
+     * address and decoder type - all mutable in place.  Renaming an excluded locomotive therefore
+     * leaves it in this set under a hash that no longer matches, and the contains() checks in
+     * isPathClear and pickPath stop finding it: the exclusion silently stops applying and the
+     * locomotive can be routed into a station it was excluded from.  Re-inserting recomputes the
+     * buckets from the members' current values.
+     *
+     * Export is unaffected either way - toJSON iterates and reads the live name.
+     */
+    synchronized public void rehashExcludedLocs()
+    {
+        if (this.excludedLocs.isEmpty()) return;
+
+        Set<Locomotive> current = new HashSet<>(this.excludedLocs);
+
+        this.excludedLocs.clear();
+        this.excludedLocs.addAll(current);
+    }
     
     /**
      * Returns the point's priority

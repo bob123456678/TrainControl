@@ -2344,6 +2344,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 other.rehashLinkedLocomotives();
             }
+
+            // Same hazard, different owner: the auto layout keys locomotivesToRun and every point's
+            // excludedLocs on the locomotive object too, and a stale exclusion is not a bookkeeping
+            // problem - it routes the locomotive into a station it was excluded from.
+            if (this.hasAutoLayout())
+            {
+                this.getAutoLayout().rehashLocomotiveKeys();
+            }
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())
