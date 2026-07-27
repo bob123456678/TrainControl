@@ -2164,8 +2164,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             throw new Exception(I18n.f("loc.changeToMultiUnitNotAllowed"));       
         }
         
-        // Execute the change
-        this.deleteLoc(l.getName());
+        // Execute the change.  locDB.delete rather than deleteLoc, matching what renameLoc already
+        // does: this is a re-key of a locomotive that continues to exist, not a deletion.  deleteLoc
+        // now unlinks the locomotive from every consist referencing it, which would silently drop it
+        // from its multi-unit on an address change - and the revalidation loop at the end of this
+        // method could not restore it, because the link would already be gone from the name map.
+        this.locDB.delete(l.getName());
         
         l.setAddress(newAddress, newDecoderType);
         
@@ -2244,10 +2248,31 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public boolean deleteLoc(String name)
     {
+        // Captured before the delete.  A consist holds Locomotive references rather than names, so a
+        // deleted member has to be removed from them explicitly - otherwise the head goes on fanning
+        // every speed, direction and function command to the decoder of a locomotive that no longer
+        // appears anywhere in the UI, right up until a restart fails to resolve the saved name and
+        // drops the link with nothing but a log line.
+        MarklinLocomotive deleted = this.locDB.getByName(name);
+
         boolean res = this.locDB.delete(name);
-        
-        if (res) this.rebuildLocIdCache();
-        
+
+        if (res)
+        {
+            if (deleted != null)
+            {
+                for (MarklinLocomotive other : this.locDB.getItems())
+                {
+                    if (other.getLinkedLocomotives().remove(deleted) != null)
+                    {
+                        this.logf("loc.unlinkedDeletedLocomotive", deleted.getName(), other.getName());
+                    }
+                }
+            }
+
+            this.rebuildLocIdCache();
+        }
+
         return res;
     }
     

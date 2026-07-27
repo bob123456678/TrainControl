@@ -12114,7 +12114,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Validate starting locations
             List<Locomotive> seen = new ArrayList<>();
 
-            for (int i = this.model.getAutoLayout().getUnfinishedTimetablePathIndex(); i < this.model.getAutoLayout().getTimetable().size(); i++)
+            // Clamped: the index is -1 when every entry has finished, which would start this loop
+            // one before the list
+            for (int i = Math.max(0, this.model.getAutoLayout().getUnfinishedTimetablePathIndex()); i < this.model.getAutoLayout().getTimetable().size(); i++)
             {
                 TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
 

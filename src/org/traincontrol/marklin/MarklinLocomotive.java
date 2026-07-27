@@ -714,13 +714,20 @@ public class MarklinLocomotive extends Locomotive
             
             if (Math.abs(entry.getValue()) > 1)
             {
-                roundedSpeed = (int) Math.ceil(scaledSpeed); 
+                roundedSpeed = (int) Math.ceil(scaledSpeed);
             }
             else
             {
-                roundedSpeed = (int) Math.floor(scaledSpeed); 
+                roundedSpeed = (int) Math.floor(scaledSpeed);
             }
-            
+
+            // Clamped, because multipliers up to 2 are accepted and the scaled value can therefore
+            // exceed the 0-100 range _setSpeed will store.  _setSpeed IGNORES an out-of-range value
+            // rather than clamping it, and the member then transmits its previous speed - so past the
+            // threshold (67 for a 1.5x member) the member silently froze while the head kept
+            // accelerating, and the two engines of one consist pulled against each other.
+            roundedSpeed = Math.min(roundedSpeed, 100);
+
             entry.getKey().setSpeed(roundedSpeed);
         }
         

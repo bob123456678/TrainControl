@@ -217,8 +217,18 @@ public class Layout
             {
                 TimetablePath second = timetable.get(timetable.size() - 1);
                 TimetablePath first = timetable.get(timetable.size() - 2);
-                
-                first.setSecondsToNext(second.getExecutionTime() - first.getExecutionTime());
+
+                // Stored on the LATER of the pair.  Everywhere else this field is read as the delay
+                // BEFORE that entry runs: executeTimetable waits on the current entry's own value
+                // before dispatching it, and the edit dialog says so in as many words - "enter delay
+                // (seconds) before this route executes".  Writing the gap onto the earlier entry made
+                // capture the only place using the opposite convention, so a captured timetable
+                // replayed with every gap shifted one entry back - the first captured gap was never
+                // applied and the last entry always started immediately.
+                //
+                // Affects newly captured timetables only.  Saved ones keep whatever they stored, and a
+                // delay set by hand in the UI was already correct.
+                second.setSecondsToNext(second.getExecutionTime() - first.getExecutionTime());
             }
             
             return true;
@@ -2107,8 +2117,14 @@ public class Layout
     }
     
     /**
-     * Returns the index of the first unfinished path in the timetable
-     * @return 
+     * Returns the index of the first unfinished path in the timetable, or -1 if every entry has
+     * finished.
+     *
+     * -1 rather than 0, which used to mean both "entry 0 is unfinished" and "nothing is unfinished".
+     * Entries are dispatched on their own threads, so they can finish out of order: a graceful stop
+     * can leave entry 0 still retrying while entry 1 has completed. The caller below then read 0 as
+     * "nothing unfinished" and wiped every completion timestamp, including entry 1's.
+     * @return the index of the first unfinished entry, or -1 if there is none
      */
     public int getUnfinishedTimetablePathIndex()
     {
@@ -2119,8 +2135,8 @@ public class Layout
                 return i;
             }
         }
-        
-        return 0;
+
+        return -1;
     }
     
     /**
@@ -2150,7 +2166,8 @@ public class Layout
      */
     private boolean timetableHasUnfinishedPaths()
     {
-        return getUnfinishedTimetablePathIndex() != 0;
+        // >= 0, matching the -1 sentinel: any non-negative index names a real unfinished entry
+        return getUnfinishedTimetablePathIndex() >= 0;
     }
   
     /**
@@ -2177,8 +2194,10 @@ public class Layout
             }
         }
         
-        // Calculate start index in case of prior graceful stop request
-        int startIndex = getUnfinishedTimetablePathIndex();
+        // Calculate start index in case of prior graceful stop request.  Clamped because the index
+        // is -1 when nothing is unfinished - which happens for an empty timetable, and momentarily
+        // after the reset above sets every entry back to unfinished.
+        int startIndex = Math.max(0, getUnfinishedTimetablePathIndex());
             
         this.control.logf(
             "autolayout.infoExecutionStartedFromIndex",

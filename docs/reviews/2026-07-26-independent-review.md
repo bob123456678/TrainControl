@@ -369,13 +369,13 @@ This table is the authoritative status for findings D*, M*, T*.
 | D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | Open |
 | D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | Open |
 | D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
-| M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | Open |
+| M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | **Fixed 2026-07-26** |
 | M2 | One-sided link validation permits chains; saved chains restore order-dependently | Low-Medium | Open |
-| M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low - author to adjudicate | Open question |
-| M4 | Deleting a locomotive never unlinks it from consists that reference it | Medium | Open |
-| T1 | Timetable capture stores each gap on the earlier entry; replay/UI read it as the entry's own pre-delay | Medium | Open |
-| T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | Open |
-| T3 | Timetable entry that can never execute retries forever with log spam | Low | Open |
+| M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low | **Closed - accepted as-is** (author, 2026-07-26) |
+| M4 | Deleting a locomotive never unlinks it from consists that reference it | Medium | **Fixed 2026-07-26** - caused one regression, see note |
+| T1 | Timetable capture stores each gap on the earlier entry; replay/UI read it as the entry's own pre-delay | Medium | **Fixed 2026-07-26** - migration risk was overstated, see note |
+| T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | **Fixed 2026-07-26** - stated trigger corrected, see note |
+| T3 | Timetable entry that can never execute retries forever with log spam | Low | Fix in flight (author, 2026-07-26) |
 | T4 | `executeTimetable` returns when the last entry is dispatched, not completed | Informational | Recorded |
 
 ### Area 1 - `executePath` and forceful-restart fencing
@@ -440,6 +440,8 @@ its last speed while the head accelerates, and the two engines of one physical c
 other. It works in every casual test and breaks only at high speed. Fix: clamp the scaled speed to
 100 in the fan-out (or make `_setSpeed` clamp instead of ignore).
 
+**Fixed (2026-07-26).** Clamped in the fan-out rather than in `_setSpeed`, because making the latter clamp would change behaviour for every caller and some may rely on an out-of-range value being ignored. Arithmetic confirmed exactly as stated: at 1.5x, speed 66 yields 99 and 67 yields 101.
+
 **M2 - membership is invisible to link validation.** `canBeLinkedTo`
 ([MarklinLocomotive.java:1107](src/org/traincontrol/marklin/MarklinLocomotive.java:1107)) rejects a
 *head* being added as a member (`other.hasLinkedLocomotives()`), but nothing records or checks that
@@ -462,6 +464,10 @@ locomotive the UI no longer shows anywhere - until restart, at which point the d
 to resolve in `setLinkedLocomotives` and the link vanishes with only a log line. Fix: on delete,
 sweep `getLocomotives()` for consists referencing the victim and unlink (mirroring what
 `renameLoc` already does for routes).
+
+**Fixed (2026-07-26), and it caused a regression that `testLocomotive` caught.** `changeLocAddress` used `deleteLoc` as a *re-key* primitive - delete, change the address, re-add - so the new sweep unlinked the locomotive from its consist on every address change, and the revalidation loop at the end of that method could not restore it because the name map had already lost the entry. `changeLocAddress` now calls `locDB.delete` directly, which is exactly what `renameLoc` was already doing for this reason. Every other caller of `deleteLoc` is a genuine user-initiated delete.
+
+Worth recording as a pattern: a method used both as a public operation and as an internal primitive silently acquires the operation's side effects. An existing test was the only thing between that and a shipped defect.
 
 **M3 (question for the author)** - the C9 coupling (`lastStartTime == 0` → re-assert direction)
 only zeroes the field in `notifyOfPowerStateChange`'s `speed > 0` branch. A locomotive **parked**
@@ -492,6 +498,10 @@ meaning of every already-saved timetable, so it needs a decision about which sem
 (the UI dialog's wording suggests delay-before-me is the intended one, making **capture** the
 defective side).
 
+**Fixed (2026-07-26) - and the migration risk was overstated.** The field had two writers that disagreed: capture wrote *delay-after-me*, while the edit dialog (`timetable.ui.enterDelaySecondsBeforeRouteExecutes`) and the replay loop both read *delay-before-me*. Capture was the outlier and now stores the gap on the later entry.
+
+This does **not** flip the meaning of saved timetables: stored values are untouched, and any delay set by hand in the UI was already correct - which is why the feature looked right in use, and why only a purely auto-captured timetable replayed with shifted gaps. Entry 0 now correctly carries no preceding gap, and the final entry keeps its real one instead of always starting immediately.
+
 **T2 - `getUnfinishedTimetablePathIndex` overloads 0.** It returns 0 both for "entry 0 is
 unfinished" and "everything is finished"
 ([Layout.java:2113](src/org/traincontrol/automation/Layout.java:2113)), and
@@ -501,6 +511,10 @@ entries, and deleting the executed first entry from a partially-run timetable br
 the resume logic then sees "nothing unfinished," silently resets every timestamp, and replays from
 the top. Return -1 for "none" (or use `noneMatch`) to make the sentinel honest.
 
+**Fixed (2026-07-26) - the stated trigger does not work.** Deleting entries cannot break the invariant: finished entries form a prefix, deletion preserves that, so index 0 always legitimately means "no finished prefix" and restarting from the top is correct.
+
+The reachable break is **parallel dispatch plus graceful stop**. Each entry runs on its own thread, so entry 1 can finish while entry 0 is still retrying; a stop then leaves `[unfinished, finished]`, and index 0 read as "nothing unfinished" wiped entry 1's completion. The sentinel now returns -1, with `Math.max(0, ...)` at the two sites that use it as a loop start. The fix stops the timestamp being destroyed; the resume loop still re-runs finished entries from `startIndex`, which is separate.
+
 **T3 - a permanently unexecutable entry retries forever.** Each dispatched entry loops
 `while (running && !executePath(...))` with a delay
 ([Layout.java:2222](src/org/traincontrol/automation/Layout.java:2222)). `executePath` returning
@@ -508,6 +522,8 @@ false for a *permanent* reason - most notably `!isValid()` after the layout is i
 produces an infinite retry loop logging "configuration invalid, must reload" until the user notices
 and presses graceful stop. Distinguishing permanent from transient refusals (or capping retries)
 would let the timetable fail loudly instead.
+
+*One detail to weigh when fixing: the retry delay is `loc.delay(getMinDelay(), getMaxDelay())`, and `Locomotive.delay(int,int)` multiplies by 1000 - those are seconds, and `setMinDelay` permits 0. A layout configured with zero delays turns this into a hot spin, and because the log suppresses a message identical to the previous one (C11, kept deliberately), it spins nearly silently.*
 
 **T4 (informational)** - `executeTimetable` returns once the *last* entry is dispatched, so the UI
 re-enables "Start Autonomy"/"Execute Timetable" while the final path is still running. Every
