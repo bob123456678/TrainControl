@@ -791,19 +791,46 @@ public class MarklinControlStation implements ViewListener, ModelListener
             parsedLocs = fileParser.parseLocomotives();
         }
 
+        // Indexed once.  This used to rebuild the entire locomotive list inside the loop, once per
+        // parsed locomotive.
+        Map<Integer, List<MarklinLocomotive>> byAddress = new HashMap<>();
+
+        for (MarklinLocomotive existingLoc : this.locDB.getItems())
+        {
+            // Consist heads are never proposed for renaming
+            if (existingLoc.hasLinkedLocomotives()) continue;
+
+            if (!byAddress.containsKey(existingLoc.getIntUID()))
+            {
+                byAddress.put(existingLoc.getIntUID(), new ArrayList<>());
+            }
+
+            byAddress.get(existingLoc.getIntUID()).add(existingLoc);
+        }
+
         for (MarklinLocomotive l : parsedLocs)
         {
-            for (MarklinLocomotive existingLoc : this.locDB.getItems())
+            List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
+
+            if (matches == null) continue;
+
+            // Duplicates at one address are legitimate - the database is keyed by name AND address, so
+            // two locomotives can share an address - but the Central Station has only one name for it.
+            // Proposing that name for each of them is incoherent, and acting on the proposals in order
+            // destroyed data: the rename flow deletes whatever already holds the target name, so the
+            // second rename deleted the locomotive the first had just renamed.
+            if (matches.size() > 1)
             {
-                // Only consider locomotives that already exist by UID
-                if (existingLoc.getIntUID() == l.getIntUID() && !existingLoc.hasLinkedLocomotives())
-                {
-                    // If the name has changed, add to rename list
-                    if (!existingLoc.getName().equals(l.getName()))
-                    {
-                        renameCandidates.add(new String[] {existingLoc.getName(), l.getName()});
-                    }                    
-                }
+                this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
+                continue;
+            }
+
+            MarklinLocomotive existingLoc = matches.get(0);
+
+            // If the name has changed, add to rename list
+            if (!existingLoc.getName().equals(l.getName()))
+            {
+                renameCandidates.add(new String[] {existingLoc.getName(), l.getName()});
             }
         }
 

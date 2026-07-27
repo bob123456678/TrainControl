@@ -403,6 +403,24 @@ public final class CS2File
      */
     public static List<Map<String, String> > parseFile(BufferedReader in) throws Exception
     {
+        // try-with-resources, matching parseJSONArray and parseJSONObject alongside.  The close used to
+        // be the last statement of the body, so any parse failure left the reader - and with it an HTTP
+        // connection, or a file handle when a local layout folder is configured - open until the
+        // garbage collector got to it.
+        try (BufferedReader reader = in)
+        {
+            return parseFileContents(reader);
+        }
+    }
+
+    /**
+     * The body of parseFile.  Call parseFile, which closes the reader whatever happens.
+     * @param in
+     * @return
+     * @throws Exception 
+     */
+    private static List<Map<String, String> > parseFileContents(BufferedReader in) throws Exception
+    {
         List<Map<String, String> > items = new ArrayList <>();
                 
         String s;
@@ -491,8 +509,6 @@ public final class CS2File
         }
         
         // Release the resource
-        in.close();
-        
         return items;
     }
     

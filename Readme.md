@@ -389,6 +389,7 @@ Tab icons provided by Freepik.
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
         - Fixed bug where renaming a locomotive that was part of a multi-unit stopped TrainControl from recognizing it as linked.  It could then be set up as a second multi-unit of its own, and deleting it left it being driven by the lead locomotive
+        - Fixed bug where checking for locomotives renamed in the Central Station could delete one of them, if two locomotives in TrainControl shared an address.  Such addresses are now reported and left alone, since there is no way to tell which locomotive the Central Station means
     - Track diagrams
         - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
         - Track diagram tiles no longer occasionally stop refreshing

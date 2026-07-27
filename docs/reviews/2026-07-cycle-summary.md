@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across six documents and produced 98 findings - 52 in the main
-review, then 46 more across five later passes.
+The entry point for a cycle that ran across seven documents and produced 103 findings - 52 in the main
+review, then 51 more across six later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -26,6 +26,7 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `INT` | [2026-07-26-integration-review.md](2026-07-26-integration-review.md) | A1-A2, B1, D1-D2 |
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
+| `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1, C1-C3, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
@@ -152,8 +153,8 @@ Four items were closed by the author's decision rather than fixed, each with rea
 
 ## State
 
-**Nothing is open.** Every finding across the six documents is fixed, withdrawn as mistaken, closed by
-decision, or informational.
+**One item is open:** `FP-C3`, a mechanical cleanup deliberately not attempted. Everything else across
+the seven documents is fixed, withdrawn as mistaken, closed by decision, or informational.
 
 Test classes added during the cycle: `testLayoutBfs`, `testLayoutBfsEquivalence`, `testLayoutPickPath`,
 `testLayoutTimetable`, `testMessageBundles`, `testMultiUnitMembership`, `testLayoutReloadFence`,

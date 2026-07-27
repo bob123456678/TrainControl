@@ -9,6 +9,7 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -39,6 +40,10 @@ public class testImportRename
     private static final String CS_NAME = "SBB RE 4_4 II";
     private static final int CS_ADDRESS = 76;
 
+    /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
+    private static final String[] TEST_LOCS = {
+        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two" };
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -64,10 +69,29 @@ public class testImportRename
     {
         if (server != null) server.stopServer();
 
-        for (String name : new String[] { "IR mismatch", CS_NAME, "IR head", "IR member" })
+        deleteTestLocomotives();
+    }
+
+    private static void deleteTestLocomotives()
+    {
+        for (String name : TEST_LOCS)
         {
             model.deleteLoc(name);
         }
+    }
+
+    /**
+     * Removes every locomotive these tests create, before each one.
+     *
+     * Necessary because two locomotives CAN share an address: the database is keyed by name *and*
+     * address, so installing a second one at the reference address does not replace the first.  Without
+     * this, each test would leave its locomotive behind, the reference address would end up shared, and
+     * the later tests would see it as ambiguous - which is now, correctly, not proposed for renaming.
+     */
+    @BeforeMethod
+    public void clearTestLocomotives()
+    {
+        deleteTestLocomotives();
     }
 
     private static void set(String field, Object value) throws Exception
@@ -79,9 +103,11 @@ public class testImportRename
     }
 
     /**
-     * Only one locomotive can hold a given UID - RemoteDeviceCollection keeps a strict one-to-one
-     * mapping and evicts whatever held it before - so each test installs its own and does not depend on
-     * what any other test left behind.
+     * Installs a locomotive at the address the fixture's reference locomotive uses.
+     *
+     * Note this does NOT replace anything already at that address: RemoteDeviceCollection keys
+     * locomotives by name and address together (getUID is "name_UID"), so two locomotives on one
+     * address coexist quite happily.  clearTestLocomotives is what keeps the tests independent.
      */
     private static MarklinLocomotive installAtReferenceAddress(String name) throws Exception
     {
@@ -147,6 +173,33 @@ public class testImportRename
         assertNull(renameTargetFor("IR head"),
             "a locomotive heading a multi-unit is skipped, even though its name differs from the "
             + "Central Station's");
+    }
+
+    /**
+     * Two local locomotives can share an address - the database is keyed by name AND address - and the
+     * Central Station has only one name for that address.  Proposing it for both is incoherent, and
+     * acting on the proposals in order used to destroy data: each rename deletes whatever already holds
+     * the target name, so the second rename deleted the locomotive the first had just renamed.
+     */
+    @Test
+    public void testDuplicateAddressProducesNoRenameProposal() throws Exception
+    {
+        MarklinLocomotive first = model.newMM2Locomotive("IR dupe one", CS_ADDRESS);
+        MarklinLocomotive second = model.newMM2Locomotive("IR dupe two", CS_ADDRESS);
+
+        assertNotNull(model.getLocByName("IR dupe one"),
+            "precondition: two locomotives on one address coexist - the database key is name and address");
+        assertNotNull(model.getLocByName("IR dupe two"), "precondition: both are present");
+
+        assertNull(renameTargetFor("IR dupe one"),
+            "neither duplicate may be proposed: renaming both to the Central Station name would delete one");
+        assertNull(renameTargetFor("IR dupe two"), "and neither may the other");
+
+        for (String[] pair : model.getLocomotivesToRenameFromImport())
+        {
+            assertNotEquals(pair[1], CS_NAME,
+                "nothing may be proposed for the ambiguous address at all");
+        }
     }
 
     /**
