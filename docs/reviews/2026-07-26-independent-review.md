@@ -375,7 +375,7 @@ This table is the authoritative status for findings D*, M*, T*.
 | M4 | Deleting a locomotive never unlinks it from consists that reference it | Medium | **Fixed 2026-07-26** - caused one regression, see note |
 | T1 | Timetable capture stores each gap on the earlier entry; replay/UI read it as the entry's own pre-delay | Medium | **Fixed 2026-07-26** - migration risk was overstated, see note |
 | T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | **Fixed 2026-07-26** - stated trigger corrected, see note |
-| T3 | Timetable entry that can never execute retries forever with log spam | Low | Fix in flight (author, 2026-07-26) |
+| T3 | Timetable entry that can never execute retries forever with log spam | Low | **Open** - needs a permanent-vs-transient decision; see the note on the retry delay |
 | T4 | `executeTimetable` returns when the last entry is dispatched, not completed | Informational | Recorded |
 
 ### Area 1 - `executePath` and forceful-restart fencing
