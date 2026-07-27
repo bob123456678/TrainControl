@@ -16,17 +16,22 @@ import org.testng.annotations.Test;
 /**
  * Renaming a locomotive must not lose it from the collections that are keyed on the locomotive object.
  *
- * A Locomotive's hashCode is built from its name, address and decoder type, and all three are mutable
- * in place - rename assigns the name, setAddress assigns the other two.  Anything holding the object as
- * a hash key therefore loses track of it the moment one changes: iteration still finds it, but
- * contains(), remove() and get() do not.
+ * These were written when a Locomotive's hashCode was built from its name, address and decoder type -
+ * all three mutable in place - so anything holding the object as a hash key lost track of it the moment
+ * one changed: iteration still found it, but contains(), remove() and get() did not.
+ *
+ * hashCode is now identity-based, which removes the hazard at the root rather than repairing each
+ * collection after the fact.  These tests are kept because they assert the *behaviour* - an exclusion
+ * still applies after a rename, a deleted locomotive stops being excluded - which must hold however
+ * that is achieved.  They are what would prove the remaining repair calls safe to delete, and
+ * testHashNeverMovesWhenAnIdentityFieldChanges guards the root fix itself.
  *
  * The autonomy graph holds locomotive references in two such places, both populated from the JSON at
  * load and both probed while routing:
  *
- *  - Point.excludedLocs, checked by isPathClear and pickPath.  A stale entry here is not a bookkeeping
- *    problem: the exclusion silently stops applying, and the locomotive gets routed into a station it
- *    was excluded from.
+ *  - Point.excludedLocs, checked by isPathClear and pickPath.  A stale entry here was never a mere
+ *    bookkeeping problem: the exclusion stopped applying silently, and the locomotive was routed into
+ *    a station it had been excluded from.
  *  - Layout.locomotivesToRun.
  *
  * Renaming is refused while the layout isRunning(), which also covers a graceful stop with paths still
@@ -34,14 +39,11 @@ import org.testng.annotations.Test;
  * The gap these tests pin is the idle one: graph loaded, nothing moving, the rename permitted and
  * correct to permit.
  *
- * Three identity changes reach these collections, and all three are covered below: rename, address
- * change (address and decoder type are hashCode inputs too), and deletion - which has to remove the
- * locomotive rather than re-key it.
- *
- * Not covered: the same drift through syncWithCS2, which updates a locomotive's address when the
- * Central Station reports a different one.  That path now defers while anything is running and
- * otherwise performs the same repair, but reaching it from a test needs a Central Station to sync
- * against.
+ * Three operations change a locomotive's identity and all three are covered below - rename, address
+ * change, and deletion, which has to remove the locomotive rather than re-key it.  A fourth,
+ * syncWithCS2 adopting an address the Central Station reports, is not: reaching it from a test needs a
+ * Central Station to sync against.  It defers while anything is running and otherwise runs the same
+ * repair as changeLocAddress, which is covered here.
  */
 public class testLayoutRenameKeys
 {
@@ -61,7 +63,7 @@ public class testLayoutRenameKeys
     {
         for (String name : new String[] {
             "RK excluded", "RK excluded 2", "RK export", "RK export 2", "RK torun", "RK torun 2",
-            "RK addr", "RK deleted", "RK drifted" })
+            "RK addr", "RK deleted", "RK drifted", "RK drifted renamed" })
         {
             model.deleteLoc(name);
         }
@@ -222,35 +224,46 @@ public class testLayoutRenameKeys
     }
 
     /**
-     * The cleanup has to work even on a locomotive whose hash has already drifted.
+     * The invariant that made all of the re-keying repairs unnecessary: a locomotive's hash never
+     * moves, whatever happens to its fields.
      *
-     * setAddress is called directly here, bypassing changeLocAddress and its repair, to manufacture
-     * exactly the stale state the repairs exist to prevent.  locDeleted must still find it: it scans
-     * rather than calling remove(), because a hash lookup is the one thing that cannot find a drifted
-     * key.  Without that, the cleanup would work only in the cases that did not need it.
+     * This test used to assert the opposite.  It manufactured a drifted hash by calling setAddress
+     * directly - bypassing the repair - to prove the delete cleanup could still find such a
+     * locomotive.  Since equals and hashCode became identity-based, drift cannot be manufactured at
+     * all, and the assertion that used to set the scene fails instead.
+     *
+     * Inverted rather than deleted, because that failure is the point: this is now the regression
+     * guard for the root fix, and it fails the moment anyone reimplements hashCode in terms of the
+     * locomotive's fields - which is the obvious thing for a future author to do, and which would
+     * silently reopen six defects at once.
+     *
+     * The raw mutators are called deliberately, rather than renameLoc and changeLocAddress: the claim
+     * is about the object itself, so going through the methods that repair the collections would test
+     * the repairs instead of the invariant.
      */
     @Test
-    public void testDeletingFindsALocomotiveWhoseHashAlreadyDrifted() throws Exception
+    public void testHashNeverMovesWhenAnIdentityFieldChanges() throws Exception
     {
-        MarklinLocomotive excluded = model.newDCCLocomotive("RK drifted", 96);
-        Layout layout = layoutExcluding(excluded);
+        MarklinLocomotive loc = model.newDCCLocomotive("RK drifted", 96);
+        Layout layout = layoutExcluding(loc);
 
         Point b = layout.getPoint("RK_B");
 
-        int before = excluded.hashCode();
+        int before = loc.hashCode();
 
-        // Drift it, without the repair that changeLocAddress would have run
-        excluded.setAddress(97, MarklinLocomotive.decoderType.DCC);
+        loc.setAddress(97, MarklinLocomotive.decoderType.DCC);
 
-        assertNotEquals(excluded.hashCode(), before,
-            "precondition: the address change moved the locomotive's hash");
+        assertEquals(loc.hashCode(), before, "an address change must not move the locomotive's hash");
+        assertTrue(b.getExcludedLocs().contains(loc),
+            "so the exclusion is still found by lookup, with no repair having run");
 
-        assertFalse(b.getExcludedLocs().contains(excluded),
-            "precondition: and the set can no longer find it by lookup - this is the whole hazard");
+        loc.rename("RK drifted renamed");
 
-        layout.locDeleted(excluded);
+        assertEquals(loc.hashCode(), before, "and neither must a rename");
+        assertTrue(b.getExcludedLocs().contains(loc), "and it is still found");
 
-        assertTrue(b.getExcludedLocs().isEmpty(),
-            "the cleanup must still remove it, which means scanning rather than looking up");
+        layout.locDeleted(loc);
+
+        assertTrue(b.getExcludedLocs().isEmpty(), "and deletion still removes it");
     }
 }

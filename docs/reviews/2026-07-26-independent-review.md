@@ -850,7 +850,7 @@ Open: **D5** (Low, deferred to next cycle with constraints recorded), **D3** (de
 non-load-bearing while the D2 stop-before-swap holds), and the standing root cause below.
 Everything else across all documents is fixed, withdrawn, closed by decision, or informational.
 
-### Standing item: MarklinLocomotive is a mutable hash key
+### Standing item: MarklinLocomotive is a mutable hash key - **FIXED 2026-07-26**
 
 Six findings now trace to one cause, spread across three reviews, and every one was fixed where it
 surfaced rather than at the root:
@@ -879,12 +879,47 @@ The removals have since been consolidated behind `Locomotive.removeFrom` and `Lo
 which document the hazard in one place. That helps a future author who reaches for them. It does
 nothing for one who adds a new `HashMap<Locomotive, ...>` and never learns any of this exists.
 
-The root fixes are to exclude the mutable fields from `hashCode`, or to key these containers by name -
-which the author confirms is viable, since locomotive names are unique and the code enforces that,
-including by deleting a colliding locomotive during a Central Station import. Both are wide changes:
-`equals` and `hashCode` are load-bearing across the locomotive database. Neither was attempted this
-cycle, and **this is the item to schedule next**. Until then the only signposts are the note on
-`hashCode` and the two helpers.
+**Fixed.** `MarklinLocomotive.equals` is now `this == other` and `hashCode` is
+`System.identityHashCode(this)`. The hash is fixed for the object's lifetime, so no mutation can move a
+locomotive out of a bucket, and all eight object-keyed collections are correct by construction - one of
+them, `Layout.locomotivePendingS88`, having never been repaired by anything and found only by
+enumerating them for this change.
+
+*Keying by name, listed above as an alternative, is not actually a root fix and was struck.* A stored
+name is a snapshot: rename the locomotive and the stored key is stale, which is the identical bug in a
+different type, still needing every repair call.
+
+*The blast radius was measured before the change, not after.* Every `.equals()` and `.contains()` on
+locomotives in `src/` compares two live objects from the same database. Names are unique and enforced,
+so two distinct live locomotives could never be value-equal in the first place - identity and the old
+equality already agreed everywhere either was used. `RemoteDeviceCollection` keys by UID and name, so
+the database never depended on `hashCode` at all. The single test asserting locomotive equality
+re-fetches the same object and passes either way.
+
+*No new method was needed.* The author's framing - `equals` should compare instances, with a separate
+method for logical equivalence - turned out to describe what already existed:
+`hasEquivalentAddress` for address and protocol, `getName` for the name, `getIntUID` for both. The old
+`equals` was a conjunction of name AND address AND type, matching neither dedupe rule and doing no job
+anything asked for.
+
+It also removes a latent deserialization hazard: `linkedLocomotives` is a non-transient
+`Map<Locomotive, Double>` on a `Serializable` class, and `HashMap.readObject` hashes each key while
+that key may still be only partly restored. An identity hash does not depend on field state.
+
+**Confirmed by a test failing.** `testDeletingFindsALocomotiveWhoseHashAlreadyDrifted` manufactured a
+drifted hash by calling `setAddress` directly; after the change it could no longer establish that
+precondition, because the state it needed had become unconstructible. It was inverted into
+`testHashNeverMovesWhenAnIdentityFieldChanges`, which now guards the fix - reimplementing `hashCode`
+from the fields is the obvious thing for a future author to do, and would silently reopen six defects
+at once.
+
+**Follow-up, deliberately not done.** All six repairs - `rehashLinkedLocomotives`,
+`rehashLocomotiveKeys`, `rehashExcludedLocs`, `removeFrom`, `removeKey` and their call sites - are now
+dead code. They were left in for one cycle: they are what keeps the application correct if this change
+has to be reverted, and removing them in the same commit would have doubled the blast radius. The
+behavioural tests in `testLayoutRenameKeys` and `testMultiUnitMembership` are what will prove the
+removal safe, because they assert that an exclusion still applies after a rename rather than asserting
+which mechanism achieves it.
 
 ---
 
@@ -940,7 +975,8 @@ door, and it discards the run.
 
 ### State after this pass
 
-Open: **D5** (Low, deferred; escape inventory corrected above), **D3** (deferred,
-non-load-bearing while stop-before-swap holds), and the **standing root-cause item** (mutable
-hash identity; scheduled next, name-keying confirmed viable by the author). Everything else
-across all four review documents is fixed, withdrawn, closed by decision, or informational.
+Open: **D5** (Low, deferred; escape inventory corrected above) and **D3** (deferred,
+non-load-bearing while stop-before-swap holds). The **standing root-cause item is now fixed** - see
+its section, updated - leaving one follow-up: deleting the six repairs it made redundant, next cycle.
+Everything else across all four review documents is fixed, withdrawn, closed by decision, or
+informational.

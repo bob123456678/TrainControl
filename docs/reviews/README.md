@@ -102,6 +102,14 @@ site.*
 **Leave the reasoning where the next person will trip over it** - in the code, not only in the review.
 Comments cannot drift out of sync with the code the way a separate document can.
 
+**Check the shape of what you changed, not just that it still parses.** A structural check that cannot
+tell "correct" from "badly broken" is not a check. *An edit that replaced `equals` and `hashCode`
+computed its start by searching backwards for the preceding javadoc; `equals` had none, so the search
+ran past it and silently deleted two unrelated methods. Braces still balanced - deleting whole methods
+keeps them balanced - and the non-ASCII check passed too. Both "verifications" were satisfied by a file
+missing two methods. Diffing the method names against HEAD takes one command and catches it
+immediately.*
+
 **Before mutating shared state, find out who else reads it and under which lock.** Verifying the
 function you are changing is not enough; the hazard lives in its call graph. *A fix that unlinked a
 deleted locomotive from every consist did exactly the right thing to the data - and did it by mutating
@@ -132,6 +140,18 @@ test in `testLayoutBfs` asserts one - e.g. "at least 300 pairs actually had a ro
 **Assert only what is deterministic.** Where the code is deliberately random, assert on invariants -
 length, existence, set membership over repeats - never on one specific outcome. *Exact-route assertions
 are safe in these suites only where the shortest route is unique, and the file header says so.*
+
+**Assert the precondition that makes a test meaningful.** Otherwise the test can pass for reasons that
+have nothing to do with what it claims. *A test for a cleanup that had to find a drifted hash key first
+asserted that the lookup genuinely failed. That assert is the only reason it caught the fix being wrong
+- the fix used `removeIf`, which cannot remove a drifted key, and without the precondition the test
+would have passed while exercising only the cases that never needed fixing.*
+
+**When a root fix lands, expect tests of the old bug to fail at their preconditions - that is
+confirmation, not regression.** *After locomotive hashing became identity-based, the test that
+manufactured a drifted hash could no longer manufacture one. Inverting it into a guard on the new
+invariant is usually better than deleting it: the scenario is gone, but the property that replaced it
+is exactly what a future author might undo.*
 
 ---
 

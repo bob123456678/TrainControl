@@ -18,8 +18,12 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | D2 | Not a defect | Closed, checked clean |
 
 A1, A2 and B1 are all the same root cause, recorded separately because they have different triggers and
-needed different repairs. The root cause itself is the standing item at the end of
+needed different repairs. That root cause - `MarklinLocomotive` being a mutable hash key - was **fixed
+on 2026-07-26** by making `equals` and `hashCode` identity-based; see the standing item at the end of
 [the independent review](2026-07-26-independent-review.md).
+
+The three repairs below are consequently redundant. They are kept for one cycle as a fallback, and the
+tests named in each finding are what prove them safe to remove.
 
 ---
 

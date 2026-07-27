@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.Conversion;
@@ -917,37 +916,43 @@ public class MarklinLocomotive extends Locomotive
             "Type: " + (this.type == decoderType.MFX ? "MFX" : (this.type == decoderType.DCC ? "DCC" : "MM2"));                
     }
     
+    /**
+     * Identity, deliberately.Do NOT reimplement either of these in terms of the locomotive's fields.  Name, address and decoder type are all mutable in place - rename assigns the name, setAddress the
+ address and type - so a field-based hashCode changes underneath any hash container holding the
+ locomotive.  The object stays in the container and iteration still finds it, but containsKey,
+ get and remove all miss: the entry sits in a bucket its hash no longer points to.
+
+ That produced six separate defects across three reviews, each fixed where it happened to surface
+ - a consist that stopped recognising a member, a station exclusion that silently stopped applying,
+ a deleted locomotive still being exported.  Eight collections key on this object, and each repair
+ was a call some future author had to know to make.  Identity ends that: the hash is fixed for the
+ object's lifetime, so no mutation can move it.
+
+ Nothing was relying on value equality.  Locomotive names are unique and the code enforces it, so
+ two distinct live locomotives could never be value-equal in the first place - identity and the
+ old equality already agreed everywhere they were used, and every comparison in the codebase is
+ between live objects from the same database.  The database keys by UID and name, never by the
+ object.
+
+ The logical checks live where they belong and are unchanged: hasEquivalentAddress for the
+ address-and-protocol comparison, getName for the name, getIntUID for both together.  Reach for
+ those, not for equals.
+
+ This also removes a latent deserialization hazard: linkedLocomotives is a non-transient
+ Map<Locomotive, Double> on a Serializable class, and HashMap.readObject hashes each key while the
+     * key may still be only partly restored.  An identity hash does not depend on field state.
+     * @param other
+     */
     @Override
     public boolean equals(Object other)
     {
-        if (!(other instanceof MarklinLocomotive))
-        {
-            return false;
-        }
-
-        return this.getName().equals(((MarklinLocomotive) other).getName()) &&
-            this.address == ((MarklinLocomotive) other).address &&
-            this.type == ((MarklinLocomotive) other).type;
+        return this == other;
     }
 
-    /**
-     * NOTE: every field below is mutable in place - setAddress assigns address and type, rename
-     * assigns name.  A locomotive used as a map KEY therefore drifts out of its bucket when any of
-     * them changes, and linkedLocomotives does exactly that.  Anything that re-keys a locomotive
-     * has to repair the consists holding it.  renameLoc calls rehashLinkedLocomotives to do that;
-     * changeLocAddress gets it as a side effect of the full revalidation it already runs.
-     * @return 
-     */
     @Override
     public int hashCode()
     {
-        int hash = 7;
-
-        hash = 73 * hash + this.address;
-        hash = 73 * hash + Objects.hashCode(this.type);
-        hash = 73 * hash + Objects.hashCode(this.getName());
-
-        return hash;
+        return System.identityHashCode(this);
     }
     
     /**
