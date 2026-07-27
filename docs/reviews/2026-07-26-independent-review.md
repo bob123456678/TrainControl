@@ -496,9 +496,15 @@ unexpected exception part-way through a path kills the thread silently and stran
 
 Before the D2 fix that state already blocked `startAutonomy` (which has always used the same
 predicate) and `setSimulate`, but reloading the JSON still worked and produced a clean `Layout` -
-which is precisely the escape hatch D2 closed. After the fix the only routes out are restarting
-TrainControl, or deleting the stranded locomotive from the database, which reaches
-`locDeleted` and clears the entry. The second is destructive and nobody would guess it.
+which is precisely the escape hatch D2 closed.
+
+**Corrected in the third evaluation pass.** This note originally listed two ways out: reloading the
+graph, or deleting the stranded locomotive. The second does not work. `deleteLoc` is gated on
+`isAutonomyRunning()` (TrainControlUI.java:10938), which is the strong predicate - the very thing the
+stranded state holds permanently true - and `Layout.locDeleted` has no other caller. The delete is
+refused with "cannot edit while running". **Reloading the graph is the only in-session recovery**,
+which strengthens the warn-not-refuse decision in D2 retroactively: had that guard stayed an outright
+refusal, the stuck state would have had no door at all short of restarting.
 
 So the D2 guard is only as sound as `executePath`'s freedom from unhandled exceptions, and nothing
 structurally guarantees that. Three ways out, in increasing order of correctness:
