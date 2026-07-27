@@ -360,7 +360,10 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v2.7.6 [Beta]
+* v2.8.0 [Beta]
+    - Added French, Italian, Spanish, Dutch, and Polish translations
+    - Removed UI features:
+        - Copy-to-next/-previous page option from locomotive button right-click menu (now redundant with 2.7.3's drag and drop)
     - Bug fixes
         - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
         - Fixed bug where a route condition would fail to parse if a locomotive's name contained the word AND or OR, such as NORD or MOTOR
@@ -376,12 +379,7 @@ Tab icons provided by Freepik.
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
         - Autonomy: path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
-
-* v2.7.5 [7/26/2026]
-    - Added French, Italian, Spanish, Dutch, and Polish translations
-    - Removed UI features:
-        - Copy-to-next/-previous page option from locomotive button right-click menu (now redundant with drag and drop)
-
+    
 * v2.7.4 [7/25/2026]   
     - Autonomy
         - Added Path Integrity Validation features. If a switch/signal configuration cannot be confirmed by the Central Station, the locomotive will not run.  Configurable via the menu bar preferences.  A warning popup will be shown if configuration fails successively.
