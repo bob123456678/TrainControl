@@ -21,7 +21,9 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | FP-B1 | Rename-on-import proposes one Central Station name for every local locomotive sharing an address; acting on the proposals deletes one of them | B | **Fixed 2026-07-27** |
 | FP-C1 | `parseFile` closed its reader outside any `finally`, leaking it whenever parsing threw | C | **Fixed 2026-07-27** |
 | FP-C2 | `getLocomotivesToRenameFromImport` rebuilt the whole locomotive list once per parsed locomotive | C | **Fixed 2026-07-27** (with FP-B1) |
+| FP-B2 | `pickPath` discarded every exception and then reported "no free paths" - a normal condition - so autonomy failures were undiagnosable | B | **Fixed 2026-07-27** |
 | FP-C3 | 100 sites allocate a `Thread` purely to pass it as a `Runnable`; five are per-CAN-message | C | Open - not attempted |
+| FP-C4 | Accessory validation during autonomy JSON load is dead code: the validator is called and its exception discarded | C | Open - report only |
 | FP-D1 | Checks that came back clean | - | Recorded |
 
 ---
@@ -114,6 +116,71 @@ that a single index makes O(n).
 
 ---
 
+## FP-B2. A failure in path selection was reported as "no free paths"
+
+`Layout.pickPath` - the method the autonomy engine calls continuously, for every running locomotive, to
+choose where a train goes next - wrapped its path enumeration in `catch (Exception e) { }`. Completely
+empty: no log, no rethrow, no comment.
+
+Execution then falls through to:
+
+```java
+this.control.logf("autolayout.infoLocomotiveNoFreePaths", loc.getName());
+loc.delay(minDelay, maxDelay);
+return null;
+```
+
+So *any* failure inside path selection was reported to the operator as "no free paths" - a normal,
+expected condition that happens whenever the layout is busy - with the exception discarded entirely.
+`runLocomotive` then retries forever. A locomotive that never moves, with a benign message repeating in
+the log and no other trace, is the whole diagnostic picture.
+
+This is the same shape as `RR-C5`, where any monitor failure was logged as "condition not satisfied",
+but worse in one respect: there the exception was still logged on the next line. Here nothing was.
+
+Given how much of this cycle was spent diagnosing autonomy behaviour - `IND-T3`, `IND-D5`, `INT-A2` -
+it is worth noting that a real fault in the middle of it would have produced no evidence at all.
+
+**Fixed.** Both empty catches - `pickPath` and `debugPath`, which share the enumeration shape - now log
+`autolayout.errorPathSelectionFailed` and the exception. The control flow is unchanged: the method still
+returns null and the caller still retries. Only the silence is gone.
+
+**Severity.** B. Nothing is corrupted and no train misbehaves; the cost is that a class of failure
+cannot be diagnosed at all, and presents as normal operation.
+
+---
+
+## FP-C4. Autonomy JSON validation that validates nothing - open
+
+`Layout.fromJSON`, in the edge-command validation loop:
+
+```java
+if (null == control.getAccessoryByName(accessory))
+{
+    try
+    {
+        Edge.validateConfigCommand(accessory, Accessory.accessorySetting.GREEN.toString(), control);
+    }
+    catch (Exception e)
+    {
+
+    }
+}
+```
+
+`validateConfigCommand` is a pure validator - it returns a setting and throws on invalid input, with no
+side effect on the model. Its return value is discarded and its exception is swallowed, so the block
+does nothing whatever the input. The sibling `else` branch, for a command with no `acc` key at all,
+calls `layout.invalidate(...)`, which suggests the intent here was to invalidate on an unresolvable
+accessory too.
+
+**Not fixed, deliberately.** Making it invalidate would start rejecting autonomy files that load today,
+and the runtime already handles missing accessories properly - a path whose accessory is absent is no
+longer used, which was an A-level fix earlier in this cycle. So the safe change is to delete the dead
+block rather than activate it, and that is a judgement about intent that belongs with the author.
+
+---
+
 ## FP-C3. `new Thread(...)` used as a `Runnable` - open
 
 100 sites across 13 files write `submit(new Thread(() -> ...))`, `invokeLater(new Thread(() -> ...))`
@@ -147,6 +214,15 @@ worth doing, and they can be done alone.
   closed windows, so it is not an unbounded collection.
 - **`layoutCache`** is keyed by page name and size, so it is bounded by the number of pages times the
   number of display sizes.
+- **The mutable-hash-key problem does not generalise to `Point` or `Edge`.** Both hash on their name,
+  and point names are mutable (`Layout.renamePoint`), so the shape is identical to the standing item -
+  but `renamePoint` re-keys `points` and `adjacency`, re-inserts every edge under its new name, and
+  then prunes stale keys by comparing each map key against its value's current name. `Edge.lockEdges`
+  is a `LinkedList`, so its `remove` uses `equals` and does not care about hash drift. Checked
+  precisely because this is the defect class the cycle kept finding elsewhere.
+- **Silent catch blocks.** 252 catch blocks; 9 completely empty. Seven are in UI code where the
+  swallowed failure is a cosmetic operation. The two that were not - `FP-B2` - are fixed; one further
+  case is `FP-C4`.
 
 ---
 

@@ -1986,8 +1986,13 @@ public class Layout
                         }
                         catch (Exception e)
                         {
-
-                        }      
+                            // Not silent.  Execution falls through to the "no free paths" message, which reports
+                            // a normal, expected condition - so a failure here was indistinguishable from simply
+                            // having nowhere to go, and the retry loop went on calling this forever with nothing
+                            // in the log to explain it.
+                            this.control.logf("autolayout.errorPathSelectionFailed", loc.getName());
+                            this.control.log(e);
+                        }
                     }
                 }
 
@@ -2124,8 +2129,13 @@ public class Layout
                             }
                             catch (Exception e)
                             {
-
-                            }      
+                                // Not silent.  Execution falls through to the "no free paths" message, which reports
+                                // a normal, expected condition - so a failure here was indistinguishable from simply
+                                // having nowhere to go, and the retry loop went on calling this forever with nothing
+                                // in the log to explain it.
+                                this.control.logf("autolayout.errorPathSelectionFailed", loc.getName());
+                                this.control.log(e);
+                            }
                         }
                     }
 
