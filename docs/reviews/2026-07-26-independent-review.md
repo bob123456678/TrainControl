@@ -20,7 +20,7 @@ the comparison against that review is a separate section appended after the find
 | N3 | `moveLocomotive` NPEs on an unknown `targetPoint` in the locomotive!=null branch | Low | Preexisting | **Fixed 2026-07-26** |
 | N4 | `getImageCache()` lazy init is unsynchronized | None | **Premise incorrect** - the getter is `static synchronized`, so the race cannot occur | **Changed anyway 2026-07-26**, for lock contention rather than correctness |
 | B1 | `PATH_INTEGRITY_VALIDATION` defaults ON: autonomy without CS echoes stalls every path | Behavior change (deliberate) | Author confirmed offline autonomy requires debug + simulate, and simulate skips validation | **Closed - not an issue** |
-| B2 | Autonomy-JSON routes omitting `triggerType` now fire on the opposite sensor edge | Behavior change (deliberate fix) | Affects hand-written JSON only | Open - release-note worthy |
+| B2 | Autonomy-JSON routes omitting `triggerType` now fire on the opposite sensor edge | Behavior change (deliberate fix) | Affects hand-written JSON only | **Closed 2026-07-26** - the requested release note already existed (`Readme.md`, added in `1d859ee`, before this report was written); the reviewer had not checked the changelog |
 | B3 | Sticky `actuationConfirmed`: a repeat command to the last-confirmed state passes validation instantly | Design property, not a defect | Informational | Recorded |
 | B4 | `unlockPath` lock-edge release is unsafe for hand-edited configs where two edges share a lock edge without traversing it | Design limitation, documented in code | Informational | Recorded |
 
@@ -294,6 +294,11 @@ cleanup, or `RemoteDeviceCollection.add`'s eviction during a type change) concur
 echo - narrow, but the fix pattern was already established and simply not applied to the sibling.
 This is the one concrete *error of incompleteness* this comparison found.
 
+> **E1/E2/E3 - all resolved 2026-07-26.** E1 is finding N1, fixed (see its entry). E2's stale
+> residual and E3's version labels were corrected in `2026-07-code-review.md` in the same fix
+> cycle (2.7.5/2.7.6 were staged then cancelled; everything shipped as 2.8.0) - both verified in
+> the evaluation pass below.
+
 **E2 - one residual item in the July document went stale after being fixed (documentation error).**
 "Residual items, not changed" #3 states `parseRoutesCS3` "leaks `routeBR` and `magBR` if
 `isCS3Version260OrAbove()` throws between opening them and the branch. Pre-existing." The current
@@ -473,6 +478,10 @@ sweep `getLocomotives()` for consists referencing the victim and unlink (mirrori
 
 Worth recording as a pattern: a method used both as a public operation and as an internal primitive silently acquires the operation's side effects. An existing test was the only thing between that and a shipped defect.
 
+**Follow-up (2026-07-26), found by an integration pass.** The sweep was correct about the data and wrong about the concurrency: it mutated `linkedLocomotives` - a plain `LinkedHashMap` - directly, from the delete flow, while `setSpeed` and `setDirection` iterate that same map under the locomotive's own lock. Deleting a member while its consist was being driven could therefore have thrown `ConcurrentModificationException` part-way through a fan-out, leaving some members commanded and others not. The unlink now goes through `MarklinLocomotive.unlinkLocomotive`, which is `synchronized` on that same lock.
+
+Pre-existing and deliberately left alone: `setLinkedLocomotives` and `preSetLinkedLocomotives` mutate the same map unsynchronised, so editing a consist's links in the dialog while it runs carries the same risk. That is a separate call path and was not widened by this fix.
+
 **M3 (question for the author)** - the C9 coupling (`lastStartTime == 0` → re-assert direction)
 only zeroes the field in `notifyOfPowerStateChange`'s `speed > 0` branch. A locomotive **parked**
 during a power cycle keeps its stale nonzero timestamp and never gets the direction re-assert -
@@ -519,6 +528,17 @@ the top. Return -1 for "none" (or use `noneMatch`) to make the sentinel honest.
 
 The reachable break is **parallel dispatch plus graceful stop**. Each entry runs on its own thread, so entry 1 can finish while entry 0 is still retrying; a stop then leaves `[unfinished, finished]`, and index 0 read as "nothing unfinished" wiped entry 1's completion. The sentinel now returns -1, with `Math.max(0, ...)` at the two sites that use it as a loop start. The fix stops the timestamp being destroyed; the resume loop still re-runs finished entries from `startIndex`, which is separate.
 
+*Verification note (2026-07-26, evaluation pass).* A third caller not named above -
+`restartTimetable`'s "already reset" guard (`getUnfinishedTimetablePathIndex() == 0 && ... &&
+get(0).getExecutionTime() == 0`, TrainControlUI.java:14157) - was checked against the new sentinel
+and remains correct: its third clause previously excluded the all-finished case that `== 0` used to
+also mean, and under -1 that clause is merely redundant, not wrong. Also noted for the record: the
+parallel-dispatch trigger described above has the same shape of problem as the withdrawn deletion
+trigger - the dispatch gate at Layout.java:2204 blocks entry k+1 until entry k's `executionTime` is
+set, and it is set at path *lock*, so `[unfinished, finished]` could not be observed through that
+route either. The fix needs no trigger to justify it: the sentinel was dishonest, and
+`restartTimetable` plus any future caller depend on it meaning one thing.
+
 **T3 - a permanently unexecutable entry retries forever.** Each dispatched entry loops
 `while (running && !executePath(...))` with a delay
 ([Layout.java:2222](src/org/traincontrol/automation/Layout.java:2222)). `executePath` returning
@@ -542,3 +562,67 @@ downstream flow re-checks `isRunning()`, so this is a cosmetic button-state quir
 milliseconds despite the name, but consistently ms at capture, edit (x1000), display (/1000) and
 comparison - a naming trap, not a defect; parallel entry threads plus the same-locomotive retry
 loop compose correctly; stop-on-exception in any entry thread ends the whole run.
+
+---
+
+## Evaluation pass (2026-07-26): verification of the fix batch
+
+Independent re-verification of the fixes for N1, N3, N4, M1, M4, T1, T2 (commits
+`43eb65f..7fc8fc2` plus the then-uncommitted M4 concurrency follow-up), conducted after the author
+updated this document. Statuses live in the tables above; this section records what was checked.
+
+### Fixes verified against the code
+
+- **M1** - clamp confirmed in the fan-out at the exact arithmetic claimed (1.5x member: speed 66
+  scales to 99, 67 to 101, previously ignored by `_setSpeed`). Clamping at the fan-out rather than
+  in `_setSpeed` is right: `_setSpeed` has other callers whose ignore-out-of-range behaviour is
+  load-bearing.
+- **M4** - the unlink sweep is present, keyed off the object captured before the delete, and the
+  new `loc.unlinkedDeletedLocomotive` key exists in all eight bundles. The `changeLocAddress`
+  regression (delete-as-re-key acquiring the unlink side effect) is resolved by calling
+  `locDB.delete` directly, matching `renameLoc`. The concurrency follow-up routes the removal
+  through `MarklinLocomotive.unlinkLocomotive`, `synchronized` on the same monitor the
+  `setSpeed`/`setDirection` fan-outs hold - verified against both the method and its caller.
+- **T1** - capture now writes the gap onto the later entry; entry 0 carries none. Pinned by
+  `testLayoutTimetable.testCaptureStoresEachGapOnTheLaterEntry` and
+  `testFirstCapturedEntryHasNoGap`.
+- **T2** - sentinel is -1; both loop-start callers clamp. The third caller
+  (`restartTimetable`, TrainControlUI.java:14157) was not named in the fix note - verified
+  separately, remains correct (see the verification note under T2).
+- **N1** - resolve-once + null-check in place, mirroring the locomotive branch; pinned by
+  `testAccessory.testEchoForADeletedAccessoryIsIgnored`.
+- **N3** - point resolved once, null-checked, reports `autolayout.errorPointDoesNotExist` - a key
+  verified to pre-exist in all eight bundles.
+- **N4** - eager `final` field, `synchronized` dropped from the getter. Behaviour-preserving.
+- **Documents** - E2's stale residual and E3's version labels corrected in
+  `2026-07-code-review.md`; the July post-change review is now tracked; `Readme.md` gained
+  changelog entries for M1, M4, T1, T2.
+
+**State at evaluation time:** the M4 concurrency follow-up (`unlinkLocomotive` in
+`MarklinLocomotive.java` / `MarklinControlStation.java`), this document's follow-up notes, and the
+new README lesson were present in the working tree but **not yet committed** - HEAD (`7fc8fc2`)
+still carried the unsynchronised direct-map unlink. Flagged to the author.
+
+### Reviewer-error tally for this report
+
+Consolidated here for calibration; each is corrected in place at its finding:
+
+| Finding | What this report got wrong |
+|---|---|
+| N4 | Claimed an init race on a getter that was `static synchronized` - the race could not occur |
+| M2 | Withdrawn entirely: verified the dialog's candidate filter but not its entry gate; `isLocLinkedToOthers` is the membership check the finding said did not exist |
+| N1 | Right defect, wrong reachability mechanism (type-flip eviction cannot empty `db`; the real route is the startup invalid-address delete) |
+| T1 | Fix was right; the claimed migration risk was overstated - stored values are never reinterpreted |
+| T2 | Fix was right; the claimed deletion trigger cannot occur (finished entries form a prefix that deletion preserves). The author's replacement trigger appears equally unreachable (the dispatch gate at Layout.java:2204); the fix stands on sentinel honesty, not on either trigger |
+| B2 | Asked for a release note that already existed in `Readme.md` (added in `1d859ee`, before this report was written) - the changelog was never checked |
+
+The pattern across N4, M2 and B2 is the same one `docs/reviews/README.md` warns about: a claim was
+made about a layer (the getter's declaration, the dialog's entry point, the changelog) that was
+never actually read. The deep-dive *defects* all held up; the errors clustered in reachability
+stories and surrounding-machinery claims.
+
+### Remaining open items
+
+D1 (fenced abort leaves the locomotive at speed), D2 (unguarded JSON reload - the cheap fix that
+makes D1 unreachable), and D3 (instance-version fence). Everything else in this report is fixed,
+withdrawn, closed by decision, or informational.

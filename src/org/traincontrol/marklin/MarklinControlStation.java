@@ -2263,7 +2263,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 for (MarklinLocomotive other : this.locDB.getItems())
                 {
-                    if (other.getLinkedLocomotives().remove(deleted) != null)
+                    // unlinkLocomotive rather than mutating the map returned by getLinkedLocomotives:
+                    // it takes the same lock setSpeed holds while fanning out to that map
+                    if (other.unlinkLocomotive(deleted))
                     {
                         this.logf("loc.unlinkedDeletedLocomotive", deleted.getName(), other.getName());
                     }
@@ -2328,6 +2330,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.locDB.add(l, newName, l.getUID());
             
             this.rebuildLocIdCache();
+            
+            // A member's hash is built partly from its name, so renaming one leaves it in its
+            // consist under a stale hash - still driven, because the fan-out iterates, but no longer
+            // findable by isLinkedTo or unlinkLocomotive.  That silently defeats both the guard
+            // against nesting multi-units and the unlink-on-delete sweep.  Re-key every consist that
+            // might hold it; we cannot ask which ones do, because that lookup is the broken thing.
+            //
+            // A full rebuild, as changeLocAddress does, is not needed here: a rename cannot create an
+            // address conflict, and setLinkedLocomotives would put a direction command on the track
+            // for every consist on every rename.
+            for (MarklinLocomotive other : this.locDB.getItems())
+            {
+                other.rehashLinkedLocomotives();
+            }
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())

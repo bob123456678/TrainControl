@@ -93,6 +93,14 @@ site.*
 **Leave the reasoning where the next person will trip over it** - in the code, not only in the review.
 Comments cannot drift out of sync with the code the way a separate document can.
 
+**Before mutating shared state, find out who else reads it and under which lock.** Verifying the
+function you are changing is not enough; the hazard lives in its call graph. *A fix that unlinked a
+deleted locomotive from every consist did exactly the right thing to the data - and did it by mutating
+a plain LinkedHashMap that `setSpeed` iterates under the locomotive's own lock, from a UI thread that
+did not hold it. The change was correct and the concurrency was not. This is the sibling of "verify the
+layer you are actually claiming about": that one catches a missing guard above you, this one catches a
+reader beside you.*
+
 ---
 
 ## Testing

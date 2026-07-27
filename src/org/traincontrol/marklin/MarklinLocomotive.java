@@ -930,6 +930,14 @@ public class MarklinLocomotive extends Locomotive
             this.type == ((MarklinLocomotive) other).type;
     }
 
+    /**
+     * NOTE: every field below is mutable in place - setAddress assigns address and type, rename
+     * assigns name.  A locomotive used as a map KEY therefore drifts out of its bucket when any of
+     * them changes, and linkedLocomotives does exactly that.  Anything that re-keys a locomotive
+     * has to repair the consists holding it.  renameLoc calls rehashLinkedLocomotives to do that;
+     * changeLocAddress gets it as a side effect of the full revalidation it already runs.
+     * @return 
+     */
     @Override
     public int hashCode()
     {
@@ -1173,6 +1181,45 @@ public class MarklinLocomotive extends Locomotive
     public boolean hasLinkedLocomotives()
     {
         return !this.linkedLocomotives.isEmpty();
+    }
+
+    /**
+     * Removes a locomotive from this one's multi-unit, if it is a member.
+     *
+     * synchronized, on the same lock setSpeed and setDirection hold: those iterate
+     * linkedLocomotives, which is a plain LinkedHashMap, so removing from it on another thread -
+     * deleting a locomotive while its consist is being driven - could otherwise throw
+     * ConcurrentModificationException part-way through a fan-out, leaving some members commanded
+     * and others not.
+     *
+     * @param member the locomotive to remove
+     * @return true if it was a member and has been removed
+     */
+    synchronized public boolean unlinkLocomotive(Locomotive member)
+    {
+        return this.linkedLocomotives.remove(member) != null;
+    }
+    
+    /**
+     * Re-keys the multi-unit membership map after a member's identity has changed.
+     *
+     * hashCode is built from the name, address and decoder type, and all three are mutable in place,
+     * so renaming a member leaves it in this map under a hash that no longer matches it: the fan-out
+     * still finds it, because that iterates, but containsKey and remove do not - meaning isLinkedTo
+     * stops recognising it and unlinkLocomotive stops removing it.  Re-inserting every entry
+     * recomputes the buckets from the members' current values.
+     *
+     * synchronized for the same reason unlinkLocomotive is - setSpeed and setDirection iterate this
+     * map under this lock.
+     */
+    synchronized public void rehashLinkedLocomotives()
+    {
+        if (this.linkedLocomotives.isEmpty()) return;
+        
+        Map<Locomotive, Double> current = new LinkedHashMap<>(this.linkedLocomotives);
+        
+        this.linkedLocomotives.clear();
+        this.linkedLocomotives.putAll(current);
     }
     
     /**

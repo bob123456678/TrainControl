@@ -381,6 +381,7 @@ Tab icons provided by Freepik.
         - Autonomy: path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
+        - Fixed bug where renaming a locomotive that was part of a multi-unit stopped TrainControl from recognizing it as linked.  It could then be set up as a second multi-unit of its own, and deleting it left it being driven by the lead locomotive
         - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct
         - Fixed bug where stopping a timetable and resuming it could forget that some routes had already finished
     
