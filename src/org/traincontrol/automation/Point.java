@@ -177,6 +177,50 @@ public class Point
     }
 
     /**
+     * Removes a locomotive from the exclusion set, if it is in it.
+     *
+     * Rebuilds the set rather than removing from it.  A locomotive whose name or address changed after
+     * it was excluded sits under a stale hash, and every hash-based removal misses it - including
+     * removeIf, which is not the escape it looks like: Collection.removeIf iterates and calls
+     * Iterator.remove(), and HashMap's iterator implements that as removeNode(hash(key), key, ...),
+     * recomputing the hash from the key's current state.  On a drifted key that searches the wrong
+     * bucket and silently removes nothing.
+     *
+     * Copying the survivors out and refilling avoids the lookup entirely, and re-keys them as a side
+     * effect.
+     *
+     * @param l the locomotive to stop excluding
+     * @return true if it was excluded and no longer is
+     */
+    synchronized public boolean removeExcludedLoc(Locomotive l)
+    {
+        if (l == null) return false;
+
+        Set<Locomotive> kept = new HashSet<>();
+        boolean removed = false;
+
+        for (Locomotive other : this.excludedLocs)
+        {
+            if (other == l || l.equals(other))
+            {
+                removed = true;
+            }
+            else
+            {
+                kept.add(other);
+            }
+        }
+
+        if (removed)
+        {
+            this.excludedLocs.clear();
+            this.excludedLocs.addAll(kept);
+        }
+
+        return removed;
+    }
+
+    /**
      * Re-keys the exclusion set after a locomotive's identity has changed.
      *
      * excludedLocs holds Locomotive references, and a locomotive's hashCode is built from its name,

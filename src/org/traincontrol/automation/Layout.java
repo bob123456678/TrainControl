@@ -318,9 +318,32 @@ public class Layout
     {
         if (l == null) return;
 
-        this.locomotivesToRun.remove(l);
+        // Rebuilt rather than removed from.  A locomotive renamed or re-addressed since it was added
+        // sits under a stale hash, and every hash-based removal misses it - removeIf included, since
+        // it iterates and calls Iterator.remove(), which recomputes the hash from the key's current
+        // state and so searches the wrong bucket.  See Point.removeExcludedLoc.
+        Set<Locomotive> keptToRun = new HashSet<>();
+
+        for (Locomotive other : this.locomotivesToRun)
+        {
+            if (other != l && !l.equals(other))
+            {
+                keptToRun.add(other);
+            }
+        }
+
+        this.locomotivesToRun.clear();
+        this.locomotivesToRun.addAll(keptToRun);
         this.activeLocomotives.remove(l);
         this.locomotiveMilestones.remove(l);
+
+        // Points hold their own references, and nothing else was clearing them: a deleted locomotive
+        // stayed excluded forever, and its name kept being written into the exported JSON as an
+        // exclusion for a locomotive that no longer exists.
+        for (Point p : this.getPoints())
+        {
+            p.removeExcludedLoc(l);
+        }
     }
     
     /**

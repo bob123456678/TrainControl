@@ -33,6 +33,15 @@ import org.testng.annotations.Test;
  * finishing - so activeLocomotives and locomotiveMilestones cannot be stale, and are not covered here.
  * The gap these tests pin is the idle one: graph loaded, nothing moving, the rename permitted and
  * correct to permit.
+ *
+ * Three identity changes reach these collections, and all three are covered below: rename, address
+ * change (address and decoder type are hashCode inputs too), and deletion - which has to remove the
+ * locomotive rather than re-key it.
+ *
+ * Not covered: the same drift through syncWithCS2, which updates a locomotive's address when the
+ * Central Station reports a different one.  That path now defers while anything is running and
+ * otherwise performs the same repair, but reaching it from a test needs a Central Station to sync
+ * against.
  */
 public class testLayoutRenameKeys
 {
@@ -51,7 +60,8 @@ public class testLayoutRenameKeys
     public static void tearDownClass() throws Exception
     {
         for (String name : new String[] {
-            "RK excluded", "RK excluded 2", "RK export", "RK export 2", "RK torun", "RK torun 2" })
+            "RK excluded", "RK excluded 2", "RK export", "RK export 2", "RK torun", "RK torun 2",
+            "RK addr", "RK deleted", "RK drifted" })
         {
             model.deleteLoc(name);
         }
@@ -158,5 +168,89 @@ public class testLayoutRenameKeys
             "a renamed locomotive must still be recognised as one of the ones to run");
 
         assertEquals(layout.getLocomotivesToRun().size(), 1);
+    }
+
+    /**
+     * An address change drifts the hash exactly as a rename does - address and decoder type are both
+     * hashCode inputs - so changeLocAddress needs the same repair.
+     *
+     * This was missed when the rename case was fixed: the repair was wired into renameLoc only, and
+     * changing a locomotive's address went on silently voiding its exclusions.
+     */
+    @Test
+    public void testExclusionSurvivesAnAddressChange() throws Exception
+    {
+        MarklinLocomotive excluded = model.newDCCLocomotive("RK addr", 93);
+        Layout layout = layoutExcluding(excluded);
+
+        Point b = layout.getPoint("RK_B");
+
+        assertTrue(b.getExcludedLocs().contains(excluded), "precondition: the exclusion applies");
+
+        model.changeLocAddress("RK addr", 94, MarklinLocomotive.decoderType.DCC);
+
+        assertTrue(b.getExcludedLocs().contains(excluded),
+            "the exclusion must survive an address change for the same reason it survives a rename");
+
+        assertEquals(b.getExcludedLocs().size(), 1);
+    }
+
+    /**
+     * Deleting a locomotive must take it out of the exclusion sets as well.
+     *
+     * locDeleted cleared locomotivesToRun, activeLocomotives and locomotiveMilestones but not the
+     * points' own sets, so a deleted locomotive stayed excluded for the life of the graph and its name
+     * kept being exported as an exclusion for a locomotive that no longer exists.
+     */
+    @Test
+    public void testDeletingALocomotiveClearsItsExclusion() throws Exception
+    {
+        MarklinLocomotive excluded = model.newDCCLocomotive("RK deleted", 95);
+        Layout layout = layoutExcluding(excluded);
+
+        Point b = layout.getPoint("RK_B");
+
+        assertTrue(b.getExcludedLocs().contains(excluded), "precondition: the exclusion applies");
+
+        layout.locDeleted(excluded);
+
+        assertTrue(b.getExcludedLocs().isEmpty(),
+            "a deleted locomotive must not stay in the exclusion set");
+
+        assertFalse(layout.toJSON().contains("RK deleted"),
+            "and must not still be exported as an exclusion");
+    }
+
+    /**
+     * The cleanup has to work even on a locomotive whose hash has already drifted.
+     *
+     * setAddress is called directly here, bypassing changeLocAddress and its repair, to manufacture
+     * exactly the stale state the repairs exist to prevent.  locDeleted must still find it: it scans
+     * rather than calling remove(), because a hash lookup is the one thing that cannot find a drifted
+     * key.  Without that, the cleanup would work only in the cases that did not need it.
+     */
+    @Test
+    public void testDeletingFindsALocomotiveWhoseHashAlreadyDrifted() throws Exception
+    {
+        MarklinLocomotive excluded = model.newDCCLocomotive("RK drifted", 96);
+        Layout layout = layoutExcluding(excluded);
+
+        Point b = layout.getPoint("RK_B");
+
+        int before = excluded.hashCode();
+
+        // Drift it, without the repair that changeLocAddress would have run
+        excluded.setAddress(97, MarklinLocomotive.decoderType.DCC);
+
+        assertNotEquals(excluded.hashCode(), before,
+            "precondition: the address change moved the locomotive's hash");
+
+        assertFalse(b.getExcludedLocs().contains(excluded),
+            "precondition: and the set can no longer find it by lookup - this is the whole hazard");
+
+        layout.locDeleted(excluded);
+
+        assertTrue(b.getExcludedLocs().isEmpty(),
+            "the cleanup must still remove it, which means scanning rather than looking up");
     }
 }

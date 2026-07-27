@@ -907,18 +907,47 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
                 )
                 {
-                    String oldAddr = this.getLocAddress(l.getName());
-                    this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
-                    
-                    // Update DB entry
-                    MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
-                    this.locDB.delete(l.getName());
-                    this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
-                    
-                    this.logf("loc.addressUpdated",
-                        existingLoc.getName(),
-                        oldAddr,
-                        this.getLocAddress(existingLoc.getName()));
+                    // Deferred while anything is running.  setAddress mutates the address and decoder
+                    // type in place, and both are hashCode inputs, so the locomotive drifts out of
+                    // every collection keyed on the object: its consist stops recognising it, its
+                    // station exclusions stop applying, and an entry stranded in activeLocomotives
+                    // would leave isRunning() permanently true.  A rename and a manual address change
+                    // are both refused while running; a sync had no such guard and is triggered
+                    // automatically from a dozen places, so the check belongs here.
+                    if (this.isAutonomyRunning())
+                    {
+                        this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
+                    }
+                    else
+                    {
+                        String oldAddr = this.getLocAddress(l.getName());
+                        this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
+
+                        // Update DB entry
+                        MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                        this.locDB.delete(l.getName());
+                        this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+
+                        this.logf("loc.addressUpdated",
+                            existingLoc.getName(),
+                            oldAddr,
+                            this.getLocAddress(existingLoc.getName()));
+
+                        // The same repair changeLocAddress performs, for the same reason
+                        for (Locomotive other : getLocomotives())
+                        {
+                            if (other.hasLinkedLocomotives())
+                            {
+                                other.preSetLinkedLocomotives(other.getLinkedLocomotiveNames());
+                                other.setLinkedLocomotives();
+                            }
+                        }
+
+                        if (this.hasAutoLayout())
+                        {
+                            this.getAutoLayout().rehashLocomotiveKeys();
+                        }
+                    }
                 }
                 
                 // Update function types if they have changed
@@ -2187,6 +2216,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 other.preSetLinkedLocomotives(other.getLinkedLocomotiveNames());
                 other.setLinkedLocomotives();
             }
+        }
+
+        // An address change drifts the locomotive's hash exactly as a rename does - address and
+        // decoder type are both hashCode inputs - so the graph's object-keyed collections need the
+        // same repair renameLoc performs.
+        if (this.hasAutoLayout())
+        {
+            this.getAutoLayout().rehashLocomotiveKeys();
         }
     }
     
