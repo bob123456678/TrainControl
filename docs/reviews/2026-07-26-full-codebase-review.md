@@ -33,7 +33,7 @@ document; findings from other documents are cited with their document name.
 | C1 | `changeRouteId` still uses `getAutoLayout() != null` - the always-true creating check C12 fixed in `deleteRoute` - and seven more UI sites share the pattern | C | **Fixed 2026-07-27** - all eight sites |
 | B3 | Editing a diagram, or a route drawn on one, ran a full Central Station sync on the EDT - freezing the UI, and re-importing routes and locomotives as a side effect | B | **Fixed 2026-07-27** - found in use, not by this review |
 | C2 | `MarklinRoute.toCSV` pretty-prints through `getAccessoryByAddress`, a creating lookup - opening the route editor can register phantom accessories | C | **Fixed 2026-07-27** - reopened after being closed, and fixed on three paths |
-| C3 | The CS2 import parsers abort the entire sync on one malformed record; the CS3 parsers catch per-record | C | Open - no real file in evidence triggers it |
+| C3 | The CS2 import parsers abort the entire sync on one malformed record; the CS3 parsers catch per-record | C | **Fixed 2026-07-27** |
 | C4 | `editRoute` deletes the route before knowing the re-add will succeed; a name collision would silently drop the route | C | **Fixed 2026-07-27** |
 | D1 | Checks that came back clean (see section) | - | Recorded |
 
@@ -338,6 +338,31 @@ fixture), and CS-generated files have no reason to produce any of these. So per 
 "could happen" / "does happen" distinction this is a trap, not a live defect - rated C, kept out
 of any changelog. If touched, the fix is the CS3 shape: per-record try/catch with the existing
 `route.invalidCs2Route`-style log lines, not three point guards.
+
+**Fixed 2026-07-27, in the CS3 shape as suggested.** `parseRoutes` and `parseLocomotives` each wrap
+their per-record body in try/catch and continue to the next record.
+
+What made the wrap safe rather than merely convenient: in both loops `out.add(...)` is already the last
+statement of the record body, so a record that throws part-way contributes nothing at all. Had a partial
+record been added before the failure point, a per-record catch would have turned an aborted import into
+a silently corrupted one - a worse outcome than the defect.
+
+*Named exception types, not `Exception`.* `parseRoutes` catches `NumberFormatException |
+ArrayIndexOutOfBoundsException`, covering both of its escapes; `parseLocomotives` adds
+`NullPointerException` for the `traktion` block. A blanket catch would suppress genuine parser logic
+bugs as though they were malformed input, and the CS3 parsers set the precedent by catching exactly
+what their own parsing can throw.
+
+*Two new message keys rather than reuse.* `route.invalidCs2Route` reads "no route commands were found",
+which is true of the missing-field guard directly above and false of a parse failure - reusing it would
+have logged a confidently wrong reason. `route.unparseableCs2Route` and `loc.invalidCs2Locomotive`
+mirror the CS3 wording; all eight bundles at 1191 keys. Both log through `logMessage(msg, e, false)`, so
+the exception itself is recorded - the existing null-field guard reports which record but not why.
+
+**Still no test and no changelog.** The reachability analysis above is unchanged: no `.cs2` fixture
+triggers any of the three escapes, so a test would have to fabricate a malformed file to prove a trap
+that no user has hit. The guards were verified by the existing parser suites continuing to pass, which
+demonstrates only that valid records are unaffected - the part most at risk from a change like this.
 
 ### C4. `editRoute` deletes before it knows the re-add will succeed
 

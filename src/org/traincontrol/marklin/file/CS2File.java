@@ -693,130 +693,149 @@ public final class CS2File
                     continue;
                 }
 
-                MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
-
-                String route = m.get("item").replace("{", "").replace("}","");
-                String[] pieces = route.split("\\|");
-
-                if (m.containsKey("s88"))
+                try
                 {
-                    r.setS88(Integer.parseInt(m.get("s88")));
-                }
-                
-                if (m.containsKey("s88Ein"))
-                {
-                    r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
-                }
-                
-                if (m.containsKey("extern"))
-                {
-                    // This variable indicates that the route will automatically fire
-                    // As this would duplicate functionality with the CS2, we leave it disabled
-                    // r.enable();
-                }
-                
-                for (String piece : pieces)
-                {
-                    String[] infos = piece.split(",");
+                    MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
 
-                    Integer id = 0;
-                    Integer setting = 0;
-                    Integer delay = 0;
+                    String route = m.get("item").replace("{", "").replace("}","");
+                    String[] pieces = route.split("\\|");
 
-                    Integer conditionS88 = 0;
-                    Integer s88Status = 1;
-                    
-                    for (String info : infos)
+                    if (m.containsKey("s88"))
                     {
-                        if (info.contains("="))
+                        r.setS88(Integer.parseInt(m.get("s88")));
+                    }
+                
+                    if (m.containsKey("s88Ein"))
+                    {
+                        r.setTriggerType(MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR);
+                    }
+                
+                    if (m.containsKey("extern"))
+                    {
+                        // This variable indicates that the route will automatically fire
+                        // As this would duplicate functionality with the CS2, we leave it disabled
+                        // r.enable();
+                    }
+                
+                    for (String piece : pieces)
+                    {
+                        String[] infos = piece.split(",");
+
+                        Integer id = 0;
+                        Integer setting = 0;
+                        Integer delay = 0;
+
+                        Integer conditionS88 = 0;
+                        Integer s88Status = 1;
+                    
+                        for (String info : infos)
                         {
-                            String[] kv = info.split("=");
+                            if (info.contains("="))
+                            {
+                                String[] kv = info.split("=");
                             
-                            if ("magnetartikel".equals(kv[0]))
-                            {
-                                id = Integer.valueOf(kv[1].trim());
-                            }
-                            
-                            if ("stellung".equals(kv[0]))
-                            {
-                                setting = Integer.valueOf(kv[1].trim());
-                            }
-                            
-                            if ("sekunde".equals(kv[0]))
-                            {
-                                delay = Float.valueOf(kv[1]).intValue() * 1000;
-                            }
-                               
-                            // Condition S88s
-                            if ("kont".equals(kv[0]))
-                            {
-                                // Another sensor follows in the same group - store the previous one
-                                if (conditionS88 != 0)
+                                if ("magnetartikel".equals(kv[0]))
                                 {
-                                    r.addConditionS88(conditionS88, s88Status != 0);
-                                    s88Status = 1;
+                                    id = Integer.valueOf(kv[1].trim());
+                                }
+                            
+                                if ("stellung".equals(kv[0]))
+                                {
+                                    setting = Integer.valueOf(kv[1].trim());
+                                }
+                            
+                                if ("sekunde".equals(kv[0]))
+                                {
+                                    delay = Float.valueOf(kv[1]).intValue() * 1000;
+                                }
+                               
+                                // Condition S88s
+                                if ("kont".equals(kv[0]))
+                                {
+                                    // Another sensor follows in the same group - store the previous one
+                                    if (conditionS88 != 0)
+                                    {
+                                        r.addConditionS88(conditionS88, s88Status != 0);
+                                        s88Status = 1;
+                                    }
+
+                                    conditionS88 = Integer.valueOf(kv[1].trim());
                                 }
 
-                                conditionS88 = Integer.valueOf(kv[1].trim());
+                                if ("hi".equals(kv[0]))
+                                {
+                                    s88Status = Integer.valueOf(kv[1].trim());
+                                }
                             }
+                        }
 
-                            if ("hi".equals(kv[0]))
+                        if (conditionS88 != 0)
+                        {
+                            r.addConditionS88(conditionS88, s88Status != 0);
+                        }
+
+                        // Handle 3-way switches and signals
+                        if (id > 0)
+                        {
+                            // Determine the decoder type
+                            Accessory.accessoryDecoderType accType = Accessory.accessoryDecoderType.MM2;
+                        
+                            if (addressMap.get(id) != null)
                             {
-                                s88Status = Integer.valueOf(kv[1].trim());
+                                accType = addressMap.get(id).getDecoderType();
                             }
-                        }
-                    }
-
-                    if (conditionS88 != 0)
-                    {
-                        r.addConditionS88(conditionS88, s88Status != 0);
-                    }
-
-                    // Handle 3-way switches and signals
-                    if (id > 0)
-                    {
-                        // Determine the decoder type
-                        Accessory.accessoryDecoderType accType = Accessory.accessoryDecoderType.MM2;
                         
-                        if (addressMap.get(id) != null)
-                        {
-                            accType = addressMap.get(id).getDecoderType();
-                        }
-                        
-                        if (setting >= 2)
-                        {
-                            r.addAccessory(id + 1, accType, setting == 2);
+                            if (setting >= 2)
+                            {
+                                r.addAccessory(id + 1, accType, setting == 2);
                             
-                            if (delay > 0)
-                            {
-                                r.setDelay(id + 1, delay);
+                                if (delay > 0)
+                                {
+                                    r.setDelay(id + 1, delay);
+                                }
                             }
+                        
+                            r.addAccessory(id, accType, setting != 1 && setting != 3);
+                        
+                            // Only set the delay once for three-way switches
+                            if (delay > 0 && setting < 2)
+                            {
+                                r.setDelay(id, delay);
+                            }
+                        
+                            // stellung 0
+                            // id -> true (red)
+                            // stellung 1
+                            // id -> false (green)
+                            // stellung 2
+                            // id -> true (red)
+                            // id + 1 -> true (red)
+                            // stellung 3
+                            // id -> false (green)
+                            // id + 1 -> false (green)
                         }
-                        
-                        r.addAccessory(id, accType, setting != 1 && setting != 3);
-                        
-                        // Only set the delay once for three-way switches
-                        if (delay > 0 && setting < 2)
-                        {
-                            r.setDelay(id, delay);
-                        }
-                        
-                        // stellung 0
-                        // id -> true (red)
-                        // stellung 1
-                        // id -> false (green)
-                        // stellung 2
-                        // id -> true (red)
-                        // id + 1 -> true (red)
-                        // stellung 3
-                        // id -> false (green)
-                        // id + 1 -> false (green)
+                    }
+                                
+                    if (!r.getRoute().isEmpty())
+                    {
+                        out.add(r);
                     }
                 }
-                                
-                if (!r.getRoute().isEmpty())
+                catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
                 {
-                    out.add(r);
+                    // Skip only the offending route, matching parseLocomotivesCS3.  Letting this
+                    // propagate would reach syncWithCS2's outer catch and abandon the entire import
+                    // - every route and locomotive - because one record was malformed.  A non-numeric
+                    // id and a key with no value (kont=) both land here; the null-field guard above
+                    // covers only missing keys.
+                    logMessage(
+                        I18n.f("route.unparseableCs2Route",
+                            m.get("name") != null ? m.get("name") : "?",
+                            m.get("id") != null ? m.get("id") : "?"
+                        ),
+                        e,
+                        false
+                    );
                 }
              }
         }
@@ -1542,113 +1561,128 @@ public final class CS2File
         {
             if ("lokomotive".equals(m.get("_type")))
             {
-                int address;
-                String name = "";
+                try
+                {
+                    int address;
+                    String name = "";
                 
-                if (m.get("name") != null)
-                {
-                    name = m.get("name");
-                }
-                
-                if (m.get("adresse") != null)
-                {
-                    address = Integer.decode(m.get("adresse"));
-                }
-                else if (m.get("uid") != null)
-                {
-                    address = Integer.decode(m.get("uid"));
-                    
-                    logMessage("Locomotive " + name + " has no address field in config file, using UID of " + Integer.toString(address));
-                }
-                else
-                {
-                    logMessage("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
-                    continue;
-                }
-                                
-                MarklinLocomotive.decoderType type;
-                Map<String, Double> multiUnitLocMap = new HashMap<>();
-                
-                // Multi-units
-                if (m.get("traktion") != null)
-                {
-                    type = MarklinLocomotive.decoderType.MULTI_UNIT;
-                    
-                    address = Integer.decode(m.get("uid"));
-                    
-                    // String looks like this
-                    // "{lokname=Re4/4II 11229SBB,lok=0x4023|lokname=SBBC 421 378-1,lok=0x4024}"
-                    List<String> multiUnitLocNames = Arrays.stream(m.get("traktion").replace("{", "").replace("}", "").split("\\|")).map(s -> s.split(",lok=")[0].replace("lokname=", "")) .collect(Collectors.toList());
-                                 
-                    for (String locName : multiUnitLocNames)
-                    { 
-                        multiUnitLocMap.put(locName, 1.0);
-                    } 
-                    
-                    logMessage(
-                        I18n.f("loc.multiUnitUsingUid", name, Integer.toString(address)),
-                        null,
-                        true
-                    );
-                    
-                    if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
+                    if (m.get("name") != null)
                     {
-                        address -= MarklinLocomotive.MULTI_UNIT_BASE;
+                        name = m.get("name");
                     }
-                }
-                // Others
-                else
-                {
-                    if ("mfx".equals(m.get("typ")))
+                
+                    if (m.get("adresse") != null)
                     {
-                        type = MarklinLocomotive.decoderType.MFX;
+                        address = Integer.decode(m.get("adresse"));
                     }
-                    else if ("dcc".equals(m.get("typ")))
+                    else if (m.get("uid") != null)
                     {
-                        type = MarklinLocomotive.decoderType.DCC;
-                        
-                        // The loc with address 1 will have an empty address entry in the file, but others won't
-                        // So, simply subtract the DCC base from the UID if we had to use the UID instead of the address above
-                        if (address > MarklinLocomotive.DCC_MAX_ADDR)
-                        {
-                            address -= MarklinLocomotive.DCC_BASE;
-                        }
+                        address = Integer.decode(m.get("uid"));
+                    
+                        logMessage("Locomotive " + name + " has no address field in config file, using UID of " + Integer.toString(address));
                     }
                     else
                     {
-                        type = MarklinLocomotive.decoderType.MM2;
+                        logMessage("Locomotive " + name + " has no address or UID field in config file. Skipping.  Raw data: " + m.toString());
+                        continue;
                     }
-                }
-                
-                int[] funcs = parseLocomotiveFunctions(m.get("funktionen"));
-                
-                MarklinLocomotive loc = new MarklinLocomotive(
-                    control, 
-                    address, 
-                    type,
-                    name,
-                    extractFunctionTypes(funcs),
-                    parseFunctionTriggerTypes(m.get("funktionen"))
-                );
-                
-                if (funcs.length == 0)
-                {
-                    logMessage(
-                        I18n.f("loc.warningInitializedWithMissingFunctionData", name)
-                    );                
-                }
-                
-                if (m.get("icon") != null)
-                {
-                    loc.setImageURL(this.getImageURL(m.get("icon")));
-                }
-                
-                if (!multiUnitLocMap.isEmpty())
-                {
-                    loc.setModelMultiUnitLocomotives(multiUnitLocMap);
-                }
                                 
-                out.add(loc);
+                    MarklinLocomotive.decoderType type;
+                    Map<String, Double> multiUnitLocMap = new HashMap<>();
+                
+                    // Multi-units
+                    if (m.get("traktion") != null)
+                    {
+                        type = MarklinLocomotive.decoderType.MULTI_UNIT;
+                    
+                        address = Integer.decode(m.get("uid"));
+                    
+                        // String looks like this
+                        // "{lokname=Re4/4II 11229SBB,lok=0x4023|lokname=SBBC 421 378-1,lok=0x4024}"
+                        List<String> multiUnitLocNames = Arrays.stream(m.get("traktion").replace("{", "").replace("}", "").split("\\|")).map(s -> s.split(",lok=")[0].replace("lokname=", "")) .collect(Collectors.toList());
+                                 
+                        for (String locName : multiUnitLocNames)
+                        { 
+                            multiUnitLocMap.put(locName, 1.0);
+                        } 
+                    
+                        logMessage(
+                            I18n.f("loc.multiUnitUsingUid", name, Integer.toString(address)),
+                            null,
+                            true
+                        );
+                    
+                        if (address > MarklinLocomotive.MULTI_UNIT_MAX_ADDR)
+                        {
+                            address -= MarklinLocomotive.MULTI_UNIT_BASE;
+                        }
+                    }
+                    // Others
+                    else
+                    {
+                        if ("mfx".equals(m.get("typ")))
+                        {
+                            type = MarklinLocomotive.decoderType.MFX;
+                        }
+                        else if ("dcc".equals(m.get("typ")))
+                        {
+                            type = MarklinLocomotive.decoderType.DCC;
+                        
+                            // The loc with address 1 will have an empty address entry in the file, but others won't
+                            // So, simply subtract the DCC base from the UID if we had to use the UID instead of the address above
+                            if (address > MarklinLocomotive.DCC_MAX_ADDR)
+                            {
+                                address -= MarklinLocomotive.DCC_BASE;
+                            }
+                        }
+                        else
+                        {
+                            type = MarklinLocomotive.decoderType.MM2;
+                        }
+                    }
+                
+                    int[] funcs = parseLocomotiveFunctions(m.get("funktionen"));
+                
+                    MarklinLocomotive loc = new MarklinLocomotive(
+                        control, 
+                        address, 
+                        type,
+                        name,
+                        extractFunctionTypes(funcs),
+                        parseFunctionTriggerTypes(m.get("funktionen"))
+                    );
+                
+                    if (funcs.length == 0)
+                    {
+                        logMessage(
+                            I18n.f("loc.warningInitializedWithMissingFunctionData", name)
+                        );                
+                    }
+                
+                    if (m.get("icon") != null)
+                    {
+                        loc.setImageURL(this.getImageURL(m.get("icon")));
+                    }
+                
+                    if (!multiUnitLocMap.isEmpty())
+                    {
+                        loc.setModelMultiUnitLocomotives(multiUnitLocMap);
+                    }
+                                
+                    out.add(loc);
+                }
+                catch (NumberFormatException | NullPointerException | ArrayIndexOutOfBoundsException e)
+                {
+                    // Skip only the offending locomotive, matching parseLocomotivesCS3.  Letting this
+                    // propagate would reach syncWithCS2's outer catch and abandon the entire import.
+                    // A traktion block with no uid is the known escape: the address selection above
+                    // tolerates a missing uid, but the multi-unit branch re-reads it unconditionally.
+                    logMessage(
+                        I18n.f("loc.invalidCs2Locomotive", m.get("name") != null ? m.get("name") : "?"),
+                        e,
+                        false
+                    );
+                }
             }
         }
         
