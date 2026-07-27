@@ -196,28 +196,7 @@ public class Point
     {
         if (l == null) return false;
 
-        Set<Locomotive> kept = new HashSet<>();
-        boolean removed = false;
-
-        for (Locomotive other : this.excludedLocs)
-        {
-            if (other == l || l.equals(other))
-            {
-                removed = true;
-            }
-            else
-            {
-                kept.add(other);
-            }
-        }
-
-        if (removed)
-        {
-            this.excludedLocs.clear();
-            this.excludedLocs.addAll(kept);
-        }
-
-        return removed;
+        return Locomotive.removeFrom(this.excludedLocs, l);
     }
 
     /**

@@ -11,9 +11,15 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | ID | Severity | Status |
 |---|---|---|
-| A1 | High | Fixed |
+| A1 | High | Fixed. Amended twice - the first fix was incomplete, see below |
+| A2 | High | Fixed |
+| B1 | Medium | Fixed |
 | D1 | Not a defect | Closed, checked clean |
 | D2 | Not a defect | Closed, checked clean |
+
+A1, A2 and B1 are all the same root cause, recorded separately because they have different triggers and
+needed different repairs. The root cause itself is the standing item at the end of
+[the independent review](2026-07-26-independent-review.md).
 
 ---
 
@@ -76,11 +82,100 @@ repair the consists holding the locomotive, so a fourth mutator has a chance of 
 The deeper fix - making `MarklinLocomotive` immutable in its hashed fields, or keying consists by name
 - is much larger and was not attempted.
 
-**Tests.** [`test/testMultiUnitMembership.java`](../../test/testMultiUnitMembership.java).
+**Amended (2026-07-26, twice).** The first fix was incomplete in two ways, both found later the same
+day.
+
+*The repair was wired into `renameLoc` only.* Address and decoder type are `hashCode` inputs exactly as
+the name is, so `changeLocAddress` drifted the same collections and never repaired them. Anyone
+changing a locomotive's address went on silently voiding its station exclusions. `changeLocAddress` now
+calls `rehashLocomotiveKeys` too.
+
+*The removal used `removeIf`, which does not work here.* Written as "iterate rather than look up", with
+a comment saying so. It is not: `Collection.removeIf` iterates and calls `Iterator.remove()`, and the
+hash-based collections implement that as `removeNode(hash(key), key, ...)` - recomputing the hash from
+the key's *current* state. On a drifted key that searches the wrong bucket and silently removes
+nothing, which is precisely the case the method existed to handle. The comment described the API's
+shape rather than its implementation.
+
+Both removals now rebuild the collection instead, via `Locomotive.removeFrom` and
+`Locomotive.removeKey` - two helpers that carry the explanation once, so the next author meets it
+before making the same assumption.
+
+This was caught by `testDeletingFindsALocomotiveWhoseHashAlreadyDrifted`, and only because that test
+asserts its precondition - that `contains()` genuinely fails first. Without that assert the test would
+have passed against a plain `remove()` and exercised only the cases that never needed fixing.
+
+**Tests.** [`test/testMultiUnitMembership.java`](../../test/testMultiUnitMembership.java),
+[`test/testLayoutRenameKeys.java`](../../test/testLayoutRenameKeys.java).
 `testRenamedMemberIsStillRecognisedAsLinked` and `testDeletingARenamedMemberRemovesItFromTheConsist`
 were written against the unfixed tree, confirmed failing there, and pass with the fix. The same file
 also pins the delete-sweep behaviour, which had no coverage at all - the defect above was found while
 writing that coverage, not by reading the fix again.
+
+---
+
+## A2. A Central Station sync re-addresses a locomotive with no guard and no repair
+
+Found by the author while questioning how CS imports resolve a name that already exists at a different
+address. `syncWithCS2` updates a locomotive whose address the Central Station reports differently:
+
+```java
+this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
+
+this.locDB.delete(l.getName());
+this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+```
+
+`setAddress` assigns `this.address` and `this.type` in place, and both are `hashCode` inputs. This
+re-keys the `locDB` and nothing else: it does not route through `changeLocAddress`, and called neither
+repair. So a sync silently drifted the locomotive out of its consist, its station exclusions and
+`locomotivesToRun` - the same damage as A1, arrived at from a different direction.
+
+Worse than A1 in two respects. It is **automatic** - triggered from a dozen UI paths and on connect,
+with no dialog - and it is **unguarded**: renames and manual address changes are both refused while
+`isRunning()`, but `syncWithCS2` has no such check. A commented-out block at Layout-sync time says as
+much: *"no longer needed now that we are allowing conditional routes during operation."* Because it can
+run mid-operation, `activeLocomotives` could be stranded too, leaving `isRunning()` permanently true.
+
+That last point partly reopens D6 trigger B in the independent review, which was withdrawn on the
+grounds that renames are guarded. The withdrawal was correct *about renames*; the mechanism it
+described was reachable through this unguarded path instead. The finding named the wrong trigger, and
+the withdrawal stopped at disproving that trigger rather than asking whether the state had another
+door.
+
+**Fixed.** The branch now defers while `isAutonomyRunning()`, logging
+`loc.addressUpdateDeferredWhileRunning` so the operator knows to sync again once trains have stopped -
+the author's call, chosen over applying the change and repairing afterwards. When it does apply, it
+performs the same repair `changeLocAddress` does: consist revalidation plus `rehashLocomotiveKeys`.
+
+**Not tested.** Reaching this branch needs a Central Station to sync against - `syncWithCS2` builds a
+`CS2File` from the network interface and parses remote config. The repair it calls is covered through
+`changeLocAddress`; the guard is one predicate, verified by reading. The gap is recorded in the
+`testLayoutRenameKeys` header rather than left silent.
+
+---
+
+## B1. A deleted locomotive stayed on every station's exclusion list
+
+`Layout.locDeleted` cleared `locomotivesToRun`, `activeLocomotives` and `locomotiveMilestones`, but not
+`Point.excludedLocs`. Nothing else cleared them either, so a deleted locomotive remained excluded for
+the life of the graph, and `Point.toJSON` kept writing its name out as an exclusion for a locomotive
+that no longer exists.
+
+Mostly inert - a dead object matches no live locomotive - but it is silent data rot in a file the user
+keeps, and it is worse in the case that led here: when a Central Station import resolves a name
+collision, the locomotive being deleted is one the user did not choose to remove, and its exclusions
+disappear from the graph on the next reload with no message.
+
+Rated B rather than A because nothing is routed wrongly as a result: the stale entry can never match a
+live locomotive, so no train goes anywhere it should not.
+
+**Fixed.** `locDeleted` now clears the exclusion sets too, through `Point.removeExcludedLoc`. Both use
+the rebuild helpers rather than a hash removal, for the reason in A1's second amendment - the deleted
+locomotive is exactly the one whose hash may already have drifted.
+
+**Tests.** `testDeletingALocomotiveClearsItsExclusion`, which asserts both that the set is empty and
+that the name is gone from `toJSON` - the export leak being the part a user would actually see.
 
 ---
 
@@ -111,3 +206,12 @@ analysis rather than a keyword.
   trigger it.
 - **C2's function-count change was never reachable from the UI**, which does not offer `numF`.
 - **B7 holds at all three `_setSwitched` call sites.**
+- **The three `rehash*` methods do not have the `removeIf` defect.** Checked after finding it in the
+  removals: all three copy via a constructor, `clear()`, then re-add. `clear()` needs no lookup and
+  re-insertion recomputes every hash, so no hash-based removal happens anywhere in them.
+- **`executePath`'s own `activeLocomotives.remove` is deliberately left as a plain removal.** The key
+  cannot have drifted there - every re-keying path is now refused or deferred while running - and a
+  rebuild would be actively wrong: it empties the map briefly, and both `Layout.isRunning()` and
+  `AutoLocomotiveStatus` read that map without taking the lock. They would momentarily see no active
+  locomotives, and `isRunning()` reading false at the wrong instant is D5's failure mode. Documented at
+  the call site so the inconsistency reads as a decision.

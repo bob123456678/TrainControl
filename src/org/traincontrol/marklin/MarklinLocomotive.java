@@ -1197,7 +1197,11 @@ public class MarklinLocomotive extends Locomotive
      */
     synchronized public boolean unlinkLocomotive(Locomotive member)
     {
-        return this.linkedLocomotives.remove(member) != null;
+        // removeKey rather than remove(): a member renamed or re-addressed since it was linked sits
+        // under a stale hash that a lookup cannot find.  Every path that re-keys a locomotive now
+        // repairs the consists immediately, so this should not arise - but that is an argument from
+        // every caller behaving, which is exactly the reasoning that produced this class of defect.
+        return Locomotive.removeKey(this.linkedLocomotives, member);
     }
     
     /**

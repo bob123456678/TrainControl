@@ -374,7 +374,7 @@ This table is the authoritative status for findings D*, M*, T*.
 | D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | **Fixed 2026-07-26** - warns and stops rather than refusing, see note |
 | D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | **Deferred 2026-07-26** - the D2 fix stops locomotives before the swap, making the fence non-load-bearing, see note |
 | D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
-| D5 | `executePath` can strand an `activeLocomotives` entry, making `isRunning()` permanently true | Low | **Open** - deferred to next cycle; no longer costs a restart, see note |
+| D5 | `executePath` can strand an `activeLocomotives` entry, making `isRunning()` permanently true | Low | **Open** - deferred to next cycle; no longer costs a restart via the reload path. Escape inventory corrected in the third evaluation pass: the delete route recorded in the note is unreachable |
 | M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | **Fixed 2026-07-26** |
 | M2 | One-sided link validation permits chains; saved chains restore order-dependently | None | **Withdrawn 2026-07-26 - the finding is wrong.** The membership check exists, in the UI layer; chains are unreachable |
 | M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low | **Closed - accepted as-is** (author, 2026-07-26) |
@@ -846,20 +846,95 @@ Everything else across all documents is fixed, withdrawn, closed by decision, or
 
 ### Standing item: MarklinLocomotive is a mutable hash key
 
-Three findings now trace to one cause, and each was fixed where it surfaced rather than at the root:
+Six findings now trace to one cause, spread across three reviews, and every one was fixed where it
+surfaced rather than at the root:
 
-| Finding | Container | Repaired by |
-|---|---|---|
-| A1 (integration review) | `MarklinLocomotive.linkedLocomotives` | `rehashLinkedLocomotives` |
-| M4 follow-up | the same consist map, on the delete path | `unlinkLocomotive` |
-| D6 trigger A | `Point.excludedLocs`, `Layout.locomotivesToRun` | `rehashLocomotiveKeys` |
+| Finding | Trigger | Container | Repaired by |
+|---|---|---|---|
+| M4 follow-up | delete | `linkedLocomotives` | `unlinkLocomotive` |
+| A1 (integration) | rename | `linkedLocomotives` | `rehashLinkedLocomotives` |
+| A1, amended | **address change** | as above, via `changeLocAddress` | the same call, wired in late |
+| D6 trigger A | rename | `excludedLocs`, `locomotivesToRun` | `rehashLocomotiveKeys` |
+| A2 (integration) | **Central Station sync** | all of the above | deferral + the same repairs |
+| B1 (integration) | delete | `excludedLocs` | `removeExcludedLoc` |
 
 `hashCode` is built from the name, address and decoder type, and `rename` and `setAddress` assign all
-three in place. Every hash container holding a locomotive is therefore one rename away from silently
-losing it, and each repair is a call some future author has to know to make. A fourth container will
-reproduce this exactly, and nothing in the type system will say so.
+three in place. Every hash container holding a locomotive is one identity change away from silently
+losing it.
 
-The root fixes are to exclude the mutable fields from `hashCode`, or to key these containers by name.
-Both are wide - `equals` and `hashCode` are load-bearing across the locomotive database - and neither
-was attempted this cycle. The note now on `hashCode` is the only thing pointing a future author at the
-hazard.
+What the count shows is not that the repairs were wrong but that the approach does not converge. Each
+one was correct and each one was found by someone tripping over a *different* symptom: a consist that
+stopped recognising a member, an exclusion that stopped applying, a name still in an export. Twice the
+new repair itself was incomplete - wired into `renameLoc` but not `changeLocAddress`, and written with
+a `removeIf` that cannot remove a drifted key. Two of the six were found only because a test asserted
+its own precondition.
+
+The removals have since been consolidated behind `Locomotive.removeFrom` and `Locomotive.removeKey`,
+which document the hazard in one place. That helps a future author who reaches for them. It does
+nothing for one who adds a new `HashMap<Locomotive, ...>` and never learns any of this exists.
+
+The root fixes are to exclude the mutable fields from `hashCode`, or to key these containers by name -
+which the author confirms is viable, since locomotive names are unique and the code enforces that,
+including by deleting a colliding locomotive during a Central Station import. Both are wide changes:
+`equals` and `hashCode` are load-bearing across the locomotive database. Neither was attempted this
+cycle, and **this is the item to schedule next**. Until then the only signposts are the note on
+`hashCode` and the two helpers.
+
+---
+
+## Third evaluation pass (2026-07-26): the D6/A2/B1 batch
+
+Re-verification of commits `1f96472..44fd035` plus the uncommitted `removeFrom`/`removeKey`
+consolidation in the working tree at evaluation time.
+
+### The trigger-B withdrawal is confirmed - by reading the method this time
+
+`MarklinControlStation.isAutonomyRunning()` was read directly
+([MarklinControlStation.java:2235](src/org/traincontrol/marklin/MarklinControlStation.java:2235)):
+it is `hasAutoLayout() && getAutoLayout().isRunning()` - the strong predicate, exactly as the
+withdrawal states. The error is mine and is correctly recorded in the tally: the predicate was
+inferred from the method's *name* (conflated with `Layout.isAutoRunning()`) rather than read -
+the same failure as M2, in the same document, by the same reviewer. With that settled, every
+premise the new code states was re-verified and holds: the rename/address dialog, `deleteLoc`,
+the import-rename flow and the CS-sync deferral all sit behind the strong predicate, so
+`activeLocomotives` and `locomotiveMilestones` are necessarily empty whenever any re-keying or
+rebuilding operation can run - which is what makes `locDeleted`'s non-atomic rebuild safe and the
+`executePath`-tail plain `remove()` correct.
+
+### Verified against the code
+
+- **D6 trigger A fix** - `rehashLocomotiveKeys` (locomotivesToRun + every point's exclusions),
+  wired into `renameLoc`, `changeLocAddress`, *and* the CS-sync address-update path; pinned by
+  `testLayoutRenameKeys` (rename, address change, and export-name cases).
+- **Integration A2** (CS sync re-keys without repair) - the deferral while `isAutonomyRunning()`
+  plus the same repairs on apply; new bundle key present in all eight files. A trigger neither of
+  my passes had named: sync is automatic and had no guard at all.
+- **Integration B1** (deleted locomotive stays excluded forever, and kept exporting) - fixed via
+  `removeExcludedLoc` in `locDeleted`; pinned by `testDeletingALocomotiveClearsItsExclusion`.
+- **The `removeIf` correction** - verified: `Collection.removeIf` delegates to
+  `Iterator.remove()`, which the hash-based collections implement by recomputing the key's hash,
+  so it cannot remove a drifted key. The first fix's comment described the API's shape, not its
+  implementation; caught by `testDeletingFindsALocomotiveWhoseHashAlreadyDrifted`. The
+  consolidation into `Locomotive.removeFrom`/`removeKey` (uncommitted at evaluation time)
+  carries the right caveats, including non-atomicity.
+- **My D6 JSON bullet correction** - verified: `Point.toJSON` iterates and reads live names, so
+  export was never affected; only the un-revalidated editor pane can hold a stale name.
+
+### D5 amendment: the recorded delete escape is unreachable
+
+The D5 note lists two in-session escapes from the stranded state: reloading the graph, or
+"deleting the stranded locomotive from the database, which reaches `locDeleted` and clears the
+entry." The second cannot happen: `deleteLoc` is gated on `isAutonomyRunning()`
+([TrainControlUI.java:10938](src/org/traincontrol/gui/TrainControlUI.java:10938)), which - being
+the strong predicate - is precisely what the stranded state holds permanently true. The guard
+refuses with "cannot edit while running," so **the D2 reload path is the only in-session
+recovery**. This strengthens the warn-not-refuse decision retroactively, and slightly sharpens
+the case for D5's option 2 or 3 next cycle: with one escape gone, the stuck state has exactly one
+door, and it discards the run.
+
+### State after this pass
+
+Open: **D5** (Low, deferred; escape inventory corrected above), **D3** (deferred,
+non-load-bearing while stop-before-swap holds), and the **standing root-cause item** (mutable
+hash identity; scheduled next, name-keying confirmed viable by the author). Everything else
+across all four review documents is fixed, withdrawn, closed by decision, or informational.

@@ -55,6 +55,15 @@ one that looks like it should. *Twice in one review: `Layout.createPoint` appear
 destination with no feedback - the check is in `Point`'s constructor. And `bfs` appeared deterministic -
 the shuffle is in `getNeighbors`.*
 
+This applies to library code too, and a method name is not a specification. *A fix used
+`Collection.removeIf` to delete a map key whose hash had drifted, with a comment explaining that it
+iterated rather than looking up. It does not: `removeIf` calls `Iterator.remove()`, which the
+hash-based collections implement by recomputing the hash from the key's current state - so it searched
+the wrong bucket and removed nothing, in exactly the case it was written for. The comment described the
+API's shape, not its implementation.* A related habit that caught two separate errors the same day:
+when a claim rests on a method whose name reads like another method's (`isAutonomyRunning` against
+`isAutoRunning`), open it. Both times, the delegation was the opposite of what the name suggested.
+
 **"Wrong code" is not "wrong behaviour".** Trace whether any caller can actually reach the defect before
 assigning severity. *B3, C7 and C15 were all structurally real and all unreachable: every caller already
 guarded. They are worth fixing as traps for the next caller, not worth a changelog entry.*

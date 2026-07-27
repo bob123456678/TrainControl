@@ -318,24 +318,14 @@ public class Layout
     {
         if (l == null) return;
 
-        // Rebuilt rather than removed from.  A locomotive renamed or re-addressed since it was added
-        // sits under a stale hash, and every hash-based removal misses it - removeIf included, since
-        // it iterates and calls Iterator.remove(), which recomputes the hash from the key's current
-        // state and so searches the wrong bucket.  See Point.removeExcludedLoc.
-        Set<Locomotive> keptToRun = new HashSet<>();
-
-        for (Locomotive other : this.locomotivesToRun)
-        {
-            if (other != l && !l.equals(other))
-            {
-                keptToRun.add(other);
-            }
-        }
-
-        this.locomotivesToRun.clear();
-        this.locomotivesToRun.addAll(keptToRun);
-        this.activeLocomotives.remove(l);
-        this.locomotiveMilestones.remove(l);
+        // Rebuilt rather than removed from - see Locomotive.removeFrom for why a hash-based removal
+        // (removeIf included) cannot find a locomotive whose name or address has changed.
+        //
+        // Safe to rebuild here specifically: deletion is refused while isAutonomyRunning(), so the two
+        // maps below are empty and no locomotive thread is reading them.
+        Locomotive.removeFrom(this.locomotivesToRun, l);
+        Locomotive.removeKey(this.activeLocomotives, l);
+        Locomotive.removeKey(this.locomotiveMilestones, l);
 
         // Points hold their own references, and nothing else was clearing them: a deleted locomotive
         // stayed excluded forever, and its name kept being written into the exported JSON as an
@@ -2706,6 +2696,12 @@ public class Layout
         {
             this.unlockPath(path, loc);
         
+            // Plain remove(), deliberately, unlike locDeleted's rebuild.  The key cannot have
+            // drifted on this path: renaming and manual address changes are refused while
+            // isRunning(), and a Central Station address update defers, so nothing can re-key a
+            // locomotive between its departure and this line.  A rebuild would also be wrong
+            // here - it empties the map briefly, and isRunning() and the UI both read it without
+            // taking this lock, so they would see no active locomotives mid-rebuild.
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
                                   
@@ -2847,7 +2843,9 @@ public class Layout
         {
             if (purge && this.getPoint(targetPoint).getCurrentLocomotive() != null)
             {
-                this.locomotivesToRun.remove(this.getPoint(targetPoint).getCurrentLocomotive());
+                // removeFrom rather than remove(): see Locomotive.removeFrom.  Safe to rebuild -
+                // moveLocomotive is refused while isRunning(), so nothing is iterating this.
+                Locomotive.removeFrom(this.locomotivesToRun, this.getPoint(targetPoint).getCurrentLocomotive());
             }
             
             // Set new location
