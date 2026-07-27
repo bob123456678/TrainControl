@@ -3,9 +3,36 @@
 How reviews in this folder are run and recorded. Every rule below exists because it was broken during
 the July 2026 review; the example after each one is what it cost.
 
+The documents already in this folder predate the A/B/C/D convention below and use several ad-hoc
+letters. They are left as they are - their identifiers are referenced from commits and from each other,
+and renumbering would break that for no gain. The convention applies to new reviews.
+
 ---
 
 ## The document
+
+**Findings are lettered A, B, C, D by severity - never by topic, phase, or reviewer.**
+
+| | |
+|---|---|
+| **A** | High. Wrong behaviour on the layout, or data silently lost. |
+| **B** | Medium. Incorrect results, or crashes in specific configurations. |
+| **C** | Low. Cosmetic, dead code, or narrow edge cases. |
+| **D** | Not defects. Things that look wrong and are not, findings withdrawn as mistaken, and checks that came back clean. |
+
+Number within the letter (A1, A2, ...). A finding keeps its identifier for life: if its severity is
+revised, say so in its entry rather than renumbering it, because the old identifier is already
+referenced from commits, changelog notes and other reviews.
+
+**D is not a bin for things you didn't fix.** It is for things that turned out not to be defects. An
+open C item is still a C. A withdrawn A becomes a D, with the original severity and the reason it was
+wrong both recorded - that transition is the single most useful thing in a review for calibrating how
+much to trust the rest of it.
+
+*Cost: the July cycle produced findings under A, B, C, SR, FR, P, N, M and T. Six of those letters
+carried no meaning beyond which pass or which reviewer produced them, so nothing could be sorted or
+counted by severity across documents, and the same defect class landed under different letters in
+different files.*
 
 **One status, one location.** A finding's disposition belongs in exactly one place - the status table at
 the head of its section. The prose under a finding is a historical record of what was believed when it

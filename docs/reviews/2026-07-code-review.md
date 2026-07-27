@@ -1,8 +1,9 @@
 # TrainControl - Code Review, July 2026
 
 Full read-through of `src/` (automation, base, marklin, marklin/file, marklin/udp, util) plus targeted
-review of the GUI layer, looking for logic errors and latent bugs. Reviewed against 2.7.5; the fixes
-landed in 2.8.0.
+review of the GUI layer, looking for logic errors and latent bugs. Reviewed against the tree following 2.7.4; everything here shipped in **2.8.0**.
+(2.7.5 and 2.7.6 were staged during the work and then cancelled - the whole cycle was bundled
+into 2.8.0.)
 
 **How to read this.** It is a working log, kept in the order things were found, so later sections
 correct earlier ones - several findings were withdrawn once the code disproved them, and others had
@@ -332,7 +333,7 @@ The comment says "Do not exit on error, simply close the socket connection", but
 entire `while (true)` loop. Any `IOException` from `socket.receive()` exits the loop, closes the
 socket, and the reader thread terminates. TrainControl keeps running and keeps *sending* commands,
 but never receives another CAN message — no feedback, no accessory echoes, no power-state changes,
-and (with 2.7.5's new feature) Path Integrity Validation fails every path. The only visible sign is
+and (with the then-new Path Integrity Validation feature) every path fails validation. The only visible sign is
 one "network.fatalError" log line.
 
 The `catch` should be inside the loop.
@@ -892,7 +893,7 @@ there was nothing for it to close in the first place.
 
 Findings A1-A8, B9 and B10 were re-derived against the source and pinned with tests.
 **All 26 tests across the four classes have been executed and pass**, which — since every test asserts
-the *current, buggy* behaviour — means every finding below is confirmed to exist in 2.7.5.
+the *current, buggy* behaviour — means every finding below is confirmed to exist in the reviewed tree.
 
 The correct behaviour is named in a comment directly above each assertion, so a test turns red the
 moment its defect is fixed; at that point invert the assertion to lock the fix in.
@@ -958,7 +959,7 @@ the blast radius wrong" category — A5 (masked by HashMap iteration order; see 
 
 ---
 
-## Final pre-release pass (v2.7.6)
+## Final pre-release pass (v2.8.0)
 
 Adversarial re-read of the full production diff (`b47b6ed~1..HEAD`, 15 source files) looking specifically
 for regressions introduced by the fixes themselves.

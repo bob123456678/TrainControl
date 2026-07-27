@@ -305,7 +305,7 @@ warns about. (Residuals #4 and #5 in the same list *were* superseded further dow
 only #3 was left dangling.)
 
 **E3 - minor version-label drift in the July document.** The header says "reviewed against 2.7.5;
-the fixes landed in 2.8.0," but a later section is titled "Final pre-release pass (v2.7.6)."
+the fixes landed in 2.8.0," but a later section is titled "Final pre-release pass (v2.8.0)."
 `RAW_VERSION` in HEAD is 2.8.0 and no 2.7.6 tag exists (`v2_7_4c` is the last pre-review tag).
 Cosmetic, but the README's "say what version was reviewed" rule exists for this.
 
@@ -370,12 +370,12 @@ This table is the authoritative status for findings D*, M*, T*.
 | D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | Open |
 | D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
 | M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | **Fixed 2026-07-26** |
-| M2 | One-sided link validation permits chains; saved chains restore order-dependently | Low-Medium | Open |
+| M2 | One-sided link validation permits chains; saved chains restore order-dependently | None | **Withdrawn 2026-07-26 - the finding is wrong.** The membership check exists, in the UI layer; chains are unreachable |
 | M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low | **Closed - accepted as-is** (author, 2026-07-26) |
 | M4 | Deleting a locomotive never unlinks it from consists that reference it | Medium | **Fixed 2026-07-26** - caused one regression, see note |
 | T1 | Timetable capture stores each gap on the earlier entry; replay/UI read it as the entry's own pre-delay | Medium | **Fixed 2026-07-26** - migration risk was overstated, see note |
 | T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | **Fixed 2026-07-26** - stated trigger corrected, see note |
-| T3 | Timetable entry that can never execute retries forever with log spam | Low | **Open** - needs a permanent-vs-transient decision; see the note on the retry delay |
+| T3 | Timetable entry that can never execute retries forever with log spam | Low | **Closed - accepted as-is** (author, 2026-07-26); the invalidation trigger is effectively unreachable, see note |
 | T4 | `executeTimetable` returns when the last entry is dispatched, not completed | Informational | Recorded |
 
 ### Area 1 - `executePath` and forceful-restart fencing
@@ -455,6 +455,10 @@ rejected ("B has linked locomotives") and **silently dropped from a configuratio
 before the restart**. Either forbid members becoming heads (needs a membership check spanning the
 DB) or make restore order-insensitive.
 
+**Withdrawn (2026-07-26) - the finding is wrong.** The membership check this asks for already exists. `TrainControlUI.changeLinkedLocomotives` refuses at its sixth line if `MarklinControlStation.isLocLinkedToOthers(l)` returns non-null - that method sweeps every locomotive asking `other.isLinkedTo(l)`, which is precisely the back-reference the finding says does not exist. It is computed rather than stored, which is presumably why looking in `MarklinLocomotive` did not find it.
+
+So B cannot acquire C while A holds B: both entry points to the dialog (the right-click menu and Ctrl+L) go through that method. A->B->C is unreachable, the rule is enforced in both directions, and with no chains creatable there are no saved chains for the restore-order half to mishandle.
+
 **M4 - deleting a locomotive does not unlink it.** `MarklinControlStation.deleteLoc`
 ([MarklinControlStation.java:2245](src/org/traincontrol/marklin/MarklinControlStation.java:2245))
 removes the DB entry and rebuilds the id cache; the UI wrapper additionally clears button mappings.
@@ -524,6 +528,10 @@ and presses graceful stop. Distinguishing permanent from transient refusals (or 
 would let the timetable fail loudly instead.
 
 *One detail to weigh when fixing: the retry delay is `loc.delay(getMinDelay(), getMaxDelay())`, and `Locomotive.delay(int,int)` multiplies by 1000 - those are seconds, and `setMinDelay` permits 0. A layout configured with zero delays turns this into a hot spin, and because the log suppresses a message identical to the previous one (C11, kept deliberately), it spins nearly silently.*
+
+**Closed as accepted (2026-07-26).** The stated trigger is effectively unreachable. Of the ~45 `invalidate()` callers, almost all are in the JSON-loading region and run before anything moves; of the four that can fire during operation, three call `stopLocomotives()` immediately after, which ends the retry loop cleanly. The one that does not - `configureEdge`'s real pass, Layout.java:1115 - needs an accessory to vanish between `isPathClear`'s preview and the configure moments later inside the same synchronized block, and accessories are only deleted during startup restore.
+
+A reachable trigger the finding did not mention: `executePath` also refuses when the locomotive is not at the path's start point, which never self-resolves without a human. Accepted regardless, since the loop honours a graceful stop - which `testLayoutTimetable` now pins.
 
 **T4 (informational)** - `executeTimetable` returns once the *last* entry is dispatched, so the UI
 re-enables "Start Autonomy"/"Execute Timetable" while the final path is still running. Every
