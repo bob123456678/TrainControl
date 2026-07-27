@@ -7,6 +7,10 @@ The documents already in this folder predate the A/B/C/D convention below and us
 letters. They are left as they are - their identifiers are referenced from commits and from each other,
 and renumbering would break that for no gain. The convention applies to new reviews.
 
+[2026-07-cycle-summary.md](2026-07-cycle-summary.md) indexes the July 2026 cycle: which pass covered
+what, the patterns that recurred across passes, and the consolidated reviewer-error tally. Start there
+rather than with any single document.
+
 ---
 
 ## The document
@@ -23,6 +27,16 @@ and renumbering would break that for no gain. The convention applies to new revi
 Number within the letter (A1, A2, ...). A finding keeps its identifier for life: if its severity is
 revised, say so in its entry rather than renumbering it, because the old identifier is already
 referenced from commits, changelog notes and other reviews.
+
+**Declare a short prefix at the top of each document, and cite other documents' findings with it.**
+Identifiers are only unique within a document, and a cycle of any size will collide. *The July 2026
+cycle produced 92 findings across five documents, in which `B1` names three unrelated things and `D1`
+another three - so "see B1" was ambiguous in exactly the place a reader needs precision. `INT-A1` and
+`FCR-B1` are not.* Keep numbering per-document; the prefix is for crossing between them.
+
+**Do not merge documents to solve that.** Each one records a pass - its scope, its method, and what it
+missed - and merging destroys who found what and when. That is the calibration data, and it is worth
+more than the tidiness. Write an index instead.
 
 **D is not a bin for things you didn't fix.** It is for things that turned out not to be defects. An
 open C item is still a C. A withdrawn A becomes a D, with the original severity and the reason it was
