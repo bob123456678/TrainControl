@@ -41,6 +41,15 @@ public interface ViewListener
     public void deleteRoute(String name);
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType);
     public Accessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType);
+
+    /**
+     * Returns the accessory at the given address, or null if none exists.  Unlike
+     * getAccessoryByAddress, this never creates one - use it on display and read-only paths
+     * @param address
+     * @param decoderType
+     * @return
+     */
+    public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
     public void allFunctionsOff();
     public void locFunctionsOff(Locomotive l);
@@ -67,6 +76,11 @@ public interface ViewListener
     public void applyAutonomyRouteActivations();
     public Layout getAutoLayout();
     public boolean hasAutoLayout();
+
+    /**
+     * Reloads the track diagrams only, without re-importing routes or locomotives
+     */
+    public void refreshLayouts();
     public boolean isAutonomyRunning();
     public boolean isDebug();
     Accessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state);

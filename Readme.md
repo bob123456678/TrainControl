@@ -364,35 +364,40 @@ Tab icons provided by Freepik.
     - Added French, Italian, Spanish, Dutch, and Polish translations
     - Removed UI features:
         - Copy-to-next/-previous page option from locomotive button right-click menu (now redundant with 2.7.3's drag and drop)
-    - Bug fixes
-        - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
+    - Autonomy
+        - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
+        - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
+        - Path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
+        - Reloading or re-validating the graph while locomotives are still running now warns first, and stops them before the new graph takes over.  Previously the layout was replaced underneath them and any train already under way kept going, untracked
+        - A locomotive part way through a route when the graph is reloaded now stops at its next point.  Previously it kept running with nothing left to stop it, and the new graph had no record of it
+        - Fixed bug where renaming a locomotive stopped its station exclusions from applying, so it could be sent to a station it was set never to visit
+        - Changing a locomotive's address, or having the Central Station report a new one, no longer stops its station exclusions from applying
+        - Deleting a locomotive now also removes it from any station exclusion lists it was on
+    - Timetables
+        - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct
+        - Fixed bug where stopping a timetable and resuming it could forget that some routes had already finished
+    - Routes
         - Fixed bug where a route condition would fail to parse if a locomotive's name contained the word AND or OR, such as NORD or MOTOR
         - Fixed bug where a DCC switch or signal used as a route condition was shown with the wrong protocol
-        - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
         - Fixed bug where a route could stop responding if one of its commands failed
-        - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where a conditional route would stop firing for the rest of the session if one of its conditions referred to a locomotive that was not placed on the autonomy graph.  The route still showed as enabled
-        - Autonomy: a path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
-        - Autonomy: fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
-        - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
         - Fixed bug where a route imported from the Central Station 3 would be silently skipped if it set a locomotive's speed or direction before a switch or signal with a delay
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
-        - Autonomy: path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
+        - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
+    - Multi-units
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
         - Fixed bug where renaming a locomotive that was part of a multi-unit stopped TrainControl from recognizing it as linked.  It could then be set up as a second multi-unit of its own, and deleting it left it being driven by the lead locomotive
-        - Autonomy: fixed bug where renaming a locomotive stopped its station exclusions from applying, so it could be sent to a station it was set never to visit
-        - Autonomy: changing a locomotive's address, or having the Central Station report a new one, no longer stops its station exclusions from applying
-        - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
-        - Autonomy: deleting a locomotive now also removes it from any station exclusion lists it was on
-        - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
+    - Track diagrams
+        - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
+        - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
-        - Autonomy: reloading or re-validating the graph while locomotives are still running now warns first, and stops them before the new graph takes over.  Previously the layout was replaced underneath them and any train already under way kept going, untracked
-        - Autonomy: a locomotive part way through a route when the graph is reloaded now stops at its next point.  Previously it kept running with nothing left to stop it, and the new graph had no record of it
-        - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct
-        - Fixed bug where stopping a timetable and resuming it could forget that some routes had already finished
-    
+    - Accessories
+        - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
+    - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
+    - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
+
 * v2.7.4 [7/25/2026]   
     - Autonomy
         - Added Path Integrity Validation features. If a switch/signal configuration cannot be confirmed by the Central Station, the locomotive will not run.  Configurable via the menu bar preferences.  A warning popup will be shown if configuration fails successively.

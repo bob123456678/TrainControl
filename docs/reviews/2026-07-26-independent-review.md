@@ -846,9 +846,10 @@ Tests: [`test/testLayoutRenameKeys.java`](../../test/testLayoutRenameKeys.java).
 
 ### State after this pass
 
-Open: **D5** (Low, deferred to next cycle with constraints recorded), **D3** (deferred,
-non-load-bearing while the D2 stop-before-swap holds), and the standing root cause below.
-Everything else across all documents is fixed, withdrawn, closed by decision, or informational.
+Open **at the time of this pass**: **D5** (Low, deferred to next cycle with constraints recorded),
+**D3** (deferred, non-load-bearing while the D2 stop-before-swap holds), and the standing root cause
+below - which was fixed later the same day; its own section carries the current status. Everything else
+across all documents is fixed, withdrawn, closed by decision, or informational.
 
 ### Standing item: MarklinLocomotive is a mutable hash key - **FIXED 2026-07-26**
 
@@ -913,13 +914,27 @@ precondition, because the state it needed had become unconstructible. It was inv
 from the fields is the obvious thing for a future author to do, and would silently reopen six defects
 at once.
 
-**Follow-up, deliberately not done.** All six repairs - `rehashLinkedLocomotives`,
-`rehashLocomotiveKeys`, `rehashExcludedLocs`, `removeFrom`, `removeKey` and their call sites - are now
-dead code. They were left in for one cycle: they are what keeps the application correct if this change
-has to be reverted, and removing them in the same commit would have doubled the blast radius. The
-behavioural tests in `testLayoutRenameKeys` and `testMultiUnitMembership` are what will prove the
-removal safe, because they assert that an exclusion still applies after a rename rather than asserting
-which mechanism achieves it.
+**Follow-up, done 2026-07-27 once the suite was green.** All five repair methods were removed -
+`rehashLinkedLocomotives`, `rehashLocomotiveKeys`, `rehashExcludedLocs`, `Locomotive.removeFrom` and
+`Locomotive.removeKey` - together with their call sites in `renameLoc`, `changeLocAddress` and
+`syncWithCS2`. Net 181 lines. The behavioural tests in `testLayoutRenameKeys` and
+`testMultiUnitMembership` are what made this safe to do: they assert that an exclusion still applies
+after a rename, rather than asserting which mechanism achieves it, so they pass against both the old
+repairs and the new invariant.
+
+Three things were deliberately **kept**, because they exist for reasons unrelated to hashing, and
+deleting them would have quietly undone two other fixes:
+
+- `MarklinLocomotive.unlinkLocomotive` - the method stays, `synchronized` on the lock `setSpeed` holds
+  while iterating the consist. That is the M4 thread-safety fix. Only its body reverted to a plain
+  `remove`.
+- `Point.removeExcludedLoc` and `locDeleted`'s clearing of the exclusion sets - that is integration-B1,
+  the orphaned-exclusion fix. Only the scan-based implementations became plain removals.
+- The `re-key` comment in `changeLocAddress`, which is about `locDB.delete` versus `deleteLoc`'s unlink
+  sweep and remains accurate.
+
+Three stale comments were removed, including one asserting a contrast with "locDeleted's rebuild" that
+no longer existed.
 
 ---
 
@@ -976,7 +991,10 @@ door, and it discards the run.
 ### State after this pass
 
 Open: **D5** (Low, deferred; escape inventory corrected above) and **D3** (deferred,
-non-load-bearing while stop-before-swap holds). The **standing root-cause item is now fixed** - see
-its section, updated - leaving one follow-up: deleting the six repairs it made redundant, next cycle.
-Everything else across all four review documents is fixed, withdrawn, closed by decision, or
-informational.
+non-load-bearing while stop-before-swap holds). The **standing root-cause item is fixed**, and its
+follow-up - deleting the five repair methods it made redundant - was completed on 2026-07-27 rather
+than deferred; see its section. Everything else across all four review documents is fixed, withdrawn,
+closed by decision, or informational.
+
+Subsequent work is recorded in [the full codebase review](2026-07-26-full-codebase-review.md), whose
+B3 was found by the author in use rather than by any review pass.

@@ -294,6 +294,91 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Parses layout files from the CS2 or local file system
      * @throws Exception 
      */
+    /**
+     * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
+     * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
+     * cannot be read.
+     *
+     * Extracted from syncWithCS2 verbatim, so that refreshing diagrams no longer requires a full sync.
+     * A full sync also re-imports every route and locomotive from the station, and for a local diagram
+     * edit that is both slow and side-effecting: routes differing from the station's copy are deleted
+     * and re-added, and locomotive addresses and function types are adopted from it.  None of that is
+     * wanted after renaming a page.
+     */
+    private void syncLayoutsFromConfiguredSource() throws Exception
+    {
+        String overrideLayoutPath = "";
+        
+        try
+        {
+            overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        }
+        catch (Exception e)
+        {                
+            this.logf("error.prefLoadAdminHint");
+            
+            this.log(e);
+        }
+            
+        if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
+        {
+            fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
+            
+            this.logf("layout.loadingStaticFiles", overrideLayoutPath);
+            
+            if (debug)
+            {
+                this.logf("layout.configFolderStructureHint");
+            }
+            
+            try
+            {
+                this.clearLayouts();
+                
+                syncLayouts();
+            }
+            catch (Exception e)
+            {
+                this.log(e);
+                   
+                this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
+                TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                fileParser.setDefaultLayoutDataLoc();
+                syncLayouts();
+            }
+        }
+        else
+        {      
+            if (this.layoutDB.getItemNames().isEmpty())
+            {
+                syncLayouts();
+            }  
+        }
+    }
+
+    /**
+     * Reloads the track diagrams and nothing else.
+     *
+     * For the UI to call after editing a diagram, or a route drawn on one.  syncWithCS2 was used for
+     * this and does far more - see syncLayoutsFromConfiguredSource.
+     *
+     * Does nothing before the first sync, when there is no parser to read through yet.
+     */
+    @Override
+    public final void refreshLayouts()
+    {
+        if (this.fileParser == null) return;
+
+        try
+        {
+            this.syncLayoutsFromConfiguredSource();
+        }
+        catch (Exception e)
+        {
+            this.log(e);
+        }
+    }
+
     private void syncLayouts() throws Exception
     {
         // Prune stale feedbacks
@@ -755,53 +840,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
                                        
             // Import layout
-            String overrideLayoutPath = "";
-            
-            try
-            {
-                overrideLayoutPath = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-            }
-            catch (Exception e)
-            {                
-                this.logf("error.prefLoadAdminHint");
-                
-                this.log(e);
-            }
-                
-            if (!"".equals(overrideLayoutPath) && TrainControlUI.getPrefs() != null)
-            {
-                fileParser.setLayoutDataLoc("file:///" + overrideLayoutPath + "/");
-                
-                this.logf("layout.loadingStaticFiles", overrideLayoutPath);
-                
-                if (debug)
-                {
-                    this.logf("layout.configFolderStructureHint");
-                }
-                
-                try
-                {
-                    this.clearLayouts();
-                    
-                    syncLayouts();
-                }
-                catch (Exception e)
-                {
-                    this.log(e);
-                       
-                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
-                    TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-                    fileParser.setDefaultLayoutDataLoc();
-                    syncLayouts();
-                }
-            }
-            else
-            {      
-                if (this.layoutDB.getItemNames().isEmpty())
-                {
-                    syncLayouts();
-                }  
-            }
+            this.syncLayoutsFromConfiguredSource();
             
             // Import locomotives
             List<MarklinRoute> parsedRoutes;
@@ -2603,6 +2642,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @return 
      */
     @Override
+    public MarklinAccessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType)
+    {
+        if (address < 1) return null;
+
+        return this.accDB.getById(MarklinAccessory.UIDfromAddress(address - 1, decoderType));
+    }
+
+    /**
+     * Returns the accessory at the given address, CREATING one if it does not exist.
+     *
+     * Use getAccessoryByAddressIfPresent for read-only paths - display, export, validation.  This one
+     * registers a switch on a miss, which is deliberate for command paths but fills the database with
+     * phantoms when called merely to look at something.
+     * @param address
+     * @param decoderType
+     * @return 
+     */
     public MarklinAccessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType)
     { 
         // Sanity check

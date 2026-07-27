@@ -784,8 +784,13 @@ public class MarklinRoute extends Route
         {
             if (r.isAccessory())
             {
-                // Pass through the accessory so we can pretty print its type
-                out += r.toLine(network.getAccessoryByAddress(r.getAddress(), r.getProtocol()));
+                // Pass through the accessory so we can pretty print its type.
+                //
+                // The non-creating lookup: this is a display path - it renders the route for the editor
+                // and for export - and the creating one registered a phantom accessory for every
+                // address in the route that had none yet, simply because someone opened the editor.
+                // toLine already falls back to the plain "address,setting" form when this is null.
+                out += r.toLine(network.getAccessoryByAddressIfPresent(r.getAddress(), r.getProtocol()));
             }
             else
             {

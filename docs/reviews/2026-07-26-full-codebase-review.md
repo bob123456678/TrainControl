@@ -31,13 +31,18 @@ document; findings from other documents are cited with their document name.
 | B1 | Local layout files are written in the platform-default charset but always read back as UTF-8; non-ASCII page names break local layouts and silently clear the override | B | **Fixed 2026-07-27** |
 | B2 | `RouteCommand.toLine` omits the newline for feedback commands; a route-editor round-trip then silently deletes the following command | B | **Fixed 2026-07-27** |
 | C1 | `changeRouteId` still uses `getAutoLayout() != null` - the always-true creating check C12 fixed in `deleteRoute` - and seven more UI sites share the pattern | C | **Fixed 2026-07-27** - all eight sites |
-| C2 | `MarklinRoute.toCSV` pretty-prints through `getAccessoryByAddress`, a creating lookup - opening the route editor can register phantom accessories | C | **Closed** - a new trigger for the already-accepted B6, see note |
+| B3 | Editing a diagram, or a route drawn on one, ran a full Central Station sync on the EDT - freezing the UI, and re-importing routes and locomotives as a side effect | B | **Fixed 2026-07-27** - found in use, not by this review |
+| C2 | `MarklinRoute.toCSV` pretty-prints through `getAccessoryByAddress`, a creating lookup - opening the route editor can register phantom accessories | C | **Fixed 2026-07-27** - reopened after being closed, and fixed on three paths |
 | C3 | The CS2 import parsers abort the entire sync on one malformed record; the CS3 parsers catch per-record | C | Open - no real file in evidence triggers it |
-| C4 | `editRoute` deletes the route before knowing the re-add will succeed; a name collision would silently drop the route | C | Open - unreachable from current callers |
+| C4 | `editRoute` deletes the route before knowing the re-add will succeed; a name collision would silently drop the route | C | **Fixed 2026-07-27** |
 | D1 | Checks that came back clean (see section) | - | Recorded |
 
-No A-level findings. The two B findings share a property worth stating: both are invisible in
-ASCII-only, happy-path use, which is presumably how they have survived.
+No A-level findings. B1 and B2 share a property worth stating: both are invisible in ASCII-only,
+happy-path use, which is presumably how they have survived.
+
+B3 was not found by this review at all. It surfaced when the author used the application after the
+other fixes landed, and it had been present far longer than any of them - a reminder of what reading
+does not catch.
 
 ---
 
@@ -175,6 +180,62 @@ fix.
 
 ---
 
+## B3. A diagram edit ran a full Central Station sync, on the EDT
+
+**Found by the author in use, not by this review.** After a route save the UI froze for several seconds;
+the log showed a sync running. Confirmed with a Central Station connected, so it is not an artefact of
+connection timeouts on a disconnected setup.
+
+[TrainControlUI.java](../../src/org/traincontrol/gui/TrainControlUI.java) `layoutEditingComplete`
+called `this.model.syncWithCS2()` directly. Six paths reach it: saving a diagram edit, saving a route
+that is drawn on a diagram, renaming, duplicating, adding and deleting a page.
+
+Two problems, and the second is the serious one.
+
+**It blocked the EDT.** `syncWithCS2` fetches and re-parses the station's config files; against real
+hardware that is seconds of work, and against an unreachable station it is seconds of connection
+timeouts. Two sibling flows in the same class - `BulkEnableOrDisable` and `enableOrDisableRoute` - had
+always wrapped the same call in `new Thread(...)`, so the codebase already knew. `layoutEditingComplete`
+was the one that did not.
+
+**It re-imported routes and locomotives.** Only one line of `syncWithCS2` is relevant to a diagram
+edit - the layout reparse. The rest reconciles the station's databases into TrainControl, and the route
+half deletes as well as adds:
+
+```java
+if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
+{
+    this.logf("route.deletingDuplicateName", r.getName());
+    this.deleteRoute(r.getName());
+}
+```
+
+So a local route sharing a **name** with a station route was deleted by an operation as innocuous as
+renaming a diagram page. ID collisions cannot happen - locally created routes start at
+`ROUTE_STARTING_ID = 1000` and the sample station routes run 1-87 - but names are user-chosen and
+nothing prevents the overlap. The locomotive half likewise adopts addresses and function types from the
+station.
+
+*Someone had already noticed half of this.* `RouteEditor` carries the comment "Moved into this condition
+as this is no longer needed when editing, since CS routes can't be edited" - the direct `syncWithCS2()`
+was removed from the edit branch. But the same sync stayed reachable through `layoutEditingComplete`,
+so the optimisation only half-landed. That is the shape of several findings this cycle: a guard applied
+to one path while a second path kept the behaviour alive.
+
+**Fixed.** The layout-import block was extracted verbatim from `syncWithCS2` into
+`syncLayoutsFromConfiguredSource`, and a public `refreshLayouts()` exposes it - including the
+override-path fallback, so B1's revert-to-station behaviour is unchanged. `layoutEditingComplete` calls
+that instead, on a background thread, with the Swing half posted back through `invokeLater`.
+
+One caller needed care: the page create/duplicate/rename flow selected the new page on the line after
+the call, which now returns before the page list is rebuilt. `layoutEditingComplete(Runnable after)`
+takes a continuation for it; the other five callers use the unchanged no-arg overload.
+
+**Not tested.** Nothing in the suite exercises the editor flows, and an EDT freeze is not something it
+could observe. Verified by the author in the UI.
+
+---
+
 ## C. Low
 
 ### C1. `changeRouteId` kept the check that C12 removed from `deleteRoute`
@@ -213,13 +274,28 @@ survive.
 
 ### C2. `MarklinRoute.toCSV` invents accessories on a display path
 
-**Closed 2026-07-27 - not separately actioned.** The mechanism is real and was verified:
-`getAccessoryByAddress` falls through to `newSwitch(address, decoderType, false)`, so the lookup
-creates. But this is a new *trigger* for behaviour the July cycle already ruled on, not a new
-consequence: B6 in [the July review](2026-07-code-review.md) - "Read-only lookups create accessories,
-filling the database with phantoms" - is recorded as **"Accepted, no change. Tolerable because the
-keyboard returns an existing signal rather than replacing it."** That reasoning is about the
-consequence, which this shares. Reopening it would mean revisiting B6, not fixing this site.
+~~**Closed 2026-07-27 - not separately actioned.**~~ **Reopened and fixed the same day, at the author's
+request.** The original reasoning was that this is a new *trigger* for behaviour the July cycle already
+accepted - B6, "Read-only lookups create accessories, filling the database with phantoms", recorded as
+"Accepted, no change. Tolerable because the keyboard returns an existing signal rather than replacing
+it."
+
+That held, but it answered the wrong question. B6 accepted phantoms as *harmless*, not as *necessary*,
+and nothing forced a display path to use a creating lookup.
+
+**Fixed on three paths, not one.** A non-creating `getAccessoryByAddressIfPresent` was added, and
+`toLine` already falls back to the plain "address,setting" form when handed null:
+
+- `MarklinRoute.toCSV` - the reported site; opening a route editor registered an accessory for every
+  address in the route that had none.
+- The keyboard's hover tooltip - the worst of the three, and not in the original finding. It ran on
+  every mouse movement over the keyboard, so sliding the cursor across a row of buttons registered an
+  accessory per address. It also called the lookup twice on the same address to read two fields.
+- `repaintSwitch`'s command capture. Its callers only ever repaint an accessory that already exists, so
+  the creating branch was dead there, but it is a read-only path and now says so.
+
+No caller of the creating lookup remains outside command paths, where creating on demand is intended.
+B6's acceptance still stands for those; what changed is that merely *looking* no longer creates.
 
 [MarklinRoute.java:788](../../src/org/traincontrol/marklin/MarklinRoute.java): the pretty-printer
 resolves each accessory command through `network.getAccessoryByAddress(...)`, which **creates a
@@ -276,6 +352,18 @@ rename onto an existing route's name before calling `editRoute` (RouteEditor.jav
 this is a guard-for-the-next-caller item in the B3/C7/C15 tradition: the enforcing check lives
 only in one UI dialog, and the model method trusts it. Fix shape: check the collision in
 `editRoute` itself before deleting, and return a status.
+
+**Fixed 2026-07-27.** `editRoute` now returns `boolean` and refuses before deleting anything, reusing
+the existing `route.notAdded` message so no new bundle key was needed. It also checks `newRoute`'s
+return value - the second way the route could vanish - and guards the `getByName(name)` null that would
+have thrown on an unknown name.
+
+Verified before shipping that `deleteRoute` frees the name from `routeDB` before `newRoute` re-checks
+it; had it not, the new early return would have deleted every edited route rather than merely refusing
+the rename. The interface signature changed from `void`, and existing callers ignore the result and
+compile unchanged.
+
+No changelog entry: unreachable from current callers, so no user has hit it.
 
 ---
 

@@ -636,12 +636,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 public void mouseMoved(MouseEvent e)
                 {    
                     int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
-                    
+
+                    // Looked up once, and without creating.  This runs on every mouse movement over the
+                    // keyboard, and the creating lookup registered an accessory for any address that did
+                    // not have one - so sliding the cursor across the keyboard silently filled the
+                    // database with accessories the user never touched.  It also ran the lookup twice to
+                    // read two fields off the same object.
+                    Accessory acc = model.getAccessoryByAddressIfPresent(accAddress, getKeyboardProtocol());
+
+                    // No accessory yet means nothing has ever been actuated here, so there is no count
+                    // to show.  Pressing the button still creates it, through the command path.
                     ((JToggleButton) e.getSource()).setToolTipText(
-                        I18n.f(
+                        acc == null ? null : I18n.f(
                             "acc.ui.tooltip.actuationCount",
-                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getName(),
-                            model.getAccessoryByAddress(accAddress, getKeyboardProtocol()).getNumActuations()
+                            acc.getName(),
+                            acc.getNumActuations()
                         )
                     );
                 }
@@ -2678,7 +2687,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
-                String command = this.model.getAccessoryByAddress(address, type).toAccessorySettingString();
+                // Non-creating: this only reads the accessory to render a command string.  It is always
+                // one that already exists, since repaintSwitch is called by the accessory being repainted
+                // - the guard is for the day that stops being true.
+                Accessory captured = this.model.getAccessoryByAddressIfPresent(address, type);
+                String command = captured != null ? captured.toAccessorySettingString() : "";
 
                 if (!command.isEmpty() && 
                         (!command.equals(lastCapturedAccessoryCommand) || (currentTime - lastCapturedAccessoryCommandTime) > CAPTURE_COMMAND_THROTTLE))
@@ -12311,11 +12324,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Re-reads the layout after an edit and refreshes the page list.
      *
-     * syncWithCS2 runs on a background thread: it fetches and re-parses the Central Station's config
-     * files, which takes seconds against real hardware and, with no station reachable, spends that long
-     * in connection timeouts instead.  Called directly this froze the whole UI after every track-diagram
-     * edit and after saving any route that appears on a diagram.  The route flows in this class already
-     * did it this way - see BulkEnableOrDisable and enableOrDisableRoute.
+     * refreshLayouts re-reads the track diagrams and nothing else.  This used to call syncWithCS2,
+     * which additionally re-imports every route and locomotive from the Central Station - slow, and
+     * side-effecting: routes differing from the station's copy are deleted and re-added.  Renaming a
+     * diagram page has no business touching the route database.
+     *
+     * It still runs on a background thread, because parsing a large diagram is not instant.  Called
+     * directly, the sync froze the whole UI after every diagram edit and after saving any route drawn
+     * on one.  The route flows in this class already did it this way - see BulkEnableOrDisable and
+     * enableOrDisableRoute.
      *
      * Everything after the sync touches Swing and is therefore posted back to the EDT.
      *
@@ -12328,7 +12345,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
         {
-            this.model.syncWithCS2();
+            this.model.refreshLayouts();
 
             javax.swing.SwingUtilities.invokeLater(() -> layoutRefreshComplete(after));
         }).start();
