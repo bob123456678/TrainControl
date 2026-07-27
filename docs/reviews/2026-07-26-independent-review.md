@@ -18,7 +18,7 @@ the comparison against that review is a separate section appended after the find
 | N1 | `receiveMessage` accessory branch: TOCTOU between `hasId(id)` and three `getById(id)` calls | Low | Preexisting gap, same class as the fixed locomotive branch | **Fixed 2026-07-26** - reachability mechanism corrected, see note |
 | N2 | `validatePathActuation` treats *any* interrupt as "validated" | Very low | New code; interrupt branch verified unreachable today | Closed as trap-for-future - see disposition note |
 | N3 | `moveLocomotive` NPEs on an unknown `targetPoint` in the locomotive!=null branch | Low | Preexisting | **Fixed 2026-07-26** |
-| N4 | `getImageCache()` lazy init is unsynchronized | Very low | Preexisting pattern | Open |
+| N4 | `getImageCache()` lazy init is unsynchronized | None | **Premise incorrect** - the getter is `static synchronized`, so the race cannot occur | **Changed anyway 2026-07-26**, for lock contention rather than correctness |
 | B1 | `PATH_INTEGRITY_VALIDATION` defaults ON: autonomy without CS echoes stalls every path | Behavior change (deliberate) | Author confirmed offline autonomy requires debug + simulate, and simulate skips validation | **Closed - not an issue** |
 | B2 | Autonomy-JSON routes omitting `triggerType` now fire on the opposite sensor edge | Behavior change (deliberate fix) | Affects hand-written JSON only | Open - release-note worthy |
 | B3 | Sticky `actuationConfirmed`: a repeat command to the last-confirmed state passes validation instantly | Design property, not a defect | Informational | Recorded |
@@ -28,6 +28,9 @@ No high-severity regressions were found. Every load-bearing claim below was veri
 method that actually enforces it, per `docs/reviews/README.md`; the "verified equivalences" section
 records the checks that came back clean, so the next reviewer does not redo them - and can see
 which assumptions this review rests on.
+
+Findings D1-D4, M1-M4 and T1-T4 from the follow-up deep dives of the original (pre-diff) code have
+their own authoritative status table in the "Deep dives" section at the end of this document.
 
 ---
 
@@ -102,8 +105,25 @@ rather than the risk.
 `imageCache` is now a `ConcurrentHashMap` (good - the old plain `HashMap` under 6+ threads was the
 real bug), but the lazy `if (imageCache == null) imageCache = new ConcurrentHashMap<>()` is itself
 unsynchronized static state. Two threads racing the first call can each create a map, and early
-puts into the loser are discarded. Consequence is a few redundant image decodes once per process
-lifetime, nothing more. Eager initialization at the field would erase the question.
+puts into the loser are discarded.
+
+**Correction (2026-07-26). The race described here cannot happen.** The getter is declared
+
+```java
+synchronized public static Map<String,Image> getImageCache()
+```
+
+so it holds the `TrainControlUI.class` monitor for the whole check-then-act, and every read of the
+field goes through that one method. There is no path from which a second map, or a partially published
+one, is observable. The finding was written from the field declaration and the `if (imageCache == null)`
+without the method modifier - the same mistake P4 made in the companion review, and worth noting as a
+recurring one: an unreachable-race claim needs every guard on the path read, not just the obvious one.
+
+**Changed anyway, on different grounds.** The field is now `final` and initialised eagerly, and the
+getter is a plain return. Not a correctness fix - the justification is that the old getter took a
+class-level lock on every call, and `LayoutLabel` calls it once per tile per repaint from both the EDT
+and the tile-refresh threads. Verified safe to make `final`: the field had exactly one assignment, is
+never cleared or reassigned, and is reachable only through the getter.
 
 ---
 
@@ -316,3 +336,185 @@ Cosmetic, but the README's "say what version was reviewed" rule exists for this.
   decides whether path validation's ON-default can strand an upgrading user. July's A8 writeup
   shows awareness that a dead listener makes validation fail every path, but the
   no-connection-at-all case is not addressed anywhere.
+
+---
+
+## Recommended further review areas (2026-07-26)
+
+After the diff review closed, seven areas of the *original* codebase were identified as carrying
+the highest risk of latent defects - places where small changes have historically had major side
+effects. Recorded here so the list survives this session; areas 1, 2 and 7 received deep dives
+(next section) at the author's request.
+
+| # | Area | Status |
+|---|------|--------|
+| 1 | `executePath` core sequencing + forceful-restart / stale-thread fencing | **Deep dive done** - findings D1-D4 |
+| 2 | Multi-unit and linked-locomotive command fan-out in `MarklinLocomotive` | **Deep dive done** - findings M1-M4 |
+| 3 | `LocDB.data` serialization/migration (`MarklinSimpleComponent`, `CustomObjectInputStream`); B6 phantom migration still open; recommend a round-trip matrix against real 2.6.x/2.7.x data files | Recommended, not yet reviewed |
+| 4 | Concurrent reads of the Layout graph: `points`/`edges`/`adjacency` are plain `HashMap`s read by route-monitor threads (`Route.evaluate`), the GraphStream viewer and loco threads while occupancy mutates | Recommended, not yet reviewed |
+| 5 | `syncWithCS2` merge semantics against a live database (renames + address changes + type changes composing with `RemoteDeviceCollection.add` eviction); review before the roadmap EDT split touches it | Recommended, not yet reviewed |
+| 6 | Interrupt hygiene: the re-asserted-interrupt pattern turns every `while (...) { delay() }` loop into a hot spin the day an interrupt source appears; needs one deliberate policy decision | Recommended, not yet reviewed |
+| 7 | Timetable subsystem (`TimetablePath`, capture/replay, `executeTimetable`) | **Deep dive done** - findings T1-T4 |
+
+---
+
+## Deep dives (2026-07-26): areas 1, 2 and 7
+
+**Scope:** original-code correctness, not diff regressions. Version: same HEAD (`9c9899b`).
+This table is the authoritative status for findings D*, M*, T*.
+
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| D1 | Fenced mid-path abort in `executePath` never stops the locomotive | High (given D2) | Open |
+| D2 | JSON reload (`validateButton`/`loadJSON`) has no `isRunning()` guard, unlike every sibling operation | Medium - the enabler for D1 | Open |
+| D3 | Layout-version fence compares against the global counter, captured after `configureAndLockPath` | Low-Medium | Open |
+| D4 | `CB_*` callbacks on shared `Locomotive` objects are re-registered by the new layout mid-flight | Informational | Recorded |
+| M1 | Linked-locomotive speed fan-out silently desyncs above the 100-speed threshold | Medium | Open |
+| M2 | One-sided link validation permits chains; saved chains restore order-dependently | Low-Medium | Open |
+| M3 | Direction re-assert after power cycle only covers locomotives that were moving at power-off | Low - author to adjudicate | Open question |
+| M4 | Deleting a locomotive never unlinks it from consists that reference it | Medium | Open |
+| T1 | Timetable capture stores each gap on the earlier entry; replay/UI read it as the entry's own pre-delay | Medium | Open |
+| T2 | `getUnfinishedTimetablePathIndex` overloads 0 as both "first entry" and "none unfinished" | Low | Open |
+| T3 | Timetable entry that can never execute retries forever with log spam | Low | Open |
+| T4 | `executeTimetable` returns when the last entry is dispatched, not completed | Informational | Recorded |
+
+### Area 1 - `executePath` and forceful-restart fencing
+
+The fencing mechanism exists and is more deliberate than expected: `executePath` captures
+`Layout.layoutVersion` (a static counter each `Layout` constructor increments) after locking the
+path, and re-checks it before every speed adjustment, s88 wait, reversing move, early unlock, and
+at the end of every milestone iteration ([Layout.java:2585](src/org/traincontrol/automation/Layout.java:2585)),
+returning early when a newer layout exists. `parseAuto` retires the old instance with
+`invalidate()` (blocks new paths) + `stopLocomotives()` (ends the `runLocomotive` loops). Three
+gaps remain:
+
+**D1 - the fenced abort leaves the locomotive at speed.** The abort path at
+[Layout.java:2585](src/org/traincontrol/automation/Layout.java:2585) just `return true` - no
+`setSpeed(0)`. For an intermediate milestone, the last speed command before the fence was cruising
+speed (set at 2414 or 2443). Concrete sequence: locomotive is between stations, thread parked in
+`waitForOccupiedFeedback`; the user reloads the autonomy JSON; the version bumps; the sensor fires;
+the thread falls through the (now-fenced-off) reversing and unlock blocks and returns - with the
+physical locomotive still running and **nothing left that will ever stop it**. The new layout
+knows nothing about it; new autonomy can then command conflicting switch positions in its path.
+The one abort branch that *does* stop the locomotive is a version change during the final
+destination wait (the `setSpeed(0)` at 2576 precedes the check). The conservative fix is
+`loc.setSpeed(0)` in the fenced-abort branch - the locomotive is at a known milestone point at
+that moment, so stopping there is exactly what the old graceful-stop semantics promised.
+
+**D2 - the reload itself is unguarded.** Timetable capture, timetable execute, `moveLocomotive`
+and at least eight other flows check `isRunning()` and refuse with "wait for active locomotives to
+stop." `validateButtonActionPerformed` (TrainControlUI.java:12650) and
+`loadJSONButtonActionPerformed` (13000) - the operations that actually re-create the layout - have
+no such check; the only confirmation is about unsaved graph edits. Adding the same guard makes D1
+unreachable through the UI and is the cheapest fix in this report.
+
+**D3 - the fence measures the wrong thing, in a window the diff made wider.** The captured value
+is the *global* counter read at [Layout.java:2407](src/org/traincontrol/automation/Layout.java:2407) -
+*after* `configureAndLockPath`, which since path-integrity validation can block for seconds. A
+reload landing in that window means the capture already equals the new version, the fence never
+trips, and the thread drives the **entire** old path against the retired graph. A `Layout` also
+has no instance version field, so the fence detects "some layout was created since my capture,"
+not "my layout is stale." Storing `this.version = ++layoutVersion` at construction and comparing
+`this.version == Layout.layoutVersion` closes both.
+
+**D4 (informational)** - `CB_ROUTE_START`/`CB_PRE_ARRIVAL`/`CB_ROUTE_END` are stored on the shared
+`Locomotive` objects, and the new layout's `fromJSON` re-registers them; an old path that passes
+its final fence check can fire the *new* JSON's arrival lambdas. Harmless today (they toggle
+functions), worth knowing.
+
+*Coverage note:* `testAutoLayoutRace` covers only the `activeLocomotives` map race - none of the
+above. A simulate-mode soak that reloads JSON mid-path and asserts every locomotive's speed is 0
+within a bounded time would pin D1/D2/D3 directly.
+
+### Area 2 - multi-unit / linked-locomotive fan-out
+
+**M1 - speed fan-out silently desyncs the consist above a threshold.** Link multipliers up to
+|2.0| are accepted ([MarklinLocomotive.java:1059](src/org/traincontrol/marklin/MarklinLocomotive.java:1059)).
+The fan-out computes `ceil(speed * multiplier)` for multipliers > 1
+([MarklinLocomotive.java:707-724](src/org/traincontrol/marklin/MarklinLocomotive.java:707)) with no
+clamp, and `Locomotive._setSpeed` **silently ignores** values outside 0-100 rather than clamping
+([Locomotive.java:413](src/org/traincontrol/base/Locomotive.java:413)). The linked locomotive's
+`setSpeed` then transmits `this.getSpeed() * 10` - the *stale previous* speed. Net effect, verified
+end-to-end: with a 1.5x member, main speeds up to 66 track correctly; from 67 the member freezes at
+its last speed while the head accelerates, and the two engines of one physical consist fight each
+other. It works in every casual test and breaks only at high speed. Fix: clamp the scaled speed to
+100 in the fan-out (or make `_setSpeed` clamp instead of ignore).
+
+**M2 - membership is invisible to link validation.** `canBeLinkedTo`
+([MarklinLocomotive.java:1107](src/org/traincontrol/marklin/MarklinLocomotive.java:1107)) rejects a
+*head* being added as a member (`other.hasLinkedLocomotives()`), but nothing records or checks that
+the *candidate head* is already someone's member - membership has no back-reference at all. So: A
+links B (fine), then B links C - accepted by both the base validation and the linking dialog, which
+filters with the same `canBeLinkedTo` (TrainControlUI.java:10323). Result is a chain A->B->C with
+compounded multipliers and nested monitor acquisition. Direct cycles are blocked (a head can never
+become a member), so no deadlock - but on reload, `setLinkedLocomotives` resolves links in `locDB`
+iteration order (a `HashMap` - effectively arbitrary): if B's links resolve before A's, A->B is
+rejected ("B has linked locomotives") and **silently dropped from a configuration that worked
+before the restart**. Either forbid members becoming heads (needs a membership check spanning the
+DB) or make restore order-insensitive.
+
+**M4 - deleting a locomotive does not unlink it.** `MarklinControlStation.deleteLoc`
+([MarklinControlStation.java:2245](src/org/traincontrol/marklin/MarklinControlStation.java:2245))
+removes the DB entry and rebuilds the id cache; the UI wrapper additionally clears button mappings.
+Neither touches other locomotives' `linkedLocomotives`, which hold **object references**. A consist
+head keeps fanning every speed/direction/function command to the deleted locomotive's decoder - a
+locomotive the UI no longer shows anywhere - until restart, at which point the dangling name fails
+to resolve in `setLinkedLocomotives` and the link vanishes with only a log line. Fix: on delete,
+sweep `getLocomotives()` for consists referencing the victim and unlink (mirroring what
+`renameLoc` already does for routes).
+
+**M3 (question for the author)** - the C9 coupling (`lastStartTime == 0` → re-assert direction)
+only zeroes the field in `notifyOfPowerStateChange`'s `speed > 0` branch. A locomotive **parked**
+during a power cycle keeps its stale nonzero timestamp and never gets the direction re-assert -
+which is the majority case, since most locomotives are stationary when power cycles. Whether this
+matters depends on whether the Central Station's own state refresh makes TrainControl's re-assert
+redundant; the author knows the hardware behavior here.
+
+*Verified clean in this area:* rename is persistence-safe (saved link names are regenerated from
+live objects at save time); direct link cycles are impossible; CS-defined multi-units cannot be
+linked or link; `changeLocAddress` refuses turning a linked locomotive into a multi-unit; `stop()`
+sends the member a redundant but harmless second speed-0.
+
+### Area 7 - timetable subsystem
+
+**T1 - capture and replay disagree about which entry owns a gap.** Capture stores the interval
+between entry k and entry k+1 on **entry k**
+([Layout.java:221](src/org/traincontrol/automation/Layout.java:221):
+`first.setSecondsToNext(second.executionTime - first.executionTime)`). Replay waits on **the
+current entry's own** value ([Layout.java:2197](src/org/traincontrol/automation/Layout.java:2197)),
+and both the edit dialog ("delay before route executes", TrainControlUI.java:14122) and the table
+display ("Pending Start +Xs", 14916) use that same delay-before-me reading. A captured timetable
+therefore replays with every gap shifted one entry earlier than it was recorded: the delay observed
+before entry k+1 is the *captured* gap between k+1 and k+2, the first captured gap is never applied,
+and the final entry always starts with zero delay. Invisible when gaps are even; wrong pacing when
+they are not. The one-line fix is storing the gap on `second` at capture - but that flips the
+meaning of every already-saved timetable, so it needs a decision about which semantic is intended
+(the UI dialog's wording suggests delay-before-me is the intended one, making **capture** the
+defective side).
+
+**T2 - `getUnfinishedTimetablePathIndex` overloads 0.** It returns 0 both for "entry 0 is
+unfinished" and "everything is finished"
+([Layout.java:2113](src/org/traincontrol/automation/Layout.java:2113)), and
+`timetableHasUnfinishedPaths()` is `!= 0`. Today this is safe purely because entries execute in
+order, so entry 0 unfinished implies nothing later finished - but the UI allows deleting timetable
+entries, and deleting the executed first entry from a partially-run timetable breaks the invariant:
+the resume logic then sees "nothing unfinished," silently resets every timestamp, and replays from
+the top. Return -1 for "none" (or use `noneMatch`) to make the sentinel honest.
+
+**T3 - a permanently unexecutable entry retries forever.** Each dispatched entry loops
+`while (running && !executePath(...))` with a delay
+([Layout.java:2222](src/org/traincontrol/automation/Layout.java:2222)). `executePath` returning
+false for a *permanent* reason - most notably `!isValid()` after the layout is invalidated mid-run -
+produces an infinite retry loop logging "configuration invalid, must reload" until the user notices
+and presses graceful stop. Distinguishing permanent from transient refusals (or capping retries)
+would let the timetable fail loudly instead.
+
+**T4 (informational)** - `executeTimetable` returns once the *last* entry is dispatched, so the UI
+re-enables "Start Autonomy"/"Execute Timetable" while the final path is still running. Every
+downstream flow re-checks `isRunning()`, so this is a cosmetic button-state quirk, not a conflict.
+
+*Verified clean in this area:* the whole execution runs on a real background thread (the
+`invokeLater(new Thread(...))` wrapper only covers the pre-checks); `secondsToNext` is
+milliseconds despite the name, but consistently ms at capture, edit (x1000), display (/1000) and
+comparison - a naming trap, not a defect; parallel entry threads plus the same-locomotive retry
+loop compose correctly; stop-on-exception in any entry thread ends the whole run.

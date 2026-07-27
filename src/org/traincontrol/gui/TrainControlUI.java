@@ -331,7 +331,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // the ImageLoader pool (4 threads), ImageLoaderLoc (2), and the render executors. A plain
     // HashMap can corrupt its bucket table under concurrent puts and spin at 100% CPU on Java 8.
     // Note: ConcurrentHashMap rejects null keys/values, so every put site must guard against null.
-    private static ConcurrentHashMap<String, Image> imageCache;
+    // Eager and final: the lazy version was correct - its getter was static synchronized, so the
+    // check-then-act could not race - but every caller then paid for the class-level lock, and
+    // LayoutLabel asks for this on the EDT and on tile-refresh threads for each tile it repaints.
+    // Initialising here removes the lock from that path without changing what anyone observes.
+    private static final ConcurrentHashMap<String, Image> imageCache = new ConcurrentHashMap<>();
     
     // Layout cache (speeds up rendering)
     public HashMap<String, JPanel> layoutCache = new HashMap<>();
@@ -1325,16 +1329,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Returns a reference to the image cache, initializing it if needed
-     * @return 
+     * Returns a reference to the image cache.
+     *
+     * No longer synchronized: the field is final and initialised with the class, so there is nothing
+     * left to guard, and this is called once per tile per repaint.
+     * @return
      */
-    synchronized public static Map<String,Image> getImageCache()
+    public static Map<String,Image> getImageCache()
     {
-        if (imageCache == null)
-        {
-            imageCache = new ConcurrentHashMap<>();
-        }
-        
         return imageCache;
     }
     
