@@ -78,8 +78,9 @@ The deeper fix - making `MarklinLocomotive` immutable in its hashed fields, or k
 
 **Tests.** [`test/testMultiUnitMembership.java`](../../test/testMultiUnitMembership.java).
 `testRenamedMemberIsStillRecognisedAsLinked` and `testDeletingARenamedMemberRemovesItFromTheConsist`
-were written against the unfixed tree and should now pass. The same file also pins the delete-sweep
-behaviour that had no coverage at all.
+were written against the unfixed tree, confirmed failing there, and pass with the fix. The same file
+also pins the delete-sweep behaviour, which had no coverage at all - the defect above was found while
+writing that coverage, not by reading the fix again.
 
 ---
 

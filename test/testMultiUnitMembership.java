@@ -19,10 +19,12 @@ import org.testng.annotations.Test;
  *
  *  - deleteLoc unlinks the locomotive from every consist referencing it.
  *  - changeLocAddress deliberately does NOT, because it is a re-key of a locomotive that still
- *    exists; it rebuilds every consist afterwards instead.
- *  - renameLoc does neither.
+ *    exists; it rebuilds every consist afterwards instead, which also revalidates them.
+ *  - renameLoc does neither, and re-keys the consists in place: a rename cannot invalidate a
+ *    membership, it only moves the member into a different hash bucket.
  *
- * That last one is the subject of the second half of this file.
+ * That last one is the subject of the second half of this file.  It did nothing at all until the
+ * tests there were written.
  *
  * The concurrency half of the delete fix cannot be tested here: it needs a member removed at the
  * exact moment its head is iterating the map in setSpeed.  What is asserted instead is that the
@@ -247,16 +249,17 @@ public class testMultiUnitMembership
     }
 
     /**
-     * EXPECTED TO FAIL until renameLoc rebuilds consists the way changeLocAddress does.
+     * Regression guard: renaming a member must not make it invisible to lookups.
      *
      * renameLoc mutates the locomotive's name in place and re-adds it to the database under the new
-     * name, but never touches the consists holding it as a map KEY.  Its hash changes underneath the
-     * map, so isLinkedTo - a containsKey - stops finding it.
+     * name.  A locomotive's hash is built partly from that name, so the rename moved it out of its
+     * bucket in every consist holding it as a map KEY, and isLinkedTo - a containsKey - stopped
+     * finding it.  Iteration still did, which is why the consist kept driving and nothing looked
+     * wrong.
      *
-     * That is the guard the multi-unit dialog uses to refuse making an already-linked locomotive into
-     * a multi-unit head.  With it defeated, the nested consist that this arrangement is supposed to
-     * make unreachable becomes constructible: rename the member first, and the dialog no longer
-     * objects.
+     * isLinkedTo is what the multi-unit dialog uses to refuse making an already-linked locomotive
+     * into a multi-unit head.  With it defeated, the nested consist that guard exists to prevent
+     * became constructible: rename the member first, and the dialog no longer objected.
      */
     @Test
     public void testRenamedMemberIsStillRecognisedAsLinked()
@@ -284,11 +287,11 @@ public class testMultiUnitMembership
     }
 
     /**
-     * EXPECTED TO FAIL for the same reason.
+     * Regression guard for the same defect, reached through the other lookup.
      *
-     * The delete sweep removes a member by map lookup, so a member whose hash has drifted is not
-     * found and stays linked - which is the exact defect the sweep was added to fix, reachable again
-     * by renaming the locomotive first.
+     * The delete sweep removes a member by map lookup, so a member whose hash had drifted was not
+     * found and stayed linked - the exact defect the sweep was added to fix, reachable again by
+     * renaming the locomotive first.
      */
     @Test
     public void testDeletingARenamedMemberRemovesItFromTheConsist()
