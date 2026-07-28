@@ -356,6 +356,61 @@ public class testHomeStaging
     }
 
     /**
+     * A corridor with one siding: HOME and FAR are joined only through MID, and MID has a siding.
+     */
+    private static String corridor(String atHome, String atMid, String atFar)
+    {
+        return json("{'points': ["
+            + station("HS HOME", 4, atHome) + ","
+            + station("HS MID", 5, atMid) + ","
+            + station("HS FAR", 6, atFar) + ","
+            + station("HS SIDING", 7, null)
+            + "],'edges': ["
+            + edge("HS HOME", "HS MID") + "," + edge("HS MID", "HS HOME") + ","
+            + edge("HS MID", "HS FAR") + "," + edge("HS FAR", "HS MID") + ","
+            + edge("HS MID", "HS SIDING") + "," + edge("HS SIDING", "HS MID")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * A locomotive that is already home may still have to move, so that another can get past it.
+     *
+     * The only way from FAR to HOME is through MID, and MID's own occupant is sitting exactly where it
+     * belongs.  Nothing is wrong with the arrangement except that it is in the way, so the plan has to
+     * park that locomotive on the siding, let the other through, and put it back.
+     *
+     * This is the shape a real layout produced: a locomotive could not reach its home because a
+     * correctly-placed train stood on the only corridor to it.  The planner reported that as
+     * impossible, because it asked whether any of a handful of routes computed WITHOUT regard to
+     * occupancy happened to be clear, rather than whether a clear route existed.  On a layout with
+     * loops those routes share the busy stretch, so they were all blocked at once.
+     */
+    @Test
+    public void testALocomotiveAtHomeStepsAsideAndReturns()
+    {
+        Layout layout = load(corridor(LOC_A, LOC_B, null));
+
+        // LOC_A goes to the far end, so its way back runs through LOC_B's home
+        assertTrue(layout.moveLocomotive(LOC_A, "HS FAR", false));
+
+        assertEquals(layout.getHomeStation(loc(LOC_B)), layout.getPoint("HS MID"));
+        assertEquals(layout.getPoint("HS MID").getCurrentLocomotive(), loc(LOC_B),
+            "precondition: the blocker is standing on its own home");
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertTrue(plan.isPossible(),
+            "a train in the way is not an impossibility - it can be moved.  Outcome was "
+            + plan.getOutcome());
+
+        assertTrue(plan.getMoves().size() >= 3,
+            "the blocker must step aside and come back: " + plan.getMoves());
+
+        applyPlan(layout, plan);
+        assertEveryoneHome(layout);
+    }
+
+    /**
      * A free agent may be moved but never has to land anywhere in particular, so it does not make a
      * plan impossible by sitting on somebody's home.
      */

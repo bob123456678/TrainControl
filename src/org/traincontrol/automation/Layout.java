@@ -3282,9 +3282,48 @@ public class Layout
      *
      * @return
      */
+    /**
+     * Reports one disagreement between the staging planner and the runtime's own path check.
+     * @param loc
+     * @param destination
+     * @param runtimeAllowsIt - true when the runtime would allow the move and the planner would not
+     */
+    void logStagingAudit(String loc, String destination, boolean runtimeAllowsIt)
+    {
+        this.control.logf(
+            runtimeAllowsIt ? "autolayout.warnStagingPlannerTooStrict" : "autolayout.warnStagingPlannerTooLoose",
+            loc, destination
+        );
+    }
+
     public HomeStaging.Plan planReturnToHome()
     {
-        return HomeStaging.snapshot(this).plan();
+        HomeStaging staging = HomeStaging.snapshot(this);
+
+        // Checked before planning, and logged either way: a mismatch here is the single most likely
+        // reason a staging run does something inexplicable, and it is invisible without asking
+        int disagreements = staging.auditAgainstRuntime();
+
+        this.control.logf("autolayout.infoStagingAudit", disagreements);
+
+        HomeStaging.Plan plan = staging.plan();
+
+        // Always logged.  "Nothing happened" is the one outcome that tells the operator nothing, and
+        // it is reachable several different ways - no homes recorded, everything already home, no
+        // route, no arrangement found - which look identical from outside.
+        this.control.logf(
+            "autolayout.infoReturnToHomePlan",
+            plan.getOutcome().toString(),
+            plan.getMoves().size(),
+            this.homeStations.size()
+        );
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            this.control.logf("autolayout.infoReturnToHomeMove", move.toString());
+        }
+
+        return plan;
     }
 
     /**
@@ -3296,6 +3335,21 @@ public class Layout
      *
      * @return the outcome, or null when only a plan can say more
      */
+    /**
+     * Whether a feedback sensor is reporting occupied right now.
+     *
+     * Exposed for the staging planner, which must read the real sensor rather than deduce it from who
+     * is standing where: in simulation the feedback is pulsed and clears again behind a train, so a
+     * stationary locomotive does not hold its sensor at all.
+     *
+     * @param s88
+     * @return
+     */
+    public boolean isFeedbackOccupied(String s88)
+    {
+        return s88 != null && this.control.getFeedbackState(s88);
+    }
+
     public HomeStaging.Outcome triageReturnToHome()
     {
         return HomeStaging.snapshot(this).triage();

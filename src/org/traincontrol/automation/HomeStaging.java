@@ -1,7 +1,10 @@
 package org.traincontrol.automation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import org.traincontrol.base.Accessory;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,9 +50,9 @@ public final class HomeStaging
      *  layouts; a plain greedy pass solves the ordinary case without searching at all. */
     private static final int SEARCH_LIMIT = 200000;
 
-    /** Alternative routes considered per station pair.  The first clear one is taken, so this only has
-     *  to be deep enough to get past the paths another train happens to be sitting on. */
-    private static final int PATHS_PER_PAIR = 8;
+    /** Expansions allowed per route search.  A point may now be revisited under different accessory
+     *  settings, so the search is no longer bounded by the number of points. */
+    private static final int ROUTE_SEARCH_LIMIT = 20000;
 
     private final Layout layout;
 
@@ -61,20 +64,21 @@ public final class HomeStaging
     /** Every station a locomotive could rest on, snapshot once. */
     private final List<Point> stations;
 
-    /** Candidate routes per ordered station pair, enumerated once - the graph does not change while
-     *  planning, so this is the expensive part done exactly once.
-     *
-     *  Keyed on the pair of points rather than on their names joined by a separator: point names come
-     *  from the config and routinely contain spaces, so any string join has pairs that collide. */
-    private final Map<List<Point>, List<List<Edge>>> routes = new HashMap<>();
+    /** Sensors that were genuinely reading occupied when the snapshot was taken. */
+    private final Set<String> sensorsSet;
+
+    /** Which points report each sensor, so a sensor can be released when its point is vacated. */
+    private final Map<String, List<Point>> pointsBySensor;
 
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
-        List<Point> stations)
+        List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor)
     {
         this.layout = layout;
         this.start = start;
         this.homes = homes;
         this.stations = stations;
+        this.sensorsSet = sensorsSet;
+        this.pointsBySensor = pointsBySensor;
     }
 
     /**
@@ -86,15 +90,35 @@ public final class HomeStaging
     {
         Map<Point, Locomotive> occupancy = new LinkedHashMap<>();
         List<Point> stations = new ArrayList<>();
+        Set<String> sensorsSet = new HashSet<>();
+        Map<String, List<Point>> pointsBySensor = new HashMap<>();
 
         for (Point p : layout.getPoints())
         {
             if (p.isDestination() && p.isActive()) stations.add(p);
 
             if (p.getCurrentLocomotive() != null) occupancy.put(p, p.getCurrentLocomotive());
+
+            if (p.getS88() != null)
+            {
+                if (!pointsBySensor.containsKey(p.getS88()))
+                {
+                    pointsBySensor.put(p.getS88(), new ArrayList<>());
+                }
+
+                pointsBySensor.get(p.getS88()).add(p);
+
+                // READ, never inferred.  A stationary locomotive does not necessarily hold its sensor -
+                // in simulation the feedback is pulsed and clears again behind the train - so deducing
+                // "sensor busy" from "point occupied" describes a layout that does not exist.  It also
+                // gets shared addresses badly wrong: a bypass exists precisely so a train can pass an
+                // occupied platform, and the two routinely report the same sensor.
+                if (layout.isFeedbackOccupied(p.getS88())) sensorsSet.add(p.getS88());
+            }
         }
 
-        return new HomeStaging(layout, occupancy, new LinkedHashMap<>(layout.getHomeStations()), stations);
+        return new HomeStaging(layout, occupancy, new LinkedHashMap<>(layout.getHomeStations()), stations,
+            sensorsSet, pointsBySensor);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -228,7 +252,7 @@ public final class HomeStaging
 
             if (home == null || home.equals(locationOf(this.start, l))) continue;
 
-            if (routesBetween(locationOf(this.start, l), home).isEmpty()) unreachable.add(l);
+            if (!connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
         if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable);
@@ -238,6 +262,72 @@ public final class HomeStaging
         if (moves == null) return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs());
 
         return new Plan(Outcome.READY, moves, noLocs());
+    }
+
+    /**
+     * Compares the planner's idea of where each locomotive may go against the runtime's, for the state
+     * as it stands right now.
+     *
+     * The planner has to answer that question for hypothetical futures, which is why it cannot simply
+     * call isPathClear - that reads live feedback.  So it re-implements the rules, and every time a
+     * rule was mis-copied the result was a plan the runtime then refused, or no plan where one existed.
+     * Re-implementing a specification is only safe if you check it against the original, and this is
+     * that check: for the ONE state where both can be asked - the present - the two answers must match.
+     *
+     * Logged rather than enforced.  A divergence is a defect in this class, not a reason to refuse the
+     * operator a staging run, and the runtime re-validates every move before driving it anyway.
+     *
+     * @return the number of disagreements
+     */
+    public int auditAgainstRuntime()
+    {
+        int disagreements = 0;
+        Set<String> blocked = blockedSensors(this.start);
+
+        for (Map.Entry<Point, Locomotive> e : this.start.entrySet())
+        {
+            Locomotive loc = e.getValue();
+
+            Set<Point> runtimeSays = new HashSet<>();
+
+            for (List<Edge> path : this.layout.getPossiblePaths(loc, true))
+            {
+                runtimeSays.add(path.get(path.size() - 1).getEnd());
+            }
+
+            Set<Point> plannerSays = new HashSet<>();
+
+            for (Point to : this.stations)
+            {
+                if (firstClearRoute(this.start, blocked, loc, e.getKey(), to) != null) plannerSays.add(to);
+            }
+
+            for (Point p : runtimeSays)
+            {
+                // Inactive points are the one divergence that is correct rather than a defect: the
+                // runtime skips its inactive-point rule unless autonomy is already running, so at rest
+                // it offers parking tracks that it would refuse once a timetable is under way.  The
+                // planner reasons about the running case, so it is right to leave them out.
+                if (!p.isActive()) continue;
+
+                if (!plannerSays.contains(p))
+                {
+                    disagreements++;
+                    this.layout.logStagingAudit(loc.getName(), p.getName(), true);
+                }
+            }
+
+            for (Point p : plannerSays)
+            {
+                if (!runtimeSays.contains(p))
+                {
+                    disagreements++;
+                    this.layout.logStagingAudit(loc.getName(), p.getName(), false);
+                }
+            }
+        }
+
+        return disagreements;
     }
 
     /**
@@ -416,61 +506,216 @@ public final class HomeStaging
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * The first route from one station to another that is clear in this hypothetical state, or null.
+     * A route from one station to another that is clear in this hypothetical state, or null.
+     *
+     * Searches over the points that can actually be entered given who is standing where, rather than
+     * enumerating a few routes computed without regard to occupancy and then filtering them.  Those are
+     * different questions, and the difference is not academic: on a layout with loops the shortest
+     * handful of routes between two stations tend to share the same busy stretch of track, so all of
+     * them can be blocked while a longer clear one exists.  Answering the wrong question made the
+     * planner report that a locomotive could not get home when it plainly could.
+     *
+     * Breadth-first, so the route returned is the shortest clear one.
      */
     private List<Edge> firstClearRoute(Map<Point, Locomotive> state, Set<String> blocked, Locomotive loc,
         Point from, Point to)
     {
-        if (from == null || to == null || !canRest(loc, to) || state.containsKey(to)) return null;
+        if (from == null || to == null || from.equals(to)) return null;
+        if (!canRest(loc, to) || state.containsKey(to)) return null;
 
-        for (List<Edge> route : routesBetween(from, to))
+        Deque<Candidate> queue = new ArrayDeque<>();
+        Map<Point, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
+        int expansions = 0;
+
+        queue.add(new Candidate(from, new LinkedList<Edge>(),
+            new HashMap<String, Accessory.accessorySetting>()));
+
+        while (!queue.isEmpty() && expansions++ < ROUTE_SEARCH_LIMIT)
         {
-            if (isClear(route, loc, blocked)) return route;
+            Candidate current = queue.poll();
+
+            for (Edge e : this.layout.getNeighbors(current.at))
+            {
+                Point next = e.getEnd();
+
+                if (!canEnter(next, loc, blocked, state)) continue;
+
+                // An edge can be refused because of track the train never drives on
+                if (!lockEdgesFree(e, loc, state)) continue;
+
+                Map<String, Accessory.accessorySetting> commands = withCommandsOf(e, current.commands);
+
+                // Two edges asking one accessory for opposite settings
+                if (commands == null) continue;
+
+                if (alreadyReached(seen, next, commands)) continue;
+
+                if (!seen.containsKey(next)) seen.put(next, new ArrayList<>());
+                seen.get(next).add(commands);
+
+                List<Edge> route = new LinkedList<>(current.route);
+                route.add(e);
+
+                if (next.equals(to)) return route;
+
+                // A terminus may be arrived at but not driven through, so it is never expanded
+                if (!next.isTerminus()) queue.add(new Candidate(next, route, commands));
+            }
         }
 
         return null;
     }
 
-    /**
-     * Sensors an occupied station reports.  Keyed by address, because two points may share one and it
-     * is the sensor that decides whether a path is blocked.
-     */
-    private static Set<String> blockedSensors(Map<Point, Locomotive> state)
+    /** A partial route and the accessory settings it has committed to along the way. */
+    private static final class Candidate
     {
-        Set<String> out = new HashSet<>();
+        private final Point at;
+        private final List<Edge> route;
+        private final Map<String, Accessory.accessorySetting> commands;
 
-        for (Point p : state.keySet())
+        private Candidate(Point at, List<Edge> route, Map<String, Accessory.accessorySetting> commands)
         {
-            if (p.getS88() != null) out.add(p.getS88());
+            this.at = at;
+            this.route = route;
+            this.commands = commands;
         }
-
-        return out;
     }
 
     /**
-     * The static half of isPathClear, evaluated against the shadow state instead of live feedback.
-     * Every point after the origin must be unoccupied - which is why the origin's own sensor, held by
-     * the locomotive that is about to leave it, never has to be excluded by hand.
+     * The commands so far plus this edge's, or null if they contradict.
+     *
+     * A path sets every switch and signal it needs before the train departs, so one accessory cannot be
+     * asked for two different settings on the same route - isPathClear builds exactly this map and
+     * refuses the path when an entry would be overwritten with something else.  On a layout where a
+     * platform and its approach both drive the same signal, the shortest route between two stations is
+     * routinely one of these: the planner offered it and the runtime then refused to drive it.
      */
-    private static boolean isClear(List<Edge> route, Locomotive loc, Set<String> blocked)
+    private static Map<String, Accessory.accessorySetting> withCommandsOf(Edge e,
+        Map<String, Accessory.accessorySetting> soFar)
     {
-        for (Edge e : route)
+        if (e.getConfigCommands().isEmpty()) return soFar;
+
+        Map<String, Accessory.accessorySetting> merged = new HashMap<>(soFar);
+
+        for (Map.Entry<String, Accessory.accessorySetting> command : e.getConfigCommands().entrySet())
         {
-            Point end = e.getEnd();
+            Accessory.accessorySetting existing = merged.get(command.getKey());
 
-            if (end.getS88() != null && blocked.contains(end.getS88())) return false;
-            if (!end.isActive()) return false;
+            if (existing != null && !existing.equals(command.getValue())) return null;
 
-            Point begin = e.getStart();
+            merged.put(command.getKey(), command.getValue());
+        }
 
-            // Excluded intermediate points cannot be traversed
-            if (!begin.isDestination() && begin.getExcludedLocs().contains(loc)) return false;
+        return merged;
+    }
 
-            // A terminus may only be the end of a path, never passed through
-            if (begin.isTerminus() && !begin.equals(route.get(0).getStart())) return false;
+    /**
+     * Whether this point has already been reached under commands that leave at least as much freedom.
+     *
+     * Arriving somewhere is no longer enough to dismiss a later arrival, because the settings committed
+     * on the way decide what may still be done.  A previous arrival only makes this one redundant if it
+     * committed to nothing that this one has not also committed to - then anything reachable from here
+     * was reachable from there.
+     */
+    private static boolean alreadyReached(Map<Point, List<Map<String, Accessory.accessorySetting>>> seen,
+        Point p, Map<String, Accessory.accessorySetting> commands)
+    {
+        if (!seen.containsKey(p)) return false;
+
+        for (Map<String, Accessory.accessorySetting> earlier : seen.get(p))
+        {
+            boolean dominates = true;
+
+            for (Map.Entry<String, Accessory.accessorySetting> command : earlier.entrySet())
+            {
+                if (!command.getValue().equals(commands.get(command.getKey())))
+                {
+                    dominates = false;
+                    break;
+                }
+            }
+
+            if (dominates) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether every edge this one locks is free.
+     *
+     * Taking an edge also claims the edges listed against it, and an edge counts as occupied when the
+     * point it leads to holds another locomotive.  So a route can be refused because of track it never
+     * touches - which is not a detail on a layout like the author's, where 54 of 92 edges carry lock
+     * edges between them.
+     *
+     * Only the endpoint is consulted: the runtime's own "locked" flag is set while a path is being
+     * driven, and the planner reasons about a layout at rest where nothing holds a lock.
+     */
+    private static boolean lockEdgesFree(Edge e, Locomotive loc, Map<Point, Locomotive> state)
+    {
+        for (Edge locked : e.getLockEdges())
+        {
+            Locomotive occupant = state.get(locked.getEnd());
+
+            if (occupant != null && !occupant.equals(loc)) return false;
         }
 
         return true;
+    }
+
+    /**
+     * Whether a locomotive may enter a point at all - the traversal half of what isPathClear enforces,
+     * evaluated against the shadow state instead of live feedback.
+     *
+     * The origin is never tested, which is what keeps the moving locomotive's own sensor from blocking
+     * its own departure.
+     */
+    private static boolean canEnter(Point p, Locomotive loc, Set<String> blocked,
+        Map<Point, Locomotive> state)
+    {
+        if (!p.isActive()) return false;
+
+        // The rule the runtime actually enforces: Edge.isOccupied is true when the point the edge leads
+        // to holds someone else.  Point occupancy, not sensor state - which is why a bypass sharing an
+        // address with a busy platform is still passable.
+        Locomotive occupant = state.get(p);
+
+        if (occupant != null && !occupant.equals(loc)) return false;
+
+        if (p.getS88() != null && blocked.contains(p.getS88())) return false;
+
+        // Intermediate points may exclude a locomotive; stations state that through canRest instead
+        return p.isDestination() || !p.getExcludedLocs().contains(loc);
+    }
+
+    /**
+     * Sensors that should still be treated as occupied in this hypothetical state.
+     *
+     * A sensor counts only if it was actually reading occupied at the snapshot.  It is released once
+     * every point that reports it has been vacated - that is the planner moving the train that was
+     * holding it.  A sensor nobody accounts for stays blocked for the whole plan: something is sitting
+     * on the track that the graph does not know about, and no move of ours will clear it.
+     */
+    private Set<String> blockedSensors(Map<Point, Locomotive> state)
+    {
+        Set<String> out = new HashSet<>();
+
+        for (String sensor : this.sensorsSet)
+        {
+            boolean explained = false;
+            boolean stillHeld = false;
+
+            for (Point p : this.pointsBySensor.get(sensor))
+            {
+                if (this.start.containsKey(p)) explained = true;
+                if (state.containsKey(p)) stillHeld = true;
+            }
+
+            if (!explained || stillHeld) out.add(sensor);
+        }
+
+        return out;
     }
 
     /**
@@ -487,40 +732,41 @@ public final class HomeStaging
     }
 
     /**
-     * Candidate routes between two stations, enumerated once and cached.
+     * Whether any route exists between two points at all, ignoring who is standing where.
+     *
+     * Deliberately blind to occupancy: it answers "could this locomotive ever get home", which is the
+     * only impossibility this class can prove.  A route blocked merely by another train is not
+     * impossible - moving that train is exactly what the planner is for.
      */
-    private List<List<Edge>> routesBetween(Point from, Point to)
+    private boolean connected(Point from, Point to)
     {
-        if (from == null || to == null) return Collections.emptyList();
+        if (from == null || to == null) return false;
+        if (from.equals(to)) return true;
 
-        List<Point> cacheKey = Arrays.asList(from, to);
+        Set<Point> seen = new HashSet<>();
+        Deque<Point> queue = new ArrayDeque<>();
 
-        if (this.routes.containsKey(cacheKey)) return this.routes.get(cacheKey);
+        seen.add(from);
+        queue.add(from);
 
-        List<List<Edge>> found = new ArrayList<>();
-        List<List<Edge>> seen = new LinkedList<>();
-
-        try
+        while (!queue.isEmpty())
         {
-            for (int i = 0; i < PATHS_PER_PAIR; i++)
+            Point at = queue.poll();
+
+            for (Edge e : this.layout.getNeighbors(at))
             {
-                List<Edge> path = this.layout.bfs(from, to, seen);
+                Point next = e.getEnd();
 
-                if (path == null) break;
+                if (seen.contains(next)) continue;
+                if (next.equals(to)) return true;
 
-                found.add(path);
-                seen.add(path);
+                seen.add(next);
+
+                if (!next.isTerminus()) queue.add(next);
             }
         }
-        catch (Exception e)
-        {
-            // An unroutable pair is a normal answer here, not a failure: it just means this locomotive
-            // cannot get there, which is what the caller is asking.
-        }
 
-        this.routes.put(cacheKey, found);
-
-        return found;
+        return false;
     }
 
     // ---------------------------------------------------------------------------------------------
