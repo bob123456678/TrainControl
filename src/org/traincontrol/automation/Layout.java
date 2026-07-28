@@ -3300,11 +3300,15 @@ public class Layout
     {
         HomeStaging staging = HomeStaging.snapshot(this);
 
-        // Checked before planning, and logged either way: a mismatch here is the single most likely
-        // reason a staging run does something inexplicable, and it is invisible without asking
-        int disagreements = staging.auditAgainstRuntime();
-
-        this.control.logf("autolayout.infoStagingAudit", disagreements);
+        // Debug only.  A mismatch here is the single most likely reason a staging run does something
+        // inexplicable, so the check is worth keeping - but it asks the runtime for every path every
+        // locomotive could take, and the runtime logs each one it rejects.  Left on, an ordinary press
+        // of the button spends that work and buries the operator's log under thousands of lines about
+        // paths nobody asked for.
+        if (this.control.isDebug())
+        {
+            this.control.logf("autolayout.infoStagingAudit", staging.auditAgainstRuntime());
+        }
 
         HomeStaging.Plan plan = staging.plan();
 
