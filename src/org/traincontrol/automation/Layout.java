@@ -2305,14 +2305,6 @@ public class Layout
     }
   
     /**
-     * Executes the paths in the timetable.
-     *
-     * Blocks until every train has arrived, not merely until the last one has set off.
-     *
-     * @return false if a move was abandoned because its path would not clear - only possible in
-     *         sequential (staging) mode.  A graceful stop is not an abandonment and returns true.
-     */
-    /**
      * Pauses between polls of a condition the dispatch loop is waiting on.
      *
      * Honours the operator's action delays, but never spins: both settings are allowed to be zero, and
@@ -2347,6 +2339,14 @@ public class Layout
         }
     }
 
+    /**
+     * Executes the paths in the timetable.
+     *
+     * Blocks until every train has arrived, not merely until the last one has set off.
+     *
+     * @return false if a move was abandoned because its path would not clear - only possible in
+     *         sequential (staging) mode.  A graceful stop is not an abandonment and returns true.
+     */
     public boolean executeTimetable()
     {
         // The flag is set here rather than inside, so that nothing thrown from the run can leave it

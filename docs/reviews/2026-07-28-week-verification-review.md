@@ -9,6 +9,8 @@ UI surfaces as they stand at HEAD, asked for with a focus on user-facing defects
 **Reviewed:** 2026-07-28. **No code was changed as part of this review, and no tests were run** - the
 author builds and tests in NetBeans. Claims were verified by reading the enforcing method, or by
 scripts that read the real data (bundles, call sites) rather than sampling it.
+**Validation round:** the fixes landed as `6be3bda` and are validated in their own section below;
+statuses in the table reflect that round.
 
 **Method note.** The instruction this review was commissioned with is the one the cycle's own record
 supports: across three evaluation rounds, every defect that survived verification was found by writing
@@ -32,11 +34,12 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| WR-B1 | Declining the conditional-route warning leaves Execute Timetable disabled for the session - the one early return in the handler with no re-enable | B | **Open** |
-| WR-C1 | `deletePoint` does not release the home claim on the deleted station - the `locDeleted` twin on the value side of the map | C | **Open** |
-| WR-C2 | With both delay sliders at 0, a staging run busy-spins a core for the whole of every train's drive - the sequential wait made an old zero-delay spin window minutes long | C | **Open** |
-| WR-C3 | The Danish delete-entry confirmation lost its `{0} ({1})` placeholders - Danish users are not told which timetable entry they are deleting | C | **Open** |
-| WR-C4 | Execute Timetable still force-disables capture for the session, a guard the `HS-B6` fix made redundant - and the staging flow next to it now deliberately preserves the same toggle | C | **Open** |
+| WR-B1 | Declining the conditional-route warning leaves Execute Timetable disabled for the session - the one early return in the handler with no re-enable | B | **Fixed 2026-07-28** (`6be3bda`). Fix validated |
+| WR-C1 | `deletePoint` does not release the home claim on the deleted station - the `locDeleted` twin on the value side of the map | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated; the occupancy-guard observation stays recorded, not fixed |
+| WR-C2 | With both delay sliders at 0, a staging run busy-spins a core for the whole of every train's drive - the sequential wait made an old zero-delay spin window minutes long | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated - and see WR-C5 for what the insertion cost |
+| WR-C3 | The Danish delete-entry confirmation lost its `{0} ({1})` placeholders - Danish users are not told which timetable entry they are deleting | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated; audit re-run clean |
+| WR-C4 | Execute Timetable still force-disables capture for the session, a guard the `HS-B6` fix made redundant - and the staging flow next to it now deliberately preserves the same toggle | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated |
+| WR-C5 | The `pacedWait` insertion stranded `executeTimetable`'s javadoc - the exact stacked-javadoc class the previous commit swept tree-wide | C | **Open** |
 | WR-D1 | Commit `08610a8` verified hunk by hunk; clean checks, resolved suspicions, and traps recorded | - | Recorded |
 
 No A findings. Nothing in the week's commits was found to have regressed: the one defect above that
@@ -188,6 +191,76 @@ Not filed as B because nothing wrong happens on the layout - the checkbox visibl
 the state is not even misrepresented. The fix is a deletion: the two lines at 12184-12185. The
 staging flow's own `timetableCapture.setSelected(...)` sync at 13038 then becomes the only remaining
 touch, and it is a no-op by inspection.
+
+---
+
+## Finding added by the fix validation
+
+### WR-C5. The fix's insertion point strands the javadoc it was placed under
+
+[Layout.java:2307](../../src/org/traincontrol/automation/Layout.java) (`executeTimetable`'s javadoc -
+"Blocks until every train has arrived", the `@return` contract about abandonment),
+[Layout.java:2315](../../src/org/traincontrol/automation/Layout.java) (`pacedWait`'s own javadoc,
+stacked directly beneath it), [Layout.java:2350](../../src/org/traincontrol/automation/Layout.java)
+(`executeTimetable`, now with no javadoc attached).
+
+The new `pacedWait` method was inserted between `executeTimetable` and its javadoc. The result is two
+javadoc blocks stacked back to back: `executeTimetable`'s - which carries the method's blocking
+contract and the meaning of its return value, the most load-bearing documentation in the dispatch
+machinery - now attaches to nothing, and `executeTimetable` itself is undocumented to any tool that
+reads javadoc.
+
+This is precisely the `HS-C4` defect class, and the timing is the recordable part: commit `08610a8`,
+*one commit earlier*, swept the entire tree for stacked javadoc and relocated the last three
+instances. The very next commit reintroduced the pattern - the cycle's familiar shape of a fix
+planting the defect class its own round had just cleaned (`RR`'s five C findings, `PV-C2`,
+`HS-B6` all have this shape). The fix is a relocation: move `pacedWait` and its javadoc above
+`executeTimetable`'s javadoc block, so each block sits over its own method.
+
+---
+
+## Validation of the fixes (commit `6be3bda`)
+
+Validated by the reviewer who filed the findings, reading each fix in the enforcing method. All five
+are correct; the validation added `WR-C5` above.
+
+- **`WR-B1`** - correct. The NO arm re-enables before returning, matching the idiom of the other four
+  early returns; the graceful-stop enable at the bottom of the handler is still correctly skipped by
+  the same return, so nothing else leaks. All five early returns in the handler now re-enable -
+  re-counted, not assumed.
+- **`WR-C1`** - correct, and the `removeIf` deserves a word given this repository's history with it:
+  the July trap was `removeIf` on a *hash-keyed* collection failing to find a key whose hash had
+  drifted. This one runs on the `values()` view of a `LinkedHashMap`, which removes entries through
+  the iterator - a linear walk, no hashing anywhere - so the trap does not apply. Comparison is by
+  name, matching every consumer of the map; the release sits after the guard exceptions and before
+  `points.remove`, so it runs exactly when deletion proceeds; injectivity means at most one entry can
+  match, and `removeIf` would be correct even if that changed. The new test pins the release and the
+  `ALREADY_HOME` triage that was previously unreachable in this state - its assertions fail against
+  the pre-fix behaviour by construction (the claim demonstrably survived; the run confirming
+  red-before-green happens in NetBeans, per this project's practice). The occupancy-guard observation
+  from the finding - `deletePoint` silently removes a locomotive standing on the point - remains
+  recorded and unfixed, now a decision rather than an oversight.
+- **`WR-C2`** - correct, and complete against its twins. The floor applies only when both delays are
+  zero (`min == 0 && max == 0`), so operators with real pacing keep it; `COMPLETION_POLL` is a
+  sensible floor and already the wait loop's own constant. Both spinning sites take it - the
+  dispatch loop's pacing and the normal-mode retry - and the third wait, the staging retry, already
+  had `STAGING_RETRY_PAUSE`. The remaining six `delay(getMinDelay(), getMaxDelay())` call sites were
+  read rather than pattern-matched: all are one-shot pauses (simulation feedback pacing, the
+  reversing-station realism pause), not condition-wait loops, so no twin was missed. One inherited
+  nit, recorded not filed: `pacedWait` swallows-and-reinterrupts like `Locomotive.delay` always has,
+  so a thread interrupted mid-wait spins through immediate `InterruptedException`s until `running`
+  clears - unchanged from the old behaviour, and nothing in the codebase interrupts these threads.
+- **`WR-C3`** - correct. The Danish value carries `#{0} ({1})` in the same shape as the German, the
+  file stays ASCII-pure (checked byte-wise, per this project's properties convention), and the
+  eight-bundle placeholder audit re-run reports zero mismatches tree-wide.
+- **`WR-C4`** - correct. Both lines are gone, replaced by a comment stating the rule the two buttons
+  now share. Checked for anything that depended on the removed force-off: the three tests touching
+  capture around execution set the flag themselves at the model layer and assert the `HS-B6` guard,
+  not the force-off - no test or caller pinned the old behaviour.
+
+The re-sweep of the fix's own surface produced `WR-C5` and nothing else: no new bundle keys were
+needed, the new test is in a registered class, and the handler's control flow around the two removed
+lines is otherwise unchanged.
 
 ---
 
