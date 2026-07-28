@@ -272,6 +272,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // View listener (model) reference
     private ViewListener model;
+
+    // Set when the operator asks trains to stop, so a staging run that ends short of home because they
+    // asked it to is not reported as a failure.  Volatile: written on the EDT, read on the run thread.
+    private volatile boolean gracefulStopRequested = false;
     
     // Graph viewer instance
     private GraphViewer graphViewer;
@@ -12182,16 +12186,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             new Thread(() ->
             {
-                this.startAutonomy.setEnabled(false);
-                this.returnHomeButton.setEnabled(false);
-                this.model.getAutoLayout().executeTimetable();
-                this.executeTimetable.setEnabled(true);
-                this.startAutonomy.setEnabled(true);
-                this.refreshReturnHomeButton();
-                this.exportJSON.setEnabled(true);
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.startAutonomy.setEnabled(false);
+                    this.returnHomeButton.setEnabled(false);
+                });
 
-                // Same gap as the staging run had: nothing turned this off once the trains stopped
-                this.gracefulStop.setEnabled(false);
+                this.model.getAutoLayout().executeTimetable();
+
+                // Marshalled, like the staging flow next door does.  These lines are new in this
+                // feature; the surrounding handler predates it and touches Swing from this worker
+                // thread, but there is no reason to add more of it.
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.executeTimetable.setEnabled(true);
+                    this.startAutonomy.setEnabled(true);
+                    this.refreshReturnHomeButton();
+                    this.exportJSON.setEnabled(true);
+
+                    // Same gap as the staging run had: nothing turned this off once the trains stopped
+                    this.gracefulStop.setEnabled(false);
+                });
             }).start();
 
             this.gracefulStop.setEnabled(true);
@@ -12907,6 +12922,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
 
+        this.gracefulStopRequested = true;
+
         this.gracefulStop.setEnabled(false);
         this.startAutonomy.setEnabled(true);
         this.refreshReturnHomeButton();
@@ -12983,6 +13000,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // file is saved, so a plan that was never saved cannot outlive the session.
         final List<TimetablePath> borrowedTimetable = new ArrayList<>(layout.getTimetable());
 
+        // Cleared per run, so a stop from an earlier one cannot excuse this one ending short
+        this.gracefulStopRequested = false;
+
         // Disabled here rather than once execution begins, matching what pressing Execute Timetable
         // does: the run is committed from this point, and both buttons would start the same thing
         this.returnHomeButton.setEnabled(false);
@@ -12992,7 +13012,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                HomeStaging.Plan plan = layout.planReturnToHome();
+                // Planned ONCE.  Asking planReturnToHome and then letting loadReturnToHomeTimetable
+                // plan again meant two answers that can genuinely differ - getNeighbors shuffles, and
+                // the state can move underneath - where the second decided whether the timetable was
+                // replaced and the first decided whether to run.  Disagreeing meant executing the
+                // operator's own timetable because "Return Home" had been pressed.
+                HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
 
                 if (!plan.isPossible())
                 {
@@ -13003,8 +13028,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     return;
                 }
-
-                layout.loadReturnToHomeTimetable();
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
@@ -13020,6 +13043,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable();
 
+                // Trusting the boolean means trusting a chain: every move completed or was abandoned,
+                // and executePath completes only on arrival.  That holds today.  Asking outright costs
+                // one occupancy read and does not decay when a link in the chain changes.
+                final boolean everyoneHome =
+                    layout.triageReturnToHome() == HomeStaging.Outcome.ALREADY_HOME;
+
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.startAutonomy.setEnabled(true);
@@ -13028,7 +13057,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // A move that gave up stopped the whole run.  It is logged, but a log line is not
                     // something an operator watching the layout will see - and what they are looking at
                     // is trains that stopped halfway with no explanation.
-                    if (!completed)
+                    // A graceful stop legitimately leaves trains short of home and returns true, so it
+                    // is not reported - the operator asked for it and watched it happen.
+                    if (!completed || (!everyoneHome && !this.gracefulStopRequested))
                     {
                         JOptionPane.showMessageDialog(this,
                             I18n.t("autolayout.ui.errorReturnToHomeStopped"));
@@ -13067,14 +13098,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Shared by the cheap triage and the full plan, so the same situation cannot be described two
-     * different ways depending on which one noticed it.
-     *
-     * @param outcome
-     * @param blocked - may be null; only IMPOSSIBLE has any
-     * @return
-     */
-    /**
      * Sets the return home button to match what the layout can actually do right now.
      *
      * Called wherever the button would otherwise simply be switched back on, and whenever the autonomy
@@ -13107,6 +13130,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             : describeStagingOutcome(nothingToDo, null));
     }
 
+    /**
+     * Shared by the cheap triage and the full plan, so the same situation cannot be described two
+     * different ways depending on which one noticed it.
+     *
+     * @param outcome
+     * @param blocked - may be null; only IMPOSSIBLE has any
+     * @return
+     */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         switch (outcome)
@@ -13119,6 +13150,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             case NO_HOMES:
                 return I18n.t("autolayout.ui.errorNoHomeStations");
+
+            case LOCOMOTIVES_RUNNING:
+                return I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
 
             case IMPOSSIBLE:
                 List<String> names = new ArrayList<>();
@@ -15254,10 +15288,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     synchronized public void repaintAutoLocList(boolean external)
     {
-        // Placement is what decides whether anything is away from home, and this is what runs when it
-        // changes - so the button stops being stale the moment the last locomotive arrives.
-        this.refreshReturnHomeButton();
-
         if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid())
         {
             // If called from another UI component, no need to refresh if there are no trains or if autonomy is on
@@ -15308,6 +15338,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     { 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // Both public entrances funnel here, and so do arrivals - the callback fires on a
+            // locomotive thread, which is why this sits inside the invokeLater rather than above
+            // it.  Wired one level up, the button stayed grey after a locomotive was sent away by
+            // hand: arrivals never pass through repaintAutoLocList at all.
+            this.refreshReturnHomeButton();
+
             new Thread(() ->
             {
                 for (Object o : this.autoLocPanel.getComponents())

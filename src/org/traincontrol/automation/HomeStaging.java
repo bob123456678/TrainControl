@@ -70,6 +70,9 @@ public final class HomeStaging
     /** Which points report each sensor, so a sensor can be released when its point is vacated. */
     private final Map<String, List<Point>> pointsBySensor;
 
+    /** Whether this layout's hardware holds a sensor under a resting train - measured, not assumed. */
+    private final boolean restingTrainsHoldSensors;
+
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
         List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor)
     {
@@ -79,6 +82,20 @@ public final class HomeStaging
         this.stations = stations;
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
+
+        // Asked of the layout rather than assumed.  An occupancy detector reads occupied under a train
+        // that is standing still; a pulsed contact clears behind it.  Which one this is decides whether
+        // a locomotive the plan MOVES somewhere will be holding that sensor when the next move runs -
+        // and getting it wrong the optimistic way plans a route the runtime then refuses, aborting the
+        // run for a rule the snapshot modelled but the futures did not.
+        boolean held = false;
+
+        for (Point p : start.keySet())
+        {
+            if (p.getS88() != null && sensorsSet.contains(p.getS88())) held = true;
+        }
+
+        this.restingTrainsHoldSensors = held;
     }
 
     /**
@@ -146,7 +163,10 @@ public final class HomeStaging
         /** At least one locomotive cannot reach its home at all - see getBlocked */
         IMPOSSIBLE,
         /** No plan was found within the search limit.  May still be possible. */
-        NO_PLAN_FOUND
+        NO_PLAN_FOUND,
+
+        /** Something is already moving - not a conclusion about the layout, just the wrong moment. */
+        LOCOMOTIVES_RUNNING
     }
 
     /**
@@ -252,7 +272,12 @@ public final class HomeStaging
 
             if (home == null || home.equals(locationOf(this.start, l))) continue;
 
-            if (!connected(locationOf(this.start, l), home)) unreachable.add(l);
+            // A home the locomotive could never be parked at - inactive, excluding it, too short for
+            // it, or a terminus it cannot reverse out of - is impossible by construction: no move can
+            // ever end there, so the goal is unreachable however the search is run.  Without this the
+            // search burns its whole budget and then reports "no arrangement found - it may still be
+            // possible", which is wrong twice over and sends the operator shunting for nothing.
+            if (!canRest(l, home) || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
         if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable);
@@ -713,6 +738,17 @@ public final class HomeStaging
             }
 
             if (!explained || stillHeld) out.add(sensor);
+        }
+
+        // Arrivals, on hardware that holds them.  A train the plan has already parked somewhere is
+        // reading that sensor by the time the next move is validated, so any point sharing the address
+        // - a bypass beside its platform, typically - is not passable either.
+        if (this.restingTrainsHoldSensors)
+        {
+            for (Point p : state.keySet())
+            {
+                if (p.getS88() != null) out.add(p.getS88());
+            }
         }
 
         return out;

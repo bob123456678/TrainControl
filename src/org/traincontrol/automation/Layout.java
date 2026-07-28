@@ -231,7 +231,11 @@ public class Layout
      */
     synchronized private boolean addTimetableEntry(Locomotive loc, List<Edge> path, long timestamp)
     {
-        if (!path.isEmpty() && loc != null && this.timetableCapture)
+        // A staging run drives the timetable it is executing, so capturing it would append each move
+        // to the list being walked - and the dispatch loop re-reads its own size, so it then executes
+        // the copies, fails them (the locomotive is at the path's END now), and reports a run that
+        // actually succeeded as abandoned, with a stop.  Capture is for what the operator drives.
+        if (!path.isEmpty() && loc != null && this.timetableCapture && !this.timetableSequential)
         {
             timetable.add(new TimetablePath(loc, path, timestamp)); 
             
@@ -3271,18 +3275,6 @@ public class Layout
     }
 
     /**
-     * Works out whether every locomotive can be sent back to its home station, and how.
-     *
-     * Read-only: nothing is moved, nothing is loaded.  Ask this to decide whether to offer the action,
-     * and what to say when it cannot be offered - the outcome distinguishes "nothing to do" from
-     * "impossible" from "no plan found", which are three different things to tell a user.
-     *
-     * Meaningful only with the layout at rest; the plan is built against current positions and a train
-     * in motion has none.
-     *
-     * @return
-     */
-    /**
      * Reports one disagreement between the staging planner and the runtime's own path check.
      * @param loc
      * @param destination
@@ -3296,6 +3288,18 @@ public class Layout
         );
     }
 
+    /**
+     * Works out whether every locomotive can be sent back to its home station, and how.
+     *
+     * Read-only: nothing is moved, nothing is loaded.  Ask this to decide whether to offer the action,
+     * and what to say when it cannot be offered - the outcome distinguishes "nothing to do" from
+     * "impossible" from "no plan found", which are three different things to tell a user.
+     *
+     * Meaningful only with the layout at rest; the plan is built against current positions and a train
+     * in motion has none.
+     *
+     * @return
+     */
     public HomeStaging.Plan planReturnToHome()
     {
         HomeStaging staging = HomeStaging.snapshot(this);
@@ -3331,15 +3335,6 @@ public class Layout
     }
 
     /**
-     * Whether there is anything to send home at all, answered without planning.
-     *
-     * Cheap - it reads the occupancy and nothing else.  Ask this before anything a user has to respond
-     * to: there is no point confirming that the timetable will be replaced when the run is not going
-     * to happen.
-     *
-     * @return the outcome, or null when only a plan can say more
-     */
-    /**
      * Whether a feedback sensor is reporting occupied right now.
      *
      * Exposed for the staging planner, which must read the real sensor rather than deduce it from who
@@ -3354,6 +3349,15 @@ public class Layout
         return s88 != null && this.control.getFeedbackState(s88);
     }
 
+    /**
+     * Whether there is anything to send home at all, answered without planning.
+     *
+     * Cheap - it reads the occupancy and nothing else.  Ask this before anything a user has to respond
+     * to: there is no point confirming that the timetable will be replaced when the run is not going
+     * to happen.
+     *
+     * @return the outcome, or null when only a plan can say more
+     */
     public HomeStaging.Outcome triageReturnToHome()
     {
         return HomeStaging.snapshot(this).triage();
@@ -3386,13 +3390,13 @@ public class Layout
         if (this.isRunning())
         {
             this.control.logf("autolayout.errorCannotEditWhileRunning");
-            return new HomeStaging.Plan(HomeStaging.Outcome.NO_PLAN_FOUND,
+            return new HomeStaging.Plan(HomeStaging.Outcome.LOCOMOTIVES_RUNNING,
                 new LinkedList<>(), new LinkedList<>());
         }
 
-        boolean capturing = this.isTimetableCapture();
-        this.setTimetableCapture(false);
-
+        // Capture is left exactly as the operator set it.  Turning it off around the load covered the
+        // load only, and the moves are appended during the RUN - addTimetableEntry now excludes them
+        // for as long as timetableSequential is set, which is the whole duration.
         List<TimetablePath> staged = new LinkedList<>();
 
         for (HomeStaging.Move move : plan.getMoves())
@@ -3407,7 +3411,6 @@ public class Layout
         }
 
         this.setTimetable(staged);
-        this.setTimetableCapture(capturing);
 
         // Must be after setTimetable, which clears it.
         //

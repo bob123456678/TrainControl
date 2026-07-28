@@ -1,10 +1,12 @@
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Edge;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
@@ -350,6 +352,49 @@ public class testHomeStaging
         assertFalse(layout.isTimetableSequential(),
             "restoring the timetable must also restore ordinary execution, or the operator's timetable "
             + "would run under staging rules");
+    }
+
+    /**
+     * With capture on, a staging run records nothing.
+     *
+     * Capture appends every path a locomotive starts to the timetable - and a staging run IS the
+     * timetable, walked by a loop that re-reads its own size.  So capture turned the run into a
+     * quine: each move appended a copy of itself, the loop walked into the copies, each copy failed
+     * validation because the locomotive now stood at its path's end, and a run whose trains had all
+     * arrived ended in an emergency stop and a failure dialog.  Excluding the append for the duration
+     * is the fix; excluding it only around the load - which is what shipped first - was not.
+     */
+    @Test
+    public void testAStagingRunIsNotCapturedIntoItsOwnTimetable() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        layout.setTimetableCapture(true);
+        assertTrue(layout.moveLocomotive(LOC_A, "HS D", false));
+
+        assertTrue(layout.loadReturnToHomeTimetable().isPossible(), "precondition: a plan must load");
+
+        int staged = layout.getTimetable().size();
+
+        assertTrue(staged > 0, "precondition: the plan must have put something in the timetable");
+        assertTrue(layout.isTimetableSequential(), "precondition: a staged plan runs sequentially");
+
+        // What executePath does for each move it starts.  Reached by reflection rather than through a
+        // hook added to production code: the guard under test lives in addTimetableEntry, and a method
+        // that exists only so a test can reach it is the kind of thing this review round removed.
+        Method append = Layout.class.getDeclaredMethod(
+            "addTimetableEntry", Locomotive.class, List.class, long.class);
+
+        append.setAccessible(true);
+
+        for (HomeStaging.Move move : layout.planReturnToHome().getMoves())
+        {
+            append.invoke(layout, move.getLocomotive(), move.getPath(), 0L);
+        }
+
+        assertEquals(layout.getTimetable().size(), staged,
+            "a staging run appended itself to the timetable it was executing - the dispatch loop would "
+            + "then walk into the copies and abandon a run that had actually succeeded");
     }
 
     /**
