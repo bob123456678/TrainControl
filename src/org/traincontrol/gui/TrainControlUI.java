@@ -12776,6 +12776,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
+                // Set here rather than on entry: declining the dialog is not asking for a stop, and
+                // arming it there left a staging run in progress able to end short without saying so.
+                this.gracefulStopRequested = true;
+
                 // Order matters: clear the dispatch flag first, so no locomotive thread can pick up a
                 // new path in between, then stop everything that is currently moving.
                 this.model.getAutoLayout().stopLocomotives();
@@ -15338,10 +15342,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     { 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // Both public entrances funnel here, and so do arrivals - the callback fires on a
-            // locomotive thread, which is why this sits inside the invokeLater rather than above
-            // it.  Wired one level up, the button stayed grey after a locomotive was sent away by
-            // hand: arrivals never pass through repaintAutoLocList at all.
+            // Arrivals enter here - the callback fires on a locomotive thread, which is why this sits
+            // inside the invokeLater rather than above it.  Full does NOT funnel through here, so it
+            // carries the same line: an earlier version of this fix claimed it did, and moved the
+            // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
 
             new Thread(() ->
@@ -15362,6 +15366,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     { 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // The other terminal path.  Every placement and removal call site reaches the button
+            // through here, not through Lite.
+            this.refreshReturnHomeButton();
+
             // Display locomotive status and possible paths
             this.autoLocPanel.removeAll();
 

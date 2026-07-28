@@ -31,15 +31,17 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| HS-B1 | `requestReturnToHome` ignores what `loadReturnToHomeTimetable` returns, and plans twice; when the second plan fails, the user's *original* timetable executes, unrequested | B | **Fixed** |
-| HS-B2 | With timetable capture toggled on, a staging run appends its own moves as captured entries, then "executes" them, fails, and reports a successful run as stopped - with an emergency stop | B | **Fixed** |
-| HS-B3 | Provably impossible configurations are reported as `NO_PLAN_FOUND` ("may still be possible"), after burning the full search - an inactive home station is the flagship case | B | **Fixed** |
-| HS-B4 | The planner never blocks the sensor of a moved train's destination, so a later move through a point sharing that s88 plans clean and is refused at execution - aborting the run | B | **Fixed** |
-| HS-C1 | The two right-click "Return Locomotives Home" items are not greyed while autonomy runs; the button is. Clicking produces an error dialog instead | C | **Fixed** |
-| HS-C2 | The Return Home button goes stale on arrivals: the refresh is wired into `repaintAutoLocList`, but the arrival callback calls `repaintAutoLocListLite` directly, bypassing it | C | **Fixed** |
-| HS-C3 | The Execute Timetable handler mutates Swing state from its worker thread; the new lines extend a pre-existing pattern the staging flow itself avoids | C | **Fixed** |
-| HS-C4 | Three new javadoc blocks are orphaned - stacked above another javadoc, so tools attach them to nothing | C | **Fixed** |
-| HS-C5 | The design's post-run arrival verification is absent: nothing checks that every homed locomotive actually arrived | C | **Fixed** |
+| HS-B1 | `requestReturnToHome` ignores what `loadReturnToHomeTimetable` returns, and plans twice; when the second plan fails, the user's *original* timetable executes, unrequested | B | **Fixed 2026-07-27**. Fix validated |
+| HS-B2 | With timetable capture toggled on, a staging run appends its own moves as captured entries, then "executes" them, fails, and reports a successful run as stopped - with an emergency stop | B | **Fixed 2026-07-27**. Fix validated - and see HS-B6 for the entrance it does not cover |
+| HS-B3 | Provably impossible configurations are reported as `NO_PLAN_FOUND` ("may still be possible"), after burning the full search - an inactive home station is the flagship case | B | **Partly fixed 2026-07-27** - the `canRest` half is fixed and validated; the A* exhaustion-vs-limit conflation remains open. See the validation section |
+| HS-B4 | The planner never blocks the sensor of a moved train's destination, so a later move through a point sharing that s88 plans clean and is refused at execution - aborting the run | B | **Fixed 2026-07-27**. Fix validated; one limitation recorded (mixed hardware) |
+| HS-C1 | The two right-click "Return Locomotives Home" items are not greyed while autonomy runs; the button is. Clicking produces an error dialog instead | C | **Fixed 2026-07-27**. Fix validated |
+| HS-C2 | The Return Home button goes stale on arrivals: the refresh is wired into `repaintAutoLocList`, but the arrival callback calls `repaintAutoLocListLite` directly, bypassing it | C | **Fixed 2026-07-27, amended** - the first fix moved the gap to placements; `Full` now carries the refresh too, and the incorrect "both entrances funnel here" comment is corrected |
+| HS-C3 | The Execute Timetable handler mutates Swing state from its worker thread; the new lines extend a pre-existing pattern the staging flow itself avoids | C | **Fixed 2026-07-27**. Fix validated |
+| HS-C4 | Three new javadoc blocks are orphaned - stacked above another javadoc, so tools attach them to nothing | C | **Fixed 2026-07-27**. Fix validated |
+| HS-C5 | The design's post-run arrival verification is absent: nothing checks that every homed locomotive actually arrived | C | **Fixed 2026-07-27**. Fix validated; the flag has one unset entrance, subsumed by `HS-B5` |
+| HS-B5 | Reloading the graph during a run hangs the blocking `executeTimetable` forever: a fence-abandoned path deliberately strands its `activeLocomotives` entry in the discarded layout, and the completion wait polls that layout's `isRunning()` | B | **Fixed 2026-07-27** - the wait is now `isRunning() && isCurrentLayout()`, and a reload sets `gracefulStopRequested`. Fix validated; one flag-timing nit recorded |
+| HS-B6 | The `HS-B2` guard covers staging only: a *normal* timetable run with capture on still appends itself, and the run then never completes on its own | B | **Fixed 2026-07-27** - the guard moved from `timetableSequential` to a new `timetableExecuting`, set by a wrapper so an exception cannot strand it. Fix validated |
 | HS-D1 | Parity checks that came back clean, and design-contract items verified present | - | Recorded |
 
 No A findings, though `HS-B1` is A-shaped by the letter of the definition ("wrong behaviour on the
@@ -288,6 +290,186 @@ insurance, and it would have caught `HS-B1` and `HS-B2` at runtime.
 
 ---
 
+## Findings added by the fix validation
+
+### HS-B5. A mid-run graph reload hangs the blocking executeTimetable, and the buttons never return
+
+[Layout.java:2484](../../src/org/traincontrol/automation/Layout.java) (the completion wait:
+`while (this.isRunning())` on *this* layout),
+[Layout.java:2572](../../src/org/traincontrol/automation/Layout.java) (`executePath`'s fence
+behaviour: an abandoned path "leaves the entry in place on purpose - it belongs to a Layout that is
+being discarded"),
+[TrainControlUI.java:12745](../../src/org/traincontrol/gui/TrainControlUI.java)
+(`validateButtonActionPerformed` - reload is offered during a run, behind a warning).
+
+The original review recorded the design's mid-run-reload question as open and untraced. Validating the
+new completion wait forced the trace, and the answer is a defect. The chain, each link read in its
+enforcing method:
+
+1. A staging run (or a normal Execute Timetable run - both now block) is under way; a locomotive is
+   mid-path.
+2. The operator presses Load JSON. The handler warns, and on confirmation calls `stopLocomotives()`
+   and swaps in a new `Layout`.
+3. The in-flight path hits the version fence at its next milestone and abandons - **deliberately
+   leaving its `activeLocomotives` entry in the old layout**, exactly as the `IND-D5`/`RR` record
+   says it must (the entry belongs to a discarded object; removing it was judged wrong there, and
+   still is).
+4. But the worker thread is parked in the *old* layout's completion wait, and
+   `isRunning()` = `running || !activeLocomotives.isEmpty()` - which is now **true forever**.
+5. The wait never exits, `executeTimetable` never returns, and in the staging flow the `finally` -
+   the timetable restore and the button re-enables - never runs. Return Home and Execute Timetable
+   stay disabled for the session; a thread is leaked; and if the stop came through the reload path,
+   `gracefulStopRequested` was never set, so even the dialogs are wrong. Restart to recover.
+
+The two behaviours in conflict are each individually correct: the fence *should* strand the entry
+(that was litigated in the July cycle), and the completion wait *should* outlive the last dispatch
+(`HS`'s own review confirmed why). They were never asked about each other - the completion wait is
+newer than the fence, and nothing re-examined the fence's "leave it in place" decision against a
+caller that now polls it.
+
+**Fix shape:** the wait belongs to the layout it polls, so let it notice being discarded:
+`while (this.isRunning() && this.isCurrentLayout())` - one condition, using the fence's own
+mechanism, and correct for both callers. Having `validateButtonActionPerformed` set
+`gracefulStopRequested` (the stop *is* operator-requested) tidies the dialog for the sub-case where
+the run ends before the fence strands anything.
+
+### HS-B6. The capture guard covers one of two identical entrances
+
+[Layout.java:238](../../src/org/traincontrol/automation/Layout.java) (the fixed guard:
+`... && !this.timetableSequential`),
+[Layout.java:2689](../../src/org/traincontrol/automation/Layout.java) (`executePathInternal` calling
+`addTimetableEntry` for every path it starts - including every path a **normal** timetable run
+starts),
+[Layout.java:2344](../../src/org/traincontrol/automation/Layout.java) (the dispatch loop bound,
+re-read each iteration).
+
+The `HS-B2` fix excludes the append while `timetableSequential` is set - the staging run, exactly as
+that finding asked. But the mechanism `HS-B2` described is not staging-specific: a **normal** Execute
+Timetable run with capture toggled on also drives paths through `executePathInternal`, also appends
+each one to the list being walked, and the loop also walks into the copies. In normal mode the
+consequences differ and are worse in one respect: the copies' locomotives are no longer at their path
+starts, and normal-mode retry **never gives up** - so the run never completes on its own. Before
+these commits that stranded the `running` flag; now that `executeTimetable` blocks and the caller
+waits on it, the worker also hangs and the handler's re-enables never run. A graceful stop recovers
+it - `running` clears, the retry loops exit - which is why this is B and not worse.
+
+This is a pre-existing defect (capture plus Execute Timetable has appended-and-walked since before
+these five commits), but the fix that just shipped chose a staging-only guard while standing in the
+one method both entrances share - the July cycle's signature error, eighth confirmed instance
+(`2026-07-cycle-summary.md`, "The same mistake" table). The narrower guard also encodes the wrong
+predicate: the reason not to capture is not "the run is sequential", it is "the path was driven by
+the timetable rather than by the operator".
+
+**Fix shape:** `executePathInternal` already knows: `ttp != null` exactly when the timetable supplied
+the path. Guard the capture call site (or `addTimetableEntry`) on that instead of
+`timetableSequential` - it covers both entrances, expresses the actual rule, and makes the
+sequential-flag guard redundant rather than wrong. The `HS-B2` test then generalises: a timetable
+run, staging or not, appends nothing.
+
+---
+
+## Validation of the fixes (commit `5744c61`)
+
+Validated by the reviewer who filed the findings, reading the enforcing methods. Seven of the nine
+fixes are correct and complete; two are partial, and the validation added the two findings above.
+
+- **`HS-B1`** - correct, and complete. `requestReturnToHome` now takes its plan from
+  `loadReturnToHomeTimetable()` alone: one plan decides both whether the timetable was replaced and
+  whether to run, so the divergence cannot arise. The `LOCOMOTIVES_RUNNING` outcome replaces the
+  fabricated `NO_PLAN_FOUND` and maps to the existing wait-for-locomotives message - the misleading
+  advice is gone. Verified that the load's internal `isRunning` refusal now flows into the same
+  dialog path.
+- **`HS-B2`** - correct for what it names (and see `HS-B6`). The append is excluded for as long as
+  `timetableSequential` is set, which spans the whole run, not just the load; the capture flag is no
+  longer touched at all, so the toggle keeps its state without the save/restore dance. The new test
+  reaches the guard by reflection rather than a test-only hook, builds a real staged plan, and
+  asserts the timetable did not grow - it fails against the shipped-first behaviour.
+- **`HS-B3`** - half fixed. The `canRest` pre-check is in the right place (before connectivity, per
+  homed misplaced locomotive) and turns the inactive-home case into IMPOSSIBLE naming the
+  locomotive, with no search burn - validated. **The A\* exhaustion half is unaddressed**: `astar`
+  still returns one null for both "examined the entire reachable space" (a completeness proof) and
+  "hit `SEARCH_LIMIT`" (gave up). With the `canRest` cases now filtered, the remaining route to a
+  false "may still be possible" is a genuine pebble-motion deadlock - every station occupied, no
+  free agent to break the cycle - which exhausts *quickly* and is exactly the case where the operator
+  would act differently on "impossible" (remove a locomotive) than on "the search gave up" (try
+  again, uselessly). One boolean out of `astar` distinguishes them.
+- **`HS-B4`** - correct, with one honest limitation recorded. The hardware question is measured from
+  the snapshot (any resting train holding its sensor implies holding hardware), and arrivals'
+  sensors join the blocked set only then; departures, the audit, and pulsed hardware are all
+  unchanged - each direction checked against `isPathClear`'s live read. *Limitation:* the inference
+  is global, so a layout mixing occupancy detectors with pulsed contacts models every sensor as
+  holding - conservative (plans get refused, runs never abort), and per-sensor inference is not
+  possible from one snapshot, since the destination was empty when it was taken. Recorded, not
+  filed.
+- **`HS-C1`** - correct. Both menus short-circuit on `isRunning()` into the shared outcome/tooltip
+  path; the triage is no longer computed against moving positions. The twin blocks remain twins,
+  duplicated verbatim - still worth an extraction someday.
+- **`HS-C2`** - fixed for the event it named, but **the fix moved the gap instead of closing it**.
+  The refresh now lives in `repaintAutoLocListLite`, on the EDT, and arrivals reach it - validated.
+  But the accompanying comment, "Both public entrances funnel here", is wrong:
+  `repaintAutoLocList(false)` dispatches to `repaintAutoLocListFull`
+  ([TrainControlUI.java:15329](../../src/org/traincontrol/gui/TrainControlUI.java)), which never
+  calls `Lite` and now contains no refresh. Every placement-and-removal call site passes `false` -
+  `GraphLocAssign`, the graph and diagram right-click place/move/remove items - so the staleness has
+  swapped events: arrivals now update the button, *placements* no longer do. Place a locomotive on a
+  graph whose button says "already home" and it stays grey. The fix is the same one again, one method
+  down: put the refresh at the top of `Full`'s `invokeLater` too (or have `Full` delegate the shared
+  prologue). Not renumbered - same finding, same defect class, status amended per the README.
+- **`HS-C3`** - correct. The feature's four Swing touches in the Execute Timetable handler are
+  marshalled; the pre-existing unmarshalled lines around them are left and documented as inherited.
+- **`HS-C4`** - correct. All three blocks now sit directly above their methods; javadoc attaches as
+  intended.
+- **`HS-C5`** - correct, and it already earns its keep: the post-run triage catches the
+  exception-path stop (which sets no `abandoned` flag) that the boolean alone missed. The
+  `gracefulStopRequested` flag is volatile, cleared per run, and set by the Graceful Stop button -
+  its one unset entrance is the reload path, where the hang of `HS-B5` dominates the wrong-dialog
+  concern; fixing `HS-B5` should set it there too.
+
+**Re-sweep of the fix's own surface, clean:** no new bundle keys were needed
+(`LOCOMOTIVES_RUNNING` reuses the existing wait message - checked present in all eight bundles);
+`testTimetableCaptureSurvivesLoadingAPlan` still holds under the new no-touch capture behaviour; the
+redundant `timetableCapture.setSelected` sync in the staging flow is now a no-op and harmless; the
+reflection in the new test names the method it reaches and the reason a hook was not added.
+
+---
+
+## Validation of the fixes (working tree above `5744c61`, 2026-07-28)
+
+The second fix round - `HS-B5`, `HS-B6`, and the `HS-C2` amendment - validated by the reviewer who
+filed them. All three are correct, and the re-sweep found no new finding.
+
+- **`HS-B5`** - the wait is `isRunning() && isCurrentLayout()`, which covers every ordering: a path
+  that arrives before the reload leaves `activeLocomotives` normally, and one abandoned by the fence
+  afterwards strands its entry only in a layout whose `isCurrentLayout()` is already false - the
+  fence's own mechanism releases the wait, which is the right dependency. Both blocking callers heal:
+  the staging `finally` then restores the borrowed timetable onto the *discarded* layout (harmless by
+  construction) and refreshes the buttons against the current one; the Execute Timetable handler's
+  re-enables run. The reload setting `gracefulStopRequested` suppresses the false failure dialog.
+  *One nit, recorded not filed:* the flag is set before the reload's confirmation dialog, so a
+  **cancelled** reload leaves it set until the next staging run clears it - and in that window an
+  exception-path stop of the same run would have its failure dialog suppressed (log only). Setting
+  the flag only on YES is exact. Contrived sequence, cosmetic consequence. A stray double blank line
+  sits at the same site.
+- **`HS-B6`** - the guard moved to the right predicate. `timetableExecuting` brackets the whole run
+  via an exception-safe wrapper, and no append can slip past its clearing: the capture call sits
+  immediately after the `activeLocomotives.put`, and the completion wait cannot exit while any entry
+  is registered - so every timetable-driven `addTimetableEntry` call happens strictly inside the
+  flag's window. Volatile is the right visibility for locomotive-thread readers. One deliberate
+  narrowing verified and endorsed: an *operator-driven* path executed while a timetable run is in
+  progress is now also not captured - correctly, since any append during the run extends the very
+  list the dispatch loop is walking, which is the defect mechanism itself. The test now sets the flag
+  it guards on, and its message speaks of timetable runs generally rather than staging.
+- **`HS-C2` amendment** - the refresh sits at the top of both terminal repaint paths, each inside its
+  `invokeLater`; the false "both entrances funnel here" comment is corrected and `Full`'s copy states
+  why it must carry its own line. Placements and arrivals both reach a refresh now; the external
+  branch's early returns skip it only in states where the button is disabled or the layout empty.
+
+**Remaining open, unchanged by this round:** the `HS-B3` A* exhaustion-vs-limit half (one boolean out
+of `astar`); the `HS-B4` mixed-hardware conservatism (recorded limitation); the duplicated menu
+blocks (extraction candidate). Nothing else is open.
+
+---
+
 ## HS-D1. Parity checks that came back clean, and contract items verified
 
 **The rule-by-rule parity table, planner vs runtime - each read in both sources:**
@@ -410,3 +592,44 @@ enforcing method rather than taking the write-up on trust.  Every claim checked 
   mechanism round-trips; nothing proves the UI invokes it on every exit path, because that needs a live
   Swing window.  Closing it means moving the borrow into `Layout` - a refactor, deliberately not made
   while fixing review findings.
+
+### Second round, 2026-07-27
+
+Three further items, all confirmed against the enforcing methods before being fixed.  Two were
+defects introduced by the first round of fixes, which is the more useful half of what this validation
+pass bought.
+
+- **HS-B5** - the completion wait now reads `while (this.isRunning() && this.isCurrentLayout())`.
+  The fence strands an `activeLocomotives` entry on purpose and the wait must outlive the last
+  dispatch; both are right, and neither had been asked about the other.  `validateButtonActionPerformed`
+  also sets `gracefulStopRequested`, since a reload-triggered stop is one the operator asked for.
+- **HS-B6** - the guard was on the wrong noun.  `timetableCapture && !timetableSequential` excluded
+  staging; the mechanism belongs to *any* timetable-driven run, so it is now
+  `!timetableExecuting`, set by a wrapper around `executeTimetableInternal` so that nothing thrown
+  from the run can leave capture silently disabled for the session.  The test was rewritten to pin the
+  run-wide guard rather than the staging-only one it originally pinned.
+- **HS-C2 (amended)** - `repaintAutoLocList(false)` dispatches to `Full`, which never calls `Lite`.
+  The first fix therefore moved the staleness from arrivals to placements, and the comment asserting
+  "both public entrances funnel here" was simply false.  `Full` now carries the refresh as well, and
+  the comment says what is actually true.
+
+**Still not addressed:** the `astar` exhaustion-versus-limit conflation (`HS-B3`, second half) and the
+absence of coverage for the UI's `finally` - both unchanged from the first round, for the reasons
+recorded there.
+
+### Third round, 2026-07-28
+
+The reviewer's validation of round two found no new finding; the one recorded nit and its litter are
+now cleared, along with one stale test assertion found while checking that round two had not broken
+anything.
+
+- **The `HS-B5` flag nit** - `gracefulStopRequested` is now set only once the operator confirms the
+  reload, not on entering the handler.  Declining the dialog is not asking for a stop, and arming it
+  on entry left an in-progress staging run able to end short without saying so.  The stray double
+  blank line at the same site is gone.
+- **A stale assertion in `testLoadingTheTimetableProducesRunnableEntries`** - it asserted capture was
+  left off after a load, which was true when loading switched it off and is deliberately not true now.
+  It passed only because the default is off, so it would have kept passing had the behaviour broken -
+  a vacuous pin, removed rather than inverted.  The real guarantee is enforced by
+  `testAStagingRunIsNotCapturedIntoItsOwnTimetable`, and preservation by
+  `testTimetableCaptureSurvivesLoadingAPlan`.

@@ -6,6 +6,7 @@ import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -382,18 +383,28 @@ public class testHomeStaging
         // What executePath does for each move it starts.  Reached by reflection rather than through a
         // hook added to production code: the guard under test lives in addTimetableEntry, and a method
         // that exists only so a test can reach it is the kind of thing this review round removed.
+        //
+        // The flag is set the same way, because the guard is on the RUN and not on staging: a normal
+        // timetable run with capture on appended itself too, and its retries never give up, so it
+        // never finished at all.  Excluding only staging fixed one of two identical entrances.
         Method append = Layout.class.getDeclaredMethod(
             "addTimetableEntry", Locomotive.class, List.class, long.class);
 
+        Field executing = Layout.class.getDeclaredField("timetableExecuting");
+
         append.setAccessible(true);
+        executing.setAccessible(true);
+        executing.setBoolean(layout, true);
 
         for (HomeStaging.Move move : layout.planReturnToHome().getMoves())
         {
             append.invoke(layout, move.getLocomotive(), move.getPath(), 0L);
         }
 
+        executing.setBoolean(layout, false);
+
         assertEquals(layout.getTimetable().size(), staged,
-            "a staging run appended itself to the timetable it was executing - the dispatch loop would "
+            "a timetable run appended itself to the list it was executing - the dispatch loop would "
             + "then walk into the copies and abandon a run that had actually succeeded");
     }
 
@@ -642,8 +653,11 @@ public class testHomeStaging
                 "no artificial delay: the retry loop holds moves back when the path is busy");
         }
 
-        assertFalse(layout.isTimetableCapture(),
-            "capture must not be left on, or executing this would record it all over again");
+        // Nothing is asserted about capture here any more.  Loading used to switch it off, and this
+        // line pinned that - but it only ever passed because the default is off, so it would have gone
+        // on passing had the behaviour broken.  Capture is now left exactly as the operator set it, and
+        // the guarantee that a run does not record itself lives where it is actually enforced:
+        // testAStagingRunIsNotCapturedIntoItsOwnTimetable.
     }
 
     /**

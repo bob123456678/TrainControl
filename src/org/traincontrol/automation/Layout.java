@@ -119,6 +119,11 @@ public class Layout
     // cleared by any other timetable load - see executeTimetable.
     private boolean timetableSequential = false;
 
+    // Set for as long as executeTimetable is driving.  Capture records what the OPERATOR drives; a
+    // timetable run recording itself appends to the very list being walked, and the dispatch loop
+    // re-reads its own size.  Staging was only one of the two entrances into that.
+    private volatile boolean timetableExecuting = false;
+
     // A staging entry that cannot run will not become runnable by waiting: nothing else is moving.  A
     // few retries ride out a sensor settling; beyond that the assumption is wrong and it must say so.
     private static final int STAGING_MAX_ATTEMPTS = 3;
@@ -235,7 +240,7 @@ public class Layout
         // to the list being walked - and the dispatch loop re-reads its own size, so it then executes
         // the copies, fails them (the locomotive is at the path's END now), and reports a run that
         // actually succeeded as abandoned, with a stop.  Capture is for what the operator drives.
-        if (!path.isEmpty() && loc != null && this.timetableCapture && !this.timetableSequential)
+        if (!path.isEmpty() && loc != null && this.timetableCapture && !this.timetableExecuting)
         {
             timetable.add(new TimetablePath(loc, path, timestamp)); 
             
@@ -2300,6 +2305,22 @@ public class Layout
      */
     public boolean executeTimetable()
     {
+        // The flag is set here rather than inside, so that nothing thrown from the run can leave it
+        // set - which would silently disable timetable capture for the rest of the session.
+        this.timetableExecuting = true;
+
+        try
+        {
+            return executeTimetableInternal();
+        }
+        finally
+        {
+            this.timetableExecuting = false;
+        }
+    }
+
+    private boolean executeTimetableInternal()
+    {
         // Returning after setting running would leave it set with nothing to clear it: no entry means
         // no thread, and isRunning() stayed true for the session - blocking autonomy and locomotive
         // edits until a reload.  The wait at the end of this method would also never return.
@@ -2481,7 +2502,13 @@ public class Layout
         //
         // Also covers a graceful stop and a staging entry that gave up: both clear running, and
         // this still waits for whatever is mid-path to finish and leave activeLocomotives.
-        while (this.isRunning())
+        // isCurrentLayout is the second condition because a fence-abandoned path leaves its
+        // activeLocomotives entry in place ON PURPOSE - the entry belongs to a Layout being discarded,
+        // and removing it was settled against.  isRunning therefore stays true forever on a reloaded
+        // graph, and a wait that polled only that never returned: the timetable was never restored and
+        // the buttons never came back.  Both behaviours are right; they had simply never been asked
+        // about each other, the wait being newer than the fence.
+        while (this.isRunning() && this.isCurrentLayout())
         {
             try
             {
