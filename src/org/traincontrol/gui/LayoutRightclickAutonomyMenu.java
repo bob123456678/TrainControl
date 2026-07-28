@@ -7,7 +7,6 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.util.I18n;
 
 /**
@@ -41,26 +40,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
-                // Shown always and greyed when there is nothing to send home, so the feature stays
-                // discoverable and says why it is unavailable.  Only the cheap half of the question is
-                // asked here - whether a plan exists needs a search, which would stall the popup.
-                // Running counts as a reason too.  The button greys while anything moves; these consulted
-                // only the triage, which knows nothing about it - so the same action was offered here and
-                // refused there, and the triage was being computed against positions changing underneath.
-                HomeStaging.Outcome nothingToDo = ui.isAutonomyBusy()
-                    ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
-                    : ui.getModel().getAutoLayout().triageReturnToHome();
-
-                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
-                menuItem.addActionListener(event -> ui.requestReturnToHome());
-                menuItem.setEnabled(nothingToDo == null);
-
-                if (nothingToDo != null)
-                {
-                    menuItem.setToolTipText(ui.describeStagingOutcome(nothingToDo, null));
-                }
-
-                add(menuItem);
+                HomeLocomotiveMenu.addReturnHomeItem(this, ui);
 
                 // Get the autonomy point corresponding to this station
                 Point current = ui.getModel().getAutoLayout().getPoint(stationName);

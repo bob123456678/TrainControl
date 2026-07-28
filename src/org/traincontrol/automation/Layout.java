@@ -441,7 +441,12 @@ public class Layout
 
             if (this.homeStations.containsKey(l))
             {
+                // Dropped, for the reason a dangling name is dropped: it can never be honoured.  One
+                // locomotive has one station - setHomeLocomotive enforces exactly that when an
+                // assignment is made - so only a hand-edited file reaches here, and keeping the loser
+                // would re-warn on every load and be written back out on every save.
                 this.control.logf("autolayout.warnHomeLocomotiveAssignedTwice", p.getHomeLoc(), p.getName());
+                p.setHomeLoc(null);
                 continue;
             }
 
@@ -4395,9 +4400,6 @@ public class Layout
                             
                             // Place the locomotive
                             layout.getPoint(point.getString("name")).setLocomotive(l);
-
-                            // Where it belongs, for "return to home"
-                            layout.claimHome(l, layout.getPoint(point.getString("name")));
                             
                             // Reset if none present
                             l.setDepartureFunc(null);

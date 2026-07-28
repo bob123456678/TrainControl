@@ -15,12 +15,16 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * The home locomotive menu items, shared by the three menus that offer them.
+ * Everything the right-click menus offer about a station being some locomotive\u2019s home.
  *
- * Two of these menus are station-scoped and carry the same pair of items, and the rules around them
- * are easy to get quietly different in two places: which name is shown, whether an assignment naming a
- * locomotive that is not on the graph survives being looked at, and what has to be refreshed after a
- * change.  One copy, three callers.
+ * Three menus reach this, and the rules are easy to get quietly different in three places: which name
+ * is shown, whether an assignment naming a locomotive that is not on the graph survives being looked
+ * at, when an edit may be applied at all, and what has to be refreshed afterwards.  One copy, three
+ * callers.
+ *
+ * The same argument covers Return Home itself, which two of those menus offer identically - a block
+ * that had already drifted once, when a flag added to the button was wired into one surface and not
+ * the others.
  *
  * @author Adam
  */
@@ -28,6 +32,39 @@ final class HomeLocomotiveMenu
 {
     private HomeLocomotiveMenu()
     {
+    }
+
+    /**
+     * Adds the item that sends every locomotive back where it belongs.
+     *
+     * Shown always and greyed when there is nothing to do, so the feature stays discoverable and says
+     * why it is unavailable.  Only the cheap half of the question is asked: whether a plan exists needs
+     * a search, which would stall the popup, and the real answer comes when it is clicked.
+     *
+     * Autonomy being busy counts as a reason of its own, and has to be asked before the triage rather
+     * than instead of it - the triage knows nothing about it, so asking only the triage offered an
+     * action the flow would then refuse, computed against positions that were changing underneath.
+     *
+     * @param menu
+     * @param ui
+     */
+    static void addReturnHomeItem(JComponent menu, TrainControlUI ui)
+    {
+        HomeStaging.Outcome nothingToDo = ui.isAutonomyBusy()
+            ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
+            : ui.getModel().getAutoLayout().triageReturnToHome();
+
+        JMenuItem menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
+
+        menuItem.addActionListener(event -> ui.requestReturnToHome());
+        menuItem.setEnabled(nothingToDo == null);
+
+        if (nothingToDo != null)
+        {
+            menuItem.setToolTipText(ui.describeStagingOutcome(nothingToDo, null));
+        }
+
+        menu.add(menuItem);
     }
 
     /**

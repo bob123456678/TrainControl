@@ -13,7 +13,6 @@ import org.traincontrol.base.Locomotive;
 import static org.traincontrol.gui.TrainControlUI.HIDE_INACTIVE_PREF;
 import static org.traincontrol.gui.TrainControlUI.HIDE_REVERSING_PREF;
 import static org.traincontrol.gui.TrainControlUI.SHOW_STATION_LENGTH;
-import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.util.I18n;
 
 /**
@@ -104,28 +103,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             add(menuItem);
             addSeparator();
 
-            // Shown always and greyed when there is nothing to send home, so the feature stays
-            // discoverable and says why it is unavailable.  Only the cheap half of the question is
-            // asked here - whether a plan exists needs a search, which would stall the popup.
-            // Running counts as a reason too.  The button greys while anything moves; these consulted
-            // only the triage, which knows nothing about it - so the same action was offered here and
-            // refused there, and the triage was being computed against positions changing underneath.
-            HomeStaging.Outcome nothingToDo = ui.isAutonomyBusy()
-                ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
-                : ui.getModel().getAutoLayout().triageReturnToHome();
-
-            menuItem = new JMenuItem(
-                I18n.t("autolayout.ui.menuReturnToHome")
-            );
-            menuItem.addActionListener(event -> ui.requestReturnToHome());
-            menuItem.setEnabled(nothingToDo == null);
-
-            if (nothingToDo != null)
-            {
-                menuItem.setToolTipText(ui.describeStagingOutcome(nothingToDo, null));
-            }
-
-            add(menuItem);
+            HomeLocomotiveMenu.addReturnHomeItem(this, ui);
             addSeparator();
 
             menuItem = new JMenuItem(

@@ -1137,7 +1137,14 @@ final class GraphRightClickPointMenu extends JPopupMenu
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 (Component) parent.getSwingView(),
-                I18n.f("autolayout.ui.confirmDeletePoint", nodeName),
+                // Says what else goes with it.  Deleting a station takes any locomotive standing on it
+                // off the graph too, which the confirmation never mentioned - and a locomotive can be
+                // standing on a point the operator cannot see a train at, having placed it there by
+                // hand or deleted the edges around it first.
+                (p.isOccupied()
+                    ? I18n.f("autolayout.ui.confirmDeletePointOccupied", nodeName,
+                        p.getCurrentLocomotive().getName())
+                    : I18n.f("autolayout.ui.confirmDeletePoint", nodeName)),
                 I18n.t("autolayout.ui.dialogPointDeletion"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,

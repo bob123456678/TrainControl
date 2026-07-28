@@ -13039,6 +13039,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
         {
+            // Whether this flow was the one that disabled those two buttons, so the finally can put
+            // back exactly what was taken and nothing else.  The impossible path never touches them.
+            boolean tookTheButtons = false;
+
             try
             {
                 // Planned ONCE.  Asking planReturnToHome and then letting loadReturnToHomeTimetable
@@ -13057,6 +13061,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     return;
                 }
+
+                tookTheButtons = true;
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
@@ -13080,9 +13086,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    this.startAutonomy.setEnabled(true);
-                    this.gracefulStop.setEnabled(false);
-
                     // A move that gave up stopped the whole run.  It is logged, but a log line is not
                     // something an operator watching the layout will see - and what they are looking at
                     // is trains that stopped halfway with no explanation.
@@ -13108,9 +13111,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 layout.setTimetable(borrowedTimetable);
 
                 // Re-enabled whether it ran, could not be planned, or threw.  In a finally because a
-                // button that never comes back needs a restart to recover.
+                // button that never comes back needs a restart to recover - and these two used to be
+                // reset only on the normal path, so an exception out of executeTimetable left Start
+                // Autonomy dead and Graceful Stop live, for a run that was no longer happening.
+                final boolean restoreButtons = tookTheButtons;
+
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
+                    if (restoreButtons)
+                    {
+                        this.startAutonomy.setEnabled(true);
+                        this.gracefulStop.setEnabled(false);
+                    }
+
                     this.refreshReturnHomeButton();
                     this.executeTimetable.setEnabled(true);
                     this.repaintTimetable();
