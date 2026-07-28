@@ -1,8 +1,12 @@
 import org.traincontrol.automation.HomeStaging;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import java.util.ArrayList;
+import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -278,6 +282,134 @@ public class testHomeStaging
         assertNull(layout.triageReturnToHome(),
             "with work to do, only a plan can say whether it is possible");
         assertTrue(layout.planReturnToHome().isPossible());
+    }
+
+    /**
+     * Gives the layout a timetable of its own, so there is something to lose.
+     */
+    private static List<TimetablePath> giveTimetable(Layout layout, String locName)
+    {
+        List<List<Edge>> paths = layout.getPossiblePaths(loc(locName), true);
+
+        assertFalse(paths.isEmpty(), "precondition: the fixture must offer this locomotive somewhere to go");
+
+        List<TimetablePath> timetable = new ArrayList<>();
+
+        timetable.add(new TimetablePath(loc(locName), paths.get(0), 111L));
+        timetable.add(new TimetablePath(loc(locName), paths.get(0), 222L));
+
+        layout.setTimetable(new ArrayList<>(timetable));
+
+        return timetable;
+    }
+
+    /**
+     * A staging run borrows the timetable and gives back exactly what it took.
+     *
+     * The operator's timetable is theirs - captured by hand, or built entry by entry - and it is only
+     * written to disk when the autonomy file is saved.  Returning home occupies the timetable because
+     * that is the machinery that drives trains, so it has to put back what it displaced: the same
+     * entries, in the same order, with their execution times intact.  Sequential mode has to go back
+     * too, or the restored timetable would run under staging semantics it was never written for.
+     */
+    @Test
+    public void testTheTimetableIsBorrowedAndGivenBackUnchanged()
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        List<TimetablePath> original = giveTimetable(layout, LOC_A);
+
+        assertFalse(layout.isTimetableSequential(), "precondition: an ordinary timetable is not sequential");
+
+        // What the UI does before it hands the timetable over - a copy, because getTimetable is live
+        List<TimetablePath> borrowed = new ArrayList<>(layout.getTimetable());
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS D", false));
+
+        assertTrue(layout.loadReturnToHomeTimetable().isPossible(),
+            "precondition: the fixture must produce a plan, or nothing displaces the timetable and the "
+            + "assertions below would be measuring the wrong thing");
+
+        assertNotEquals(layout.getTimetable(), original, "the plan should have displaced the timetable");
+        assertTrue(layout.isTimetableSequential(), "a staging plan must run one train at a time");
+
+        // What the UI does in its finally, however the run ended
+        layout.setTimetable(borrowed);
+
+        assertEquals(layout.getTimetable().size(), original.size(), "a different number of entries came back");
+
+        for (int i = 0; i < original.size(); i++)
+        {
+            assertSame(layout.getTimetable().get(i), original.get(i),
+                "entry " + i + " is not the one that was taken away");
+
+            assertEquals(layout.getTimetable().get(i).getExecutionTime(), original.get(i).getExecutionTime(),
+                "entry " + i + " came back with a different execution time");
+        }
+
+        assertFalse(layout.isTimetableSequential(),
+            "restoring the timetable must also restore ordinary execution, or the operator's timetable "
+            + "would run under staging rules");
+    }
+
+    /**
+     * Loading a plan leaves timetable capture as it found it.
+     *
+     * Capture has to be off while the plan is written, or the staging moves would be recorded as though
+     * the operator had driven them.  Turning it off is not the same as turning it off permanently, and
+     * an operator who had capture on has no reason to expect it silently switched off.
+     */
+    @Test
+    public void testTimetableCaptureSurvivesLoadingAPlan()
+    {
+        for (boolean capturing : new boolean[] { true, false })
+        {
+            Layout layout = load(ring(LOC_A, LOC_B, null));
+
+            layout.setTimetableCapture(capturing);
+            assertTrue(layout.moveLocomotive(LOC_A, "HS D", false));
+
+            layout.loadReturnToHomeTimetable();
+
+            assertEquals(layout.isTimetableCapture(), capturing,
+                "capture was " + capturing + " before the plan was loaded and must be " + capturing
+                + " after it");
+        }
+    }
+
+    /**
+     * getTimetable hands back the live list, which is why the caller has to copy it.
+     *
+     * Holding the returned list and expecting to restore from it later does not work - loading a plan
+     * empties that very list.  This is pinned because the mistake is invisible: the code reads as though
+     * it saved the timetable, and the failure only shows up as the operator's timetable quietly gone.
+     */
+    @Test
+    public void testGetTimetableIsLiveSoCallersMustCopyToRestoreIt()
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        giveTimetable(layout, LOC_A);
+
+        TimetablePath first = layout.getTimetable().get(0);
+
+        List<TimetablePath> notACopy = layout.getTimetable();
+        List<TimetablePath> aCopy = new ArrayList<>(layout.getTimetable());
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS D", false));
+        assertTrue(layout.loadReturnToHomeTimetable().isPossible(), "precondition: a plan must be loaded");
+
+        // Checked by content rather than by size: a plan that happened to have as many moves as the
+        // timetable had entries would make a size comparison pass while proving nothing
+        assertFalse(notACopy.contains(first),
+            "if the live list still held the original entries this test would be pointless - and the "
+            + "copy in the UI could be dropped");
+
+        assertTrue(aCopy.contains(first), "the copy must still hold what was taken away");
+
+        layout.setTimetable(aCopy);
+
+        assertEquals(layout.getTimetable().size(), 2, "only the copy could restore the original");
     }
 
     /**
