@@ -675,11 +675,44 @@ that they were doing it wrong.  It now warns, names the same four things, and de
 assignment is the operator's to make.  What was ever actually wrong was learning about it later from a
 dialog that blames the track.  This closes `WR-C9` rather than leaving it half-open.
 
-**Still untouched:** the two observations this round recorded but did not file - duplicate assignments
-warned on every load but never cleared, and the now-dead in-loop `claimHome` during `fromJSON` - plus
-everything carried from earlier rounds: the `HS-B3` exhaustion-vs-limit half, the `HS-B4`
-mixed-hardware conservatism, the duplicated menu blocks, the `deletePoint` occupancy-guard
-observation, and the `startAutonomy`/`gracefulStop` reset asymmetry recorded as a trap in D1.
+**Still open:** the `HS-B3` exhaustion-vs-limit half, the `HS-B4` mixed-hardware conservatism, `FP-B3`
+and `FP-C6`.  Each is author-deferred pending a measurement or a design decision rather than pending
+an edit, so none is being settled here.  The editor flows and the charset round trip remain untested,
+as the cycle summary already records.
+
+
+## Addressed 2026-07-28 (open items)
+
+Everything on the open list that was an edit rather than a decision, closed in one pass.
+
+- **The two observations from the fourth round.**  Duplicate assignments are dropped rather than
+  ignored: only a hand-edited file produces two stations naming one locomotive, the loser can never be
+  honoured, and keeping it re-warned on every load and was written back out on every save.  The
+  warning now says removed, in all eight bundles.  The in-loop `claimHome` during `fromJSON` is gone -
+  checked first that the only earlier return from that method is an invalidation path firing before
+  any point exists, so nothing reaches the end without the rebuild.
+- **The `deletePoint` occupancy observation**, which `WR-C1` said was worth acting on once the claim
+  release existed.  It exists, so the confirmation now names the locomotive that will be taken off the
+  graph with the station.  Told rather than refused, on the same reasoning that settled `WR-C9`: the
+  operator is allowed to do this, and the complaint was never that it happened but that nothing said
+  so.
+- **The reset asymmetry recorded as a trap in D1.**  `startAutonomy` and `gracefulStop` were reset
+  only on the normal path, so an exception out of `executeTimetable` left Start Autonomy dead and
+  Graceful Stop live for a run that had ended.  Both now reset in the `finally`, guarded by whether
+  this flow was the one that disabled them - so the impossible path, which never touches them, still
+  does not.
+- **The duplicated menu blocks**, named as an extraction candidate since the first round.  Return Home
+  is now `HomeLocomotiveMenu.addReturnHomeItem`, called from both menus.  That block is precisely
+  where the drift this report chased twice occurred: a flag added to the button reached one surface
+  and not the others.
+
+Two notes on the checking rather than the code.  The validator gained an unused-import check, which
+the extraction immediately needed - and its first version silently reported every import in
+`TrainControlUI` as unused, having been mangled by shell quoting on the way into the file; it was
+rewritten and then verified on a synthetic file, flagging an import mentioned only in a comment and a
+string literal while leaving a used one alone.  Separately, a suspicion that scripted edits had
+flipped eight files from LF to CRLF died on inspection: `core.autocrlf` is `true` and every blob is
+stored LF, so the working tree is doing exactly what it should.
 
 `testHomeStaging` 33 -> 36.  Committed as `f14bddf`, `4f9eb09` and `e5b252b`; none of it has been
 compiled or run, and `f14bddf` is the first of the three that can be.
