@@ -90,7 +90,7 @@ public class Edge
     }
     
     /**
-     * Validates that a command is valid.Creates accessories in DB if needed.
+     * Validates that a command is valid.  Creates accessories in DB if needed.
      * @param accessory
      * @param action
      * @param control

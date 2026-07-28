@@ -42,7 +42,8 @@ public final class I18n
 
     /**
      * Fetch a formatted string with placeholders.
-     * Example: messages.properties -> log.userLogin=User {0} logged in.Usage: I18n.f("log.userLogin", username);
+     * Example: messages.properties -> log.userLogin=User {0} logged in.
+     * Usage: I18n.f("log.userLogin", username);
      * @param key
      * @param args
      * @return 

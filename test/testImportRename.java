@@ -42,16 +42,28 @@ public class testImportRename
     private static final String CS_NAME = "SBB RE 4_4 II";
     private static final int CS_ADDRESS = 76;
 
-    /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
-    private static final String[] TEST_LOCS = {
-        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
-        "IR cs dupe" };
+    /**
+     * Two fixture locomotives at addresses the fixture holds exactly once.  Their names are used as
+     * LOCAL names, crossed over, to build a rename cycle and a rename chain.
+     *
+     * Declared above TEST_LOCS because that array references them: a field initializer may not refer
+     * to a field declared later in the class.
+     */
+    private static final String CS_TEN = "BR 10 001";
+    private static final int CS_TEN_ADDRESS = 10;
+    private static final String CS_TWENTYONE = "V 200 150";
+    private static final int CS_TWENTYONE_ADDRESS = 21;
 
     /**
      * An address the FIXTURE holds twice: MM2 60 is both "ALCO UP" and "V 60 706" in CS3_loks.json.
      * Two others exist (MM2 1 and MM2 3) if this one ever needs replacing.
      */
     private static final int CS_DUPE_ADDRESS = 60;
+
+    /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
+    private static final String[] TEST_LOCS = {
+        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
+        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE };
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -224,6 +236,113 @@ public class testImportRename
         assertTrue(targets.isEmpty(),
             "the Central Station has two locomotives at this address, so no single name can be "
             + "proposed - but got " + targets);
+    }
+
+    /**
+     * Installs a locomotive, first clearing anything that would collide with it: any locomotive already
+     * on that decoder, and any already holding that name.
+     *
+     * Both are necessary against a restored database.  Another locomotive on the decoder makes the
+     * address ambiguous and triggers the LOCAL-side refusal, and the name matters here because these
+     * tests deliberately reuse Central Station names as local ones.  In memory only - saveState lives
+     * in TrainControlUI, which these tests never construct.
+     */
+    private static MarklinLocomotive installCleanly(String name, int address) throws Exception
+    {
+        model.deleteLoc(name);
+
+        MarklinLocomotive installed = model.newMM2Locomotive(name, address);
+
+        for (Locomotive other : model.getLocomotives())
+        {
+            MarklinLocomotive existing = (MarklinLocomotive) other;
+
+            if (existing != installed && existing.getIntUID() == installed.getIntUID())
+            {
+                model.deleteLoc(existing.getName());
+            }
+        }
+
+        return installed;
+    }
+
+    /**
+     * A name swap on the Central Station is refused outright, because no order can apply it safely.
+     *
+     * The two ambiguity refusals are each about a single address.  What survives them still interacts
+     * ACROSS addresses through the names: sources are unique and Central Station names are unique, so
+     * the list is a permutation - and a permutation can contain a cycle.
+     *
+     * Swapping two names is what a user does after noticing a mislabelling, and it produces
+     * [{A to B}, {B to A}].  Both entries are individually correct.  Applied in order against a
+     * database each entry mutates, the first deletes the locomotive the second was about to rename,
+     * and the second then renames the survivor back to the name it started with: one locomotive
+     * destroyed with its function mappings, notes and images, no rename, and two confirmations that
+     * both described renames.  Unwinding a swap needs a temporary name, which this flow cannot offer.
+     */
+    @Test
+    public void testNameSwapIsRefused() throws Exception
+    {
+        installCleanly(CS_TWENTYONE, CS_TEN_ADDRESS);
+        installCleanly(CS_TEN, CS_TWENTYONE_ADDRESS);
+
+        assertTrue(renameTargetsFor(CS_TWENTYONE).isEmpty(),
+            "a swap cannot be applied one rename at a time without destroying one of the pair");
+
+        assertTrue(renameTargetsFor(CS_TEN).isEmpty(),
+            "and neither half of it may be proposed on its own");
+    }
+
+    /**
+     * A rename CHAIN is not refused - it is ordered, so that no deletion is needed at all.
+     *
+     * The Central Station renamed one locomotive to a name a second one is also giving up.  Applied
+     * with the giver first, the name is free by the time it is wanted and nothing is deleted; applied
+     * the other way, the consumer deletes the giver to clear the way and the chain loses it.  Which
+     * order the parser happened to produce is not something the user can see or influence, so the
+     * order is imposed here.
+     */
+    @Test
+    public void testRenameChainIsOrderedSoNothingNeedsDeleting() throws Exception
+    {
+        // Local "V 200 150" at address 10 must become "BR 10 001"; local "IR chain tail" at address 21
+        // must become "V 200 150" - the name the first one is giving up
+        installCleanly(CS_TWENTYONE, CS_TEN_ADDRESS);
+        installCleanly("IR chain tail", CS_TWENTYONE_ADDRESS);
+
+        List<String[]> proposals = model.getLocomotivesToRenameFromImport();
+
+        int giverUp = indexOfProposalFrom(proposals, CS_TWENTYONE);
+        int taker = indexOfProposalFrom(proposals, "IR chain tail");
+
+        assertTrue(giverUp >= 0 && taker >= 0,
+            "precondition: both halves of the chain should be proposed - got " + describe(proposals));
+
+        assertTrue(giverUp < taker,
+            "the locomotive giving up the name must be renamed first, or the consumer deletes it to "
+            + "clear the way - got " + describe(proposals));
+    }
+
+    private static int indexOfProposalFrom(List<String[]> proposals, String source)
+    {
+        for (int i = 0; i < proposals.size(); i++)
+        {
+            if (proposals.get(i)[0].equals(source)) return i;
+        }
+
+        return -1;
+    }
+
+    private static String describe(List<String[]> proposals)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (String[] proposal : proposals)
+        {
+            out.add(proposal[0] + " -> " + proposal[1]);
+        }
+
+        return out.toString();
     }
 
     /**

@@ -856,7 +856,82 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        return renameCandidates;
+        return orderRenameProposals(renameCandidates);
+    }
+
+    /**
+     * Orders rename proposals so each one is applied only once its target name is free, and drops any
+     * that form a cycle.
+     *
+     * Both ambiguity refusals above are about ONE address.  What is left after them still interacts
+     * across addresses, through the names: sources are unique and Central Station names are unique, so
+     * this list is a partial injective mapping - a permutation - and permutations contain cycles.
+     *
+     * The consumer computes this list once and then applies it one entry at a time against a database
+     * each entry mutates, deleting whatever already holds a target name so that renameLoc's
+     * "target must be free" guard can pass.  That makes the order load-bearing:
+     *
+     *  - A CHAIN (the Central Station renamed X to C and the old C to D) is safe in one order and
+     *    destroys the middle locomotive in the other.  Emitting "C to D" first frees the name, and the
+     *    second rename then needs no deletion at all.
+     *  - A SWAP (X and C exchange names) is safe in NO order.  Applying either entry deletes the
+     *    locomotive the other entry was about to rescue - two confirmations, both describing renames,
+     *    and the result is one deletion and no rename.  Unwinding it needs a temporary name, which this
+     *    flow has no way to offer, so the cycle is refused instead.
+     *
+     * After this, a deletion in the consumer can only be a name held by something with no pending
+     * rename of its own - the stale-duplicate case that step was written for.
+     *
+     * @param proposals
+     * @return
+     */
+    private List<String[]> orderRenameProposals(List<String[]> proposals)
+    {
+        List<String[]> remaining = new LinkedList<>(proposals);
+        List<String[]> ordered = new ArrayList<>();
+
+        boolean progress = true;
+
+        while (progress)
+        {
+            progress = false;
+
+            // Iterated over a copy so the live list can be modified.  A proposal can never block
+            // itself: generation only emits pairs whose two names differ.
+            for (String[] proposal : new ArrayList<>(remaining))
+            {
+                if (!isPendingRenameSource(proposal[1], remaining))
+                {
+                    ordered.add(proposal);
+                    remaining.remove(proposal);
+                    progress = true;
+                }
+            }
+        }
+
+        // Nothing could be emitted, so every target left is still some other entry's source: a cycle
+        for (String[] proposal : remaining)
+        {
+            this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
+        }
+
+        return ordered;
+    }
+
+    /**
+     * Whether a locomotive by this name is still waiting to be renamed away
+     * @param name
+     * @param remaining
+     * @return
+     */
+    private static boolean isPendingRenameSource(String name, List<String[]> remaining)
+    {
+        for (String[] proposal : remaining)
+        {
+            if (proposal[0].equals(name)) return true;
+        }
+
+        return false;
     }
     
     /**
@@ -2684,7 +2759,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Gets the state of the accessory with the specified address.If it does not exist, a new switch is created.
+     * Gets the state of the accessory with the specified address.  If it does not exist, a new
+     * switch is created.
      * @param address greater than 1
      * @param decoderType
      * @return 
@@ -2714,7 +2790,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Returns an accessory based on its numerical address.If the address does not exist, a new switch is created.
+     * Returns an accessory based on its numerical address.  If the address does not exist, a new
+     * switch is created.
      * @param address greater than 1
      * @param decoderType
      * @return 

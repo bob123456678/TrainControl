@@ -8,6 +8,12 @@
 added** - the author builds and tests in NetBeans. Every claim below was made by reading the enforcing
 method or by a scripted count over the source, per [README.md](README.md).
 
+**Validation pass:** the fixes for `PV-C1`..`C5` landed in `3391cb9` and were verified against that
+commit the same day, by the reviewer who filed them. All five are correct - the per-fix evidence is in
+the "Validation of the fixes" section. The validation also produced two further findings: `PV-B1`,
+found by asking whether the two rename-ambiguity fixes compose (they do not - the hazard moved to the
+name space), and `PV-C6`, the completed scan `PV-C5` called for.
+
 **Scope.** The cycle closed with `RR` reviewed at `5e80c41` - but the fixes for `RR-C1`..`C5` and for
 `FP-B1`/`B2`/`C1`..`C5` landed *after* that, in the four source-bearing commits `c24a82a`, `5af916a`,
 `1a407b3` and `c8af58e`. Those commits had never been read by anyone who did not write them, and the
@@ -36,23 +42,102 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| PV-C4 | Duplicate addresses on the *Central Station* side produce two rename proposals for one local locomotive; the second deletes an unrelated locomotive and renames nothing | **B** | **Fixed 2026-07-27**. Raised from C on verification |
-| PV-C1 | The `FP-C3` unwrap missed its one multiline site, so "all 100 sites" is false by one - and it is the per-repaint hot path | C | **Fixed 2026-07-27** |
-| PV-C2 | `switchCSLayout` clears the layout database on the EDT without `layoutRefreshLock` - a third entrance to the rebuild the `RR-C2` fix says it covered | C | **Fixed 2026-07-27** |
-| PV-C3 | The sync deferral's comment still gives the pre-identity-hash rationale; the cleanup that fixed its two siblings missed it | C | **Fixed 2026-07-27** |
-| PV-C5 | The javadoc on `equals`/`hashCode` - the cycle's most-cited comment - is structurally mangled, having lost its `*` prefix on 22 lines | C | **Fixed 2026-07-27** |
+| PV-B1 | A name swap or rename chain done on the Central Station turns the rename-on-import flow into a deletion: proposals interact through the name space, and applying them in order destroys one locomotive of the pair | B | **Fixed 2026-07-27** - proposals are now ordered, and cycles refused |
+| PV-C4 | Duplicate addresses on the *Central Station* side produce two rename proposals for one local locomotive; the second deletes an unrelated locomotive and renames nothing | **B** | **Fixed 2026-07-27**. Raised from C on verification. Fix validated |
+| PV-C1 | The `FP-C3` unwrap missed its one multiline site, so "all 100 sites" is false by one - and it is the per-repaint hot path | C | **Fixed 2026-07-27**. Fix validated |
+| PV-C2 | `switchCSLayout` clears the layout database on the EDT without `layoutRefreshLock` - a third entrance to the rebuild the `RR-C2` fix says it covered | C | **Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope |
+| PV-C3 | The sync deferral's comment still gives the pre-identity-hash rationale; the cleanup that fixed its two siblings missed it | C | **Fixed 2026-07-27**. Fix validated |
+| PV-C5 | The javadoc on `equals`/`hashCode` - the cycle's most-cited comment - is structurally mangled, having lost its `*` prefix on 22 lines | C | **Fixed 2026-07-27**. Fix validated |
+| PV-C6 | The reformat behind `PV-C5` left sentence run-ons in other javadoc blocks | C | **Fixed 2026-07-27**. Four, not the three recorded - see below |
 | PV-D1 | Fix verification and clean checks | - | Recorded |
 
-**One B finding, and it was filed as a C.** `PV-C4` was written up as benign; tracing the delete branch
-to its end showed the benign conclusion was wrong and the outcome is data loss. It keeps its `C4`
-identifier - identifiers are fixed when assigned - so this is the second place in the cycle where the
-letter no longer matches the severity, after `FP-C4`.
+**Two B findings, and the first-filed one was filed as a C.** `PV-C4` was written up as benign; tracing
+the delete branch to its end showed the benign conclusion was wrong and the outcome is data loss. It
+keeps its `C4` identifier - identifiers are fixed when assigned - so this is the second place in the
+cycle where the letter no longer matches the severity, after `FP-C4`. `PV-B1`, filed at B from the
+start, is the same family one flow further down.
 
-All findings are in code this cycle touched, and all are now fixed.
+All findings are in code this cycle touched, and all are now fixed. `PV-C1`..`C5` were fixed first and
+validated; `PV-B1` and `PV-C6` arrived with that validation and were fixed after it.
 
 ---
 
 ## Findings
+
+### PV-B1. Rename proposals interact through the name space, and a Central Station name swap deletes a locomotive
+
+[MarklinControlStation.java:779](../../src/org/traincontrol/marklin/MarklinControlStation.java)
+(`getLocomotivesToRenameFromImport`, after both ambiguity fixes),
+[TrainControlUI.java:13949](../../src/org/traincontrol/gui/TrainControlUI.java) (the consumer loop),
+[TrainControlUI.java:10957](../../src/org/traincontrol/gui/TrainControlUI.java) (`deleteLoc`'s
+confirmation).
+
+`FP-B1` closed the collision where several **local** locomotives share one address. `PV-C4` closed its
+mirror, several **parsed** locomotives at one address. Both are same-address collisions. Validating the
+second fix raised the remaining question - can proposals at *different* addresses interact? - and they
+can, through the names.
+
+Let the user swap two names on the Central Station, the ordinary way of fixing a mislabelling: the
+locomotive at address 10, known locally as `X`, is renamed to `C` there, and the one at address 20,
+known locally as `C`, is renamed to `X`. Every step below was read in the enforcing method, not
+predicted:
+
+1. Generation passes both ambiguity checks - each address holds exactly one local and one parsed
+   locomotive - and emits `[{X -> C}, {C -> X}]`. Both proposals are individually correct.
+2. The consumer applies them in order. For `{X -> C}`: the target name `C` is taken, so the flow asks
+   to delete `C` - `deleteLoc`'s dialog names it, with no hint that the very next proposal was about
+   to rename that locomotive - and on confirmation **destroys it**, then renames `X` to `C`.
+3. For `{C -> X}`: `getLocByName("C")` now resolves to the *renamed former `X`*, whose target `X` is
+   free again - so it is renamed straight back.
+
+Net effect, in either application order (both were traced; the situation is symmetric): **one
+locomotive of the pair is deleted with its function mappings, notes and images, and the survivor ends
+the flow holding its original name.** Two confirmations were shown; both described renames; the
+outcome is a deletion and no rename. A rename *chain* (`X -> C`, `C -> D` where the CS renamed `X` to
+`C` and the old `C` to `D`) either succeeds completely or destroys the middle locomotive, depending on
+nothing but the order the parser returned them in.
+
+**Severity B on the cycle's own precedent** (`FP-B1`, `PV-C4`): real destruction, a plausible
+precondition - swapping two names to fix a mix-up is exactly what a user does after noticing a
+mislabelling - and confirmations that do not describe what will actually happen. Not A, because each
+deletion is individually confirmed and names a locomotive the user knows.
+
+**The root defect is now visible as one thing.** All three findings in this family are the same
+statement: the list is generated against the database as it stands, then applied step by step to a
+database each step mutates. `FP-B1` and `PV-C4` removed the two single-address symptoms; the
+cross-address symptom needs the interaction handled, not a third filter. Fix shapes, safest first:
+decline any proposal whose target name is another proposal's source name (or an existing locomotive's
+name at a different address), logging it like the two existing refusals - conservative, loses the
+lucky-order chain case, entirely safe; or apply the whole batch through temporary names, which handles
+swaps and chains correctly but changes the confirmation flow.
+
+**Fixed by ordering the list rather than filtering it.** `getLocomotivesToRenameFromImport` now emits
+an entry only once its target name is no longer some other pending entry's source, and refuses whatever
+is left. That distinction matters, because the two cases are not equally hopeless:
+
+- A **chain** is orderable. Emitting the entry that gives up the contested name first means the name is
+  free when it is wanted, and the second rename needs **no deletion at all**. Both locomotives survive.
+  Declining chains - the conservative shape this finding first proposed - would have given up something
+  that simply needed sequencing.
+- A **swap** is a cycle, unsatisfiable in any order, and unwinding it needs a temporary name this flow
+  cannot offer. Those are dropped, logging `loc.renameCycleRefused`, which tells the user to give one of
+  the pair a temporary name first - a refusal with no stated exit would just move the dead end.
+
+The consequence worth recording: after this, a deletion in the consumer can only be a name held by
+something with **no pending rename of its own** - the stale-duplicate case that step was written for.
+The UI is unchanged; the ordering is entirely in the model, which is the only layer that can see the
+whole list. The consumer sees one pair at a time and cannot know that pair 2 was about to rescue what
+pair 1 deletes.
+
+**Tests.** `testImportRename.testNameSwapIsRefused` and
+`testRenameChainIsOrderedSoNothingNeedsDeleting`, built from two fixture locomotives at addresses the
+fixture holds exactly once (`BR 10 001` at MM2 10, `V 200 150` at MM2 21) with the local names crossed.
+Both install through a helper that first clears the decoder *and* the name, since these tests reuse
+Central Station names as local ones and a restored database may hold either.
+
+*Found by validating the `PV-C4` fix and asking whether the two refusals compose. They do: the parsed
+side and the local side are each internally consistent now - but the pairs still interact with each
+other, one flow further down.*
 
 ### PV-C1. The one wrapped Thread the unwrap missed - because its call spans two lines
 
@@ -234,6 +319,81 @@ javadoc reformat rather than a hand edit, and means other blocks in the tree may
 Worth recording because this document verified that fix's *behaviour* in detail and never looked at the
 comment carrying its reasoning - the same shape as `PV-C1`, found while verifying a different property
 of the same method.
+
+---
+
+### PV-C6. The reformat's residue, enumerated
+
+`PV-C5` suspected that the reformat which mangled the `equals`/`hashCode` javadoc had touched other
+blocks, citing `Edge.validateConfigCommand`'s `valid.Creates` as the signature. The scan it called for
+has now been run, both ways: every javadoc block in `src/` checked for body lines missing their `*`
+prefix, and every javadoc line checked for the `period.Capital` run-on.
+
+The residue is three sentence run-ons and nothing else:
+
+- [Edge.java:93](../../src/org/traincontrol/automation/Edge.java) - *"Validates that a command is
+  valid.Creates accessories in DB if needed."* The known one, named in `PV-C5` and left unfixed there.
+  Also the javadoc whose first sentence decided `FP-C4` - it deserves the space after its period.
+- [MarklinControlStation.java:2687](../../src/org/traincontrol/marklin/MarklinControlStation.java) -
+  *"...specified address.If it does not exist, a new switch is created."*
+- [MarklinControlStation.java:2717](../../src/org/traincontrol/marklin/MarklinControlStation.java) -
+  *"...numerical address.If the address does not exist, a new switch is created."*
+
+No other block lost its `*` prefixes - the one candidate the prefix scan raised
+(`RouteEditor.java:122`) is commented-out code inside a method body that happens to open with `/**`,
+not a javadoc. So `PV-C5`'s "other blocks may be affected" resolves to: affected, cosmetically.
+
+**Four, not three.** An independent rescan before fixing found one more with the same signature:
+
+- [I18n.java:45](../../src/org/traincontrol/util/I18n.java) - *"...log.userLogin=User {0} logged
+  in.Usage: I18n.f(...)"*, in the javadoc of `I18n.f` itself.
+
+**Fixed**, all four. The two long ones were split across lines rather than merely spaced, since they
+were over-length anyway, and the `I18n` example was split at the same point so the usage line stands on
+its own. A rescan finds no prose run-ons left in `src/`.
+
+Two notes for whoever runs this scan next. The `RouteEditor` block is a real trap: it closes with `}*/`
+rather than `*/` on its own line, so a scanner looking for a line *starting* with `*/` never leaves the
+block and reports the next ninety lines of ordinary code as malformed javadoc. And a naive
+`[a-z0-9]\.[A-Z]` pattern matches every `@throws java.lang.Exception` in the tree; the signal is in
+prose lines only.
+
+---
+
+## Validation of the fixes (commit `3391cb9`)
+
+Each `PV` fix was verified in the current source by the reviewer who filed the finding - reading the
+enforcing method, not the diff alone:
+
+- **`PV-C1`** - `setImageOnEDT` now passes a plain lambda to `invokeLater`; nothing else changed in
+  the method. The multiline grep finds zero wrapped sites in `src/`.
+- **`PV-C2`** - `clearLayouts` takes `layoutRefreshLock` internally, with the reentrancy note; the
+  locked callers are unaffected. **Deadlock audit:** the only `invokeAndWait` calls in `src/` are the
+  two in `LocomotiveStats`' CSV-export thread, which holds no model locks; the model-to-UI log path
+  (`TrainControlUI.log`) marshals with `invokeLater`, asynchronously. So no holder of
+  `layoutRefreshLock` can ever block on the EDT, and the EDT blocking on the lock cannot deadlock -
+  the worst case is the EDT stalling for the tail of a background refresh in exactly the collision
+  the lock exists to prevent, which is bounded and correct.
+- **`PV-C3`** - the rewritten comment is accurate at HEAD: the decoder-redirection rationale is real
+  (`setAddress` changes which engine subsequent commands reach), and the explicit "do not re-add
+  repair machinery" note closes the trap the stale text had set.
+- **`PV-C4`** - the parsed side is now grouped by `getIntUID()` and ambiguous addresses declined,
+  symmetrically with `FP-B1`; the check sits after the local-match lookup so a Central Station
+  duplicate with no local counterpart stays silent, as intended.
+  `loc.renameAmbiguousCentralStationDuplicate` exists in all eight bundles with both placeholders
+  used. `testDuplicateCentralStationAddressProducesNoRenameProposal` builds the one-local-two-remote
+  shape it needs and asserts that precondition rather than assuming it, counting by UID so decoder
+  types cannot alias. One deliberate narrowing noted: when one of the Central Station duplicates
+  already bears the local locomotive's name, the old code emitted a single coherent proposal and the
+  fix now declines the address entirely - declining is the safe direction, and the log message says
+  what to do.
+- **`PV-C5`** - the javadoc block is restored: `*` prefixes on every line, summary sentence split,
+  wording unchanged.
+
+Validating `PV-C4`'s fix is also what produced `PV-B1`: the fix is correct for the collision it
+names, and the question "do the two refusals compose?" showed the same root defect surfacing one flow
+further down. That question is worth asking of any pair of fixes to one method - each was verified
+against its own finding, and neither verification could have raised it.
 
 ---
 

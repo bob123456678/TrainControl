@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across eight documents and produced 114 findings - 52 in the main
-review, then 62 more across seven later passes.
+The entry point for a cycle that ran across eight documents and produced 116 findings - 52 in the main
+review, then 64 more across seven later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -10,9 +10,10 @@ document holds.
 
 Written 2026-07-27. The cycle's review work is finished, but this is not a frozen snapshot: two findings
 are open by the author's decision, two arrived after the reviews had closed, from writing tests
-rather than from reading, and five more were added later the same day by `PV` - the pass that
-reviewed the fix commits the cycle ended on, which no earlier document could have covered. All counts
-above include them. Anything that reopens or adds a finding needs this page updated with it.
+rather than from reading, and seven more were added later the same day by `PV` - five by the pass that
+reviewed the fix commits the cycle ended on, and two by the validation of *its* fixes. All counts above
+include them. Anything that reopens or adds a finding needs this page
+updated with it.
 
 ---
 
@@ -30,7 +31,7 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
 | `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B3, C1-C6, D1 |
-| `PV` | [2026-07-27-post-cycle-verification.md](2026-07-27-post-cycle-verification.md) | C1-C5, D1 |
+| `PV` | [2026-07-27-post-cycle-verification.md](2026-07-27-post-cycle-verification.md) | B1, C1-C6, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
@@ -88,10 +89,25 @@ sixth instance), the stale hash-drift comment the `9c5727e` cleanup missed (`PV-
 Central-Station-side mirror of `FP-B1`'s precondition (`PV-C4`, benign end state - traced, not
 assumed - and wrongly: see the error tally).
 
-Every `PV` finding is now fixed, `PV-C4` at severity B after a second reader traced its delete branch
+`PV-C1`..`C5` are now fixed, `PV-C4` at severity B after a second reader traced its delete branch
 one step further. The pass also produced `PV-C5`, found while verifying the `PV` document itself: the
 javadoc explaining the identity-hash fix - the cycle's most-cited comment - had lost its `*` prefix on
 22 lines and nothing had noticed, because it still compiles.
+
+The validation of those fixes (commit `3391cb9`) confirmed all five correct - including a deadlock
+audit of the new `clearLayouts` lock scope - and produced two more findings. `PV-C6` is the residue of
+`PV-C5`'s reformat, enumerated by the scan that writeup called for: sentence run-ons, nothing
+structural - four of them, one more than the enumeration recorded. `PV-B1` is the one that matters: the
+`FP-B1` and `PV-C4` refusals are each correct alone, but the proposals they let through still interact
+*with each other* - a name swap performed on the Central Station generates two individually-valid
+proposals whose sequential application deletes one locomotive of the pair. Severity B, and it turns the
+family's three findings into one root statement: the rename list is generated against a database that
+applying the list mutates.
+
+The fix is the one place in the cycle where a finding's own proposed shape was improved on rather than
+implemented. It suggested declining anything whose target was another proposal's source. Ordering them
+instead costs no more code and saves the chain case entirely - the contested name is freed before it is
+wanted, so nothing is deleted at all - leaving only true cycles to refuse.
 
 ---
 
@@ -112,7 +128,7 @@ itself incomplete. Two of the six surfaced only because a test asserted its own 
 The root fix - identity `equals`/`hashCode` - was five lines, and made 181 lines of accumulated repairs
 dead. It is recorded under "Standing item" in `IND`.
 
-### The same mistake, seven times: fixing one of several identical entrances
+### The same mistake, eight times: fixing one of several identical entrances
 
 This is the cycle's signature error. A defect is found at one call site, fixed there, and the identical
 call site next to it is left alone - so the defect survives with its report marked closed.
@@ -126,6 +142,7 @@ call site next to it is left alone - so the defect survives with its report mark
 | 5 | `INT-D1` decided `setLinkedLocomotives` could stay unsynchronised | That decision was scoped to the multi-unit dialog; `INT-A2` then called it from an automatic sync - `RR-C1` |
 | 6 | The `RR-C2` fix locked `syncLayoutsFromConfiguredSource` "so every entrance inherits it" | `switchCSLayout` clears the same database directly, on the EDT, without the lock - `PV-C2` |
 | 7 | `FP-B1` indexed the LOCAL side by UID and refused ambiguous addresses | The parsed side went on being iterated ungrouped, so the Central Station's own duplicates still produced two proposals - `PV-C4` |
+| 8 | `PV-C4` grouped the parsed side per address, symmetrically | The pairs still interact across addresses through the *names*: a swap or chain of renames on the Central Station deletes a locomotive - `PV-B1` |
 
 Instances 4 and 5 were produced *while fixing earlier instances of the same pattern*. Number 4 was
 introduced the day after number 3 was diagnosed. Number 6 is the older shape of instances 1-3 - the
@@ -177,6 +194,7 @@ The cycle's calibration data. Both reviewers were wrong repeatedly, and in *the 
 | `FP` | A new test assumed accessory addresses 291-293 were free. They are not: `init` restores the real database, and `testAccessory`'s helper had already documented why |
 | `FP` | `C3`'s verification reported 69 as an independently counted number of *started* threads. It was a count of `new Thread(` occurrences, and one of the 69 is never started - found as `PV-C1` |
 | `PV` | `C4`: traced the phantom rename as far as `renameLoc`'s guard and stopped, calling the end state benign. The delete one step earlier destroys an unrelated locomotive and then renames nothing |
+| `PV` | `C6` called its enumeration complete - "that is the whole residue" - having found three run-ons. An independent rescan before fixing found a fourth, in `I18n`'s own javadoc |
 
 Three of these are the same mistake: **assuming what a method does instead of reading what it says**.
 Twice from the name (`IND-M2`, `IND-D6`), and once - `FP-C4` - from the body, against a javadoc that
@@ -210,12 +228,18 @@ first) were both found after the cycle's findings had closed, while writing test
 The author recorded and deferred both, judging neither likely to be met in practice. They are written
 up so that a later change to the import flow is made knowing the delete has already run.
 
-`PV-C1`..`PV-C5` were added by the post-cycle verification pass and are all fixed. One of them,
-`PV-C4`, was filed as C and benign; verification found the benign conclusion wrong and it closed as a
-B - data loss. That correction is the cycle's last, and its shape is the cycle's most common: the
-finding was right, and the reasoning about what it *led to* stopped one call too early.
+`PV-C1`..`PV-C5` were added by the post-cycle verification pass and are all fixed, the fixes validated
+at `3391cb9`. One of them, `PV-C4`, was filed as C and benign; verification found the benign conclusion
+wrong and it closed as a B - data loss. Its shape is the cycle's most common: the finding was right,
+and the reasoning about what it *led to* stopped one call too early.
 
-Everything else across the eight documents is fixed, withdrawn as mistaken, closed by decision, or
+The validation added `PV-B1` (severity B: rename proposals interact through the name space, and a
+Central Station name swap deletes a locomotive - the third face of the `FP-B1` family, and the argument
+that the family's root defect is the precomputed list itself) and `PV-C6` (cosmetic: the javadoc
+run-ons left by the `PV-C5` reformat). Both are fixed; `PV-C6` turned out to be four run-ons rather
+than the three its enumeration recorded.
+
+Everything across the eight documents is now fixed, withdrawn as mistaken, closed by decision, or
 informational. The last item to close was `FP-C4`, on 2026-07-27, having been reported wrongly,
 re-diagnosed, and then fixed more severely than first proposed. It was written up as a block that
 validates nothing; in fact the call creates the accessory as a side effect, exactly as the author said
