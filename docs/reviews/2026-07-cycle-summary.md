@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across seven documents and produced 108 findings - 52 in the main
-review, then 56 more across six later passes.
+The entry point for a cycle that ran across eight documents and produced 114 findings - 52 in the main
+review, then 62 more across seven later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -9,9 +9,10 @@ what was reviewed, by whom, what came of it, and what the cycle taught - none of
 document holds.
 
 Written 2026-07-27. The cycle's review work is finished, but this is not a frozen snapshot: two findings
-are open by the author's decision, and two arrived after the reviews had closed, from writing tests
-rather than from reading. Both counts above include them. Anything that reopens or adds a finding needs
-this page updated with it.
+are open by the author's decision, two arrived after the reviews had closed, from writing tests
+rather than from reading, and five more were added later the same day by `PV` - the pass that
+reviewed the fix commits the cycle ended on, which no earlier document could have covered. All counts
+above include them. Anything that reopens or adds a finding needs this page updated with it.
 
 ---
 
@@ -29,13 +30,15 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
 | `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B3, C1-C6, D1 |
+| `PV` | [2026-07-27-post-cycle-verification.md](2026-07-27-post-cycle-verification.md) | C1-C5, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
 
 The letter normally encodes severity, but identifiers are fixed when first assigned and the documents
-that cite them are not rewritten. `FP-C4` is the one place these diverge: it was raised to B once its
-cause was understood, and keeps its `C4` identifier. Its own status table carries the real severity.
+that cite them are not rewritten. Two findings diverge, and by coincidence both are `C4`: `FP-C4` was
+raised to B once its cause was understood, and `PV-C4` when its "benign" conclusion proved wrong.
+Both keep their identifiers. Each document's own status table carries the real severity.
 
 ---
 
@@ -74,6 +77,22 @@ are. The last question produced `FP-B1`. Nine findings and one clean-checks reco
 recorded and deferred. Two of the nine were found later and by a different route - writing the
 invalid-input tests, not reading.
 
+**`PV` - the post-cycle verification.** The fixes for `RR`'s and `FP`'s findings landed *after* `RR`
+froze at `5e80c41`, so the cycle ended on four source commits nobody but their author had read. This
+pass verified all twelve fixes against their writeups in the enforcing methods, traced the
+identity-hash change across the serialization boundary (a question no earlier pass had asked), and
+re-verified a sample of `RR-D1`. All twelve fixes verified correct. Five new findings, four of them in
+or beside the cycle's own fixes: the one wrapped-Thread site the `FP-C3` matcher could not see
+(`PV-C1`), a third entrance to the layout rebuild outside the `RR-C2` lock (`PV-C2`, the pattern's
+sixth instance), the stale hash-drift comment the `9c5727e` cleanup missed (`PV-C3`), and the
+Central-Station-side mirror of `FP-B1`'s precondition (`PV-C4`, benign end state - traced, not
+assumed - and wrongly: see the error tally).
+
+Every `PV` finding is now fixed, `PV-C4` at severity B after a second reader traced its delete branch
+one step further. The pass also produced `PV-C5`, found while verifying the `PV` document itself: the
+javadoc explaining the identity-hash fix - the cycle's most-cited comment - had lost its `*` prefix on
+22 lines and nothing had noticed, because it still compiles.
+
 ---
 
 ## What the cycle actually taught
@@ -93,7 +112,7 @@ itself incomplete. Two of the six surfaced only because a test asserted its own 
 The root fix - identity `equals`/`hashCode` - was five lines, and made 181 lines of accumulated repairs
 dead. It is recorded under "Standing item" in `IND`.
 
-### The same mistake, five times: fixing one of several identical entrances
+### The same mistake, seven times: fixing one of several identical entrances
 
 This is the cycle's signature error. A defect is found at one call site, fixed there, and the identical
 call site next to it is left alone - so the defect survives with its report marked closed.
@@ -105,9 +124,14 @@ call site next to it is left alone - so the defect survives with its report mark
 | 3 | The route editor's edit branch dropped its `syncWithCS2` call | The same sync survived inside `layoutEditingComplete` - found much later as `FCR-B3` |
 | 4 | The `FCR-B3` follow-up serialised `refreshLayouts` on a lock | `syncWithCS2` reaches the same clear-and-repopulate unlocked - `RR-C2` |
 | 5 | `INT-D1` decided `setLinkedLocomotives` could stay unsynchronised | That decision was scoped to the multi-unit dialog; `INT-A2` then called it from an automatic sync - `RR-C1` |
+| 6 | The `RR-C2` fix locked `syncLayoutsFromConfiguredSource` "so every entrance inherits it" | `switchCSLayout` clears the same database directly, on the EDT, without the lock - `PV-C2` |
+| 7 | `FP-B1` indexed the LOCAL side by UID and refused ambiguous addresses | The parsed side went on being iterated ungrouped, so the Central Station's own duplicates still produced two proposals - `PV-C4` |
 
 Instances 4 and 5 were produced *while fixing earlier instances of the same pattern*. Number 4 was
-introduced the day after number 3 was diagnosed.
+introduced the day after number 3 was diagnosed. Number 6 is the older shape of instances 1-3 - the
+entrance predates the fix, and the fix's own comment ("so every entrance inherits it") claims a
+coverage it does not have; what made the missed entrance *matter* is `FCR-B3` moving refreshes off the
+EDT, which removed the serialisation that had made it safe.
 
 A related shape, twice: a finding withdrawn because a guard made it unreachable, where another path
 bypasses the guard. `IND-M2` was withdrawn on a UI guard, and `IND-D6` showed a rename defeats it;
@@ -151,6 +175,8 @@ The cycle's calibration data. Both reviewers were wrong repeatedly, and in *the 
 | `INT` | `D5`'s note recorded a recovery route (delete the locomotive) that the delete guard makes unreachable |
 | `FP` | `C4`: called a method a pure validator when its own first line of javadoc says it creates accessories. The author said so at the time and was right |
 | `FP` | A new test assumed accessory addresses 291-293 were free. They are not: `init` restores the real database, and `testAccessory`'s helper had already documented why |
+| `FP` | `C3`'s verification reported 69 as an independently counted number of *started* threads. It was a count of `new Thread(` occurrences, and one of the 69 is never started - found as `PV-C1` |
+| `PV` | `C4`: traced the phantom rename as far as `renameLoc`'s guard and stopped, calling the end state benign. The delete one step earlier destroys an unrelated locomotive and then renames nothing |
 
 Three of these are the same mistake: **assuming what a method does instead of reading what it says**.
 Twice from the name (`IND-M2`, `IND-D6`), and once - `FP-C4` - from the body, against a javadoc that
@@ -181,10 +207,15 @@ Four items were closed by the author's decision rather than fixed, each with rea
 **Two items are open by decision; nothing is open by oversight.** `FP-B3` (a route import that parses
 can still destroy routes) and `FP-C6` (the load error dialog shows the last problem rather than the
 first) were both found after the cycle's findings had closed, while writing tests for invalid input.
-The author recorded and deferred both, judging neither likely to be met in practice. They are written up
-so that a later change to the import flow is made knowing the delete has already run.
+The author recorded and deferred both, judging neither likely to be met in practice. They are written
+up so that a later change to the import flow is made knowing the delete has already run.
 
-Everything else across the seven documents is fixed, withdrawn as mistaken, closed by decision, or
+`PV-C1`..`PV-C5` were added by the post-cycle verification pass and are all fixed. One of them,
+`PV-C4`, was filed as C and benign; verification found the benign conclusion wrong and it closed as a
+B - data loss. That correction is the cycle's last, and its shape is the cycle's most common: the
+finding was right, and the reasoning about what it *led to* stopped one call too early.
+
+Everything else across the eight documents is fixed, withdrawn as mistaken, closed by decision, or
 informational. The last item to close was `FP-C4`, on 2026-07-27, having been reported wrongly,
 re-diagnosed, and then fixed more severely than first proposed. It was written up as a block that
 validates nothing; in fact the call creates the accessory as a side effect, exactly as the author said

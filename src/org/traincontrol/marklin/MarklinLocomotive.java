@@ -917,29 +917,31 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Identity, deliberately.Do NOT reimplement either of these in terms of the locomotive's fields.  Name, address and decoder type are all mutable in place - rename assigns the name, setAddress the
- address and type - so a field-based hashCode changes underneath any hash container holding the
- locomotive.  The object stays in the container and iteration still finds it, but containsKey,
- get and remove all miss: the entry sits in a bucket its hash no longer points to.
-
- That produced six separate defects across three reviews, each fixed where it happened to surface
- - a consist that stopped recognising a member, a station exclusion that silently stopped applying,
- a deleted locomotive still being exported.  Eight collections key on this object, and each repair
- was a call some future author had to know to make.  Identity ends that: the hash is fixed for the
- object's lifetime, so no mutation can move it.
-
- Nothing was relying on value equality.  Locomotive names are unique and the code enforces it, so
- two distinct live locomotives could never be value-equal in the first place - identity and the
- old equality already agreed everywhere they were used, and every comparison in the codebase is
- between live objects from the same database.  The database keys by UID and name, never by the
- object.
-
- The logical checks live where they belong and are unchanged: hasEquivalentAddress for the
- address-and-protocol comparison, getName for the name, getIntUID for both together.  Reach for
- those, not for equals.
-
- This also removes a latent deserialization hazard: linkedLocomotives is a non-transient
- Map<Locomotive, Double> on a Serializable class, and HashMap.readObject hashes each key while the
+     * Identity, deliberately.  Do NOT reimplement either of these in terms of the locomotive's
+     * fields.  Name, address and decoder type are all mutable in place - rename assigns the name,
+     * setAddress the address and type - so a field-based hashCode changes underneath any hash
+     * container holding the locomotive.  The object stays in it and iteration still finds it, but
+     * containsKey, get and remove all miss: the entry sits in a bucket its hash no longer
+     * points to.
+     *
+     * That produced six separate defects across three reviews, each fixed where it happened to surface
+     * - a consist that stopped recognising a member, a station exclusion that silently stopped applying,
+     * a deleted locomotive still being exported.  Eight collections key on this object, and each repair
+     * was a call some future author had to know to make.  Identity ends that: the hash is fixed for the
+     * object's lifetime, so no mutation can move it.
+     *
+     * Nothing was relying on value equality.  Locomotive names are unique and the code enforces it, so
+     * two distinct live locomotives could never be value-equal in the first place - identity and the
+     * old equality already agreed everywhere they were used, and every comparison in the codebase is
+     * between live objects from the same database.  The database keys by UID and name, never by the
+     * object.
+     *
+     * The logical checks live where they belong and are unchanged: hasEquivalentAddress for the
+     * address-and-protocol comparison, getName for the name, getIntUID for both together.  Reach for
+     * those, not for equals.
+     *
+     * This also removes a latent deserialization hazard: linkedLocomotives is a non-transient
+     * Map<Locomotive, Double> on a Serializable class, and HashMap.readObject hashes each key while the
      * key may still be only partly restored.  An identity hash does not depend on field state.
      * @param other
      */

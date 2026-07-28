@@ -1,7 +1,9 @@
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -42,7 +44,14 @@ public class testImportRename
 
     /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
     private static final String[] TEST_LOCS = {
-        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two" };
+        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
+        "IR cs dupe" };
+
+    /**
+     * An address the FIXTURE holds twice: MM2 60 is both "ALCO UP" and "V 60 706" in CS3_loks.json.
+     * Two others exist (MM2 1 and MM2 3) if this one ever needs replacing.
+     */
+    private static final int CS_DUPE_ADDRESS = 60;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -125,6 +134,22 @@ public class testImportRename
     }
 
     /**
+     * Every target proposed for one source.  Separate from renameTargetFor because the defect below is
+     * precisely that one source produced more than one proposal - which a first-match lookup hides.
+     */
+    private static List<String> renameTargetsFor(String currentName) throws Exception
+    {
+        List<String> targets = new ArrayList<>();
+
+        for (String[] pair : model.getLocomotivesToRenameFromImport())
+        {
+            if (pair[0].equals(currentName)) targets.add(pair[1]);
+        }
+
+        return targets;
+    }
+
+    /**
      * The locomotive the Central Station knows under a different name is proposed for renaming, and the
      * match is made on the decoder rather than the label.
      */
@@ -147,6 +172,77 @@ public class testImportRename
         installAtReferenceAddress(CS_NAME);
 
         assertNull(renameTargetFor(CS_NAME), "the names already match, so there is nothing to rename");
+    }
+
+    /**
+     * The Central Station can hold two locomotives at one address too, and then there is no single
+     * name to propose.  The mirror image of the local-side rule, and it was missed when that one was
+     * fixed - the local side was indexed and de-duplicated, the parsed side went on being iterated
+     * straight through.
+     *
+     * Both fixture locomotives at this address matched the one local locomotive, so the list came back
+     * with TWO proposals from a single source.  The consumer precomputes that list and acts on it in
+     * order, so once the first rename is applied the second names a locomotive that no longer exists.
+     * If some unrelated local locomotive happens to hold the second target name, the flow deletes it
+     * and then renames nothing, because its source is gone: a delete with no compensating rename,
+     * after two dialogs that both described a rename.
+     *
+     * **The shape this needs has to be built, not assumed.**  It requires ONE local locomotive against
+     * TWO remote ones, and an untouched database does not supply it: init restores the real LocDB.data,
+     * and syncWithCS2 auto-adds Central Station locomotives the local side lacks - so on any database
+     * that has synced against this fixture, both duplicates are local too, and the local-side refusal
+     * fires before the parsed side is ever consulted.  That is exactly the narrowing that makes this
+     * finding a B rather than an A, and it also means the first version of this test failed its own
+     * precondition on the author's database.  So every other locomotive on this decoder is removed
+     * first.
+     *
+     * In memory only: saveState lives in TrainControlUI, which these tests never construct.
+     */
+    @Test
+    public void testDuplicateCentralStationAddressProducesNoRenameProposal() throws Exception
+    {
+        MarklinLocomotive mine = model.newMM2Locomotive("IR cs dupe", CS_DUPE_ADDRESS);
+
+        // getLocomotives returns a fresh list, so deleting while iterating it is safe
+        for (Locomotive other : model.getLocomotives())
+        {
+            MarklinLocomotive existing = (MarklinLocomotive) other;
+
+            if (existing != mine && existing.getIntUID() == mine.getIntUID())
+            {
+                model.deleteLoc(existing.getName());
+            }
+        }
+
+        assertEquals(localsSharingDecoderWith(mine), 1,
+            "precondition: this test's locomotive must be the only local one on this decoder - with "
+            + "another there the LOCAL-side refusal fires instead, and this would pass without "
+            + "exercising the Central Station side at all");
+
+        List<String> targets = renameTargetsFor("IR cs dupe");
+
+        assertTrue(targets.isEmpty(),
+            "the Central Station has two locomotives at this address, so no single name can be "
+            + "proposed - but got " + targets);
+    }
+
+    /**
+     * Locomotives sharing a decoder with the given one, itself included.
+     *
+     * Counted by UID rather than by raw address: getDuplicateLocAddresses keys on getAddress, so it
+     * cannot tell an MM2 60 from an MFX 60 - which are different decoders and do not collide in the
+     * index the method under test builds.
+     */
+    private static int localsSharingDecoderWith(MarklinLocomotive loc)
+    {
+        int count = 0;
+
+        for (Locomotive other : model.getLocomotives())
+        {
+            if (((MarklinLocomotive) other).getIntUID() == loc.getIntUID()) count++;
+        }
+
+        return count;
     }
 
     /**

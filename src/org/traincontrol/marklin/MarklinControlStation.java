@@ -808,11 +808,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
             byAddress.get(existingLoc.getIntUID()).add(existingLoc);
         }
 
+        // The same ambiguity exists on the Central Station side, and has to be refused for the same
+        // reason.  Two parsed locomotives at one address both match the single local locomotive there,
+        // so the list gets two proposals with one source.  The consumer precomputes the list and acts
+        // on it in order, so once the first rename is applied the second names a locomotive that no
+        // longer exists - and if some unrelated local locomotive happens to hold the second target
+        // name, the flow deletes it and then renames nothing, because its source is gone.  A delete
+        // with no compensating rename, after two dialogs that both described a rename.
+        Map<Integer, Integer> parsedCountByAddress = new HashMap<>();
+
+        for (MarklinLocomotive l : parsedLocs)
+        {
+            parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
+        }
+
         for (MarklinLocomotive l : parsedLocs)
         {
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
 
             if (matches == null) continue;
+
+            // Checked after the match lookup so a Central Station duplicate with no local counterpart
+            // stays silent - there is nothing to propose for it either way
+            if (parsedCountByAddress.get(l.getIntUID()) > 1)
+            {
+                this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
+                continue;
+            }
 
             // Duplicates at one address are legitimate - the database is keyed by name AND address, so
             // two locomotives can share an address - but the Central Station has only one name for it.
@@ -986,13 +1008,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
                 )
                 {
-                    // Deferred while anything is running.  setAddress mutates the address and decoder
-                    // type in place, and both are hashCode inputs, so the locomotive drifts out of
-                    // every collection keyed on the object: its consist stops recognising it, its
-                    // station exclusions stop applying, and an entry stranded in activeLocomotives
-                    // would leave isRunning() permanently true.  A rename and a manual address change
-                    // are both refused while running; a sync had no such guard and is triggered
-                    // automatically from a dozen places, so the check belongs here.
+                    // Deferred while anything is running.  setAddress changes which decoder this
+                    // locomotive commands, so applying it mid-run sends every subsequent speed and
+                    // function command to a different engine while the graph goes on tracking this one
+                    // - and the train already moving keeps moving, now unaddressable.  A rename and a
+                    // manual address change are both refused while running; a sync had no such guard
+                    // and is triggered automatically from a dozen places, so the check belongs here.
+                    //
+                    // This used to cite hash drift as the reason as well.  That reason is gone: a
+                    // locomotive hashes by identity, so no mutation moves it out of the collections
+                    // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
+                    // machinery here to satisfy it.
                     if (this.isAutonomyRunning())
                     {
                         this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
@@ -1072,13 +1098,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Deletes the current layout from the model
+     *
+     * Takes layoutRefreshLock because this is a third entrance to the emptied-database state that
+     * syncLayoutsFromConfiguredSource guards: "Switch to CS Layout" calls this directly, from the EDT,
+     * before its own syncWithCS2().  Guarding only the two callers of that method left this one able to
+     * delete from layoutDB while a background diagram-save refresh was repopulating it - plain HashMaps,
+     * modified structurally from two threads.  The exclusion existed for free until FCR-B3 moved
+     * refreshes off the EDT.
+     *
+     * Intrinsic locks are reentrant, so the callers already holding it are unaffected.
      */
     @Override
     public void clearLayouts()
     {
-        for (String name : this.layoutDB.getItemNames())
+        synchronized (this.layoutRefreshLock)
         {
-            this.layoutDB.delete(name);
+            for (String name : this.layoutDB.getItemNames())
+            {
+                this.layoutDB.delete(name);
+            }
         }
     }
     

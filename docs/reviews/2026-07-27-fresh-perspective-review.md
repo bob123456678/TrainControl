@@ -265,9 +265,15 @@ the code behaves correctly.
 *Why it was safe to do mechanically.* The transformation was scripted with a paren matcher that skips
 string literals and comments, and every file was verified **before** being written: brace counts
 unchanged, paren counts down by exactly the number of transformations, method set identical.
-`new Thread(` occurrences went from 169 to 69 - and 69 was the independently pre-counted number of
-genuine thread creations, the ones that are actually started. Those were never candidates: the matcher
-fired only where `submit(`, `invokeLater(` or `execute(` immediately preceded.
+`new Thread(` occurrences went from 169 to 69.
+
+**That 69 was described here as the independently pre-counted number of genuine, started thread
+creations. It was not - it was a count of `new Thread(` occurrences, and the property was asserted
+rather than checked.** One of the 69 was an unstarted Thread the matcher could not see, because
+`invokeLater(` and `new Thread(` sat on separate lines and it fired only on immediate adjacency. Found
+later as `PV-C1`, fixed, and the count is now 68. Recorded because the arithmetic was doing the work of
+a verification and could not have caught this: a site that is neither transformed nor counted as a
+candidate is absorbed silently into the residue.
 
 ---
 
@@ -318,8 +324,13 @@ strips comments.
 
 The unwrap itself was verified beyond the structural checks: every one of the 100 transformed sites was
 a lambda (two used `()->` without a space, which an initial grep missed), and `new Thread(` occurrences
-fell from 169 to 69 - 69 being the independently counted number of genuine, started threads, none of
-which were candidates.
+fell from 169 to 69.
+
+The residual 69 was reported as started threads. **It was not verified to be** - see the correction
+under `FP-C3`. One was not started, and the same near-miss shape the note above congratulates itself on
+catching (lambda spacing) recurred as a newline instead. The lesson generalises past this fix: a
+mechanical matcher and the count used to check it share a blind spot, because the count is over the
+same pattern the matcher keys on.
 
 ---
 

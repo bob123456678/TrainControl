@@ -334,9 +334,8 @@ public final class LayoutLabel extends JLabel
      */
     private void setImageOnEDT(boolean update)
     {
-        javax.swing.SwingUtilities.invokeLater(
-        new Thread(() ->
-        {            
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
             if (this.component != null)
             {            
                 // Special handling for text labels
@@ -434,7 +433,7 @@ public final class LayoutLabel extends JLabel
                     }
                 }
             }
-        }));
+        });
     }
     
     /**
