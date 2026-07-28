@@ -616,10 +616,62 @@ four held.
 - **WR-C8** - reworded to cover both states `isRunning()` reports.  It now asks the user to wait for
   the trains to arrive, and names the button only as the conditional remedy for an autonomy run - which
   is the only state in which that button is enabled.
-- **Polish grammar**, found while verifying the interpolation renders correctly: `u` + chr(380) + `yj` governs the
+- **Polish grammar**, found while verifying the interpolation renders correctly: `użyj` governs the
   genitive, so an interpolated nominative label was ungrammatical.  Reworded to cite the button
   ("press the button X"), the usual way to quote a UI label without declining it.
 
 **Unchanged and still open:** the `HS-B3` A* exhaustion-vs-limit half, the `HS-B4` mixed-hardware
 conservatism, the duplicated menu blocks, the `deletePoint` occupancy-guard observation, and the
 `startAutonomy`/`gracefulStop` reset asymmetry recorded as a trap in D1.
+
+## Addressed 2026-07-28 (fourth round)
+
+`WR-B3` and `WR-C9` fixed, both re-read in their enforcing methods first, and both held.  One thing
+this round did not contain was found while verifying it, and it mattered more than either finding.
+
+- **The tree did not compile, and had not for two commits.**  `178aa4c` calls
+  `ui.isStagingFlowActive()` from both autonomy right-click menus, and the accessor was never added:
+  `stagingFlowActive` is a private field with no getter, and `isStagingFlowActive` is declared nowhere
+  in the codebase.  `d1f7008` was built on top of that.  This report states the fix was wired into
+  "both menus (via a new accessor)" - the call sites were read and the accessor inferred from them.
+  Nothing in the author's validation compiled Java either, so every check passed on a tree that did
+  not build.  The check now exists: methods declared by `TrainControlUI` against every call on a
+  `TrainControlUI`-typed variable in the gui package, verified with `git show HEAD` to flag exactly
+  the two broken sites and to pass on the fixed tree.
+- **WR-B3** - the diagnosis held exactly, including the unlocked read: `getHomeStations` was not
+  synchronized and returned `Collections.unmodifiableMap` over the live field, so
+  `HomeStaging.snapshot` walked the real map on a worker.  But the finding was narrower than the bug.
+  Gating the three assignment surfaces leaves two other writers reaching that map in the same window,
+  both predating the feature: `claimHome` via `moveLocomotive` for hand placement, and `deletePoint`
+  with its `values().removeIf` - both reachable from the graph menus for the very reason the finding
+  names, since those menus gate on `isRunning()` and planning has nothing moving.  Fixed at the
+  accessor instead: `getHomeStations` copies under the monitor, and `locDeleted` - the one writer of
+  that map without `synchronized`, where `deletePoint` and `moveLocomotive` both have it - now takes
+  it, without which the reader's monitor means nothing.  Every reader is safe without each writer
+  having to know a reader exists.
+- **The predicate, rather than the flag.**  The prescribed fix was one `|| ui.isStagingFlowActive()`
+  in four places.  That disjunction had already been hand-rolled in four places before this feature
+  added three more surfaces asking half of it, which is the shape the finding itself names.  It is now
+  one method - `TrainControlUI.isAutonomyBusy()` - and all seven surfaces ask it.  That also repairs
+  the build, since the menus now call something that exists.  `refuseWhileRunning` became
+  `refuseWhileBusy`: the old name was the next instance of this same mistake waiting to happen.
+- **WR-C9** - held.  `HomeStaging.canBeHome` now exposes the planner's own rest rule, delegating to
+  `canRest` rather than restating it, and the chooser refuses with a message naming the locomotive,
+  the station, and the four things to check.  Two tests pin it, one asserting that what the chooser
+  refuses is exactly what the planner reports as IMPOSSIBLE - which is the whole reason for delegating.
+
+**Decided, not fixed:** the second `WR-C9` fix shape - naming the reason in the IMPOSSIBLE dialog - is
+not being pursued, and the residual path it would close is accepted.  Editing a station's length
+limit, terminus flag or exclusions out from under an existing assignment can still produce a permanent
+IMPOSSIBLE, and that is allowed to happen: the operator made the state and the operator can audit it,
+since the point menu already reports per-path reasons for every route into a station.  The planner
+naming the locomotive is enough to start from.  This closes `WR-C9` rather than leaving it half-open.
+
+**Still untouched:** the two observations this round recorded but did not file - duplicate assignments
+warned on every load but never cleared, and the now-dead in-loop `claimHome` during `fromJSON` - plus
+everything carried from earlier rounds: the `HS-B3` exhaustion-vs-limit half, the `HS-B4`
+mixed-hardware conservatism, the duplicated menu blocks, the `deletePoint` occupancy-guard
+observation, and the `startAutonomy`/`gracefulStop` reset asymmetry recorded as a trap in D1.
+
+`testHomeStaging` 33 -> 36.  Committed as `f14bddf`, `4f9eb09` and `e5b252b`; none of it has been
+compiled or run, and `f14bddf` is the first of the three that can be.
