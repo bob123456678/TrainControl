@@ -223,6 +223,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         add(menuItem);
                     }
+
+                    // Which locomotive belongs here, as opposed to which one happens to be here now
+                    addSeparator();
+
+                    HomeLocomotiveMenu.addStationMenu(this, ui, current, ui, ui::updateVisiblePoints);
                 }
             }
             else

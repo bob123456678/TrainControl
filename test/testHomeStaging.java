@@ -2,6 +2,7 @@ import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -9,7 +10,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -107,6 +110,26 @@ public class testHomeStaging
     private static String edge(String from, String to)
     {
         return "{'start': '" + from + "', 'end': '" + to + "'}";
+    }
+
+    /**
+     * The ring, with HS D assigned to a named locomotive - which need not exist.
+     *
+     * Built by rewriting what station() produced rather than by hand, and asserting the rewrite landed,
+     * so a change to the station fixture cannot silently yield a config with no assignment in it - which
+     * would make the tests below pass while testing nothing.
+     */
+    private static String ringAssigning(String homeAtD)
+    {
+        String raw = station("HS D", 3, null);
+        String plain = json(raw);
+        String assigned = json(raw.substring(0, raw.length() - 1) + ", 'home': '" + homeAtD + "'}");
+
+        String config = ring(LOC_A, null, null);
+
+        assertTrue(config.contains(plain), "precondition: the ring fixture must still emit HS D plainly");
+
+        return config.replace(plain, assigned);
     }
 
     /** Loads a graph and returns it, asserting it parsed - an invalid graph fails every test below
@@ -740,5 +763,330 @@ public class testHomeStaging
 
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.ALREADY_HOME);
         assertTrue(layout.getTimetable().isEmpty(), "an untouched layout loads no moves");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Assigning a home, rather than deriving one
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * An assignment says where a locomotive belongs; standing somewhere only ever said where it was.
+     *
+     * Assignments are applied before anything is derived, so the station a locomotive is sitting on no
+     * longer speaks for it.  Everything the assignments did not mention still falls back to the old
+     * rule, which is what keeps a layout that assigns nothing behaving exactly as it always did.
+     */
+    @Test
+    public void testAnAssignmentBeatsWhereTheLocomotiveHappensToStand() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS A"),
+            "precondition: with nothing assigned, home is the station the locomotive was placed on");
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS D"),
+            "the assignment decides, not the occupancy");
+
+        assertEquals(layout.getHomeStation(loc(LOC_B)), layout.getPoint("HS B"),
+            "a locomotive nobody assigned keeps the home it derived");
+
+        // HS A is still occupied by LOC_A, but LOC_A is spoken for, so nothing claims HS A
+        assertNull(layout.getHomeStation(loc(LOC_C)),
+            "a locomotive that is not on the graph derives nothing");
+    }
+
+    /**
+     * One station per locomotive: assigning it somewhere new gives up wherever it was.
+     *
+     * Two stations waiting for the same train can never both be satisfied, so the planner would be
+     * handed a goal it cannot reach - and would report the layout impossible rather than the assignment
+     * contradictory.
+     */
+    @Test
+    public void testAssigningALocomotiveSomewhereNewReleasesItsOldStation() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+        layout.setHomeLocomotive("HS C", LOC_A);
+
+        assertNull(layout.getPoint("HS D").getHomeLoc(),
+            "the station it was assigned to before has to let go of it");
+        assertEquals(layout.getPoint("HS C").getHomeLoc(), LOC_A);
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS C"));
+    }
+
+    /**
+     * Clearing one station falls back to the rule that was there before it was assigned.
+     */
+    @Test
+    public void testClearingOneStationFallsBackToWhereItsLocomotiveStands() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS D"),
+            "precondition: the assignment took effect");
+
+        layout.setHomeLocomotive("HS D", null);
+
+        assertNull(layout.getPoint("HS D").getHomeLoc());
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS A"),
+            "with the assignment gone, home is once again the station it stands on");
+    }
+
+    /**
+     * Clearing every assignment restores the derived homes exactly, not approximately.
+     *
+     * This is the promise the feature is built on: a user who tries assignments and changes their mind
+     * gets back the behaviour they had before, with no residue.  Compared as a whole map rather than
+     * station by station, because a leftover entry is precisely the failure worth catching.
+     */
+    @Test
+    public void testClearingEveryAssignmentRestoresThePositionalHomesExactly() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, LOC_C));
+
+        Map<Locomotive, Point> before = new LinkedHashMap<>(layout.getHomeStations());
+
+        assertFalse(before.isEmpty(), "precondition: the fixture must derive some homes to restore");
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+        layout.setHomeLocomotive("HS A", LOC_B);
+
+        assertNotEquals(layout.getHomeStations(), before,
+            "precondition: the assignments must have actually changed something");
+
+        layout.clearHomeLocomotives();
+
+        assertEquals(layout.getHomeStations(), before,
+            "clearing has to leave exactly the homes a layout without this feature would have had");
+    }
+
+    /**
+     * Only assignments count as assignments - derived homes are not something to offer to clear.
+     *
+     * The menu item that clears them all is shown on this answer alone, so getting it wrong would put a
+     * destructive-sounding option in front of every user who has never assigned anything.
+     */
+    @Test
+    public void testOnlyAssignmentsCountAsHomeLocomotives() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(layout.getHomeStations().isEmpty(), "precondition: homes were derived");
+        assertFalse(layout.hasHomeLocomotives(), "derived homes are not assignments");
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+        assertTrue(layout.hasHomeLocomotives());
+
+        layout.clearHomeLocomotives();
+        assertFalse(layout.hasHomeLocomotives());
+    }
+
+    /**
+     * An assignment naming a locomotive that is not on the graph is kept, and ignored.
+     *
+     * Kept, because the locomotive may be placed later and the operator said what they meant.  Ignored,
+     * because every question the planner asks is asked of locomotives that are actually placed - so an
+     * absent one contributes no goal, and cannot make an otherwise fine layout unplannable.
+     */
+    @Test
+    public void testAnAssignmentForALocomotiveNotOnTheGraphIsKeptButIgnored() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        // LOC_C is in the database, but the fixture never placed it
+        layout.setHomeLocomotive("HS D", LOC_C);
+
+        assertEquals(layout.getHomeStation(loc(LOC_C)), layout.getPoint("HS D"), "the assignment is kept");
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS C", false));
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "a home for an absent locomotive must not stop the locomotives that are here");
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            assertNotEquals(move.getLocomotive(), loc(LOC_C),
+                "nothing can be routed for a locomotive that is not on the graph");
+        }
+
+        applyPlan(layout, plan);
+
+        assertEquals(layout.getPoint("HS A").getCurrentLocomotive(), loc(LOC_A),
+            "the locomotive that is here still went home");
+    }
+
+    /**
+     * An assignment naming something that is not a locomotive at all is dropped when the file loads.
+     *
+     * A name matching nothing in the database cannot resolve later by itself, so keeping it would store
+     * something that only looks like state: written back out on every save and reported again on every
+     * load.  The graph itself is never invalidated over it - one bad name must not cost the layout.
+     */
+    @Test
+    public void testAnAssignmentNamingAnUnknownLocomotiveIsDroppedOnLoad()
+    {
+        Layout layout = load(ringAssigning("HS phantom"));
+
+        assertNull(layout.getPoint("HS D").getHomeLoc(),
+            "a dangling name is removed rather than carried around");
+        assertFalse(layout.hasHomeLocomotives());
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS A"),
+            "and everything else still derives its home as usual");
+    }
+
+    /**
+     * Assignments survive a save and a reload, which is the only reason to store them on the point.
+     */
+    @Test
+    public void testAssignmentsSurviveBeingSavedAndReloaded() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        Layout reloaded = load(layout.toJSON());
+
+        assertEquals(reloaded.getPoint("HS D").getHomeLoc(), LOC_A);
+        assertEquals(reloaded.getHomeStation(loc(LOC_A)), reloaded.getPoint("HS D"));
+        assertTrue(reloaded.hasHomeLocomotives());
+    }
+
+    /**
+     * The whole point: returning home goes to the assigned station, not the one it was standing on.
+     */
+    @Test
+    public void testReturningHomeGoesToTheAssignedStation() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+        layout.setHomeLocomotive("HS C", LOC_B);
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertTrue(plan.isPossible(), "outcome was " + plan.getOutcome());
+
+        applyPlan(layout, plan);
+        assertEveryoneHome(layout);
+
+        assertEquals(layout.getPoint("HS D").getCurrentLocomotive(), loc(LOC_A));
+        assertEquals(layout.getPoint("HS C").getCurrentLocomotive(), loc(LOC_B));
+    }
+
+    /**
+     * Deleting a locomotive takes the assignment naming it with it.
+     *
+     * The assignment is a name, so nothing about deleting the locomotive object touches it.  Left
+     * behind it is written back out on every save and reported on every load as a locomotive that is
+     * not in the database - and until then the menus offer a station assigned to something gone.
+     */
+    @Test
+    public void testDeletingALocomotiveClearsTheAssignmentNamingIt() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        layout.setHomeLocomotive("HS D", LOC_C);
+
+        assertEquals(layout.getPoint("HS D").getHomeLoc(), LOC_C, "precondition: the assignment was made");
+
+        layout.locDeleted(loc(LOC_C));
+
+        assertNull(layout.getPoint("HS D").getHomeLoc(),
+            "a name nothing can resolve must not be left sitting on the point");
+        assertNull(layout.getHomeStation(loc(LOC_C)));
+        assertFalse(layout.hasHomeLocomotives(),
+            "and nothing is left for the clear-all menu item to offer");
+    }
+
+    /**
+     * Renaming a locomotive keeps its assignment, rather than quietly losing it.
+     *
+     * Every other reference the layout holds is an object reference hashed by identity, which a rename
+     * cannot dislodge - which is exactly why this one is easy to forget.  An assignment is a name, so
+     * without repair it dangles the instant the locomotive is renamed, and the next rebuild reports it
+     * missing from the database and drops it.  Driven through renameLoc rather than the layout method
+     * directly, because the wiring is the part that would be missing.
+     */
+    @Test
+    public void testRenamingALocomotiveKeepsItsAssignment() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        String renamed = LOC_A + " renamed";
+
+        assertTrue(model.renameLoc(LOC_A, renamed), "precondition: the rename must succeed");
+
+        try
+        {
+            assertEquals(layout.getPoint("HS D").getHomeLoc(), renamed,
+                "the assignment is held by name, so a rename has to be followed through");
+
+            // Only a rebuild proves it: that is what resolves names, and what would have dropped a
+            // stale one
+            layout.rebuildHomeStations();
+
+            assertEquals(layout.getPoint("HS D").getHomeLoc(), renamed,
+                "and it survives being re-derived rather than being reported missing and dropped");
+            assertEquals(layout.getHomeStation(model.getLocByName(renamed)), layout.getPoint("HS D"));
+        }
+        finally
+        {
+            // The database here is the real one, so the name goes back whatever happened above.  Not
+            // asserted: an assertion in a finally replaces whatever failure it is cleaning up after,
+            // and tearDownClass deletes by the original name, so a failure to restore is not silent.
+            model.renameLoc(renamed, LOC_A);
+        }
+    }
+
+    /**
+     * Renaming a station keeps its assignment, which holds only because the point object survives.
+     */
+    @Test
+    public void testRenamingAStationKeepsItsAssignment() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+        layout.renamePoint("HS D", "HS Depot");
+
+        assertEquals(layout.getPoint("HS Depot").getHomeLoc(), LOC_A);
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS Depot"));
+    }
+
+    /**
+     * An assignment stores the locomotive name exactly as it was given.
+     *
+     * Locomotive names are only checked for being blank when they are created, never trimmed, so
+     * surrounding space is part of the name.  Trimming it when it is stored would produce a name that
+     * matches no locomotive - and the next rebuild would report it missing from the database and
+     * silently drop the assignment, for a locomotive that is sitting right there.
+     */
+    @Test
+    public void testAnAssignmentDoesNotAlterTheNameItIsGiven()
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        Point d = layout.getPoint("HS D");
+
+        d.setHomeLoc("  padded name  ");
+
+        assertEquals(d.getHomeLoc(), "  padded name  ",
+            "a name is stored as given - trimming it would stop it matching its own locomotive");
+
+        d.setHomeLoc("   ");
+        assertNull(d.getHomeLoc(), "but blank is how a station says it has no locomotive of its own");
+
+        d.setHomeLoc(null);
+        assertNull(d.getHomeLoc());
     }
 }

@@ -357,7 +357,11 @@ final class GraphRightClickPointMenu extends JPopupMenu
         submenu.add(menuItem);
 
         add(submenu);
-        
+
+        // Its own group beside the other per-station settings, titled with the current assignment
+        HomeLocomotiveMenu.addStationMenu(this, ui, p, (Component) parent.getSwingView(),
+            () -> ui.updatePoint(p, parent.getMainGraph()));
+
         addSeparator();
 
         // Allow changes because locomotives on non-stations will by design not run

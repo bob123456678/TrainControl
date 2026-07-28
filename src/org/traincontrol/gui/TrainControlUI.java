@@ -235,6 +235,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Maximum displayed locomotive name length
     public static final Integer MAX_LOC_NAME = 30;
     public static final Integer MAX_MU_SELECTOR_LOC_NAME_LENGTH = 16;
+
+    // Locomotive names shown inside a menu item, where the popup width is what is at stake
+    public static final Integer MAX_MENU_LOC_NAME_LENGTH = 16;
     
     // Minimum time between possible route repainting in semi-autonmous mode
     public static final Integer REPAINT_ROUTE_INTERVAL = 100;

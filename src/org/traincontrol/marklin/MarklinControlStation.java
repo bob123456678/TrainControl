@@ -2595,9 +2595,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.rebuildLocIdCache();
             
-            // Nothing else to repair: a locomotive hashes by identity, so renaming one cannot move it
-            // out of the consists, exclusion sets or run lists that hold it.  This used to need a
-            // sweep - see the note on MarklinLocomotive.hashCode.
+            // Nothing else to repair by identity: a locomotive hashes by identity, so renaming one
+            // cannot move it out of the consists, exclusion sets or run lists that hold it.  This used
+            // to need a sweep - see the note on MarklinLocomotive.hashCode.
+            //
+            // State held by NAME does still need repairing, and there are two such places - the routes
+            // below, and autonomy home assignments.
+            if (this.hasAutoLayout())
+            {
+                this.getAutoLayout().locomotiveRenamed(name, newName);
+            }
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())

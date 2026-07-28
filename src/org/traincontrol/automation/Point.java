@@ -34,6 +34,17 @@ public class Point
     private Set<Locomotive> excludedLocs;
     private double speedMultiplier = 1.0;
 
+    // The locomotive this station has been assigned to, by NAME rather than by reference.
+    //
+    // A name rather than a reference because an assignment outlives placement: a locomotive that is not
+    // currently on the graph keeps its station, and is simply ignored while it is absent.  A name that
+    // matches no locomotive at all is a different case - it is reported and cleared on load, since
+    // nothing can ever resolve it - but neither invalidates the layout.
+    //
+    // Null means no assignment, which is the state every existing layout is in - and in that state the
+    // home of a locomotive is still simply where it was standing when the graph loaded.
+    private String homeLoc;
+
     // Unique ID for any new node
     private static Integer id = 0;
   
@@ -420,6 +431,33 @@ public class Point
     }
     
     /**
+     * The locomotive assigned to this station, by name, or null.
+     * @return
+     */
+    public String getHomeLoc()
+    {
+        return this.homeLoc;
+    }
+
+    /**
+     * Assigns this station to a locomotive by name, or clears it with null.
+     *
+     * Not validated here: a name that matches nothing is a legitimate stored state, reported on load
+     * rather than refused.
+     *
+     * Blank means unassigned, but a name that is not blank is stored exactly as given.  Locomotive
+     * names are only checked for being blank when they are created, never trimmed, so surrounding space
+     * is part of the name - and trimming it here would store something that matches no locomotive at
+     * all, which the next rebuild reports as missing from the database and drops.
+     *
+     * @param homeLoc
+     */
+    public void setHomeLoc(String homeLoc)
+    {
+        this.homeLoc = homeLoc == null || homeLoc.trim().isEmpty() ? null : homeLoc;
+    }
+
+    /**
      * Converts this point to a JSON representation
      * @return 
      * @throws java.lang.IllegalAccessException 
@@ -469,6 +507,11 @@ public class Point
         if (this.speedMultiplier != 1.0)
         {
             jsonObj.put("speedMultiplier", this.speedMultiplier);
+        }
+        
+        if (this.homeLoc != null)
+        {
+            jsonObj.put("home", this.homeLoc);
         }
         
         if (this.currentLoc != null)

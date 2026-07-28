@@ -493,9 +493,15 @@ This feature can be used for emergency stop logic, playing sound effects when lo
 
 ## Returning locomotives home (v2.8.0+)
 
-The `Return Home` button in the autonomy tab sends every locomotive back to the station it started on.  The same command is available by right-clicking either the graph or a station on the track diagram.
+The `Return Home` button in the autonomy tab sends every locomotive back to the station it belongs at - by default the one it started on.  The same command is available by right-clicking either the graph or a station on the track diagram.
 
-A locomotive's home is simply the station it occupied when the graph was loaded.  Locomotives placed on the graph afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing on its home station, and `+` marks one standing at its timetable starting point.
+Unless you say otherwise, a locomotive's home is simply the station it occupied when the graph was loaded.  Locomotives placed on the graph afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing on its home station, and `+` marks one standing at its timetable starting point.
+
+You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  Right-click a station - on the graph or on the track diagram - and use the `Home locomotive` submenu, whose title shows that station's current locomotive.  It is on every station, so there is always somewhere to make the first assignment.  To undo the lot, `Clear all home locomotives` on the graph's background menu drops every assignment at once and returns things to exactly the behaviour described above; it appears only once something has been assigned.
+
+An assigned station is that locomotive's home whether or not it is standing there, and whether or not it is on the graph at all - an assignment for a locomotive you have not placed is simply ignored until you place it.  Each locomotive belongs at one station only, so assigning it somewhere new releases it from wherever it was assigned before.  Everything you do not assign still falls back to the rule above.
+
+Assignments are saved with the autonomy file.  If one names a locomotive that is no longer in the database, it is reported in the log and dropped, and the rest of the layout loads normally.  Renaming a locomotive keeps its assignment; deleting one removes it.  Assignments cannot be changed while trains are moving.
 
 Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the graph has a home to go back to.
 
@@ -505,4 +511,4 @@ Your timetable is borrowed for the duration and put back afterwards - on success
 
 If no arrangement can be found, you are told so and nothing moves.  If a path turns out to be blocked once the run is under way - because the layout is no longer in the state the plan was built for - the run stops and says which locomotive was affected, so you can move it clear by hand and try again.
 
-The same functionality is available programmatically via `Layout.triageReturnToHome` (is there anything to do?), `Layout.planReturnToHome` (what would it take?), and `Layout.loadReturnToHomeTimetable`, which loads the plan into the timetable ready for `Layout.executeTimetable`.
+The same functionality is available programmatically via `Layout.triageReturnToHome` (is there anything to do?), `Layout.planReturnToHome` (what would it take?), and `Layout.loadReturnToHomeTimetable`, which loads the plan into the timetable ready for `Layout.executeTimetable`.  Assignments are read and written with `Layout.setHomeLocomotive`, `Layout.clearHomeLocomotives` and `Layout.hasHomeLocomotives`, and are stored per point as `home` in the autonomy JSON.

@@ -367,6 +367,7 @@ Tab icons provided by Freepik.
     - Autonomy
         - Added a "return home" feature that will return all locomotives back to where they started, if routing is possible.
         - The * next to a station now marks a locomotive's home station; + marks its timetable starting point
+        - You can now pick which locomotive belongs at each station, so "return home" brings each one back to the station you chose instead of the one it happened to start on
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
