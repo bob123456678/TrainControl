@@ -870,7 +870,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isRunning())
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {  
                 for (Set<JLabel> labelSet : layoutStations.values())
                 {
@@ -880,7 +880,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         j.setOpaque(false);
                     }
                 }
-            }));
+            });
         }
     }
     
@@ -906,7 +906,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void applyKeyboardType(String type)
     {            
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {    
             initButtonMapping();
 
@@ -946,7 +946,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.repaintMappings();
-        }));
+        });
     }
        
     /**
@@ -1356,11 +1356,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void log(String message)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             this.debugArea.insert(message + "\n", 0);
             this.debugArea.setCaretPosition(0);
-        }));
+        });
     }             
     
     public int getKeyboardOffset()
@@ -1557,7 +1557,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void switchKeyboard(int keyboardNum)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             int tarKeyboard = keyboardNum;
             
@@ -1611,7 +1611,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             repaintSwitches();
-        }));
+        });
     }
     
     /**
@@ -1836,13 +1836,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.model.log(message);
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     JOptionPane.showMessageDialog(
                         this,
                         I18n.f("ui.warningNoCanMessagesDialog", message)
                     );
-                }));
+                });
             }
         }).start();
         
@@ -1871,12 +1871,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (Conversion.compareVersions(LATEST_VERSION, RAW_VERSION) > 0)
                     {
-                        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                        javax.swing.SwingUtilities.invokeLater(() ->
                         {
                             this.downloadUpdateMenuItem.setVisible(true);
                             this.viewReleasesMenuItem.setText("v" + LATEST_VERSION + " Update Info");
                             this.helpMenu.setText(this.helpMenu.getText() + "*");
-                        }));
+                        });
                     }
                 }
                 catch (Exception e)
@@ -1907,13 +1907,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
                         {
-                            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                            javax.swing.SwingUtilities.invokeLater(() ->
                             {
                                 latencyLabel.setText(
                                     I18n.t("ui.labelLostNetworkConnection")
                                 );
                                 latencyLabel.setForeground(Color.red);
-                            }));
+                            });
                             
                             checkAutoLayoutLatency(PING_INTERVAL);
                         }
@@ -1936,10 +1936,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Load autonomy if requested
         if (this.AutoLoadAutonomyMenuItem.isSelected())
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+            javax.swing.SwingUtilities.invokeLater(() -> 
             {
                 this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
-            }));
+            });
         }
                 
         // Release the latch
@@ -2044,7 +2044,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     { 
         if (PING_INTERVAL > 0)
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 this.latencyLabel.setText(
                     I18n.f(
@@ -2055,7 +2055,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
-            }));
+            });
             
             this.checkAutoLayoutLatency(latency);
         }        
@@ -2080,13 +2080,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.model.stop();
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     JOptionPane.showMessageDialog(
                         this,
                         I18n.f("ui.errorPowerOffLatencyExceededDialog", l.getMaxLatency())
                     );
-                }));
+                });
             }
         }
     }
@@ -2126,7 +2126,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (proceed)
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 try
                 {
@@ -2163,7 +2163,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 this.initializeLocalLayoutMenuItem.setEnabled(true);
-            }));
+            });
         }
         else
         {
@@ -2177,7 +2177,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(()->
+        javax.swing.SwingUtilities.invokeLater(()->
         { 
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
 
@@ -2192,7 +2192,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     "layout.ui.errorNoLayoutLoaded"
                 );
             }
-        }));
+        });
     }
     
     public LocomotiveSelector getLocSelector()
@@ -2245,7 +2245,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void showLocSelector(boolean doAssign)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(()->
+        javax.swing.SwingUtilities.invokeLater(()->
         { 
             if (this.getModel().getLocomotives().isEmpty())
             {
@@ -2261,7 +2261,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.selector.toFront();
                 this.selector.getClickToAssign().setSelected(doAssign);
             }
-        }));
+        });
     }
     
     /**
@@ -2461,13 +2461,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (l != null)
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() -> {
+            javax.swing.SwingUtilities.invokeLater(() -> {
                 this.model.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 this.repaintLayout();
                 this.repaintMappings(Collections.singletonList(l), true);
-            }));
+            });
         }   
     }
         
@@ -2558,9 +2558,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private synchronized void repaintMappings(List<Locomotive> forceUpdateLoc, boolean updateIcon)
     {         
-        this.MappingRenderer.submit(new Thread(() -> 
+        this.MappingRenderer.submit(() -> 
         { 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {            
                 for (int i = 0; i < locKeyTabs.getTabCount(); i++)
                 {
@@ -2630,8 +2630,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.sliderMapping.get(b).setEnabled(false);   
                     }
                 }
-            }));
-        }));
+            });
+        });
     }
     
     @Override
@@ -2657,7 +2657,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     synchronized public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             int offset = this.getKeyboardOffset();
             
@@ -2712,12 +2712,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
             }
-        }));
+        });
     }
     
     public void mapUnassignedLocomotives()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             for (JButton key : this.labelMapping.keySet())
             {
@@ -2742,7 +2742,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             repaintMappings();
-        }));
+        });
     }
     
     /**
@@ -2752,7 +2752,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Switch to the target page and clear it
             this.switchLocMapping(pageNumber);
@@ -2778,13 +2778,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             repaintMappings();
             displayCurrentButtonLoc(QButton);
-        }));
+        });
     }
     
     @Override
     public void repaintSwitches()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             int offset = this.getKeyboardOffset();
             
@@ -2822,7 +2822,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     key.setFont(font.deriveFont(attributes));
                 }
             }
-        }));
+        });
     }
     
     /**
@@ -2913,7 +2913,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         noImageButton(b); // makes icons appear consistent on slow networks
         
-        ImageLoader.submit(new Thread(() -> 
+        ImageLoader.submit(() -> 
         {
             if (b != null)
             {
@@ -2973,7 +2973,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     noImageButton(b);
                 }
             }
-        }));
+        });
     }
     
     public ExecutorService getImageLoader()
@@ -3026,9 +3026,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.locFutures.clear();
 
         this.locFutures.add(
-            this.LocRenderer.submit(new Thread(() -> 
+            this.LocRenderer.submit(() -> 
             { 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     if (this.activeLoc != null 
                             && this.model.getLocByName(this.activeLoc.getName()) != null // If this loc no longer exists, don't display it
@@ -3072,7 +3072,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
 
-                                ImageLoaderLoc.submit(new Thread(() -> 
+                                ImageLoaderLoc.submit(() -> 
                                 {
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
@@ -3108,7 +3108,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         locIcon.setIcon(null);
                                         locIcon.setVisible(false);
                                     }
-                                }));
+                                });
 
                                 this.ActiveLocLabel.setText(name);
 
@@ -3130,7 +3130,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     bt.setHorizontalTextPosition(JButton.CENTER);
                                     bt.setVerticalTextPosition(JButton.CENTER);
 
-                                    ImageLoaderLoc.submit(new Thread(() -> 
+                                    ImageLoaderLoc.submit(() -> 
                                     {
                                         try
                                         {
@@ -3168,7 +3168,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                             );                  
                                             //bt.setText("F" + Integer.toString(fNo));
                                         } 
-                                    }));         
+                                    });         
                                 }
 
                                 for (int i = this.activeLoc.getNumF(); i < NUM_FN; i++)
@@ -3266,8 +3266,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         this.repaintMappings(updatedLocs, false);
                     }
-                }));
-            }))
+                });
+            })
         );
     }
     
@@ -3313,7 +3313,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void displayCurrentButtonLoc(javax.swing.JButton b, boolean showSelector)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.currentButton != null)
             {
@@ -3352,7 +3352,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 showLocSelector(true);
             }
-        }));
+        });
     }
 
     private void setLocSpeed(int speed)
@@ -9896,7 +9896,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void doSync(Component c)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.syncMenuItem.setEnabled(false);
             this.functionsMenu.setEnabled(false);
@@ -9930,7 +9930,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
             }).start();
-        }));
+        });
     }
     
     /**
@@ -9992,7 +9992,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void clearCurrentPage()
     {
         // The dialog and the mappings it clears both belong on the event thread
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 this,
@@ -10008,7 +10008,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 doClearCurrentPage();
             }
-        }));
+        });
     }
     
     /**
@@ -10032,7 +10032,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void quickLocSearch()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             String input = JOptionPane.showInputDialog(
                 this,
@@ -10043,7 +10043,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.jumpToLocomotive(input);
             }
-        }));
+        });
     }
     
     /**
@@ -11573,7 +11573,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
                                 
@@ -11585,7 +11585,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     menu.showPopup(evt);      
                 };
-            }));
+            });
         }
     }//GEN-LAST:event_EditFunction
 
@@ -11598,7 +11598,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void clearTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
@@ -11625,11 +11625,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
             this.repaintTimetable();
             this.repaintAutoLocListLite();
-        }));
+        });
     }
         
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 this,
@@ -11660,7 +11660,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 }).start();
             }
-        }));
+        });
     }//GEN-LAST:event_syncFullLocStateMenuItemActionPerformed
 
     private void syncMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncMenuItemActionPerformed
@@ -11672,7 +11672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_viewDatabaseMenuItemActionPerformed
 
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             this.syncMenuItem.setEnabled(false);
             this.functionsMenu.setEnabled(false);
@@ -11694,11 +11694,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.functionsMenu.setEnabled(true);
 
             }).start();
-        }));
+        });
     }//GEN-LAST:event_turnOnLightsMenuItemActionPerformed
 
     private void turnOffFunctionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.syncMenuItem.setEnabled(false);
             this.functionsMenu.setEnabled(false);
@@ -11709,7 +11709,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.syncMenuItem.setEnabled(true);
                 this.functionsMenu.setEnabled(true);
             }).start();
-        }));
+        });
     }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
 
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
@@ -11760,7 +11760,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Hide the tab in case loading fails but the model still has the local diagram
         this.switchCSLayoutMenuItem.setEnabled(false);
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             try
             {
@@ -11786,11 +11786,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.switchCSLayoutMenuItem.setEnabled(true);
             this.repaintPathLabel();
             
-        }));
+        });
     }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
 
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -11811,7 +11811,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.createAndApplyEmptyLayout(filepath, false);
             }
-        }));
+        });
     }//GEN-LAST:event_initializeLocalLayoutMenuItemActionPerformed
 
     private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
@@ -12045,7 +12045,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
@@ -12057,14 +12057,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-        }));
+        });
     }//GEN-LAST:event_timetableCaptureActionPerformed
 
     private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
 
         this.executeTimetable.setEnabled(false);
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (!this.getModel().getPowerState())
             {
@@ -12172,7 +12172,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }).start();
 
             this.gracefulStop.setEnabled(true);
-        }));
+        });
     }//GEN-LAST:event_executeTimetableActionPerformed
 
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
@@ -12408,7 +12408,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         this.editLayoutButton.setEnabled(false);
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {    
             try
             {
@@ -12436,12 +12436,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             
             this.editLayoutButton.setEnabled(true);
-        }));
+        });
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
     private void showLayoutPopup(String layoutName, int size)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             LayoutPopupUI popup = new LayoutPopupUI(
                 this.model.getLayout(layoutName),
@@ -12454,7 +12454,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             popups.add(popup);
             updatePopups(false);
             repaintLoc();
-        }));
+        });
     }
     
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
@@ -12706,7 +12706,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Retiring a Layout does not stop anything: parseAuto calls stopLocomotives(), which only
             // clears the dispatch flag.  Trains already under way would keep running with no graph
@@ -12877,7 +12877,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Stop all locomotives
             AltEmergencyStopActionPerformed(null);
 
-        }));
+        });
     }//GEN-LAST:event_validateButtonActionPerformed
 
     private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
@@ -13309,17 +13309,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
                     {
-                        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                        javax.swing.SwingUtilities.invokeLater(() ->
                         {
                             this.downloadUpdateMenuItem.setText(percent < 0
                                 ? I18n.t("ui.infoDownloadingUpdate")
                                 : I18n.f("ui.infoDownloadingUpdatePercent", percent)
                             );
-                        }));
+                        });
                     });
                 }
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     JOptionPane.showMessageDialog(
                         this,
@@ -13330,17 +13330,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     );
 
                     showFileExplorer(new File(f.getAbsoluteFile().toString()).getParentFile());
-                }));
+                });
             }
             catch (Exception e)
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     JOptionPane.showMessageDialog(
                         this,
                         I18n.t("ui.errorDownloadingUpdateFile")
                     );
-                }));
+                });
 
                 this.model.logf("ui.errorDownloadingUpdateFile");
 
@@ -13351,11 +13351,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.downloadUpdateMenuItem.setText(I18n.t("ui.main.downloadUpdate"));
                     this.downloadUpdateMenuItem.setEnabled(true);
-                }));
+                });
             }
         }).start();
     }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
@@ -13575,7 +13575,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -13616,7 +13616,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
                 this.model.log(ex);
             }
-        }));    
+        });    
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
@@ -13632,7 +13632,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         this.KeyboardTab.setSelectedIndex(1);
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (this.model.getLayoutList().size() <= 1)
             {
@@ -13679,7 +13679,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.log(ex);
                 }
             }
-        }));
+        });
     }//GEN-LAST:event_deleteLayoutMenuItemActionPerformed
 
     private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
@@ -13818,7 +13818,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (!isLocalLayout() && !this.model.getLayoutList().isEmpty())
         {
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 JOptionPane.showMessageDialog(
                     this,
@@ -13864,7 +13864,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.f("layout.ui.errorDownloadFailedWithMessage", e.getMessage())
                     );
                 }
-            }));
+            });
         } 
         else
         {
@@ -13903,11 +13903,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.ensureShowLayoutPreference();
             
             // Repaint diagrams
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 this.repaintLayout(false, false);
                 this.updatePopups(true);
-            }));
+            });
         }
     }//GEN-LAST:event_menuItemShowLayoutAddressesActionPerformed
 
@@ -13918,7 +13918,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForRenameMenuItemActionPerformed
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (!this.model.getNetworkCommState())
             {
@@ -14008,7 +14008,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(ex);
                 JOptionPane.showMessageDialog(this, I18n.f("error.generic", ex.getMessage()));
             }
-        }));
+        });
     }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
 
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
@@ -14074,7 +14074,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_reopenGraphButtonActionPerformed
 
     private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
@@ -14089,12 +14089,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
             
             this.autoRouteList.setEnabled(this.model.getAutoLayout().isActivateRoutes());
-        }));
+        });
     }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
 
     private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
             
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.model.hasAutoLayout())
             {
@@ -14119,7 +14119,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.refreshRouteList();
                 }
             }    
-        }));
+        });
     }//GEN-LAST:event_autoRouteListMouseReleased
 
     private void InnerLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_InnerLayoutPanelMouseClicked
@@ -14127,12 +14127,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {      
             if (this.getModel().hasAutoLayout() && this.getModel().getAutoLayout().isValid())
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null);
 
                     menu.show(evt.getComponent(), evt.getX(), evt.getY());      
-                }));
+                });
             }
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
@@ -14241,7 +14241,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void restartTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (this.getModel().getAutoLayout().isRunning())
             {
@@ -14277,14 +14277,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.getModel().getAutoLayout().resetTimetable();
             this.repaintTimetable();
-        }));
+        });
     }
         
     public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
     {
         Window sourceWindow = evt != null ? SwingUtilities.getWindowAncestor((Component) evt.getSource()) : this;
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {    
             LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
             // Select the locomotive
@@ -14318,19 +14318,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             dialog.setVisible(true);
 
             edit.focusFno();
-        }));
+        });
     }
     
     public void clearLocIcon(Locomotive l)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             l.setLocalImageURL(null);
             this.model.syncWithCS2();
             this.repaintLoc(true, null);
             this.repaintMappings(Collections.singletonList(l), true);
             this.selector.refreshLocSelectorList();
-        }));
+        });
     }
     
     public void setLocIcon(Locomotive l)
@@ -14347,7 +14347,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         Component source = evt != null ? (Component) evt.getSource() : this;
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             String currentPath = null;
 
@@ -14391,7 +14391,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.selector.refreshLocSelectorList();
                 // TODO - clear icon setting if load failed
             } 
-        }));
+        });
     }
     
     /**
@@ -14962,7 +14962,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized private void repaintTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Initial setup
             if (this.timetable.getColumnCount() != 5)
@@ -15015,7 +15015,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 tableModel.addRow(data);
             }
-        }));
+        });
     }
     
     synchronized public void repaintAutoLocList(boolean external)
@@ -15042,7 +15042,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.autonomyFutures.clear();
 
                 this.autonomyFutures.add(
-                    this.AutonomyRenderer.submit(new Thread(() -> 
+                    this.AutonomyRenderer.submit(() -> 
                     {
                         try 
                         {
@@ -15053,7 +15053,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         
                         this.repaintAutoLocListLite();
-                    }))
+                    })
                 );
             }
             else
@@ -15068,7 +15068,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized private void repaintAutoLocListLite()
     { 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             new Thread(() ->
             {
@@ -15078,7 +15078,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     status.updateState(null);
                 }
             }).start();
-        }));
+        });
     }
     
     /**
@@ -15086,7 +15086,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized private void repaintAutoLocListFull()
     { 
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Display locomotive status and possible paths
             this.autoLocPanel.removeAll();
@@ -15137,13 +15137,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Sometimes the list doesn't repaint until you click on it.  Alernative might be to do this before rendering the graph.
             this.autoLocPanel.repaint();
             this.locCommandPanels.repaint();
-        }));
+        });
     }
 
     @Override
     public void emergencyStopTriggered(Route r)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -15152,14 +15152,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     r.getName()
                 )
             );
-        }));
+        });
     }
 
     @Override
     public void showAutonomyAlert(String message)
     {
         // Non-blocking so the autonomy thread that raised the alert is not held up
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -15167,7 +15167,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.t("autolayout.ui.pathConfigErrorTitle"),
                 JOptionPane.WARNING_MESSAGE
             );
-        }));
+        });
     }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer
@@ -15285,7 +15285,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void refreshRouteList()
     {   
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             DefaultTableModel tableModel = new DefaultTableModel()
             {
@@ -15338,7 +15338,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.updateAutoRouteList();
 
             // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
-        }));
+        });
     }
         
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -15799,7 +15799,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void showFileExplorer(File path)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -15816,7 +15816,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.log(e);
                 }
             }
-        }));
+        });
     }
     
     /**
@@ -15868,7 +15868,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void repaintPathLabel()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Set UI label
             if (!isLocalLayout())
@@ -15887,7 +15887,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.downloadCSLayoutMenuItem.setEnabled(false);
                 this.popUpAllMenuItem.setEnabled(true);
             }
-        }));
+        });
     }
     
     @Override
@@ -15916,9 +15916,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public synchronized void repaintLayout(boolean showTab, boolean useCache)
     {    
-        this.LayoutGridRenderer.submit(new Thread(() -> 
+        this.LayoutGridRenderer.submit(() -> 
         { 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 repaintPathLabel();
 
@@ -16013,7 +16013,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Update auto layout station labels on the track diagram
                     this.updateVisiblePoints();
                 }
-            }));
-        }));
+            });
+        });
     }
 }

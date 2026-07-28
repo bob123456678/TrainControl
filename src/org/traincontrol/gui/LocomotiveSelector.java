@@ -81,7 +81,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
     public synchronized void refreshLocSelectorList()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.MainLocList.removeAll();
 
@@ -103,12 +103,12 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
             // this.LocFilterBox.setText("");
             filterLocList();     
-        }));
+        });
     }
     
     synchronized private void filterLocList()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             String filter = this.LocFilterBox.getText().toLowerCase();
         
@@ -126,7 +126,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
             }
 
             updateScrollArea();
-        }));
+        });
     }
     
     /**
@@ -390,13 +390,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_formFocusGained
 
     private void addLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveActionPerformed
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             this.parent.getLocAdder().setVisible(true);
 
             // this.toBack();
             // this.parent.showTab("Tools");
-        }));
+        });
     }//GEN-LAST:event_addLocomotiveActionPerformed
 
     private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
@@ -464,13 +464,13 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     public void refreshToolTips()
     {
         // Update all tooltips
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             for (Component c: this.MainLocList.getComponents())
             {
                 ((LocomotiveSelectorItem) c).refreshToolTip();
             }
-        }));
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across seven documents and produced 105 findings - 52 in the main
-review, then 53 more across six later passes.
+The entry point for a cycle that ran across seven documents and produced 106 findings - 52 in the main
+review, then 54 more across six later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -26,10 +26,14 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `INT` | [2026-07-26-integration-review.md](2026-07-26-integration-review.md) | A1-A2, B1, D1-D2 |
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
-| `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B2, C1-C4, D1 |
+| `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B2, C1-C5, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
+
+The letter normally encodes severity, but identifiers are fixed when first assigned and the documents
+that cite them are not rewritten. `FP-C4` is the one place these diverge: it was raised to B once its
+cause was understood, and keeps its `C4` identifier. Its own status table carries the real severity.
 
 ---
 
@@ -131,9 +135,16 @@ The cycle's calibration data. Both reviewers were wrong repeatedly, and in *the 
 | `IND` | `N4`, `T1`, `T2`: right defect or right fix, wrong stated mechanism or trigger |
 | `INT` | `A1`'s first fix repaired one of two re-keying paths, and used `removeIf`, which cannot remove a drifted key |
 | `INT` | `D5`'s note recorded a recovery route (delete the locomotive) that the delete guard makes unreachable |
+| `FP` | `C4`: called a method a pure validator when its own first line of javadoc says it creates accessories. The author said so at the time and was right |
+| `FP` | A new test assumed accessory addresses 291-293 were free. They are not: `init` restores the real database, and `testAccessory`'s helper had already documented why |
 
-Two of these are the same mistake: **believing a method does what its name suggests**. It is now a rule
-in [README.md](README.md).
+Three of these are the same mistake: **assuming what a method does instead of reading what it says**.
+Twice from the name (`IND-M2`, `IND-D6`), and once - `FP-C4` - from the body, against a javadoc that
+stated the behaviour in its first sentence. It is now a rule in [README.md](README.md).
+
+The last row is the same shape one level out: the information needed was in a helper whose call sites
+were read and whose comment was not. Both new test files were written by consulting existing tests for
+*idiom* while skipping what those tests had written down about the *environment*.
 
 ---
 
@@ -153,13 +164,28 @@ Four items were closed by the author's decision rather than fixed, each with rea
 
 ## State
 
-**Two items are open**, both in `FP` and both deliberately left: `FP-C3`, a 100-site mechanical cleanup,
-and `FP-C4`, a dead validation block whose removal is a judgement about intent. Everything else across
-the seven documents is fixed, withdrawn as mistaken, closed by decision, or informational.
+**Nothing is open.** The last item, `FP-C4`, closed on 2026-07-27, having been reported wrongly,
+re-diagnosed, and then fixed more severely than first proposed. It was written up as a block that
+validates nothing; in fact the call creates the accessory as a side effect, exactly as the author said
+when the finding was raised. What was really wrong was that its failure was silent - so a configuration
+that could never be actuated loaded as valid, and failed later at a point that named nothing about the
+cause. It is now fatal at load, and the severity was raised from C to B. Everything across the seven
+documents is fixed, withdrawn as mistaken, closed by decision, or informational.
+
+Worth recording for its own sake: **that fix was reached by writing the error message.** Three wordings
+were drafted, and each forced a sharper question about what the code actually did - the second being
+provably false the moment it was checked against `addConfigCommand`. Having to state plainly what
+happens to the user is a cheap and unusually effective way to find out whether you know.
 
 Test classes added during the cycle: `testLayoutBfs`, `testLayoutBfsEquivalence`, `testLayoutPickPath`,
 `testLayoutTimetable`, `testMessageBundles`, `testMultiUnitMembership`, `testLayoutReloadFence`,
-`testLayoutRenameKeys`, `testImportRename`, `testRouteRoundTrip`.
+`testLayoutRenameKeys`, `testImportRename`, `testRouteRoundTrip`, `testAdvancedRoutes`,
+`testInvalidInput`.
+
+The last two were added after the findings closed, covering combinations rather than defects:
+conditional routes acting on locomotives with multi-units inside them, and the rejection paths for
+input the user entered incorrectly - `Layout.fromJSON`'s roughly forty validations, none of which had
+been asserted before.
 
 Two areas remain untested and are named here so the gap is not mistaken for coverage: the editor flows
 (`FCR-B3`, verified manually), and the charset round trip (`FCR-B1`, which would pass vacuously on a

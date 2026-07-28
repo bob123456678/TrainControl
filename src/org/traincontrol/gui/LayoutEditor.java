@@ -335,11 +335,11 @@ public class LayoutEditor extends PositionAwareJFrame
                     label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                 }
 
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.clearBordersFromChildren(this.grid.getContainer());
                     this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
-                }));
+                });
             }
         }
         
@@ -434,12 +434,12 @@ public class LayoutEditor extends PositionAwareJFrame
             // Propagate the hover event.  Should be done for BUTTON3 at minimum
             receiveMoveEvent(e, label);
         
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 popup = new LayoutEditorRightclickMenu(this, parent, label, lc);
 
                 popup.show(e.getComponent(), e.getX(), e.getY());      
-            }));
+            });
         }
         else if (e.getButton() == MouseEvent.BUTTON2)
         {
@@ -724,7 +724,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             catch (IOException ex)
             {
-
+                // A tile edit that fails should say so.  This was silent, so the component simply did
+                // not appear and nothing explained why.  Logged rather than shown as a dialog: the
+                // editor calls this per placement, and a dialog per failed tile would be worse.
+                this.parent.getModel().log(ex);
             }
 
             refreshGrid();
@@ -751,7 +754,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             catch (IOException ex)
             {
-
+                // A tile edit that fails should say so.  This was silent, so the component simply did
+                // not appear and nothing explained why.  Logged rather than shown as a dialog: the
+                // editor calls this per placement, and a dialog per failed tile would be worse.
+                this.parent.getModel().log(ex);
             }
 
             refreshGrid();
@@ -792,7 +798,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             catch (IOException ex)
             {
-
+                // A tile edit that fails should say so.  This was silent, so the component simply did
+                // not appear and nothing explained why.  Logged rather than shown as a dialog: the
+                // editor calls this per placement, and a dialog per failed tile would be worse.
+                this.parent.getModel().log(ex);
             }
 
             refreshGrid();
@@ -1395,7 +1404,7 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void render()
     {        
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
@@ -1438,7 +1447,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     confirmExit();
                 }
             });            
-        }));
+        });
     }
     
     /**
@@ -1465,10 +1474,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             parent.layoutEditingComplete();
-        }));
+        });
         
         this.dispose();    
     }
@@ -1647,7 +1656,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         
         // Handle key shortcuts
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
@@ -1716,7 +1725,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.resetClipboard();
             }
-        }));
+        });
     }//GEN-LAST:event_formKeyPressed
     
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
@@ -1730,10 +1739,10 @@ public class LayoutEditor extends PositionAwareJFrame
             
             layout.saveChanges(null, false);
             
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 parent.layoutEditingComplete();
-            }));
+            });
             
             dispose();
         }

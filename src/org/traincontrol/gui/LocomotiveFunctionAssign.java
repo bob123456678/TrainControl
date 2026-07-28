@@ -151,7 +151,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         // Now load the actual icons        
         fIcon.setEnabled(false);
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             for (int i = 0; i <= this.loc.getNumFnIcons(); i++)
             {
@@ -176,7 +176,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             fIconlabel.setText(fIconlabel.getText().replace(" " + I18n.t("loc.ui.loadingMessage"), ""));
             fNoItemStateChanged(null);
             displayCustomizationButtons();
-        }));
+        });
         
         javax.swing.DefaultComboBoxModel<String> defaultModel = (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
 
@@ -440,7 +440,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.loc.setCustomFunctions(false);
                     this.loc.unsetLocalFunctionImageURLs();
@@ -449,14 +449,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
                     this.customIconPath = null;
 
                     updateFNumber(this.fNo.getSelectedIndex());
-                }));
+                });
             }
 
             // The button was only disabled to keep a second dialog from opening, so restore its correct state
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 displayCustomizationButtons();
-            }));
+            });
 
         }).start();
     }//GEN-LAST:event_resetButtonActionPerformed

@@ -106,7 +106,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     public void goToLayoutPage(int index)
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread( () -> 
+        javax.swing.SwingUtilities.invokeLater( () -> 
         {
             int page = index + 1;
 
@@ -128,7 +128,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             {
                 this.parent.getModel().logf("layout.ui.logPopupLayoutPageNotExist", page);
             }
-        }));
+        });
     }
     
     public JPanel getPanel()
@@ -210,12 +210,12 @@ public class LayoutPopupUI extends PositionAwareJFrame
         {
             if (evt.getButton() == MouseEvent.BUTTON3)
             {                              
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
 
                     menu.show(evt.getComponent(), evt.getX(), evt.getY());      
-                }));
+                });
             }
         }
     }//GEN-LAST:event_ExtLayoutPanelMouseClicked

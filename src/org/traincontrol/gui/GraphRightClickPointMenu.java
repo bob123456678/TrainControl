@@ -979,7 +979,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                         }
                         catch (Exception e)
                         {
-                            
+                            ui.getModel().log(e);
                         }
                     }
                 }

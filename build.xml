@@ -113,12 +113,14 @@
         </macrodef>
 
         <test-one-class class="testAccessory"/>
+        <test-one-class class="testAdvancedRoutes"/>
         <test-one-class class="testAutoLayout"/>
         <test-one-class class="testAutoLayoutRace"/>
         <test-one-class class="testAutonomyPathValidation"/>
         <test-one-class class="testAutonomySimulationSanity"/>
         <test-one-class class="testCS2Message"/>
         <test-one-class class="testImportRename"/>
+        <test-one-class class="testInvalidInput"/>
         <test-one-class class="testLayoutBfs"/>
         <test-one-class class="testLayoutBfsEquivalence"/>
         <test-one-class class="testLayoutPickPath"/>

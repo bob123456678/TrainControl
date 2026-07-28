@@ -22,8 +22,9 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | FP-C1 | `parseFile` closed its reader outside any `finally`, leaking it whenever parsing threw | C | **Fixed 2026-07-27** |
 | FP-C2 | `getLocomotivesToRenameFromImport` rebuilt the whole locomotive list once per parsed locomotive | C | **Fixed 2026-07-27** (with FP-B1) |
 | FP-B2 | `pickPath` discarded every exception and then reported "no free paths" - a normal condition - so autonomy failures were undiagnosable | B | **Fixed 2026-07-27** |
-| FP-C3 | 100 sites allocate a `Thread` purely to pass it as a `Runnable`; five are per-CAN-message | C | Open - not attempted |
-| FP-C4 | Accessory validation during autonomy JSON load is dead code: the validator is called and its exception discarded | C | Open - report only |
+| FP-C3 | 100 sites allocate a `Thread` purely to pass it as a `Runnable`; five are per-CAN-message | C | **Fixed 2026-07-27** - all 100 |
+| FP-C4 | Accessory creation during autonomy JSON load fails silently, so a config that can never be actuated loads as valid | B | **Fixed 2026-07-27** - now fatal at load. Severity raised from C once the cause was understood |
+| FP-C5 | Four empty catch blocks in the layout editor and graph menu swallowed failures with no message | C | **Fixed 2026-07-27** |
 | FP-D1 | Checks that came back clean | - | Recorded |
 
 ---
@@ -150,7 +151,7 @@ cannot be diagnosed at all, and presents as normal operation.
 
 ---
 
-## FP-C4. Autonomy JSON validation that validates nothing - open
+## FP-C4. Accessory creation that fails silently - and a finding that was wrong about why
 
 `Layout.fromJSON`, in the edge-command validation loop:
 
@@ -168,20 +169,71 @@ if (null == control.getAccessoryByName(accessory))
 }
 ```
 
-`validateConfigCommand` is a pure validator - it returns a setting and throws on invalid input, with no
-side effect on the model. Its return value is discarded and its exception is swallowed, so the block
-does nothing whatever the input. The sibling `else` branch, for a command with no `acc` key at all,
-calls `layout.invalidate(...)`, which suggests the intent here was to invalidate on an unresolvable
-accessory too.
+**The finding above was wrong, and the author's instinct was right.** It was written on the premise
+that `validateConfigCommand` is a pure validator with no side effect on the model, so that discarding
+both its return value and its exception left a block that does nothing. The premise is false. The
+method's own first line of javadoc says otherwise - *"Validates that a command is valid.Creates
+accessories in DB if needed."* - and its body calls `control.newSignal(...)` or `control.newSwitch(...)`
+for an accessory that does not yet exist. The call is there **for** that side effect. The author said as
+much when the finding was raised.
 
-**Not fixed, deliberately.** Making it invalidate would start rejecting autonomy files that load today,
-and the runtime already handles missing accessories properly - a path whose accessory is absent is no
-longer used, which was an A-level fix earlier in this cycle. So the safe change is to delete the dead
-block rather than activate it, and that is a judgement about intent that belongs with the author.
+So the block is not dead. What was actually wrong with it is narrower and still worth fixing: when
+creation fails, nothing was said.
+
+**Fixed by making it fatal.** The failure now throws, and the enclosing edge handler converts it into
+`autolayout.errorInvalidEdgeWithMessage` wrapping `autolayout.errorEdgeAccessoryCouldNotBeAdded` - so
+the config is rejected at load, naming the accessory and the reason.
+
+Two intermediate wordings were written and discarded before this, and the sequence is the point:
+
+1. *"Paths using this edge will not be available"* - accurate about the runtime, but it described a
+   consequence rather than a fault, implying the operator should expect degraded operation.
+2. *"ignoring invalid accessory"* - which would have been a false statement. The command is stored on
+   the edge a few lines below regardless, via `addConfigCommand`, whose own javadoc says it *expects* a
+   successful `validateConfigCommand` first. Nothing ignores anything.
+
+Writing the message is what forced the question of what the code actually does, and the answer settled
+it: `configureEdge` already treats an unresolvable accessory as fatal, refusing the path during preview
+and invalidating the layout during actuation. Failing at load is the same verdict delivered where the
+cause is still visible, instead of several steps downstream.
+
+**This rejects configurations that used to load.** That is the intended change, not a side effect: such
+a configuration was never operable, it merely failed later and less clearly. The alternative - dropping
+the command and running the path anyway - would send a train across an accessory whose position was
+never commanded, which on a real layout is a switch left wherever it happened to be.
+
+**Tests.** `testInvalidInput.testUnusableEdgesAreRejected`, case *"command naming an accessory that
+cannot be added"* - which loaded as **valid** before this fix.
+
+*Recorded as a reviewer error.* Two of this cycle's earlier mistakes were "believing a method does what
+its name suggests"; this one is the same family but worse, because the method's documentation stated
+the behaviour plainly in its first sentence and the finding contradicted it anyway. Reading a method's
+body without its javadoc is how a side effect becomes invisible.
 
 ---
 
-## FP-C3. `new Thread(...)` used as a `Runnable` - open
+## FP-C5. Silent catches in the editor UI
+
+Four `catch` blocks with an entirely empty body: three in `LayoutEditor` around
+`layout.addComponent(...)` - placing, rotating and editing a tile - and one in
+`GraphRightClickPointMenu`. A failed tile edit simply did not appear, with nothing said anywhere.
+
+`LayoutEditor` already logs via `this.parent.getModel().log(ex)` in three other places, so these were
+inconsistent rather than deliberate.
+
+**Fixed** - all four now log the exception. Logged rather than shown in a dialog on purpose: the editor
+calls `addComponent` per placement, and a dialog per failed tile would be worse than the silence.
+
+**Deliberately not changed:** `Util.openURL`'s two `catch (...) {return false;}` blocks, which an
+automated scan flagged alongside these. Returning false *is* the handling - the caller decides what to
+tell the user - and they were flagged only because the body sits on the same line as the `catch`.
+
+The wider count: 252 catch blocks in `src/`, of which 9 were empty. Two were `FP-B2`, four are these,
+one was `FP-C4`, and two were those false positives. All but the two are now fixed.
+
+---
+
+## FP-C3. `new Thread(...)` used as a `Runnable`
 
 100 sites across 13 files write `submit(new Thread(() -> ...))`, `invokeLater(new Thread(() -> ...))`
 or `execute(new Thread(() -> ...))`. The executor or the EDT calls `run()` on the object, so the
@@ -192,10 +244,22 @@ thread-locals, names itself and registers with a thread group.
 Five of them are in `receiveMessage`, so one such object is allocated per incoming CAN message, of
 which there are many during operation.
 
-**Not attempted.** The change is mechanical - delete `new Thread(` and its closing paren - but it is
-100 sites for a per-message saving that is probably microseconds, and this cycle has twice shown that
-large mechanical edits are where files get damaged. If taken, the five in `receiveMessage` are the ones
-worth doing, and they can be done alone.
+**Fixed - all 100 sites**, at the author's request.
+
+*The performance argument is weak and should not be the reason.* A `Thread` object costs perhaps a
+microsecond; on the five per-message sites that is invisible against the network I/O around them, and
+on the other 95 - one-off user actions - it is meaningless. The real argument is that
+`submit(new Thread(...))` *reads* as though a thread is being spawned inside an executor. It is not:
+`Thread` implements `Runnable`, so the pool simply calls `run()` on it. A reader who believed the code
+meant what it appears to mean would be wrong about the concurrency - a correctness hazard, even though
+the code behaves correctly.
+
+*Why it was safe to do mechanically.* The transformation was scripted with a paren matcher that skips
+string literals and comments, and every file was verified **before** being written: brace counts
+unchanged, paren counts down by exactly the number of transformations, method set identical.
+`new Thread(` occurrences went from 169 to 69 - and 69 was the independently pre-counted number of
+genuine thread creations, the ones that are actually started. Those were never candidates: the matcher
+fired only where `submit(`, `invokeLater(` or `execute(` immediately preceded.
 
 ---
 
@@ -221,8 +285,88 @@ worth doing, and they can be done alone.
   is a `LinkedList`, so its `remove` uses `equals` and does not care about hash drift. Checked
   precisely because this is the defect class the cycle kept finding elsewhere.
 - **Silent catch blocks.** 252 catch blocks; 9 completely empty. Seven are in UI code where the
-  swallowed failure is a cosmetic operation. The two that were not - `FP-B2` - are fixed; one further
-  case is `FP-C4`.
+  swallowed failure is a cosmetic operation. The two that were not - `FP-B2` - are fixed, as is the
+  remaining case, `FP-C4`. No empty catch block is left in `src/` outside UI cosmetics.
+
+---
+
+## Validation of this cycle's changes
+
+Re-validated after the `FP-C3` unwrap, which touched 100 sites across 13 files - by far the largest
+mechanical edit of the cycle. A scripted check covers every changed Java file and the bundles:
+
+- quote parity per line, brace balance, and brace delta against `HEAD`
+- no method present at `HEAD` missing now
+- eight bundles, equal key sets, no duplicates, ASCII-only
+- **every message key referenced from `src/` exists in the bundles** - `I18n.t`/`f` call
+  `bundle.getString` directly, so a mistyped key is a `MissingResourceException` at runtime, not a
+  fallback
+- every test class registered in `build.xml`
+- no references to the symbols deleted this cycle
+
+All passed. The key-existence check produced one false positive worth recording: two keys appeared to
+be used but absent, and both turned out to be usage examples in `I18n`'s own javadoc. The checker now
+strips comments.
+
+The unwrap itself was verified beyond the structural checks: every one of the 100 transformed sites was
+a lambda (two used `()->` without a space, which an initial grep missed), and `new Thread(` occurrences
+fell from 169 to 69 - 69 being the independently counted number of genuine, started threads, none of
+which were candidates.
+
+---
+
+## New coverage added alongside this review
+
+`testAdvancedRoutes` - six tests for two combinations the suite had never exercised together, and which
+the author's manual testing also did not reach:
+
+- **An autoloc condition driving a function command.** "Fire function 3 when this locomotive reaches
+  this sensor." `testRoutes` covers autoloc conditions through `Route.evaluate` in isolation, and
+  covers function commands nowhere. The pair is tested through a real s88 trigger, including the
+  negative case where the locomotive is on the graph but standing at a *different* sensor - without
+  which a route that fired merely because the locomotive existed would pass.
+- **Multi-units reached through a route.** `setF` and `setSpeed` fan out over `linkedLocomotives`, so a
+  route naming a consist head commands every member. Nothing asserted that, and this cycle rebuilt that
+  fan-out map three times (`INT-A1`, `INT-A2`, `RR-C1`). Also pinned: an autoloc condition resolves
+  against the head only - a member is not separately on the graph - and a head and its own member are
+  never simultaneously compatible.
+
+`testInvalidInput` - eleven tests for input the user entered incorrectly. The suite covered one such
+surface well (`RouteCommand.fromLine`, eight malformed command lines) and three not at all:
+
+- **The autonomy configuration file.** `Layout.fromJSON` has around forty distinct rejection paths and
+  not one was asserted - no test in the suite ever called `isValid()`. It is also the only input the
+  user hand-edits as text, and the only parser here that *never throws*: it returns an invalidated
+  `Layout` either way, so a lost check would not fail loudly, it would quietly load a broken layout.
+  Covered: malformed JSON, each required key removed in turn, quoted numbers, non-numeric settings,
+  unusable points, unknown and duplicated locomotives, and edges naming points that do not exist.
+- **`Edge.validateConfigCommand`** - the accessory command box in the graph edge editor, previously
+  called only with valid input. Six malformed commands, each asserted to produce a *checked* exception
+  with a message, plus the property that a rejected command leaves no half-created accessory behind.
+- **Route file import.** `importRoutes` deletes every existing route before adding the parsed ones;
+  that is safe only because parsing happens first, in a separate statement. Nothing pinned the
+  ordering, and the comment describing it sits *below* the deletion. Three shapes of bad file, each
+  failing at a different depth, with the route count asserted unchanged after each.
+
+Each group carries a control case asserting valid input is still accepted. Without them a validator
+that rejected everything would satisfy every other assertion in the file.
+
+**The accessory tests failed first time, correctly.** They picked accessory addresses believed to be
+unused and asserted one was absent; the author's database had a switch at 291. The assertion was
+written as a stated precondition rather than a bare `assertNull`, so the failure said exactly what was
+wrong instead of looking like a defect in the code under test. `testAccessory` had already solved this
+and its helper says why - *a real database is not clean; the keyboard registers an accessory at every
+address the operator has ever scrolled past* - which was read past when that helper's call sites were
+checked but its javadoc was not. Both accessory tests now empty the address first, in memory only.
+
+**A checker error worth recording.** Both new test files initially failed the structural validator -
+unbalanced braces and quotes - and both reports were wrong. The validator counted braces and quotes on
+raw source, so a deliberately truncated JSON fixture (`"{'points': ["`) read as an unclosed brace, and
+the char literal `'"'` read as an unbalanced quote. It now strips comments and literals with a state
+machine before counting, and was self-tested against eight cases - four benign shapes it must not flag,
+and three real defects it must still catch - because a checker relaxed to stop crying wolf is worth
+less than no checker at all. It also gained a paren-balance check, which the old line-based approach
+could not support.
 
 ---
 

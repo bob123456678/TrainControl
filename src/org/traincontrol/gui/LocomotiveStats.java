@@ -75,7 +75,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
     public final void refresh()
     {
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -196,7 +196,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                     this.tcui.getModel().log(e);
                 }
             }
-        }));
+        });
     }
     
     private void filterTable()
@@ -513,10 +513,10 @@ public class LocomotiveStats extends javax.swing.JPanel
 
     private void viewUsageGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewUsageGraphActionPerformed
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+        javax.swing.SwingUtilities.invokeLater(() -> 
         {
             new UsageHistogram(this.tcui);
-        }));
+        });
     }//GEN-LAST:event_viewUsageGraphActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

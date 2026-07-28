@@ -1738,7 +1738,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Send the message to the appropriate listener
         if (message.isFeedbackCommand())
         {
-            this.feedbackMessageProcessor.submit(new Thread(() ->
+            this.feedbackMessageProcessor.submit(() ->
             {
                 int id = message.extractShortUID();
 
@@ -1750,12 +1750,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     newFeedback(id, message);   
                 }
-            }));
+            });
         }
         // Only worry about the message if it's a response
         else if (message.isLocCommand() && message.getResponse())
         {            
-            this.locMessageProcessor.submit(new Thread(() ->
+            this.locMessageProcessor.submit(() ->
             {
                 Integer id = message.extractUID();
 
@@ -1794,11 +1794,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         this.logf("network.unknownLocomotiveCommand", MarklinLocomotive.addressFromUID(id));
                     }
                 }
-            }));
+            });
         }
         else if (message.isAccessoryCommand() && message.getResponse())
         {
-            this.locMessageProcessor.submit(new Thread(() ->
+            this.locMessageProcessor.submit(() ->
             {
                 int id = message.extractUID();
 
@@ -1820,13 +1820,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         //this.view.repaintSwitches();
                     }
                 }
-            }));
+            });
         }
         else if (message.isSysCommand() && 
            (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
         )
         {
-            this.locMessageProcessor.submit(new Thread(() ->
+            this.locMessageProcessor.submit(() ->
             {
                 if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
                 {
@@ -1854,11 +1854,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     if (this.view != null) this.view.updatePowerState();
                     this.logf("log.powerOff");
                 }
-            }));
+            });
         }
         else if (message.isPingCommand() && message.getResponse())
         {
-            this.systemMessageProcessor.submit(new Thread(() ->
+            this.systemMessageProcessor.submit(() ->
             {
                 // Track latency
                 if (this.pingStart > 0)
@@ -1889,7 +1889,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
-            }));
+            });
         }
     }
         
@@ -3141,7 +3141,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
                 try
                 {
@@ -3160,18 +3160,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         Thread.currentThread().interrupt();
                     }
                 }                
-            }));
+            });
 
             latch.await();
             model.logf("ui.rendering");
             
             try
             {
-                javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     theUI.display();
                     model.logf("ui.initialized");
-                }));
+                });
             }
             catch (Exception ex)
             {

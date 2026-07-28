@@ -37,7 +37,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         // Set icon
         if (TrainControlUI.LOAD_IMAGES && loc.getImageURL() != null && loc.getImageURL().length() > 0)
         {
-            this.selector.getUI().getImageLoader().submit(new Thread(() ->
+            this.selector.getUI().getImageLoader().submit(() ->
             {
                 try 
                 {
@@ -56,7 +56,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
                     );                    
                     locIcon.setIcon(null);
                 }
-            }));
+            });
         }
         else
         {

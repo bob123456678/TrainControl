@@ -175,12 +175,12 @@ public class LayoutGrid
                             {  
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {                              
-                                    javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+                                    javax.swing.SwingUtilities.invokeLater(() ->
                                     {
                                         LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, text.getToolTipText());
 
                                         menu.show(e.getComponent(), e.getX(), e.getY());      
-                                    }));
+                                    });
                                 }
                                 // Left-clicking a station will activate its locomotive
                                 else

@@ -255,10 +255,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                         {
                             try
                             {
-                                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
                                     ui.editRoute(route.getName());
-                                }));
+                                });
                             }
                             catch (Exception e)
                             {

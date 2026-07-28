@@ -308,7 +308,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             JList list = (JList) evt.getSource();
 
@@ -352,7 +352,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     }).start();
                 }
             } 
-        }));
+        });
     }//GEN-LAST:event_locAvailPathsMouseClicked
 
     private void locAvailPathsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered

@@ -3950,13 +3950,22 @@ public class Layout
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
-                                try 
+                                // This call is here to ADD the accessory, not merely to check it.  If
+                                // it cannot be added the edge can never be actuated, so the failure is
+                                // fatal rather than advisory: the outer catch invalidates the layout.
+                                // Continuing would build a path that configureEdge refuses later, with
+                                // the cause several steps behind wherever the operator notices.
+                                try
                                 {
                                     Edge.validateConfigCommand(accessory, Accessory.accessorySetting.GREEN.toString(), control);
                                 }
                                 catch (Exception e)
                                 {
-
+                                    // Unchecked because this runs inside a forEach consumer.  The outer
+                                    // catch turns it back into a readable invalidation message.
+                                    throw new RuntimeException(
+                                        I18n.f("autolayout.errorEdgeAccessoryCouldNotBeAdded", accessory, e.getMessage())
+                                    );
                                 }
                             }
                         }

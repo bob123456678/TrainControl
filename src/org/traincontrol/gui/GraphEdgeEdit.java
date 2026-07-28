@@ -491,7 +491,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
         
         this.captureCommands.setSelected(false);
         
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {   
             try
             {
@@ -503,7 +503,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                     I18n.f("error.generic",  e.getMessage())
                 );
             }
-        }));
+        });
     }//GEN-LAST:event_testCommandsActionPerformed
 
     /**
@@ -512,7 +512,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     private void highlightTiles()
     {
         // The "true" will highlight the tiles
-        javax.swing.SwingUtilities.invokeLater(new Thread(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         { 
             if (!parent.getModel().getLayoutList().isEmpty())
             {
@@ -523,7 +523,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
                     a.updateTiles(true);
                 } 
             }
-        }));
+        });
     }
     
     private void testCommands1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testCommands1ActionPerformed

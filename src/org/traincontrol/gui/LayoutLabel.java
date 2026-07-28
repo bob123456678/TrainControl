@@ -162,15 +162,15 @@ public final class LayoutLabel extends JLabel
                                 // Edit route on right-click
                                 if (e.getButton() == MouseEvent.BUTTON3 && component.isRoute() && (!tcUI.getModel().getPowerState() || !tcUI.getModel().getNetworkCommState())) 
                                 {
-                                    javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                    javax.swing.SwingUtilities.invokeLater(() -> 
                                     {
                                         tcUI.editRoute(component.getRoute().getName());
-                                    }));
+                                    });
                                     
                                     return;
                                 }
                                 
-                                javax.swing.SwingUtilities.invokeLater(new Thread(() -> 
+                                javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
                                     if (!tcUI.getModel().getPowerState())
                                     {
@@ -256,7 +256,7 @@ public final class LayoutLabel extends JLabel
 
                                     lastClicked = System.currentTimeMillis();
                                     component.execSwitching();
-                                }));
+                                });
                             }  
                         });    
                     }
