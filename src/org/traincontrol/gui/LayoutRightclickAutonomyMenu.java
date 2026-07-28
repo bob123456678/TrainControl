@@ -7,6 +7,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.util.I18n;
 
 /**
@@ -40,15 +41,21 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
-                // Offered only when something has a home to go back to.  A cheap map read - planning
-                // here would stall the popup, and the real answer comes when it is clicked.
-                if (!ui.getModel().getAutoLayout().getHomeStations().isEmpty())
-                {
-                    menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
-                    menuItem.addActionListener(event -> ui.requestReturnToHome());
+                // Shown always and greyed when there is nothing to send home, so the feature stays
+                // discoverable and says why it is unavailable.  Only the cheap half of the question is
+                // asked here - whether a plan exists needs a search, which would stall the popup.
+                HomeStaging.Outcome nothingToDo = ui.getModel().getAutoLayout().triageReturnToHome();
 
-                    add(menuItem);
+                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
+                menuItem.addActionListener(event -> ui.requestReturnToHome());
+                menuItem.setEnabled(nothingToDo == null);
+
+                if (nothingToDo != null)
+                {
+                    menuItem.setToolTipText(ui.describeStagingOutcome(nothingToDo, null));
                 }
+
+                add(menuItem);
 
                 // Get the autonomy point corresponding to this station
                 Point current = ui.getModel().getAutoLayout().getPoint(stationName);

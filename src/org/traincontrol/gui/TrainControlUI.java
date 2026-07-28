@@ -12187,7 +12187,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.getAutoLayout().executeTimetable();
                 this.executeTimetable.setEnabled(true);
                 this.startAutonomy.setEnabled(true);
-                this.returnHomeButton.setEnabled(true);
+                this.refreshReturnHomeButton();
                 this.exportJSON.setEnabled(true);
 
                 // Same gap as the staging run had: nothing turned this off once the trains stopped
@@ -12872,7 +12872,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 loadAutoLayoutSettings();
 
                 this.startAutonomy.setEnabled(true);
-                this.returnHomeButton.setEnabled(true);
+                this.refreshReturnHomeButton();
                 this.executeTimetable.setEnabled(true);
 
                 // Advance to locomotive tab
@@ -12909,7 +12909,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.gracefulStop.setEnabled(false);
         this.startAutonomy.setEnabled(true);
-        this.returnHomeButton.setEnabled(true);
+        this.refreshReturnHomeButton();
 
         new Thread(() ->
             {
@@ -13047,7 +13047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // button that never comes back needs a restart to recover.
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    this.returnHomeButton.setEnabled(true);
+                    this.refreshReturnHomeButton();
                     this.executeTimetable.setEnabled(true);
                     this.repaintTimetable();
                 });
@@ -13074,7 +13074,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param blocked - may be null; only IMPOSSIBLE has any
      * @return
      */
-    private String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
+    /**
+     * Sets the return home button to match what the layout can actually do right now.
+     *
+     * Called wherever the button would otherwise simply be switched back on, and whenever the autonomy
+     * locomotive list is repainted - that is what runs when a locomotive is placed or arrives, which is
+     * exactly when "is anything away from home" changes its answer.
+     *
+     * Only the cheap half of the question is asked: whether a plan exists needs a search, and this runs
+     * on the EDT.
+     */
+    void refreshReturnHomeButton()
+    {
+        // repaintAutoLocList can run while the window is still being built, before the buttons exist
+        if (this.returnHomeButton == null) return;
+
+        Layout layout = this.model == null ? null : this.model.getAutoLayout();
+
+        if (layout == null || layout.isRunning())
+        {
+            this.returnHomeButton.setEnabled(false);
+            return;
+        }
+
+        HomeStaging.Outcome nothingToDo = layout.triageReturnToHome();
+
+        this.returnHomeButton.setEnabled(nothingToDo == null);
+
+        // Says why it is unavailable, rather than leaving a dead button with no explanation
+        this.returnHomeButton.setToolTipText(nothingToDo == null
+            ? I18n.t("ui.main.tooltip.returnHome")
+            : describeStagingOutcome(nothingToDo, null));
+    }
+
+    String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         switch (outcome)
         {
@@ -15221,6 +15254,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     synchronized public void repaintAutoLocList(boolean external)
     {
+        // Placement is what decides whether anything is away from home, and this is what runs when it
+        // changes - so the button stops being stale the moment the last locomotive arrives.
+        this.refreshReturnHomeButton();
+
         if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid())
         {
             // If called from another UI component, no need to refresh if there are no trains or if autonomy is on
