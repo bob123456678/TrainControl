@@ -13,6 +13,9 @@ scripts that read the real data (bundles, call sites) rather than sampling it.
 statuses in the table reflect that round.
 **Third round:** the uncommitted button-consistency changes in the working tree above `6be3bda` are
 reviewed in their own section; `WR-B2` and `WR-C6`-`C8` were filed there.
+**Fourth round:** commits `178aa4c` (the fixes for `WR-B2`/`C6`-`C8`, validated) and `d1f7008` (the
+assignable-home-stations feature, which the author had not yet tested) are reviewed in their own
+section; `WR-B3` and `WR-C9` were filed there.
 
 **Method note.** The instruction this review was commissioned with is the one the cycle's own record
 supports: across three evaluation rounds, every defect that survived verification was found by writing
@@ -46,6 +49,8 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | WR-C6 | The `requestReturnToHome` entry dialog still speaks the old text for LOCOMOTIVES_RUNNING - the one surface the working-tree consistency change missed | C | **Fixed 2026-07-28** (working tree) - the entry guard routes through `describeStagingOutcome` |
 | WR-C7 | Four translations of the new message name a Graceful Stop button that does not exist under that name; the Polish adds a misspelling | C | **Fixed 2026-07-28** (working tree) - the message takes the button label as `{0}`, filled from each bundle's own `ui.main.gracefulStop`, so the two cannot drift; the Polish was reworded to cite the button rather than decline its name |
 | WR-C8 | "Use Graceful Stop first" is the wrong instruction when the running state comes from a manually driven path - the control it names is greyed and does nothing for that case | C | **Fixed 2026-07-28** (working tree) - reworded to cover both states: wait for arrival, or use the button if autonomy is running |
+| WR-B3 | The three new home-assignment mutation surfaces are gated on `isRunning()` alone - the `stagingFlowActive` window the *previous commit* closed for the run buttons is wide open for edits that rebuild the claim map under the planner | B | **Open** |
+| WR-C9 | The assignment chooser offers locomotives the station can never hold, and the resulting permanent IMPOSSIBLE advises checking the track - the wrong remedy for an assignment | C | **Open** |
 | WR-D1 | Commit `08610a8` verified hunk by hunk; clean checks, resolved suspicions, and traps recorded | - | Recorded |
 
 No A findings. Nothing in the week's commits was found to have regressed: the one defect above that
@@ -390,6 +395,114 @@ cannot press, in exactly the state a user fiddling manually is most likely to se
 since the state resolves itself when the train arrives; the honest fix is either to keep the advice
 conditional (running vs merely active), or to word the message so it covers both ("wait for trains
 to stop - use Graceful Stop if autonomy is running").
+
+---
+
+## Review of the last-4h commits: `178aa4c` and `d1f7008` (2026-07-28, fourth round)
+
+Two commits. `178aa4c` fixes `WR-B2` and `WR-C6`-`C8` from the third round; `d1f7008` adds assignable
+home stations - a new `HomeLocomotiveMenu` on three right-click menus, per-point `home` names in the
+autonomy JSON, and thirteen new tests. The author notes the new UI and the JSON home tracking are
+**not yet tested by hand**, so this round read those paths hardest.
+
+### Validation of the `178aa4c` fixes
+
+All four correct, each read in the enforcing method:
+
+- **`WR-B2`** - `stagingFlowActive` is volatile, set on the EDT at the commit point (before the
+  worker spawns, closing the window from the first instant), and cleared *first* in the worker's
+  `finally` - before the buttons re-enable, so no surface can offer the action while the flow
+  unwinds. All four surfaces consult it: the button refresh, both menus (via a new accessor), and
+  the entry guard. The ordering is the part that had to be checked and it is right.
+- **`WR-C6`** - the entry guard routes through `describeStagingOutcome`; one voice per state.
+- **`WR-C7`** - solved better than filed: rather than fixing four translations, the message now takes
+  the button label as `{0}`, filled from each bundle's own `ui.main.gracefulStop` - the name cannot
+  drift again in any language. The superseded key is fully removed (checked in all eight bundles),
+  all eight translations of the new key carry `{0}`, and no `I18n.f`-fetched value anywhere contains
+  a bare apostrophe (re-swept, since the new French/Italian values are exactly where that
+  MessageFormat trap would land - they use typographic apostrophes throughout).
+- **`WR-C8`** - the wording covers both states: wait for arrival, or use the button if autonomy runs.
+- **`WR-C5`** - `pacedWait` now sits above `executeTimetable`'s javadoc; each block attaches to its
+  own method.
+
+### The feature, verified clean where it could be read
+
+The shape is sound: assignments are stored by name on the `Point` (so they survive the locomotive
+being off the graph), `rebuildHomeStations` is the single derivation for both entrances (load and
+edit), assignments win, the positional rule fills in behind them, and a file with no assignments
+reproduces the old behaviour exactly. The three lifecycle repairs the commit message names were each
+verified in the enforcing method, and each has a test: `renameLoc` repairs the name (and no
+collision is constructible: a live assignment always names a real locomotive, and `renameLoc` refuses
+a taken target); `locDeleted` clears the point's name, not just the map; `setHomeLoc` stores names
+verbatim. The `deletePoint` release from `WR-C1` composes correctly with assignments - the claim
+leaves the map and the point leaves the rebuild's source in the same act. The `fromJSON` ordering is
+right: names are read verbatim during the point loop and resolved only once every point exists.
+`changeLocAddress` needs no repair (the name does not change) - checked, not assumed. The
+JSON round-trip test drives `toJSON` into a real reload and asserts both the stored name and the
+derived map; the plan test drives an assigned layout through a full plan to arrival. Bundle audit:
+1,227 keys x 8, parity exact, placeholders exact, ASCII-pure.
+
+Two observations recorded, not filed: duplicate assignments (constructible only by hand-editing the
+JSON) are warned on every load but never cleared - asymmetric with the dangling-name case, which is
+dropped on the same reasoning; and the in-loop `claimHome` during `fromJSON` is now dead work, since
+the rebuild at the end clears and re-derives everything - harmless, one loop to delete someday.
+
+### WR-B3. The new mutation surfaces missed the flag the previous commit introduced
+
+[HomeLocomotiveMenu.java:205](../../src/org/traincontrol/gui/HomeLocomotiveMenu.java)
+(`refuseWhileRunning` - the enforcement, and it asks only `isRunning()`), lines 95, 117 and 174 (the
+three enablement hints, same predicate), against
+[TrainControlUI.java:290](../../src/org/traincontrol/gui/TrainControlUI.java) (`stagingFlowActive`,
+introduced *one commit earlier* because `isRunning()` reads false for the whole planning phase),
+[Layout.java:422](../../src/org/traincontrol/automation/Layout.java) (`rebuildHomeStations`:
+`homeStations.clear()` and repopulate, under the Layout monitor),
+[HomeStaging.java:137](../../src/org/traincontrol/automation/HomeStaging.java) (the planner's copy:
+`new LinkedHashMap<>(layout.getHomeStations())`, under no lock at all).
+
+`178aa4c` established that the staging flow's planning phase is invisible to `isRunning()` and wired
+`stagingFlowActive` into every surface that could start a second run. `d1f7008`, the next commit,
+added three surfaces that *mutate the claim map the planner is reading* - assign, clear, clear-all -
+and gated them on `isRunning()` alone. During planning, the submenu is enabled, the click-time
+re-check passes, and `setHomeLocomotive` runs `rebuildHomeStations`: a clear-and-repopulate of
+`homeStations` on the EDT while the staging worker's `snapshot` may be iterating that exact map for
+its copy, holding no lock. A `ConcurrentModificationException` lands in the worker - which has no
+catch, so the run dies with no dialog (the `finally` does restore the timetable and buttons); the
+subtler outcome is a torn copy, a plan derived from half the homes, and trains driven to stations
+that are no longer theirs. Even with no interleaving at all, an edit that lands between triage and
+load changes what the committed run means.
+
+Everything the fix needs already exists: `ui.isStagingFlowActive()` was added for the menus in the
+same session. One `|| ui.isStagingFlowActive()` in `refuseWhileRunning` (the enforcement) and the
+three hints, and `Automation.md`'s sentence "Assignments cannot be changed while trains are moving"
+becomes true for the one window where it currently is not. This is the same-mistake family's next
+instance, and its purest form yet: the guard was invented, named, documented and wired into four
+surfaces in the morning, and the afternoon's feature added a fifth, sixth and seventh surface
+without it.
+
+### WR-C9. The chooser offers what the station can never hold
+
+[HomeLocomotiveMenu.java:225](../../src/org/traincontrol/gui/HomeLocomotiveMenu.java) (the list:
+every locomotive in the run list, unfiltered),
+[HomeStaging.java:761](../../src/org/traincontrol/automation/HomeStaging.java) (`canRest`: length,
+exclusions, reversibility at a terminus, activity),
+[HomeStaging.java:280](../../src/org/traincontrol/automation/HomeStaging.java) (the pre-search check
+that turns a `canRest` failure into IMPOSSIBLE), the `errorCannotReachHome` message ("Check the
+track between them and where they started").
+
+The chooser lists every locomotive in the run list, including ones `canRest` will refuse at this
+station forever: a locomotive longer than the station allows, a non-reversible one at a terminus,
+one the station explicitly excludes. Assigning any of these produces a *permanent* IMPOSSIBLE on
+every Return Home press - correctly detected before any search burn, thanks to `HS-B3` - but the
+dialog's advice is "Check the track between them and where they started", which is the wrong remedy:
+nothing about the track is at fault, and the way out is the assignment the user just made. Before
+this feature, reaching such a state required editing station properties out from under a derived
+claim; the chooser now offers it as a menu pick.
+
+Two fix shapes, compatible: screen the chooser with `canRest` (grey the unassignable entries with
+the reason as tooltip - the data is one call away), and/or have the IMPOSSIBLE dialog name the
+reason as well as the locomotive - which is what the `HS-B3` fix-shape originally asked for
+("home station X is inactive" being actionable in a way the current text is not). The second helps
+every path into IMPOSSIBLE, not only assignments.
 
 ---
 

@@ -12990,7 +12990,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final Layout layout = this.model.getAutoLayout();
 
-        if (layout.isRunning() || this.stagingFlowActive)
+        if (this.isAutonomyBusy())
         {
             // Routed through describeStagingOutcome like every other surface.  This one said "please
             // wait for all active locomotives to stop" while the button tooltip and the plan-refusal
@@ -13131,6 +13131,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether autonomy is doing anything at all - running, still finishing, or planning a staging run.
+     *
+     * Layout.isRunning cannot answer this on its own.  A staging run spends its whole planning phase
+     * with nothing moving and no locomotive active, so isRunning reads false while the flow is very
+     * much under way - which is why stagingFlowActive exists.  The two have to be asked together, and
+     * every surface that offers an autonomy action or edits autonomy state asks this instead of
+     * rebuilding the disjunction, because rebuilding it is how a new surface comes to be missing half
+     * of it.
+     *
+     * @return
+     */
+    boolean isAutonomyBusy()
+    {
+        Layout layout = this.model == null ? null : this.model.getAutoLayout();
+
+        return (layout != null && layout.isRunning()) || this.stagingFlowActive;
+    }
+
+    /**
      * Sets the return home button to match what the layout can actually do right now.
      *
      * Called wherever the button would otherwise simply be switched back on, and whenever the autonomy
@@ -13153,7 +13172,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        if (layout.isRunning() || this.stagingFlowActive)
+        if (this.isAutonomyBusy())
         {
             // Said out loud rather than left to the previous reason.  Disabling without touching the
             // tooltip meant a button greyed because trains are moving went on claiming they were all

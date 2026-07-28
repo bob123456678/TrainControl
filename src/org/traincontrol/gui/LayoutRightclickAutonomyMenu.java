@@ -47,10 +47,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // Running counts as a reason too.  The button greys while anything moves; these consulted
                 // only the triage, which knows nothing about it - so the same action was offered here and
                 // refused there, and the triage was being computed against positions changing underneath.
-                HomeStaging.Outcome nothingToDo =
-                    (ui.getModel().getAutoLayout().isRunning() || ui.isStagingFlowActive())
-                        ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
-                        : ui.getModel().getAutoLayout().triageReturnToHome();
+                HomeStaging.Outcome nothingToDo = ui.isAutonomyBusy()
+                    ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
+                    : ui.getModel().getAutoLayout().triageReturnToHome();
 
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
                 menuItem.addActionListener(event -> ui.requestReturnToHome());

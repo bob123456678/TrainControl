@@ -8,6 +8,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JComponent;
+import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
@@ -88,11 +89,16 @@ final class HomeLocomotiveMenu
 
             setItem.addActionListener(event -> chooseHomeLocomotive(ui, p, dialogParent, afterChange));
 
-            // Editing this during a run would do more than it says: applying it re-derives the homes of
-            // every unassigned locomotive from where they are standing at that moment, which mid-run is
-            // wherever autonomy has happened to leave them.  With nothing on the graph there is also
-            // nothing to pick, though an assignment already made stays visible and clearable below.
-            if (layout.isRunning())
+            // Editing this while autonomy is busy would do more than it says.  Applying it re-derives
+            // the homes of every unassigned locomotive from where they are standing at that moment,
+            // which mid-run is wherever autonomy has left them - and it clears and repopulates the very
+            // map a staging run reads to build its plan, which that run copies under no lock at all.
+            //
+            // Busy, not merely running: the planning phase of a staging run has nothing moving and no
+            // active locomotive, so isRunning reads false for the whole window in which the plan is
+            // being derived from this map.  With nothing on the graph there is also nothing to pick,
+            // though an assignment already made stays visible and clearable below.
+            if (ui.isAutonomyBusy())
             {
                 setItem.setEnabled(false);
                 setItem.setToolTipText(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
@@ -114,9 +120,9 @@ final class HomeLocomotiveMenu
             JMenuItem clearItem = new JMenuItem(I18n.t("autolayout.ui.menuResetHomeLocomotive"));
 
             clearItem.addActionListener(event -> apply(ui, p.getName(), null, dialogParent, afterChange));
-            clearItem.setEnabled(!layout.isRunning());
+            clearItem.setEnabled(!ui.isAutonomyBusy());
 
-            if (layout.isRunning())
+            if (ui.isAutonomyBusy())
             {
                 clearItem.setToolTipText(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
             }
@@ -162,7 +168,7 @@ final class HomeLocomotiveMenu
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                if (refuseWhileRunning(ui, dialogParent)) return;
+                if (refuseWhileBusy(ui, dialogParent)) return;
 
                 layout.clearHomeLocomotives();
 
@@ -171,9 +177,9 @@ final class HomeLocomotiveMenu
             }
         });
 
-        menuItem.setEnabled(!layout.isRunning());
+        menuItem.setEnabled(!ui.isAutonomyBusy());
 
-        if (layout.isRunning())
+        if (ui.isAutonomyBusy())
         {
             menuItem.setToolTipText(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
         }
@@ -195,16 +201,17 @@ final class HomeLocomotiveMenu
     }
 
     /**
-     * Whether a run started after this menu was built, in which case nothing here may be applied.
+     * Whether autonomy became busy after this menu was built, in which case nothing here may be applied.
      *
      * The greying done when the items are created is a hint about a moment that has already passed - a
      * popup keeps whatever state it was constructed with, and autonomy can start from elsewhere while
-     * it sits open.  Applying an assignment mid-run would do more than it says: it re-derives the home
-     * of every unassigned locomotive from wherever autonomy has left it standing.
+     * it sits open.  Applying an assignment then would do more than it says: it re-derives the home of
+     * every unassigned locomotive from wherever autonomy has left it standing, by clearing and
+     * repopulating the map a staging run reads - and reads without holding any lock.
      */
-    private static boolean refuseWhileRunning(TrainControlUI ui, Component dialogParent)
+    private static boolean refuseWhileBusy(TrainControlUI ui, Component dialogParent)
     {
-        if (!ui.getModel().getAutoLayout().isRunning()) return false;
+        if (!ui.isAutonomyBusy()) return false;
 
         JOptionPane.showMessageDialog(
             dialogParent,
@@ -250,10 +257,25 @@ final class HomeLocomotiveMenu
             (p.getHomeLoc() != null ? p.getHomeLoc() : names.get(0))
         );
 
-        if (choice != null)
+        if (choice == null) return;
+
+        // Refused here rather than discovered later.  A locomotive this station can never hold - too
+        // long for it, excluded by it, or not reversible at a terminus - makes every future Return Home
+        // report IMPOSSIBLE, and the advice that dialog gives is to check the track, which is the wrong
+        // remedy: nothing about the track is at fault, the assignment is.
+        Locomotive chosen = ui.getModel().getLocByName(choice);
+
+        if (chosen != null && !HomeStaging.canBeHome(chosen, p))
         {
-            apply(ui, p.getName(), choice, dialogParent, afterChange);
+            JOptionPane.showMessageDialog(
+                dialogParent,
+                I18n.f("autolayout.ui.errorCannotBeHomeHere", choice, p.getName())
+            );
+
+            return;
         }
+
+        apply(ui, p.getName(), choice, dialogParent, afterChange);
     }
 
     /**
@@ -262,7 +284,7 @@ final class HomeLocomotiveMenu
     private static void apply(TrainControlUI ui, String pointName, String locName,
         Component dialogParent, Runnable afterChange)
     {
-        if (refuseWhileRunning(ui, dialogParent)) return;
+        if (refuseWhileBusy(ui, dialogParent)) return;
 
         try
         {

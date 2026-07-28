@@ -10,6 +10,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1088,5 +1090,94 @@ public class testHomeStaging
 
         d.setHomeLoc(null);
         assertNull(d.getHomeLoc());
+    }
+
+    /**
+     * A station refuses a locomotive it could never hold, and says so before the assignment is made.
+     *
+     * Every one of these makes Return Home report IMPOSSIBLE forever after, and the advice that dialog
+     * gives is to check the track - which is the wrong remedy, because nothing about the track is at
+     * fault.  The chooser asks this question first so the state cannot be reached from a menu pick.
+     *
+     * Asked through the planner’s own rule rather than a second copy of it: the answer given when the
+     * assignment is made has to be the answer Return Home gives later, or the check is theatre.
+     */
+    @Test
+    public void testAStationRefusesALocomotiveItCouldNeverHold() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        Point d = layout.getPoint("HS D");
+
+        // Point state dies with the layout, which every load() replaces - but locomotive state does not,
+        // because load() re-parses the graph and not the database.  Whatever this test changes about the
+        // locomotive has to go back even if an assertion below fails, or the next test in the class runs
+        // against a locomotive this one quietly left non-reversible.
+        final boolean wasReversible = loc(LOC_A).isReversible();
+        final Integer wasLength = loc(LOC_A).getTrainLength();
+
+        assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "precondition: an ordinary station accepts it");
+
+        try
+        {
+            // Excluded by the station
+            d.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+            assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "a station that excludes it cannot be its home");
+            d.setExcludedLocs(new HashSet<Locomotive>());
+
+            // Longer than the station allows
+            loc(LOC_A).setTrainLength(10);
+            d.setMaxTrainLength(5);
+            assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "a train too long to stop there cannot rest there");
+            d.setMaxTrainLength(0);
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "and no limit means no objection");
+
+            // A terminus it cannot reverse out of
+            loc(LOC_A).setReversible(false);
+            d.setTerminus(true);
+            assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "a non-reversible locomotive cannot end at a terminus");
+            loc(LOC_A).setReversible(true);
+            assertTrue(HomeStaging.canBeHome(loc(LOC_A), d), "but a reversible one can");
+            d.setTerminus(false);
+
+            // Switched off
+            d.setActive(false);
+            assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "an inactive station is not a destination for anything");
+            d.setActive(true);
+        }
+        finally
+        {
+            loc(LOC_A).setReversible(wasReversible);
+            loc(LOC_A).setTrainLength(wasLength);
+        }
+    }
+
+    /**
+     * And the refusal agrees with what Return Home would have done: a permanent IMPOSSIBLE.
+     *
+     * This is the reason the chooser delegates rather than restating the rules - the two answers are
+     * the same answer, and this test fails if they ever stop being.
+     */
+    @Test
+    public void testAnImpossibleAssignmentIsExactlyWhatReturnHomeWouldRefuse() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        Point d = layout.getPoint("HS D");
+
+        d.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+
+        assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "precondition: the chooser would refuse this");
+
+        // Made anyway, the way loading a hand-edited file could
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "what the chooser refuses is exactly what the planner calls impossible");
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)), "and it names the locomotive concerned");
+
+        d.setExcludedLocs(new HashSet<Locomotive>());
     }
 }

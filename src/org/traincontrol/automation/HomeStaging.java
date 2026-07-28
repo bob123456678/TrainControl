@@ -755,6 +755,22 @@ public final class HomeStaging
     }
 
     /**
+     * Whether this station could ever be this locomotive’s home.
+     *
+     * The same question the planner asks before it searches, offered to callers who are about to make
+     * an assignment.  Delegated rather than restated: a second copy of the rest rules would drift, and
+     * the whole point is that the answer here matches the one Return Home will give later.
+     *
+     * @param loc
+     * @param at
+     * @return
+     */
+    public static boolean canBeHome(Locomotive loc, Point at)
+    {
+        return canRest(loc, at);
+    }
+
+    /**
      * Whether a locomotive may come to rest on a station - length, exclusions, and the reversibility a
      * terminus demands.
      */
