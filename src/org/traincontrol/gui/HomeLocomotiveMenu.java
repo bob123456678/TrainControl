@@ -259,20 +259,33 @@ final class HomeLocomotiveMenu
 
         if (choice == null) return;
 
-        // Refused here rather than discovered later.  A locomotive this station can never hold - too
-        // long for it, excluded by it, or not reversible at a terminus - makes every future Return Home
+        // Said here rather than discovered later.  A locomotive this station can never hold - too long
+        // for it, excluded by it, or not reversible at a terminus - makes every future Return Home
         // report IMPOSSIBLE, and the advice that dialog gives is to check the track, which is the wrong
         // remedy: nothing about the track is at fault, the assignment is.
+        //
+        // Warned and not refused, though.  The same state is reachable by editing the station after the
+        // assignment is made, so refusing only this door would be arbitrary, and an operator who wants
+        // to assign homes first and set the station up afterwards is not making a mistake.  What was
+        // actually wrong was finding out from a dialog that blames the track.
         Locomotive chosen = ui.getModel().getLocByName(choice);
 
         if (chosen != null && !HomeStaging.canBeHome(chosen, p))
         {
-            JOptionPane.showMessageDialog(
+            int proceed = JOptionPane.showOptionDialog(
                 dialogParent,
-                I18n.f("autolayout.ui.errorCannotBeHomeHere", choice, p.getName())
+                I18n.f("autolayout.ui.confirmCannotBeHomeHere", choice, p.getName()),
+                I18n.t("autolayout.ui.dialogSetHomeLocomotive"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                // Defaulted to No, unlike the other confirmations here: this one is answering a question
+                // the operator did not ask, about a choice that cannot work as things stand
+                TrainControlUI.YES_NO_OPTS[1]
             );
 
-            return;
+            if (proceed != JOptionPane.YES_OPTION) return;
         }
 
         apply(ui, p.getName(), choice, dialogParent, afterChange);

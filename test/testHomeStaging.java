@@ -1093,17 +1093,19 @@ public class testHomeStaging
     }
 
     /**
-     * A station refuses a locomotive it could never hold, and says so before the assignment is made.
+     * A station knows which locomotives it could never hold, before the assignment is made.
      *
      * Every one of these makes Return Home report IMPOSSIBLE forever after, and the advice that dialog
      * gives is to check the track - which is the wrong remedy, because nothing about the track is at
-     * fault.  The chooser asks this question first so the state cannot be reached from a menu pick.
+     * fault.  The chooser asks this question up front so the operator hears it then rather than later.
+     * It warns rather than refuses: the same state is reachable by editing the station afterwards, and
+     * assigning homes before configuring the stations is not a mistake.
      *
      * Asked through the planner’s own rule rather than a second copy of it: the answer given when the
-     * assignment is made has to be the answer Return Home gives later, or the check is theatre.
+     * assignment is made has to be the answer Return Home gives later, or the warning is theatre.
      */
     @Test
-    public void testAStationRefusesALocomotiveItCouldNeverHold() throws Exception
+    public void testAStationKnowsWhichLocomotivesItCouldNeverHold() throws Exception
     {
         Layout layout = load(ring(LOC_A, null, null));
 
@@ -1153,7 +1155,7 @@ public class testHomeStaging
     }
 
     /**
-     * And the refusal agrees with what Return Home would have done: a permanent IMPOSSIBLE.
+     * And the warning agrees with what Return Home would then do: report a permanent IMPOSSIBLE.
      *
      * This is the reason the chooser delegates rather than restating the rules - the two answers are
      * the same answer, and this test fails if they ever stop being.
@@ -1167,15 +1169,15 @@ public class testHomeStaging
 
         d.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
 
-        assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "precondition: the chooser would refuse this");
+        assertFalse(HomeStaging.canBeHome(loc(LOC_A), d), "precondition: the chooser would warn about this");
 
-        // Made anyway, the way loading a hand-edited file could
+        // Made anyway, which the chooser permits and a hand-edited file does not even ask about
         layout.setHomeLocomotive("HS D", LOC_A);
 
         HomeStaging.Plan plan = layout.planReturnToHome();
 
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
-            "what the chooser refuses is exactly what the planner calls impossible");
+            "what the chooser warns about is exactly what the planner calls impossible");
         assertTrue(plan.getBlocked().contains(loc(LOC_A)), "and it names the locomotive concerned");
 
         d.setExcludedLocs(new HashSet<Locomotive>());

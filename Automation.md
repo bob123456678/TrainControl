@@ -503,7 +503,7 @@ An assigned station is that locomotive's home whether or not it is standing ther
 
 Assignments are saved with the autonomy file.  If one names a locomotive that is no longer in the database, it is reported in the log and dropped, and the rest of the layout loads normally.  Renaming a locomotive keeps its assignment; deleting one removes it.  Assignments cannot be changed while autonomy is doing anything - running, still coming to a stop, or working out a route home - because changing one alters what a run already under way is aiming for.
 
-A station will not accept a locomotive it could never hold: one longer than its length limit, one it excludes, or a locomotive that cannot reverse at a terminus.  You are told which station and locomotive, and where to look, rather than the assignment being made and every later `Return Home` reporting that it is impossible.
+If you pick a locomotive the station could never hold - one longer than its length limit, one it excludes, or one that cannot reverse at a terminus - you are told which locomotive and station, and where to look, and asked whether to go ahead.  The assignment is still yours to make: you may well be setting the station up afterwards.  What it avoids is finding out later from a `Return Home` that says to check the track, when the track is not the problem.
 
 Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the graph has a home to go back to.
 

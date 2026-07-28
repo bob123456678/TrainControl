@@ -656,16 +656,24 @@ this round did not contain was found while verifying it, and it mattered more th
   the build, since the menus now call something that exists.  `refuseWhileRunning` became
   `refuseWhileBusy`: the old name was the next instance of this same mistake waiting to happen.
 - **WR-C9** - held.  `HomeStaging.canBeHome` now exposes the planner's own rest rule, delegating to
-  `canRest` rather than restating it, and the chooser refuses with a message naming the locomotive,
-  the station, and the four things to check.  Two tests pin it, one asserting that what the chooser
-  refuses is exactly what the planner reports as IMPOSSIBLE - which is the whole reason for delegating.
+  `canRest` rather than restating it, and the chooser says so before the assignment is made, naming the
+  locomotive, the station and the four things to check.  Two tests pin it, one asserting that what the
+  chooser warns about is exactly what the planner reports as IMPOSSIBLE - the whole reason for
+  delegating rather than restating.  It warns rather than refuses, for the reason below.
 
 **Decided, not fixed:** the second `WR-C9` fix shape - naming the reason in the IMPOSSIBLE dialog - is
 not being pursued, and the residual path it would close is accepted.  Editing a station's length
 limit, terminus flag or exclusions out from under an existing assignment can still produce a permanent
 IMPOSSIBLE, and that is allowed to happen: the operator made the state and the operator can audit it,
 since the point menu already reports per-path reasons for every route into a station.  The planner
-naming the locomotive is enough to start from.  This closes `WR-C9` rather than leaving it half-open.
+naming the locomotive is enough to start from.
+
+That decision then applied backwards to the fix itself.  The chooser was first written to *refuse* an
+impossible pick, which would have blocked one door while leaving the other deliberately open - and
+would have told an operator who wanted to assign homes first and configure the stations afterwards
+that they were doing it wrong.  It now warns, names the same four things, and defaults to No, but the
+assignment is the operator's to make.  What was ever actually wrong was learning about it later from a
+dialog that blames the track.  This closes `WR-C9` rather than leaving it half-open.
 
 **Still untouched:** the two observations this round recorded but did not file - duplicate assignments
 warned on every load but never cleared, and the now-dead in-loop `claimHome` during `fromJSON` - plus
