@@ -346,7 +346,7 @@ public class Layout
      * To be called externally when a locomotive is deleted from the database
      * @param l
      */
-    public void locDeleted(Locomotive l)
+    synchronized public void locDeleted(Locomotive l)
     {
         if (l == null) return;
 
