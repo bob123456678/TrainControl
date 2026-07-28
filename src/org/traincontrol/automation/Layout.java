@@ -531,10 +531,6 @@ public class Layout
     }
     
     /**
-     * Marks the layout state as invalid
-     * Used to show error message in UI
-     */
-    /**
      * Whether this Layout is still the one in use, or has been superseded by a newer one.
      *
      * executePath used to answer this by capturing layoutVersion when a run began and comparing the
@@ -553,6 +549,10 @@ public class Layout
         return this.version == Layout.layoutVersion;
     }
 
+    /**
+     * Marks the layout state as invalid
+     * Used to show error message in UI
+     */
     public void invalidate()
     {
         this.isValid = false;

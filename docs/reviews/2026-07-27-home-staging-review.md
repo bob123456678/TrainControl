@@ -468,6 +468,27 @@ filed them. All three are correct, and the re-sweep found no new finding.
 of `astar`); the `HS-B4` mixed-hardware conservatism (recorded limitation); the duplicated menu
 blocks (extraction candidate). Nothing else is open.
 
+**Pre-release sweep addendum (2026-07-28).** The `HS-C4` stacked-javadoc scan, applied tree-wide
+rather than to the new code only, finds exactly three pre-existing instances - each an older short
+javadoc left stranded above a newer method's javadoc by one of this month's own refactors:
+
+- [Layout.java:533](../../src/org/traincontrol/automation/Layout.java) - "Marks the layout state as
+  invalid" stranded above `isCurrentLayout`'s javadoc (left behind when that method was inserted).
+- [TrainControlUI.java:1033](../../src/org/traincontrol/gui/TrainControlUI.java) - "Saves initialized
+  component database to a file" stranded above the autonomy-bytes decode helper's javadoc; it belongs
+  to `saveState`, below.
+- [MarklinControlStation.java:297](../../src/org/traincontrol/marklin/MarklinControlStation.java) -
+  "Parses layout files from the CS2 or local file system" stranded above
+  `syncLayoutsFromConfiguredSource`'s javadoc, which superseded it.
+
+Cosmetic, `HS-C4`'s class; three deletions (or one relocation, in the `saveState` case). The rest of
+the sweep was clean: bundle parity at 1,215 keys x 8 with every one of the 1,200 keys referenced from
+`src/` defined; every test class on disk registered in `build.xml` except `testAutoDetect`, which
+pings a live Central Station at a hard-coded address and is excluded deliberately (`CS3TestServer` is
+a harness, not a test); no TODOs, stray `System.out`, wrapped threads, or empty catch blocks anywhere
+in the new code; `RAW_VERSION` 2.8.0 matches the changelog heading, and the changelog covers the
+feature and the legend change in operator language.
+
 ---
 
 ## HS-D1. Parity checks that came back clean, and contract items verified

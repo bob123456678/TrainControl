@@ -1031,10 +1031,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Saves initialized component database to a file
-     * @param backup
-     */
-    /**
      * Decodes stored autonomy JSON bytes.  Current files are raw JSON; files written by older versions
      * (and their backups) are ObjectOutputStream-serialized Strings, detected by the 0xAC 0xED magic header.
      * @param bytes the raw file contents
@@ -1057,6 +1053,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Saves initialized component database to a file
+     * @param backup
+     */
     public void saveState(boolean backup)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";

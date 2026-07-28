@@ -295,10 +295,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
        
     /**
-     * Parses layout files from the CS2 or local file system
-     * @throws Exception 
-     */
-    /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
      * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
      * cannot be read.
