@@ -131,6 +131,7 @@ import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.LocomotiveNotes;
+import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
 import org.traincontrol.base.LayoutDiagram;
@@ -13935,13 +13936,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             List<String[]> renameList;
             try
             {
-                renameList = model.getLocomotivesToRenameFromImport();
-                
+                RenameProposals proposals = model.getRenameProposals();
+                renameList = proposals.getProposals();
+
                 if (renameList.isEmpty())
                 {
+                    // An empty list means one of two things.  Saying "nothing to rename" when the
+                    // renames were in fact refused is false, and it hides the remedy - the cycle
+                    // refusal ends by telling the user to give one of the pair a temporary name.
                     JOptionPane.showMessageDialog(
                         this,
-                        I18n.t("loc.ui.infoNoLocomotivesToRename")
+                        proposals.hasRefusals()
+                            ? I18n.t("loc.ui.infoRenamesRefusedSeeLog")
+                            : I18n.t("loc.ui.infoNoLocomotivesToRename")
                     );
                 }
                 else

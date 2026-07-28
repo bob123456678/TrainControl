@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.RenameProposals;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -291,6 +292,34 @@ public class testImportRename
 
         assertTrue(renameTargetsFor(CS_TEN).isEmpty(),
             "and neither half of it may be proposed on its own");
+    }
+
+    /**
+     * A refusal is reported to the caller, not only to the log.
+     *
+     * All three refusal paths - local duplicates, Central Station duplicates, cycles - communicate by
+     * logging, and the proposal list simply comes back shorter.  When everything is refused it comes
+     * back empty, which is indistinguishable from having nothing to rename, and the dialog said "No
+     * locomotives to rename." - false, and hiding a remedy the user needs.
+     *
+     * Asserted on the refusal signal rather than on an exact count, so a restored database carrying
+     * unrelated duplicates of its own cannot make this pass or fail for the wrong reason.
+     */
+    @Test
+    public void testRefusedRenamesAreReportedToTheCaller() throws Exception
+    {
+        installCleanly(CS_TWENTYONE, CS_TEN_ADDRESS);
+        installCleanly(CS_TEN, CS_TWENTYONE_ADDRESS);
+
+        RenameProposals result = model.getRenameProposals();
+
+        assertTrue(result.hasRefusals(),
+            "the swap was declined, and the caller must be able to tell that apart from there being "
+            + "nothing to rename - they need different messages");
+
+        assertTrue(result.getRefusedCount() >= 2,
+            "both halves of the cycle were dropped, so at least two were refused - got "
+            + result.getRefusedCount());
     }
 
     /**

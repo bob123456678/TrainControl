@@ -51,6 +51,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RemoteDeviceCollection;
+import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
@@ -778,7 +779,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception
     {
+        return getRenameProposals().getProposals();
+    }
+
+    /**
+     * The rename check proper: the applicable proposals, and how much was declined.
+     *
+     * The count matters to the caller because an empty proposal list is ambiguous - either nothing
+     * needs renaming, or everything that did was refused - and those want different messages.
+     *
+     * @return
+     * @throws java.lang.Exception
+     */
+    @Override
+    public RenameProposals getRenameProposals() throws Exception
+    {
         List<String[]> renameCandidates = new ArrayList<>();
+        int refused = 0;
         List<MarklinLocomotive> parsedLocs;
 
         // Parse locomotives based on CS version
@@ -833,6 +850,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (parsedCountByAddress.get(l.getIntUID()) > 1)
             {
                 this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
+                refused++;
                 continue;
             }
 
@@ -844,6 +862,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (matches.size() > 1)
             {
                 this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
+                refused++;
                 continue;
             }
 
@@ -856,7 +875,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        return orderRenameProposals(renameCandidates);
+        List<String[]> ordered = orderRenameProposals(renameCandidates);
+
+        // Whatever ordering dropped was a cycle
+        refused += renameCandidates.size() - ordered.size();
+
+        return new RenameProposals(ordered, refused);
     }
 
     /**

@@ -8,11 +8,16 @@
 added** - the author builds and tests in NetBeans. Every claim below was made by reading the enforcing
 method or by a scripted count over the source, per [README.md](README.md).
 
-**Validation pass:** the fixes for `PV-C1`..`C5` landed in `3391cb9` and were verified against that
+**Validation passes:** the fixes for `PV-C1`..`C5` landed in `3391cb9` and were verified against that
 commit the same day, by the reviewer who filed them. All five are correct - the per-fix evidence is in
-the "Validation of the fixes" section. The validation also produced two further findings: `PV-B1`,
+the "Validation of the fixes" section. That validation also produced two further findings: `PV-B1`,
 found by asking whether the two rename-ambiguity fixes compose (they do not - the hazard moved to the
-name space), and `PV-C6`, the completed scan `PV-C5` called for.
+name space), and `PV-C6`, the completed scan `PV-C5` called for. The fixes for those two landed in
+`b82bde1` and were validated in turn the same day - both correct, with the `PV-B1` ordering fix
+improving on the finding's own proposed shape - producing one further C finding (`PV-C7`, the
+empty-proposal dialog) and one premise check against both fixtures. The `PV-C7` fix was validated in
+the working tree the same day; that third round confirmed it correct and, for the first time in this
+document, added no finding. Each round has its own validation section below.
 
 **Scope.** The cycle closed with `RR` reviewed at `5e80c41` - but the fixes for `RR-C1`..`C5` and for
 `FP-B1`/`B2`/`C1`..`C5` landed *after* that, in the four source-bearing commits `c24a82a`, `5af916a`,
@@ -42,13 +47,14 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| PV-B1 | A name swap or rename chain done on the Central Station turns the rename-on-import flow into a deletion: proposals interact through the name space, and applying them in order destroys one locomotive of the pair | B | **Fixed 2026-07-27** - proposals are now ordered, and cycles refused |
+| PV-B1 | A name swap or rename chain done on the Central Station turns the rename-on-import flow into a deletion: proposals interact through the name space, and applying them in order destroys one locomotive of the pair | B | **Fixed 2026-07-27** - proposals are now ordered, and cycles refused. Fix validated, including its injectivity premise against both fixtures |
 | PV-C4 | Duplicate addresses on the *Central Station* side produce two rename proposals for one local locomotive; the second deletes an unrelated locomotive and renames nothing | **B** | **Fixed 2026-07-27**. Raised from C on verification. Fix validated |
 | PV-C1 | The `FP-C3` unwrap missed its one multiline site, so "all 100 sites" is false by one - and it is the per-repaint hot path | C | **Fixed 2026-07-27**. Fix validated |
 | PV-C2 | `switchCSLayout` clears the layout database on the EDT without `layoutRefreshLock` - a third entrance to the rebuild the `RR-C2` fix says it covered | C | **Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope |
 | PV-C3 | The sync deferral's comment still gives the pre-identity-hash rationale; the cleanup that fixed its two siblings missed it | C | **Fixed 2026-07-27**. Fix validated |
 | PV-C5 | The javadoc on `equals`/`hashCode` - the cycle's most-cited comment - is structurally mangled, having lost its `*` prefix on 22 lines | C | **Fixed 2026-07-27**. Fix validated |
-| PV-C6 | The reformat behind `PV-C5` left sentence run-ons in other javadoc blocks | C | **Fixed 2026-07-27**. Four, not the three recorded - see below |
+| PV-C6 | The reformat behind `PV-C5` left sentence run-ons in other javadoc blocks | C | **Fixed 2026-07-27**. Four, not the three recorded - see below. Fix validated |
+| PV-C7 | When every rename proposal is refused, the dialog states "No locomotives to rename." - a false statement, with the actual reason and remedy only in the log | C | **Fixed 2026-07-27** - the check now reports refusals to its caller. Fix validated |
 | PV-D1 | Fix verification and clean checks | - | Recorded |
 
 **Two B findings, and the first-filed one was filed as a C.** `PV-C4` was written up as benign; tracing
@@ -360,6 +366,60 @@ prose lines only.
 
 ---
 
+### PV-C7. Refusing every proposal produces the dialog "No locomotives to rename."
+
+[TrainControlUI.java:13940](../../src/org/traincontrol/gui/TrainControlUI.java) (the empty-list
+branch), `loc.ui.infoNoLocomotivesToRename` ("No locomotives to rename.").
+
+The rename flow now has three refusal paths - local duplicates (`FP-B1`), Central Station duplicates
+(`PV-C4`), and cycles (`PV-B1`) - and all three communicate only through the log. When everything the
+Central Station wanted renamed is refused, the returned list is empty, and the consumer's empty-list
+branch tells the user **"No locomotives to rename."** - which is false. There are renames; the flow
+declined them, for reasons worth reading, one of which (`loc.renameCycleRefused`) ends with an
+instruction the user needs: *give one of them a temporary name first*.
+
+The user this hits is precisely the one who just swapped two names on the Central Station and ran the
+check expecting the app to follow - the `PV-B1` scenario, now safe but silent. They see a dialog that
+says nothing needs doing, and the remedy sits in a log tab they have no reason to open.
+
+C, not B: no data is touched and the log does explain. Fix shape: have
+`getLocomotivesToRenameFromImport` report whether it refused anything (a count alongside the list, or
+a second list), and have the empty-list dialog say "No renames could be applied - see the log" when
+the count is nonzero. The dialog text alone cannot be fixed unconditionally, because "no locomotives
+to rename" is the right message in the common case where nothing was refused either.
+
+**Fixed** by making the refusal count part of the answer rather than a side effect. A new
+`getRenameProposals()` returns a small immutable `RenameProposals` - the ordered proposals plus how many
+candidates were declined - and the empty-list dialog picks its message from `hasRefusals()`. The
+existing `getLocomotivesToRenameFromImport()` stays as a one-line wrapper over it, so no other caller
+or test changed.
+
+*Why a return value and not a field.* The smaller-looking option was to leave the signature alone and
+have the model remember whether the last check refused anything. That is the latent shared-state shape
+this cycle kept finding defects in - correct only while exactly one caller asks exactly once, in order,
+and silently wrong the first time anything else calls it. The count belongs to the answer, so it is
+returned with the answer.
+
+The count is deliberately documented as *declined candidates*, not renames-that-would-have-happened:
+the two duplicate refusals fire before the names are compared, so some of what they skip would have
+produced no proposal anyway. It is a "was anything held back" signal and the log carries the detail,
+which is all the dialog needs.
+
+**A residual, recorded rather than fixed.** This closes the *empty* case. When some proposals survive
+and others were refused, the user works through the survivors and is still never told that anything was
+declined. That is the same silence one degree quieter, and fixing it means adding a dialog after the
+rename loop - a change to the flow rather than to a message, and beyond what this finding names. Left
+for the author.
+
+**Tests.** `testImportRename.testRefusedRenamesAreReportedToTheCaller`, asserting on the refusal signal
+rather than an exact count so that unrelated duplicates in a restored database cannot make it pass or
+fail for the wrong reason.
+
+*Found by validating the `PV-B1` fix end to end: the model now does the right thing, so the question
+moved one layer up - what does the user see when it does?*
+
+---
+
 ## Validation of the fixes (commit `3391cb9`)
 
 Each `PV` fix was verified in the current source by the reviewer who filed the finding - reading the
@@ -394,6 +454,84 @@ Validating `PV-C4`'s fix is also what produced `PV-B1`: the fix is correct for t
 names, and the question "do the two refusals compose?" showed the same root defect surfacing one flow
 further down. That question is worth asking of any pair of fixes to one method - each was verified
 against its own finding, and neither verification could have raised it.
+
+---
+
+## Validation of the fixes (commit `b82bde1`)
+
+- **`PV-B1`** - `orderRenameProposals` is correct, and choosing ordering over the finding's proposed
+  filtering was the right call: chains now apply with **no deletion at all**, which the conservative
+  shape would have refused. Verified in the method, not assumed:
+  - *Chains*: Kahn-style emission - an entry is emitted only once its target is no other pending
+    entry's source - so the giver always precedes the taker, and the consumer's delete branch finds
+    the target name already free. Pinned by `testRenameChainIsOrderedSoNothingNeedsDeleting`.
+  - *Cycles*: nothing in a cycle is ever emitted; each member is logged with `loc.renameCycleRefused`,
+    whose text supplies the exit (a temporary name). Pinned by `testNameSwapIsRefused`. Longer cycles
+    (three or more locomotives rotating names) take the same path - every member stays blocked.
+  - *Self-cycles* cannot arise: generation only emits pairs whose names differ, as the code comment
+    notes and the generation guard enforces.
+  - *Termination and mechanics*: each outer pass either emits at least one entry or ends the loop;
+    `remaining.remove(proposal)` removes by reference identity (the copy holds the same `String[]`
+    instances), so `LinkedList.remove(Object)`'s `equals` walk cannot miss.
+  - **The injectivity premise was checked against real data, not accepted.** The comment's "Central
+    Station names are unique" is what makes the list a permutation - a duplicate *target* would defeat
+    the ordering the same way a cycle does, without being refused. Both fixtures were scanned: 136
+    CS3 names and 108 CS2 names, zero duplicates in either - consistent with the device enforcing
+    name uniqueness, and locomotive lists are always fetched from the device (the local-folder
+    override covers layout files only). The residual - a hand-edited or corrupted device file with two
+    locomotives sharing a name - is a could-not-does per the README, recorded here so a future change
+    to that premise is made knowingly. A duplicate-target refusal would be one more pass over the
+    list, if ever wanted.
+  - *One caveat on the writeup's guarantee*: "a deletion in the consumer can only be a name held by
+    something with no pending rename of its own" holds when the user accepts the proposals. A user who
+    *declines* the giver and accepts the taker reinstates the delete-to-replace dialog for the
+    declined locomotive - correctly named, and the consequence of two explicit contradictory choices,
+    so acceptable; noted so nobody reads the guarantee as unconditional.
+  - `loc.renameCycleRefused` exists in all eight bundles with both placeholders; parity re-checked
+    across all eight (1,197 keys each, ASCII-pure).
+- **`PV-C6`** - all four run-ons fixed, wording intact, over-length lines split. A rescan with both
+  patterns finds no prose run-on left in `src/`. The independent pre-fix rescan that found the fourth
+  (`I18n.f`'s own example) is recorded in the error tally; the enumeration here stands corrected.
+
+This validation produced `PV-C7`: with the model layer now declining correctly, the empty-proposal
+dialog's claim became the loudest remaining wrong statement in the flow. It is fixed; the one thing
+that fix does not cover - a *partial* refusal, where some renames apply and the declined ones go
+unmentioned - is recorded under the finding.
+
+---
+
+## Validation of the fixes (`PV-C7`, working tree above `b82bde1`)
+
+Validated uncommitted, in the working tree, by the reviewer who filed the finding. The fix is correct,
+and the re-sweep of its new surface found nothing further - the first validation round of this
+document to add no finding:
+
+- **Accounting.** `refused` is incremented at both duplicate refusals and then by
+  `renameCandidates.size() - ordered.size()` for whatever ordering dropped - correct because
+  `orderRenameProposals` does not mutate its input (it copies into its own `LinkedList`; re-verified
+  in the method). Every refusal path is counted; nothing else decrements or resets.
+- **Compatibility.** `getLocomotivesToRenameFromImport()` is now a one-line wrapper over
+  `getRenameProposals().getProposals()`, so its four existing test call sites still receive the
+  ordered list unchanged. `MarklinControlStation` is the only implementer of `ViewListener` (checked),
+  so the interface addition breaks no other class.
+- **The DTO.** `RenameProposals` exposes the list through `Collections.unmodifiableList`; the wrapped
+  list is a method-local `ArrayList` no one else holds, so there is no aliasing path to mutate it.
+- **The dialog branch.** `hasRefusals()` selects `infoRenamesRefusedSeeLog` only in the empty-list
+  branch, which is exactly the case the finding named. The key exists in all eight bundles; full
+  parity re-audited at 1,198 keys per bundle, zero duplicates, ASCII-pure.
+- **The test** asserts the refusal signal and a lower bound rather than an exact count, so a restored
+  database with its own duplicates cannot flip it - the same discipline `testImportRename` already
+  follows elsewhere.
+- **One wording note, matching the DTO's own caveat.** The English dialog says "Every one the Central
+  Station suggested was declined". Because the duplicate refusals fire before names are compared, a
+  declined candidate might have produced no proposal anyway - so the sentence can slightly overstate
+  what was lost. The DTO javadoc records exactly this imprecision, the direction is safe (the user is
+  sent to the log, which is precise), and tightening it would mean comparing names before refusing,
+  changing the refusal semantics for a message. Recorded, not worth changing.
+
+The *why a return value and not a field* note under the finding is worth the space it takes: the
+rejected alternative is the latent shared-state shape this cycle repeatedly paid for, and the note is
+placed where the next person adding "just one more flag" will read it.
 
 ---
 

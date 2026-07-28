@@ -11,6 +11,7 @@ import org.traincontrol.base.Feedback;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.NodeExpression;
+import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
@@ -102,6 +103,14 @@ public interface ViewListener
     public void waitForPowerState(boolean state) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
+
+    /**
+     * The rename check with its refusal count, so an empty proposal list can be told apart from
+     * everything having been declined
+     * @return
+     * @throws java.lang.Exception
+     */
+    public RenameProposals getRenameProposals() throws Exception;
     public String exportLocsToCSV();
     public void logf(String key, Object... args);
     public Feedback newFeedback(int id, CANMessage message);

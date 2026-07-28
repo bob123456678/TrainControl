@@ -1,7 +1,7 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across eight documents and produced 116 findings - 52 in the main
-review, then 64 more across seven later passes.
+The entry point for a cycle that ran across eight documents and produced 117 findings - 52 in the main
+review, then 65 more across seven later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
@@ -10,7 +10,7 @@ document holds.
 
 Written 2026-07-27. The cycle's review work is finished, but this is not a frozen snapshot: two findings
 are open by the author's decision, two arrived after the reviews had closed, from writing tests
-rather than from reading, and seven more were added later the same day by `PV` - five by the pass that
+rather than from reading, and eight more were added later the same day by `PV` - five by the pass that
 reviewed the fix commits the cycle ended on, and two by the validation of *its* fixes. All counts above
 include them. Anything that reopens or adds a finding needs this page
 updated with it.
@@ -31,7 +31,7 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
 | `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B3, C1-C6, D1 |
-| `PV` | [2026-07-27-post-cycle-verification.md](2026-07-27-post-cycle-verification.md) | B1, C1-C6, D1 |
+| `PV` | [2026-07-27-post-cycle-verification.md](2026-07-27-post-cycle-verification.md) | B1, C1-C7, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
@@ -238,6 +238,23 @@ Central Station name swap deletes a locomotive - the third face of the `FP-B1` f
 that the family's root defect is the precomputed list itself) and `PV-C6` (cosmetic: the javadoc
 run-ons left by the `PV-C5` reformat). Both are fixed; `PV-C6` turned out to be four run-ons rather
 than the three its enumeration recorded.
+
+Those two fixes were validated in turn at `b82bde1` - both correct, the `PV-B1` ordering verified for
+chains, cycles, termination and its injectivity premise (checked against both fixtures: 244 names,
+zero duplicates). That second validation produced the cycle's last finding, `PV-C7`: with the model
+now refusing unsafe renames correctly, the consumer's empty-list dialog said "No locomotives to
+rename." to precisely the user whose renames had just been refused, with the remedy only in the log.
+Fixed by returning the refusal count alongside the proposals, so the two cases can be told apart. One
+residual is recorded there rather than fixed: a *partial* refusal is still not mentioned to the user.
+That fix was validated in turn, in the working tree - the accounting covers all three refusal paths,
+the old method survives as a wrapper so no other caller changed, and the sole `ViewListener`
+implementer means the interface addition breaks nothing. The third validation round is the first to
+add no finding, which is how a chain of fix-validate-fix should terminate.
+
+The last three findings of the cycle came from validating the previous three fixes, each time by asking
+what the layer above now sees. That is the pattern worth keeping: `PV-C4` was found by asking whether
+`FP-B1` covered both sides, `PV-B1` by asking whether those two refusals compose, and `PV-C7` by asking
+what the user is told once they do.
 
 Everything across the eight documents is now fixed, withdrawn as mistaken, closed by decision, or
 informational. The last item to close was `FP-C4`, on 2026-07-27, having been reported wrongly,
