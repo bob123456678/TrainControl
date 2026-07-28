@@ -490,3 +490,19 @@ If you want your autonomy configuration to require certain routes, set `activate
 The chosen routes are required to have a triggering S88, as otherwise they can't fire on their own.
 
 This feature can be used for emergency stop logic, playing sound effects when locomotives reach a certain location, switching safety signals, etc.
+
+## Returning locomotives home (v2.8.0+)
+
+The `Return Home` button in the autonomy tab sends every locomotive back to the station it started on.  The same command is available by right-clicking either the graph or a station on the track diagram.
+
+A locomotive's home is simply the station it occupied when the graph was loaded.  Locomotives placed on the graph afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing on its home station, and `+` marks one standing at its timetable starting point.
+
+Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the graph has a home to go back to.
+
+Getting everyone home is rarely as simple as driving each locomotive to its own station, because a station holds only one locomotive at a time - a train cannot go home while another is standing there.  TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.  The moves are then run one at a time, each waiting for the one before it to arrive rather than merely to set off.
+
+Your timetable is borrowed for the duration and put back afterwards - on success, on failure, and after a graceful stop alike.  Nothing is written to disk unless you save the autonomy file.
+
+If no arrangement can be found, you are told so and nothing moves.  If a path turns out to be blocked once the run is under way - because the layout is no longer in the state the plan was built for - the run stops and says which locomotive was affected, so you can move it clear by hand and try again.
+
+The same functionality is available programmatically via `Layout.triageReturnToHome` (is there anything to do?), `Layout.planReturnToHome` (what would it take?), and `Layout.loadReturnToHomeTimetable`, which loads the plan into the timetable ready for `Layout.executeTimetable`.

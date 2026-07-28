@@ -111,7 +111,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             // only the triage, which knows nothing about it - so the same action was offered here and
             // refused there, and the triage was being computed against positions changing underneath.
             HomeStaging.Outcome nothingToDo =
-                ui.getModel().getAutoLayout().isRunning()
+                (ui.getModel().getAutoLayout().isRunning() || ui.isStagingFlowActive())
                     ? HomeStaging.Outcome.LOCOMOTIVES_RUNNING
                     : ui.getModel().getAutoLayout().triageReturnToHome();
 

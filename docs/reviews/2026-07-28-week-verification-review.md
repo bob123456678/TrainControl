@@ -11,6 +11,8 @@ author builds and tests in NetBeans. Claims were verified by reading the enforci
 scripts that read the real data (bundles, call sites) rather than sampling it.
 **Validation round:** the fixes landed as `6be3bda` and are validated in their own section below;
 statuses in the table reflect that round.
+**Third round:** the uncommitted button-consistency changes in the working tree above `6be3bda` are
+reviewed in their own section; `WR-B2` and `WR-C6`-`C8` were filed there.
 
 **Method note.** The instruction this review was commissioned with is the one the cycle's own record
 supports: across three evaluation rounds, every defect that survived verification was found by writing
@@ -39,7 +41,11 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | WR-C2 | With both delay sliders at 0, a staging run busy-spins a core for the whole of every train's drive - the sequential wait made an old zero-delay spin window minutes long | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated - and see WR-C5 for what the insertion cost |
 | WR-C3 | The Danish delete-entry confirmation lost its `{0} ({1})` placeholders - Danish users are not told which timetable entry they are deleting | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated; audit re-run clean |
 | WR-C4 | Execute Timetable still force-disables capture for the session, a guard the `HS-B6` fix made redundant - and the staging flow next to it now deliberately preserves the same toggle | C | **Fixed 2026-07-28** (`6be3bda`). Fix validated |
-| WR-C5 | The `pacedWait` insertion stranded `executeTimetable`'s javadoc - the exact stacked-javadoc class the previous commit swept tree-wide | C | **Open** |
+| WR-C5 | The `pacedWait` insertion stranded `executeTimetable`'s javadoc - the exact stacked-javadoc class the previous commit swept tree-wide | C | **Fixed 2026-07-28** (working tree) - `pacedWait` relocated above `executeTimetable`'s javadoc; the check is now part of the routine validator, which caught the next recurrence immediately |
+| WR-B2 | The staging flow's planning phase reads as idle to every enablement surface, so Return Home can be re-entered while committed - a double entry can permanently replace the user's timetable with the staging plan | B | **Fixed 2026-07-28** (working tree) - a volatile `stagingFlowActive`, set on the EDT at the commit point and cleared in the worker's `finally`, consulted by the button, both menus and the entry guard |
+| WR-C6 | The `requestReturnToHome` entry dialog still speaks the old text for LOCOMOTIVES_RUNNING - the one surface the working-tree consistency change missed | C | **Fixed 2026-07-28** (working tree) - the entry guard routes through `describeStagingOutcome` |
+| WR-C7 | Four translations of the new message name a Graceful Stop button that does not exist under that name; the Polish adds a misspelling | C | **Fixed 2026-07-28** (working tree) - the message takes the button label as `{0}`, filled from each bundle's own `ui.main.gracefulStop`, so the two cannot drift; the Polish was reworded to cite the button rather than decline its name |
+| WR-C8 | "Use Graceful Stop first" is the wrong instruction when the running state comes from a manually driven path - the control it names is greyed and does nothing for that case | C | **Fixed 2026-07-28** (working tree) - reworded to cover both states: wait for arrival, or use the button if autonomy is running |
 | WR-D1 | Commit `08610a8` verified hunk by hunk; clean checks, resolved suspicions, and traps recorded | - | Recorded |
 
 No A findings. Nothing in the week's commits was found to have regressed: the one defect above that
@@ -264,6 +270,129 @@ lines is otherwise unchanged.
 
 ---
 
+## Review of the uncommitted button-consistency changes (2026-07-28, working tree above `6be3bda`)
+
+The working tree carries a change prompted by the author noticing inconsistencies in the Return Home
+button: a `disableReturnHome(reason)` helper so the button never greys without saying why, a
+dedicated LOCOMOTIVES_RUNNING message that prescribes Graceful Stop, a direct disable in the Start
+Autonomy handler (with a comment correctly noting that `refreshReturnHomeButton` would re-enable the
+button there, because `isRunning()` is not yet true), a new bundle key in all eight languages, and an
+operator-documentation section in `Automation.md`.
+
+**What was verified clean:** the tooltip fix is real - the old running-branch disable left whatever
+tooltip was last set, so a button greyed by a run went on claiming everything was home. The new
+branch, the helper, and the Start Autonomy direct-disable all do what they say. The key exists in all
+eight bundles, ASCII-pure, no placeholders to mismatch. The `Automation.md` claims were each checked
+against the enforcing code - the borrow-and-restore, the one-at-a-time execution, waiting for arrival
+rather than departure, the `*`/`+` legend, the claim rules including the placed-afterwards case, and
+the three programmatic entry points all match. The `describeStagingOutcome` change routes the menus
+and the plan-refusal dialog through the same new text, so those three surfaces agree.
+
+The findings below are what the change misses, in descending order of consequence. The pattern of the
+first two is the cycle's signature error yet again: the change fixes the inconsistency at the
+surfaces it looked at, and the identical inconsistency survives at the entrances it did not.
+
+### WR-B2. Planning reads as idle, so the committed flow can be entered twice
+
+[TrainControlUI.java:13018](../../src/org/traincontrol/gui/TrainControlUI.java) (the disable, with
+"the run is committed from this point"), [Layout.java:2379](../../src/org/traincontrol/automation/Layout.java)
+(`running` becomes true only here - *after* planning),
+[TrainControlUI.java:13120](../../src/org/traincontrol/gui/TrainControlUI.java)
+(`refreshReturnHomeButton`: `isRunning()` false -> triage -> misplaced -> **re-enabled**),
+[LayoutRightclickAutonomyMenu.java:50](../../src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java)
+(the menus compute the same answer at open),
+[TrainControlUI.java:12981](../../src/org/traincontrol/gui/TrainControlUI.java) (the entry guard:
+also only `isRunning()`).
+
+The working-tree comment in the Start Autonomy handler names the exact mechanism: a refresh
+re-enables the button it was meant to grey, because `isRunning()` lags the decision. For Start
+Autonomy that lag is milliseconds. For the staging flow it is the **entire planning phase** - seconds
+on a large layout, unbounded by anything the operator can see, with no cancel (the recorded `HS`
+unknown) - and during it every enablement surface treats the layout as idle:
+
+1. Press Return Home. The button and Execute Timetable grey; the worker starts planning.
+2. Move a locomotive by hand (nothing forbids it - nothing is running). The repaint calls
+   `refreshReturnHomeButton`, which asks `isRunning()` (false) and the triage (misplaced locomotives
+   exist) and **re-enables the button**. No repaint is even needed for the menus: opening either
+   right-click menu during planning runs the same computation and offers "Return Locomotives Home"
+   enabled.
+3. Press it again. The entry guard asks only `isRunning()` - false - so a second worker starts,
+   borrows the current timetable, plans, and races the first through `setTimetable`,
+   `timetableSequential`, and two concurrent `executeTimetable` dispatch loops over one list.
+
+The interleavings vary; the two worst are concrete. If the second press lands after the first
+worker's `setTimetable`, the second worker's "borrowed" copy *is the first worker's staging plan* -
+and its `finally` faithfully restores that as though it were the operator's timetable. The user's
+actual timetable is gone (permanently, if they save). Either way, two dispatch loops walk the same
+entries: the loser's `executePath` validations fail, retry, abandon - `stopLocomotives`, and a run
+that may have been proceeding correctly is reported stopped.
+
+B rather than A on the July convention for narrow triggers, but note it clears the A bar's letter
+("data silently lost") in its worst interleaving. The fix wants to be a state, not a wider disable:
+the flow *knows* it is committed from line 13022 - a volatile `stagingFlowActive` set there (on the
+EDT, before the worker spawns) and cleared in the worker's `finally`, consulted as
+LOCOMOTIVES_RUNNING by `refreshReturnHomeButton`, both menus, and the entry guard, closes every
+surface at once - including the milliseconds-wide Start Autonomy and Execute Timetable variants of
+the same lag, which the direct-disable mitigates but does not close (an independently triggered
+repaint in the lag window still re-enables).
+
+### WR-C6. The entry dialog still speaks the old text
+
+[TrainControlUI.java:12984](../../src/org/traincontrol/gui/TrainControlUI.java) against
+[TrainControlUI.java:13187](../../src/org/traincontrol/gui/TrainControlUI.java).
+
+`describeStagingOutcome` exists, per its own javadoc, "so the same situation cannot be described two
+different ways depending on which one noticed it" - and the change routes LOCOMOTIVES_RUNNING
+through a new text there. But `requestReturnToHome`'s entry guard shows
+`errorWaitForActiveLocomotivesToStop` directly. So a user who clicks the menu item during a run (the
+menus can race a run starting - they were computed at open) gets "Please wait for all active
+locomotives to stop", while the button tooltip and the plan-refusal dialog for the *same state* say
+"Use Graceful Stop first, then return them home". One line: route the guard through
+`describeStagingOutcome(LOCOMOTIVES_RUNNING, null)`. (The Execute Timetable guard at 12100 correctly
+keeps the old text - it is not about returning home.)
+
+### WR-C7. Four translations name a button that is not on the screen
+
+The new message tells the user which control to press, so its translations must name the control by
+the label it actually wears - checked against `ui.main.gracefulStop` in each bundle:
+
+| Locale | The button says | The new message says | |
+|---|---|---|---|
+| en | Graceful Stop | "Use Graceful Stop first" | match |
+| fr | Arrêt en douceur | "Utilisez d'abord l'arrêt en douceur" | match |
+| it | Arresto graduale | "Usa prima Arresto graduale" | match |
+| de | Geordnetes Stoppen | "Erst sanft anhalten" | descriptive, names nothing - borderline |
+| da | **Kontrolleret stop** | "Brug **Blid stop** først" | wrong name |
+| es | **Parada gradual** | "Usa **Parada suave** primero" | wrong name |
+| nl | **Geleidelijk stoppen** | "Gebruik eerst **Rustig stoppen**" | wrong name |
+| pl | **Płynne zatrzymanie** | "użyj **łagodnego zatrzymania**" | wrong name |
+
+A Danish user told to press "Blid stop" will not find it; the button is labelled "Kontrolleret
+stop". Same for Spanish, Dutch and Polish. The Polish also misspells the verb: `odeslij` should be
+`odeślij` (odeślij) - and as plain ASCII it is the one unescaped-looking word in the line,
+which is how it was noticed. The fix is to reuse each bundle's own `ui.main.gracefulStop` value in
+the sentence (or reference it), so the two cannot drift again - this table is what drift looks like
+on day one.
+
+### WR-C8. The prescribed remedy does not apply to every state that triggers it
+
+[Layout.java:634](../../src/org/traincontrol/automation/Layout.java) (`isRunning`: `running ||
+!activeLocomotives.isEmpty()`), the `HomeStaging.Outcome` javadoc ("Something is already moving -
+not a conclusion about the layout, just the wrong moment").
+
+LOCOMOTIVES_RUNNING covers two states: an autonomy/timetable run (`running` true - Graceful Stop is
+enabled and is the right advice) and a **manually driven path** (`activeLocomotives` non-empty,
+`running` false - a double-clicked path from the locomotive panel). In the second state the new
+message's instruction is wrong twice: the Graceful Stop button is greyed (nothing enables it outside
+the three run flows), and pressing it would do nothing for a manual path anyway - the path completes
+on its own and the correct advice is the old text's "wait". So the tooltip names a control the user
+cannot press, in exactly the state a user fiddling manually is most likely to see it. Cosmetic-C
+since the state resolves itself when the train arrives; the honest fix is either to keep the advice
+conditional (running vs merely active), or to word the message so it covers both ("wait for trains
+to stop - use Graceful Stop if autonomy is running").
+
+---
+
 ## WR-D1. The verified commit, the clean checks, and two suspicions that died correctly
 
 **Commit `08610a8`, hunk by hunk** - the only source commit of the week with no second reader before
@@ -351,3 +480,33 @@ conflation (author-deferred pending a planning-cost measurement), the `HS-B4` mi
 conservatism (recorded limitation), the duplicated menu blocks (extraction candidate), `FP-B3` and
 `FP-C6` (author-deferred). The editor flows and the charset round trip remain untested, as the cycle
 summary already records.
+
+
+## Addressed 2026-07-28 (second round)
+
+`WR-B2`, `WR-C6`, `WR-C7` and `WR-C8` fixed; `WR-C5` was already fixed in the working tree the report
+was written against.  Each finding was re-read in its enforcing method before being acted on, and all
+four held.
+
+- **WR-B2** - the diagnosis was exact: `isRunning()` cannot express "committed but not yet dispatched",
+  and the planning phase lives entirely inside that gap.  A volatile `stagingFlowActive` is set on the
+  EDT at the commit point - before the worker spawns, so no window - and cleared in the worker's
+  `finally` ahead of the button re-enables.  The button, both right-click menus and the entry guard all
+  consult it, which closes the double-entry and with it the interleaving that restored a staging plan
+  as though it were the operator's timetable.
+- **WR-C6** - the entry guard now routes through `describeStagingOutcome` like every other surface.
+- **WR-C7** - the message takes `{0}` and the call site fills it with `I18n.t("ui.main.gracefulStop")`,
+  so each locale names the button it actually shows.  Four bundles had invented a different name within
+  a day of the string being written; interpolation removes the possibility rather than correcting the
+  instances.  Checked afterwards: the key is fetched only via `I18n.f` (it now carries a placeholder),
+  is not fetched via `I18n.t` anywhere, and no bundle's value contains a bare apostrophe.
+- **WR-C8** - reworded to cover both states `isRunning()` reports.  It now asks the user to wait for
+  the trains to arrive, and names the button only as the conditional remedy for an autonomy run - which
+  is the only state in which that button is enabled.
+- **Polish grammar**, found while verifying the interpolation renders correctly: `u` + chr(380) + `yj` governs the
+  genitive, so an interpolated nominative label was ungrammatical.  Reworded to cite the button
+  ("press the button X"), the usual way to quote a UI label without declining it.
+
+**Unchanged and still open:** the `HS-B3` A* exhaustion-vs-limit half, the `HS-B4` mixed-hardware
+conservatism, the duplicated menu blocks, the `deletePoint` occupancy-guard observation, and the
+`startAutonomy`/`gracefulStop` reset asymmetry recorded as a trap in D1.

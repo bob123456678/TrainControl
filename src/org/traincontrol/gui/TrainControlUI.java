@@ -276,6 +276,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Set when the operator asks trains to stop, so a staging run that ends short of home because they
     // asked it to is not reported as a failure.  Volatile: written on the EDT, read on the run thread.
     private volatile boolean gracefulStopRequested = false;
+
+    // True from the moment a return-home run is committed until its worker has finished.
+    //
+    // isRunning() cannot stand in for this: it only becomes true once a locomotive is dispatched, and
+    // the planning phase before that can last seconds with no cancel.  Throughout it every enablement
+    // surface asked isRunning(), got false, and re-offered the very action already under way - so a
+    // second press started a second worker, which borrowed the first one's staging plan as though it
+    // were the operator's timetable and restored it as such.  That loses the real one.
+    private volatile boolean stagingFlowActive = false;
     
     // Graph viewer instance
     private GraphViewer graphViewer;
@@ -12978,10 +12987,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final Layout layout = this.model.getAutoLayout();
 
-        if (layout.isRunning())
+        if (layout.isRunning() || this.stagingFlowActive)
         {
+            // Routed through describeStagingOutcome like every other surface.  This one said "please
+            // wait for all active locomotives to stop" while the button tooltip and the plan-refusal
+            // dialog described the same state differently - which is the exact thing that method
+            // exists to prevent.
             JOptionPane.showMessageDialog(this,
-                I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
 
@@ -13014,7 +13027,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.gracefulStopRequested = false;
 
         // Disabled here rather than once execution begins, matching what pressing Execute Timetable
-        // does: the run is committed from this point, and both buttons would start the same thing
+        // does: the run is committed from this point, and both buttons would start the same thing.
+        // The flag is what makes that stick - a repaint or a menu opening during planning would
+        // otherwise re-enable the button, because nothing is running yet.
+        this.stagingFlowActive = true;
         this.returnHomeButton.setEnabled(false);
         this.executeTimetable.setEnabled(false);
 
@@ -13078,6 +13094,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
+                // Released before the buttons come back, so no surface can offer the action while this
+                // worker is still unwinding
+                this.stagingFlowActive = false;
+
                 // Hands the timetable back.  In the finally so it survives every way out of the block:
                 // the plan being impossible, the run finishing, a move giving up, a graceful stop, or
                 // an exception.  setTimetable also clears the sequential flag, so normal execution
@@ -13124,9 +13144,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Layout layout = this.model == null ? null : this.model.getAutoLayout();
 
-        if (layout == null || layout.isRunning())
+        if (layout == null)
         {
             this.returnHomeButton.setEnabled(false);
+            return;
+        }
+
+        if (layout.isRunning() || this.stagingFlowActive)
+        {
+            // Said out loud rather than left to the previous reason.  Disabling without touching the
+            // tooltip meant a button greyed because trains are moving went on claiming they were all
+            // at home - the explanation from before the run started.
+            this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
 
@@ -13138,6 +13167,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setToolTipText(nothingToDo == null
             ? I18n.t("ui.main.tooltip.returnHome")
             : describeStagingOutcome(nothingToDo, null));
+    }
+
+    /**
+     * Greys the return home button and says why.
+     *
+     * A dead control with a stale reason is worse than one with none: it answers a question the user
+     * did not ask and contradicts what they can see.
+     *
+     * @param reason
+     */
+    private void disableReturnHome(String reason)
+    {
+        this.returnHomeButton.setEnabled(false);
+        this.returnHomeButton.setToolTipText(reason);
     }
 
     /**
@@ -13162,7 +13205,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return I18n.t("autolayout.ui.errorNoHomeStations");
 
             case LOCOMOTIVES_RUNNING:
-                return I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+                // The button is named by pulling its own label in, so the sentence cannot tell the user
+                // to press something that is not on their screen - four translations had already
+                // invented a different name for it on day one.
+                return I18n.f("autolayout.ui.errorReturnHomeTrainsMoving",
+                    I18n.t("ui.main.gracefulStop"));
 
             case IMPOSSIBLE:
                 List<String> names = new ArrayList<>();
@@ -13277,8 +13324,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }).start();
 
                     this.startAutonomy.setEnabled(false);
-                    this.returnHomeButton.setEnabled(false);
                     this.gracefulStop.setEnabled(true);
+
+                    // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
+                    // thread, so isRunning() may still be false here and a refresh would re-enable the
+                    // button it is meant to grey.  This path knows the answer without asking.
+                    this.disableReturnHome(
+                        describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
                 }
                 else if (this.model.getAutoLayout().isRunning())
                 {
