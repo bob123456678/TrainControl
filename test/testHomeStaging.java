@@ -1180,4 +1180,37 @@ public class testHomeStaging
 
         d.setExcludedLocs(new HashSet<Locomotive>());
     }
+
+    /**
+     * getHomeStations hands back a snapshot, not a window onto the live map.
+     *
+     * The planner reads this on a worker thread, while hand placement, station deletion, locomotive
+     * deletion and a wholesale rebuild all write to it from elsewhere.  As a view it left that read
+     * walking a map another thread was clearing: a ConcurrentModificationException in a worker with
+     * nothing to catch it, or the quieter outcome of a plan built from half the homes.
+     *
+     * Pinned because turning it back into a view is a one-word change that nothing else notices until a
+     * run dies in the middle of planning.
+     */
+    @Test
+    public void testGetHomeStationsIsASnapshotRatherThanALiveView() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        Map<Locomotive, Point> taken = layout.getHomeStations();
+        int before = taken.size();
+
+        assertEquals(taken.get(loc(LOC_A)), layout.getPoint("HS A"), "precondition: derived from placement");
+
+        // Two different writers, either of which a view would expose to a reader mid-iteration
+        layout.setHomeLocomotive("HS D", LOC_A);                  // rebuild: clear and repopulate
+        assertTrue(layout.moveLocomotive(LOC_C, "HS C", false));   // claimHome: a put
+
+        assertEquals(taken.size(), before, "a map handed out earlier must not grow underneath its reader");
+        assertEquals(taken.get(loc(LOC_A)), layout.getPoint("HS A"), "nor change what it already said");
+
+        assertEquals(layout.getHomeStations().get(loc(LOC_A)), layout.getPoint("HS D"),
+            "while a fresh read does see the change");
+        assertEquals(layout.getHomeStations().size(), before + 1);
+    }
 }

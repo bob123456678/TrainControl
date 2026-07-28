@@ -546,7 +546,7 @@ public class Layout
      * @param l
      * @return
      */
-    public Point getHomeStation(Locomotive l)
+    synchronized public Point getHomeStation(Locomotive l)
     {
         if (l == null) return null;
 
@@ -554,12 +554,23 @@ public class Layout
     }
 
     /**
-     * Every locomotive that has a home, and where
+     * Every locomotive that has a home, and where, as it stands right now.
+     *
+     * A copy, not a view.  This map is rebuilt wholesale - cleared and repopulated - and is also
+     * written by hand placement, station deletion and locomotive deletion, none of which happen on the
+     * thread that reads it.  The planner reads it to build a plan, and an unmodifiable *view* left that
+     * read walking the live map while another thread cleared it: a ConcurrentModificationException in a
+     * worker with nothing to catch it, or the quieter outcome of a plan derived from half the homes.
+     *
+     * Copying under the monitor makes every reader safe without asking each of the writers to know
+     * about the readers, which is the version of this that has to be got right once rather than at
+     * every call site that will ever mutate a home.
+     *
      * @return
      */
-    public Map<Locomotive, Point> getHomeStations()
+    synchronized public Map<Locomotive, Point> getHomeStations()
     {
-        return Collections.unmodifiableMap(this.homeStations);
+        return Collections.unmodifiableMap(new LinkedHashMap<>(this.homeStations));
     }
     
     /**
