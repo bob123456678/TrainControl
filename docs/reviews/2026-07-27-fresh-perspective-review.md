@@ -3,12 +3,18 @@
 **Prefix for citing this document: `FP`.**
 
 **Version reviewed:** the v2.8.0 working tree after the `RR` fixes. **Reviewed:** 2026-07-27, while the
-author tested the application manually.
+author tested the application manually. `FP-B3` and `FP-C6` were added later the same day, and did not
+come from this pass at all - both surfaced while writing `testInvalidInput`, which is consistent with
+the cycle's own finding that using and testing located more than reading did.
 
 **Scope:** angles the July 2026 cycle had not used. The six prior documents worked through correctness
 of specific subsystems; this pass asked different questions instead - resource lifecycle, cost per
 operation, unbounded growth, locale sensitivity, and what the *database keys actually are*. That last
-question is what produced the only serious finding.
+question is what produced `FP-B1`, the most serious finding this pass was looking for.
+
+Four findings here are B-severity. `FP-B1` and `FP-B2` were found by the questions above; `FP-C4` was
+raised from C to B once its cause was understood, keeping its original identifier; `FP-B3` came from
+test-writing afterwards.
 
 Findings use the A/B/C/D convention in [README.md](README.md).
 
@@ -25,6 +31,8 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | FP-C3 | 100 sites allocate a `Thread` purely to pass it as a `Runnable`; five are per-CAN-message | C | **Fixed 2026-07-27** - all 100 |
 | FP-C4 | Accessory creation during autonomy JSON load fails silently, so a config that can never be actuated loads as valid | B | **Fixed 2026-07-27** - now fatal at load. Severity raised from C once the cause was understood |
 | FP-C5 | Four empty catch blocks in the layout editor and graph menu swallowed failures with no message | C | **Fixed 2026-07-27** |
+| FP-B3 | `importRoutes` deletes every route first, so a file that parses but re-adds fewer leaves the difference destroyed | B | **Open - deferred by author 2026-07-27**, judged unlikely in practice |
+| FP-C6 | `Layout.getLastError()` shows the last invalidation rather than the first, so a config with several mistakes reports the least useful one | C | **Open - deferred by author 2026-07-27** |
 | FP-D1 | Checks that came back clean | - | Recorded |
 
 ---
@@ -370,10 +378,72 @@ could not support.
 
 ---
 
+## FP-B3. A route import that parses can still destroy routes
+
+`importRoutes` parses the whole file, then deletes every existing route, then adds the parsed ones.
+The parse-first ordering is what makes an unreadable file safe, and `testInvalidInput` now pins it.
+
+It does not make a *readable* file safe. `newRoute` refuses a route whose id or name is already taken:
+
+```java
+if (!this.routeDB.hasId(r.getId()) && !this.routeDB.hasName(r.getName().trim()))
+{
+    this.routeDB.add(r, r.getName().trim(), r.getId());
+    return true;
+}
+else
+{
+    this.logf("route.alreadyImportedSkipping", r.getId(), r.getName().trim());
+    return false;
+}
+```
+
+So a file containing two routes that share an id or a name imports as: everything deleted, one of the
+pair added, the other announced only in the log. The user chose a file and silently has fewer routes
+than either the file or the database held.
+
+**Where such a file comes from** is the reason this is not higher. TrainControl's own export cannot
+produce one - `routeDB` is keyed by both id and name, so duplicates cannot exist to be exported. It
+takes a hand-edited or hand-merged file. That is also exactly the file someone is most likely to import.
+
+**Severity B, not C:** it is data loss with no dialog. Rated the same as `FP-B1` for the same reason -
+real destruction, unusual precondition, and a user interface that does not say what happened.
+
+**Deferred by the author**, 2026-07-27, as unlikely to be hit in practice. Recorded so that a later
+change to `newRoute` or to the import flow is made knowing the delete already ran.
+
+---
+
+## FP-C6. The error the user is shown is the last one, not the first
+
+`Layout.invalidate(String)` overwrites a static field on every call:
+
+```java
+public void invalidate(String message)
+{
+    this.isValid = false;
+    Layout.lastError = message;
+    this.control.log(message);
+}
+```
+
+The point loop keeps parsing after invalidating - `points.forEach` continues to the next point rather
+than returning - so a configuration with three mistakes calls this three times, and
+`TrainControlUI` puts `Layout.getLastError()` in front of the user. The user sees the third.
+
+**Nothing is lost:** `control.log(message)` runs on every call, so all of them are in the log. This is
+which one gets promoted to the dialog. It matters because the first failure in a hand-edited file is
+usually the cause and the rest are consequences, and because the dialog is what most users will read
+instead of the log.
+
+**Deferred by the author**, 2026-07-27.
+
+---
+
 ## Remaining, for a later pass
 
-Nothing above is open except **FP-C3**. Two areas were noticed but not reviewed, and are recorded so
-the gap is not mistaken for a clean bill:
+**FP-B3** and **FP-C6** are open by the author's decision - recorded, not fixed. Beyond them, two areas
+were noticed but not reviewed, and are recorded so the gap is not mistaken for a clean bill:
 
 - **Rendering cost for large diagrams.** `LayoutGrid` builds a component per tile, and the cache is
   invalidated wholesale (`layoutCache = new HashMap<>()`) whenever a repaint runs without `useCache`.

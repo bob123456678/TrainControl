@@ -1,15 +1,17 @@
 # July 2026 review cycle - index
 
-The entry point for a cycle that ran across seven documents and produced 106 findings - 52 in the main
-review, then 54 more across six later passes.
+The entry point for a cycle that ran across seven documents and produced 108 findings - 52 in the main
+review, then 56 more across six later passes.
 
 Nothing here is authoritative: **each finding's status lives in the status table at the head of its own
 section**, per the "one status, one location" rule in [README.md](README.md). This page exists to say
 what was reviewed, by whom, what came of it, and what the cycle taught - none of which any single
 document holds.
 
-Written 2026-07-27, when the last open finding closed. The cycle is finished, so this is a snapshot that
-should not need maintaining.
+Written 2026-07-27. The cycle's review work is finished, but this is not a frozen snapshot: two findings
+are open by the author's decision, and two arrived after the reviews had closed, from writing tests
+rather than from reading. Both counts above include them. Anything that reopens or adds a finding needs
+this page updated with it.
 
 ---
 
@@ -26,7 +28,7 @@ Identifiers are per-document and several collide: `B1` names three different fin
 | `INT` | [2026-07-26-integration-review.md](2026-07-26-integration-review.md) | A1-A2, B1, D1-D2 |
 | `FCR` | [2026-07-26-full-codebase-review.md](2026-07-26-full-codebase-review.md) | B1-B3, C1-C4, D1 |
 | `RR` | [2026-07-27-regression-review.md](2026-07-27-regression-review.md) | C1-C5, D1 |
-| `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B2, C1-C5, D1 |
+| `FP` | [2026-07-27-fresh-perspective-review.md](2026-07-27-fresh-perspective-review.md) | B1-B3, C1-C6, D1 |
 
 So `INT-A1` is the mutable-hash-key finding, `FCR-B1` is the charset bug, and `IND-B1` is a deliberate
 behaviour change - three unrelated things that would all be "B1" without the prefix.
@@ -59,6 +61,18 @@ findings.
 
 **`FCR` - the full codebase review.** A fresh pass over the parts the cycle had not deep-dived. Seven
 findings, all fixed.
+
+**`RR` - the regression review.** An independent read of the v2_7_4..HEAD range, 72 commits and roughly
+2,700 inserted source lines, hunk by hunk, asking what had regressed since v2_7_2. No A findings and no
+B findings: nothing had regressed into wrong behaviour or data loss. But **all five C findings were
+introduced by this cycle's own changes** - the sharpest evidence for the signature error below, and the
+reason a cycle this size needs a pass that reviews the fixes rather than the code.
+
+**`FP` - the fresh-perspective review.** Deliberately not another correctness sweep: it asked resource
+lifecycle, cost per operation, unbounded growth, locale sensitivity, and what the database keys actually
+are. The last question produced `FP-B1`. Nine findings and one clean-checks record; seven fixed, two
+recorded and deferred. Two of the nine were found later and by a different route - writing the
+invalid-input tests, not reading.
 
 ---
 
@@ -164,13 +178,19 @@ Four items were closed by the author's decision rather than fixed, each with rea
 
 ## State
 
-**Nothing is open.** The last item, `FP-C4`, closed on 2026-07-27, having been reported wrongly,
+**Two items are open by decision; nothing is open by oversight.** `FP-B3` (a route import that parses
+can still destroy routes) and `FP-C6` (the load error dialog shows the last problem rather than the
+first) were both found after the cycle's findings had closed, while writing tests for invalid input.
+The author recorded and deferred both, judging neither likely to be met in practice. They are written up
+so that a later change to the import flow is made knowing the delete has already run.
+
+Everything else across the seven documents is fixed, withdrawn as mistaken, closed by decision, or
+informational. The last item to close was `FP-C4`, on 2026-07-27, having been reported wrongly,
 re-diagnosed, and then fixed more severely than first proposed. It was written up as a block that
 validates nothing; in fact the call creates the accessory as a side effect, exactly as the author said
 when the finding was raised. What was really wrong was that its failure was silent - so a configuration
 that could never be actuated loaded as valid, and failed later at a point that named nothing about the
-cause. It is now fatal at load, and the severity was raised from C to B. Everything across the seven
-documents is fixed, withdrawn as mistaken, closed by decision, or informational.
+cause. It is now fatal at load, and the severity was raised from C to B.
 
 Worth recording for its own sake: **that fix was reached by writing the error message.** Three wordings
 were drafted, and each forced a sharper question about what the code actually did - the second being

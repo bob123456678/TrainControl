@@ -78,6 +78,11 @@ API's shape, not its implementation.* A related habit that caught two separate e
 when a claim rests on a method whose name reads like another method's (`isAutonomyRunning` against
 `isAutoRunning`), open it. Both times, the delegation was the opposite of what the name suggested.
 
+And the documentation is part of the method - read it before contradicting it. *`validateConfigCommand`
+was written up as a pure validator with no effect on the model, from reading its body. Its first line of
+javadoc says it creates accessories in the database if needed, and that side effect was the entire
+reason the call site existed. The author said so when the finding was raised and was told otherwise.*
+
 **"Wrong code" is not "wrong behaviour".** Trace whether any caller can actually reach the defect before
 assigning severity. *B3, C7 and C15 were all structurally real and all unreachable: every caller already
 guarded. They are worth fixing as traps for the next caller, not worth a changelog entry.*
