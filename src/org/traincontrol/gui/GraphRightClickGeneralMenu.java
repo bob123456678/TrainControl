@@ -103,6 +103,19 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             add(menuItem);
             addSeparator();
 
+            // Offered only when something has a home to go back to.  A cheap map read - planning here
+            // would stall the popup, and the real answer comes when it is clicked.
+            if (!ui.getModel().getAutoLayout().getHomeStations().isEmpty())
+            {
+                menuItem = new JMenuItem(
+                    I18n.t("autolayout.ui.menuReturnToHome")
+                );
+                menuItem.addActionListener(event -> ui.requestReturnToHome());
+
+                add(menuItem);
+                addSeparator();
+            }
+
             menuItem = new JMenuItem(
                 I18n.t("autolayout.ui.menuClearLocomotives")
             );

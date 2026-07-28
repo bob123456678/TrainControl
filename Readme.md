@@ -362,9 +362,12 @@ Tab icons provided by Freepik.
 
 * v2.8.0 [Beta]
     - Added French, Italian, Spanish, Dutch, and Polish translations
-    - Removed UI features:
-        - Copy-to-next/-previous page option from locomotive button right-click menu (now redundant with 2.7.3's drag and drop)
+    - Locomotive Control Page
+        - Removed copy-to-next/-previous page option from button right-click menus (now redundant with 2.7.3's drag and drop)
     - Autonomy
+        - Added a "return home" feature that will return all locomotives back to where they started, if routing is possible.
+        - The * next to a station now marks a locomotive's home station; + marks its timetable starting point
+    - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
         - Path integrity validation now waits for the Central Station to confirm every switch and signal on the path.  An accessory that was already believed to be in the commanded position used to be accepted without any confirmation at all
@@ -373,10 +376,10 @@ Tab icons provided by Freepik.
         - Fixed bug where renaming a locomotive stopped its station exclusions from applying, so it could be sent to a station it was set never to visit
         - Changing a locomotive's address, or having the Central Station report a new one, no longer stops its station exclusions from applying
         - Deleting a locomotive now also removes it from any station exclusion lists it was on
-    - Timetables
+    - Timetable Bug Fixes
         - Fixed bug where a recorded timetable played back with its pauses shifted by one route, so the timing did not match what was recorded.  Delays typed in by hand were always correct
         - Fixed bug where stopping a timetable and resuming it could forget that some routes had already finished
-    - Routes
+    - Route Bug Fixes
         - Fixed bug where a route condition would fail to parse if a locomotive's name contained the word AND or OR, such as NORD or MOTOR
         - Fixed bug where a DCC switch or signal used as a route condition was shown with the wrong protocol
         - Fixed bug where a route could stop responding if one of its commands failed
@@ -385,20 +388,21 @@ Tab icons provided by Freepik.
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
         - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
-    - Multi-units
+    - Multi-unit Bug Fixes
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
         - Fixed bug where renaming a locomotive that was part of a multi-unit stopped TrainControl from recognizing it as linked.  It could then be set up as a second multi-unit of its own, and deleting it left it being driven by the lead locomotive
         - Fixed bug where checking for locomotives renamed in the Central Station could delete one of them, if two locomotives in TrainControl shared an address.  Such addresses are now reported and left alone, since there is no way to tell which locomotive the Central Station means
-    - Track diagrams
+    - Track Diagram Bug Fixes
         - Fixed bug where adding columns to a track diagram could fail on layouts taller than they are wide
         - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
         - Editing a track diagram, or saving a route that appears on one, no longer freezes TrainControl for several seconds.  Cycling between pages while editing is faster for the same reason: these actions re-read the track diagrams only, instead of reloading the entire Central Station database
-    - Accessories
+    - Accessory bug Fixes
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
-    - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
-    - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
+    - Central Station Sync Bug Fixes
+        - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
+        - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
 
 * v2.7.4 [7/25/2026]   
     - Autonomy

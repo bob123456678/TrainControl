@@ -40,6 +40,16 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
+                // Offered only when something has a home to go back to.  A cheap map read - planning
+                // here would stall the popup, and the real answer comes when it is clicked.
+                if (!ui.getModel().getAutoLayout().getHomeStations().isEmpty())
+                {
+                    menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
+                    menuItem.addActionListener(event -> ui.requestReturnToHome());
+
+                    add(menuItem);
+                }
+
                 // Get the autonomy point corresponding to this station
                 Point current = ui.getModel().getAutoLayout().getPoint(stationName);
 

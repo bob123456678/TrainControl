@@ -156,7 +156,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getHomeStation(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
 
                     );
@@ -165,7 +166,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getHomeStation(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
                     );
                 }
@@ -183,7 +185,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
-                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(layout.getHomeStation(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
                         + (path.get(path.size() - 1).getEnd().getExcludedLocs().contains(locomotive) ? " -" : "")
                     );
                     //Edge.pathToString(path));

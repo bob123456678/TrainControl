@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -98,6 +99,10 @@ public class Layout
     
     // Execution history
     private final List<TimetablePath> timetable;
+
+    // Where each locomotive belongs: the station it occupied when it first appeared on this graph.
+    // Injective by construction - see claimHome.
+    private final Map<Locomotive, Point> homeStations;
     
     // Additional configuration
     private int minDelay;
@@ -109,6 +114,18 @@ public class Layout
     private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
     private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
     private boolean timetableCapture = false;
+
+    // Staging plans are only valid executed one train at a time.  Set by loadReturnToHomeTimetable and
+    // cleared by any other timetable load - see executeTimetable.
+    private boolean timetableSequential = false;
+
+    // A staging entry that cannot run will not become runnable by waiting: nothing else is moving.  A
+    // few retries ride out a sensor settling; beyond that the assumption is wrong and it must say so.
+    private static final int STAGING_MAX_ATTEMPTS = 3;
+    private static final int STAGING_RETRY_PAUSE = 2000;
+
+    // How often executeTimetable checks whether the run it dispatched has actually finished
+    private static final int COMPLETION_POLL = 250;
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
     
@@ -186,6 +203,7 @@ public class Layout
         this.activeLocomotives = new ConcurrentHashMap<>();
         this.locomotiveMilestones = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();
+        this.homeStations = new LinkedHashMap<>();
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
         this.activateRouteIDs = new LinkedList<>();
         
@@ -334,6 +352,62 @@ public class Layout
         {
             p.removeExcludedLoc(l);
         }
+
+        // Releases the home claim too.  Without this the station stays claimed by a locomotive that no
+        // longer exists, and nothing placed there afterwards could ever have a home of its own - the
+        // same shape as the exclusions above, which outlived their locomotive until IND-M4.
+        this.homeStations.remove(l);
+    }
+
+    /**
+     * Records where a locomotive belongs, the first time it is placed on this graph.
+     *
+     * First claim wins, and a station can be claimed only once, so the map stays injective - two
+     * locomotives can never want the same station, which would make returning home unsatisfiable by
+     * construction.
+     *
+     * A locomotive placed on an already-claimed station therefore gets no home. That is deliberate:
+     * it becomes a free agent, which the staging planner may move anywhere free but never has to place
+     * exactly. Free agents are also the spare capacity that lets a planner break a cyclic dependency.
+     *
+     * Called when the graph is loaded and when a locomotive is placed by hand - never on arrival at
+     * the end of a path, which is a locomotive moving, not appearing.
+     *
+     * @param l
+     * @param p
+     */
+    private void claimHome(Locomotive l, Point p)
+    {
+        if (l == null || p == null) return;
+
+        // Already has a home: keep it.  Moving a locomotive by hand does not re-home it.
+        if (this.homeStations.containsKey(l)) return;
+
+        // Station already spoken for: this locomotive is a free agent
+        if (this.homeStations.containsValue(p)) return;
+
+        this.homeStations.put(l, p);
+    }
+
+    /**
+     * The station this locomotive belongs at, or null if it has none
+     * @param l
+     * @return
+     */
+    public Point getHomeStation(Locomotive l)
+    {
+        if (l == null) return null;
+
+        return this.homeStations.get(l);
+    }
+
+    /**
+     * Every locomotive that has a home, and where
+     * @return
+     */
+    public Map<Locomotive, Point> getHomeStations()
+    {
+        return Collections.unmodifiableMap(this.homeStations);
     }
     
     /**
@@ -2213,15 +2287,32 @@ public class Layout
     }
   
     /**
-     * Executes the paths in the timetable
+     * Executes the paths in the timetable.
+     *
+     * Blocks until every train has arrived, not merely until the last one has set off.
+     *
+     * @return false if a move was abandoned because its path would not clear - only possible in
+     *         sequential (staging) mode.  A graceful stop is not an abandonment and returns true.
      */
-    public void executeTimetable()
+    public boolean executeTimetable()
     {
+        // Returning after setting running would leave it set with nothing to clear it: no entry means
+        // no thread, and isRunning() stayed true for the session - blocking autonomy and locomotive
+        // edits until a reload.  The wait at the end of this method would also never return.
+        if (this.timetable.isEmpty())
+        {
+            this.control.logf("autolayout.infoTimetableExecutionFinished");
+            return true;
+        }
+
         synchronized (this.activeLocomotives)
         {
             this.running = true;
         }
         
+        // Written from an entry's own thread, read here once they have all finished
+        final AtomicBoolean abandoned = new AtomicBoolean(false);
+
         // Capture start time
         long startTime = System.currentTimeMillis();
 
@@ -2268,6 +2359,14 @@ public class Layout
                         "autolayout.infoWaitingForPreviousRouteToStart"
                     );
                 }
+                else if (i > startIndex && this.timetableSequential
+                    && this.activeLocomotives.containsKey(this.timetable.get(i - 1).getLoc()))
+                {
+                    // Sequential mode waits for the train ahead to ARRIVE, not merely to set off
+                    this.control.logf(
+                        "autolayout.infoWaitingForPreviousRouteToFinish"
+                    );
+                }
                 else
                 {
                     this.control.logf(
@@ -2280,14 +2379,56 @@ public class Layout
                     {
                         try
                         {
+                            int attempts = 0;
+
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
+                                attempts++;
+
+                                if (this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
+                                {
+                                    // Retrying cannot help here - with one train moving at a time,
+                                    // nothing will free the path.  Stop and say so rather than spin.
+                                    this.control.logf(
+                                        "autolayout.errorReturnToHomeEntryStuck",
+                                        ttp.toString()
+                                    );
+
+                                    // Recorded so the caller can say so, rather than the operator
+                                    // having to notice a log line and work out that the run ended early
+                                    abandoned.set(true);
+
+                                    synchronized (this.activeLocomotives)
+                                    {
+                                        this.stopLocomotives();
+                                    }
+
+                                    break;
+                                }
+
                                 this.control.logf(
                                     "autolayout.infoTimetableEntryNotYetExecutable",
                                     ttp.toString()
                                 );
 
-                                ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+                                if (this.timetableSequential)
+                                {
+                                    // Paced independently of the delay settings, which may be zero -
+                                    // that would busy-wait here rather than pause
+                                    try
+                                    {
+                                        Thread.sleep(STAGING_RETRY_PAUSE);
+                                    }
+                                    catch (InterruptedException ie)
+                                    {
+                                        Thread.currentThread().interrupt();
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+                                }
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -2328,6 +2469,28 @@ public class Layout
                 ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
             }                
         }
+
+        // The loop above only DISPATCHES the last entry - its own thread is still driving that
+        // train, and is what finally clears the running state.  Returning here handed control back
+        // while a locomotive was still moving: callers re-enable their buttons on return, so Start
+        // came back before the last train had arrived, and Graceful Stop stayed lit after it had.
+        //
+        // Also covers a graceful stop and a staging entry that gave up: both clear running, and
+        // this still waits for whatever is mid-path to finish and leave activeLocomotives.
+        while (this.isRunning())
+        {
+            try
+            {
+                Thread.sleep(COMPLETION_POLL);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        return !abandoned.get();
     }
     
     /**
@@ -2915,6 +3078,10 @@ public class Layout
             // Set new location
             target.setLocomotive(l);
 
+            // A locomotive placed by hand claims this station if it has no home and the station is
+            // free of claims.  Placing an already-homed locomotive somewhere else does not re-home it.
+            this.claimHome(l, target);
+
             result = true;
         }
         
@@ -3097,8 +3264,121 @@ public class Layout
     {
         this.timetable.clear();
         this.timetable.addAll(lst);
+
+        // Overlapping execution is the normal behaviour; only a staging plan opts out, and it does so
+        // after calling this
+        this.timetableSequential = false;
+    }
+
+    /**
+     * Works out whether every locomotive can be sent back to its home station, and how.
+     *
+     * Read-only: nothing is moved, nothing is loaded.  Ask this to decide whether to offer the action,
+     * and what to say when it cannot be offered - the outcome distinguishes "nothing to do" from
+     * "impossible" from "no plan found", which are three different things to tell a user.
+     *
+     * Meaningful only with the layout at rest; the plan is built against current positions and a train
+     * in motion has none.
+     *
+     * @return
+     */
+    public HomeStaging.Plan planReturnToHome()
+    {
+        return HomeStaging.snapshot(this).plan();
+    }
+
+    /**
+     * Whether there is anything to send home at all, answered without planning.
+     *
+     * Cheap - it reads the occupancy and nothing else.  Ask this before anything a user has to respond
+     * to: there is no point confirming that the timetable will be replaced when the run is not going
+     * to happen.
+     *
+     * @return the outcome, or null when only a plan can say more
+     */
+    public HomeStaging.Outcome triageReturnToHome()
+    {
+        return HomeStaging.snapshot(this).triage();
+    }
+
+    /**
+     * Plans the return home and, if one exists, loads it into the timetable ready to execute.
+     *
+     * <b>This replaces the current timetable.</b>  Save it first if it matters - a captured or
+     * hand-built timetable is persisted in the autonomy file, so overwriting it and then saving loses
+     * it for good.
+     *
+     * The moves are emitted in the order the planner produced, each with no delay, so the existing
+     * timetable machinery does the rest: executeTimetable dispatches entry i+1 once entry i has
+     * started, and its retry loop holds a move back while the train ahead is still on the path it
+     * needs.  That is what turns a sequential plan into as much parallelism as the layout allows,
+     * without a scheduler - and it is why the order matters and must not be rearranged.
+     *
+     * Capture is forced off for the load: with it on, every move would be appended to the timetable a
+     * second time as though the operator had recorded it.
+     *
+     * @return the plan, whether or not it could be loaded - check isPossible()
+     */
+    public HomeStaging.Plan loadReturnToHomeTimetable()
+    {
+        HomeStaging.Plan plan = planReturnToHome();
+
+        if (!plan.isPossible()) return plan;
+
+        if (this.isRunning())
+        {
+            this.control.logf("autolayout.errorCannotEditWhileRunning");
+            return new HomeStaging.Plan(HomeStaging.Outcome.NO_PLAN_FOUND,
+                new LinkedList<>(), new LinkedList<>());
+        }
+
+        boolean capturing = this.isTimetableCapture();
+        this.setTimetableCapture(false);
+
+        List<TimetablePath> staged = new LinkedList<>();
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            TimetablePath entry = new TimetablePath(move.getLocomotive(), move.getPath(), 0);
+
+            // No delay: every entry should start as soon as the one before it has, and be held back
+            // only by the path actually being occupied
+            entry.setSecondsToNext(0);
+
+            staged.add(entry);
+        }
+
+        this.setTimetable(staged);
+        this.setTimetableCapture(capturing);
+
+        // Must be after setTimetable, which clears it.
+        //
+        // The plan is built on a model in which nothing is moving - see HomeStaging - so the moves are
+        // only safe run one at a time.  executeTimetable normally dispatches an entry as soon as the
+        // one before it has STARTED, and executePath locks a whole path up front, so two staging moves
+        // overlapping can contend for an edge the planner never considered: the second retries forever
+        // on a route it cannot abandon, while a free alternative exists that only live path selection
+        // would find.  Observed in exactly that form before this flag existed.
+        this.timetableSequential = true;
+
+        this.control.logf("autolayout.infoReturnToHomeLoaded", staged.size());
+
+        return plan;
     }
         
+    /**
+     * Whether the loaded timetable must run one train at a time.
+     *
+     * True only for a staging plan: it is built on a model in which nothing is moving, so overlapping
+     * its moves can contend for an edge the planner never considered.
+     *
+     * @return
+     */
+    public boolean isTimetableSequential()
+    {
+        return this.timetableSequential;
+    }
+
     public boolean isTimetableCapture()
     {
         return timetableCapture;
@@ -3821,6 +4101,9 @@ public class Layout
                             
                             // Place the locomotive
                             layout.getPoint(point.getString("name")).setLocomotive(l);
+
+                            // Where it belongs, for "return to home"
+                            layout.claimHome(l, layout.getPoint(point.getString("name")));
                             
                             // Reset if none present
                             l.setDepartureFunc(null);

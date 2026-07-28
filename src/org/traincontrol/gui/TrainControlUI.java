@@ -119,6 +119,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
@@ -3594,6 +3595,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         gracefulStop = new javax.swing.JButton();
         startAutonomy = new javax.swing.JButton();
         reopenGraphButton = new javax.swing.JButton();
+        returnHomeButton = new javax.swing.JButton();
         timetablePanel = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
         timetable = new javax.swing.JTable();
@@ -5850,6 +5852,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        returnHomeButton.setBackground(new java.awt.Color(255, 204, 204));
+        returnHomeButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        returnHomeButton.setText(bundle.getString("ui.main.returnHome")); // NOI18N
+        returnHomeButton.setToolTipText(bundle.getString("ui.main.tooltip.returnHome")); // NOI18N
+        returnHomeButton.setEnabled(false);
+        returnHomeButton.setFocusable(false);
+        returnHomeButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                returnHomeButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout locCommandTabLayout = new javax.swing.GroupLayout(locCommandTab);
         locCommandTab.setLayout(locCommandTabLayout);
         locCommandTabLayout.setHorizontalGroup(
@@ -5857,9 +5871,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .addGroup(locCommandTabLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 745, Short.MAX_VALUE)
+                    .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
                     .addGroup(locCommandTabLayout.createSequentialGroup()
                         .addComponent(gracefulStop)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(returnHomeButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(reopenGraphButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -5873,10 +5889,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(locCommandTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(startAutonomy)
-                        .addComponent(gracefulStop))
+                        .addComponent(gracefulStop)
+                        .addComponent(returnHomeButton))
                     .addComponent(reopenGraphButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 501, Short.MAX_VALUE)
+                .addComponent(autoLocScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 511, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -12166,10 +12183,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new Thread(() ->
             {
                 this.startAutonomy.setEnabled(false);
+                this.returnHomeButton.setEnabled(false);
                 this.model.getAutoLayout().executeTimetable();
                 this.executeTimetable.setEnabled(true);
                 this.startAutonomy.setEnabled(true);
+                this.returnHomeButton.setEnabled(true);
                 this.exportJSON.setEnabled(true);
+
+                // Same gap as the staging run had: nothing turned this off once the trains stopped
+                this.gracefulStop.setEnabled(false);
             }).start();
 
             this.gracefulStop.setEnabled(true);
@@ -12804,6 +12826,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 locCommandPanels.remove(this.autoSettingsPanel);
 
                 this.startAutonomy.setEnabled(false);
+                this.returnHomeButton.setEnabled(false);
 
                 JOptionPane.showMessageDialog(
                     this,
@@ -12849,6 +12872,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 loadAutoLayoutSettings();
 
                 this.startAutonomy.setEnabled(true);
+                this.returnHomeButton.setEnabled(true);
                 this.executeTimetable.setEnabled(true);
 
                 // Advance to locomotive tab
@@ -12885,6 +12909,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.gracefulStop.setEnabled(false);
         this.startAutonomy.setEnabled(true);
+        this.returnHomeButton.setEnabled(true);
 
         new Thread(() ->
             {
@@ -12912,7 +12937,171 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             );
         }
     }
-    
+
+    /**
+     * Sends every locomotive back to the station it started on.  Called from the button and from both
+     * right-click menus.
+     *
+     * The confirmation comes first and the planning second, deliberately: the question is about the
+     * timetable, which the user already knows the state of, and asking it after a search would make
+     * them wait to be asked.  Everything after the confirmation is off the EDT - planning enumerates
+     * routes and may search, and executeTimetable blocks until the run finishes.
+     */
+    public void requestReturnToHome()
+    {
+        final Layout layout = this.model.getAutoLayout();
+
+        if (layout.isRunning())
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+            return;
+        }
+
+        if (!this.getModel().getPowerState())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+            return;
+        }
+
+        // Answered before the confirmation below: asking whether to discard the timetable only makes
+        // sense if a run is going to happen, and "everything is already home" is knowable without
+        // planning.  The expensive half - can it actually be arranged - still waits until after.
+        HomeStaging.Outcome trivial = layout.triageReturnToHome();
+
+        if (trivial != null)
+        {
+            JOptionPane.showMessageDialog(this, describeStagingOutcome(trivial, null));
+            return;
+        }
+
+        // Borrowed, not replaced.  The staging plan occupies the timetable only while it runs and the
+        // original goes back afterwards - on success, on failure, and on a graceful stop alike - so
+        // there is nothing to warn about and nothing to ask.
+        //
+        // An abrupt exit is safe by construction: the timetable only reaches disk when the autonomy
+        // file is saved, so a plan that was never saved cannot outlive the session.
+        final List<TimetablePath> borrowedTimetable = new ArrayList<>(layout.getTimetable());
+
+        // Disabled here rather than once execution begins, matching what pressing Execute Timetable
+        // does: the run is committed from this point, and both buttons would start the same thing
+        this.returnHomeButton.setEnabled(false);
+        this.executeTimetable.setEnabled(false);
+
+        new Thread(() ->
+        {
+            try
+            {
+                HomeStaging.Plan plan = layout.planReturnToHome();
+
+                if (!plan.isPossible())
+                {
+                    final String message = describeStagingPlan(plan);
+
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(this, message));
+
+                    return;
+                }
+
+                layout.loadReturnToHomeTimetable();
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.timetableCapture.setSelected(layout.isTimetableCapture());
+                    this.startAutonomy.setEnabled(false);
+                    this.gracefulStop.setEnabled(true);
+
+                    // So the operator can see what is about to run rather than watching the old
+                    // timetable while different trains move
+                    this.repaintTimetable();
+                });
+
+                // Blocks until every train has arrived, not merely until the last one set off
+                final boolean completed = layout.executeTimetable();
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.startAutonomy.setEnabled(true);
+                    this.gracefulStop.setEnabled(false);
+
+                    // A move that gave up stopped the whole run.  It is logged, but a log line is not
+                    // something an operator watching the layout will see - and what they are looking at
+                    // is trains that stopped halfway with no explanation.
+                    if (!completed)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            I18n.t("autolayout.ui.errorReturnToHomeStopped"));
+                    }
+                });
+            }
+            finally
+            {
+                // Hands the timetable back.  In the finally so it survives every way out of the block:
+                // the plan being impossible, the run finishing, a move giving up, a graceful stop, or
+                // an exception.  setTimetable also clears the sequential flag, so normal execution
+                // semantics return with it.
+                layout.setTimetable(borrowedTimetable);
+
+                // Re-enabled whether it ran, could not be planned, or threw.  In a finally because a
+                // button that never comes back needs a restart to recover.
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.returnHomeButton.setEnabled(true);
+                    this.executeTimetable.setEnabled(true);
+                    this.repaintTimetable();
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * Why a return home is not on offer.
+     *
+     * IMPOSSIBLE names the locomotives, because that is actionable.  NO_PLAN_FOUND must not claim
+     * impossibility - the search only ran out of room, which is a weaker statement.
+     */
+    private String describeStagingPlan(HomeStaging.Plan plan)
+    {
+        return describeStagingOutcome(plan.getOutcome(), plan.getBlocked());
+    }
+
+    /**
+     * Shared by the cheap triage and the full plan, so the same situation cannot be described two
+     * different ways depending on which one noticed it.
+     *
+     * @param outcome
+     * @param blocked - may be null; only IMPOSSIBLE has any
+     * @return
+     */
+    private String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
+    {
+        switch (outcome)
+        {
+            case ALREADY_HOME:
+                return I18n.t("autolayout.ui.infoAllLocomotivesAlreadyHome");
+
+            case NO_LOCOMOTIVES:
+                return I18n.t("autolayout.ui.errorNoLocomotivesOnGraph");
+
+            case NO_HOMES:
+                return I18n.t("autolayout.ui.errorNoHomeStations");
+
+            case IMPOSSIBLE:
+                List<String> names = new ArrayList<>();
+
+                for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
+                {
+                    names.add(l.getName());
+                }
+
+                return I18n.f("autolayout.ui.errorCannotReachHome", String.join(", ", names));
+
+            default:
+                return I18n.t("autolayout.ui.errorNoReturnPlanFound");
+        }
+    }
+
     /**
      * Called externally
      * @throws Exception 
@@ -13011,6 +13200,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }).start();
 
                     this.startAutonomy.setEnabled(false);
+                    this.returnHomeButton.setEnabled(false);
                     this.gracefulStop.setEnabled(true);
                 }
                 else if (this.model.getAutoLayout().isRunning())
@@ -14148,6 +14338,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         prefs.putBoolean(ENHANCED_PATH_VALIDATION, this.enhancedPathValidationMenuItemCheckbox.isSelected());
     }//GEN-LAST:event_enhancedPathValidationMenuItemActionPerformed
+
+    private void returnHomeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_returnHomeButtonActionPerformed
+        requestReturnToHome();
+    }//GEN-LAST:event_returnHomeButtonActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -15745,6 +15939,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBoxMenuItem rememberLocationMenuItem;
     private javax.swing.JMenuItem renameLayoutMenuItem;
     private javax.swing.JButton reopenGraphButton;
+    private javax.swing.JButton returnHomeButton;
     private javax.swing.JLabel routeLabel;
     private javax.swing.JScrollPane routeScrollPane;
     private javax.swing.JMenu routesMenu;
