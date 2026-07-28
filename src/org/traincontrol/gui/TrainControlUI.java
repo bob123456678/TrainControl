@@ -12139,6 +12139,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         
                         if (dialogResult == JOptionPane.NO_OPTION)
                         {
+                            // The other four early returns in this handler re-enable; this one did not,
+                            // so declining the warning - the prudent answer, and the one the warning
+                            // invites - killed the button for the session with no stated way back.
+                            this.executeTimetable.setEnabled(true);
+
                             return;
                         }
                         else
@@ -12180,9 +12185,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }
 
-            // Disable capture if it was enabled
-            this.model.getAutoLayout().setTimetableCapture(false);
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            // Capture is left exactly as the operator set it, as the staging button next door already
+            // does.  Forcing it off protected against a run appending itself to the list being walked;
+            // that guard now lives in addTimetableEntry, covers both entrances, and does not cost the
+            // operator their toggle every time they execute a timetable.
 
             new Thread(() ->
             {

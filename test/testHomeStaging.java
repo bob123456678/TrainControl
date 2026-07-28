@@ -599,6 +599,43 @@ public class testHomeStaging
     }
 
     /**
+     * Deleting a station releases the home claim on it.
+     *
+     * The claim map is keyed by locomotive and valued by point, and releasing was wired only into the
+     * key side: deleting a locomotive frees its claim, deleting its home did not.  A claim that
+     * outlives its station is worse than a leak - the locomotive still counts as misplaced, so Return
+     * Home stays lit, and pressing it reports that the locomotive cannot reach a station that is no
+     * longer on the graph.  Stable, unactionable, and only escapable by re-creating the station or
+     * reloading the file.
+     */
+    @Test
+    public void testDeletingAStationReleasesTheHomeClaimOnIt() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS A"),
+            "precondition: the locomotive is homed at the station about to be deleted");
+
+        // A station can only be deleted once nothing connects to it, and the ring is bidirectional -
+        // all four edges touching HS A have to go first
+        assertTrue(layout.moveLocomotive(LOC_A, "HS C", false));
+
+        layout.deleteEdge("HS A", "HS B");
+        layout.deleteEdge("HS B", "HS A");
+        layout.deleteEdge("HS D", "HS A");
+        layout.deleteEdge("HS A", "HS D");
+        layout.deletePoint("HS A");
+
+        assertNull(layout.getHomeStation(loc(LOC_A)),
+            "the claim outlived the station it was held against");
+
+        // LOC_B is still homed and still at home, so the only homed locomotive is where it belongs.
+        // Before the fix this said IMPOSSIBLE, naming a station that is no longer on the graph.
+        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.ALREADY_HOME,
+            "a locomotive whose home was deleted is homeless, not permanently unable to reach home");
+    }
+
+    /**
      * A free agent may be moved but never has to land anywhere in particular, so it does not make a
      * plan impossible by sitting on somebody's home.
      */

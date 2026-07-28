@@ -1316,6 +1316,15 @@ public class Layout
             }
         }
         
+        // Releases any home claim on it - the twin of locDeleted's release, on the value side of the
+        // map.  Without this the claim outlives the station: its locomotive still counts as misplaced,
+        // so Return Home stays lit, and every press reports "cannot reach their home station" naming a
+        // station that no longer exists - stable, unactionable, and self-inflicted.
+        //
+        // By name, because that is how every consumer compares points, and a claim held against an
+        // object equal by name is the same claim.
+        this.homeStations.values().removeIf(home -> home != null && home.getName().equals(name));
+
         // Remove from db
         this.points.remove(name);
     }
@@ -2303,6 +2312,41 @@ public class Layout
      * @return false if a move was abandoned because its path would not clear - only possible in
      *         sequential (staging) mode.  A graceful stop is not an abandonment and returns true.
      */
+    /**
+     * Pauses between polls of a condition the dispatch loop is waiting on.
+     *
+     * Honours the operator's action delays, but never spins: both settings are allowed to be zero, and
+     * zero means Thread.sleep(0).  That was survivable while these loops waited only for the train
+     * ahead to SET OFF - a short window - but the sequential branch waits for it to ARRIVE, which is
+     * minutes per entry.  With no floor, a staging run pins a core for most of its duration, and
+     * silently: the wait message never varies, so the log's consecutive-duplicate suppression hides
+     * every repeat after the first.
+     *
+     * The staging retry loop already reached this conclusion for itself - STAGING_RETRY_PAUSE exists
+     * with "the delay settings may be zero" written against it.  This is the same thought, applied to
+     * the other two places that wait.
+     *
+     * @param loc
+     */
+    private void pacedWait(Locomotive loc)
+    {
+        if (this.getMinDelay() == 0 && this.getMaxDelay() == 0)
+        {
+            try
+            {
+                Thread.sleep(COMPLETION_POLL);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+        else
+        {
+            loc.delay(this.getMinDelay(), this.getMaxDelay());
+        }
+    }
+
     public boolean executeTimetable()
     {
         // The flag is set here rather than inside, so that nothing thrown from the run can leave it
@@ -2452,7 +2496,7 @@ public class Layout
                                 }
                                 else
                                 {
-                                    ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+                                    this.pacedWait(ttp.getLoc());
                                 }
                             }
 
@@ -2491,7 +2535,7 @@ public class Layout
                     break;
                 }  
 
-                ttp.getLoc().delay(this.getMinDelay(), this.getMaxDelay());
+                this.pacedWait(ttp.getLoc());
             }                
         }
 
