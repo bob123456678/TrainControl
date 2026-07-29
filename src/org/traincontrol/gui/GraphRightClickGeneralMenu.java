@@ -101,7 +101,6 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             });
 
             add(menuItem);
-            addSeparator();
 
             HomeLocomotiveMenu.addReturnHomeItem(this, ui);
             addSeparator();
