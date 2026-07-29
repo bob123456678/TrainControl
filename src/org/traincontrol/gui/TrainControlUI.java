@@ -13083,11 +13083,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.timetableCapture.setSelected(layout.isTimetableCapture());
                     this.startAutonomy.setEnabled(false);
                     this.gracefulStop.setEnabled(true);
-
-                    // So the operator can see what is about to run rather than watching the old
-                    // timetable while different trains move
-                    this.repaintTimetable();
                 });
+
+                // So the operator can see what is about to run rather than watching the old timetable
+                // while different trains move.
+                //
+                // Called from this thread rather than from the block above: repaintTimetable takes the
+                // Layout monitor before it marshals, and the first entry's configureAndLockPath is
+                // about to hold that monitor for the length of its switch-throwing.  Marshalled, the
+                // wait landed on the EDT and froze the UI for it - roughly a coin toss, once per run.
+                // The method does its own marshalling, so the wrapper was never needed here.
+                this.repaintTimetable();
 
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable();
@@ -13142,8 +13148,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     this.refreshReturnHomeButton();
                     this.executeTimetable.setEnabled(true);
-                    this.repaintTimetable();
                 });
+
+                // Off the EDT for the same reason as the pre-run repaint above: a path abandoned or
+                // graceful-stopped can still be unwinding when this runs, so the monitor is not
+                // reliably free here either
+                this.repaintTimetable();
             }
         }).start();
     }
@@ -15354,8 +15364,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Repaints the timetable once a route completes
      */
-    synchronized private void repaintTimetable()
+    // Deliberately not synchronized.  It was, and a caller waiting up to a path configuration for the
+    // Layout monitor then held the UI-class monitor for that whole wait - so any click entering another
+    // synchronized UI method queued behind it.  The method has nothing left to guard: its only state,
+    // lastTimetableState, is read and written solely inside the invokeLater below, which the EDT
+    // already serialises, and the snapshot is a local.
+    private void repaintTimetable()
     {
+        // Taken here, on the calling thread, and never on the EDT.
+        //
+        // getTimetableSnapshot holds the Layout monitor, and configureAndLockPath holds that same
+        // monitor across its per-command sleeps - half a second to two seconds on an ordinary path,
+        // deliberately, because locking a path has to be atomic.  This method runs at every path start
+        // and end, so with two or more trains one locomotive is regularly mid-configuration when
+        // another’s callback lands here: taken inside the invokeLater, the whole UI froze for the
+        // length of someone else’s switch-throwing, over and over.
+        //
+        // The callback thread pays that wait instead, which is where contention for this monitor is
+        // already the design - it holds activeLocomotives at that point, and activeLocomotives ->
+        // Layout is the order the completion block already establishes.  Idle callers take it
+        // uncontended and hand the EDT a finished copy.
+        final List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetableSnapshot();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             // Initial setup
@@ -15391,15 +15421,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             // Update the data
             this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-            
-            // Copied, not read live.  getTimetable hands back the field itself, and with capture on
-            // during a run a locomotive thread appends to it under the Layout monitor while this runs
-            // on the EDT holding nothing - so both the hashCode below and the for-each further down,
-            // each of which iterates, could fault and leave the table blank until the next repaint.
-            //
-            // Copied here rather than in the getter: deleteTimetableEntry removes from the list the
-            // getter returns, so handing out a snapshot would make that deletion apply to nothing.
-            List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetableSnapshot();
             
             // Do nothing if the timetable hasn't been updated
             if (timeTable.hashCode() == lastTimetableState) return;

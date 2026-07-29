@@ -14,7 +14,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * Everything the right-click menus offer about a station being some locomotive\u2019s home.
+ * Everything the right-click menus offer about a station being some locomotive's home.
  *
  * Three menus reach this, and the rules are easy to get quietly different in three places: which name
  * is shown, whether an assignment naming a locomotive that is not on the graph survives being looked
@@ -70,7 +70,7 @@ final class HomeLocomotiveMenu
     }
 
     /**
-     * Adds the item that opens this station\u2019s home locomotive editor.
+     * Adds the item that opens this station's home locomotive editor.
      *
      * One item rather than a submenu of actions: the label already answers the question, and the editor
      * both assigns and clears, so a menu of two verbs was a level of nesting that bought nothing.

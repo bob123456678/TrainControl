@@ -564,7 +564,7 @@ public class testHomeStaging
         // Exactly three, not merely at least three.  A swap cannot be done in two, and A* with an
         // admissible heuristic returns the shortest plan - so this is also the regression test for the
         // priority queue: it was ordered on a score map the relaxation rewrote, which changed an
-        // enqueued entry\u2019s priority in place and let polls return states that were not the cheapest.
+        // enqueued entry's priority in place and let polls return states that were not the cheapest.
         // A search that explores out of order can still reach the goal, but by a longer route.
         assertEquals(plan.getMoves().size(), 3,
             "a swap needs one locomotive moved out of the way and back, and no more: " + plan.getMoves());
@@ -1264,10 +1264,10 @@ public class testHomeStaging
      * The model can see a staging flow, not merely a dispatched run.
      *
      * Six guards ask the *model* whether autonomy is busy - locomotive delete, rename, address change,
-     * the rename-proposal pass, the diagram save, and the sync\u2019s address adoption - and the model
+     * the rename-proposal pass, the diagram save, and the sync's address adoption - and the model
      * answered on isRunning() alone.  Nothing is dispatched while a plan is being derived, so all six
      * read the planning window as idle: a locomotive could be deleted out from under a plan about to
-     * drive it, or re-addressed so the plan\u2019s commands reach a decoder the train no longer answers.
+     * drive it, or re-addressed so the plan's commands reach a decoder the train no longer answers.
      *
      * The flag has to live on the Layout rather than the UI, because the sync deferral is model-side
      * and no UI predicate can ever cover it.

@@ -28,6 +28,21 @@ re-applied the method that has been finding bugs - read every consumer of the th
 and grep for its twins - to the fixes themselves. Three findings: `IR-C6` (the timetable-iteration
 twins the C5 fix missed), `IR-C7` (a silent no-op branch), and `IR-C8` (the busy question now has
 two authorities, and the model-side one cannot see planning). Clean checks in `IR-D4`.
+**Fifth round (2026-07-28):** the fixes for IR-C6/C7/C8 landed as `62a89e9` and are validated in
+their own section; all three held. The round was asked specifically whether the bug-fixing itself
+had introduced a regression or deadlock in UI behaviour, so it closed with a lock-order audit of
+every monitor the fixes touch. The answer: **no deadlock** - the ordering is consistent and no
+monitor-holder ever blocks on the EDT - but one real regression, filed as `IR-B2`: the C6 fix puts
+the Layout monitor on the EDT at every path start and end, and path configuration holds that
+monitor through its command sleeps. Clean checks and one recorded false alarm in `IR-D5`.
+**Sixth round (2026-07-28):** the IR-B2 fix landed in the working tree - the snapshot hoisted out of
+the `invokeLater` onto the calling thread, exactly the prescribed shape - and is validated in its
+own section. The recurring unprompted freeze is gone. The deadlock question was re-asked against
+the *new* lock chain the hoist creates (`activeLocomotives -> TrainControlUI -> Layout`): every
+potential reverse edge was traced and none exists - `getActiveLocomotives` returns the concurrent
+map without locking, no Layout-monitor holder enters a synchronized UI method, and the two
+`invokeAndWait` sites hold nothing. **No deadlock.** Two bounded residuals of the hoist's coverage
+are filed together as `IR-C9`.
 
 Findings use the A/B/C/D convention in [README.md](README.md).
 
@@ -43,16 +58,21 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | IR-C3 | The graph-mutation surfaces (both graph key handlers, the graph general menu, the diagram autonomy menu's remove/edit items) still gate on `isRunning()` alone, so the planning window permits placements, cuts, point deletion and locomotive removal under the planner | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated at all seven sites; the point menu's construction verified inside the same gate |
 | IR-C4 | `RouteEditor` ignores the boolean `editRoute` now returns: a model-refused edit closes the dialog as if saved, with the refusal only in the log - the `PV-C7` shape, reachable today only through a race with a concurrent Central Station sync | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated; the two sibling call sites that also ignore the boolean are recorded in the validation section, not filed |
 | IR-C5 | `Layout.getTimetable` hands the EDT the live list, and the graph callback repaints the timetable on every path start/end - so a capture-on autonomy run has locomotive threads appending to a `LinkedList` the EDT is iterating. The missed twin of `4f9eb09`, which gave `getHomeStations` a snapshot for exactly this reader/writer pair | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - validated as a large narrowing; the copy itself still walks the live list, recorded under IR-C6 with the twins |
-| IR-C6 | The IR-C5 fix covered one of three iterators of the live timetable: `getTimetableStartingPoint` runs on every locomotive-list repaint during a capture-on run, `toJSON`'s timetable loop on export, and the repaint's own defensive copy still races `LinkedList.toArray` against an append | C | **Open** - filed by the fourth round |
-| IR-C7 | Start Autonomy pressed during the planning window is silently swallowed: the handler's else-chain has no branch for busy-but-not-running, so the press is correctly refused and the user is told nothing | C | **Open** - filed by the fourth round |
-| IR-C8 | The busy question now has two authorities: every UI surface asks `isAutonomyBusy()`, but the surfaces guarded through the model's `isAutonomyRunning()` - locomotive delete, rename, address change, rename-proposal application, layout-editor save, and the sync's own address adoption - cannot see `stagingFlowActive` and read the planning window as idle | C | **Open** - filed by the fourth round |
+| IR-B2 | The IR-C6 fix trades the transient fault for recurring whole-UI stalls: `getTimetableSnapshot` takes the Layout monitor on the EDT at every path start/end, and `configureAndLockPath` holds that monitor through its per-command sleeps - so in multi-train autonomy the EDT can freeze for the length of a concurrent path configuration, repeatedly. No deadlock (lock-order audited), but a responsiveness regression of the `FCR-B3` class | B | **Fixed 2026-07-28** (working tree) - the snapshot is hoisted to the calling thread, so the callback pays the wait off the EDT. Fix validated, including a fresh lock-order audit of the chain it creates; two bounded residuals filed as IR-C9 |
+| IR-C9 | Two bounded residuals of the IR-B2 hoist: the staging flow's own pre-run repaint still enters `repaintTimetable` on the EDT and races entry 1's configuration (one coin-toss stall per staging run), and the callback thread holds the `TrainControlUI` monitor while waiting for the Layout monitor, so EDT actions entering any synchronized UI method during that window queue behind it | C | **Open** - filed by the sixth round |
+| IR-C6 | The IR-C5 fix covered one of three iterators of the live timetable: `getTimetableStartingPoint` runs on every locomotive-list repaint during a capture-on run, `toJSON`'s timetable loop on export, and the repaint's own defensive copy still races `LinkedList.toArray` against an append | C | **Fixed 2026-07-28** (`62a89e9`) - the hot twin is synchronized and the repaint copies under the monitor, both validated; the `toJSON` loop stays recorded (milliseconds reachability, unchanged). The fix's own cost is filed as IR-B2 |
+| IR-C7 | Start Autonomy pressed during the planning window is silently swallowed: the handler's else-chain has no branch for busy-but-not-running, so the press is correctly refused and the user is told nothing | C | **Fixed 2026-07-28** (`62a89e9`). Fix validated - the new arm routes through `describeStagingOutcome`, one voice per state |
+| IR-C8 | The busy question now has two authorities: every UI surface asks `isAutonomyBusy()`, but the surfaces guarded through the model's `isAutonomyRunning()` - locomotive delete, rename, address change, rename-proposal application, layout-editor save, and the sync's own address adoption - cannot see `stagingFlowActive` and read the planning window as idle | C | **Fixed 2026-07-28** (`62a89e9`). Fix validated - the flag lives on the Layout, the model folds it in, and all six guards inherit it; lifecycle under reload verified |
 | IR-D1 | Clean checks: bundle audits re-run from scratch, the fence coverage IR-B1's trace rests on, the `-1` sentinel's call sites, and six other suspicions that died on reading | - | Recorded |
 | IR-D2 | Validation-round clean checks: the `bbaca6f` test fixes, the closed hazard families re-swept, source-encoding suspicion resolved, and two narrow observations recorded | - | Recorded |
 | IR-D3 | Third-round clean checks over the previously unread code: network timeouts, function bounds, backup fallback, blank-name traps, and where the live-view pattern does *not* bite | - | Recorded |
 | IR-D4 | Fourth-round clean checks: the end-to-end trace of a confirmed reload during planning, the new bundle key audited in all eight languages, and the fence's interaction with every other executePath caller | - | Recorded |
+| IR-D5 | Fifth-round clean checks: the lock-order audit behind the "no deadlock" answer, a false alarm recorded per the withdrawn-suspicion discipline, the caller-by-caller behaviour review of the widened `isAutonomyRunning`, and the staging flag's lifecycle under reload | - | Recorded |
 
 No A findings. Nothing in the range was found to have regressed against `v2_7_2` into wrong
-train movement or data loss; the one B is a session-wedging interleaving in the new feature.
+train movement or data loss. The two Bs are both artefacts of the new feature and its fixes: a
+session-wedging interleaving (IR-B1) and the EDT stall its fix chain introduced (IR-B2) - both now
+fixed and validated, with IR-B2's two bounded leftovers filed as IR-C9.
 
 ---
 
@@ -118,6 +138,48 @@ either refuse or treat it as the running case - confirm, then wait for the worke
 Start Autonomy's guard gets the same one-word change. This is the family's next instance after the
 eight in the cycle summary's table and `WR-B3`; the predicate exists and is documented as the thing
 every surface must ask.
+
+### IR-B2. The C6 fix moves the fault from a crash to a freeze
+
+*Filed by the fifth round, which was asked whether the bug-fixing had introduced a regression or
+deadlock in UI behaviour. This is the regression; the deadlock audit came back clean (D5).*
+
+[Layout.java:2472](../../src/org/traincontrol/automation/Layout.java) (`getTimetableSnapshot` -
+`synchronized`, so it takes the Layout monitor), its caller
+([TrainControlUI.java](../../src/org/traincontrol/gui/TrainControlUI.java) - `repaintTimetable`'s
+body, which runs **on the EDT** inside `invokeLater`), the trigger
+([TrainControlUI.java:15233](../../src/org/traincontrol/gui/TrainControlUI.java) - the graph
+callback calls `repaintTimetable()` at every path start and end), against
+[Layout.java:1688](../../src/org/traincontrol/automation/Layout.java) (`configureAndLockPath`:
+`synchronized (this)` around the accessory commands, with `Thread.sleep(CONFIGURE_SLEEP)` per
+command inside `configureEdge` plus `loc.delay(CONFIGURE_SLEEP)` per edge - deliberately, because
+path locking must be atomic).
+
+The arithmetic: a path with E edges carrying A accessory commands holds the Layout monitor for
+roughly (A + E) x 150 ms - half a second to two seconds on ordinary paths. Before `62a89e9`,
+nothing on the EDT ever waited for that monitor during a run. Now the timetable repaint does, and
+it is triggered at **every path start and end**: with two or more trains, locomotive B is regularly
+inside its configuration window when locomotive A's callback queues a repaint, and the whole UI -
+not just the timetable tab - freezes until B's switches are thrown. `getTimetableStartingPoint`
+(also newly synchronized) adds a rarer EDT entrance through full locomotive-list rebuilds, beside
+the pre-existing ones this class already had (`getPossiblePaths` and `getActiveAccs` are old
+synchronized methods with occasional EDT callers) - the new repaint is the first *frequent* one.
+
+This is the `FCR-B3` class in mirror image: that finding moved a seconds-long sync off the EDT;
+this fix quietly put a monitor with seconds-long holders onto it. No wrongness, no deadlock, and
+each stall ends by itself - but a UI that hitches for a second whenever two trains sequence a
+departure is a regression an operator will feel, and it was introduced by a fix for a fault that
+was rare and self-healing.
+
+**Fix shape:** take the snapshot off the EDT. Hoisting it out of the `invokeLater` to
+`repaintTimetable`'s entry does it in one move: the graph callback then pays the wait on its
+locomotive thread - where contention for that monitor is already the design - and hands the EDT a
+finished copy; the idle UI callers take it uncontended. The lock-order audit in D5 confirms this is
+safe: the callback thread holds `activeLocomotives` at that point, and `activeLocomotives ->
+Layout` is already the established order (`unlockPath` inside the completion block). The
+alternative - a dedicated lock for the timetable list, taken by `addTimetableEntry`, the snapshot
+and the legend - decouples readers from the path-configuration monitor entirely, at the cost of one
+more lock to reason about.
 
 ---
 
@@ -302,6 +364,33 @@ give the model the flag - a `planningInProgress` on the Layout (or station), set
 inherits it, including the sync deferral no UI predicate can ever cover. Routing the six call
 sites through `ui.isAutonomyBusy()` also works but leaves the sync uncovered and plants the next
 missed-entrance instance.
+
+### IR-C9. Two bounded leftovers of the B2 hoist
+
+*Filed by the sixth round, from tracing every `repaintTimetable` caller's thread after the hoist.*
+
+**(a) The staging flow's own pre-run repaint still enters on the EDT.**
+[TrainControlUI.java:13089](../../src/org/traincontrol/gui/TrainControlUI.java) - the staging
+worker queues an `invokeLater` (capture checkbox, buttons, "so the operator can see what is about
+to run" - `repaintTimetable()`) and then immediately calls `executeTimetable()`. The repaint
+therefore enters `repaintTimetable` **on the EDT**, and its hoisted snapshot races entry 1's
+`configureAndLockPath` for the Layout monitor - roughly a coin toss, once per staging run, bounded
+by one configuration (~0.5-2 s of frozen UI when it loses). Every other run-time caller is a
+locomotive thread; this is the one the hoist's "calling thread" argument does not cover, because
+the call was already marshalled before the hoist existed. The fix is to lift that one call out of
+the `invokeLater` onto the worker thread - `repaintTimetable` does its own EDT marshalling now, so
+the wrapper is not just unnecessary but the residual itself.
+
+**(b) The waiting callback thread holds the `TrainControlUI` monitor.**
+`repaintTimetable` is `synchronized`, so a callback thread waiting up to a configure's length for
+the Layout monitor holds the UI-class monitor throughout - and any EDT action that enters one of
+the other synchronized UI methods (`repaintLoc` from a locomotive click, `updateVisiblePoints`,
+`repaintSwitch`) queues behind it for the same bound. Interaction-triggered rather than unprompted,
+which is the difference between this C and the B it descends from. Worth knowing:
+`lastTimetableState` - the only state the method guards - is touched exclusively inside the
+`invokeLater` body, on the EDT, so the method-level `synchronized` now protects nothing the EDT
+marshalling does not already serialise. Dropping it (or scoping it to exclude the snapshot wait)
+removes the window; the dedicated timetable lock recorded under IR-B2 removes the whole class.
 
 ---
 
@@ -509,6 +598,95 @@ headline scenario re-traced end to end rather than assumed from the diff.
 
 ---
 
+## Validation of the third fix round (`62a89e9`)
+
+Validated by the reviewer who filed the findings; the round was additionally asked whether the
+bug-fixing itself had introduced any regression or deadlock in UI behaviour, and D5 carries that
+audit. All three fixes held; one of them is what produced `IR-B2`.
+
+- **`IR-C6` - correct for what it covers, and it covers what mattered.** `getTimetableSnapshot`
+  copies under the Layout monitor and returns an unmodifiable list; `getTimetableStartingPoint` is
+  `synchronized`, closing the hot twin (`addTimetableEntry` writes under the same monitor); the
+  repaint consumes the snapshot, so its `hashCode` change-detector and row loop iterate a private
+  copy. The comment's reasoning for keeping `getTimetable` live - `deleteTimetableEntry` removes
+  through it - was re-checked: every remaining live-list iteration sits behind a busy guard, so
+  idle-only. The `toJSON` loop (residual 3, milliseconds-wide) is unchanged and stays recorded.
+  What the fix costs is filed as `IR-B2`: the snapshot is taken on the EDT, and the monitor it
+  takes has seconds-long holders.
+- **`IR-C7` - correct.** The else arm covers exactly the busy-but-not-running state (running and
+  invalid are both caught above it) and routes through `describeStagingOutcome`, so the planning
+  window and a live run each get their own accurate sentence, in every locale.
+- **`IR-C8` - correct, and the durable shape.** The flag lives on the Layout (`stagingInProgress`,
+  volatile), is set at the commit point on the same captured instance the worker uses, and cleared
+  in the `finally` - so a mid-flow reload leaves it set on nothing anyone can reach, and the new
+  Layout starts clean. `isAutonomyRunning()` folds it in, so all six model-side guards - including
+  the sync's address adoption, which no UI predicate could cover - now refuse the planning window.
+  Checked for unintended callers: the UI's `isAutonomyBusy` does not route through
+  `isAutonomyRunning`, so no double-counting; the widened predicate's other callers are reviewed
+  one by one in D5.
+
+## IR-D5. Fifth-round clean checks: the deadlock audit and a false alarm
+
+- **The lock-order audit, done properly rather than asserted.** Every `synchronized
+  (this.activeLocomotives)` block in `Layout` was enumerated (ten) and its enclosing method checked
+  for Layout-monitor status: none holds it. The one method flagged by a heuristic as nesting the
+  two - `updatePendingS88`, `private synchronized` - was read in full and does **not** contain the
+  block the heuristic attributed to it (that block belongs to `executePath`'s unsynchronized catch
+  handler). Recorded as a false alarm per the withdrawn-suspicion discipline: the ordering is
+  therefore consistently `activeLocomotives -> Layout` (the completion block calling `unlockPath`)
+  and never the reverse, so no AB-BA cycle exists, before or after the fixes.
+- **No monitor-holder blocks on the EDT.** The only `invokeAndWait` calls in the tree
+  (`LocomotiveStats`) run on threads holding no application monitors; every Layout-monitor holder
+  that touches the UI does so through the model log, which posts with `invokeLater`. So the EDT
+  waiting on the Layout monitor (IR-B2) can stall but never deadlock: its holder always progresses.
+- **The widened `isAutonomyRunning`, caller by caller:** locomotive delete, rename, address change
+  and rename-proposal application now refuse the planning window - intended, with one cosmetic
+  residue: their dialogs say "while running", which is now slightly imprecise for the planning
+  case. `LayoutEditor`'s save guard also refuses during planning - over-strict but harmless, since
+  the message points at a real conflict window. `LayoutLabel`'s accessory-click branch evaluates
+  the active-accessory warning during planning and finds the set empty, so behaviour there is
+  unchanged. The sync's address adoption defers and re-applies on the next sync, as its log line
+  already promises.
+- **The staging flag's lifecycle under every exit:** all early returns in `requestReturnToHome`
+  precede the commit point, so the flag is never set without the `finally` armed to clear it; the
+  `finally` clears both flags before the buttons re-enable, preserving the `WR-B2` ordering
+  argument; and a reload mid-flow strands the model-side flag only on the retired instance, where
+  `isAutonomyRunning` - which resolves `getAutoLayout()` - can never read it again.
+
+---
+
+## Validation of the fourth fix round (working tree, IR-B2)
+
+The fix is the prescribed hoist, verbatim: the snapshot is taken at `repaintTimetable`'s entry on
+the calling thread, and the `invokeLater` body consumes the finished, private copy. The recurring
+unprompted freeze is gone - the graph callback now pays the Layout-monitor wait on its locomotive
+thread, where contention with `configureAndLockPath` is already the design.
+
+Because the hoist creates a new held-lock chain, the deadlock question was re-asked from scratch
+rather than carried forward:
+
+- **The chain is `activeLocomotives -> TrainControlUI -> Layout`** (the callback holds the first,
+  enters the synchronized `repaintTimetable`, then waits for the third). A cycle needs a reverse
+  edge, and each candidate was traced to its implementation:
+  - *`TrainControlUI -> activeLocomotives`*: no UI code takes that monitor as a block, and
+    `getActiveLocomotives()` returns the `ConcurrentHashMap` itself - reads never lock.
+  - *`Layout -> TrainControlUI`*: no Layout-monitor holder calls a synchronized UI method - Layout
+    reaches the UI only through the model log (`invokeLater`) and `showAutonomyAlert`, which
+    `handleMisconfiguredPath` calls outside its synchronized blocks (re-verified).
+  - *`TrainControlUI -> Layout`* already existed before the hoist (`repaintAutoLocListFull` on the
+    EDT reaching the synchronized `getPossiblePaths`) and points the same direction.
+  - All ten `synchronized (activeLocomotives)` blocks were re-enumerated at the new line numbers;
+    every enclosing method is still unsynchronized on Layout, so `activeLocomotives -> Layout`
+    remains the only order on that pair.
+  **No deadlock: every wait in the chain has a holder that always progresses.**
+- **Every `repaintTimetable` caller's thread was classified**, which is what produced `IR-C9`: the
+  graph callback and the idle-guarded handlers are covered by the hoist; the staging flow's own
+  pre-run call enters on the EDT (residual a); and the waiting thread's held UI monitor can queue
+  EDT actions behind it (residual b). Both bounded, neither a deadlock, both with one-line fix
+  shapes recorded in the finding.
+
+---
+
 ## Comparison against the existing review record
 
 The comparison was done after the pass, per the independence requirement. The short version: the
@@ -698,3 +876,65 @@ silently break entry deletion.  `testHomeStaging` is now 40.
 
 **Not testable:** `IR-C7`’s else-arm is a UI event handler, and the synchronization in `IR-C6` can
 only be shown by a race, not by an assertion.
+
+## Addressed 2026-07-28 (fourth round)
+
+`IR-B2` - a regression my own `IR-C6` fix introduced, and the finding is right about all of it.  I
+made `getTimetableSnapshot` synchronized and then called it from inside the `invokeLater`, which put
+the Layout monitor on the EDT at every path start and end - a monitor `configureAndLockPath` holds
+across its per-command sleeps.  I had reasoned about the *correctness* of taking the monitor and not
+at all about who would be waiting on it.
+
+Fixed with the finding’s primary shape: the snapshot is taken at `repaintTimetable`’s entry, on the
+calling thread, and the finished copy is handed to the `invokeLater`.  The callback thread pays the
+wait, which is where contention for that monitor is already the design, and the lock order is the one
+D5 established as already present - it holds `activeLocomotives` at that point, and
+`activeLocomotives -> Layout` is what the completion block does via `unlockPath`.  Idle UI callers
+take it uncontended.
+
+Not taken: the dedicated-timetable-lock alternative.  It would decouple readers from the
+path-configuration monitor entirely, but `deleteTimetableEntry` mutates the list *through the live
+getter*, so a new lock would have one writer outside it from the start - and that writer is only safe
+today because it sits behind a busy guard, which is the same reasoning the monitor already relies on.
+One lock, correctly ordered, beats two with an exception.
+
+**The other newly-synchronized read is left as it is.**  `getTimetableStartingPoint` is also on the
+EDT, but only through *full* locomotive-list rebuilds - the graph callback calls
+`repaintAutoLocListLite`, which does not rebuild the status text, so it is not on the hot path the
+way the timetable repaint was.  Verified rather than assumed, since it was the other half of the same
+fix.  If the stall is ever felt there, the answer is the same hoist.
+
+**Nothing new to test.**  `IR-B2` is a scheduling property - which thread waits on a monitor - and no
+assertion can express it; the existing snapshot test still pins the contract the fix moved around.
+
+## Addressed 2026-07-28 (fifth round)
+
+`IR-C9`, both residuals, plus a third instance of (a) that the round did not name.
+
+- **(a) Marshalled callers.**  `repaintTimetable` now takes the Layout monitor *before* it marshals,
+  so any caller already inside an `invokeLater` pays that wait on the EDT - the very thing the B2
+  hoist existed to prevent.  The staging flow's pre-run repaint is one, as filed.  Classifying *every*
+  caller's thread rather than only the one cited found a second: the worker's `finally`, where a path
+  abandoned or graceful-stopped can still be unwinding, so the monitor is not reliably free there
+  either.  Both lifted out of their `invokeLater` - the method does its own marshalling, so the
+  wrapper was never needed at either site.
+
+  `clearTimetable` is a third marshalled caller and is deliberately left alone: it sits behind the
+  busy guard, so it only ever runs when the monitor is uncontended.
+
+- **(b) The monitor held while waiting.**  `repaintTimetable` is no longer `synchronized`.  The
+  finding's reasoning checked out exactly: `lastTimetableState` is the only state the method has, it
+  is read and written solely inside the `invokeLater` body, and the EDT already serialises that - so
+  the keyword protected nothing while holding the UI monitor across a wait that can last a whole path
+  configuration.
+
+**Six unicode escapes had leaked from my edit scripts into Java comments** - `locomotive\u2019s` where
+an apostrophe was meant.  Java translates `\uXXXX` before it tokenizes, comments included, so these
+compiled to the character intended: correct by accident.  A malformed one would instead have failed
+the build, for a reason that looks nothing like its cause.  All six replaced with plain apostrophes,
+and `validate_all.py` now rejects both shapes in changed Java sources - applying the eligibility rule,
+so `\\uXXXX` inside a string literal is correctly spared (`testMessageBundles` carries two, and they
+are not escapes).  Verified against probes for all four cases: leaked, malformed, escaped, clean.
+
+**Nothing new to test:** both residuals are scheduling properties - which thread waits, and what it
+holds while waiting - and neither is expressible as an assertion.
