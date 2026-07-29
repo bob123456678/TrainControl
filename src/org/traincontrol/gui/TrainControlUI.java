@@ -14995,9 +14995,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // trains move; shape and size carry terminus/reversing/station; the shadow is exclusions, and a
         // node gets one.  Stroke is uniform #EEE everywhere today, so any change to it is pure signal.
         //
-        // Solid means the station has its locomotive; dashes mean it is waiting for one, which is the
+        // Solid means the station has its locomotive; dots mean it is waiting for one, which is the
         // state Return Home acts on.  Two channels rather than one, so the difference survives being
-        // read quickly and does not depend on telling two purples apart.
+        // read quickly and does not depend on telling two shades apart.
+        //
+        // Teal, and the choice is more constrained than it looks.  The stroke has to read against three
+        // things: the dark blue active fill, the orange an inactive station or an exclusion shadow
+        // paints, and the white canvas.  Blue and orange sit almost opposite each other, so no hue is
+        // far from both - one of them has to be beaten on lightness instead.  A purple lost to the blue
+        // it neighbours; a magenta lost to the orange, sharing its full red channel.  Teal is the
+        // orange's complement and far lighter than the blue, and stays saturated enough for white.
+        //
+        // The dots are a pixel wider than the solid line, since they cover about half as much of it.
         //
         // Read entirely from the Point - no Layout call, so this stays lock-free.  updatePoint runs on
         // the EDT for every node, and reaching for the monitor here is the shape that produced IR-B2.
@@ -15009,8 +15018,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 && p.getHomeLoc().equals(p.getCurrentLocomotive().getName());
 
             homeStyle = settled
-                ? "stroke-mode: plain; stroke-color: rgb(140,0,190); stroke-width: 3px;"
-                : "stroke-mode: dashes; stroke-color: rgb(140,0,190); stroke-width: 3px;";
+                ? "stroke-mode: plain; stroke-color: rgb(0,200,210); stroke-width: 3px;"
+                : "stroke-mode: dots; stroke-color: rgb(0,200,210); stroke-width: 4px;";
         }
         
         // Remove locomotive from graph if it was deleted
