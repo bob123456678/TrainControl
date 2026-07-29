@@ -367,10 +367,10 @@ Tab icons provided by Freepik.
         - Removed copy-to-next/-previous page option from button right-click menus (now redundant with 2.7.3's drag and drop)
     - Autonomy
         - Added a "return home" feature that will return all locomotives back to where they started, if routing is possible.
+        - You can now pick which locomotive belongs at each station, so "return home" brings each one back to the station you chose instead of the one it happened to start on
         - A locomotive standing at the station you assigned it to now shows its location highlighted in teal; * marks one standing at its timetable starting point
         - Stations that have a home locomotive are outlined in the graph: solid when that locomotive is standing there, dotted when it is elsewhere.  Can be switched off under Display Options
         - Double-clicking a locomotive in a station's excluded-locomotives window now moves it to the other side
-        - You can now pick which locomotive belongs at each station, so "return home" brings each one back to the station you chose instead of the one it happened to start on
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
@@ -402,7 +402,7 @@ Tab icons provided by Freepik.
         - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
         - Editing a track diagram, or saving a route that appears on one, no longer freezes TrainControl for several seconds.  Cycling between pages while editing is faster for the same reason: these actions re-read the track diagrams only, instead of reloading the entire Central Station database
-    - Accessory bug Fixes
+    - Accessory Bug Fixes
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
     - Central Station Sync Bug Fixes
         - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded

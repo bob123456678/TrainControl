@@ -128,11 +128,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                 // Standing on its home station, in the teal the graph outlines such a station with.
                 //
-                // Inverted rather than tinted: that teal was picked to read against the graph's dark
-                // blue fill, so it is a light colour, and the badge's white text would be illegible on
-                // it.  The navy the badge normally paints itself becomes the text instead.
+                // White text like every other state of this badge.  The teal is a light colour - it was
+                // picked to read against the graph's dark blue fill - so this is the lowest-contrast
+                // pairing the badge has; it holds because the text is short and the badge is small, and
+                // a colour of its own for this one state would read as a different kind of thing.
                 locStation.setBackground(TrainControlUI.COLOR_AT_HOME);
-                locStation.setForeground(new Color(0,0,115));
+                locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), TrainControlUI.COLOR_AT_HOME, 1, 999));
             }
             else
