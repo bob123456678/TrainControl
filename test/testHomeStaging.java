@@ -1323,6 +1323,63 @@ public class testHomeStaging
             "while the getter stays live, which is what the editing surfaces depend on");
     }
 
+
+    /**
+     * A derived home is not an assignment, and the display must not treat them alike.
+     *
+     * getHomeStation answers with the positional fallback as well as the assignments, which is right
+     * for the planner - Return Home moves a locomotive back to where it started whether or not anyone
+     * said so.  It is wrong for the locomotive list, which paints "standing at home" teal: on a graph
+     * nobody has assigned anything on, every placed locomotive is standing on its derived home, so the
+     * whole list went teal while the graph - which reads the assignments - outlined nothing.
+     *
+     * Assigning one locomotive elsewhere then moves the count for locomotives nobody touched, because
+     * an assignment makes rebuildHomeStations refuse the fallback claims that collide with it.  That is
+     * the shape of the reported bug, and this pins the difference the two readings produce.
+     */
+    @Test
+    public void testADerivedHomeIsNotAnAssignment() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, LOC_C));
+
+        assertFalse(layout.hasHomeLocomotives(), "precondition: this graph assigns nothing");
+
+        for (Point point : layout.getPoints())
+        {
+            assertNull(point.getHomeLoc(), point.getName() + " carries no assignment");
+
+            if (point.getCurrentLocomotive() != null)
+            {
+                assertEquals(layout.getHomeStation(point.getCurrentLocomotive()), point,
+                    point.getName() + " is nonetheless its occupant's derived home");
+            }
+        }
+
+        // One locomotive given a station it is not standing on - HS D is empty, LOC_A is at HS A
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        int atAssignedHome = 0;
+        int atDerivedHome = 0;
+
+        for (Point point : layout.getPoints())
+        {
+            Locomotive here = point.getCurrentLocomotive();
+
+            if (here == null) continue;
+
+            if (here.getName().equals(point.getHomeLoc())) atAssignedHome++;
+            if (point.equals(layout.getHomeStation(here))) atDerivedHome++;
+        }
+
+        assertEquals(atAssignedHome, 0,
+            "nothing is standing on a station that was assigned to it, which is what the graph outlines "
+            + "and what the locomotive list must agree with");
+
+        assertEquals(atDerivedHome, 2,
+            "while two locomotives stand on homes that were only ever derived - the reading that used "
+            + "to paint them teal against a graph showing nothing");
+    }
+
     /**
      * getHomeStations hands back a snapshot, not a window onto the live map.
      *

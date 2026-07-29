@@ -94,9 +94,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Ensure consistent state
             this.pauseButton.setSelected(locomotive.isAutonomyPaused());
                      
-            // Asked once and reused below: getHomeStation takes the Layout monitor, and this runs
-            // on the EDT
-            final Point home = layout.getHomeStation(locomotive);
+            // Assigned to this locomotive - the same question the graph outlines a station on, and
+            // deliberately not getHomeStation.
+            //
+            // getHomeStation answers with the positional fallback as well: with no assignments at all,
+            // every placed locomotive's home is wherever it stood when the graph loaded, so the badge
+            // went teal for all of them while the graph outlined nothing.  Worse, assigning one
+            // locomotive a home elsewhere makes rebuildHomeStations refuse the fallback claims that
+            // collide with it, so the number of teal badges changed for locomotives nobody had touched.
+            //
+            // Reading the point the locomotive is standing on answers only what was actually assigned,
+            // matches the graph exactly, and takes no lock - this runs on the EDT.
+            final Point at = layout.getLocomotiveLocation(locomotive);
+            final boolean atAssignedHome = at != null && locomotive.getName().equals(at.getHomeLoc());
 
             // Grey out locomotives on inactive points / not on the graph
             if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
@@ -111,7 +121,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
             }
-            else if (layout.getLocomotiveLocation(locomotive).equals(home))
+            else if (atAssignedHome)
             {
                 this.locName.setForeground(Color.BLACK);
                 this.pauseButton.setVisible(true);
