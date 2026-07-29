@@ -1873,8 +1873,17 @@ public class RouteEditor extends PositionAwareJFrame
                     
                     boolean updateRoute = parent.getModel().getRoute(origName) != null && parent.getModel().getRoute(origName).hasTiles();
                     
-                    parent.getModel().editRoute(origName, routeName, newRoute,
-                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression);
+                    // editRoute was given a boolean so the model would not depend on this dialog
+                    // to protect its data; not reading it put the dialog back where it started -
+                    // a refused edit fell through and the editor closed as though it had saved.
+                    if (!parent.getModel().editRoute(origName, routeName, newRoute,
+                        Math.abs(Integer.parseInt(s88)), triggerType, isEnabled, conditionExpression))
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            I18n.f("route.ui.errorEditRouteFailed", routeName));
+
+                        return false;
+                    }
                     
                     if (updateRoute)
                     {

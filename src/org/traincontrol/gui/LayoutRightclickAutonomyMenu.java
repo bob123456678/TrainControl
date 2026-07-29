@@ -134,7 +134,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                     // Place a different locomotive at this station
                     if (ui.getActiveLoc() != null 
-                        && !ui.getModel().getAutoLayout().isRunning() 
+                        && !ui.isAutonomyBusy() 
                         && !ui.getActiveLoc().equals(locomotive))
                     {
                         menuItem = new JMenuItem(
@@ -153,7 +153,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
-                    if (current.getCurrentLocomotive() != null && !ui.getModel().getAutoLayout().isRunning())
+                    if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
                     {
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
@@ -171,7 +171,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem); 
                     }
                     
-                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.getModel().getAutoLayout().isRunning())
+                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.isAutonomyBusy())
                     {
                         // Edit locomotive
                         menuItem = new JMenuItem(

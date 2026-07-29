@@ -263,8 +263,13 @@ final public class GraphViewer extends PositionAwareJFrame
             @Override
             public void mouseMoved(MouseEvent evt)
             {                
-                // Disply log message to show what locomotives are excluded
-                if (!parent.getModel().getAutoLayout().isRunning())
+                // Disply log message to show what locomotives are excluded.
+                //
+                // isAutonomyBusy, not isRunning: the planning phase of a staging run has nothing
+                // dispatched, so isRunning reads false throughout it, and every graph edit below stayed
+                // available while the planner was deriving moves from a snapshot those edits invalidate
+                // - and while its route searches walk the live adjacency list unsynchronized.
+                if (!parent.isAutonomyBusy())
                 {
                     g.requestFocus();
                     
@@ -324,7 +329,7 @@ final public class GraphViewer extends PositionAwareJFrame
                 }
                 else
                 { 
-                    if (!parent.getModel().getAutoLayout().isRunning())
+                    if (!parent.isAutonomyBusy())
                     {
                         // Special double-click functionality - directly edit the locomotive
                         if (!SwingUtilities.isRightMouseButton(evt) && evt.getClickCount() == 2)
@@ -524,7 +529,9 @@ final public class GraphViewer extends PositionAwareJFrame
         // boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
         boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
         
-        boolean isRunning = parent.getModel().getAutoLayout().isRunning();
+        // Busy rather than running - see the hover gate above.  Every shortcut below mutates the graph
+        // or its occupancy, which is exactly what the planner is reading.
+        boolean isRunning = parent.isAutonomyBusy();
         
         if (!isRunning && controlPressed && keyCode == KeyEvent.VK_V)
         {

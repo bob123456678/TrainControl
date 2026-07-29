@@ -1104,4 +1104,95 @@ public class testRoutes
     public void tearDownMethod() throws Exception
     {
     }
+
+    /**
+     * A route nothing else is using, so these tests cannot collide with the database they run against.
+     */
+    private static MarklinRoute unusedRoute()
+    {
+        MarklinRoute candidate = generateRandomRoute();
+
+        while (model.getRoute(candidate.getName()) != null || model.getRoute(candidate.getId()) != null)
+        {
+            candidate = generateRandomRoute();
+        }
+
+        return candidate;
+    }
+
+    /**
+     * editRoute refuses what it cannot do, says so in its return value, and damages nothing.
+     *
+     * It edits by delete-then-re-add, so a rename onto a name another route already holds used to
+     * delete the original and then decline to add it back - losing the route. The check moved into the
+     * model precisely so it would not depend on one dialog; this pins both halves of that: the boolean
+     * is false, and both routes are still there afterwards.
+     */
+    @Test
+    public void testEditRouteRefusesWithoutLosingTheRoute() throws Exception
+    {
+        MarklinRoute first = unusedRoute();
+        MarklinRoute second = unusedRoute();
+
+        while (second.getName().equals(first.getName()) || second.getId() == first.getId())
+        {
+            second = unusedRoute();
+        }
+
+        assertTrue(model.newRoute(first), "precondition: the first route must be added");
+        assertTrue(model.newRoute(second), "precondition: the second route must be added");
+
+        final String firstName = first.getName();
+        final String secondName = second.getName();
+
+        try
+        {
+            assertFalse(model.editRoute("no route is called this", "anything", new ArrayList<>(), 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+                "editing a route that does not exist must be refused rather than reported as done");
+
+            assertFalse(model.editRoute(firstName, secondName, first.getRoute(), first.getS88(),
+                first.getTriggerType(), false, null),
+                "renaming onto a name another route already holds must be refused");
+
+            assertNotNull(model.getRoute(firstName),
+                "the refusal has to come before the delete - the route being renamed must survive it");
+            assertNotNull(model.getRoute(secondName),
+                "and so must the route whose name it collided with");
+        }
+        finally
+        {
+            model.deleteRoute(firstName);
+            model.deleteRoute(secondName);
+        }
+    }
+
+    /**
+     * And it still succeeds, so the test above is not passing because everything is refused.
+     */
+    @Test
+    public void testEditRouteSucceedsWhenNothingIsInTheWay() throws Exception
+    {
+        MarklinRoute route = unusedRoute();
+
+        assertTrue(model.newRoute(route), "precondition: the route must be added");
+
+        final String original = route.getName();
+        final String renamed = original + " renamed";
+
+        try
+        {
+            assertTrue(model.editRoute(original, renamed, route.getRoute(), route.getS88(),
+                route.getTriggerType(), false, null),
+                "an edit with nothing in its way must report success");
+
+            assertNotNull(model.getRoute(renamed), "and the new name must resolve");
+            assertNull(model.getRoute(original), "while the old one must not");
+        }
+        finally
+        {
+            model.deleteRoute(renamed);
+            model.deleteRoute(original);
+        }
+    }
 }

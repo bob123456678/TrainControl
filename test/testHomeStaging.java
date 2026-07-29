@@ -561,8 +561,13 @@ public class testHomeStaging
         HomeStaging.Plan plan = layout.planReturnToHome();
 
         assertTrue(plan.isPossible(), "outcome was " + plan.getOutcome());
-        assertTrue(plan.getMoves().size() >= 3,
-            "a swap needs a locomotive moved out of the way and back: " + plan.getMoves());
+        // Exactly three, not merely at least three.  A swap cannot be done in two, and A* with an
+        // admissible heuristic returns the shortest plan - so this is also the regression test for the
+        // priority queue: it was ordered on a score map the relaxation rewrote, which changed an
+        // enqueued entry\u2019s priority in place and let polls return states that were not the cheapest.
+        // A search that explores out of order can still reach the goal, but by a longer route.
+        assertEquals(plan.getMoves().size(), 3,
+            "a swap needs one locomotive moved out of the way and back, and no more: " + plan.getMoves());
 
         applyPlan(layout, plan);
         assertEveryoneHome(layout);
@@ -1181,6 +1186,77 @@ public class testHomeStaging
         assertTrue(plan.getBlocked().contains(loc(LOC_A)), "and it names the locomotive concerned");
 
         d.setExcludedLocs(new HashSet<Locomotive>());
+    }
+
+    /**
+     * A retired Layout refuses a path outright rather than part-running it.
+     *
+     * Reloading the autonomy file builds a new Layout, and the version counter is static, so the old
+     * one is retired while whatever holds it carries on.  Every speed write was already fenced, so no
+     * train moved - but the path was locked and every switch and signal on it commanded first, and the
+     * fence-abort then returned before the completion block that removes the locomotive from
+     * activeLocomotives.  That strand is what left isRunning() true for the rest of the session.
+     */
+    @Test
+    public void testARetiredLayoutRefusesToRunAPath() throws Exception
+    {
+        Layout retired = load(ring(LOC_A, LOC_B, null));
+
+        List<List<Edge>> paths = retired.getPossiblePaths(loc(LOC_A), true);
+
+        assertFalse(paths.isEmpty(), "precondition: the fixture must offer this locomotive somewhere to go");
+
+        List<Edge> path = paths.get(0);
+
+        // Parsing again builds a new Layout, which is what a reload does - and the version counter is
+        // static, so this retires the one above
+        load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(retired.isCurrentLayout(), "precondition: the first layout must now be retired");
+
+        assertFalse(retired.executePath(path, loc(LOC_A), 30, null),
+            "a retired layout must refuse the path rather than locking it and aborting part way");
+
+        assertTrue(retired.getActiveLocomotives().isEmpty(),
+            "and must strand nothing in activeLocomotives - a strand there is what made isRunning() "
+            + "true for the rest of the session");
+    }
+
+    /**
+     * A retired Layout stops executing its timetable instead of waiting for a train that will never run.
+     *
+     * The dispatch loop waits for the entry ahead to leave activeLocomotives before starting the next
+     * one.  On a retired Layout that entry is the strand above, nothing reachable from the UI can call
+     * stopLocomotives() on a graph getAutoLayout() no longer resolves to, and the executor never
+     * returned - so the staging worker holding it never reached its finally, and every surface asking
+     * isAutonomyBusy answered "trains are moving" until TrainControl was restarted.
+     *
+     * The timeout is the assertion: without the fence this call does not come back.
+     */
+    @Test(timeOut = 30000)
+    public void testARetiredLayoutStopsExecutingItsTimetable() throws Exception
+    {
+        Layout retired = load(ring(LOC_A, LOC_B, null));
+
+        // The swap arrangement, because a single move never reaches the wait that spins
+        assertTrue(retired.moveLocomotive(LOC_A, "HS C", false));
+        assertTrue(retired.moveLocomotive(LOC_B, "HS A", false));
+        assertTrue(retired.moveLocomotive(LOC_A, "HS B", false));
+
+        HomeStaging.Plan plan = retired.loadReturnToHomeTimetable();
+
+        assertTrue(plan.isPossible(), "precondition: there must be a plan to execute");
+        assertTrue(plan.getMoves().size() > 1, "precondition: one move never reaches the sequential wait");
+        assertTrue(retired.isTimetableSequential(), "precondition: a staged plan runs one train at a time");
+
+        load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(retired.isCurrentLayout(), "precondition: the first layout must now be retired");
+
+        retired.executeTimetable();
+
+        assertTrue(retired.getActiveLocomotives().isEmpty(),
+            "a retired layout must dispatch nothing at all");
     }
 
     /**

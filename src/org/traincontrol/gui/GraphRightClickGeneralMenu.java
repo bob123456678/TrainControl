@@ -111,7 +111,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             );
             menuItem.addActionListener(event ->
             {
-                if (!ui.getModel().getAutoLayout().isRunning())
+                if (!ui.isAutonomyBusy())
                 {
                     try
                     {

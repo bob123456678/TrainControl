@@ -2571,8 +2571,16 @@ public class Layout
             
             final int index = i;
 
-            // Continuously execute unless user requests graceful stop
-            while (this.running)
+            // Continuously execute unless user requests graceful stop - or unless this Layout has been
+            // retired.  Without the fence a reload during a run left this loop waiting on a retired
+            // graph forever: the sequential branch below waits for the entry ahead to leave
+            // activeLocomotives, the fence-abort inside executePath returns before removing it, and
+            // nothing reachable from the UI can call stopLocomotives() on a Layout that getAutoLayout()
+            // no longer resolves to.  The executor never returned, so its caller’s finally never ran.
+            //
+            // The completion wait below already reads isRunning() && isCurrentLayout(); this is the
+            // same question asked at the point that actually spins.
+            while (this.running && this.isCurrentLayout())
             {
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
                 {
@@ -2846,6 +2854,14 @@ public class Layout
         if (!this.isValid())
         {
             this.control.logf("autolayout.errorConfigurationInvalidMustReload");
+            return false;
+        }
+
+        // Retired graph: refuse before anything is commanded.  The speed writes further down are each
+        // fenced, so no train moved - but configureAndLockPath and the departure function ran first,
+        // throwing every switch and signal on a path belonging to a layout that has been replaced.
+        if (!this.isCurrentLayout())
+        {
             return false;
         }
 

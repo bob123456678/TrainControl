@@ -15376,7 +15376,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Update the data
             this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
             
-            List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetable();
+            // Copied, not read live.  getTimetable hands back the field itself, and with capture on
+            // during a run a locomotive thread appends to it under the Layout monitor while this runs
+            // on the EDT holding nothing - so both the hashCode below and the for-each further down,
+            // each of which iterates, could fault and leave the table blank until the next repaint.
+            //
+            // Copied here rather than in the getter: deleteTimetableEntry removes from the list the
+            // getter returns, so handing out a snapshot would make that deletion apply to nothing.
+            List<TimetablePath> timeTable =
+                new ArrayList<>(this.model.getAutoLayout().getTimetable());
             
             // Do nothing if the timetable hasn't been updated
             if (timeTable.hashCode() == lastTimetableState) return;
