@@ -187,6 +187,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String HIDE_REVERSING_PREF = "HideReversing";
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
     public static final String SHOW_STATION_LENGTH = "ShowStationLength";
+    public static final String SHOW_HOME_LOCOMOTIVES = "ShowHomeLocomotives";
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
@@ -14987,6 +14988,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             additionalStyle = "shadow-mode:none;";
         }
+
+        // Which locomotive belongs here, in three states, on the one channel nothing else uses.
+        //
+        // Fill is out - the run-state classes override it, so a home colour would vanish exactly when
+        // trains move; shape and size carry terminus/reversing/station; the shadow is exclusions, and a
+        // node gets one.  Stroke is uniform #EEE everywhere today, so any change to it is pure signal.
+        //
+        // Solid means the station has its locomotive; dashes mean it is waiting for one, which is the
+        // state Return Home acts on.  Two channels rather than one, so the difference survives being
+        // read quickly and does not depend on telling two purples apart.
+        //
+        // Read entirely from the Point - no Layout call, so this stays lock-free.  updatePoint runs on
+        // the EDT for every node, and reaching for the monitor here is the shape that produced IR-B2.
+        String homeStyle = "stroke-mode: plain; stroke-color: #EEE; stroke-width: 1px;";
+
+        if (p.getHomeLoc() != null && prefs.getBoolean(SHOW_HOME_LOCOMOTIVES, true))
+        {
+            boolean settled = p.getCurrentLocomotive() != null
+                && p.getHomeLoc().equals(p.getCurrentLocomotive().getName());
+
+            homeStyle = settled
+                ? "stroke-mode: plain; stroke-color: rgb(140,0,190); stroke-width: 3px;"
+                : "stroke-mode: dashes; stroke-color: rgb(140,0,190); stroke-width: 3px;";
+        }
         
         // Remove locomotive from graph if it was deleted
         if (p.isOccupied() && p.getCurrentLocomotive() != null && !this.model.getLocomotives().contains((Locomotive) p.getCurrentLocomotive()))
@@ -15035,11 +15060,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (p.isActive())
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);" + additionalStyle);
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);" + additionalStyle + homeStyle);
         }
         else
         {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle);
+            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle + homeStyle);
         }
         
         // Update locomotive autonomy location labels on the main layout

@@ -12,6 +12,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import static org.traincontrol.gui.TrainControlUI.HIDE_INACTIVE_PREF;
 import static org.traincontrol.gui.TrainControlUI.HIDE_REVERSING_PREF;
+import static org.traincontrol.gui.TrainControlUI.SHOW_HOME_LOCOMOTIVES;
 import static org.traincontrol.gui.TrainControlUI.SHOW_STATION_LENGTH;
 import org.traincontrol.util.I18n;
 
@@ -257,6 +258,29 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             });
            
             submenu.add(showLengths);
+
+            JCheckBoxMenuItem showHomes = new JCheckBoxMenuItem(
+                I18n.t("ui.main.showHomeLocomotives"),
+                TrainControlUI.getPrefs().getBoolean(SHOW_HOME_LOCOMOTIVES, true)
+            );
+            showHomes.setToolTipText(I18n.t("ui.main.tooltip.showHomeLocomotives"));
+            showHomes.addItemListener(event ->
+            {
+                try
+                {
+                    TrainControlUI.getPrefs().putBoolean(SHOW_HOME_LOCOMOTIVES,
+                        !TrainControlUI.getPrefs().getBoolean(SHOW_HOME_LOCOMOTIVES, true)
+                    );
+
+                    ui.updateVisiblePoints();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(parent, ex.getMessage());
+                }
+            });
+
+            submenu.add(showHomes);
         }
         else
         {

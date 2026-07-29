@@ -174,8 +174,10 @@ final class GraphRightClickPointMenu extends JPopupMenu
         
         // Above the advanced parameters: which locomotive belongs here is a plainer question than any
         // of the tuning below it
+        // Every point, not just this one: assigning a locomotive here releases it from wherever it was
+        // assigned before, so another station's outline changes at the same time as this one's.
         HomeLocomotiveMenu.addStationItem(this, ui, p, (Component) parent.getSwingView(), "Control+H",
-            () -> ui.updatePoint(p, parent.getMainGraph()));
+            () -> ui.updateVisiblePoints());
 
         // Create a submenu for the remaining items
         JMenu submenu = new JMenu(
