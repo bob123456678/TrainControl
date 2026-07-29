@@ -11634,7 +11634,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(
                     this,
@@ -12081,7 +12081,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
             }
@@ -12107,7 +12107,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             } 
 
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 this.executeTimetable.setEnabled(true);
@@ -12776,7 +12776,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // and removing it, and nothing else clears the map - so refusing outright would leave a
             // stuck layout unrecoverable without restarting TrainControl.  Reloading builds a fresh
             // Layout and is the only in-session way out of that state.
-            if (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
+            // isAutonomyBusy, not isRunning: a staging run spends its planning phase with nothing
+            // dispatched, so isRunning read false and this block was skipped entirely.  The Layout was
+            // then swapped underneath a worker that went on to load and execute its plan against the
+            // retired one - commanding accessories for a move no train could make, stranding an entry
+            // in activeLocomotives, and wedging the worker so its finally never released
+            // stagingFlowActive, which left every surface reporting "trains are moving" for the session.
+            //
+            // Still a confirmation rather than a refusal, for the reason above: reloading is the only
+            // in-session way out of a stranded activeLocomotives entry, and refusing here would put
+            // that recovery out of reach.
+            if (this.model.hasAutoLayout() && this.isAutonomyBusy())
             {
                 int stillRunningResult = JOptionPane.showOptionDialog(
                     this,
@@ -13157,9 +13167,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     boolean isAutonomyBusy()
     {
-        Layout layout = this.model == null ? null : this.model.getAutoLayout();
+        if (this.stagingFlowActive) return true;
 
-        return (layout != null && layout.isRunning()) || this.stagingFlowActive;
+        // hasAutoLayout, not getAutoLayout: the latter builds a graph when none exists, and a question
+        // about whether autonomy is busy must not bring a Layout into being to answer it
+        return this.model != null && this.model.hasAutoLayout()
+            && this.model.getAutoLayout().isRunning();
     }
 
     /**
@@ -13351,7 +13364,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                if (this.model.getAutoLayout().isValid() && !this.model.getAutoLayout().isRunning())
+                if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                 {
                     new Thread( () ->
                     {
@@ -14437,7 +14450,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
             }
@@ -14459,7 +14472,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.model.hasAutoLayout())
             {
-                if (this.getModel().getAutoLayout().isRunning())
+                if (this.isAutonomyBusy())
                 {
                     this.applyAutoRouteListSelections();
                     JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
@@ -14527,7 +14540,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
@@ -14570,7 +14583,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
@@ -14608,7 +14621,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.getModel().getAutoLayout().isRunning())
+            if (this.isAutonomyBusy())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;

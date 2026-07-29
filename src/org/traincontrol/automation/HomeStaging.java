@@ -455,18 +455,31 @@ public final class HomeStaging
         // Ordered on a precomputed f-score.  Computing it inside the comparator instead would rescan
         // every locomotive on every comparison - O(log n) comparisons per queue operation, each doing
         // work proportional to the fleet.
-        PriorityQueue<String> open = new PriorityQueue<>((a, b) -> score.get(a) - score.get(b));
+        //
+        // Each entry carries the score it was queued with rather than reading the score map.  The
+        // relaxation below re-scores a state when it finds a cheaper route to it, and that state may
+        // already be sitting in the queue: a PriorityQueue compares on demand, so rewriting the map
+        // changed an existing entry’s priority in place and broke the heap invariant after the fact,
+        // letting polls return states that were not the cheapest.  Plans stayed valid - the closed set
+        // makes revisits harmless - but the search spent its budget out of order, and NO_PLAN_FOUND is
+        // precisely a statement about that budget.
+        PriorityQueue<Scored> open = new PriorityQueue<>((a, b) -> Integer.compare(a.score, b.score));
 
-        open.add(startKey);
+        open.add(new Scored(startKey, score.get(startKey)));
 
         Set<String> closed = new HashSet<>();
         int examined = 0;
 
         while (!open.isEmpty() && examined < SEARCH_LIMIT)
         {
-            String currentKey = open.poll();
+            Scored polled = open.poll();
+            String currentKey = polled.key;
 
             if (closed.contains(currentKey)) continue;
+
+            // A cheaper route to this state was found after this entry was queued.  The better entry is
+            // still in the queue and will come up in its own place, so this one is stale.
+            if (polled.score != score.get(currentKey)) continue;
 
             closed.add(currentKey);
             examined++;
@@ -503,7 +516,7 @@ public final class HomeStaging
                         score.put(nextKey, nextCost + misplaced(next));
                         cameFrom.put(nextKey, currentKey);
                         arrivedBy.put(nextKey, new Move(l, path));
-                        open.add(nextKey);
+                        open.add(new Scored(nextKey, score.get(nextKey)));
                     }
                 }
             }
@@ -589,6 +602,19 @@ public final class HomeStaging
         }
 
         return null;
+    }
+
+    /** A queued state and the score it was queued with, so re-scoring cannot reorder what is already in. */
+    private static final class Scored
+    {
+        private final String key;
+        private final int score;
+
+        private Scored(String key, int score)
+        {
+            this.key = key;
+            this.score = score;
+        }
     }
 
     /** A partial route and the accessory settings it has committed to along the way. */
