@@ -2,6 +2,9 @@ package org.traincontrol.gui;
 
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,6 +47,61 @@ public class GraphLocExclude extends javax.swing.JPanel
         }
         
         updateValues();
+
+        // Double-clicking a name sends it to the other side.  The arrows already do that for a
+        // selection, but moving locomotives one at a time is the common case, and select-then-aim is
+        // two gestures for it.
+        this.allowedLocList.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent evt)
+            {
+                if (evt.getClickCount() == 2) moveOnDoubleClick(allowedLocList, evt, true);
+            }
+        });
+
+        this.excludedLocList.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent evt)
+            {
+                if (evt.getClickCount() == 2) moveOnDoubleClick(excludedLocList, evt, false);
+            }
+        });
+    }
+
+    /**
+     * Sends the entry under the cursor to the other list.
+     *
+     * Routed through the buttons' own handlers rather than moving the element here, so the move, the
+     * re-sort and the selection reset stay in one place and cannot drift apart from what the arrows do.
+     *
+     * @param list the list that was clicked
+     * @param evt
+     * @param exclude whether this list is the allowed one, so the entry is being excluded
+     */
+    private void moveOnDoubleClick(javax.swing.JList<String> list, MouseEvent evt, boolean exclude)
+    {
+        int index = list.locationToIndex(evt.getPoint());
+
+        if (index < 0) return;
+
+        // locationToIndex answers with the nearest row for a click past the end of the list, so without
+        // this the empty space below the names would move the last one
+        Rectangle cell = list.getCellBounds(index, index);
+
+        if (cell == null || !cell.contains(evt.getPoint())) return;
+
+        list.setSelectedIndex(index);
+
+        if (exclude)
+        {
+            excludeLocActionPerformed(null);
+        }
+        else
+        {
+            includeLocActionPerformed(null);
+        }
     }
     
     public final void updateValues()
