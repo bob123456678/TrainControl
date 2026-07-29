@@ -546,15 +546,12 @@ final public class GraphViewer extends PositionAwareJFrame
         {
             if (this.getLastHoveredNode() != null)
             {
+                this.clipboard = null;
                 if (controlPressed && keyCode == KeyEvent.VK_X)
                 {
-                    // Only a cut touches the clipboard.  Clearing it on a plain Delete as well meant
-                    // that taking some unrelated locomotive off the graph silently discarded whatever
-                    // had been cut, and the next paste fell back to the selected locomotive.
-                    //
-                    // The hovered name outlives the point it names - it is cleared only when the mouse
-                    // moves off a node - so a point deleted while hovered leaves a name that no longer
-                    // resolves, and this dereferenced it blind.
+                    // The hovered name outlives the point it names: it is cleared only when the mouse
+                    // moves off a node, so a point deleted while hovered leaves a name that no longer
+                    // resolves and this dereferenced it blind
                     Point hovered = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode());
 
                     this.clipboard = hovered == null ? null : hovered.getCurrentLocomotive();
