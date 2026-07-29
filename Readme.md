@@ -223,6 +223,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+E (exclude active locomotive from currently hovered node)
     * Control+U (unexclude active locomotive from currently hovered node)
     * Control+S (change S88 of currently hovered node)
+    * Control+H (set the home locomotive of the currently hovered node)
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
