@@ -929,6 +929,17 @@ public class testRoutes
             )
             {
                 newRoutes.add(newRouteCandidate);
+
+                // The id has to join the ones already in use, or this loop only ever checks the
+                // candidate against routes that existed before it started.  Ids are drawn from
+                // nextInt(1000), so two generated routes collided a few percent of the time - and the
+                // route database is keyed by id, so the second silently evicted the first from it.  The
+                // evicted route was then missing from the export, missing again after the re-import,
+                // and getRoute(name) returned null for a route this list still expects to exist.
+                //
+                // Names needed no such fix: getRoute(name) below sees routes added earlier in this loop.
+                currentIds.add(newRouteCandidate.getId());
+
                 model.newRoute(newRouteCandidate);
             }
         }

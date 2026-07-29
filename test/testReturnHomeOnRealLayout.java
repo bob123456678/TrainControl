@@ -180,8 +180,25 @@ public class testReturnHomeOnRealLayout
     {
         Layout layout = load();
 
-        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.ALREADY_HOME,
-            "precondition: a freshly loaded graph has everyone on the station that becomes their home");
+        // Not necessarily already home.  This assertion used to read ALREADY_HOME, which held only while
+        // a home was always the station a locomotive was standing on when the file loaded.  An
+        // assignment says where a locomotive *belongs*, which need not be where the file left it - so
+        // the operator’s own layout legitimately loads with trains away from home, and requiring
+        // otherwise made the feature working look like a test failure.
+        //
+        // What does have to hold before the rounds begin is that the loaded state is one the planner can
+        // work from, or a failure below would belong to the file rather than to the random stop.
+        HomeStaging.Outcome loaded = layout.triageReturnToHome();
+
+        if (loaded != HomeStaging.Outcome.ALREADY_HOME)
+        {
+            assertNull(loaded, "precondition: the loaded graph offers no way home at all - got " + loaded
+                + " with " + describe(layout));
+
+            assertTrue(layout.planReturnToHome().isPossible(),
+                "precondition: the loaded graph cannot be returned home before any autonomy has run - "
+                + describe(layout));
+        }
 
         for (int round = 1; round <= ROUNDS; round++)
         {
