@@ -528,10 +528,15 @@ final public class GraphViewer extends PositionAwareJFrame
         
         if (!isRunning && controlPressed && keyCode == KeyEvent.VK_V)
         {
-            // can also be parent.getCopyTarget()
-            if (parent.getActiveLoc() != null && this.getLastHoveredNode() != null)
+            // What Control+X cut, or else whatever is selected in the main window.  The guard used to
+            // demand an active locomotive whichever of the two was going to be pasted, so cutting a
+            // locomotive and then pasting it did nothing whenever no button happened to be selected -
+            // which is precisely when the clipboard is the only thing still holding it.
+            Locomotive toPlace = this.clipboard != null ? this.clipboard : parent.getActiveLoc();
+
+            if (toPlace != null && this.getLastHoveredNode() != null)
             {
-                parent.getModel().getAutoLayout().moveLocomotive(this.clipboard != null ? this.clipboard.getName() : parent.getActiveLoc().getName(), this.lastHoveredNode, false);
+                parent.getModel().getAutoLayout().moveLocomotive(toPlace.getName(), this.getLastHoveredNode(), false);
                 this.clipboard = null;
                 parent.updateVisiblePoints();
                 parent.repaintAutoLocList(false);
@@ -544,7 +549,12 @@ final public class GraphViewer extends PositionAwareJFrame
                 this.clipboard = null;
                 if (controlPressed && keyCode == KeyEvent.VK_X)
                 {
-                    this.clipboard = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode()).getCurrentLocomotive();
+                    // The hovered name outlives the point it names: it is cleared only when the mouse
+                    // moves off a node, so a point deleted while hovered leaves a name that no longer
+                    // resolves and this dereferenced it blind
+                    Point hovered = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode());
+
+                    this.clipboard = hovered == null ? null : hovered.getCurrentLocomotive();
                 }
                 
                 parent.getModel().getAutoLayout().moveLocomotive(null, this.getLastHoveredNode(), true);
