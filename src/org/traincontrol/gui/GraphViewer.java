@@ -579,6 +579,17 @@ final public class GraphViewer extends PositionAwareJFrame
         {
             this.setS88(parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode()));
         }
+        // Choose the locomotive that belongs at this station
+        else if (!isRunning && controlPressed && (keyCode == KeyEvent.VK_H))
+        {
+            Point p = parent.getModel().getAutoLayout().getPoint(this.getLastHoveredNode());
+
+            if (p != null)
+            {
+                HomeLocomotiveMenu.editHomeLocomotive(parent, p, this,
+                    () -> parent.updatePoint(p, mainGraph));
+            }
+        }
         // Default key commands
         else
         {

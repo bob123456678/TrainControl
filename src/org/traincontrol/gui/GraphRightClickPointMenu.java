@@ -35,12 +35,19 @@ final class GraphRightClickPointMenu extends JPopupMenu
         String nodeName = p.getName();
         this.tcui = ui;
 
+        // Says which point this menu belongs to, once, so the items below do not each have to repeat it
+        menuItem = new JMenuItem(nodeName);
+        menuItem.setEnabled(false);
+        add(menuItem);
+
+        addSeparator();
+
         if (p.isDestination())
         {
             // Select the active locomotive
             if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
             {
-                menuItem = new JMenuItem(I18n.f("autolayout.ui.labelEditLocomotiveAt", nodeName));
+                menuItem = new JMenuItem(I18n.t("autolayout.ui.labelEditLocomotiveAt"));
                 menuItem.addActionListener(event -> 
                     {
                         GraphLocAssign edit = new GraphLocAssign(ui, p, false);
@@ -67,7 +74,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
             }
 
             menuItem = new JMenuItem(
-                I18n.f("autolayout.ui.menuAddLocomotiveAtNode", nodeName)
+                I18n.t("autolayout.ui.menuAddLocomotiveAtNode")
             );
             menuItem.addActionListener(event -> 
             {
@@ -165,6 +172,11 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
         add(menuItem);
         
+        // Above the advanced parameters: which locomotive belongs here is a plainer question than any
+        // of the tuning below it
+        HomeLocomotiveMenu.addStationItem(this, ui, p, (Component) parent.getSwingView(), "Control+H",
+            () -> ui.updatePoint(p, parent.getMainGraph()));
+
         // Create a submenu for the remaining items
         JMenu submenu = new JMenu(
             I18n.t("autolayout.ui.menuEditAdvancedParameters")
@@ -357,10 +369,6 @@ final class GraphRightClickPointMenu extends JPopupMenu
         submenu.add(menuItem);
 
         add(submenu);
-
-        // Its own group beside the other per-station settings, titled with the current assignment
-        HomeLocomotiveMenu.addStationMenu(this, ui, p, (Component) parent.getSwingView(),
-            () -> ui.updatePoint(p, parent.getMainGraph()));
 
         addSeparator();
 
@@ -1086,7 +1094,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
         addSeparator();
 
         menuItem = new JMenuItem(
-            I18n.f("autolayout.ui.menuRenamePoint", nodeName)
+            I18n.t("autolayout.ui.menuRenamePoint")
         );
         menuItem.addActionListener(event ->
         {

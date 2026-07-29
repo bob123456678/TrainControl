@@ -175,7 +175,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     {
                         // Edit locomotive
                         menuItem = new JMenuItem(
-                            I18n.f("autolayout.ui.labelEditLocomotiveAt", current.getName())
+                            I18n.t("autolayout.ui.labelEditLocomotiveAt")
                         );
                         menuItem.addActionListener(event -> 
                         {
@@ -206,7 +206,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // Which locomotive belongs here, as opposed to which one happens to be here now
                     addSeparator();
 
-                    HomeLocomotiveMenu.addStationMenu(this, ui, current, ui, ui::updateVisiblePoints);
+                    HomeLocomotiveMenu.addStationItem(this, ui, current, ui, null,
+                        ui::updateVisiblePoints);
                 }
             }
             else
