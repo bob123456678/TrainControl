@@ -2461,7 +2461,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public boolean isAutonomyRunning()
     {
-        return this.hasAutoLayout() && this.getAutoLayout().isRunning();
+        // Staging counts.  A staging flow spends its planning phase with nothing dispatched, so
+        // isRunning() alone reported the whole window as idle - and every guard that asks the model
+        // rather than the UI permitted a locomotive to be deleted, renamed or re-addressed out from
+        // under a plan about to drive it.
+        return this.hasAutoLayout()
+            && (this.getAutoLayout().isRunning() || this.getAutoLayout().isStagingInProgress());
     }
     
     /**

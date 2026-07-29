@@ -22,6 +22,12 @@ produced one new finding, `IR-C3`, filed from the fresh pass that followed.
 the route editor flows, the model-level route mutations, the live-view getters, network timeouts and
 function bounds. Two findings (`IR-C4`, `IR-C5`) and one amendment (`IR-C3`); clean checks in
 `IR-D3`.
+**Fourth round (2026-07-28):** the fixes for IR-B1/C3/C4/C5 landed as `e3dc172`/`e7b468c` and are
+validated in their own section; all four held, one with a recorded residual. The same round then
+re-applied the method that has been finding bugs - read every consumer of the thing just changed,
+and grep for its twins - to the fixes themselves. Three findings: `IR-C6` (the timetable-iteration
+twins the C5 fix missed), `IR-C7` (a silent no-op branch), and `IR-C8` (the busy question now has
+two authorities, and the model-side one cannot see planning). Clean checks in `IR-D4`.
 
 Findings use the A/B/C/D convention in [README.md](README.md).
 
@@ -31,15 +37,19 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| IR-B1 | The two run-starting entrances missed by the `WR-B2`/`WR-B3` sweep: autonomy reload and Start Autonomy gate on `isRunning()` alone, and a reload landing in the staging planning window permanently wedges the staging worker - `isAutonomyBusy` then reads true for the rest of the session | B | **Partly fixed 2026-07-28** (working tree) - both guard arms closed and validated; a *confirmed* reload during planning still wedges, because the Layout-side chain is untouched. See the validation section |
-| IR-C1 | The timetable-editing surfaces (clear, restart, per-entry delay, capture toggle) also read the planning window as idle; edits made there are silently undone by the borrow-restore | C | **Fixed 2026-07-28** (working tree). Fix validated - all four surfaces plus entry-deletion, the route-activation toggle and its list |
-| IR-C2 | `HomeStaging.astar` orders its priority queue on a mutable score map; re-scoring a state already enqueued breaks the heap invariant retroactively. Correctness survives (closed set), but the search burns budget out of order - worsening the open `HS-B3` NO_PLAN_FOUND ambiguity | C | **Fixed 2026-07-28** (working tree). Fix validated |
-| IR-C3 | The graph-mutation surfaces (both graph key handlers, the graph general menu, the diagram autonomy menu's remove/edit items) still gate on `isRunning()` alone, so the planning window permits placements, cuts, point deletion and locomotive removal under the planner | C | **Open** - filed by the validation round's fresh pass |
-| IR-C4 | `RouteEditor` ignores the boolean `editRoute` now returns: a model-refused edit closes the dialog as if saved, with the refusal only in the log - the `PV-C7` shape, reachable today only through a race with a concurrent Central Station sync | C | **Open** - filed by the third-round pass |
-| IR-C5 | `Layout.getTimetable` hands the EDT the live list, and the graph callback repaints the timetable on every path start/end - so a capture-on autonomy run has locomotive threads appending to a `LinkedList` the EDT is iterating. The missed twin of `4f9eb09`, which gave `getHomeStations` a snapshot for exactly this reader/writer pair | C | **Open** - filed by the third-round pass |
+| IR-B1 | The two run-starting entrances missed by the `WR-B2`/`WR-B3` sweep: autonomy reload and Start Autonomy gate on `isRunning()` alone, and a reload landing in the staging planning window permanently wedges the staging worker - `isAutonomyBusy` then reads true for the rest of the session | B | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - guards, dispatch-loop fence and entry fence all validated; the confirmed-reload path traced end to end and clean |
+| IR-C1 | The timetable-editing surfaces (clear, restart, per-entry delay, capture toggle) also read the planning window as idle; edits made there are silently undone by the borrow-restore | C | **Fixed 2026-07-28**. Fix validated - all four surfaces plus entry-deletion, the route-activation toggle and its list |
+| IR-C2 | `HomeStaging.astar` orders its priority queue on a mutable score map; re-scoring a state already enqueued breaks the heap invariant retroactively. Correctness survives (closed set), but the search burns budget out of order - worsening the open `HS-B3` NO_PLAN_FOUND ambiguity | C | **Fixed 2026-07-28**. Fix validated |
+| IR-C3 | The graph-mutation surfaces (both graph key handlers, the graph general menu, the diagram autonomy menu's remove/edit items) still gate on `isRunning()` alone, so the planning window permits placements, cuts, point deletion and locomotive removal under the planner | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated at all seven sites; the point menu's construction verified inside the same gate |
+| IR-C4 | `RouteEditor` ignores the boolean `editRoute` now returns: a model-refused edit closes the dialog as if saved, with the refusal only in the log - the `PV-C7` shape, reachable today only through a race with a concurrent Central Station sync | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`). Fix validated; the two sibling call sites that also ignore the boolean are recorded in the validation section, not filed |
+| IR-C5 | `Layout.getTimetable` hands the EDT the live list, and the graph callback repaints the timetable on every path start/end - so a capture-on autonomy run has locomotive threads appending to a `LinkedList` the EDT is iterating. The missed twin of `4f9eb09`, which gave `getHomeStations` a snapshot for exactly this reader/writer pair | C | **Fixed 2026-07-28** (`e3dc172`/`e7b468c`) - validated as a large narrowing; the copy itself still walks the live list, recorded under IR-C6 with the twins |
+| IR-C6 | The IR-C5 fix covered one of three iterators of the live timetable: `getTimetableStartingPoint` runs on every locomotive-list repaint during a capture-on run, `toJSON`'s timetable loop on export, and the repaint's own defensive copy still races `LinkedList.toArray` against an append | C | **Open** - filed by the fourth round |
+| IR-C7 | Start Autonomy pressed during the planning window is silently swallowed: the handler's else-chain has no branch for busy-but-not-running, so the press is correctly refused and the user is told nothing | C | **Open** - filed by the fourth round |
+| IR-C8 | The busy question now has two authorities: every UI surface asks `isAutonomyBusy()`, but the surfaces guarded through the model's `isAutonomyRunning()` - locomotive delete, rename, address change, rename-proposal application, layout-editor save, and the sync's own address adoption - cannot see `stagingFlowActive` and read the planning window as idle | C | **Open** - filed by the fourth round |
 | IR-D1 | Clean checks: bundle audits re-run from scratch, the fence coverage IR-B1's trace rests on, the `-1` sentinel's call sites, and six other suspicions that died on reading | - | Recorded |
 | IR-D2 | Validation-round clean checks: the `bbaca6f` test fixes, the closed hazard families re-swept, source-encoding suspicion resolved, and two narrow observations recorded | - | Recorded |
 | IR-D3 | Third-round clean checks over the previously unread code: network timeouts, function bounds, backup fallback, blank-name traps, and where the live-view pattern does *not* bite | - | Recorded |
+| IR-D4 | Fourth-round clean checks: the end-to-end trace of a confirmed reload during planning, the new bundle key audited in all eight languages, and the fence's interaction with every other executePath caller | - | Recorded |
 
 No A findings. Nothing in the range was found to have regressed against `v2_7_2` into wrong
 train movement or data loss; the one B is a session-wedging interleaving in the new feature.
@@ -220,6 +230,79 @@ home map as a snapshot rather than a live view", same class, same reader (EDT), 
 getter. `getPoints()` (see the IR-C3 amendment) is the third of the family. The fix is the one
 `getHomeStations` already demonstrates: copy under the monitor, or copy at the repaint's entry.
 
+### IR-C6. The C5 fix covered one of the three iterators of the live timetable
+
+*Filed by the fourth round, from grepping the fixed read's twins - the cycle's own rule.*
+
+[Layout.java:2440](../../src/org/traincontrol/automation/Layout.java) (`getTimetableStartingPoint` -
+a for-each over `this.timetable`, unsynchronized), its caller chain (`AutoLocomotiveStatus` renders
+the `+` legend through it on **every** locomotive-list repaint, and the graph callback repaints that
+list at every path start and end), [Layout.java:3850](../../src/org/traincontrol/automation/Layout.java)
+(`toJSON`'s timetable loop, reached from the export flow), and the C5 fix itself
+([TrainControlUI.java:15383](../../src/org/traincontrol/gui/TrainControlUI.java) - `new
+ArrayList<>(live)` runs `LinkedList.toArray`, which walks the node chain with no lock and can
+overrun its pre-sized array when an append lands mid-walk).
+
+Three residual iterators, in descending reachability:
+
+1. **`getTimetableStartingPoint`** has exactly the reachability IR-C5 was filed on: capture-on run,
+   locomotive threads appending, repaints iterating - only the faulting frame moves from the
+   timetable table to the locomotive panel's legend. The method is one `synchronized` keyword away
+   from safe: `addTimetableEntry` already writes under the Layout monitor.
+2. **The repaint's defensive copy** narrows C5's window from two full iterations plus table
+   building down to one `toArray` node-walk - a large improvement, and the reason C5 is closed
+   rather than reopened - but the walk is still unsynchronized against the appender.
+3. **`toJSON`'s loop** is reachable only in the gap before the run's first callback disables the
+   export button - milliseconds, recorded for completeness.
+
+One shape closes all three: a synchronized snapshot on the Layout (`getTimetable` stays live for
+the guarded UI mutations, exactly as the C5 fix's comment reasons - the snapshot is a second,
+read-only accessor), used by the repaint, the legend and the export.
+
+### IR-C7. Start Autonomy during planning is refused silently
+
+[TrainControlUI.java:13364](../../src/org/traincontrol/gui/TrainControlUI.java) (the guard:
+`isValid() && !isAutonomyBusy()`), lines 13383-13395 (the else-chain: `isRunning()`, then
+`!isValid()` - and nothing else).
+
+The IR-B1 fix correctly moved the Start Autonomy guard to `isAutonomyBusy()`, but the handler's
+explanation branches were left as they were: busy-but-not-running - the whole planning window -
+fails the first condition, fails `isRunning()`, fails `!isValid()`, and falls off the end of the
+chain. The press does nothing and says nothing. Correct refusal, no feedback - the `PV-C7` shape
+in one else-chain, and the same one-line class as `WR-C6`: an
+`else { describeStagingOutcome(LOCOMOTIVES_RUNNING) }` arm ends it.
+
+### IR-C8. The model's own busy predicate cannot see planning
+
+[TrainControlUI.java:10985](../../src/org/traincontrol/gui/TrainControlUI.java) (locomotive delete:
+`this.model.isAutonomyRunning()`), lines 10140, 10271 and 14297 (rename, address change,
+rename-proposal application - the same predicate),
+[LayoutEditor.java:1734](../../src/org/traincontrol/gui/LayoutEditor.java) (diagram save),
+[MarklinControlStation.java:1117](../../src/org/traincontrol/marklin/MarklinControlStation.java)
+(the sync's address adoption, deferred "while running"), against
+[MarklinControlStation.java:2462](../../src/org/traincontrol/marklin/MarklinControlStation.java)
+(`isAutonomyRunning`: `hasAutoLayout && isRunning` - and `stagingFlowActive` is a private field of
+the UI).
+
+The `isAutonomyBusy()` consolidation closed every surface that asks the **UI** whether autonomy is
+busy. But six guards ask the **model**, and the model's answer is still `isRunning()` alone - it
+has no way to know a staging flow is planning, because the flag lives in `TrainControlUI`. So
+during the planning window a locomotive can be deleted (the plan then drives an engine that is no
+longer in the database - the milestone null-guard added this cycle absorbs the bookkeeping, but the
+train moves), renamed, or re-addressed (the plan's commands then go to a decoder the physical train
+no longer answers - the move stalls at its first sensor and the run gives up), and an automatic
+sync can adopt Central Station addresses mid-plan.
+
+Each outcome is bounded - identity hashing keeps every container coherent, and the runtime's
+validation catches the wreckage as a stalled or abandoned run rather than wrong movement - which is
+why this is C. But the shape is the cycle's signature error at the architectural level: the busy
+state now has two authorities, and only one of them knows about planning. The durable fix is to
+give the model the flag - a `planningInProgress` on the Layout (or station), set and cleared where
+`stagingFlowActive` is - so `isAutonomyRunning()` can fold it in and every model-side guard
+inherits it, including the sync deferral no UI predicate can ever cover. Routing the six call
+sites through `ui.isAutonomyBusy()` also works but leaves the sync uncovered and plants the next
+missed-entrance instance.
+
 ---
 
 ## IR-D1. Clean checks and suspicions that died correctly
@@ -364,6 +447,65 @@ looking for pre-existing defects. What was read, and what came of it:
 - **Cosmetic, recorded only:** `PositionAwareJFrame` and a handful of bootstrap paths use
   `printStackTrace` rather than the model log - console-only diagnostics, all in
   startup/preferences code that predates the cycle.
+
+---
+
+## Validation of the second fix round (`e3dc172`/`e7b468c`)
+
+Validated by the reviewer who filed the findings, each fix read in the enforcing method and the
+headline scenario re-traced end to end rather than assumed from the diff.
+
+- **`IR-B1` - correct and complete.** Three parts: the reload and Start Autonomy guards ask
+  `isAutonomyBusy()`; the dispatch loop's wait is now `while (this.running && this.isCurrentLayout())`,
+  the same question the completion wait already asked; and `executePathInternal` refuses a retired
+  Layout at entry, **before** `configureAndLockPath` - which removes both the spurious hardware
+  commands and the stranded `activeLocomotives` entry at the root. The confirmed-reload-during-planning
+  scenario, re-traced: the confirmation now fires (defaulting to No) and arms `gracefulStopRequested`;
+  if confirmed, the worker's dispatch loop refuses every entry instantly on the fence, nothing is
+  commanded, nothing is stranded, the completion wait exits, and the `finally` restores the timetable
+  and buttons - with no spurious "stopped early" dialog, because the armed flag suppresses it. The
+  one residue is a `running` flag left true on the retired Layout object, which nothing can reach:
+  every surface resolves `getAutoLayout()` to the new one. Recorded, harmless.
+- **`IR-C3` - correct.** All seven sites ask `isAutonomyBusy()`, and the point right-click menu's
+  construction was verified to sit inside the same gated block, so the entire point-menu surface
+  inherits the guard. The worker-side live reads (`getNeighbors`, `getPoints`) are now safe by
+  exclusion: no UI entrance can mutate the graph during planning. The non-UI writers are IR-C8's
+  subject.
+- **`IR-C4` - correct.** The editor reads the boolean, shows a dialog naming the route, and keeps
+  the dialog open. The new key `route.ui.errorEditRouteFailed` exists in all eight bundles; the
+  full placeholder-and-apostrophe audit re-run reports zero problems across the now-485
+  `I18n.f`-fetched keys. The finding's two sibling call sites - the bulk enable/disable loop and
+  `enableOrDisableRoute` - still discard the boolean; recorded rather than filed, because for them
+  a refusal (race-only: name unchanged, route just fetched) is followed immediately by a full
+  `syncWithCS2` and repaint that reconcile the display, so there is no dialog claiming success and
+  nothing stale left visible.
+- **`IR-C5` - correct as filed, with the residual promoted into `IR-C6`.** The copy removes the two
+  EDT iterations of the live list, and its comment is right that the *getter* must stay live for
+  the guarded UI mutations. What the copy cannot do is make its own `toArray` walk atomic against
+  an appender that holds a lock the EDT does not take - the window shrinks by orders of magnitude
+  but the mechanism survives, and two sibling iterators were never covered. All three are one
+  finding (IR-C6) with one fix shape.
+
+## IR-D4. Fourth-round clean checks
+
+- **The fence's interaction with every other `executePath` caller, read not assumed:** autonomy's
+  own dispatch (`runLocomotives`) reaches a retired Layout only after a confirmed reload has already
+  cleared `running`, so the new entry-fence adds a second line of defence, not a behaviour change;
+  the manual double-click path resolves `getAutoLayout()` and cannot reach a retired instance; and
+  the sequential retry loop's worst case on a fence refusal is three two-second attempts before a
+  clean abandon - bounded, and unreachable now that the dispatch loop itself is fenced.
+- **The in-flight milestone fence is undisturbed:** a path already past the entry check still
+  abandons at its next milestone with the deliberate `HS-B5` strand, and the completion wait still
+  unwinds it - the mid-run reload behaviour is unchanged.
+- **The new bundle key**, audited: present in all eight bundles, `{0}` intact everywhere, no bare
+  apostrophes (the French and Italian values use typographic apostrophes, consistent with the
+  convention `WR` verified).
+- **The fixes arrived with tests that pin them:** `testARetiredLayoutRefusesToRunAPath` and
+  `testARetiredLayoutStopsExecutingItsTimetable` pin both halves of the IR-B1 fence, and
+  `testEditRouteRefusesWithoutLosingTheRoute` / `testEditRouteSucceedsWhenNothingIsInTheWay` pin the
+  editRoute contract IR-C4's fix consumes - the model refuses without deleting, which is the half of
+  the family (`WR`-round work) that had no direct test. Read for shape, not run - the author runs
+  tests in NetBeans, and red-before-green is this project's own discipline to confirm there.
 
 ---
 
@@ -518,3 +660,41 @@ fault plus a malformed `\u12`, both flagged, with valid escapes left alone.
 **Still not tested**, and not reachable from the suite: the ten-plus predicate swaps are UI event
 handlers, and `IR-C5` needs timetable capture on during a live run to produce the interleaving.  Both
 were verified by reading the enforcing method only.
+
+## Addressed 2026-07-28 (third round)
+
+`IR-C6`, `IR-C7` and `IR-C8`.  Tests were written first this round, against the contract each finding
+describes rather than against the code that satisfies it - they name API that did not exist yet, so
+they would not compile until the fix landed.  That is the nearest thing to red-first available here,
+since nothing in this environment runs them.
+
+- **`IR-C8`** - fixed the durable way the finding recommends, not the shortcut.  `Layout` now carries
+  `stagingInProgress`, set and cleared exactly where `stagingFlowActive` is, and
+  `MarklinControlStation.isAutonomyRunning()` folds it in - so all six model-side guards inherit it,
+  including the sync deferral that no UI predicate can reach.  Routing the call sites through
+  `ui.isAutonomyBusy()` would have left that one uncovered and planted the next missed entrance.
+- **`IR-C6`** - one `getTimetableSnapshot()` on the Layout, taken under the monitor, used by the
+  repaint; and `getTimetableStartingPoint` is now `synchronized`, which covers the legend read on
+  every locomotive-list repaint.  `getTimetable` stays live, because the editing surfaces mutate what
+  it returns.
+
+  **One correction to the finding:** its third residual, `toJSON`’s loop, was already safe -
+  `toJSON` is declared `synchronized` (Layout.java), so it holds the same monitor `addTimetableEntry`
+  writes under.  Nothing was changed there.
+- **`IR-C7`** - the else-chain gained the missing arm, routed through `describeStagingOutcome` like
+  every other surface that explains this state.
+
+**Two stacked javadocs, again, and caught by the validator rather than by me.**  Both from anchoring
+an insertion on a method signature, which lands it between the method above and its own javadoc -
+the same mistake recorded twice before in this cycle.  `isCurrentLayout` and
+`getTimetableStartingPoint` were each briefly separated from their documentation and are now
+reattached.  The habit that avoids it is anchoring on the javadoc’s own opening, not the signature.
+
+**Tests:** `testTheModelSeesAStagingFlowAsAutonomyRunning` pins that the model - not just the UI -
+sees a staging flow, which is the whole point of putting the flag on the Layout.
+`testTheTimetableSnapshotIsACopyWhileTheGetterStaysLive` pins both halves of the two-accessor split,
+including that the getter stays live, since making it a copy is the obvious “tidy-up” that would
+silently break entry deletion.  `testHomeStaging` is now 40.
+
+**Not testable:** `IR-C7`’s else-arm is a UI event handler, and the synchronization in `IR-C6` can
+only be shown by a race, not by an assertion.

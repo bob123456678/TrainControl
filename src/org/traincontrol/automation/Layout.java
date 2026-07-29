@@ -141,6 +141,16 @@ public class Layout
     // Track the layout version so we know whether an orphan instance of this class is stale
     private static int layoutVersion = 0;
 
+    // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow
+    // unwinds, mirroring the UI flag of the same lifetime.
+    //
+    // It lives here rather than only on the UI because six guards ask the *model* whether autonomy is
+    // busy, and one of them - the sync adopting Central Station addresses - is not reachable from any
+    // UI predicate at all.  Nothing is dispatched while a plan is being derived, so isRunning() alone
+    // reads that whole window as idle, and a locomotive could be deleted, renamed or re-addressed out
+    // from under a plan that is about to drive it.
+    private volatile boolean stagingInProgress = false;
+
     // This instance's version, fixed at construction.  Compared against layoutVersion to answer "am I
     // still the current Layout?" - see isCurrentLayout
     private final int version;
@@ -706,6 +716,24 @@ public class Layout
     public boolean isCurrentLayout()
     {
         return this.version == Layout.layoutVersion;
+    }
+
+    /**
+     * Whether a staging flow currently owns this Layout, planning or executing.
+     * @return
+     */
+    public boolean isStagingInProgress()
+    {
+        return this.stagingInProgress;
+    }
+
+    /**
+     * Marks this Layout as owned by a staging flow, or releases it.
+     * @param stagingInProgress
+     */
+    public void setStagingInProgress(boolean stagingInProgress)
+    {
+        this.stagingInProgress = stagingInProgress;
     }
 
     /**
@@ -2433,11 +2461,26 @@ public class Layout
     }
     
     /**
+     * The timetable as it stands right now, for readers that only look at it.
+     *
+     * A copy taken under the monitor.  getTimetable hands back the field itself and has to keep doing
+     * so - deleteTimetableEntry removes from the list it returns - so the safe read is a second
+     * accessor rather than a change to that one.  Locomotive threads append here whenever capture is on
+     * during a run, and the readers are on the EDT holding nothing.
+     *
+     * @return
+     */
+    synchronized public List<TimetablePath> getTimetableSnapshot()
+    {
+        return Collections.unmodifiableList(new ArrayList<>(this.timetable));
+    }
+
+    /**
      * Fetches the starting station for a given locomotive
      * @param l
      * @return 
      */
-    public Point getTimetableStartingPoint(Locomotive l)
+    synchronized public Point getTimetableStartingPoint(Locomotive l)
     {
         if (l != null)
         {

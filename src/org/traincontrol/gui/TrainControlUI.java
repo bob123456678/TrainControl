@@ -13044,6 +13044,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The flag is what makes that stick - a repaint or a menu opening during planning would
         // otherwise re-enable the button, because nothing is running yet.
         this.stagingFlowActive = true;
+
+        // The same state on the Layout, so the guards that ask the model rather than this class can see
+        // it too - including the sync deferral, which no UI predicate can reach
+        layout.setStagingInProgress(true);
         this.returnHomeButton.setEnabled(false);
         this.executeTimetable.setEnabled(false);
 
@@ -13113,6 +13117,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Released before the buttons come back, so no surface can offer the action while this
                 // worker is still unwinding
                 this.stagingFlowActive = false;
+
+                layout.setStagingInProgress(false);
 
                 // Hands the timetable back.  In the finally so it survives every way out of the block:
                 // the plan being impossible, the run finishing, a move giving up, a graceful stop, or
@@ -13392,6 +13398,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                         this,
                         I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
+                    ));
+                }
+                else
+                {
+                    // Busy but not running - the staging planning window.  The guard above moved to
+                    // isAutonomyBusy without this arm following it, so a press during planning was
+                    // correctly refused and then said nothing at all.
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                     ));
                 }
             }).start();
@@ -15383,8 +15399,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // Copied here rather than in the getter: deleteTimetableEntry removes from the list the
             // getter returns, so handing out a snapshot would make that deletion apply to nothing.
-            List<TimetablePath> timeTable =
-                new ArrayList<>(this.model.getAutoLayout().getTimetable());
+            List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetableSnapshot();
             
             // Do nothing if the timetable hasn't been updated
             if (timeTable.hashCode() == lastTimetableState) return;

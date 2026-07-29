@@ -1259,6 +1259,70 @@ public class testHomeStaging
             "a retired layout must dispatch nothing at all");
     }
 
+
+    /**
+     * The model can see a staging flow, not merely a dispatched run.
+     *
+     * Six guards ask the *model* whether autonomy is busy - locomotive delete, rename, address change,
+     * the rename-proposal pass, the diagram save, and the sync\u2019s address adoption - and the model
+     * answered on isRunning() alone.  Nothing is dispatched while a plan is being derived, so all six
+     * read the planning window as idle: a locomotive could be deleted out from under a plan about to
+     * drive it, or re-addressed so the plan\u2019s commands reach a decoder the train no longer answers.
+     *
+     * The flag has to live on the Layout rather than the UI, because the sync deferral is model-side
+     * and no UI predicate can ever cover it.
+     */
+    @Test
+    public void testTheModelSeesAStagingFlowAsAutonomyRunning() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(model.isAutonomyRunning(), "precondition: nothing is running or being planned");
+
+        layout.setStagingInProgress(true);
+
+        assertTrue(layout.isStagingInProgress());
+        assertTrue(model.isAutonomyRunning(),
+            "the model has to see a staging flow, or every model-side guard treats the planning "
+            + "window as idle");
+
+        layout.setStagingInProgress(false);
+
+        assertFalse(model.isAutonomyRunning(), "and stop seeing it once the flow is done");
+    }
+
+    /**
+     * The timetable can be read as a snapshot, while the getter stays live for the callers that edit it.
+     *
+     * Locomotive threads append to the timetable under the Layout monitor whenever capture is on during
+     * a run, and the EDT iterates the same list to repaint - the table, and the legend that marks a
+     * locomotive at its timetable start.  Neither reader holds the monitor, and both use iterators.
+     *
+     * The getter cannot simply return a copy: deleteTimetableEntry removes from the list it hands back,
+     * so a snapshot there would make that deletion apply to nothing.  Hence two accessors, and this
+     * pins the difference between them.
+     */
+    @Test
+    public void testTheTimetableSnapshotIsACopyWhileTheGetterStaysLive() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        giveTimetable(layout, LOC_A);
+
+        List<TimetablePath> snapshot = layout.getTimetableSnapshot();
+        int before = snapshot.size();
+
+        assertTrue(before > 0, "precondition: the fixture must have given us a timetable");
+
+        // What deleteTimetableEntry does - it mutates the list the getter returns
+        layout.getTimetable().remove(0);
+
+        assertEquals(snapshot.size(), before,
+            "a snapshot handed to a repaint must not change underneath the repaint");
+        assertEquals(layout.getTimetable().size(), before - 1,
+            "while the getter stays live, which is what the editing surfaces depend on");
+    }
+
     /**
      * getHomeStations hands back a snapshot, not a window onto the live map.
      *
