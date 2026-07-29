@@ -269,6 +269,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int ROUTE_UI_COLS = 3;
     
     // Keyboard colors
+    // The teal the graph outlines a station with when its home locomotive is standing there, shared so
+    // the locomotive list can say the same thing in the same colour
+    public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
+
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
     
@@ -15018,8 +15022,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 && p.getHomeLoc().equals(p.getCurrentLocomotive().getName());
 
             homeStyle = settled
-                ? "stroke-mode: plain; stroke-color: rgb(0,200,210); stroke-width: 3px;"
-                : "stroke-mode: dots; stroke-color: rgb(0,200,210); stroke-width: 4px;";
+                ? "stroke-mode: plain; stroke-color: rgb("
+                    + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
+                    + COLOR_AT_HOME.getBlue() + "); stroke-width: 3px;"
+                : "stroke-mode: dots; stroke-color: rgb("
+                    + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
+                    + COLOR_AT_HOME.getBlue() + "); stroke-width: 4px;";
         }
         
         // Remove locomotive from graph if it was deleted
@@ -15405,7 +15413,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // already serialises, and the snapshot is a local.
     private void repaintTimetable()
     {
-        // Taken here, on the calling thread, and never on the EDT.
+        // The snapshot must not be taken on the EDT.
         //
         // getTimetableSnapshot holds the Layout monitor, and configureAndLockPath holds that same
         // monitor across its per-command sleeps - half a second to two seconds on an ordinary path,
@@ -15418,6 +15426,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // already the design - it holds activeLocomotives at that point, and activeLocomotives ->
         // Layout is the order the completion block already establishes.  Idle callers take it
         // uncontended and hand the EDT a finished copy.
+        // The UI callers were left alone on the argument that their busy guard means the monitor is
+        // free by the time they run.  That argument is wrong: configureAndLockPath runs *before* the
+        // locomotive is put into activeLocomotives, and a hand-launched path never sets running - so
+        // for the whole configuration window isRunning(), and with it isAutonomyBusy(), answers false.
+        // Three of those callers hold a modal dialog open between the check and the snapshot, so the
+        // window is as wide as the operator leaves it.
+        //
+        // Bouncing off the EDT costs one short-lived thread on a user action and asks nothing of the
+        // callers, which still marshal their own work through the invokeLater below.
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            new Thread(() -> this.repaintTimetable()).start();
+            return;
+        }
+
         final List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetableSnapshot();
 
         javax.swing.SwingUtilities.invokeLater(() ->

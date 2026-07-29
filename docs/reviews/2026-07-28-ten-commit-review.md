@@ -268,3 +268,33 @@ busy behaviour until told to verify it.
 The two bundle fixes in this round (TCR-C2, TCR-C4) were applied with literal-string replacement
 (no regex, no escape interpretation), and both files re-verified: zero bytes above 127, zero
 malformed `\u` escapes. Each typo occurred exactly once; nothing else in either file changed.
+
+## Addressed 2026-07-28
+
+Both open findings fixed; `TCR-C2` and `TCR-C4` were already in the working tree.
+
+- **`TCR-C3`** - `clearSelection()` at both sites.  The claim was checked rather than taken on trust:
+  `setSelectedIndices` clears and then iterates the array, so a null argument does the intended work
+  and then throws, every time either arrow was pressed.  Pre-existing, but the double-click added in
+  `171c735` routes through those handlers deliberately, so it inherited a swallowed throw - and
+  anything added after those calls would silently never have run.
+
+- **`TCR-C1`** - the premise really is broken, and the trace holds: `configureAndLockPath` runs before
+  the locomotive is put into `activeLocomotives`, and a hand-launched path never sets `running`, so
+  `isRunning()` - and `isAutonomyBusy()` with it - answers false for the whole configuration window.
+  Three of the four callers hold a modal dialog open across the gap, so the operator sets the width.
+
+  Fixed with the smaller of the two shapes offered: `repaintTimetable` bounces to a short-lived
+  thread when it finds itself on the EDT, and the callers are untouched.  The alternative - registering
+  the locomotive before configuration - would move a fence several other things depend on.
+
+  The entry comment's "never on the EDT" is now a statement of the requirement rather than a claim
+  about the callers, and the paragraph that was wrong about the guard has been replaced with why it is
+  wrong.
+
+**A false positive in my own escape check, found by this work.**  The check added last round flagged
+`AutoLocomotiveStatus`'s two `\u23F8` escapes - a pause glyph in a string literal, which is the
+ordinary way to write a character that cannot be typed portably.  Leaked escapes land in *comments*;
+deliberate ones live in literals.  The check now walks the file as a small state machine and looks
+only at comment text, verified on a probe carrying all three cases: a leak in a `//` comment and a
+malformed one in javadoc are both flagged, and the `\u23F8` literal is spared.

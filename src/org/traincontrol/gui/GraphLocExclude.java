@@ -271,7 +271,7 @@ public class GraphLocExclude extends javax.swing.JPanel
         this.sort((DefaultListModel) this.excludedLocList.getModel());
         this.sort((DefaultListModel) this.allowedLocList.getModel());
         
-        this.allowedLocList.setSelectedIndices(null);
+        this.allowedLocList.clearSelection();
     }//GEN-LAST:event_excludeLocActionPerformed
 
     private void includeLocActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_includeLocActionPerformed
@@ -285,7 +285,7 @@ public class GraphLocExclude extends javax.swing.JPanel
         this.sort((DefaultListModel) this.excludedLocList.getModel());
         this.sort((DefaultListModel) this.allowedLocList.getModel());
 
-        this.excludedLocList.setSelectedIndices(null);
+        this.excludedLocList.clearSelection();
     }//GEN-LAST:event_includeLocActionPerformed
 
     /**

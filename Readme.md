@@ -367,7 +367,9 @@ Tab icons provided by Freepik.
         - Removed copy-to-next/-previous page option from button right-click menus (now redundant with 2.7.3's drag and drop)
     - Autonomy
         - Added a "return home" feature that will return all locomotives back to where they started, if routing is possible.
-        - The * next to a station now marks a locomotive's home station; + marks its timetable starting point
+        - A locomotive standing at its home station now shows its location highlighted in teal; * marks one standing at its timetable starting point
+        - Stations that have a home locomotive are outlined in the graph: solid when that locomotive is standing there, dotted when it is elsewhere.  Can be switched off under Display Options
+        - Double-clicking a locomotive in a station's excluded-locomotives window now moves it to the other side
         - You can now pick which locomotive belongs at each station, so "return home" brings each one back to the station you chose instead of the one it happened to start on
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded

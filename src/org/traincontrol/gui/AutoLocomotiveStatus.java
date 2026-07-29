@@ -94,6 +94,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Ensure consistent state
             this.pauseButton.setSelected(locomotive.isAutonomyPaused());
                      
+            // Asked once and reused below: getHomeStation takes the Layout monitor, and this runs
+            // on the EDT
+            final Point home = layout.getHomeStation(locomotive);
+
             // Grey out locomotives on inactive points / not on the graph
             if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
                     layout.getLocomotiveLocation(locomotive) == null
@@ -104,7 +108,22 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 
                 // Grey out label
                 locStation.setBackground(Color.LIGHT_GRAY);
+                locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
+            }
+            else if (layout.getLocomotiveLocation(locomotive).equals(home))
+            {
+                this.locName.setForeground(Color.BLACK);
+                this.pauseButton.setVisible(true);
+
+                // Standing on its home station, in the teal the graph outlines such a station with.
+                //
+                // Inverted rather than tinted: that teal was picked to read against the graph's dark
+                // blue fill, so it is a light colour, and the badge's white text would be illegible on
+                // it.  The navy the badge normally paints itself becomes the text instead.
+                locStation.setBackground(TrainControlUI.COLOR_AT_HOME);
+                locStation.setForeground(new Color(0,0,115));
+                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), TrainControlUI.COLOR_AT_HOME, 1, 999));
             }
             else
             {
@@ -113,6 +132,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 
                 // Restore label color
                 locStation.setBackground(new Color(0,0,115));
+                locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), new Color(0,0,115), 1, 999 ));
             }
             
@@ -156,8 +176,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getHomeStation(locomotive)) ? " *" : "")
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
 
                     );
@@ -166,8 +185,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getHomeStation(locomotive)) ? " *" : "")
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
                     );
                 }
@@ -185,8 +203,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
-                        + (path.get(path.size() - 1).getEnd().equals(layout.getHomeStation(locomotive)) ? " *" : "")
-                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " +" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + (path.get(path.size() - 1).getEnd().getExcludedLocs().contains(locomotive) ? " -" : "")
                     );
                     //Edge.pathToString(path));
