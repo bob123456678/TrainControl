@@ -27,12 +27,15 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| TCR-C1 | The busy guard protecting the four EDT entrances into `repaintTimetable` cannot see a manually launched path's configuration window, so the EDT can block on the Layout monitor for the length of a path configuration - the premise the fifth `IR` round used to leave those callers alone does not hold, and the method's "never on the EDT" comment is wrong as stated | C | **Open** |
+| TCR-C1 | The busy guard protecting the four EDT entrances into `repaintTimetable` cannot see a manually launched path's configuration window, so the EDT can block on the Layout monitor for the length of a path configuration - the premise the fifth `IR` round used to leave those callers alone does not hold, and the method's "never on the EDT" comment is wrong as stated | C | **Fixed 2026-07-28** (`136a273`) - the method bounces to a short-lived thread when entered on the EDT; validated, one scheduling observation recorded in TCR-D3 |
 | TCR-C2 | The Polish translation of the new home-locomotive tooltip misspells "ciągłą" as "ciąłą" - a missing `g` the escape validator cannot see | C | **Fixed 2026-07-28** (working tree) - one escape restored, file re-verified ASCII-pure |
-| TCR-C3 | Both arrow-button handlers in `GraphLocExclude` end in `setSelectedIndices(null)`, which throws NPE on every invocation (verified in the installed JDK's source) - pre-existing and invisible because the work completes first and the EDT swallows the throw, but the new double-click path now routes through it | C | **Open** (pre-existing; newly load-bearing) |
-| TCR-C4 | The Danish tooltip for the same key reads "Markerér" - neither the indicative ("Markerer") nor the imperative ("Markér"). Raised as assumption 2; the author confirmed the imperative was intended, which makes it a defect | C | **Fixed 2026-07-28** (working tree) - now "Markér", matching the bundle's imperative style ("Simulér", "Skjul") |
+| TCR-C3 | Both arrow-button handlers in `GraphLocExclude` end in `setSelectedIndices(null)`, which throws NPE on every invocation (verified in the installed JDK's source) - pre-existing and invisible because the work completes first and the EDT swallows the throw, but the new double-click path now routes through it | C | **Fixed 2026-07-28** (`136a273`) - `clearSelection()` at both sites; validated |
+| TCR-C4 | The Danish tooltip for the same key reads "Markerér" - neither the indicative ("Markerer") nor the imperative ("Markér"). Raised as assumption 2; the author confirmed the imperative was intended, which makes it a defect | C | **Fixed 2026-07-28** (`297763a`) - now "Markér", matching the bundle's imperative style ("Simulér", "Skjul") |
+| TCR-C5 | The legend tooltip (`autolayout.ui.tooltip.currentLocation`) still described the old markers in all eight bundles - "* is the home station, + the timetable start" - after `7a20b77` removed the home marker and renamed `+` to `*`. The twin the legend change missed: the three render sites, the Readme and Automation.md were updated; the string that *explains* the legend was not | C | **Fixed 2026-07-28** (working tree) - all eight bundles reworded: `*` is the timetable start, teal is the assigned home |
+| TCR-C6 | `297763a` reworded the clear-all-homes confirmation in English only ("as it did before" became "when autonomy is loaded"); the seven translations kept the old sentence | C | **Fixed 2026-07-28** (working tree) - all seven translations carry the same clarification, phrased with each bundle's own autonomy vocabulary |
 | TCR-D1 | Clean checks: the A* fix, the retirement fence end to end, the lock-order re-audit, the home-display styling against the stylesheet, the bundles, the tests, and three suspicions that died correctly | - | Recorded |
 | TCR-D2 | Answers round: the author's three answers recorded, the menu gating verified as directed - and the verification overturned this review's own assumption 3 in the code's favour | - | Recorded |
+| TCR-D3 | Final round: validation of the author's fix commits (`297763a..3bacd5c`), the home-badge feature reviewed with its test re-derived against the fixture, and the sweep that produced TCR-C5/C6 | - | Recorded |
 
 No A or B findings. The ten commits do what their record says they do: every `IR` fix validated here
 independently, and the Home loc display feature is clean apart from two translation typos (both
@@ -106,6 +109,35 @@ the value began "Markerér stationer..." - the indicative would be "Markerer", t
 native-speaker question rather than a finding); the author's answer - "imperative is what it
 should be" - resolved it into a defect. Now "Markér", which also matches the bundle's established
 imperative style ("Simulér", "Aktivér", "Skjul").
+
+### TCR-C5. The tooltip that explains the legend was not in the legend change
+
+*Filed by the final round, from grepping the legend's twins after `7a20b77` changed it - the
+cycle's own rule, and the same class as `IR-C6`: the change covered the sites it looked at.*
+
+`autolayout.ui.tooltip.currentLocation`, in **all eight bundles**, still read "* is the
+locomotive's home station, + its timetable starting station" after `7a20b77` removed the textual
+home marker (the assigned-home teal badge replaced it) and renamed the timetable marker from `+`
+to `*`. The tooltip hangs on exactly the label that renders those markers
+([AutoLocomotiveStatus.java](../../src/org/traincontrol/gui/AutoLocomotiveStatus.java) - the
+`locStation` tooltip), so every locale explained a legend the code no longer draws - and
+attributed the new `*` to the wrong thing. The commit updated the three render sites, the Readme
+changelog and Automation.md; the bundle string describing the legend was the missed twin.
+
+All eight reworded: `*` is the timetable starting station, and teal means the locomotive is
+standing at its assigned home.
+
+### TCR-C6. The clear-all confirmation was reworded in one language
+
+`297763a` changed the English `autolayout.ui.confirmClearAllHomeLocomotives` - "back to where it
+was placed, as it did before" became "back to where it was placed when autonomy is loaded" - and
+left the seven translations on the old sentence ("como antes", "wie zuvor", "comme avant",
+"come prima", "som før", "zoals voorheen", "tak jak wcześniej"). Not wrong, but the rewording
+existed to pin down *which* placement is the fallback, and translated users did not get the
+clarification. All seven now say it, each phrased with the autonomy vocabulary its own bundle
+already uses ("den autonome drift", "des autonomen Betriebs", "el funcionamiento autónomo",
+"du fonctionnement autonome", "del funzionamento autonomo", "de autonome werking",
+"pracy autonomicznej").
 
 ### TCR-C3. Both list-move handlers end in a guaranteed NPE, and the new double-click inherits it
 
@@ -298,3 +330,51 @@ ordinary way to write a character that cannot be typed portably.  Leaked escapes
 deliberate ones live in literals.  The check now walks the file as a small state machine and looks
 only at comment text, verified on a probe carrying all three cases: a leak in a `//` comment and a
 malformed one in javadoc are both flagged, and the `\u23F8` literal is spared.
+
+---
+
+## TCR-D3. Final round: validation of `297763a..3bacd5c`, and the sweep behind TCR-C5/C6
+
+Validated by the reviewer who filed the findings, each fix read in the enforcing method.
+
+- **`TCR-C1` - correct, and the smaller of the two offered shapes.** `repaintTimetable` re-enters
+  itself on a short-lived thread when `SwingUtilities.isEventDispatchThread()` answers true, so the
+  snapshot can never be taken on the EDT no matter who calls; the guarded callers are untouched and
+  still marshal their own work. Sequencing was checked, not assumed: an EDT caller's edit
+  (`getTimetable().remove(index)`) completes before the bounce thread starts, so the snapshot always
+  sees it. One observation, recorded not filed (fails the "does happen" bar): two EDT-triggered
+  repaints in quick succession now take their snapshots on two independent threads, so the *later*
+  `invokeLater` can theoretically carry the *earlier* snapshot and paint one edit stale until the
+  next repaint. Requires two user actions racing within the lifetime of a microsecond-scale thread,
+  and the next callback repaints over it. The rewritten comment - "must not be taken on the EDT" as
+  a requirement plus why the guard argument was wrong - now matches the code and the record.
+- **`TCR-C3` - correct.** `clearSelection()` at both sites - the intended half of what the null
+  call did, without the throw. The author's addressed note independently re-verified the JDK claim.
+- **The home-badge feature (`136a273`/`7a20b77`/`3bacd5c`), reviewed as new code.** The
+  `getHomeLoc`-not-`getHomeStation` reasoning is right and matters: `getHomeStation` folds in the
+  positional fallback, so the badge would have gone teal for every locomotive on an untouched graph
+  while the graph outlined nothing - and assignment of one locomotive would flip badges of others
+  (`rebuildHomeStations` refuses colliding fallback claims). The badge now reads the Point-side
+  assignment, exactly what the graph outlines, lock-free on the EDT. The test
+  (`testADerivedHomeIsNotAnAssignment`) was re-derived against the fixture rather than read for
+  intent: the ring has four stations (HS A-D), HS D is empty, so after assigning LOC_A there the
+  counts are necessarily 0 assigned / 2 derived (LOC_B and LOC_C) - the assertions pin the exact
+  divergence that produced the bug. One deliberate asymmetry recorded: an inactive station's badge
+  greys out even when its assigned locomotive stands on it (the grey branch wins), while the graph
+  still outlines that station teal - the badge is answering "can it run", the outline "is it home";
+  defensible, and not worth a finding.
+- **The three `getHomeStation` legend calls are gone** from `AutoLocomotiveStatus` - which also
+  removes three synchronized Layout-monitor reads from every locomotive-list repaint, a small
+  bonus of the `IR-B2` class in the right direction this time.
+- **The docs moved with the code:** Automation.md and the Readme changelog describe the new legend
+  (`*` = timetable start, teal = assigned home, outlines toggleable) consistently with what the
+  code renders. That sweep is also what surfaced TCR-C5: the one description of the legend that
+  did *not* move was the tooltip in the bundles, in every language.
+- **The TCR-C5/C6 fixes themselves** were applied with the same discipline as the earlier bundle
+  round: exact-match literal replacement (each old string verified to occur exactly once in its
+  file before writing), and all eight bundles re-verified afterwards - zero bytes above 127, zero
+  malformed `\u` escapes. The translations are the reviewer's; the author should read them once,
+  since this cycle has already produced two non-native wording defects (`WR-C7`, `TCR-C4`) - and
+  the tooltip and confirmation are the two strings a user actually reads slowly.
+
+With TCR-C5 and TCR-C6 applied, nothing filed in this document remains open.
