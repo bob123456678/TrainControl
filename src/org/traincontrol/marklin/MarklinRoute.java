@@ -40,6 +40,15 @@ public class MarklinRoute extends Route
     
     // Extra delay between route commands
     private static final int DEFAULT_SLEEP_MS = 150;
+
+    // What a route command's delay must be for the *next* command to land THREEWAY_DELAY_MS later -
+    // the gap the track diagram already leaves between a three-way's two commands.  execRoute sleeps
+    // SLEEP_INTERVAL plus the command's own delay, hence the subtraction.
+    //
+    // Both places that build a three-way pair use this: the CS2 file importer and the route editor.
+    // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
+    public static final int THREEWAY_ROUTE_DELAY_MS =
+        (int) (MarklinAccessory.THREEWAY_DELAY_MS - MarklinControlStation.SLEEP_INTERVAL);
     
     // State for routes with S88 trigger
     // volatile: the monitor thread started below loops on this field, while enable() and disable() are

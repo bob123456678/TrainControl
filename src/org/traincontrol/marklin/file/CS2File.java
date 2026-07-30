@@ -35,14 +35,6 @@ public final class CS2File
     // network, but reads are given time to transfer potentially large database files.
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
-    // The gap the track diagram already leaves between a three-way's two commands, expressed as a route
-    // delay.  Route execution sleeps SLEEP_INTERVAL + the command's own delay after each command, so
-    // this lands the second command exactly THREEWAY_DELAY_MS after the first - where a route otherwise
-    // fires them 200ms apart, inside the margin the diagram path was tuned to.
-    //
-    // Derived from both constants rather than written as a number, so the two paths cannot drift.
-    private static final int THREEWAY_ROUTE_DELAY_MS =
-        (int) (MarklinAccessory.THREEWAY_DELAY_MS - MarklinControlStation.SLEEP_INTERVAL);
 
 
     // IP address for our HTTP requests
@@ -1247,7 +1239,7 @@ public final class CS2File
                                         RouteCommand straighten =
                                             RouteCommand.RouteCommandAccessory(address + 1, protocol, false);
 
-                                        straighten.setDelay(THREEWAY_ROUTE_DELAY_MS);
+                                        straighten.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         r.addItem(straighten);
                                     }
 
@@ -1269,7 +1261,7 @@ public final class CS2File
                                         // Both drives go straight here, so there is no wrong transient to
                                         // avoid - but they are still two coils, and the diagram path
                                         // spaces this case as well
-                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
+                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, false);
                                     }
                                 }
@@ -1282,7 +1274,7 @@ public final class CS2File
 
                                     if (3 == accessory.getInt("states"))
                                     {
-                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
+                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, true);
                                     }
                                 }
@@ -1296,7 +1288,7 @@ public final class CS2File
 
                                     if (3 == accessory.getInt("states"))
                                     {
-                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
+                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, false);
                                     }
                                 }

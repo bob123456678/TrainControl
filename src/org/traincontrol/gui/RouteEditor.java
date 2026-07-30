@@ -21,6 +21,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
+import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 
 /**
@@ -1291,10 +1292,11 @@ public class RouteEditor extends PositionAwareJFrame
                 int address = Math.abs(Integer.parseInt(this.accAddr.getText()));
                 
                 String delayString = "";
+                int delayVal = 0;
                 
                 if (!"".equals(this.delay.getText()) && !isConditional)
                 {
-                    int delayVal = Math.abs(Integer.parseInt(this.delay.getText()));
+                    delayVal = Math.abs(Integer.parseInt(this.delay.getText()));
 
                     if (delayVal > 0)
                     {
@@ -1302,13 +1304,21 @@ public class RouteEditor extends PositionAwareJFrame
                     }
                 }
                 
+                // A three-way needs its two commands spaced whatever the operator typed, so this is a
+                // floor rather than a default: leaving the field blank emitted no delay at all, and the
+                // pair then fired DEFAULT_SLEEP_MS apart - closer together than the track diagram allows
+                // for the very same turnout.  Conditions do not execute, so they keep none.
+                String threeWayDelayString = isConditional
+                    ? delayString
+                    : "," + Math.max(delayVal, MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+
                 if (this.accType3Way.isSelected())
                 {
                     if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
                     {
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), false
-                        ) + delayString + "\n";
+                        ) + threeWayDelayString + "\n";
                         
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
@@ -1318,7 +1328,7 @@ public class RouteEditor extends PositionAwareJFrame
                     {
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
-                        ) + delayString + "\n";     
+                        ) + threeWayDelayString + "\n";     
                         
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), true
@@ -1328,7 +1338,7 @@ public class RouteEditor extends PositionAwareJFrame
                     {
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address, getProtocol(), false
-                        ) + delayString + "\n";
+                        ) + threeWayDelayString + "\n";
                         
                         newEntry += Accessory.toAccessorySettingString(
                             Accessory.accessoryType.SWITCH, address + 1, getProtocol(), true
