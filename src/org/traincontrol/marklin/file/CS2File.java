@@ -1274,7 +1274,15 @@ public final class CS2File
 
                                     if (3 == accessory.getInt("states"))
                                     {
-                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                        // The gap is a turnout's, not every three-state accessory's.
+                                        // states == 3 also matches a three-aspect signal, whose two
+                                        // addresses drive lamps with nothing to bind - and delaying
+                                        // those changed the parse of routes that were always correct.
+                                        if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                        {
+                                            first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                        }
+
                                         r.addAccessory(address + 1, protocol, true);
                                     }
                                 }
@@ -1288,7 +1296,12 @@ public final class CS2File
 
                                     if (3 == accessory.getInt("states"))
                                     {
-                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                        // Turnouts only - see stellung 2 above
+                                        if ("dreiwegweiche".equals(accessory.getString("typ")))
+                                        {
+                                            first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                        }
+
                                         r.addAccessory(address + 1, protocol, false);
                                     }
                                 }

@@ -9,6 +9,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.RemoteDeviceCollection;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.udp.CS2Message;
@@ -495,5 +496,38 @@ public class testAccessory
     @AfterMethod
     public void tearDownMethod() throws Exception
     {
+    }
+
+    /**
+     * Which settings throw the accessory, and setState agreeing with the answer.
+     *
+     * Two callers depend on this mapping: setState acts on it, and the autonomy path configuration
+     * orders an edge's commands by it, so that a three-way turnout has its diverging drive commanded
+     * only after the other has been released - never both at once, which routes nowhere.
+     *
+     * Pinned because inverting it is invisible: every accessory would still be commanded, just in the
+     * wrong order, and only a three-way would show it - on the layout rather than in a test.
+     */
+    @Test
+    public void testWhichSettingsThrowAnAccessory() throws Exception
+    {
+        assertTrue(Accessory.isThrow(Accessory.accessorySetting.TURN), "TURN throws");
+        assertTrue(Accessory.isThrow(Accessory.accessorySetting.RED), "RED throws");
+
+        assertFalse(Accessory.isThrow(Accessory.accessorySetting.STRAIGHT), "STRAIGHT releases");
+        assertFalse(Accessory.isThrow(Accessory.accessorySetting.GREEN), "GREEN releases");
+
+        // And the other caller has to agree with it, or ordering by one while acting on the other would
+        // put the commands in exactly the wrong sequence.  Address picked clear of the ones the rest of
+        // this class uses, since nothing here tears accessories down.
+        MarklinAccessory acc = model.newSwitch(295, MarklinAccessory.accessoryDecoderType.MM2, false);
+
+        for (Accessory.accessorySetting setting : Accessory.accessorySetting.values())
+        {
+            assertTrue(acc.setState(setting), setting + " must be a valid setting");
+
+            assertEquals(acc.isSwitched(), Accessory.isThrow(setting),
+                "setState(" + setting + ") must leave the accessory in the state isThrow reports");
+        }
     }
 }

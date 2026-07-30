@@ -85,13 +85,28 @@ abstract public class Accessory
     }
     
     /**
+     * Whether this setting throws the accessory, as opposed to releasing it to straight.
+     *
+     * Two callers, and they must agree: setState below acts on it, and the autonomy path configuration
+     * orders its commands by it - a three-way turnout is two drives, and its diverging drive has to be
+     * commanded after the other has been released, never before.
+     *
+     * @param state
+     * @return
+     */
+    public static boolean isThrow(accessorySetting state)
+    {
+        return state == accessorySetting.TURN || state == accessorySetting.RED;
+    }
+
+    /**
      * Sets state based on the provided accessory setting
      * @param state
      * @return was the state value valid?
      */
     public boolean setState(accessorySetting state)
     {
-        if (state == accessorySetting.TURN || state == accessorySetting.RED)
+        if (isThrow(state))
         {   
             this.turn();
             return true;

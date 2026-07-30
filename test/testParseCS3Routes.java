@@ -152,4 +152,205 @@ public class testParseCS3Routes
     public void tearDownMethod() throws Exception
     {
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Three-way turnouts in CS3 routes
+    //
+    // The shipped fixtures do not reach this code: CS3_mags.json holds exactly one dreiwegweiche
+    // (id 8, address 5, mm) and not one of the 50 routes in CS3_automatics.json references it.  So the
+    // routes below are built here and parsed against the real accessory list.
+    // ---------------------------------------------------------------------------------------------
+
+    /** The mag id of the fixture's only three-way, whose address is 5. */
+    private static final int THREE_WAY_MAG_ID = 8;
+    private static final int THREE_WAY_ADDRESS = 5;
+
+    /**
+     * A CS3 route naming the fixture's three-way at the given stellung, parsed against the real mags.
+     */
+    private MarklinRoute parseThreeWayRoute(String stellung, String name) throws Exception
+    {
+        org.json.JSONObject item = new org.json.JSONObject();
+
+        item.put("typ", "mag");
+        item.put("magnetartikel", THREE_WAY_MAG_ID);
+
+        if (stellung != null) item.put("stellung", stellung);
+
+        org.json.JSONObject route = new org.json.JSONObject();
+
+        route.put("id", 9001);
+        route.put("name", name);
+        route.put("items", new org.json.JSONArray().put(item));
+
+        List<MarklinRoute> parsed = parser.parseRoutesCS3(
+            new org.json.JSONArray().put(route),
+            parseJSONArray(fetchURL(cs3_mags)),
+            parseJSONArray(fetchURL(cs3_loks)));
+
+        assertEquals(parsed.size(), 1, "expected exactly one parsed route");
+
+        return parsed.get(0);
+    }
+
+    /**
+     * A three-way yields both of its drives, released before thrown, with the pair spaced apart.
+     *
+     * Two things are pinned, and they broke separately.  The order: a three-way is two drives on
+     * consecutive addresses, and commanding the diverging one before the other is released puts both
+     * blade sets over at once - a combination that routes nowhere.  The gap: route execution sleeps
+     * SLEEP_INTERVAL plus the command's own delay, so without a delay on the first command the pair
+     * fires DEFAULT_SLEEP_MS apart, closer together than the track diagram allows for the same turnout.
+     */
+    @Test
+    public void testThreeWayRouteReleasesBeforeThrowing() throws Exception
+    {
+        MarklinRoute left = parseThreeWayRoute("0", "TW left");
+
+        assertEquals(left.getRoute().size(), 2, "a three-way is two commands: " + left.getRoute());
+
+        RouteCommand first = left.getRoute().get(0);
+        RouteCommand second = left.getRoute().get(1);
+
+        assertEquals(first.getAddress(), THREE_WAY_ADDRESS + 1, "the released drive comes first");
+        assertFalse(first.getSetting(), "and it is released, not thrown");
+
+        assertEquals(second.getAddress(), THREE_WAY_ADDRESS, "the thrown drive comes second");
+        assertTrue(second.getSetting(), "and it is the one thrown");
+
+        assertEquals(first.getDelay(), MarklinRoute.THREEWAY_ROUTE_DELAY_MS,
+            "the gap has to sit on the FIRST command - execRoute sleeps after each one, so a delay on "
+            + "the second would space this pair from whatever follows instead");
+
+        // The other diverging position, which throws the other drive
+        MarklinRoute right = parseThreeWayRoute("2", "TW right");
+
+        assertEquals(right.getRoute().size(), 2, "also two commands: " + right.getRoute());
+        assertEquals(right.getRoute().get(0).getAddress(), THREE_WAY_ADDRESS, "released first");
+        assertFalse(right.getRoute().get(0).getSetting(), "and released, not thrown");
+        assertTrue(right.getRoute().get(1).getSetting(), "the second is the thrown one");
+        assertEquals(right.getRoute().get(0).getDelay(), MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+    }
+
+    /**
+     * Neither drive is ever thrown at the same time as the other.
+     *
+     * Both-thrown is the state with no valid route through the turnout, so no stellung may produce it -
+     * this asks the question of every position rather than of the two that happen to be interesting.
+     */
+    @Test
+    public void testNoThreeWayPositionThrowsBothDrives() throws Exception
+    {
+        for (String stellung : new String[] { null, "0", "1", "2", "3" })
+        {
+            MarklinRoute r = parseThreeWayRoute(stellung, "TW " + stellung);
+
+            int thrown = 0;
+
+            for (RouteCommand rc : r.getRoute())
+            {
+                if (rc.getSetting()) thrown++;
+            }
+
+            assertTrue(thrown <= 1,
+                "stellung " + stellung + " throws " + thrown + " drives at once: " + r.getRoute());
+        }
+    }
+
+    /**
+     * A route naming the same three-way twice spaces both of its pairs.
+     *
+     * This is why the delay is set on the command object rather than through
+     * MarklinRoute.setDelay(address, ms): that searches the route for the address and returns at the
+     * first match, so the second pair would have been left unspaced - and a route that sets a turnout,
+     * runs a locomotive past it and sets it back is an ordinary thing to build.
+     */
+    @Test
+    public void testEveryThreeWayPairInARouteIsSpaced() throws Exception
+    {
+        org.json.JSONArray items = new org.json.JSONArray();
+
+        for (String stellung : new String[] { "0", "2" })
+        {
+            org.json.JSONObject item = new org.json.JSONObject();
+
+            item.put("typ", "mag");
+            item.put("magnetartikel", THREE_WAY_MAG_ID);
+            item.put("stellung", stellung);
+
+            items.put(item);
+        }
+
+        org.json.JSONObject route = new org.json.JSONObject();
+
+        route.put("id", 9002);
+        route.put("name", "TW twice");
+        route.put("items", items);
+
+        List<MarklinRoute> parsed = parser.parseRoutesCS3(
+            new org.json.JSONArray().put(route),
+            parseJSONArray(fetchURL(cs3_mags)),
+            parseJSONArray(fetchURL(cs3_loks)));
+
+        assertEquals(parsed.size(), 1);
+
+        List<RouteCommand> commands = parsed.get(0).getRoute();
+
+        assertEquals(commands.size(), 4, "two three-ways, two commands each: " + commands);
+
+        assertEquals(commands.get(0).getDelay(), MarklinRoute.THREEWAY_ROUTE_DELAY_MS,
+            "the first pair is spaced");
+        assertEquals(commands.get(2).getDelay(), MarklinRoute.THREEWAY_ROUTE_DELAY_MS,
+            "and so is the second - an address-keyed delay would have stopped at the first");
+    }
+
+    /**
+     * An ordinary two-state accessory still yields exactly one command.
+     *
+     * The pair is emitted on the strength of the accessory's typ, so a plain turnout must be untouched
+     * by all of the above - otherwise every route in the fixture would have grown a phantom command on
+     * address + 1, which is a far worse bug than the one being fixed.
+     */
+    @Test
+    public void testAnOrdinaryTurnoutStillYieldsOneCommand() throws Exception
+    {
+        org.json.JSONArray mags = parseJSONArray(fetchURL(cs3_mags));
+
+        // -1 as the sentinel, not 0: the fixture's first plain turnout has id 0, and a > 0 check
+        // rejected it
+        int plainId = -1;
+
+        for (int i = 0; i < mags.length(); i++)
+        {
+            org.json.JSONObject m = mags.getJSONObject(i);
+
+            if ("linksweiche".equals(m.optString("typ")))
+            {
+                plainId = m.getInt("id");
+                break;
+            }
+        }
+
+        assertTrue(plainId >= 0, "precondition: the fixture must contain a plain turnout");
+
+        org.json.JSONObject item = new org.json.JSONObject();
+
+        item.put("typ", "mag");
+        item.put("magnetartikel", plainId);
+        item.put("stellung", "0");
+
+        org.json.JSONObject route = new org.json.JSONObject();
+
+        route.put("id", 9003);
+        route.put("name", "plain turnout");
+        route.put("items", new org.json.JSONArray().put(item));
+
+        List<MarklinRoute> parsed = parser.parseRoutesCS3(
+            new org.json.JSONArray().put(route), mags, parseJSONArray(fetchURL(cs3_loks)));
+
+        assertEquals(parsed.size(), 1, "the route must parse, not be skipped");
+
+        assertEquals(parsed.get(0).getRoute().size(), 1,
+            "a two-state accessory is one command: " + parsed.get(0).getRoute());
+    }
 }

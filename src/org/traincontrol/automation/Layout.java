@@ -1391,7 +1391,28 @@ public class Layout
     {
         boolean result = true;
 
-        for (String name : e.getConfigCommands().keySet())
+        // Released before thrown, and otherwise by name.
+        //
+        // This used to iterate the map's own key order, which is no order at all.  It matters because a
+        // three-way turnout is two drives on consecutive addresses: commanding the diverging one before
+        // the other has been released puts both blade sets over at once, a combination that routes
+        // nowhere and that some mechanisms bind in.  Releasing first means the only transient the
+        // turnout passes through is straight.
+        //
+        // Applied to every edge rather than to detected pairs: for independent accessories the order is
+        // immaterial, so there is nothing to weigh against making it deterministic - and a pair is only
+        // recognisable from an address convention this method cannot see.
+        List<String> names = new ArrayList<>(e.getConfigCommands().keySet());
+
+        names.sort((a, b) ->
+        {
+            boolean aThrows = Accessory.isThrow(e.getConfigCommands().get(a));
+            boolean bThrows = Accessory.isThrow(e.getConfigCommands().get(b));
+
+            return aThrows == bThrows ? a.compareTo(b) : (aThrows ? 1 : -1);
+        });
+
+        for (String name : names)
         {
             Accessory.accessorySetting state = e.getConfigCommands().get(name);
 
