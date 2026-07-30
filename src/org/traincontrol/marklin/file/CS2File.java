@@ -35,6 +35,15 @@ public final class CS2File
     // network, but reads are given time to transfer potentially large database files.
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
+    // The gap the track diagram already leaves between a three-way's two commands, expressed as a route
+    // delay.  Route execution sleeps SLEEP_INTERVAL + the command's own delay after each command, so
+    // this lands the second command exactly THREEWAY_DELAY_MS after the first - where a route otherwise
+    // fires them 200ms apart, inside the margin the diagram path was tuned to.
+    //
+    // Derived from both constants rather than written as a number, so the two paths cannot drift.
+    private static final int THREEWAY_ROUTE_DELAY_MS =
+        (int) (MarklinAccessory.THREEWAY_DELAY_MS - MarklinControlStation.SLEEP_INTERVAL);
+
 
     // IP address for our HTTP requests
     private final String IP;
@@ -1227,44 +1236,67 @@ public final class CS2File
                                 // this means red/turn
                                 if (!item.has("stellung") || "0".equals(item.getString("stellung")))
                                 {
-                                    r.addAccessory(address, protocol, true);
-
                                     // This is invalid for 3-way signals
                                     // if (3 == accessory.getInt("states"))
                                     if ("dreiwegweiche".equals(accessory.getString("typ")))
                                     {
-                                        r.addAccessory(address + 1, protocol, false);
+                                        // Held as an object rather than delayed afterwards through
+                                        // r.setDelay(address): that searches by address and stops at the
+                                        // first match, so a route touching the same three-way twice
+                                        // would put the gap on the wrong command.
+                                        RouteCommand straighten =
+                                            RouteCommand.RouteCommandAccessory(address + 1, protocol, false);
+
+                                        straighten.setDelay(THREEWAY_ROUTE_DELAY_MS);
+                                        r.addItem(straighten);
                                     }
+
+                                    r.addAccessory(address, protocol, true);
                                 }
-                                // stellung 1 means isSwitched is false   
+                                // stellung 1 means isSwitched is false
                                 // this means green/straight
                                 else if ("1".equals(item.getString("stellung")))
-                                {                                
-                                    r.addAccessory(address, protocol, false);
+                                {
+                                    RouteCommand first =
+                                        RouteCommand.RouteCommandAccessory(address, protocol, false);
+
+                                    r.addItem(first);
 
                                     // This is invalid for 3-way signals
                                     // if (3 == accessory.getInt("states"))
                                     if ("dreiwegweiche".equals(accessory.getString("typ")))
                                     {
+                                        // Both drives go straight here, so there is no wrong transient to
+                                        // avoid - but they are still two coils, and the diagram path
+                                        // spaces this case as well
+                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, false);
                                     }
                                 }
                                 else if ("2".equals(item.getString("stellung")))
-                                {           
-                                    r.addAccessory(address, protocol, false);
+                                {
+                                    RouteCommand first =
+                                        RouteCommand.RouteCommandAccessory(address, protocol, false);
+
+                                    r.addItem(first);
 
                                     if (3 == accessory.getInt("states"))
                                     {
+                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, true);
                                     }
                                 }
                                 // Unclear how this differs from 1, seems to only be used by certain signals
                                 else if ("3".equals(item.getString("stellung")))
-                                {           
-                                    r.addAccessory(address, protocol, false);
+                                {
+                                    RouteCommand first =
+                                        RouteCommand.RouteCommandAccessory(address, protocol, false);
+
+                                    r.addItem(first);
 
                                     if (3 == accessory.getInt("states"))
                                     {
+                                        first.setDelay(THREEWAY_ROUTE_DELAY_MS);
                                         r.addAccessory(address + 1, protocol, false);
                                     }
                                 }

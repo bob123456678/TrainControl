@@ -392,6 +392,7 @@ Tab icons provided by Freepik.
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
         - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
+        - Fixed bug where 3-way switches created via the route editing wizard or parsed via the CS2 would sometimes fail to turn left
     - Multi-unit Bug Fixes
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted

@@ -1317,12 +1317,12 @@ public class RouteEditor extends PositionAwareJFrame
                     else if (this.accState.getSelectedItem().toString().equals(LEFT))
                     {
                         newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, getProtocol(), true
-                        ) + delayString + "\n";
+                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
+                        ) + delayString + "\n";     
                         
                         newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
-                        );               
+                            Accessory.accessoryType.SWITCH, address, getProtocol(), true
+                        );          
                     }
                     else if (this.accState.getSelectedItem().toString().equals(RIGHT))
                     {
