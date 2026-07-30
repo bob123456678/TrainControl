@@ -30,6 +30,9 @@ finding by finding in the Validation section at the end of this document; status
 reflect that round. Every fix held. The round amended one status the resolution had compressed
 (`SWC-B3` is fixed in its ordering half and closed by decision in its delay half) and filed one new
 finding, `SWC-C8`, in the fix for `SWC-C2`.
+**Second validation round - 2026-07-30.** The `SWC-C8` fix and the `SWC-C3` changelog amendment
+landed as `ff42fe3` and are validated in the final section; both held, including the test's claim of
+being red against `062f7ef`. The round filed one cosmetic finding, `SWC-C9`.
 
 Findings use the A/B/C/D convention in [README.md](README.md).
 
@@ -51,8 +54,10 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | SWC-C6 | Every three-way pair execution now logs a `route.delay` line, because the 300ms floor exceeds the 150ms logging threshold in `execRoute` - log noise on every routine execution of a route containing a three-way | C | Won't fix - accepted by the author.  Any threshold that hides the floor also hides an operator's deliberate 200-300ms pause |
 | SWC-C7 | The new `THREEWAY_ROUTE_DELAY_MS` comment states "Both places that build a three-way pair use this: the CS2 file importer and the route editor" - both halves are wrong: the importer that uses it is the CS3 one, and capture (SWC-B3) is a third builder that does not | C | Fixed - the comment names the CS3 importer and the two builders that do not use the constant |
 | SWC-C8 | `LayoutLabel.submitSwitching` discards the `Future` from `submit()`, so an unchecked exception escaping a switching action - which on the EDT previously reached the default handler and printed - is now silently swallowed; filed by the validation round against the `SWC-C2` fix | C | Fixed - execute() instead of submit(), so an escaping exception reaches the thread handler as it did on the EDT.  Pinned by `testAnExceptionEscapingASwitchingActionIsNotSwallowed`, which fails against `062f7ef` |
+| SWC-C9 | The javadoc of the new `testAnExceptionEscapingASwitchingActionIsNotSwallowed` contains `'''s` twice - stray triple apostrophes where possessives were meant; compiles fine, renders as three quotes in the javadoc | C | Fixed - both possessives repaired, and the validator now rejects the sequence, so this class of artifact cannot reach a reviewer again |
 | SWC-D1-D9 | Clean checks on the four commits and the surrounding machinery | D | Verified clean |
 | SWC-D10-D14 | Clean checks by the validation round on the fixes themselves | D | Verified clean |
+| SWC-D15 | Clean check by the second validation round: worker replacement after an escaping exception preserves the dispatch's guarantees | D | Verified clean |
 
 No A findings. The B findings are all pre-existing and all reachable only in specific configurations;
 none is a regression from this round.
@@ -561,3 +566,56 @@ against committed code rather than against a reconstructed expression.
 Also acted on from this round: the changelog omission noted under `SWC-C3`. The reworded entry now
 names both origins - the wizard and routes imported from a Central Station 3 - so the CS3 half of the
 original fix is claimed again, this time only where it is true.
+
+---
+
+## Validation of the SWC-C8 fix - 2026-07-30, second round
+
+The fix landed as `ff42fe3`. Verified at the mechanism, not the diff: with `execute`
+([LayoutLabel.java:75](../../src/org/traincontrol/gui/LayoutLabel.java)), a throwable escaping the
+action propagates out of the pool's `runWorker`, and the worker thread dies carrying it - the
+factory installs no per-thread handler, so it reaches the *default* uncaught-exception handler,
+which is both what the old EDT path gave and exactly what the test installs and waits on. The
+test's red claim was traced too: under `submit`, `FutureTask.run` absorbs the throwable before any
+thread handler can see it, the latch never counts down, and the 5-second await fails the test - red
+against `062f7ef` for the right reason, green now. The handler swap is restored in a `finally`, so
+the test cannot leak its handler into the suite.
+
+**SWC-D15 - what the dying worker takes with it: nothing that matters.** An escaping exception now
+kills the pool's single thread, which is new - `submit` kept the worker alive. Checked rather than
+assumed: the pool replaces the dead worker through the same factory, so the replacement is again a
+daemon named "LayoutSwitching"; queued actions run on it; and the one-at-a-time guarantee is the
+pool's size, not the thread's identity, so it survives the replacement. The disposition's reason for
+not choosing catch-and-log - a static dispatch has no model to log through - is accurate as written.
+
+The changelog amendment was re-checked word for word: "created via the route editing wizard, or in
+routes imported from a Central Station 3" claims exactly the two origins that were fixed, and no
+longer omits the import half nor overclaims the CS2 one.
+
+**SWC-C9 (cosmetic, filed by this round):** the new test's javadoc reads `MarklinRoute'''s` and
+`the thread'''s` ([testLayoutTiles.java:337](../../test/testLayoutTiles.java)) - stray triple
+apostrophes, twice in one paragraph. Compiles and runs identically; renders as three quotes in the
+javadoc. Same class as `PV-C5`/`PV-C6`, and smaller than both; recorded because this folder's rule
+is that the record stays honest about its own residue.
+
+**Verdict.** The fix holds, its test is the document's only red-against-committed-code pin, and the
+round's sole finding is two characters of punctuation. This is the shape a closing round should
+have.
+
+### Disposition of SWC-C9 - 2026-07-30
+
+Both possessives repaired. The finding is two characters; its cause is not. Every edit in this
+cycle goes through a `python -c "..."` command, so an apostrophe in the text being written has to
+cross two levels of quoting. It has failed that crossing three times now - `\u2019` escapes into
+java comments, an invalid `\x` escape into a danish properties value, and now '''s into a
+javadoc. Each one compiled, so each one was found by a reader rather than by a check.
+
+The instance was fixed and the class was closed with it: the validator now rejects ''' and the
+triple-quote in any java or properties source, sequences no legitimate Java 8 file contains. The
+check was verified by reintroducing the artifact and confirming it names the file and the line -
+a detector nobody has seen fail is not yet a detector.
+
+Its first version also listed `'\''` and flagged three real tests, because that is the legal java
+char literal for a single quote (`testHomeStaging:83`, `testInvalidInput:122`,
+`testMessageBundles:120`). Caught before it was relied on, and recorded here because a check that
+cries wolf is worse than no check, and this one nearly shipped that way.

@@ -334,8 +334,8 @@ public class testLayoutTiles
      * While switching ran on the event thread, anything that escaped it reached the default handler
      * and printed.  Moving the work to an executor put that at risk: submit() captures the throwable
      * into a Future, and this dispatch keeps no Future to read it back from, so the exception would
-     * have vanished with no sign of it anywhere - the failure mode MarklinRoute'''s monitor loop already
-     * carries a comment about.  execute() puts it back on the thread'''s normal path.
+     * have vanished with no sign of it anywhere - the failure mode MarklinRoute's monitor loop already
+     * carries a comment about.  execute() puts it back on the thread's normal path.
      */
     @Test
     public void testAnExceptionEscapingASwitchingActionIsNotSwallowed() throws Exception
