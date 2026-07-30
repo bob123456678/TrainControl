@@ -327,4 +327,45 @@ public class testLayoutTiles
             "two switching actions overlapped: a three-way's two sends must not interleave with another "
             + "tile's, which the event queue used to guarantee");
     }
+
+    /**
+     * An exception escaping a switching action stays visible.
+     *
+     * While switching ran on the event thread, anything that escaped it reached the default handler
+     * and printed.  Moving the work to an executor put that at risk: submit() captures the throwable
+     * into a Future, and this dispatch keeps no Future to read it back from, so the exception would
+     * have vanished with no sign of it anywhere - the failure mode MarklinRoute'''s monitor loop already
+     * carries a comment about.  execute() puts it back on the thread'''s normal path.
+     */
+    @Test
+    public void testAnExceptionEscapingASwitchingActionIsNotSwallowed() throws Exception
+    {
+        Thread.UncaughtExceptionHandler original = Thread.getDefaultUncaughtExceptionHandler();
+
+        AtomicReference<Throwable> seen = new AtomicReference<>();
+        CountDownLatch reported = new CountDownLatch(1);
+
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) ->
+        {
+            seen.set(throwable);
+            reported.countDown();
+        });
+
+        try
+        {
+            LayoutLabel.submitSwitching(() ->
+            {
+                throw new IllegalStateException("switching blew up");
+            });
+
+            assertTrue(reported.await(5, TimeUnit.SECONDS),
+                "the exception was swallowed - submit() captures it into a Future nobody reads");
+
+            assertEquals(seen.get().getMessage(), "switching blew up");
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(original);
+        }
+    }
 }

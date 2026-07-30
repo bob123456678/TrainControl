@@ -394,7 +394,7 @@ Tab icons provided by Freepik.
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
         - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
-        - Fixed bug where 3-way switches created via the route editing wizard would sometimes fail to switch left
+        - Fixed bug where 3-way switches created via the route editing wizard, or in routes imported from a Central Station 3, would sometimes fail to switch left
         - Fixed bug where adding a 3-way switch as a route condition made the condition impossible to save
         - Fixed bug where capturing a 3-way switch by clicking it on the track diagram could record its two commands in the wrong order
         - Pauses in routes imported from a Central Station 2 no longer lose their fraction of a second, and pauses shorter than one second are no longer dropped

@@ -59,14 +59,20 @@ public final class LayoutLabel extends JLabel
     /**
      * Runs one diagram switching action off the event thread.
      *
+     * execute rather than submit: submit captures whatever the action throws into a Future, and there
+     * is no Future kept here to read it back from, so an escaping exception would disappear with no
+     * sign of it anywhere.  On the event thread it used to reach the default handler and print, and
+     * with execute it still does.
+     *
      * Separate and public so the dispatch can be tested on its own: what has to hold is that the
-     * action does not run on the event thread, and that two of them never overlap.
+     * action does not run on the event thread, that two of them never overlap, and that an exception
+     * escaping one stays visible.
      *
      * @param action the switching work, including any sleeps it needs
      */
     public static void submitSwitching(Runnable action)
     {
-        SWITCHING.submit(action);
+        SWITCHING.execute(action);
     }
     
     private Icon lastIcon;

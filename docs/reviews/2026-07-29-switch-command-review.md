@@ -25,6 +25,12 @@ directly in the comparison section: **no functional regression was found in the 
 round's two new errors are both false claims in prose (`SWC-C3`, `SWC-C7`), and every functional
 finding below predates the round and was reachable before it.
 
+**Validation round - 2026-07-30.** The fixes landed as `062f7ef` (2026-07-29) and are validated
+finding by finding in the Validation section at the end of this document; statuses in the table
+reflect that round. Every fix held. The round amended one status the resolution had compressed
+(`SWC-B3` is fixed in its ordering half and closed by decision in its delay half) and filed one new
+finding, `SWC-C8`, in the fix for `SWC-C2`.
+
 Findings use the A/B/C/D convention in [README.md](README.md).
 
 ---
@@ -35,7 +41,7 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 |---|---------|----------|--------|
 | SWC-B1 | The CS2 flat-file route importer (`parseRoutes`) is the unfixed twin of everything this round fixed in the CS3 importer: a three-way at stellung 0 emits one command with no release of the sibling drive, the `setting >= 2` pair is emitted `id+1`-then-`id` with no gap floor, and its `sekunde` is applied through the first-match address search the CS3 fix explicitly abandoned | B | **Partly fixed.**  The first-match `setDelay(address, ms)` is fixed; the three-way semantics are closed by the author - `parseMags` keeps no `typ`, and a three-way reaches the user through the track diagram rather than the accessory record, so this half is metadata, not a defect |
 | SWC-B2 | The same importer truncates `sekunde` to whole seconds before converting to ms (`Float.valueOf(kv[1]).intValue() * 1000`), so the fractional pauses present in the real fixtures (2.3, 3.2) lose their fraction and a pause under one second parses as no pause at all | B | Fixed |
-| SWC-B3 | The capture-commands flow is a third builder of three-way pairs: captured pairs carry no delay floor, and `filterConfigCommands`' dedup (first-seen position, latest value) inverts a captured pair into throw-before-release when the user clicks a three-way through more than one position while capturing | B | Fixed - `filterConfigCommands` now keeps the last-written value at the last-written position, so the two rules agree |
+| SWC-B3 | The capture-commands flow is a third builder of three-way pairs: captured pairs carry no delay floor, and `filterConfigCommands`' dedup (first-seen position, latest value) inverts a captured pair into throw-before-release when the user clicks a three-way through more than one position while capturing | B | **Fixed (ordering half); closed by decision (delay half.)**  The dedup now keeps the last-written value at the last-written position, so a captured pair always ends release-before-throw.  A captured pair still executes 200ms apart with no floor - capture cannot recognise a pair to space it, a limitation now stated at `THREEWAY_ROUTE_DELAY_MS`; within the author's stated tolerance, since the ordering is the requirement and the delay a latency safeguard |
 | SWC-B4 | A three-way added on the route editor's condition tab can never parse: the wizard emits its two lines with no operator between them, and `NodeExpression.fromTextRepresentation` then fails the whole condition at save | B | Fixed - the pair joins with the operator in a condition, via the extracted `RouteEditor.threeWayEntry` |
 | SWC-C1 | The layout importer seeds a three-way's first drive from `c.getState() != 1`, which is wrong for state 2: a three-way saved at "right" (a real fixture case) starts in the database with both drives believed thrown | C | Fixed - seeded through `LayoutDiagramComponent.getPrimaryDriveState`/`getSecondaryDriveState` |
 | SWC-C2 | The diagram click handler runs `execSwitching` on the EDT via `invokeLater`, so every three-way click freezes the UI for the 350ms inter-drive sleep (and the power-on path sleeps a further full second) | C | Fixed - dialogs stay on the event thread, the sleeps and both sends move together to a single-thread worker (`LayoutLabel.submitSwitching`) |
@@ -44,7 +50,9 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | SWC-C5 | The release-before-throw sort is per-edge; a pair whose two commands are authored on different edges of the same path executes in edge order, so the guarantee does not hold across edges - a limitation the code comment does not state | C | Fixed - the edge boundary is stated at the sort |
 | SWC-C6 | Every three-way pair execution now logs a `route.delay` line, because the 300ms floor exceeds the 150ms logging threshold in `execRoute` - log noise on every routine execution of a route containing a three-way | C | Won't fix - accepted by the author.  Any threshold that hides the floor also hides an operator's deliberate 200-300ms pause |
 | SWC-C7 | The new `THREEWAY_ROUTE_DELAY_MS` comment states "Both places that build a three-way pair use this: the CS2 file importer and the route editor" - both halves are wrong: the importer that uses it is the CS3 one, and capture (SWC-B3) is a third builder that does not | C | Fixed - the comment names the CS3 importer and the two builders that do not use the constant |
+| SWC-C8 | `LayoutLabel.submitSwitching` discards the `Future` from `submit()`, so an unchecked exception escaping a switching action - which on the EDT previously reached the default handler and printed - is now silently swallowed; filed by the validation round against the `SWC-C2` fix | C | Fixed - execute() instead of submit(), so an escaping exception reaches the thread handler as it did on the EDT.  Pinned by `testAnExceptionEscapingASwitchingActionIsNotSwallowed`, which fails against `062f7ef` |
 | SWC-D1-D9 | Clean checks on the four commits and the surrounding machinery | D | Verified clean |
+| SWC-D10-D14 | Clean checks by the validation round on the fixes themselves | D | Verified clean |
 
 No A findings. The B findings are all pre-existing and all reachable only in specific configurations;
 none is a regression from this round.
@@ -396,3 +404,160 @@ about three-ways or delays (SWC-B1, SWC-B2 are unpinned); no test drives the cap
 each fix wants its failing test first, per the README - and the CS2 ones can reuse
 `testParseCS3Routes`' synthetic-route pattern, which exists because fixtures without three-way
 routes cannot pin any of this.
+
+---
+
+## Validation of the fixes - 2026-07-30
+
+The fixes landed as `062f7ef`, one commit, working tree clean. Every fix was read in its enforcing
+method; every factual claim the fix commit's comments and this document's resolution make was
+re-verified at the layer it is about, not taken from the writeup. No code was changed by this round
+and no tests were run - the four tests claimed to fail pre-fix were traced against the old
+expressions instead. **Every fix held.** One new finding (`SWC-C8`), one status made precise
+(`SWC-B3`), two observations recorded below.
+
+**SWC-B1 (partly fixed, remainder closed) - verified.** The `sekunde` now lands on a held
+`RouteCommand` object ([CS2File.java:816](../../src/org/traincontrol/marklin/file/CS2File.java)), so
+a route touching one address twice keeps both pauses -
+`testAPauseLandsOnItsOwnItemNotAnEarlierOne` pins exactly the overwrite the old first-match search
+produced. The closure of the three-way half rests on a checkable claim, and it checks out:
+`parseMags` ([CS2File.java:641](../../src/org/traincontrol/marklin/file/CS2File.java)) maps any typ
+containing "weiche" to `accessoryType.SWITCH` and discards the string, so `parseRoutes`' accessory
+database genuinely cannot distinguish a dreiwegweiche - the defect is unfixable without keeping the
+typ, which is a design change, not a patch. One placement decision is worth recording: for
+`setting >= 2` pairs the pause now sits on the pair's *first* command - between the two drives,
+where the CS3 importer puts its floor and then its `sekunde` on the last. Defensible (it is the only
+spacing an unrecognisable pair will ever get) and currently unobservable: no `stellung=3` item in
+either real route file carries a `sekunde` (grepped, 0 hits).
+
+**SWC-B2 (fixed) - verified.** Scale-then-truncate
+([CS2File.java:765](../../src/org/traincontrol/marklin/file/CS2File.java)), the formula
+`parseRoutesCS3` always used. The float arithmetic behind the tests' exact assertions was checked
+rather than trusted: `2.3f * 1000` and `3.2f * 1000` both round to the exact integer float (2300.0f,
+3200.0f), so `testAFractionalPauseKeepsItsFraction`'s `assertEquals(..., 2300)` is sound, and the
+fixture route it pins (`zyA01/02`, accessory 8) carries the value it claims.
+
+**SWC-B3 (ordering fixed; delay half closed by decision) - verified, status amended.** The dedup's
+`map.remove(key); map.put(key, value)`
+([RouteEditor.java:243](../../src/org/traincontrol/gui/RouteEditor.java)) moves a rewritten
+accessory to the end, so surviving lines sit in last-written order. This was traced through every
+diagram click sequence, not just the reported one: whatever the click path, the final pair is the
+last click's two captures in `execSwitching`'s own order, which releases before it throws - so the
+invariant holds generally, with no three-way special case. The resolution's table said "Fixed"
+unqualified; the finding had two halves, and the *no-floor* half is not fixed but closed - a
+captured pair still executes 200ms apart, and the updated `THREEWAY_ROUTE_DELAY_MS` comment records
+capture as a builder that "cannot" space pairs. That is a decision within the author's stated
+tolerance (ordering is the requirement; the delay is a latency safeguard), but the status table now
+says both dispositions, per the one-status rule.
+
+**SWC-B4 (fixed) - verified.** `threeWayEntry`
+([RouteEditor.java:1302](../../src/org/traincontrol/gui/RouteEditor.java)) emits the identical three
+pairs the inline branches did - re-checked position by position, release first in all three - with
+the separator now a parameter: bare newline in a route, `"\nAND "` in a condition. The conditional
+form was traced through `NodeExpression.fromTextRepresentation`'s stack for both the first entry and
+an appended one; both parse. `testAConditionalThreeWayCanBeParsed` pins the old failure inside
+itself by asserting the bare form still refuses to parse - the strongest red a test of a new method
+can have.
+
+**SWC-C1 (fixed) - verified.** `getPrimaryDriveState`/`getSecondaryDriveState`
+([LayoutDiagramComponent.java:256](../../src/org/traincontrol/base/LayoutDiagramComponent.java))
+produce exactly the three legal combinations for states 0/1/2, and non-three-ways keep `state != 1`
+bit for bit. One behaviour change beyond the finding: a three-way at state *3* seeded thrown-first
+before and seeds both-straight now. Checked against the real data before accepting it: every
+dreiwegweiche across every layout fixture (14 elements, five files plus the Oles kreds layout)
+carries `zustand=2` or no `zustand` at all - never 3 - and the absent case behaves identically
+before and after (state defaults to 0, left, both versions). No real file changes behaviour except
+the one the fix is for.
+
+**SWC-C2 (fixed) - verified.** The dialogs stay on the EDT; the power-on wait and both sends move
+together to a single-thread daemon worker
+([LayoutLabel.java:52](../../src/org/traincontrol/gui/LayoutLabel.java)). The question the July
+cycle taught reviewers to ask - what did the old thread serialise for free? - is answered in the
+code itself (one worker, not a pool, so two clicks' sends cannot interleave) and asserted by
+`testDiagramSwitchingRunsOffTheEventThreadOneAtATime`, which pins both halves: off the EDT, and one
+at a time. The Swing work the moved code reaches was checked at its layer: `repaintSwitch`
+marshals itself onto the EDT with `invokeLater`, and `execSwitching`'s accessory mutations have
+always also run from route and autonomy threads, so the worker adds no new hazard class. The one
+thing the move lost is exception visibility - `SWC-C8` below.
+
+**SWC-C3 (fixed) - verified against each claim.** The five new changelog entries were checked one
+by one against the code they describe; all are accurate, including the restraint of the capture
+entry (it claims order, not spacing - matching what was actually fixed). One omission, left to the
+author per the changelog's non-technical charter: the CS3-import half of the original round - an
+imported route could also fail to switch left, and no longer does - now has no entry at all, since
+the reworded line claims only the wizard.
+
+**SWC-C4/C5/C6/C7 - verified.** Both inline predicates now call `Accessory.isThrow`
+([Layout.java:1796](../../src/org/traincontrol/automation/Layout.java),
+[Layout.java:1880](../../src/org/traincontrol/automation/Layout.java)) and the javadoc now
+enumerates its three users truthfully. The edge-boundary limitation is stated at the sort, with the
+practical guidance in it. `SWC-C6`'s closure carries its reasoning, and the reasoning is sound: the
+floor (300ms) and a deliberate operator pause occupy the same range, so no threshold separates them.
+`SWC-C7`'s replacement comment makes two factual claims and both were verified at their layers:
+the `parseMags` collapse (above) and capture's delay-lessness (the captured string is
+`toAccessorySettingString()`, which never emits a delay).
+
+### SWC-C8 - the switching worker swallows escaping exceptions
+
+**New, filed by this round, in the `SWC-C2` fix.** `submitSwitching`
+([LayoutLabel.java:67](../../src/org/traincontrol/gui/LayoutLabel.java)) calls
+`SWITCHING.submit(action)` and discards the returned `Future`. `submit` captures any exception the
+action throws into that Future, so an unchecked exception escaping `execSwitching` or the power-on
+wait now vanishes without a trace - on the EDT it previously reached the default exception handler
+and printed. The codebase's own commentary warns about precisely this failure mode (the
+`MarklinRoute` monitor thread's catch exists because "an escaping exception would silently stop"
+the work with no sign). No current throw path was found - `execSwitching` null-guards every branch -
+so this is a trap for the next contributor rather than a live defect, which is why it is C.
+`execute()` instead of `submit()` restores the old visibility through the thread's
+uncaught-exception handler; a catch-and-log inside the runnable would be better still.
+
+### Validation clean checks
+
+**D10 - no entrance was missed by the C2 move.** `execSwitching` has exactly two callers, both in
+`LayoutLabel`: the feedback branch (EDT, no sleeps - toggling a sensor is instant, correctly left
+alone) and the switch/signal branch, now routed through the worker. `LayoutGrid`'s three-way
+reference is tile registration, not switching.
+
+**D11 - the dedup change has no other victims.** `filterConfigCommands` has two callers. The route
+editor's capture wants last-written order (the fix); the edge editor's capture feeds config
+commands whose execution order `configureEdge` now sorts regardless of text order, so the change is
+invisible there. Capture of a touch-twice route still collapses to one command per accessory - a
+pre-existing limit of dedup itself, unchanged in kind by reordering.
+
+**D12 - the tests' red-before-green claims hold.** The four tests said to fail against the reviewed
+code were each traced against the old expressions: truncation makes 2300 into 2000 and 500 into 0,
+the first-match search makes the pause pair [2000, none] instead of [1000, 2000], and the old dedup
+returns the captured pair throw-first. All four fail pre-fix, for the right reason. The other five
+pin new methods and say so.
+
+**D13 - the wizard emission is unchanged where it was already right.** `threeWayEntry`'s three
+route-form outputs are byte-identical to the inline branches they replaced (delay floor on the
+first line, release first, no trailing delay on the second), so no route built by the fixed wizard
+differs from one built by the reviewed wizard.
+
+**D14 - real-data checks behind the verdicts above.** No dreiwegweiche in any layout fixture
+carries `zustand=3` (C1's behaviour change is unobservable); no `stellung=3` route item carries
+`sekunde` (B1's pause placement is unobservable); the `zyA01/02` route carries `sekunde=2.3` on
+accessory 8 (B2's fixture pin is real).
+
+**Verdict.** Ten fixes verified correct, two closures verified honest, one status made precise, one
+new C filed and left open. The chain ends the way the cycle summary says it should - the validation
+of the fixes found its finding in the fixes themselves, and it is smaller than what they fixed.
+
+### Disposition of SWC-C8 - 2026-07-30
+
+Fixed the same day it was filed. `submit` became `execute`
+([LayoutLabel.java:75](../../src/org/traincontrol/gui/LayoutLabel.java)), which is the smaller of the
+two remedies the finding offers; the catch-and-log alternative was not taken because a static
+dispatch has no model to log through, and reaching one would mean threading the UI into a method
+whose whole value is that it does not need it.
+
+The finding was pinned first: `testAnExceptionEscapingASwitchingActionIsNotSwallowed` installs a
+default uncaught-exception handler, submits a throwing action and requires the handler to fire. It
+fails against `062f7ef` - the code this validation round read - because the FutureTask absorbs the
+throwable before any thread handler sees it. That makes it the one test in this document that is red
+against committed code rather than against a reconstructed expression.
+
+Also acted on from this round: the changelog omission noted under `SWC-C3`. The reworded entry now
+names both origins - the wizard and routes imported from a Central Station 3 - so the CS3 half of the
+original fix is claimed again, this time only where it is true.
