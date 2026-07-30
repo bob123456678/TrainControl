@@ -353,4 +353,49 @@ public class testParseCS3Routes
         assertEquals(parsed.get(0).getRoute().size(), 1,
             "a two-state accessory is one command: " + parsed.get(0).getRoute());
     }
+
+    /**
+     * An item's own pause attaches after the three-way, not between its two drives.
+     *
+     * The CS records a pause per route item as "sekunde", meaning "wait this long before the next one".
+     * It used to be applied by searching the route for the item's address, and that search returns at
+     * the first match - so where the pair is emitted address-then-address+1, the pause landed on the
+     * first of the two drives.  That did the wrong thing twice: it spaced the turnout's own two commands
+     * by the operator's figure instead of the gap they need, and it never delayed anything before the
+     * following item.
+     */
+    @Test
+    public void testAnItemPauseGoesAfterTheThreeWayNotInsideIt() throws Exception
+    {
+        // stellung 2 emits address then address + 1, which is the order that used to be mishandled
+        org.json.JSONObject item = new org.json.JSONObject();
+
+        item.put("typ", "mag");
+        item.put("magnetartikel", THREE_WAY_MAG_ID);
+        item.put("stellung", "2");
+        item.put("sekunde", 0.5);
+
+        org.json.JSONObject route = new org.json.JSONObject();
+
+        route.put("id", 9004);
+        route.put("name", "TW paused");
+        route.put("items", new org.json.JSONArray().put(item));
+
+        List<MarklinRoute> parsed = parser.parseRoutesCS3(
+            new org.json.JSONArray().put(route),
+            parseJSONArray(fetchURL(cs3_mags)),
+            parseJSONArray(fetchURL(cs3_loks)));
+
+        assertEquals(parsed.size(), 1, "the route must parse, not be skipped");
+
+        List<RouteCommand> commands = parsed.get(0).getRoute();
+
+        assertEquals(commands.size(), 2, "still the two drives: " + commands);
+
+        assertEquals(commands.get(0).getDelay(), MarklinRoute.THREEWAY_ROUTE_DELAY_MS,
+            "the gap between the two drives has to survive the operator's pause");
+
+        assertEquals(commands.get(1).getDelay(), 500,
+            "and the pause belongs on the last command of the item, where it delays the next item");
+    }
 }

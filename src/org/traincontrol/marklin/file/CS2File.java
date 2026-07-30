@@ -36,7 +36,6 @@ public final class CS2File
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
 
-
     // IP address for our HTTP requests
     private final String IP;
     
@@ -1224,6 +1223,17 @@ public final class CS2File
                                     protocol = Accessory.accessoryDecoderType.DCC;
                                 }
 
+                                // Which command the item's own "sekunde" pause belongs on: the LAST one this item
+                                // emits.  It used to be found by searching the route for the address, and
+                                // that search returns at the first match - so for a three-way at stellung
+                                // 1, 2 or 3, where the pair is emitted address-then-address+1, the pause
+                                // landed *between* the two drives instead of after them, and overwrote
+                                // the gap that holds them apart.
+                                //
+                                // Null when a stellung emits nothing, which also stops the address search
+                                // logging a missing key for it.
+                                RouteCommand lastForItem = null;
+
                                 // stellung 0 - key not included
                                 // this means red/turn
                                 if (!item.has("stellung") || "0".equals(item.getString("stellung")))
@@ -1243,16 +1253,17 @@ public final class CS2File
                                         r.addItem(straighten);
                                     }
 
-                                    r.addAccessory(address, protocol, true);
+                                    lastForItem = RouteCommand.RouteCommandAccessory(address, protocol, true);
+                                    r.addItem(lastForItem);
                                 }
                                 // stellung 1 means isSwitched is false
                                 // this means green/straight
                                 else if ("1".equals(item.getString("stellung")))
                                 {
-                                    RouteCommand first =
+                                    lastForItem =
                                         RouteCommand.RouteCommandAccessory(address, protocol, false);
 
-                                    r.addItem(first);
+                                    r.addItem(lastForItem);
 
                                     // This is invalid for 3-way signals
                                     // if (3 == accessory.getInt("states"))
@@ -1261,16 +1272,20 @@ public final class CS2File
                                         // Both drives go straight here, so there is no wrong transient to
                                         // avoid - but they are still two coils, and the diagram path
                                         // spaces this case as well
-                                        first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
-                                        r.addAccessory(address + 1, protocol, false);
+                                        lastForItem.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+
+                                        lastForItem =
+                                            RouteCommand.RouteCommandAccessory(address + 1, protocol, false);
+
+                                        r.addItem(lastForItem);
                                     }
                                 }
                                 else if ("2".equals(item.getString("stellung")))
                                 {
-                                    RouteCommand first =
+                                    lastForItem =
                                         RouteCommand.RouteCommandAccessory(address, protocol, false);
 
-                                    r.addItem(first);
+                                    r.addItem(lastForItem);
 
                                     if (3 == accessory.getInt("states"))
                                     {
@@ -1280,37 +1295,44 @@ public final class CS2File
                                         // those changed the parse of routes that were always correct.
                                         if ("dreiwegweiche".equals(accessory.getString("typ")))
                                         {
-                                            first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                            lastForItem.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         }
 
-                                        r.addAccessory(address + 1, protocol, true);
+                                        lastForItem =
+                                            RouteCommand.RouteCommandAccessory(address + 1, protocol, true);
+
+                                        r.addItem(lastForItem);
                                     }
                                 }
                                 // Unclear how this differs from 1, seems to only be used by certain signals
                                 else if ("3".equals(item.getString("stellung")))
                                 {
-                                    RouteCommand first =
+                                    lastForItem =
                                         RouteCommand.RouteCommandAccessory(address, protocol, false);
 
-                                    r.addItem(first);
+                                    r.addItem(lastForItem);
 
                                     if (3 == accessory.getInt("states"))
                                     {
                                         // Turnouts only - see stellung 2 above
                                         if ("dreiwegweiche".equals(accessory.getString("typ")))
                                         {
-                                            first.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
+                                            lastForItem.setDelay(MarklinRoute.THREEWAY_ROUTE_DELAY_MS);
                                         }
 
-                                        r.addAccessory(address + 1, protocol, false);
+                                        lastForItem =
+                                            RouteCommand.RouteCommandAccessory(address + 1, protocol, false);
+
+                                        r.addItem(lastForItem);
                                     }
                                 }
 
-                                if (item.has("sekunde"))
+                                if (item.has("sekunde") && lastForItem != null)
                                 {
-                                    r.setDelay(address, Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
+                                    lastForItem.setDelay(
+                                        Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
                                 }
-                            }     
+                            }
                         }
                         else if (item.has("typ") && "s88".equals(item.getString("typ")))
                         {

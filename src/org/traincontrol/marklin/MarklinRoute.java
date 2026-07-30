@@ -47,6 +47,10 @@ public class MarklinRoute extends Route
     //
     // Both places that build a three-way pair use this: the CS2 file importer and the route editor.
     // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
+    //
+    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honours a command's own delay
+    // only when it is the larger of the two.  It does, with room to spare - but lowering
+    // THREEWAY_DELAY_MS far enough would make this silently inert rather than merely shorter.
     public static final int THREEWAY_ROUTE_DELAY_MS =
         (int) (MarklinAccessory.THREEWAY_DELAY_MS - MarklinControlStation.SLEEP_INTERVAL);
     
