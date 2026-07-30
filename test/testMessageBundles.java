@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -297,5 +299,66 @@ public class testMessageBundles
 
         assertTrue(offenders.isEmpty(),
             "translations are out of step with " + ENGLISH_BUNDLE + ": " + offenders);
+    }
+
+    /**
+     * A whole number in a message is an identifier, and identifiers are not grouped.
+     *
+     * MessageFormat sends a bare {0} through the locale's NumberFormat, so the track diagram tooltip
+     * for feedback 1001 read "Feedback 1,001" - and "1.001" or "1 001" for anyone running a European
+     * locale, since the static MessageFormat.format uses the default locale rather than the bundle's.
+     * The same path carries s88 UIDs, DCC addresses and route ids, all of which pass four digits.
+     *
+     * Asserted by digits rather than whole strings so the test does not depend on which locale the
+     * bundle was loaded for.
+     */
+    @Test
+    public void testAWholeNumberInAMessageIsNotGrouped()
+    {
+        assertTrue(I18n.f("layout.feedbackUid", 1001).contains("1001"),
+            "a feedback UID must read as typed, got: " + I18n.f("layout.feedbackUid", 1001));
+
+        assertTrue(I18n.f("layout.switchAddr", 2048, "").contains("2048"),
+            "a DCC address must read as typed, got: " + I18n.f("layout.switchAddr", 2048, ""));
+
+        assertTrue(I18n.f("layout.route", 9001, "Yard").contains("9001"),
+            "a route id must read as typed, got: " + I18n.f("layout.route", 9001, "Yard"));
+    }
+
+    /**
+     * No placeholder may ask for a format of its own.
+     *
+     * I18n.f hands whole numbers to MessageFormat as text, so that identifiers are not grouped.  A
+     * {0,number} or {0,choice} placeholder would then be given a String and throw
+     * IllegalArgumentException - at run time, inside whichever dialog happened to use that message.
+     * There are none today, in any bundle; this is what keeps the premise of that conversion true.
+     */
+    @Test
+    public void testNoPlaceholderAsksForItsOwnFormat() throws Exception
+    {
+        Pattern formatted = Pattern.compile("\\{\\s*\\d+\\s*,");
+
+        List<String> offenders = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            List<String> lines = Files.readAllLines(bundle.toPath(), StandardCharsets.ISO_8859_1);
+
+            for (int i = 0; i < lines.size(); i++)
+            {
+                if (keyOf(lines.get(i)) == null) continue;
+
+                String value = lines.get(i).substring(lines.get(i).indexOf('=') + 1);
+
+                if (formatted.matcher(value).find())
+                {
+                    offenders.add(bundle.getName() + ":" + (i + 1) + " " + lines.get(i).trim());
+                }
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "these placeholders ask MessageFormat for a format, which I18n.f can no longer satisfy "
+            + "for whole numbers: " + offenders);
     }
 }
