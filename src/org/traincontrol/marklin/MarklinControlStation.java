@@ -444,16 +444,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         
                         if (c.isSwitch() || c.isUncoupler())
                         {
-                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getState() != 1);
+                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getPrimaryDriveState());
 
                             if (c.isThreeWay())
                             {
-                                newAccessory(c.getAddress() + 1, newAddress + 1, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getState() == 2);                                            
+                                newAccessory(c.getAddress() + 1, newAddress + 1, Accessory.accessoryType.SWITCH, c.getProtocol(), c.getSecondaryDriveState());                                            
                             }
                         }
                         else if (c.isSignal())
                         {
-                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getState() != 1);
+                            newAccessory(c.getAddress(), newAddress, Accessory.accessoryType.SIGNAL, c.getProtocol(), c.getPrimaryDriveState());
                         }
 
                         this.logf("acc.adding", this.accDB.getById(targetAddress).getName());

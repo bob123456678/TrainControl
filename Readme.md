@@ -8,6 +8,8 @@
 
 Available in 🇬🇧 English · 🇩🇪 Deutsch · 🇩🇰 Dansk · 🇵🇱 Polski · 🇫🇷 Français · 🇮🇹 Italiano · 🇪🇸 Español · 🇳🇱 Nederlands
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20TrainControl-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/traincontrol)
+
 ![TrainControl main window, showing locomotive control with keyboard mappings, locomotive thumbnails, and function buttons](assets/main23_2.png?raw=true)
 
 TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  It is designed for model railways with many locomotives, where the standard Marklin UI makes common tasks — quickly switching between locomotives, or triggering functions — overly tedious.  It is a complete replacement for the CS2/CS3 when operating your layout, with the Central Station serving solely as the track interface and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
@@ -392,7 +394,11 @@ Tab icons provided by Freepik.
         - Fixed bug where an automatic route restored from a layout file that did not record its trigger type would wait for the opposite s88 sensor change, firing at the wrong moment
         - A mistyped or incomplete route command now explains which line could not be read, instead of showing a technical error
         - Fixed bug where a route containing a feedback entry lost the command directly after it when the route was opened in the editor and saved again
-        - Fixed bug where 3-way switches created via the route editing wizard or parsed via the CS2 would sometimes fail to turn left
+        - Fixed bug where 3-way switches created via the route editing wizard would sometimes fail to switch left
+        - Fixed bug where adding a 3-way switch as a route condition made the condition impossible to save
+        - Fixed bug where capturing a 3-way switch by clicking it on the track diagram could record its two commands in the wrong order
+        - Pauses in routes imported from a Central Station 2 no longer lose their fraction of a second, and pauses shorter than one second are no longer dropped
+        - Fixed bug where a pause on a route step was applied to an earlier step instead, if both steps used the same switch or signal
     - Multi-unit Bug Fixes
         - Fixed bug where a locomotive linked to run faster than the one leading it would stop keeping pace above a certain speed, leaving the two engines of one consist pulling against each other
         - Fixed bug where deleting a locomotive that was linked to another one left it still being driven by the lead locomotive until TrainControl was restarted
@@ -403,6 +409,7 @@ Tab icons provided by Freepik.
         - Track diagram tiles no longer occasionally stop refreshing
         - Fixed bug where track diagram pages whose names contain accented characters could not be loaded from a local layout folder, and the folder setting was silently cleared as a result
         - Editing a track diagram, or saving a route that appears on one, no longer freezes TrainControl for several seconds.  Cycling between pages while editing is faster for the same reason: these actions re-read the track diagrams only, instead of reloading the entire Central Station database
+        - Clicking a 3-way switch on a track diagram no longer briefly freezes TrainControl, and neither does clicking any switch or signal while the track power is off
     - Accessory Bug Fixes
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
     - Central Station Sync Bug Fixes

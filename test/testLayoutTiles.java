@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -259,5 +261,70 @@ public class testLayoutTiles
 
         assertEquals(offEdt.get(), 0,
             "no icon change may be applied to a Swing component off the EDT");
+    }
+
+    /**
+     * Diagram switching runs off the event thread, one action at a time.
+     *
+     * The click handler used to do all of its work inside SwingUtilities.invokeLater, so every sleep it
+     * contains ran on the event thread: 350ms between a three-way's two drives, and a further second
+     * when the same click also turns the track power on.  The UI was frozen for all of it - including
+     * the repaint of the drive that had already moved.
+     *
+     * Both halves are asserted.  Off the event thread is the fix.  One at a time is what the event
+     * queue used to provide for free, and it has to survive the move: a three-way is two sends with a
+     * load-bearing gap between them, and another tile's click must not land in that gap.
+     */
+    @Test
+    public void testDiagramSwitchingRunsOffTheEventThreadOneAtATime() throws Exception
+    {
+        AtomicBoolean ranOnEventThread = new AtomicBoolean(false);
+        AtomicBoolean overlapped = new AtomicBoolean(false);
+        AtomicInteger inFlight = new AtomicInteger(0);
+        CountDownLatch done = new CountDownLatch(2);
+
+        Runnable action = () ->
+        {
+            if (SwingUtilities.isEventDispatchThread())
+            {
+                ranOnEventThread.set(true);
+            }
+
+            if (inFlight.incrementAndGet() > 1)
+            {
+                overlapped.set(true);
+            }
+
+            try
+            {
+                // Long enough that a second action would have to overlap this one if nothing were
+                // serialising them - a thread per click would fail here
+                Thread.sleep(120);
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            inFlight.decrementAndGet();
+            done.countDown();
+        };
+
+        // Submitted from the event thread, which is where a click submits them from
+        SwingUtilities.invokeAndWait(() ->
+        {
+            LayoutLabel.submitSwitching(action);
+            LayoutLabel.submitSwitching(action);
+        });
+
+        assertTrue(done.await(5, TimeUnit.SECONDS), "both switching actions should have run");
+
+        assertFalse(ranOnEventThread.get(),
+            "switching blocks - a three-way sleeps between its two drives - so it must not run on the "
+            + "event thread");
+
+        assertFalse(overlapped.get(),
+            "two switching actions overlapped: a three-way's two sends must not interleave with another "
+            + "tile's, which the event queue used to guarantee");
     }
 }

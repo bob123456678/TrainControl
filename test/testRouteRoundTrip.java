@@ -4,6 +4,10 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import org.traincontrol.base.RouteCommand;
+import java.util.Arrays;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.NodeExpression;
+import org.traincontrol.gui.RouteEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
@@ -146,5 +150,80 @@ public class testRouteRoundTrip
 
         assertTrue(withCommands > 50,
             "only " + withCommands + " routes had commands - the fixture is not exercising much");
+    }
+
+    /** One accessory line, exactly as capture and the editor write it. */
+    private static String line(int address, boolean thrown)
+    {
+        return Accessory.toAccessorySettingString(Accessory.accessoryType.SWITCH, address, "MM2", thrown);
+    }
+
+    /**
+     * Capturing a three-way keeps the released drive ahead of the thrown one.
+     *
+     * The diagram cycles straight - left - right, so capturing "right" takes two clicks and records
+     * four lines, each click releasing one drive and throwing the other.  filterConfigCommands then
+     * reduces them to one line per drive.  It used to keep the latest value at the earliest position,
+     * and those two rules disagree: the pair came back as throw-before-release, which puts both blade
+     * sets over at once - the one combination a three-way must never be given.
+     */
+    @Test
+    public void testCapturingAThreeWayKeepsReleaseBeforeThrow()
+    {
+        String captured = line(6, false) + "\n" + line(5, true) + "\n"
+                        + line(5, false) + "\n" + line(6, true);
+
+        List<String> out = Arrays.asList(RouteEditor.filterConfigCommands(captured).split("\n"));
+
+        assertEquals(out.size(), 2, "one line per drive: " + out);
+
+        assertEquals(out.get(0), line(5, false), "the released drive has to come first");
+        assertEquals(out.get(1), line(6, true), "and the thrown drive second");
+    }
+
+    /**
+     * A three-way added as a condition can actually be saved.
+     *
+     * A condition is an expression, not a sequence.  The wizard emitted the pair's two lines joined by
+     * a bare newline - the AND it inserts goes between whole entries, never inside one - and
+     * NodeExpression rejects two adjacent operands, so the first conditional three-way a user added
+     * made the entire condition unsaveable.
+     */
+    @Test
+    public void testAConditionalThreeWayCanBeParsed() throws Exception
+    {
+        // What the wizard used to emit
+        String bare = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", "", "\n");
+
+        try
+        {
+            NodeExpression.fromTextRepresentation(bare, null);
+            fail("two operands with no operator between them must not parse: " + bare);
+        }
+        catch (Exception expected)
+        {
+            // the reason the separator has to differ between a route and a condition
+        }
+
+        // What it emits now
+        String conditional = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", "", "\nAND ");
+
+        NodeExpression parsed = NodeExpression.fromTextRepresentation(conditional, null);
+
+        assertNotNull(parsed, "the condition must parse");
+        assertEquals(NodeExpression.toList(parsed).size(), 2, "both drives belong to the condition");
+    }
+
+    /**
+     * And the route form of the same pair still must NOT carry an operator - it is a sequence.
+     */
+    @Test
+    public void testTheRouteFormOfAPairHasNoOperator()
+    {
+        String route = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", ",300", "\n");
+
+        assertFalse(route.contains("AND"), "a route is executed in order, not evaluated: " + route);
+        assertEquals(route.split("\n").length, 2, "still two lines: " + route);
+        assertTrue(route.split("\n")[0].endsWith(",300"), "the pair's delay sits on its first line");
     }
 }

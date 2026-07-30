@@ -1402,6 +1402,10 @@ public class Layout
         // Applied to every edge rather than to detected pairs: for independent accessories the order is
         // immaterial, so there is nothing to weigh against making it deterministic - and a pair is only
         // recognisable from an address convention this method cannot see.
+        //
+        // The guarantee stops at the edge boundary.  configureAndLockPath configures a path's edges in
+        // path order, so a pair split across two edges executes in that order whatever this sort says.
+        // Both commands of one turnout belong on one edge.
         List<String> names = new ArrayList<>(e.getConfigCommands().keySet());
 
         names.sort((a, b) ->
@@ -1789,7 +1793,7 @@ public class Layout
                 {
                     accessorySetting state = e.getConfigCommands().get(name);
                     accessories.add(acc);
-                    desired.add(state == accessorySetting.TURN || state == accessorySetting.RED);
+                    desired.add(Accessory.isThrow(state));
                 }
             }
         }
@@ -1873,7 +1877,7 @@ public class Layout
             {
                 Accessory acc = control.getAccessoryByName(name);
                 accessorySetting state = e.getConfigCommands().get(name);
-                boolean d = state == accessorySetting.TURN || state == accessorySetting.RED;
+                boolean d = Accessory.isThrow(state);
 
                 // An accessory that is not in the database at all is named too - otherwise the
                 // operator is told the path is misconfigured without being told which part

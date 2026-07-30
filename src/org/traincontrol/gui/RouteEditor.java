@@ -248,16 +248,18 @@ public class RouteEditor extends PositionAwareJFrame
         for (String line : lines)
         {
             String[] keyValue = line.split(",", 2); // Split on the first comma
-            if (keyValue.length == 2)
-            {
-                String key = keyValue[0];
-                String value = keyValue[1];
-                map.put(key, value); // This keeps the latest value for each key
-            }
-            else
-            {
-                map.put(line, "");
-            }
+
+            String key = keyValue.length == 2 ? keyValue[0] : line;
+            String value = keyValue.length == 2 ? keyValue[1] : "";
+
+            // Rewriting an accessory moves it to the end, so the lines that survive are in the
+            // order they were last written.  Keeping the latest value at the earliest position
+            // answered the same question two different ways, and it inverted captured three-way
+            // pairs: reaching "right" means clicking through "left", and the four lines that
+            // captured collapsed to turn-before-straight - the one order a three-way must never
+            // be given.
+            map.remove(key);
+            map.put(key, value);
         }
 
         StringBuilder filteredCommands = new StringBuilder();
@@ -1281,6 +1283,53 @@ public class RouteEditor extends PositionAwareJFrame
         return this.MM2.getText();
     }
     
+    /**
+     * The two lines that put a three-way turnout into one of its three positions, in the order they
+     * must execute: the drive being released always precedes the drive being thrown, so the turnout
+     * never passes through the both-diverging combination, which routes nowhere.
+     *
+     * Static and separate from the dialog so that what the wizard emits can be tested directly.
+     *
+     * @param state one of STRAIGHT3, LEFT or RIGHT
+     * @param address the turnout's first address; its second drive is address + 1
+     * @param protocol decoder protocol
+     * @param firstLineSuffix appended to the first line only - the pair's delay in a route, nothing
+     *                        in a condition
+     * @param separator what joins the two lines - a bare newline in a route, an operator in a
+     *                  condition
+     * @return the two lines, or null if state is not a three-way position
+     */
+    public static String threeWayEntry(String state, int address, String protocol, String firstLineSuffix,
+        String separator)
+    {
+        if (STRAIGHT3.equals(state))
+        {
+            return switchLine(address, protocol, false) + firstLineSuffix
+                + separator + switchLine(address + 1, protocol, false);
+        }
+        else if (LEFT.equals(state))
+        {
+            return switchLine(address + 1, protocol, false) + firstLineSuffix
+                + separator + switchLine(address, protocol, true);
+        }
+        else if (RIGHT.equals(state))
+        {
+            return switchLine(address, protocol, false) + firstLineSuffix
+                + separator + switchLine(address + 1, protocol, true);
+        }
+
+        return null;
+    }
+
+    /**
+     * One accessory line as the route text stores it.
+     */
+    private static String switchLine(int address, String protocol, boolean setting)
+    {
+        return Accessory.toAccessorySettingString(
+            Accessory.accessoryType.SWITCH, address, protocol, setting);
+    }
+
     private void addAcc(boolean isConditional)
     {
         String newEntry = "\n";
@@ -1314,35 +1363,16 @@ public class RouteEditor extends PositionAwareJFrame
 
                 if (this.accType3Way.isSelected())
                 {
-                    if (this.accState.getSelectedItem().toString().equals(STRAIGHT3))
+                    // A route is a sequence, so its two lines take a bare newline between them.  A
+                    // condition is an expression: with no operator there, NodeExpression sees two
+                    // adjacent operands and rejects the whole condition at save - so the first
+                    // conditional three-way a user added made the condition unsaveable.
+                    String pair = threeWayEntry(this.accState.getSelectedItem().toString(), address,
+                        getProtocol(), threeWayDelayString, isConditional ? "\nAND " : "\n");
+
+                    if (pair != null)
                     {
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, getProtocol(), false
-                        ) + threeWayDelayString + "\n";
-                        
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
-                        );
-                    }
-                    else if (this.accState.getSelectedItem().toString().equals(LEFT))
-                    {
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), false
-                        ) + threeWayDelayString + "\n";     
-                        
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, getProtocol(), true
-                        );          
-                    }
-                    else if (this.accState.getSelectedItem().toString().equals(RIGHT))
-                    {
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address, getProtocol(), false
-                        ) + threeWayDelayString + "\n";
-                        
-                        newEntry += Accessory.toAccessorySettingString(
-                            Accessory.accessoryType.SWITCH, address + 1, getProtocol(), true
-                        );
+                        newEntry += pair;
                     }
                 }
                 else if (this.accTypeTurnout.isSelected())

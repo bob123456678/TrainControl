@@ -289,4 +289,73 @@ public class testParseCS2Routes
     public void tearDownMethod() throws Exception
     {
     }
+
+    /**
+     * A fractional pause keeps its fraction.
+     *
+     * "sekunde" was read as Float.valueOf(text).intValue() * 1000 - truncated to whole seconds before
+     * being scaled - so the operator's 2.3s became 2.0s.  Route "zyA01/02" in the shipped file carries
+     * exactly that value, so the repository's own data lost 300ms on every import.
+     */
+    @Test
+    public void testAFractionalPauseKeepsItsFraction()
+    {
+        MarklinRoute r = this.getRoute("zyA01/02", routes_mags);
+
+        assertNotNull(r, "route 'zyA01/02' should be present in the fixture");
+
+        RouteCommand paused = null;
+
+        for (RouteCommand rc : r.getRoute())
+        {
+            if (rc.hasAddress() && rc.getAddress() == 8)
+            {
+                paused = rc;
+            }
+        }
+
+        assertNotNull(paused, "the fixture route sets accessory 8");
+        assertEquals(paused.getDelay(), 2300, "sekunde=2.3 is 2300ms - the fraction was truncated away");
+    }
+
+    /**
+     * And a pause under one second survives at all.
+     *
+     * Truncation turned 0.5 into 0, and the delay > 0 guards then skipped setting any delay - so the
+     * shortest pauses, the ones that exist to space accessories, were the ones lost completely.
+     */
+    @Test
+    public void testASubSecondPauseIsNotLostEntirely() throws Exception
+    {
+        MarklinRoute r = parseOne(cs2Route(9504, "Half second", "{magnetartikel=4,stellung=1,sekunde=0.5}"));
+
+        assertEquals(r.getRoute().size(), 1, "one command: " + r.getRoute());
+        assertEquals(r.getRoute().get(0).getDelay(), 500, "0.5s is 500ms, not no pause at all");
+    }
+
+    /**
+     * An item's pause attaches to that item's own command.
+     *
+     * It used to be applied with setDelay(address, ms), which searches the route and returns at the
+     * first match.  A route that sets a turnout and later sets it back names one address twice, so the
+     * second item's pause overwrote the first item's and left its own command with none.
+     */
+    @Test
+    public void testAPauseLandsOnItsOwnItemNotAnEarlierOne() throws Exception
+    {
+        MarklinRoute r = parseOne(cs2Route(9505, "There and back",
+            "{magnetartikel=3,stellung=1,sekunde=1}|{magnetartikel=3,stellung=0,sekunde=2}"));
+
+        List<RouteCommand> commands = r.getRoute();
+
+        assertEquals(commands.size(), 2, "one command per item: " + commands);
+
+        assertEquals(commands.get(0).getAddress(), 3);
+        assertEquals(commands.get(1).getAddress(), 3);
+
+        assertEquals(commands.get(0).getDelay(), 1000, "the first item's own pause");
+        assertEquals(commands.get(1).getDelay(), 2000,
+            "and the second item's - the address search matched the first command both times, so this "
+            + "pause overwrote the one above and this command was left with none");
+    }
 }

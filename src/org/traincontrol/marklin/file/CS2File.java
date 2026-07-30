@@ -762,7 +762,13 @@ public final class CS2File
                             
                                 if ("sekunde".equals(kv[0]))
                                 {
-                                    delay = Float.valueOf(kv[1]).intValue() * 1000;
+                                    // Scale first, truncate second.  The other way round threw away
+                                    // the fraction of every pause the operator tuned - the two real
+                                    // route files in this repository carry 2.3 and 3.2 - and turned
+                                    // anything under a second into no pause at all, because the
+                                    // delay > 0 guard below then skips it.  parseRoutesCS3 has
+                                    // always done it this way round.
+                                    delay = Float.valueOf(Float.parseFloat(kv[1].trim()) * 1000).intValue();
                                 }
                                
                                 // Condition S88s
@@ -801,22 +807,35 @@ public final class CS2File
                                 accType = addressMap.get(id).getDecoderType();
                             }
                         
+                            // Which command this item's "sekunde" pause belongs on.  Held as an
+                            // object rather than found afterwards through setDelay(address, ms):
+                            // that search returns at the first match, so a route touching one
+                            // address twice - set a turnout, run past it, set it back - put the
+                            // second item's pause on the first item's command and left its own
+                            // with none.  The same defect the CS3 importer was fixed for.
+                            RouteCommand pauseAfter = null;
+
                             if (setting >= 2)
                             {
-                                r.addAccessory(id + 1, accType, setting == 2);
-                            
-                                if (delay > 0)
-                                {
-                                    r.setDelay(id + 1, delay);
-                                }
+                                pauseAfter = RouteCommand.RouteCommandAccessory(id + 1, accType, setting == 2);
+                                r.addItem(pauseAfter);
                             }
-                        
-                            r.addAccessory(id, accType, setting != 1 && setting != 3);
-                        
-                            // Only set the delay once for three-way switches
-                            if (delay > 0 && setting < 2)
+
+                            RouteCommand primary =
+                                RouteCommand.RouteCommandAccessory(id, accType, setting != 1 && setting != 3);
+
+                            r.addItem(primary);
+
+                            // Only set the delay once for three-way switches - on the first command
+                            // of a pair, which is where it spaces the pair itself
+                            if (pauseAfter == null)
                             {
-                                r.setDelay(id, delay);
+                                pauseAfter = primary;
+                            }
+
+                            if (delay > 0)
+                            {
+                                pauseAfter.setDelay(delay);
                             }
                         
                             // stellung 0

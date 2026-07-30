@@ -184,4 +184,62 @@ public class testParseCS2Layout
     public void tearDownMethod() throws Exception
     {
     }
+
+    /**
+     * Importing a three-way never records both of its drives as thrown.
+     *
+     * A three-way is two solenoid drives, and they have exactly three combinations the turnout can
+     * hold: straight with both released, left with the first thrown, right with the second - the cycle
+     * execSwitching walks.  The importer seeded the first drive from state != 1, which makes state 2
+     * both drives thrown.  That is none of the three, and the sample layout shipped with this
+     * repository contains it: element 0x203 of "1 - Main.cs2" is a dreiwegweiche with zustand=2.
+     */
+    @Test
+    public void testAThreeWayNeverImportsWithBothDrivesThrown() throws Exception
+    {
+        for (int state = 0; state <= 2; state++)
+        {
+            LayoutDiagramComponent c = new LayoutDiagramComponent(
+                LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, state, 36, 36, MM2);
+
+            assertFalse(c.getPrimaryDriveState() && c.getSecondaryDriveState(),
+                "state " + state + " records both drives thrown, which is not a position a three-way has");
+        }
+
+        // state 2 is "right": the second drive over, the first released
+        LayoutDiagramComponent right = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 2, 36, 36, MM2);
+
+        assertFalse(right.getPrimaryDriveState(), "the first drive is released at right");
+        assertTrue(right.getSecondaryDriveState(), "and the second is the one thrown");
+
+        // the other two, unchanged
+        LayoutDiagramComponent left = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 0, 36, 36, MM2);
+
+        assertTrue(left.getPrimaryDriveState(), "state 0 is left");
+        assertFalse(left.getSecondaryDriveState());
+
+        LayoutDiagramComponent straight = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 1, 36, 36, MM2);
+
+        assertFalse(straight.getPrimaryDriveState(), "state 1 is straight - both released");
+        assertFalse(straight.getSecondaryDriveState());
+    }
+
+    /**
+     * An ordinary turnout is untouched by the above: it has one drive and state 0 means thrown.
+     */
+    @Test
+    public void testAnOrdinaryTurnoutStillSeedsFromStateOne() throws Exception
+    {
+        LayoutDiagramComponent thrown = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_LEFT, 0, 0, 0, 0, 10, 10, MM2);
+
+        LayoutDiagramComponent released = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_LEFT, 0, 0, 0, 1, 10, 10, MM2);
+
+        assertTrue(thrown.getPrimaryDriveState());
+        assertFalse(released.getPrimaryDriveState());
+    }
 }

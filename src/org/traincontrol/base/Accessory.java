@@ -87,9 +87,11 @@ abstract public class Accessory
     /**
      * Whether this setting throws the accessory, as opposed to releasing it to straight.
      *
-     * Two callers, and they must agree: setState below acts on it, and the autonomy path configuration
-     * orders its commands by it - a three-way turnout is two drives, and its diverging drive has to be
-     * commanded after the other has been released, never before.
+     * Everything that decides whether a setting is thrown asks here, so that they cannot disagree:
+     * setState below acts on it, autonomy path configuration orders its commands by it, and path
+     * actuation checks confirmation against it.  A three-way turnout is two drives, and its diverging
+     * drive has to be commanded after the other has been released, never before - an inline copy left
+     * to drift would break either that ordering or the confirmation that follows it.
      *
      * @param state
      * @return

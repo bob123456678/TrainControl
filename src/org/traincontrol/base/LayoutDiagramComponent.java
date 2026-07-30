@@ -241,6 +241,33 @@ public class LayoutDiagramComponent
     {
         return this.type == componentType.SWITCH_THREE;
     }
+
+    /**
+     * The state the accessory at getAddress() should be recorded as when this component is
+     * imported into the accessory database.
+     *
+     * A three-way's two drives have exactly three combinations it can hold - straight with both
+     * released, left with the first thrown, right with the second - which is the cycle
+     * execSwitching walks.  Seeding from state != 1 made state 2 both drives thrown, which is
+     * none of the three, so the turnout opened in a position it cannot physically be in.
+     *
+     * @return true if the first drive should be recorded as thrown
+     */
+    public boolean getPrimaryDriveState()
+    {
+        return this.isThreeWay() ? this.state == 0 : this.state != 1;
+    }
+
+    /**
+     * The state the accessory at getAddress() + 1 should be recorded as.  Three-ways only -
+     * nothing else has a second drive.
+     *
+     * @return true if the second drive should be recorded as thrown
+     */
+    public boolean getSecondaryDriveState()
+    {
+        return this.state == 2;
+    }
     
     public boolean isLink()
     {

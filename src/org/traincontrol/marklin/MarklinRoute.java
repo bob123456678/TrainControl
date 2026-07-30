@@ -45,7 +45,10 @@ public class MarklinRoute extends Route
     // the gap the track diagram already leaves between a three-way's two commands.  execRoute sleeps
     // SLEEP_INTERVAL plus the command's own delay, hence the subtraction.
     //
-    // Both places that build a three-way pair use this: the CS2 file importer and the route editor.
+    // Used by the two builders that can space a pair: the CS3 route importer and the route editor's
+    // wizard.  Two others cannot.  The CS2 flat-file importer has no way to tell a three-way from a
+    // plain turnout - parseMags keeps only SWITCH or SIGNAL, discarding the "dreiwegweiche" the file
+    // states - and command capture records what the diagram sent, carrying no delay of its own.
     // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
     //
     // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honours a command's own delay

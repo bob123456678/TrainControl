@@ -11,6 +11,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -39,6 +41,33 @@ public final class LayoutLabel extends JLabel
     private static final int HIGHLIGHT_DURATION = 2250;
     private static final int CLICK_TIMEOUT = HIGHLIGHT_DURATION + 250;
     private long lastClicked = 0;
+
+    /**
+     * Diagram switching runs here rather than on the event thread.
+     *
+     * One thread, not a pool, and not a thread per click: the event queue used to serialise these
+     * actions for free, and a three-way's two sends must not interleave with another tile's.  Daemon
+     * so that it never holds the JVM open by itself.
+     */
+    private static final ExecutorService SWITCHING = Executors.newFixedThreadPool(1, runnable ->
+    {
+        Thread worker = new Thread(runnable, "LayoutSwitching");
+        worker.setDaemon(true);
+        return worker;
+    });
+
+    /**
+     * Runs one diagram switching action off the event thread.
+     *
+     * Separate and public so the dispatch can be tested on its own: what has to hold is that the
+     * action does not run on the event thread, and that two of them never overlap.
+     *
+     * @param action the switching work, including any sleeps it needs
+     */
+    public static void submitSwitching(Runnable action)
+    {
+        SWITCHING.submit(action);
+    }
     
     private Icon lastIcon;
     private boolean edit;
@@ -172,6 +201,8 @@ public final class LayoutLabel extends JLabel
                                 
                                 javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
+                                    boolean powerOnFirst = false;
+
                                     if (!tcUI.getModel().getPowerState())
                                     {
                                         Object[] options = {
@@ -194,23 +225,8 @@ public final class LayoutLabel extends JLabel
                                         switch (choice)
                                         {
                                             case 0: // Power on
-                                                tcUI.getModel().go();
-
-                                                if (tcUI.getModel().getNetworkCommState())
-                                                {
-                                                    try
-                                                    {
-                                                        tcUI.getModel().waitForPowerState(true);
-
-                                                        // We need a significant delay because the power might take some time to come on
-                                                        Thread.sleep(1000);
-                                                    } 
-                                                    catch (InterruptedException ex)
-                                                    {
-                                                        Thread.currentThread().interrupt();
-                                                    }
-                                                }
-                                                
+                                                // Done on the worker below, with the wait that follows it
+                                                powerOnFirst = true;
                                                 break;
                                             case 2: // No
                                                 return;
@@ -255,7 +271,43 @@ public final class LayoutLabel extends JLabel
                                     }
 
                                     lastClicked = System.currentTimeMillis();
-                                    component.execSwitching();
+
+                                    // Everything below this point blocks, so none of it belongs on the
+                                    // event thread.  A three-way sleeps between its two drives - that gap
+                                    // is what keeps the turnout out of the both-diverging combination -
+                                    // and turning the power on waits a further second for the track to
+                                    // come up.  Run here, those sleeps froze the whole UI, including the
+                                    // repaint of the drive that had already moved.
+                                    //
+                                    // The sends and the gap between them stay together on one worker.  The
+                                    // dialogs above have already been answered, on the thread they belong
+                                    // on.
+                                    final boolean powerOn = powerOnFirst;
+
+                                    submitSwitching(() ->
+                                    {
+                                        if (powerOn)
+                                        {
+                                            tcUI.getModel().go();
+
+                                            if (tcUI.getModel().getNetworkCommState())
+                                            {
+                                                try
+                                                {
+                                                    tcUI.getModel().waitForPowerState(true);
+
+                                                    // We need a significant delay because the power might take some time to come on
+                                                    Thread.sleep(1000);
+                                                }
+                                                catch (InterruptedException ex)
+                                                {
+                                                    Thread.currentThread().interrupt();
+                                                }
+                                            }
+                                        }
+
+                                        component.execSwitching();
+                                    });
                                 });
                             }  
                         });    
