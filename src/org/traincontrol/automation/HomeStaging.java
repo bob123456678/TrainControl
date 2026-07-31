@@ -5,6 +5,7 @@ import org.traincontrol.base.Accessory;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +49,20 @@ public final class HomeStaging
 {
     /** Configurations examined before the search gives up.  Reached only on large, tightly packed
      *  layouts; a plain greedy pass solves the ordinary case without searching at all. */
-    private static final int SEARCH_LIMIT = 200000;
+    private static final int SEARCH_LIMIT = 50000;
+
+    /**
+     * Wall clock, because a state count cannot bound the time this takes.
+     *
+     * Expanding one state runs firstClearRoute once per locomotive per station, and each of those is a
+     * breadth-first search over the graph.  On a 62-point layout that is milliseconds per state, so the
+     * old ceiling of 200000 states was minutes of work - and an arrangement with no solution reached it
+     * every time, presenting as a frozen application rather than as NO_PLAN_FOUND.
+     *
+     * NO_PLAN_FOUND already says "may still be possible", which is exactly the right claim to make when
+     * the answer is cut short.  What was wrong was how long it took to say it.
+     */
+    private static final long SEARCH_BUDGET_MS = 15000;
 
     /** Expansions allowed per route search.  A point may now be revisited under different accessory
      *  settings, so the search is no longer bounded by the number of points. */
@@ -71,7 +85,6 @@ public final class HomeStaging
     private final Map<String, List<Point>> pointsBySensor;
 
     /** Whether this layout's hardware holds a sensor under a resting train - measured, not assumed. */
-    private final boolean restingTrainsHoldSensors;
 
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
         List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor)
@@ -83,19 +96,6 @@ public final class HomeStaging
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
 
-        // Asked of the layout rather than assumed.  An occupancy detector reads occupied under a train
-        // that is standing still; a pulsed contact clears behind it.  Which one this is decides whether
-        // a locomotive the plan MOVES somewhere will be holding that sensor when the next move runs -
-        // and getting it wrong the optimistic way plans a route the runtime then refuses, aborting the
-        // run for a rule the snapshot modelled but the futures did not.
-        boolean held = false;
-
-        for (Point p : start.keySet())
-        {
-            if (p.getS88() != null && sensorsSet.contains(p.getS88())) held = true;
-        }
-
-        this.restingTrainsHoldSensors = held;
     }
 
     /**
@@ -470,7 +470,9 @@ public final class HomeStaging
         Set<String> closed = new HashSet<>();
         int examined = 0;
 
-        while (!open.isEmpty() && examined < SEARCH_LIMIT)
+        long deadline = System.currentTimeMillis() + SEARCH_BUDGET_MS;
+
+        while (!open.isEmpty() && examined < SEARCH_LIMIT && System.currentTimeMillis() < deadline)
         {
             Scored polled = open.poll();
             String currentKey = polled.key;
@@ -722,7 +724,7 @@ public final class HomeStaging
      * The origin is never tested, which is what keeps the moving locomotive's own sensor from blocking
      * its own departure.
      */
-    private static boolean canEnter(Point p, Locomotive loc, Set<String> blocked,
+    private boolean canEnter(Point p, Locomotive loc, Set<String> blocked,
         Map<Point, Locomotive> state)
     {
         if (!p.isActive()) return false;
@@ -736,17 +738,47 @@ public final class HomeStaging
 
         if (p.getS88() != null && blocked.contains(p.getS88())) return false;
 
-        // Intermediate points may exclude a locomotive; stations state that through canRest instead
+        // Two ACTIVE points reporting one sensor are a single detection section, so they cannot both
+        // hold a train.  This is now the whole of the shared-address rule.  It used to be expressed by
+        // blocking the address itself, which only happened for a sensor that was READING occupied when
+        // the snapshot was taken - so on a layout whose feedback was quiet the rule did not apply at
+        // all, and the planner would cheerfully park two trains on one section for the runtime to
+        // discover.
+        if (p.getS88() != null && this.pointsBySensor.containsKey(p.getS88()))
+        {
+            for (Point sibling : this.pointsBySensor.get(p.getS88()))
+            {
+                if (sibling.equals(p) || !sibling.isActive()) continue;
+
+                Locomotive there = state.get(sibling);
+
+                if (there != null && !there.equals(loc)) return false;
+            }
+        }
+
+        // The two exclusion lists mean different things, and the difference is deliberate.
+        //
+        // On a NON-station, exclusion means the locomotive may not pass at all - that is the collision
+        // constraint, and it is enforced here.  On a station it means the locomotive may not STOP
+        // there, which canRest enforces; driving through is allowed, because a station on a through
+        // route is exactly where an operator puts "not this one, not here".
+        //
+        // Enforcing the stricter reading on stations too was tried and reverted: on the author's own
+        // layout it removed 45% of the reachable station pairs for two locomotives, because two of its
+        // through stations carry exclusion lists.
         return p.isDestination() || !p.getExcludedLocs().contains(loc);
     }
 
     /**
-     * Sensors that should still be treated as occupied in this hypothetical state.
+     * Sensors reading occupied that no locomotive on the graph accounts for.
      *
-     * A sensor counts only if it was actually reading occupied at the snapshot.  It is released once
-     * every point that reports it has been vacated - that is the planner moving the train that was
-     * holding it.  A sensor nobody accounts for stays blocked for the whole plan: something is sitting
-     * on the track that the graph does not know about, and no move of ours will clear it.
+     * Something is sitting on that track which the graph does not know about, and no move of ours will
+     * clear it, so it stays blocked for the whole plan.
+     *
+     * A sensor a KNOWN train is standing on is not blocked here.  That train can move, and where it
+     * leaves the section closed behind it is the mutual exclusion in canEnter - two active points
+     * sharing an address cannot both be occupied.  Expressing it there rather than here is what makes
+     * the rule structural instead of a function of whatever the feedback happened to read a moment ago.
      */
     private Set<String> blockedSensors(Map<Point, Locomotive> state)
     {
@@ -755,26 +787,13 @@ public final class HomeStaging
         for (String sensor : this.sensorsSet)
         {
             boolean explained = false;
-            boolean stillHeld = false;
 
             for (Point p : this.pointsBySensor.get(sensor))
             {
                 if (this.start.containsKey(p)) explained = true;
-                if (state.containsKey(p)) stillHeld = true;
             }
 
-            if (!explained || stillHeld) out.add(sensor);
-        }
-
-        // Arrivals, on hardware that holds them.  A train the plan has already parked somewhere is
-        // reading that sensor by the time the next move is validated, so any point sharing the address
-        // - a bypass beside its platform, typically - is not passable either.
-        if (this.restingTrainsHoldSensors)
-        {
-            for (Point p : state.keySet())
-            {
-                if (p.getS88() != null) out.add(p.getS88());
-            }
+            if (!explained) out.add(sensor);
         }
 
         return out;
@@ -794,6 +813,31 @@ public final class HomeStaging
     public static boolean canBeHome(Locomotive loc, Point at)
     {
         return canRest(loc, at);
+    }
+
+    /**
+     * The home assignment that excluding these locomotives from this station would contradict.
+     *
+     * canBeHome asked from the other side.  Assigning a home to a station that excludes the locomotive
+     * is warned about; excluding a locomotive from the station that is its home reaches exactly the
+     * same dead state - every future Return Home reports IMPOSSIBLE - and was silent, so the guard
+     * stood on one door of two.  One keystroke over a hovered node was enough to walk through the
+     * other.
+     *
+     * @param p the station whose exclusion list is being changed
+     * @param toExclude the locomotives that would be excluded from it
+     * @return the name of the home locomotive this would strand, or null if none
+     */
+    public static String homeBrokenByExcluding(Point p, Collection<Locomotive> toExclude)
+    {
+        if (p == null || p.getHomeLoc() == null || toExclude == null) return null;
+
+        for (Locomotive l : toExclude)
+        {
+            if (l != null && p.getHomeLoc().equals(l.getName())) return p.getHomeLoc();
+        }
+
+        return null;
     }
 
     /**

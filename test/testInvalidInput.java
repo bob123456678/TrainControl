@@ -511,4 +511,31 @@ public class testInvalidInput
         assertTrue(plainReversing.isReversing());
         assertFalse(plainReversing.isTerminus());
     }
+
+    /**
+     * A point that omits "station" is a non-station, not a parse failure.
+     *
+     * Every other optional field on a point defaults; this one was read with getBoolean, which throws
+     * when the key is absent.  The throw left the try block before createPoint ran, so the point was
+     * dropped without a word - and the first sign of it was an edge reporting that one of its endpoints
+     * did not exist.  In a file the operator edits by hand, that names the wrong line entirely.
+     */
+    @Test
+    public void testAPointWithoutTheStationKeyIsANonStation()
+    {
+        String noKey = "{'name': 'IN C', 's88': 8882, 'x': 30, 'y': 30}";
+        String edge = "{'start': 'IN A', 'end': 'IN C'}";
+
+        Layout layout = Layout.fromJSON(config(POINT_A + ", " + noKey, edge, ""), model);
+
+        assertNotNull(layout, "fromJSON returned null rather than a layout");
+
+        assertTrue(layout.isValid(),
+            "a point without the station key should load as a non-station - " + Layout.getLastError());
+
+        assertNotNull(layout.getPoint("IN C"), "and the point itself has to exist");
+
+        assertFalse(layout.getPoint("IN C").isDestination(),
+            "defaulting to false means it is not a station");
+    }
 }

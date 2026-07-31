@@ -1,4 +1,6 @@
 import org.traincontrol.automation.HomeStaging;
+import java.util.Map;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
@@ -55,7 +57,7 @@ public class testReturnHomeOnRealLayout
     private static final int RUN_MAX_SECONDS = 9;
 
     /** Long enough for any single path to finish; short enough that a hang fails instead of hanging. */
-    private static final long SETTLE_TIMEOUT_MS = 240000;
+    private static final long SETTLE_TIMEOUT_MS = 60000;
 
     private static final Random RANDOM = new Random();
 
@@ -140,8 +142,25 @@ public class testReturnHomeOnRealLayout
         {
             if (System.currentTimeMillis() > deadline)
             {
+                // Named, not counted.  This run stops autonomy at a random moment, so a failure here is
+                // not reproducible by re-running: whatever the message says is the only evidence there
+                // will be of which locomotive hung and where it was on its path.
+                List<String> stuck = new ArrayList<>();
+
+                for (Map.Entry<Locomotive, List<Edge>> e : layout.getActiveLocomotives().entrySet())
+                {
+                    List<Edge> path = e.getValue();
+
+                    stuck.add(e.getKey().getName()
+                        + " on " + (path == null || path.isEmpty() ? "no path"
+                            : path.get(0).getStart().getName() + "->"
+                              + path.get(path.size() - 1).getEnd().getName())
+                        + " at " + describeLocation(layout, e.getKey()));
+                }
+
                 fail("locomotives were still running " + (SETTLE_TIMEOUT_MS / 1000)
-                    + "s after the graceful stop");
+                    + "s after the graceful stop.  running=" + layout.isAutoRunning()
+                    + ", still active: " + stuck + ".  Arrangement: " + describe(layout));
             }
 
             Thread.sleep(250);
@@ -151,6 +170,17 @@ public class testReturnHomeOnRealLayout
     /**
      * Where everything currently stands, for failure messages worth reading.
      */
+    /** Where a locomotive currently stands, or unknown if no point claims it. */
+    private static String describeLocation(Layout layout, Locomotive loc)
+    {
+        for (Point p : layout.getPoints())
+        {
+            if (loc.equals(p.getCurrentLocomotive())) return p.getName();
+        }
+
+        return "unknown";
+    }
+
     private static String describe(Layout layout)
     {
         List<String> out = new ArrayList<>();

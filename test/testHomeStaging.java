@@ -1412,4 +1412,497 @@ public class testHomeStaging
             "while a fresh read does see the change");
         assertEquals(layout.getHomeStations().size(), before + 1);
     }
+
+    // =============================================================================================
+    // Point types in the path, rather than only at its end
+    //
+    // The suite pinned canBeHome - the rule for where a locomotive may COME TO REST - and nothing at
+    // all about what it may drive through.  These cover the traversal half: terminus, reversing,
+    // non-station, exclusions and shared sensors, in the middle of a route rather than at the end.
+    // =============================================================================================
+
+    /**
+     * The four-station ring, with extra JSON spliced onto any of its stations.
+     *
+     * Named apart from ring(String, String, String) rather than overloading it: three nulls match both
+     * signatures and neither is more specific, so ring(null, null, null) stopped compiling.
+     */
+    private static String ringWith(String[] locs, String[] extras)
+    {
+        return ringWith(locs, extras, new int[]{0, 1, 2, 3});
+    }
+
+    /**
+     * The ring with explicit sensor offsets, so two stations can be given one address.
+     *
+     * A separate argument rather than another entry in extras: station() already emits an s88, and
+     * splicing a second one produced a duplicate key and a graph that would not parse at all.
+     */
+    private static String ringWith(String[] locs, String[] extras, int[] s88Offsets)
+    {
+        StringBuilder points = new StringBuilder();
+
+        for (int i = 0; i < 4; i++)
+        {
+            String raw = station("HS " + (char) ('A' + i), s88Offsets[i], locs[i]);
+
+            if (extras[i] != null)
+            {
+                // Splice before the closing brace, and assert it landed - a fixture that silently
+                // dropped the flag would make every test below pass while testing nothing
+                assertTrue(raw.endsWith("}"), "station JSON shape changed: " + raw);
+                raw = raw.substring(0, raw.length() - 1) + ", " + extras[i] + "}";
+            }
+
+            if (i > 0) points.append(",");
+
+            points.append(raw);
+        }
+
+        String config = json("{'points': [" + points + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B") + ","
+            + edge("HS C", "HS D") + "," + edge("HS D", "HS C") + ","
+            + edge("HS D", "HS A") + "," + edge("HS A", "HS D")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+
+        for (String extra : extras)
+        {
+            if (extra != null) assertTrue(config.contains(json(extra)), "fixture lost " + extra);
+        }
+
+        return config;
+    }
+
+    /**
+     * Three mutually connected stations, the third a terminus.
+     *
+     * Used where the terminus has to be the ONLY place a train can step aside to.  Carving that out of
+     * the ring with exclusions would have worked today and broken the moment exclusions start applying
+     * to stations driven through - this says what it means instead.
+     */
+    private static String triangleWithTerminus(String locAtA, String locAtB)
+    {
+        String t = station("HS T", 2, null);
+
+        assertTrue(t.endsWith("}"), "station JSON shape changed: " + t);
+
+        return json("{'points': ["
+            + station("HS A", 0, locAtA) + ","
+            + station("HS B", 1, locAtB) + ","
+            + t.substring(0, t.length() - 1) + ", 'terminus': true}"
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS T") + "," + edge("HS T", "HS B") + ","
+            + edge("HS T", "HS A") + "," + edge("HS A", "HS T")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
+    private static void assign(Layout layout, String locName, String stationName) throws Exception
+    {
+        layout.setHomeLocomotive(stationName, locName);
+    }
+
+    /**
+     * Sets reversibility on both test locomotives and returns what they were.
+     *
+     * Locomotive state outlives load(), which re-parses the graph and not the database, so anything
+     * changed here has to be put back exactly - restoring a hardcoded "true" would hand every later
+     * test a locomotive this one had quietly made reversible.
+     */
+    private static boolean[] setReversible(boolean state, String... names)
+    {
+        boolean[] was = new boolean[names.length];
+
+        for (int i = 0; i < names.length; i++)
+        {
+            was[i] = loc(names[i]).isReversible();
+            loc(names[i]).setReversible(state);
+        }
+
+        return was;
+    }
+
+    private static void restoreReversible(boolean[] was, String... names)
+    {
+        for (int i = 0; i < names.length; i++) loc(names[i]).setReversible(was[i]);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Terminus
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A terminus is a legitimate place to put a train mid-plan.
+     *
+     * Two locomotives standing on each other's homes can only be unwound by parking one somewhere
+     * else first.  Here the only free station is a terminus, so the plan exists if and only if a
+     * terminus may be an intermediate stop.  A* offers every active destination as a target and gates
+     * it through canRest, which permits a terminus to a reversible locomotive - this pins that, and
+     * pins that the train can leave again afterwards.
+     */
+    @Test
+    public void testATerminusCanBeTheEndOfAnIntermediateMove() throws Exception
+    {
+        Layout layout = load(triangleWithTerminus(LOC_A, LOC_B));
+
+        assertTrue(layout.getPoint("HS T").isTerminus(), "precondition: HS T is the terminus");
+
+        assign(layout, LOC_A, "HS B");
+        assign(layout, LOC_B, "HS A");
+
+        // Set rather than asserted: a locomotive is not reversible by default
+        boolean[] was = setReversible(true, LOC_A, LOC_B);
+
+        try
+        {
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertTrue(plan.isPossible(),
+                "a swap needs one train parked elsewhere, and the terminus is the only elsewhere: " + plan);
+
+            applyPlan(layout, plan);
+
+            boolean usedTerminus = false;
+
+            for (HomeStaging.Move m : plan.getMoves())
+            {
+                if (m.getEnd().getName().equals("HS T")) usedTerminus = true;
+            }
+
+            assertTrue(usedTerminus, "the terminus has to be the station used: " + plan.getMoves());
+        }
+        finally
+        {
+            restoreReversible(was, LOC_A, LOC_B);
+        }
+    }
+
+    /**
+     * ...but only for a locomotive that can reverse out of it again.
+     *
+     * The same fixture with a non-reversible locomotive: the terminus is unusable, so there is nowhere
+     * to step aside and no plan exists.  isPathClear refuses a terminus to a non-reversible locomotive,
+     * so a planner that offered it would be planning a move the runtime then rejects.
+     */
+    @Test
+    public void testANonReversibleLocomotiveIsNotParkedAtATerminus() throws Exception
+    {
+        Layout layout = load(triangleWithTerminus(LOC_A, LOC_B));
+
+        assign(layout, LOC_A, "HS B");
+        assign(layout, LOC_B, "HS A");
+
+        boolean[] was = setReversible(false, LOC_A, LOC_B);
+
+        try
+        {
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertFalse(plan.isPossible(),
+                "neither train can rest at the terminus, so the swap cannot be unwound: " + plan);
+        }
+        finally
+        {
+            restoreReversible(was, LOC_A, LOC_B);
+        }
+    }
+
+    /**
+     * A terminus may be arrived at but never driven through.
+     *
+     * The planner refuses to expand a terminus during its search; the runtime reaches the same answer
+     * from the other end, by rejecting any path whose intermediate point is a terminus.  Both have to
+     * agree, because this one decides whether the answer is IMPOSSIBLE - a claim the planner is only
+     * entitled to make when no arrangement of the other trains could help.
+     */
+    @Test
+    public void testAHomeReachableOnlyThroughATerminusIsImpossible() throws Exception
+    {
+        // A line, not a ring: HS A - HS B - HS C, with the middle station a terminus
+        Layout layout = load(ringWith(new String[]{LOC_A, null, null, null},
+                                  new String[]{null, "'terminus': true", null, null}));
+
+        assign(layout, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        // The ring still offers HS A -> HS D -> HS C, so this must SUCCEED - the terminus only removes
+        // one of the two ways round.  Asserting the reachable case first keeps the test below honest.
+        assertTrue(plan.isPossible(), "the long way round the ring is still open: " + plan);
+
+        // Now close the other way round, leaving the terminus as the only route
+        Layout blocked = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null).substring(0, station("HS B", 1, null).length() - 1)
+                + ", 'terminus': true}" + ","
+            + station("HS C", 2, null)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertTrue(blocked.getPoint("HS B").isTerminus(), "precondition: the only route is through HS B");
+
+        assign(blocked, LOC_A, "HS C");
+
+        HomeStaging.Plan impossible = HomeStaging.snapshot(blocked).plan();
+
+        assertEquals(impossible.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "a terminus cannot be driven through, so HS C is unreachable: " + impossible);
+
+        assertTrue(impossible.getBlocked().contains(loc(LOC_A)),
+            "and the locomotive that cannot get home is named");
+    }
+
+    /**
+     * A locomotive standing on a terminus can still be sent home.
+     *
+     * The rule is that a terminus may not be an intermediate point; being the point a path STARTS from
+     * is expressly allowed, by isPathClear and by the planner seeding its search there.
+     */
+    @Test
+    public void testALocomotiveStartingOnATerminusIsPlannedHome() throws Exception
+    {
+        Layout layout = load(ringWith(new String[]{null, null, null, LOC_A},
+                                  new String[]{null, null, null, "'terminus': true"}));
+
+        assign(layout, LOC_A, "HS B");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertTrue(plan.isPossible(), "a train may leave a terminus: " + plan);
+
+        applyPlan(layout, plan);
+
+        assertEquals(plan.getMoves().size(), 1, "one move, straight home: " + plan.getMoves());
+        assertEquals(plan.getMoves().get(0).getEnd().getName(), "HS B");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Reversing
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A reversing station is an ordinary station to the planner - drivable through, restable on.
+     *
+     * Neither the planner nor isPathClear has any rule about reversing points, so this pins the
+     * absence: if one is ever added to the runtime, the planner has to learn it in the same change.
+     */
+    @Test
+    public void testAReversingStationIsAnOrdinaryStationToThePlanner() throws Exception
+    {
+        Layout layout = load(ringWith(new String[]{LOC_A, null, null, null},
+                                  new String[]{null, "'reversing': true", null, null}));
+
+        assertTrue(layout.getPoint("HS B").isReversing(), "precondition: HS B reverses");
+
+        // Home two stations away, so the shortest route runs THROUGH the reversing station
+        assign(layout, LOC_A, "HS C");
+
+        HomeStaging.Plan through = HomeStaging.snapshot(layout).plan();
+
+        assertTrue(through.isPossible(), "a reversing station may be driven through: " + through);
+
+        // And it may be a home in its own right
+        Layout resting = load(ringWith(new String[]{LOC_A, null, null, null},
+                                   new String[]{null, "'reversing': true", null, null}));
+
+        assign(resting, LOC_A, "HS B");
+
+        assertTrue(HomeStaging.canBeHome(loc(LOC_A), resting.getPoint("HS B")),
+            "a reversing station can be a home");
+
+        assertTrue(HomeStaging.snapshot(resting).plan().isPossible());
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Exclusions on the way past - collision prevention, not just parking
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A station's exclusion list says where a locomotive may not STOP - not where it may not go.
+     *
+     * The two lists mean different things on purpose.  On a non-station, exclusion blocks passage, which
+     * is the collision constraint.  On a station it blocks parking only, because a station on a through
+     * route is exactly where an operator writes "not this one, not here" without wanting to sever the
+     * route.
+     *
+     * Made to block passage as well, briefly, and reverted: on the author's own layout that removed 45%
+     * of the reachable station pairs for two locomotives, and Return Home then ran its search out
+     * instead of finding the plan that was there before.  A line graph is used here rather than the
+     * ring, so passing through HS B is the only way to reach HS C and the test cannot be satisfied by
+     * the long way round.
+     */
+    @Test
+    public void testAStationExclusionStopsParkingNotPassing() throws Exception
+    {
+        Layout line = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + station("HS C", 2, null)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        Point b = line.getPoint("HS B");
+
+        b.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+
+        assertFalse(HomeStaging.canBeHome(loc(LOC_A), b),
+            "the exclusion still forbids parking there");
+
+        assign(line, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(line).plan();
+
+        assertTrue(plan.isPossible(),
+            "but HS B may be driven through, and it is the only way to HS C: " + plan);
+
+        applyPlan(line, plan);
+
+        assertEquals(plan.getMoves().get(0).getEnd().getName(), "HS C");
+    }
+
+    /**
+     * A non-station that excludes the locomotive cannot be passed at all.
+     *
+     * The other half of the same rule, and the one that carries the collision constraint.  Without it
+     * the test above would be satisfied by exclusions meaning nothing anywhere.
+     */
+    @Test
+    public void testANonStationExclusionBlocksPassage() throws Exception
+    {
+        Layout line = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + "{'name': 'Mid', 'station': false, 's88': " + (S88_BASE + 1) + "}" + ","
+            + station("HS C", 2, null)
+            + "],'edges': ["
+            + edge("HS A", "Mid") + "," + edge("Mid", "HS A") + ","
+            + edge("Mid", "HS C") + "," + edge("HS C", "Mid")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        Point mid = line.getPoint("Mid");
+
+        assertFalse(mid.isDestination(), "precondition: Mid is not a station");
+
+        mid.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+
+        assign(line, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(line).plan();
+
+        assertFalse(plan.isPossible(),
+            "the only route runs through a non-station this locomotive may not enter: " + plan);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Shared sensors
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Two active points that report one sensor are never both occupied.
+     *
+     * They are one piece of track as far as detection goes, so a plan that ends with a train on each
+     * of them is describing something the layout cannot do - and the runtime would refuse the second
+     * arrival, stranding the run halfway through.
+     *
+     * The rule used to be expressed by blocking the sensor address, and only for a sensor that was
+     * READING occupied when the snapshot was taken - so on a layout whose feedback was quiet it did
+     * not apply at all, and the planner would put both trains on one section for the runtime to
+     * discover halfway through the run.  It is now structural, in canEnter.
+     */
+    @Test
+    public void testTwoActivePointsSharingASensorAreNeverBothOccupied() throws Exception
+    {
+        // HS C reports HS A's sensor, and each train is assigned to one of the pair
+        Layout layout = load(ringWith(new String[]{null, LOC_A, null, LOC_B},
+                                  new String[]{null, null, null, null},
+                                  new int[]{0, 1, 0, 3}));
+
+        assertEquals(layout.getPoint("HS C").getS88(), layout.getPoint("HS A").getS88(),
+            "precondition: HS A and HS C report one sensor");
+
+        assertTrue(layout.getPoint("HS A").isActive() && layout.getPoint("HS C").isActive(),
+            "precondition: both are active, which is what makes them mutually exclusive");
+
+        assign(layout, LOC_A, "HS A");
+        assign(layout, LOC_B, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertFalse(plan.isPossible(),
+            "the two homes are one detection section - both trains cannot stand on them: " + plan);
+    }
+
+    /**
+     * Control: the shared address closes the other point only while something is standing on it.
+     *
+     * Without this the test above would be satisfied by a planner that refused every layout with a
+     * shared address on it, which is most real layouts.
+     */
+    @Test
+    public void testASharedSensorOnlyClosesTheOtherPointWhileItIsHeld() throws Exception
+    {
+        Layout layout = load(ringWith(new String[]{null, LOC_A, null, null},
+                                  new String[]{null, null, null, null},
+                                  new int[]{0, 1, 0, 3}));
+
+        assertEquals(layout.getPoint("HS C").getS88(), layout.getPoint("HS A").getS88(),
+            "precondition: HS A and HS C report one sensor");
+
+        assign(layout, LOC_A, "HS A");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertTrue(plan.isPossible(),
+            "nothing is standing on HS C, so its twin HS A is free to be occupied: " + plan);
+
+        applyPlan(layout, plan);
+
+        assertEquals(plan.getMoves().size(), 1, "one move: " + plan.getMoves());
+    }
+
+    /**
+     * Excluding a locomotive from the station that is its home is recognised before it is applied.
+     *
+     * The guard on the other door already existed: assigning a home to a station that excludes the
+     * locomotive warns.  This state is identical - every future Return Home reports IMPOSSIBLE and
+     * refuses to move anything, including the locomotives that could have gone home - and reaching it
+     * was silent, one keystroke over a hovered node.
+     *
+     * The predicate is what both UI paths ask; the dialog around it is not testable here.
+     */
+    @Test
+    public void testExcludingALocomotiveFromItsOwnHomeIsRecognised() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        Point d = layout.getPoint("HS D");
+
+        layout.setHomeLocomotive("HS D", LOC_A);
+
+        assertEquals(HomeStaging.homeBrokenByExcluding(d, Arrays.asList((Locomotive) loc(LOC_A))),
+            LOC_A, "HS D is the home of this locomotive, so excluding it there strands it");
+
+        assertNull(HomeStaging.homeBrokenByExcluding(d, Arrays.asList((Locomotive) loc(LOC_B))),
+            "another locomotive being excluded from HS D breaks nothing");
+
+        assertNull(HomeStaging.homeBrokenByExcluding(layout.getPoint("HS C"),
+            Arrays.asList((Locomotive) loc(LOC_A))),
+            "and neither does excluding it from a station that is not its home");
+
+        // The state the guard exists to prevent, confirmed to be as bad as claimed
+        d.setExcludedLocs(new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE);
+        assertTrue(plan.getMoves().isEmpty(),
+            "and no locomotive moves at all, not even LOC_B which could have gone home");
+
+        d.setExcludedLocs(new HashSet<Locomotive>());
+    }
 }

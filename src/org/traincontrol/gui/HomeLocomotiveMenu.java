@@ -10,6 +10,7 @@ import javax.swing.JComponent;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import java.util.Collection;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
@@ -314,6 +315,51 @@ final class HomeLocomotiveMenu
         }
 
         apply(ui, p.getName(), choice, dialogParent, afterChange);
+    }
+
+    /**
+     * Warns when excluding locomotives from a station would strand the one that calls it home, and
+     * clears that assignment if the operator agrees.
+     *
+     * Yes clears the home as well as excluding, rather than leaving a station and a locomotive that
+     * disagree about each other.  The state where both are set IS still reachable - exclude first,
+     * assign afterwards, which the chooser permits on purpose - so nothing is being forbidden here;
+     * what is being prevented is arriving in it without noticing.
+     *
+     * Defaulted to No, like the chooser's warning: this answers a question the operator did not ask.
+     *
+     * @return false if the operator cancelled, and the exclusion must not be applied
+     */
+    public static boolean confirmExclusion(TrainControlUI ui, Point p, Collection<Locomotive> toExclude,
+        Component dialogParent)
+    {
+        String stranded = HomeStaging.homeBrokenByExcluding(p, toExclude);
+
+        if (stranded == null) return true;
+
+        int proceed = JOptionPane.showOptionDialog(
+            dialogParent,
+            I18n.f("autolayout.ui.confirmExcludeHomeLocomotive", stranded, p.getName()),
+            I18n.f("autolayout.ui.dialogEditExcludedLocomotives", p.getName()),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[1]
+        );
+
+        if (proceed != JOptionPane.YES_OPTION) return false;
+
+        try
+        {
+            ui.getModel().getAutoLayout().setHomeLocomotive(p.getName(), null);
+        }
+        catch (Exception e)
+        {
+            ui.getModel().log(e);
+        }
+
+        return true;
     }
 
     /**

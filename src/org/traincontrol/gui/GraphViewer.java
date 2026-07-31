@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import org.traincontrol.automation.Point;
+import java.util.Arrays;
 import org.traincontrol.base.Locomotive;
 import java.awt.Component;
 import java.awt.event.InputEvent;
@@ -579,7 +580,12 @@ final public class GraphViewer extends PositionAwareJFrame
                 {
                     if (keyCode == KeyEvent.VK_E)
                     {
-                        p.getExcludedLocs().add(parent.getActiveLoc()); 
+                        // One keystroke, no dialog - which is why this needed the guard most
+                        if (HomeLocomotiveMenu.confirmExclusion(parent, p,
+                            Arrays.asList((Locomotive) parent.getActiveLoc()), this))
+                        {
+                            p.getExcludedLocs().add(parent.getActiveLoc());
+                        }
                     }
                     else if (keyCode == KeyEvent.VK_U)
                     {

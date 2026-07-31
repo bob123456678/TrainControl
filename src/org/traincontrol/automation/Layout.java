@@ -1200,7 +1200,26 @@ public class Layout
      */
     private void logPathError(Locomotive loc, List<Edge> path, String message)
     {
+        logPathError(loc, path, true, message);
+    }
+
+    /**
+     * Records why a path was refused, and optionally says so in the log.
+     *
+     * lastError is set either way - the caller that reports per-destination reasons reads it.
+     * What the flag turns off is the log line, for the callers that are ENUMERATING paths rather
+     * than validating a chosen one.  For those, a refusal is the ordinary answer and not an error:
+     * getPossiblePaths asks about every candidate route from a point, so on a layout with trains
+     * parked across it nearly every question is answered no.  One test run produced 143,353 of
+     * these lines - 38 distinct messages, 36MB, up to 77 in a single millisecond - which is slow
+     * enough to matter and far too noisy to read.
+     */
+    private void logPathError(Locomotive loc, List<Edge> path, boolean log, String message)
+    {
         lastError = message;
+
+        if (!log) return;
+
         
         if (control.isDebug())
         {
@@ -1221,11 +1240,21 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
+        return isPathClear(path, loc, true);
+    }
+
+    /**
+     * @param logFailures false when enumerating candidate paths, where a refusal is the ordinary
+     *                    answer rather than something worth a log line.  lastError is still set.
+     */
+    public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
+    {
         if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
         {
             logPathError(
                 loc,
                 path,
+                logFailures,
                 I18n.f("autolayout.errorMaxActiveTrainsExceeded", this.maxActiveTrains)
             );
             return false;
@@ -1235,7 +1264,7 @@ public class Layout
         {
             if (e.isOccupied(loc))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorEdgeOccupied", e.getName())
                 );
                 return false;
@@ -1244,16 +1273,21 @@ public class Layout
             // The same edge going in the opposite direction
             if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorEdgeOccupied", e.getOppositeName())
                 );
                 return false;
             }
 
-            // Excluded intermediate points cannot be traversed
+            // Excluded intermediate points cannot be traversed.  Non-stations only, and deliberately:
+            // a station's exclusion list says the locomotive may not STOP there, which is checked
+            // against the path's destination, not against the points it drives past.  Blocking passage
+            // through excluded stations as well was tried and reverted - on the author's own layout it
+            // removed 45% of the reachable station pairs for two locomotives, because it uses station
+            // exclusions on through routes.  See HomeStaging.canEnter for the other half of the rule.
             if (!e.getStart().isDestination() && e.getStart().getExcludedLocs().contains(loc))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorIntermediatePointExcluded", e.getStart().getName())
                 );
                 return false;
@@ -1262,7 +1296,7 @@ public class Layout
             // Terminus stations may only be at the end of a path
             if (e.getStart().isTerminus() && !e.getStart().equals(path.get(0).getStart()))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorIntermediateTerminusStation")
                 );
                 return false;
@@ -1271,7 +1305,7 @@ public class Layout
             // Inactive points not allowed in auto running
             if (this.isAutoRunning() && (!e.getStart().isActive() || !e.getEnd().isActive()))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorInactivePointInAutoRun")
                 );
                 return false;
@@ -1280,7 +1314,7 @@ public class Layout
             // Starting point is not a station - do not pick it in fully autonomous mode
             if (this.isAutoRunning() && !e.getStart().isDestination() && e.getStart().equals(path.get(0).getStart()))
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorStartWithNonStation")
                 );
                 return false;
@@ -1288,7 +1322,7 @@ public class Layout
 
             if (control.getFeedbackState(e.getEnd().getS88()) != false)
             {
-                logPathError(loc, path,
+                logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorFeedbackNotClear", e.getEnd().getS88())
                 );
                 return false;
@@ -1299,7 +1333,7 @@ public class Layout
             {
                 if (e2.isOccupied(loc))
                 {
-                    logPathError(loc, path,
+                    logPathError(loc, path, logFailures,
                         I18n.f("autolayout.errorLockEdgeOccupied", e2.getName())
                     );
                     return false;
@@ -1313,6 +1347,7 @@ public class Layout
             logPathError(
                 loc,
                 path,
+                logFailures,
                 I18n.f("autolayout.errorTrainLengthTooLong", path.get(path.size() - 1).getEnd().getName())
             );
             return false;
@@ -1323,6 +1358,7 @@ public class Layout
             logPathError(
                 loc,
                 path,
+                logFailures,
                 I18n.f("autolayout.errorInactiveStationInAutoRun", path.get(path.size() - 1).getEnd().getName())
             );
             return false;
@@ -1334,6 +1370,7 @@ public class Layout
             logPathError(
                 loc,
                 path,
+                logFailures,
                 I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName())
             );
             return false;
@@ -1353,6 +1390,7 @@ public class Layout
             logPathError(
                 loc,
                 path,
+                logFailures,
                 validity.errorMessage != null
                     ? validity.errorMessage
                     : I18n.f("autolayout.errorConflictingAccessoryCommands", validity.invalidConfigs.toString())
@@ -2276,7 +2314,7 @@ public class Layout
                             {
                                 path = this.bfs(start, end, seenPaths);
 
-                                if (path != null && this.isPathClear(path, loc))
+                                if (path != null && this.isPathClear(path, loc, false))
                                 {
                                     return path;
                                 }
@@ -2344,7 +2382,7 @@ public class Layout
         {
             try
             {
-                boolean result = this.isPathClear(p, loc);
+                boolean result = this.isPathClear(p, loc, false);
 
                 if (!result)
                 {
@@ -2400,7 +2438,7 @@ public class Layout
                                 {
                                     path = this.bfs(start, end, seenPaths);
 
-                                    if (path != null && this.isPathClear(path, loc))
+                                    if (path != null && this.isPathClear(path, loc, false))
                                     {
                                         boolean unique = true;
 
@@ -4211,7 +4249,11 @@ public class Layout
             
             try 
             {
-                layout.createPoint(point.getString("name"), point.getBoolean("station"), s88);
+                // optBoolean, not getBoolean: every other optional field on a point defaults, and a
+                // missing "station" threw out of this try, dropping the point silently.  The first sign
+                // of it was an edge complaining that one of its endpoints did not exist, which names
+                // the wrong line entirely in a file the operator edits by hand.
+                layout.createPoint(point.getString("name"), point.optBoolean("station", false), s88);
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive
                 // placed at a point this loop has not reached yet, so nothing can be concluded from it
@@ -4471,7 +4513,7 @@ public class Layout
                             }
 
                             // Only throw a warning if this is not a station
-                            if (point.getBoolean("station") != true)
+                            if (!point.optBoolean("station", false))
                             {
                                 control.logf(
                                     "autolayout.warnLocomotivePlacedOnNonStation",

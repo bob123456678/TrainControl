@@ -305,7 +305,11 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
                 if (dialogResult2 == JOptionPane.OK_OPTION)
                 {
-                    p.setExcludedLocs(edit.getSelectedExcludeLocs());
+                    if (HomeLocomotiveMenu.confirmExclusion(ui, p, edit.getSelectedExcludeLocs(),
+                        (Component) parent.getSwingView()))
+                    {
+                        p.setExcludedLocs(edit.getSelectedExcludeLocs());
+                    }
                 }
 
                 ui.updatePoint(p, parent.getMainGraph());
