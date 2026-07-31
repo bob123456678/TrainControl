@@ -84,8 +84,6 @@ public final class HomeStaging
     /** Which points report each sensor, so a sensor can be released when its point is vacated. */
     private final Map<String, List<Point>> pointsBySensor;
 
-    /** Whether this layout's hardware holds a sensor under a resting train - measured, not assumed. */
-
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
         List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor)
     {
@@ -280,6 +278,28 @@ public final class HomeStaging
             if (!canRest(l, home) || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
+        // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on
+        // one detection section is the easiest wrong click on a layout that shares addresses - a
+        // platform and its bypass - and nothing warns when the assignment is made, because canBeHome is
+        // a one-station question.  Without this the search simply exhausts: correct, since
+        // NO_PLAN_FOUND claims less than it could, but it spends the whole budget to say "maybe" about
+        // something provable in a pairwise scan.
+        for (Map.Entry<Locomotive, Point> a : this.homes.entrySet())
+        {
+            if (!this.start.containsValue(a.getKey())) continue;
+
+            for (Map.Entry<Locomotive, Point> b : this.homes.entrySet())
+            {
+                if (a.getKey().equals(b.getKey()) || !this.start.containsValue(b.getKey())) continue;
+
+                if (sharesSection(a.getValue(), b.getValue()))
+                {
+                    if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
+                    if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
+                }
+            }
+        }
+
         if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable);
 
         List<Move> moves = search();
@@ -334,6 +354,13 @@ public final class HomeStaging
                 // it offers parking tracks that it would refuse once a timetable is under way.  The
                 // planner reasons about the running case, so it is right to leave them out.
                 if (!p.isActive()) continue;
+
+                // And the same for exclusions, for a closely related reason: the oracle here is
+                // getPossiblePaths, which filters destinations on occupancy and station-ness but not on
+                // exclusion - pickPath does that separately.  So it offers stations the planner's
+                // canRest correctly refuses, and every audit on a layout with a free excluded station
+                // reported a disagreement between two runtime methods rather than a planner defect.
+                if (p.getExcludedLocs().contains(loc)) continue;
 
                 if (!plannerSays.contains(p))
                 {
@@ -561,6 +588,13 @@ public final class HomeStaging
         Point from, Point to)
     {
         if (from == null || to == null || from.equals(to)) return null;
+
+        // The origin is exempt from every other test here - that is what stops the moving train's own
+        // sensor blocking its own departure - but not from this one.  isPathClear applies its
+        // inactive-point rule to every edge start including the first, and staging executes with
+        // autonomy running, so a locomotive standing on a deactivated point would be planned home and
+        // then refused at its first edge.
+        if (!from.isActive()) return null;
         if (!canRest(loc, to) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();
@@ -748,7 +782,12 @@ public final class HomeStaging
         {
             for (Point sibling : this.pointsBySensor.get(p.getS88()))
             {
-                if (sibling.equals(p) || !sibling.isActive()) continue;
+                // Not gated on the sibling being active: a detection section is electrical, and a
+                // train parked on a deactivated siding holds the sensor exactly as hard as one on a
+                // live platform.  snapshot records occupants of inactive points, so the planner knows
+                // it is there; skipping it let a second train be routed into the active twin, for the
+                // runtime to refuse on live feedback partway through the run.
+                if (sibling.equals(p)) continue;
 
                 Locomotive there = state.get(sibling);
 
@@ -894,6 +933,19 @@ public final class HomeStaging
     // ---------------------------------------------------------------------------------------------
     // State helpers
     // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Whether two points are one detection section - both active, and reporting the same sensor.
+     *
+     * The same rule canEnter enforces between a train and the section it wants to enter, asked here
+     * between two goals instead.
+     */
+    private boolean sharesSection(Point a, Point b)
+    {
+        return a != null && b != null && !a.equals(b)
+            && a.isActive() && b.isActive()
+            && a.getS88() != null && a.getS88().equals(b.getS88());
+    }
 
     private static Point locationOf(Map<Point, Locomotive> state, Locomotive l)
     {

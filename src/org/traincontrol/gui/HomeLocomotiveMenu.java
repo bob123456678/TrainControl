@@ -350,14 +350,21 @@ final class HomeLocomotiveMenu
 
         if (proceed != JOptionPane.YES_OPTION) return false;
 
-        try
+        // Off the event thread: setHomeLocomotive is synchronized on the Layout, and
+        // configureAndLockPath holds that monitor through CONFIGURE_SLEEP per accessory command - so
+        // confirming this while autonomy is driving would freeze the UI for a path's whole
+        // configuration.  Nothing below reads the result, and the caller repaints afterwards.
+        new Thread(() ->
         {
-            ui.getModel().getAutoLayout().setHomeLocomotive(p.getName(), null);
-        }
-        catch (Exception e)
-        {
-            ui.getModel().log(e);
-        }
+            try
+            {
+                ui.getModel().getAutoLayout().setHomeLocomotive(p.getName(), null);
+            }
+            catch (Exception e)
+            {
+                ui.getModel().log(e);
+            }
+        }).start();
 
         return true;
     }
@@ -370,21 +377,32 @@ final class HomeLocomotiveMenu
     {
         if (refuseWhileBusy(ui, dialogParent)) return;
 
-        try
+        // Off the event thread, and everything after the write marshalled back onto it.
+        // setHomeLocomotive is synchronized on the Layout, and configureAndLockPath holds that monitor
+        // through CONFIGURE_SLEEP per accessory command - so writing from the EDT freezes the UI for a
+        // whole path'’'s configuration whenever autonomy happens to be driving.
+        new Thread(() ->
         {
-            ui.getModel().getAutoLayout().setHomeLocomotive(pointName, locName);
+            try
+            {
+                ui.getModel().getAutoLayout().setHomeLocomotive(pointName, locName);
 
-            afterChange.run();
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    afterChange.run();
 
-            // The home markers in the locomotive list, and whether returning home has anything to do
-            ui.repaintAutoLocList(false);
-        }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(
-                dialogParent,
-                I18n.f("autolayout.ui.errorSetHomeLocomotive", e.getMessage())
-            );
-        }
+                    // The home markers in the locomotive list, and whether returning home has anything to do
+                    ui.repaintAutoLocList(false);
+                });
+            }
+            catch (Exception e)
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(
+                        dialogParent,
+                        I18n.f("autolayout.ui.errorSetHomeLocomotive", e.getMessage())
+                    ));
+            }
+        }).start();
     }
 }

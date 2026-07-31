@@ -1219,7 +1219,6 @@ public class Layout
         lastError = message;
 
         if (!log) return;
-
         
         if (control.isDebug())
         {

@@ -168,9 +168,8 @@ public class testReturnHomeOnRealLayout
     }
 
     /**
-     * Where everything currently stands, for failure messages worth reading.
+     * Where a locomotive currently stands, or unknown if no point claims it.
      */
-    /** Where a locomotive currently stands, or unknown if no point claims it. */
     private static String describeLocation(Layout layout, Locomotive loc)
     {
         for (Point p : layout.getPoints())
@@ -181,6 +180,9 @@ public class testReturnHomeOnRealLayout
         return "unknown";
     }
 
+    /**
+     * Where everything currently stands, for failure messages worth reading.
+     */
     private static String describe(Layout layout)
     {
         List<String> out = new ArrayList<>();

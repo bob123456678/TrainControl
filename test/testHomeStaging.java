@@ -1798,6 +1798,83 @@ public class testHomeStaging
             "the only route runs through a non-station this locomotive may not enter: " + plan);
     }
 
+
+    /**
+     * A train parked on a deactivated point still holds its detection section.
+     *
+     * A section is electrical: taking a siding out of service does not lift the train standing on it
+     * off the rails.  The mutual-exclusion rule skipped inactive siblings, so the planner would route
+     * a second train into the active twin of that section - and the runtime, reading the real sensor,
+     * refuses it partway through the run.
+     */
+    @Test
+    public void testATrainOnAnInactivePointStillClosesItsSection() throws Exception
+    {
+        // HS A is out of service with LOC_B stored on it, and HS C reports HS A's sensor
+        Layout layout = load(ringWith(new String[]{LOC_B, LOC_A, null, null},
+                                      new String[]{"'active': false", null, null, null},
+                                      new int[]{0, 1, 0, 3}));
+
+        assertFalse(layout.getPoint("HS A").isActive(), "precondition: HS A is out of service");
+        assertEquals(layout.getPoint("HS C").getS88(), layout.getPoint("HS A").getS88(),
+            "precondition: HS C reports HS A's sensor");
+
+        assign(layout, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertFalse(plan.isPossible(),
+            "HS C is the far end of a section LOC_B is standing on: " + plan);
+    }
+
+    /**
+     * A locomotive standing on a deactivated point is not planned home.
+     *
+     * Every other test here exempts the origin - that is what stops a train's own sensor blocking its
+     * own departure - but the runtime does not exempt it from the inactive-point rule, and staging
+     * executes with autonomy running.  Planning the move anyway means it is refused at its first edge.
+     */
+    @Test
+    public void testALocomotiveOnAnInactivePointIsNotPlannedHome() throws Exception
+    {
+        Layout layout = load(ringWith(new String[]{LOC_A, null, null, null},
+                                      new String[]{"'active': false", null, null, null}));
+
+        assertFalse(layout.getPoint("HS A").isActive(), "precondition: HS A is out of service");
+
+        assign(layout, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertFalse(plan.isPossible(),
+            "the runtime would refuse this at the first edge, so it must not be planned: " + plan);
+    }
+
+    /**
+     * The parity audit reports nothing when planner and runtime actually agree.
+     *
+     * The audit exists to catch the planner drifting from the rules it re-implements, which only works
+     * if a clean layout is silent.  Its runtime oracle is getPossiblePaths, which filters destinations
+     * on occupancy and station-ness but not on exclusion - pickPath does that separately - so a free
+     * station that excludes the locomotive was reported as a disagreement on every run.  That is two
+     * runtime methods disagreeing with each other, not a planner defect, and on a layout carrying
+     * station exclusions it made the instrument cry wolf exactly where it is meant to be believed.
+     */
+    @Test
+    public void testTheParityAuditIsSilentWhenTheTwoAgree() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        // Free, reachable, a station, and excluded - the combination the oracle used to offer
+        layout.getPoint("HS C").setExcludedLocs(
+            new HashSet<Locomotive>(Arrays.asList((Locomotive) loc(LOC_A))));
+
+        assign(layout, LOC_A, "HS B");
+
+        assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "an excluded destination is not a divergence - canRest refuses it and pickPath would too");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Shared sensors
     // ---------------------------------------------------------------------------------------------
@@ -1835,6 +1912,17 @@ public class testHomeStaging
 
         assertFalse(plan.isPossible(),
             "the two homes are one detection section - both trains cannot stand on them: " + plan);
+
+        // IMPOSSIBLE, not NO_PLAN_FOUND.  The distinction is the whole point: NO_PLAN_FOUND means the
+        // search ran out of room and says so, and reaching it here costs the entire budget - instant on
+        // this four-point fixture, fifteen seconds on a real layout.  Conflicting goals are provable
+        // without searching at all.
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "conflicting homes are proved, not searched for: " + plan);
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)) && plan.getBlocked().contains(loc(LOC_B)),
+            "and both locomotives are named, since either assignment could be the wrong one: "
+            + plan.getBlocked());
     }
 
     /**
