@@ -15010,7 +15010,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // it neighbours; a magenta lost to the orange, sharing its full red channel.  Teal is the
         // orange's complement and far lighter than the blue, and stays saturated enough for white.
         //
-        // The dots are a pixel wider than the solid line, since they cover about half as much of it.
+        // The dots are a pixel wider than the solid line, since they cover about half as much of it -
+        // except on a cross, where that width leaves too few of them to read as dots at all.  See below.
         //
         // Read entirely from the Point - no Layout call, so this stays lock-free.  updatePoint runs on
         // the EDT for every node, and reaching for the monitor here is the shape that produced IR-B2.
@@ -15021,13 +15022,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             boolean settled = p.getCurrentLocomotive() != null
                 && p.getHomeLoc().equals(p.getCurrentLocomotive().getName());
 
+            // Dot length, gap and thickness are all one number: DotsShapeStroke builds its dash pattern
+            // as {width, width}, so the outline repeats every 2 * width.  A reversing station is drawn
+            // as a cross, whose outline is twelve short segments, and at 4px barely one dot lands on
+            // each - they read as blobs stuck on the corners rather than as a dotted line.  Halving the
+            // width doubles the number of dots and thins them in the same move, which is the only
+            // control GraphStream offers here.
+            //
+            // isReversing is an exact test for the cross shape, not an approximation of it: Point
+            // rejects terminus and reversing together in both directions, so the box branch below can
+            // never be a reversing station.
+            int dotWidth = p.isReversing() ? 3 : 4;
+
             homeStyle = settled
                 ? "stroke-mode: plain; stroke-color: rgb("
                     + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
                     + COLOR_AT_HOME.getBlue() + "); stroke-width: 3px;"
                 : "stroke-mode: dots; stroke-color: rgb("
                     + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
-                    + COLOR_AT_HOME.getBlue() + "); stroke-width: 4px;";
+                    + COLOR_AT_HOME.getBlue() + "); stroke-width: " + dotWidth + "px;";
         }
         
         // Remove locomotive from graph if it was deleted

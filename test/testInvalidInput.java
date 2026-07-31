@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
@@ -450,5 +451,64 @@ public class testInvalidInput
         }
 
         return false;
+    }
+
+    /**
+     * A point cannot be both a terminus and a reversing station, whichever order they are set in.
+     *
+     * The rule itself is the layout's: a terminus is where a train stops and leaves the way it came, so
+     * asking it to also reverse as part of shunting is a contradiction.  Point enforces it from both
+     * setters, which is what makes the pair genuinely unreachable rather than merely unusual.
+     *
+     * It is pinned here because the graph drawing now reads it as a fact.  A reversing station renders
+     * as a cross, and the home-locomotive outline thins its dots for exactly that shape by asking
+     * isReversing() - which is only an exact test for "drawn as a cross" while a terminus can never be
+     * reversing.  Drop either check below and the outline quietly starts thinning boxes too.
+     */
+    @Test
+    public void testAPointCannotBeBothTerminusAndReversing() throws Exception
+    {
+        Point terminusFirst = new Point("Terminus first", true, "101");
+
+        terminusFirst.setTerminus(true);
+
+        try
+        {
+            terminusFirst.setReversing(true);
+            fail("a terminus must not be allowed to become reversing");
+        }
+        catch (Exception expected)
+        {
+            assertTrue(terminusFirst.isTerminus(), "and the point it was called on is unchanged");
+            assertFalse(terminusFirst.isReversing());
+        }
+
+        Point reversingFirst = new Point("Reversing first", true, "102");
+
+        reversingFirst.setReversing(true);
+
+        try
+        {
+            reversingFirst.setTerminus(true);
+            fail("a reversing station must not be allowed to become a terminus");
+        }
+        catch (Exception expected)
+        {
+            assertTrue(reversingFirst.isReversing(), "and this one is unchanged too");
+            assertFalse(reversingFirst.isTerminus());
+        }
+
+        // The control case: each alone is perfectly valid, or the rule above would be vacuous
+        Point plainTerminus = new Point("Just a terminus", true, "103");
+        Point plainReversing = new Point("Just reversing", true, "104");
+
+        plainTerminus.setTerminus(true);
+        plainReversing.setReversing(true);
+
+        assertTrue(plainTerminus.isTerminus());
+        assertFalse(plainTerminus.isReversing());
+
+        assertTrue(plainReversing.isReversing());
+        assertFalse(plainReversing.isTerminus());
     }
 }
