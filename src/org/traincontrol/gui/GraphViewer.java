@@ -580,12 +580,19 @@ final public class GraphViewer extends PositionAwareJFrame
                 {
                     if (keyCode == KeyEvent.VK_E)
                     {
-                        // One keystroke, no dialog - which is why this needed the guard most
-                        if (HomeLocomotiveMenu.confirmExclusion(parent, p,
-                            Arrays.asList((Locomotive) parent.getActiveLoc()), this))
-                        {
-                            p.getExcludedLocs().add(parent.getActiveLoc());
-                        }
+                        // One keystroke, no dialog - which is why this needed the guard most.  The
+                        // exclusion and its repaint are handed over, because clearing a home the
+                        // exclusion contradicts finishes on a worker after this method returns.
+                        HomeLocomotiveMenu.confirmExclusion(parent, p,
+                            Arrays.asList((Locomotive) parent.getActiveLoc()), this, () ->
+                            {
+                                p.getExcludedLocs().add(parent.getActiveLoc());
+
+                                parent.updatePoint(p, mainGraph);
+                                parent.repaintAutoLocList(true);
+                            });
+
+                        return;
                     }
                     else if (keyCode == KeyEvent.VK_U)
                     {

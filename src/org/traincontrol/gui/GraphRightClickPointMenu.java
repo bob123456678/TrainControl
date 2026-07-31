@@ -305,15 +305,23 @@ final class GraphRightClickPointMenu extends JPopupMenu
 
                 if (dialogResult2 == JOptionPane.OK_OPTION)
                 {
-                    if (HomeLocomotiveMenu.confirmExclusion(ui, p, edit.getSelectedExcludeLocs(),
-                        (Component) parent.getSwingView()))
-                    {
-                        p.setExcludedLocs(edit.getSelectedExcludeLocs());
-                    }
-                }
+                    // Applying and repainting are handed over rather than done here: clearing a home
+                    // the exclusion contradicts happens on a worker, and a repaint issued from this
+                    // thread would draw the outline that clear is about to remove.
+                    HomeLocomotiveMenu.confirmExclusion(ui, p, edit.getSelectedExcludeLocs(),
+                        (Component) parent.getSwingView(), () ->
+                        {
+                            p.setExcludedLocs(edit.getSelectedExcludeLocs());
 
-                ui.updatePoint(p, parent.getMainGraph());
-                ui.repaintAutoLocList(true);
+                            ui.updatePoint(p, parent.getMainGraph());
+                            ui.repaintAutoLocList(true);
+                        });
+                }
+                else
+                {
+                    ui.updatePoint(p, parent.getMainGraph());
+                    ui.repaintAutoLocList(true);
+                }
             }
             catch (Exception e)
             {

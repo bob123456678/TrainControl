@@ -328,14 +328,22 @@ final class HomeLocomotiveMenu
      *
      * Defaulted to No, like the chooser's warning: this answers a question the operator did not ask.
      *
-     * @return false if the operator cancelled, and the exclusion must not be applied
+     * @param applyAndRepaint applies the exclusion and refreshes whatever showed the old state.  Run
+     *                        by this method rather than by the caller, because the home-clear it may
+     *                        have to do first is not synchronous: a caller that repainted on its own
+     *                        would draw the home outline the dialog had just promised to remove, and
+     *                        leave it there until some unrelated interaction redrew the node.
      */
-    public static boolean confirmExclusion(TrainControlUI ui, Point p, Collection<Locomotive> toExclude,
-        Component dialogParent)
+    public static void confirmExclusion(TrainControlUI ui, Point p, Collection<Locomotive> toExclude,
+        Component dialogParent, Runnable applyAndRepaint)
     {
         String stranded = HomeStaging.homeBrokenByExcluding(p, toExclude);
 
-        if (stranded == null) return true;
+        if (stranded == null)
+        {
+            applyAndRepaint.run();
+            return;
+        }
 
         int proceed = JOptionPane.showOptionDialog(
             dialogParent,
@@ -348,12 +356,12 @@ final class HomeLocomotiveMenu
             TrainControlUI.YES_NO_OPTS[1]
         );
 
-        if (proceed != JOptionPane.YES_OPTION) return false;
+        if (proceed != JOptionPane.YES_OPTION) return;
 
         // Off the event thread: setHomeLocomotive is synchronized on the Layout, and
         // configureAndLockPath holds that monitor through CONFIGURE_SLEEP per accessory command - so
         // confirming this while autonomy is driving would freeze the UI for a path's whole
-        // configuration.  Nothing below reads the result, and the caller repaints afterwards.
+        // configuration.  The exclusion and the repaint follow the write rather than racing it.
         new Thread(() ->
         {
             try
@@ -364,9 +372,9 @@ final class HomeLocomotiveMenu
             {
                 ui.getModel().log(e);
             }
-        }).start();
 
-        return true;
+            javax.swing.SwingUtilities.invokeLater(applyAndRepaint);
+        }).start();
     }
 
     /**
@@ -380,7 +388,7 @@ final class HomeLocomotiveMenu
         // Off the event thread, and everything after the write marshalled back onto it.
         // setHomeLocomotive is synchronized on the Layout, and configureAndLockPath holds that monitor
         // through CONFIGURE_SLEEP per accessory command - so writing from the EDT freezes the UI for a
-        // whole path'’'s configuration whenever autonomy happens to be driving.
+        // whole path's configuration whenever autonomy happens to be driving.
         new Thread(() ->
         {
             try

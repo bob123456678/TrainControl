@@ -1848,6 +1848,16 @@ public class testHomeStaging
 
         assertFalse(plan.isPossible(),
             "the runtime would refuse this at the first edge, so it must not be planned: " + plan);
+
+        // IMPOSSIBLE, not NO_PLAN_FOUND.  !isPossible() alone was true before the pre-check learned
+        // this rule as well - the search simply found nothing - so it pinned the refusal without
+        // pinning the upgrade.  A locomotive that cannot leave where it stands is provably stuck, and
+        // saying so costs one flag test instead of the whole budget.
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "a locomotive that cannot depart is proved stuck, not searched for: " + plan);
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)),
+            "and it is named, so the operator knows which train to reactivate: " + plan.getBlocked());
     }
 
     /**
@@ -1873,6 +1883,28 @@ public class testHomeStaging
 
         assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
             "an excluded destination is not a divergence - canRest refuses it and pickPath would too");
+    }
+
+    /**
+     * The parity audit is silent about a locomotive that cannot depart, too.
+     *
+     * The companion to the exclusion case: the audit's oracle is asked at rest, where the runtime does
+     * not apply its inactive-point rule, so it offers departures from a deactivated point that the
+     * planner refuses because staging executes with autonomy running.  That is the third deliberate
+     * divergence, and reporting it would make the instrument cry wolf in the configuration the rule
+     * was just added for.
+     */
+    @Test
+    public void testTheParityAuditIsSilentAboutALocomotiveThatCannotDepart() throws Exception
+    {
+        Layout layout = load(ringWith(new String[]{LOC_A, null, null, null},
+                                      new String[]{"'active': false", null, null, null}));
+
+        assertFalse(layout.getPoint("HS A").isActive(), "precondition: HS A is out of service");
+
+        assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "the planner refuses every departure from an inactive point, and is right to - comparing "
+            + "that against an at-rest oracle reports the rule as a defect");
     }
 
     // ---------------------------------------------------------------------------------------------

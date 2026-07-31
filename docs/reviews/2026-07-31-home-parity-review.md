@@ -25,6 +25,17 @@ is newly pinned by tests.
 
 Findings use the A/B/C/D convention in [README.md](README.md).
 
+**Validation round - 2026-07-31.** The fixes landed as `5884f70` and are validated in their own
+section at the end; statuses in the table reflect that round. All six held, and all four
+new-or-strengthened tests were traced red against the pre-fix code. The round corrected one status
+the resolution had understated (`HP-C5` - `apply` was in fact fixed too), and filed three findings
+in the fixes themselves: `HP-C7`, `HP-C8`, `HP-C9`.
+**Second validation round - 2026-07-31.** The fixes for `HP-C7`/`C8`/`C9` are in the working tree
+above `5884f70` and are validated in the final section. All three hold, no new findings - the first
+round of this document's chain to add none, which is how it should terminate. Two test gaps were
+named there; both were closed the same day and the closures verified (see "Test gaps closed" and
+the validation note beneath it). Nothing in this document remains open.
+
 ---
 
 ## Status
@@ -35,9 +46,13 @@ Findings use the A/B/C/D convention in [README.md](README.md).
 | HP-C2 | The planner never tests the origin, but the runtime's inactive-point rule tests every edge start including the first - so a locomotive standing on an inactive point is planned home and refused at departure | C | Fixed - `firstClearRoute` refuses an inactive origin, matching the rule `isPathClear` applies to the first edge.  Pinned by `testALocomotiveOnAnInactivePointIsNotPlannedHome` |
 | HP-C3 | `auditAgainstRuntime` compares the planner against `getPossiblePaths`, which offers destinations that exclude the locomotive (it lacks `pickPath`'s filter) - a permanent phantom disagreement on any layout with a free excluded station, logged by the very instrument the round exists to keep trustworthy | C | Fixed - the audit skips excluded destinations, symmetric with the inactive skip beside it.  `getPossiblePaths` is left alone, since changing it would change two UI surfaces.  Pinned by `testTheParityAuditIsSilentWhenTheTwoAgree`, the audit's first test |
 | HP-C4 | Two home assignments on one shared-sensor section are provably impossible but burn the full 15-second budget before answering NO_PLAN_FOUND, because neither `triage` nor the unreachable check knows about detection-section conflicts between goals | C | Fixed - homes are scanned pairwise for shared sections at plan time, so conflicting goals answer IMPOSSIBLE with both locomotives named instead of spending the budget to say maybe.  The existing shared-sensor test now asserts the outcome, not just the refusal |
-| HP-C5 | `HomeLocomotiveMenu.confirmExclusion` calls the Layout-synchronized `setHomeLocomotive` on the EDT, which blocks for up to a path's whole configuration time if autonomy is driving - the `TCR-C1` shape at a new entrance | C | Fixed - `confirmExclusion` clears the home on a worker.  The other entrance named here, `HomeLocomotiveMenu.apply`, is untouched and still on the EDT |
+| HP-C5 | `HomeLocomotiveMenu.confirmExclusion` calls the Layout-synchronized `setHomeLocomotive` on the EDT, which blocks for up to a path's whole configuration time if autonomy is driving - the `TCR-C1` shape at a new entrance | C | Fixed - both entrances, not one: `confirmExclusion` clears the home on a worker, and `apply` also moved its write off the EDT with the repaint and error dialog marshalled back.  The resolution note originally claimed `apply` was untouched; the validation round corrected this cell.  Residual in the first entrance: HP-C8 |
 | HP-C6 | Fix residue, three locations: the javadoc of the deleted `restingTrainsHoldSensors` field now documents the `HomeStaging` constructor; `describe`'s javadoc in `testReturnHomeOnRealLayout` is stranded above `describeLocation`'s; `logPathError` gained a stray double blank line | C | Fixed - all three: the deleted field's javadoc, the stranded `describe` javadoc, and the double blank line in `logPathError` |
+| HP-C7 | The origin-inactive rule from the HP-C2 fix landed only in `firstClearRoute`; its two other consumers did not learn it - the audit still counts a phantom divergence for a train on an inactive point (the at-rest `getPossiblePaths` offers departures the running planner refuses), and the unreachable pre-check still answers NO_PLAN_FOUND after a search where IMPOSSIBLE is provable without one | C | Fixed - both consumers.  The audit skips a locomotive whose origin is inactive, a third correct-divergence skip beside the two already there; and `plan()`'s pre-check now proves it, so a train on a deactivated point answers IMPOSSIBLE by name instead of NO_PLAN_FOUND after a search |
+| HP-C8 | `confirmExclusion`'s callers repaint before its asynchronous home-clear lands, so the home outline survives the operator's confirmation until an unrelated repaint - the fix comment's "the caller repaints afterwards" describes code order, not completion order; `apply` solved exactly this by marshalling its repaint after the write | C | Fixed - `confirmExclusion` takes the apply-and-repaint work as a Runnable and runs it itself: immediately when there is no conflict, and after the home-clear completes when there is.  Both callers hand theirs over, so nothing repaints ahead of the write |
+| HP-C9 | Punctuation residue in `apply`'s new comment: "a whole path'’'s configuration" - a straight-curly-straight quote cluster, the third instance of the `SWC-C9` class in three review rounds | C | Fixed |
 | HP-D1-D10 | Clean checks: the parity table re-read rule by rule, both spec changes verified against the runtime, the I18n conversion, the Point invariant, the logging change's caller census, and the fixture questions behind the tests | D | Verified clean |
+| HP-D11-D13 | Clean checks by the validation round: the interlocking of the C1/C2 fixes, the pairwise goal scan's edge cases, and the red-first tracing of all four tests | D | Verified clean |
 
 No A findings and no B findings: nothing in the three commits produces wrong behaviour on the
 layout, and each C above either needs a narrow configuration, degrades an answer rather than an
@@ -329,3 +344,182 @@ fixture with a train on an inactive point is buildable with the existing helpers
 test at all, so HP-C3's phantom class would survive a fix unpinned; and no test asserts how long a
 provably-conflicted goal state takes to answer (HP-C4), which is the difference between a test bench
 observation and an operator staring at a frozen button for fifteen seconds.
+
+---
+
+## Validation of the fixes - 2026-07-31
+
+The fixes landed as `5884f70`. Every fix was verified at its enforcing method against the finding it
+answers, every test was traced against the pre-fix code rather than trusted to have been red, and
+the resolution's own claims were checked the way any other claims are. All six fixes hold. One
+status cell was corrected, and the round filed three findings - all three in or beside the fixes,
+all three C.
+
+**HP-C1 (fixed) - verified, and the fix interlocks with HP-C2's.** The sibling skip no longer tests
+`isActive`, with the electrical argument recorded at the site. Traced for side effects: the planner
+can never place a *new* occupant on an inactive point (`stations` is active-only and the unreachable
+pre-check demands `canRest`), so the widened rule fires only for snapshot occupants - exactly the
+hole. The new test is stronger than it looks: with LOC_B stored on the deactivated point, A* would
+try to move it aside to unblock the section, and it is HP-C2's origin check that refuses that move -
+so `testATrainOnAnInactivePointStillClosesItsSection` exercises both fixes together, and fails
+against the pre-fix code through either hole alone (D11).
+
+**HP-C2 (fixed) - verified.** `firstClearRoute` refuses an inactive origin before anything else,
+matching the rule `isPathClear` applies to the first edge in the running state staging executes in.
+Red-first traced: pre-fix, the route is found and the plan claims possible. The residual is HP-C7:
+the rule's other two consumers were not taught it.
+
+**HP-C3 (fixed) - verified.** The audit skips excluded destinations in its `runtimeSays` loop,
+symmetric with the inactive skip and with the same style of justification beside it. The planner
+side needs no twin skip - `canRest` already keeps excluded stations out of `plannerSays`, so the
+second loop cannot fire for them. The decision to leave `getPossiblePaths` alone is recorded with
+its reason, and the audit finally has a test - one traced red against the pre-fix audit (one phantom
+disagreement) and asserting silence, which is the only assertion an agreement instrument can make.
+
+**HP-C4 (fixed) - verified.** The pairwise goal scan runs before the IMPOSSIBLE return, mirrors
+`canEnter`'s section rule exactly (`sharesSection`: both active, same non-null sensor), and its edge
+cases check out (D12): locomotives absent from the graph are skipped because their goals constrain
+nothing; already-home locomotives are deliberately *not* skipped because the conflict is between
+goals, not positions; two locomotives cannot share one home point (a point stores one home name);
+and the duplicate-guard keeps `getBlocked` clean. The strengthened test now asserts the outcome
+IMPOSSIBLE and both names - the exact observable difference between the fix and the fifteen-second
+"maybe" it replaced, and red against the pre-fix code where the outcome was NO_PLAN_FOUND.
+
+**HP-C5 (fixed - both entrances) - verified, status corrected.** The resolution note claimed
+`confirmExclusion` was fixed and `apply` left on the EDT; the diff fixes both, and `apply` does it
+the more complete way - write on a worker, `afterChange` and the repaint marshalled back onto the
+EDT after the write, the error dialog likewise. The table cell now says what the code does. The
+asymmetry between the two entrances is HP-C8.
+
+**HP-C6 (fixed) - verified.** All three residues gone; the two test javadocs now sit on the methods
+they describe.
+
+### The validation round's findings
+
+**HP-C7 - the origin-inactive rule has two consumers that did not learn it.** The fix landed in
+`firstClearRoute`, which is right for planning - but the audit compares `plannerSays` (now empty for
+a train on an inactive point) against the at-rest `getPossiblePaths`, which happily offers
+departures from inactive origins because the runtime's inactive rule is gated on `isAutoRunning()`.
+So the configuration HP-C2 fixed now produces the phantom-divergence class HP-C3 removed, one door
+over - debug-only, same shape, and the audit already contains the pattern to fix it (skip
+destinations of paths whose origin is inactive, or filter by origin the way it filters by exclusion).
+And `plan()`'s unreachable pre-check still answers a train-on-an-inactive-point with NO_PLAN_FOUND
+after spending its search, although "this locomotive cannot depart" is provable by one flag test -
+the exact quality upgrade HP-C4 just gave conflicting goals. Both facets are narrow (a parked train
+on a deactivated point), which is why this is C.
+
+**HP-C8 - `confirmExclusion`'s repaint races its own write.** Both callers repaint immediately after
+applying the exclusion (`updatePoint`, `repaintAutoLocList`), while the home-clear the operator just
+confirmed completes later on the worker - so the home outline the dialog promised to remove is still
+drawn, until some unrelated interaction repaints the node. The fix comment's justification ("the
+caller repaints afterwards") describes source order, not completion order. `apply`, changed in the
+same commit, gets this right by marshalling its repaint after the write; `confirmExclusion` wants
+the same shape, or a completion callback its callers can hang the repaint on.
+
+**HP-C9 - the recurring punctuation class, third instance.** `apply`'s new comment reads
+"a whole path'’'s configuration" - a straight-curly-straight cluster. `SWC-C9` was three
+apostrophes in a test javadoc; `HP-C6` included two stranded javadocs; this makes three rounds
+running in which the change's own prose carried a typo the change did not need. Two characters,
+filed so the class stays counted.
+
+### Validation clean checks
+
+**D11 - the C1/C2 interlock** described above: the section test cannot be satisfied by either fix
+alone, because the free agent on the deactivated point must be both unroutable-around (C1) and
+unmovable (C2).
+
+**D12 - the pairwise scan's edges**, enumerated above; also confirmed the scan cannot fire for a
+`homes` entry with no point (the map holds only real assignments) and that `sharesSection` is
+null-safe from both sides.
+
+### Disposition of HP-C7 to HP-C9 - 2026-07-31
+
+All three fixed. `HP-C7` was the interesting one: the round is right that a rule landing in one of
+three consumers is the cycle's signature error, and the two it missed wanted different remedies -
+the audit needed a skip (the divergence there is correct, like the two beside it), while the
+pre-check needed the opposite, an added test, because a locomotive that cannot leave where it stands
+is unreachable in exactly the sense that check exists to prove.
+
+`HP-C8` is a fix to a fix, and its shape is worth recording: the comment justifying the original
+asynchronous write said "the caller repaints afterwards", which was true of the source and false of
+the execution.  The remedy was to stop splitting the responsibility - `confirmExclusion` now takes
+the apply-and-repaint work as a Runnable and runs it at the one moment that is correct in both
+branches, rather than trusting two callers to sequence around an asynchrony they cannot see.
+
+`HP-C9` is the third instance of a class this reviewer has now counted three rounds running, and the
+count is fair. Every one of them entered through the same door: prose written into an edit script
+that crosses two levels of shell quoting. The instances are two characters each; the habit is not.
+
+**D13 - red-first, all four.** Each of the four tests was traced against `c5c499c`: the section
+test passes pre-fix planning and fails its assertion; the inactive-origin test finds a route
+pre-fix; the audit test counts one disagreement pre-fix; the conflict test gets NO_PLAN_FOUND
+pre-fix where it now demands IMPOSSIBLE. Four for four, red for the right reasons.
+
+**Verdict.** Six fixes verified, one status corrected to match the code, three C findings filed -
+one substantive (HP-C7, the same one-rule-many-consumers shape the cycle summary calls the signature
+error, caught this time within a day), one interaction residual (HP-C8), one cosmetic (HP-C9). The
+chain is converging the way it should: each round's findings smaller than the last's, and the
+substantive one found by asking the question this folder's record keeps proving worth asking - who
+else consumes the thing you just changed?
+
+---
+
+## Validation of the HP-C7/C8/C9 fixes - 2026-07-31, second round
+
+The fixes are in the working tree above `5884f70`, touching `HomeStaging`, `HomeLocomotiveMenu` and
+both exclusion entrances. Each was verified at its enforcing method; all three hold, and this is
+the chain's first round to file nothing.
+
+**HP-C7 (fixed, both consumers) - verified.** The unreachable pre-check tests the origin's active
+flag first, and its edges are safe: the locomotive comes from `start.values()`, so `locationOf`
+over the same map cannot return null, and a locomotive already standing on its home - even an
+inactive one - is skipped by the misplaced test before the flag is consulted, so no in-order state
+is reported IMPOSSIBLE. The audit's skip is per-locomotive rather than per-path, which is the right
+granularity: the planner refuses every plan for a locomotive it cannot depart, so the only
+comparison that is not a phantom is no comparison at all - and the comment beside it correctly
+names it the third deliberate divergence, mirror of the inactive-destination one.
+
+**HP-C8 (fixed) - verified in all three branches.** `confirmExclusion` now owns the
+apply-and-repaint work: run synchronously when no home conflicts (instant feedback preserved), not
+at all when the operator declines (nothing changed, so the skipped repaint is a no-op - the
+right-click editor's cancel path keeps its unconditional repaint, which covers the outer dialog),
+and after the write, marshalled by `invokeLater`, when the home is cleared - so nothing can draw
+the outline the dialog promised to remove. The signature change is compile-enforced across callers,
+and both were updated; `VK_U` still falls through to the shared repaint the `VK_E` early-return now
+bypasses. One harmless residual, recorded not filed: the callback runs even if `setHomeLocomotive`
+throws (logged), which is unreachable here since the point in hand exists.
+
+**HP-C9 (fixed) - verified.** The cluster is a plain apostrophe.
+
+**Test gaps, named so they are not mistaken for coverage:** the audit's inactive-origin skip is
+unpinned - `testTheParityAuditIsSilentWhenTheTwoAgree` covers the exclusion skip only, and a
+one-line fixture variant (a parked train on a deactivated point, audit asserted silent) would pin
+this one too. And `testALocomotiveOnAnInactivePointIsNotPlannedHome` still asserts only
+`!isPossible()`, which passed before the HP-C7 pre-check fix and passes after it - asserting
+IMPOSSIBLE with the locomotive named, as the conflict test now does, is what would actually pin the
+upgrade. Neither gap blocks closing the finding; both are one assertion away.
+
+### Test gaps closed - 2026-07-31
+
+Both gaps this round named are now pinned, and the second one earns its place.
+`testALocomotiveOnAnInactivePointIsNotPlannedHome` asserted only !isPossible(), which held
+before the pre-check learned this rule and after it - so it pinned the refusal while leaving the
+upgrade it was written for unguarded. It now asserts IMPOSSIBLE with the locomotive named, the
+same assertion the conflicting-homes test uses, for the same reason.
+
+The audit gained `testTheParityAuditIsSilentAboutALocomotiveThatCannotDepart`, so two of its three
+deliberate divergences are now pinned; the inactive-destination skip, which predates this chain,
+remains uncovered.
+
+*Validated the same day:* both closures were traced red against the code before their fixes. The
+strengthened assertion fails pre-fix because the outcome there was NO_PLAN_FOUND - it pins the
+upgrade, not merely the refusal - and the new audit test counts three disagreements without the
+origin skip, one per station the at-rest oracle offers. The "two of three pinned" claim was checked
+against the test file: exactly two audit tests exist, and the third divergence is the one named.
+
+**Verdict.** Three for three, nothing new filed. Across this document's chain: six findings in the
+reviewed commits, three smaller ones in their fixes, none in the fixes' fixes - each round's residue
+smaller than the last's until it reached zero, which is the shape the README's discipline exists to
+produce. The record stands at nine C findings, no A or B, and a return-home planner whose parity
+with the runtime is now enforced by structure, proved where provable, audited where not, and pinned
+by tests at every rule the audit cannot reach.

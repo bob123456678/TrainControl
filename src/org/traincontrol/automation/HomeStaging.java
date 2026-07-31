@@ -275,7 +275,13 @@ public final class HomeStaging
             // ever end there, so the goal is unreachable however the search is run.  Without this the
             // search burns its whole budget and then reports "no arrangement found - it may still be
             // possible", which is wrong twice over and sends the operator shunting for nothing.
-            if (!canRest(l, home) || !connected(locationOf(this.start, l), home)) unreachable.add(l);
+            // A locomotive that cannot leave where it stands is as unreachable as one with no route:
+            // firstClearRoute refuses an inactive origin, so the search can only exhaust and answer
+            // "maybe".  One flag test turns that into a proof, the same upgrade the pairwise goal scan
+            // below gives conflicting homes.
+            if (!locationOf(this.start, l).isActive()
+                || !canRest(l, home)
+                || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
         // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on
@@ -332,6 +338,13 @@ public final class HomeStaging
         for (Map.Entry<Point, Locomotive> e : this.start.entrySet())
         {
             Locomotive loc = e.getValue();
+
+            // A locomotive standing on a deactivated point is the third correct divergence, and it is
+            // the mirror of the inactive-destination one below: getPossiblePaths is asked at rest,
+            // where the runtime's inactive rule is not in force, so it offers departures the planner
+            // refuses because staging executes with autonomy running.  Comparing them here would
+            // report the planner as wrong for applying the rule it is supposed to apply.
+            if (!e.getKey().isActive()) continue;
 
             Set<Point> runtimeSays = new HashSet<>();
 
