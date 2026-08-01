@@ -303,4 +303,41 @@ public class testLayoutRenameKeys
         assertNotNull(layout.getPoint("UCR_B"), "the target point still exists");
         assertTrue(layout.getEdges().contains(e), "and the edge between them survived");
     }
+
+    /**
+     * UC-C18: a rename is refused while the staging planner is at work, not only while trains run.
+     *
+     * The first guard tested the bare running flag, which the staging planning window passes - yet
+     * the planner runs bfs over exactly the structures a rename mutates, with nothing dispatched at
+     * all.  isRunning() also counts in-flight locomotives, so the guard now holds through the
+     * graceful-stop wind-down too.
+     */
+    @Test
+    public void testRenamingIsRefusedWhileStagingIsPlanning() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String s88 = model.newFeedback(feedbackBase++, null).getName();
+
+        layout.createPoint("UCR_S", true, s88);
+
+        layout.setStagingInProgress(true);
+
+        try
+        {
+            layout.renamePoint("UCR_S", "UCR_S2");
+            fail("the staging planner walks these structures - a rename under it must be refused");
+        }
+        catch (Exception expected)
+        {
+            // refused
+        }
+        finally
+        {
+            layout.setStagingInProgress(false);
+        }
+
+        assertNotNull(layout.getPoint("UCR_S"), "the point is untouched after the refusal");
+        assertNull(layout.getPoint("UCR_S2"), "and nothing was created under the new name");
+    }
 }

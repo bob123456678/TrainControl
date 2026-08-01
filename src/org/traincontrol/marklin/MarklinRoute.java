@@ -124,7 +124,12 @@ public class MarklinRoute extends Route
         this.triggerType = triggerType != null ? triggerType : s88Triggers.CLEAR_THEN_OCCUPIED;
         this.enabled = enabled;
         
-        this.conditions = conditions;
+        // Every door that builds conditions passes through here - text (already right-nested, a
+        // no-op), hand-written JSON (normalized again, idempotent), and the locomotive database,
+        // which Java-serializes the tree and restores it WITHOUT running any parser: a bare
+        // cross-operator tree imported before normalization existed would come back through that
+        // door unrepaired forever.
+        this.conditions = NodeExpression.normalize(conditions);
                 
         // Starts the execution of the automated route
         this.executeAutoRoute();

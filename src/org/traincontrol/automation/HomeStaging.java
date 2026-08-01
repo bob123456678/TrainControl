@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,9 +85,14 @@ public final class HomeStaging
     /** Which points report each sensor, so a sensor can be released when its point is vacated. */
     private final Map<String, List<Point>> pointsBySensor;
 
+    /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
+    private final Set<String> launchPads;
+
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
-        List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor)
+        List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor,
+        Set<String> launchPads)
     {
+        this.launchPads = launchPads;
         this.layout = layout;
         this.start = start;
         this.homes = homes;
@@ -132,8 +138,43 @@ public final class HomeStaging
             }
         }
 
-        return new HomeStaging(layout, occupancy, new LinkedHashMap<>(layout.getHomeStations()), stations,
-            sensorsSet, pointsBySensor);
+        // Launch pads: stations with zero incoming edges.  Some layouts stage trains on one-way
+        // tracks - departure edges only - and re-stage by hand; the author's own graph carries
+        // nineteen of them.  The topology is the declaration of intent, and two rules follow from
+        // it below: a positional home on one is not a home, and the search never moves a locomotive
+        // off one.
+        Set<String> launchPads = new HashSet<>();
+
+        for (Point p : layout.getPoints())
+        {
+            if (layout.getIncomingEdges(p).isEmpty()) launchPads.add(p.getName());
+        }
+
+        // A POSITIONAL home on a launch pad stops being a home once the locomotive has LEFT it.
+        // Away, the claim is unsatisfiable - nothing can re-enter the pad - and because a plan is
+        // all-or-nothing, keeping the entry made Return Home refuse to move ANYTHING for the rest
+        // of the session.  Still standing there, the claim is simply satisfied, and dropping it
+        // anyway turned a perfectly staged layout's ALREADY_HOME into NO_HOMES - which the
+        // no-way-back test caught on the very fixture its javadoc tells a war story about.  An
+        // ASSIGNED home keeps the strict contract either way: the operator chose it, so an
+        // unreachable one still answers IMPOSSIBLE with the locomotive named.
+        Map<Locomotive, Point> homes = new LinkedHashMap<>(layout.getHomeStations());
+
+        for (Iterator<Map.Entry<Locomotive, Point>> it = homes.entrySet().iterator(); it.hasNext();)
+        {
+            Map.Entry<Locomotive, Point> entry = it.next();
+
+            boolean assigned = entry.getKey().getName().equals(entry.getValue().getHomeLoc());
+            boolean standingOnIt = entry.getKey().equals(occupancy.get(entry.getValue()));
+
+            if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName()))
+            {
+                it.remove();
+            }
+        }
+
+        return new HomeStaging(layout, occupancy, homes, stations,
+            sensorsSet, pointsBySensor, launchPads);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -536,6 +577,22 @@ public final class HomeStaging
             for (Locomotive l : new ArrayList<>(current.values()))
             {
                 Point at = locationOf(current, l);
+
+                // A locomotive standing on a launch pad stays there unless its assigned home lies
+                // elsewhere.  Free agents exist to break deadlocks, and the expansion would happily
+                // relocate one when cornered - but a pad has no incoming edges, so the move can
+                // never be planner-undone: the hand-staging the pad represents would be destroyed
+                // permanently, silently, as a side effect of someone else's plan.  Keyed on the pad
+                // and the home, not on homelessness: a satisfied positional pad-home stays in the
+                // homes map (that is what makes a staged layout report ALREADY_HOME), so the
+                // homeless test alone would have re-opened this exact hole for it.  One already
+                // dispatched from its pad is an ordinary free agent wherever it now stands.
+                Point ownHome = this.homes.get(l);
+
+                if (this.launchPads.contains(at.getName()) && (ownHome == null || ownHome.equals(at)))
+                {
+                    continue;
+                }
 
                 for (Point to : this.stations)
                 {

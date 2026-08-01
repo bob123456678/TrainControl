@@ -1163,8 +1163,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                 }
                               
-                // Set current locomotive icon if a remote icon is available, and a local icon is not set
-                if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null && this.locDB.getById(l.getUID()).getLocalImageURL() == null)
+                // Always adopt the remote icon.  This used to skip while a local override existed -
+                // a guard protecting the override back when it LIVED in imageURL.  The override moved
+                // to its own field with getImageURL falling back, so skipping only starved the
+                // fallback: a custom icon restored from the database starts with no imageURL, the
+                // guard kept it that way, and clearing the icon offline landed on nothing - the
+                // UC-C12 scenario again, one restart later.
+                if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
                 {
                     this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
                 }
@@ -2683,7 +2688,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // one used to NPE.  getLocAddress in this class was fixed for exactly this shape.
         if (r == null)
         {
-            this.log("Route does not exist: " + name);
+            this.logf("route.warningRouteNotExistCalledFrom", name, "execRoute");
             return;
         }
 

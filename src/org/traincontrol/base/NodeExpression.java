@@ -71,6 +71,59 @@ public abstract class NodeExpression implements Serializable
     
     public abstract JSONObject toJSON() throws Exception;
 
+    /**
+     * Wraps every bare cross-operator LEFT child in a group, recursively.
+     *
+     * The text parser applies stacked operators LIFO, so text-origin trees are right-nested and
+     * their left children are always leaves or groups - this is a no-op for everything users author
+     * as text, which is what keeps the editor round trip byte-identical (testExpressions pins it).
+     * Two doors can build the unreachable shape: hand-written structural JSON, and the locomotive
+     * database, which Java-serializes condition trees and restores them without a parse.  Rendered
+     * bare, such a tree changes meaning on the next editor round trip ("a AND b OR c" reparses
+     * right-nested); grouped, the serializer emits the parentheses that preserve it.  Idempotent,
+     * and null-safe because routes without conditions carry null.
+     */
+    public static NodeExpression normalize(NodeExpression expr)
+    {
+        if (expr instanceof NodeAnd)
+        {
+            NodeExpression left = normalize(((NodeAnd) expr).getLeft());
+            NodeExpression right = normalize(((NodeAnd) expr).getRight());
+
+            if (left instanceof NodeOr)
+            {
+                left = new NodeGroup(java.util.Arrays.asList(left));
+            }
+
+            return new NodeAnd(left, right);
+        }
+        else if (expr instanceof NodeOr)
+        {
+            NodeExpression left = normalize(((NodeOr) expr).getLeft());
+            NodeExpression right = normalize(((NodeOr) expr).getRight());
+
+            if (left instanceof NodeAnd)
+            {
+                left = new NodeGroup(java.util.Arrays.asList(left));
+            }
+
+            return new NodeOr(left, right);
+        }
+        else if (expr instanceof NodeGroup)
+        {
+            List<NodeExpression> normalized = new ArrayList<>();
+
+            for (NodeExpression child : ((NodeGroup) expr).getExpressions())
+            {
+                normalized.add(normalize(child));
+            }
+
+            return new NodeGroup(normalized);
+        }
+
+        return expr;
+    }
+
     public static NodeExpression fromJSON(JSONObject jsonObject)
     {
         String type = jsonObject.getString("type");
@@ -79,11 +132,13 @@ public abstract class NodeExpression implements Serializable
             case "NodeRouteCommand":
                 return NodeRouteCommand.fromJSON(jsonObject);
             case "NodeAnd":
-                return NodeAnd.fromJSON(jsonObject);
+                // normalize: see its javadoc - hand-written JSON is one of the two doors that can
+                // build shapes the text parser cannot
+                return normalize(NodeAnd.fromJSON(jsonObject));
             case "NodeGroup":
-                return NodeGroup.fromJSON(jsonObject);
+                return normalize(NodeGroup.fromJSON(jsonObject));
             case "NodeOr":
-                return NodeOr.fromJSON(jsonObject);
+                return normalize(NodeOr.fromJSON(jsonObject));
             default:
                 throw new IllegalArgumentException(
                     I18n.f("error.unknownNodeExpressionType", type)

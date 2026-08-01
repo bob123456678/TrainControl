@@ -845,6 +845,25 @@ public class testLocomotive
             assertEquals(loc.getImageURL(), "http://cs/loc60.png",
                 "the Central Station image must survive clearing the local override - offline "
                 + "there is no syncWithCS2 to bring it back");
+
+            // UC-C17, the restore ordering: after a restart the override exists FIRST (restored from
+            // the locomotive database) and the CS image arrives second, from a sync that now adopts
+            // it unconditionally - the old guard skipped adopting while an override existed, which
+            // starved the fallback and reopened the same offline gap one restart later.  The sync
+            // guard itself has no headless seam, so this pins the Locomotive-level ordering it
+            // relies on.
+            loc.setImageURL(null);
+            loc.setLocalImageURL("file:///restored/icon.png");
+
+            loc.setImageURL("http://cs/loc60.png");
+
+            assertEquals(loc.getImageURL(), "file:///restored/icon.png",
+                "the override wins while it is set, even when the CS image arrives afterwards");
+
+            loc.setLocalImageURL(null);
+
+            assertEquals(loc.getImageURL(), "http://cs/loc60.png",
+                "and clearing it after the restart reveals the adopted CS image");
         }
         finally
         {

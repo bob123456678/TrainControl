@@ -122,16 +122,16 @@ public class Conversion
             end++;
         }
 
+        return end == 0 ? 0 : Integer.parseInt(component.substring(0, end));
+    }
+
     /**
      * Compared version numbers, i.e. 1.2.3
      * Returns 1 if version1 is higher than version2
      * @param version1
      * @param version2
-     * @return 
+     * @return
      */
-        return end == 0 ? 0 : Integer.parseInt(component.substring(0, end));
-    }
-
     public static int compareVersions(String version1, String version2)
     {
         String[] v1 = version1.split("\\.");

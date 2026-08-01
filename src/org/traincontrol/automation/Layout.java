@@ -1687,7 +1687,11 @@ public class Layout
             throw new Exception(I18n.f("autolayout.errorPointAlreadyExists", newName));
         }
 
-        if (this.isAutoRunning())
+        // isRunning, not the bare isAutoRunning flag: it also counts in-flight locomotives, so the
+        // guard holds through the graceful-stop wind-down while paths still walk the graph.  And the
+        // staging planner runs bfs over these structures with nothing dispatched at all, which is
+        // exactly the window the bare flag waves through.
+        if (this.isRunning() || this.isStagingInProgress())
         {
             throw new Exception(I18n.f("autolayout.errorCannotEditWhileRunning"));
         }

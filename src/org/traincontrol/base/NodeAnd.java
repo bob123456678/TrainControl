@@ -75,17 +75,6 @@ public class NodeAnd extends NodeExpression
         NodeExpression left = NodeExpression.fromJSON(jsonObject.getJSONObject("left"));
         NodeExpression right = NodeExpression.fromJSON(jsonObject.getJSONObject("right"));
 
-        // A bare NodeOr as the LEFT child is a shape the text parser can never produce - it applies
-        // stacked operators LIFO, so text-origin trees are right-nested and their left children are
-        // always leaves or groups.  Hand-written JSON can build it, and rendering it bare changed its
-        // meaning on the next editor round trip: "a OR b AND c" reparses right-nested.  Wrapping it
-        // in a group here makes the serializer emit the parentheses that preserve it, and touches no
-        // tree that text could have built - which is what keeps the editor round trip byte-identical
-        // for everything users authored as text.
-        if (left instanceof NodeOr)
-        {
-            left = new NodeGroup(java.util.Arrays.asList(left));
-        }
         return new NodeAnd(left, right);
     }
 }

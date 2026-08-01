@@ -1,3 +1,7 @@
+import java.util.LinkedList;
+import org.traincontrol.base.NodeRouteCommand;
+import org.traincontrol.base.NodeOr;
+import org.traincontrol.base.NodeAnd;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -468,6 +472,50 @@ public class testAdvancedRoutes
             assertEquals(reparsed.evaluate(model), loaded.evaluate(model),
                 "a=" + ((mask & 1) != 0) + " b=" + ((mask & 2) != 0) + " c=" + ((mask & 4) != 0)
                 + ": the reparse of \"" + text.replace("\n", " ") + "\" changed the meaning");
+        }
+    }
+
+    /**
+     * UC-C20: a condition tree restored from the locomotive database is normalized too.
+     *
+     * The locomotive database Java-serializes condition trees and restores them without running any
+     * parser - so a bare cross-operator tree imported from hand-written JSON before normalization
+     * existed came back through that door unrepaired, and the editor round trip kept silently
+     * rewriting its meaning.  The route constructor is the choke point every door shares; building
+     * the route directly with a constructor-built bare tree models exactly what deserialization
+     * hands it.
+     */
+    @Test
+    public void testALegacyDatabaseConditionTreeIsNormalizedOnRestore() throws Exception
+    {
+        int[] sensors = {46811, 46812, 46813};
+
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+        }
+
+        NodeExpression bare = new NodeOr(
+            new NodeAnd(
+                new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[0], true)),
+                new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[1], true))),
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[2], true)));
+
+        MarklinRoute restored = new MarklinRoute(model, "UC C20 legacy", 46810,
+            new LinkedList<>(), 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, bare);
+
+        String text = NodeExpression.toTextRepresentation(restored.getConditions(), model);
+        NodeExpression reparsed = NodeExpression.fromTextRepresentation(text, model);
+
+        for (int mask = 0; mask < 8; mask++)
+        {
+            model.setFeedbackState(String.valueOf(sensors[0]), (mask & 1) != 0);
+            model.setFeedbackState(String.valueOf(sensors[1]), (mask & 2) != 0);
+            model.setFeedbackState(String.valueOf(sensors[2]), (mask & 4) != 0);
+
+            assertEquals(reparsed.evaluate(model), bare.evaluate(model),
+                "a=" + ((mask & 1) != 0) + " b=" + ((mask & 2) != 0) + " c=" + ((mask & 4) != 0)
+                + ": the restored tree changed meaning through \"" + text.replace("\n", " ") + "\"");
         }
     }
 }

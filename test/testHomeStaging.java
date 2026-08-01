@@ -2025,4 +2025,129 @@ public class testHomeStaging
 
         d.setExcludedLocs(new HashSet<Locomotive>());
     }
+
+    /**
+     * A positional home on an exit-only station is a launch pad, and does not block the fleet.
+     *
+     * Some layouts stage trains on one-way tracks - departure edges only, re-staged by hand; the
+     * author's graph carries nineteen.  A locomotive loaded there acquires it as its positional
+     * home, autonomy is free to dispatch it, and it can then never return - which, because a plan is
+     * all-or-nothing, made Return Home answer IMPOSSIBLE for the whole fleet for the rest of the
+     * session (found in the wild: MV 1134 on St99).  The graph states the intent topologically, so
+     * the planner now treats such a locomotive as homeless.
+     *
+     * An ASSIGNED home on the same station keeps the strict contract - the operator chose it, so it
+     * still answers IMPOSSIBLE with the locomotive named.
+     */
+    @Test
+    public void testALaunchPadPositionalHomeDoesNotBlockTheFleet() throws Exception
+    {
+        // Two stations, a siding, and a launch pad whose only edge points INTO the layout.  The
+        // siding matters: the dispatched pad locomotive is parked on the homed one's station, so
+        // the plan exists only if the free agent has somewhere legitimate to step aside to - the
+        // first version of this fixture had no siding, and its READY expectation was impossible
+        // for any planner (the launch pad itself can never be re-entered).
+        Layout layout = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + station("HS C", 5, null) + ","
+            + station("Launch", 4, LOC_B)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B") + ","
+            + edge("Launch", "HS A")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertTrue(layout.getIncomingEdges(layout.getPoint("Launch")).isEmpty(),
+            "precondition: nothing can reach the launch pad");
+
+        // LOC_B was loaded on the pad (positional home Launch), then ran - the wild scenario
+        assertTrue(layout.moveLocomotive(LOC_B, "HS B", false),
+            "precondition: the dispatch itself must succeed");
+
+        assign(layout, LOC_A, "HS B");
+
+        try
+        {
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "the launch-pad locomotive is homeless, not a blocker: " + plan);
+
+            assertTrue(plan.getBlocked().isEmpty(), "nothing is reported stuck: " + plan.getBlocked());
+
+            boolean movesHomedLoc = false;
+
+            for (HomeStaging.Move m : plan.getMoves())
+            {
+                if (m.getLocomotive().equals(loc(LOC_A))) movesHomedLoc = true;
+            }
+
+            assertTrue(movesHomedLoc, "and the locomotive with a real home still gets there: "
+                + plan.getMoves());
+
+            // The strict half: ASSIGN the unreachable station and the answer is IMPOSSIBLE again,
+            // because the operator explicitly asked for something the track cannot do
+            assign(layout, LOC_B, "Launch");
+
+            HomeStaging.Plan strict = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(strict.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+                "an assigned home is still honoured with an error: " + strict);
+
+            assertTrue(strict.getBlocked().contains(loc(LOC_B)),
+                "and the locomotive concerned is named");
+        }
+        finally
+        {
+            layout.setHomeLocomotive("Launch", null);
+        }
+    }
+
+    /**
+     * UC-C21: a cornered search never buys a plan by moving a locomotive off its launch pad.
+     *
+     * Free agents exist to break deadlocks, and the A* expansion generates moves for every
+     * locomotive in the state - so a locomotive still standing on its pad could be relocated when
+     * the search was cornered, reachable whenever the pad shares a sensor with a point on someone
+     * else's route.  A pad has no incoming edges, so that move can never be planner-undone: the
+     * hand-staging the pad represents would be destroyed permanently as a side effect.  The honest
+     * answer is NO_PLAN_FOUND - the only way out required undoing hand-staging, which is the
+     * operator's to undo.
+     */
+    @Test
+    public void testTheSearchNeverMovesALocomotiveOffItsLaunchPad() throws Exception
+    {
+        // X must travel HS A -> HS D -> HS B; the pad shares HS D's sensor, so the locomotive
+        // parked on the pad closes HS D (two active points on one section are mutually exclusive).
+        // Pre-fix, the search unwedges itself by shunting the pad locomotive to HS E.
+        Layout layout = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + station("HS D", 2, null) + ","
+            + station("HS E", 3, null) + ","
+            + station("Pad", 2, LOC_B)
+            + "],'edges': ["
+            + edge("HS A", "HS D") + "," + edge("HS D", "HS B") + ","
+            + edge("Pad", "HS E")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertEquals(layout.getPoint("Pad").getS88(), layout.getPoint("HS D").getS88(),
+            "precondition: the pad and HS D are one detection section");
+        assertTrue(layout.getIncomingEdges(layout.getPoint("Pad")).isEmpty(),
+            "precondition: the pad has no way back in");
+
+        assign(layout, LOC_A, "HS B");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        for (HomeStaging.Move m : plan.getMoves())
+        {
+            assertFalse(m.getLocomotive().equals(loc(LOC_B)),
+                "the plan bought its way out by destroying hand-staging: " + plan.getMoves());
+        }
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND,
+            "with the pad exempt, the honest answer is that no plan was found: " + plan);
+    }
 }

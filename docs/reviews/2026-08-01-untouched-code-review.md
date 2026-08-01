@@ -2,8 +2,9 @@
 
 **Prefix for citing this document: `UC`.**
 
-**Version reviewed: `897c155`, working tree clean, on 2026-08-01.** No code was changed by this
-review; it is a report only.
+**Version reviewed: `897c155`, working tree clean, on 2026-08-01.** No code was changed by the
+original review; it was a report only. The validation round of the same date (see "Validation of
+the resolution", run against fix commit `5c92967`) changed one comment: the `UC-C16` javadoc move.
 
 ## Scope and method
 
@@ -118,15 +119,15 @@ has ever converted a decoder type downward can hit this.
 | UC-C1 | Update check cannot parse a release name with a non-numeric version component; failure is silent and mislabeled | Fixed in `compareVersions` - each component parses its leading digit run - so the fix covers any caller, not just the release-name path.  Pinned by `testUpdateCheckSurvivesASuffixedReleaseName` |
 | UC-C2 | `Feedback N, 1` (space before the state) silently parses as state 0 | Fixed - the token is trimmed.  Pinned by `testFeedbackStateTokenIsTrimmed` |
 | UC-C3 | `locdir` treats every direction string other than `forward` as backward, silently | Fixed - only forward/backward parse, case-insensitively; anything else raises the friendly invalid-line error.  Pinned by `testATypodDirectionIsRefusedNotReversed` |
-| UC-C4 | Condition AND/OR precedence is nonstandard and undocumented; ungrouped JSON-origin trees change meaning on an edit round-trip | Fixed at the JSON door, second attempt: `NodeAnd`/`NodeOr.fromJSON` wrap a bare cross-operator LEFT child in a group on load - the one shape text parsing can never build, since LIFO stacking right-nests - so the serializer emits preserving parentheses without changing how any text-origin tree renders.  The first attempt (parenthesizing in the serializer) broke `testExpressions` structural round-trip identity and was reverted.  Pinned by `testAnUngroupedConditionTreeSurvivesTheEditorRoundTrip`, which builds the tree through hand-written structural JSON |
-| UC-C5 | `Layout.renamePoint` enforces neither precondition its sole caller does (unique name, autonomy idle) | Fixed - `renamePoint` refuses a taken target name (self-rename allowed) and refuses while autonomy runs, both with existing message keys.  Pinned by `testRenamingOntoAnExistingPointIsRefused` |
+| UC-C4 | Condition AND/OR precedence is nonstandard and undocumented; ungrouped JSON-origin trees change meaning on an edit round-trip | Fixed at the JSON door, second attempt: `NodeAnd`/`NodeOr.fromJSON` wrap a bare cross-operator LEFT child in a group on load - the one shape text parsing can never build, since LIFO stacking right-nests - so the serializer emits preserving parentheses without changing how any text-origin tree renders.  The first attempt (parenthesizing in the serializer) broke `testExpressions` structural round-trip identity and was reverted.  Pinned by `testAnUngroupedConditionTreeSurvivesTheEditorRoundTrip`, which builds the tree through hand-written structural JSON.  Validated 2026-08-01; one door remains open, filed as `UC-C20` |
+| UC-C5 | `Layout.renamePoint` enforces neither precondition its sole caller does (unique name, autonomy idle) | Fixed - `renamePoint` refuses a taken target name (self-rename allowed) and refuses while autonomy runs, both with existing message keys.  Pinned by `testRenamingOntoAnExistingPointIsRefused`.  Validated 2026-08-01; the busy predicate chosen is the weakest of the three available, filed as `UC-C18` |
 | UC-C6 | `MarklinControlStation.execRoute` NPEs on an unknown route name | Fixed - unknown names log and return.  Pinned by `testExecutingAnUnknownRouteNameIsANoOp` |
 | UC-C7 | Example/`main` drift: nonexistent 4-arg `init` in a comment, a wrong "equivalent" line, `Error ocurred` x4, `System.exit(0)` on failure | Fixed - the commented `init` names the real 5-arg form, the switch example acts on the switch, occurred is spelled, and the four failure paths exit 1 |
 | UC-C8 | Dead code: `ImageUtil.textToImage`, `ImageUtil.rotateImage`, `MarklinRoute.equalsUnordered`, an always-true visibility conditional, an unused constructor parameter | Fixed, with one correction: `textToImage` and `rotateImage` removed, the inert visibility conditional and the unused constructor parameter removed - but `equalsUnordered` is NOT dead; `testParseCS3Routes` calls it twice (fixture comparison), so it stays |
 | UC-C9 | `RightClickFunctionMenu` calls `focusImages()` after the modal dialog is disposed - a no-op | Fixed - `focusImages` now fires from an `AncestorListener` when the dialog shows, the `GraphLocAssign` pattern |
 | UC-C10 | `ImageUtil.getScaledImage` throws for `TYPE_CUSTOM` images; both current callers happen to pre-convert | Fixed - a `TYPE_CUSTOM` source falls back to `TYPE_INT_ARGB` |
 | UC-C11 | `Point` traps: runtime-inert `assert` guards, a nullable `Integer` that NPEs later, `toJSON` throws on a non-numeric s88 | Fixed - the constructor rejects a non-numeric s88 where the mistake is made, and a null/negative max train length means no limit.  Pinned by `testAPointRejectsANonNumericS88AtConstruction` and `testANullMaxTrainLengthMeansNoLimit` |
-| UC-C12 | Clearing a local locomotive icon also wipes the Central Station image URL; compensated online, not offline | Fixed - `setLocalImageURL` touches only the override and `getImageURL` falls back, so clearing no longer destroys the Central Station image.  Pinned by `testClearingTheLocalIconKeepsTheCentralStationImage` |
+| UC-C12 | Clearing a local locomotive icon also wipes the Central Station image URL; compensated online, not offline | Fixed - `setLocalImageURL` touches only the override and `getImageURL` falls back, so clearing no longer destroys the Central Station image.  Pinned by `testClearingTheLocalIconKeepsTheCentralStationImage`.  Validated 2026-08-01: covers the same-session case; the across-restart case persists through a sync guard conditioned on the old storage model, filed as `UC-C17` |
 | UC-C13 | `UsageHistogram.paintComponent` mutates the window title and queries the model on every repaint | Fixed - the title and its model queries moved into `createHistogramPanel`, the refresh funnel all three buttons already use; paint only paints |
 | UC-C14 | `RouteCommand.KEY_*` map keys are `public static` non-final | Fixed - all nine are final |
 | UC-C15 | Locomotive-selector menu renders keycode -1 as a garbage glyph when no button is selected | Fixed - the assign-to-button item is omitted when no button is current |
@@ -233,6 +234,15 @@ before anyone resurrects it). `GraphLocAssign`'s constructor sets `boolean visib
 then `if (newOnly) visibility = true` (GraphLocAssign.java:69-78) - the conditional is inert and
 reads as if visibility were ever false. `RightClickFunctionMenu`'s constructor takes a
 `JToggleButton b` it never uses (the popup re-derives the button from the event source).
+
+*Correction, 2026-08-01, found by the author during the fix round and confirmed:* the
+`equalsUnordered` claim above is wrong. `testParseCS3Routes` calls it twice (lines 82 and 113),
+comparing imported fixtures against expectations. The searches behind this finding were two: the
+`textToImage`/`rotateImage` one genuinely covered src and test; the `equalsUnordered` one was
+scoped to src only, and the sentence then asserted the wider coverage of its neighbour. Same error
+class as the July tally's `FP-C3` entry - reporting a number as independently counted when it was
+counted under different conditions. The method stays, and the `HashSet` deduplication note above
+becomes live guidance for its two real callers rather than archaeology.
 
 ### UC-C9: focus request after the dialog is gone
 
@@ -407,4 +417,295 @@ the same method) and a `Layout.renamePoint` duplicate-name defect that turned ou
 its sole caller (retained at lower severity as `UC-C5`, a trap rather than a live defect). Both are
 instances of the README's "verify the layer you are actually claiming about". One prediction in
 `UC-C1` was checked against live data (the GitHub releases API) rather than reasoned about, and that
-check is the only reason it is a C: the reasoning alone said B.
+check is the only reason it is a C: the reasoning alone said B. One filed claim was later proved
+wrong: `UC-C8`'s "zero callers" for `equalsUnordered` rested on a search that did not cover test/,
+while the sentence claimed one that did - caught by the author during the fix round, corrected in
+place under `UC-C8`.
+
+---
+
+## Validation of the resolution - 2026-08-01
+
+The fix commit (`5c92967`) was read hunk by hunk against the findings it closes, the way `PV`
+validated the July cycle's late fixes: each fix checked in its enforcing method, its twins
+re-searched, the premises of the two extra fixes it carried verified, and the twelve new tests read
+against what they claim to pin. No tests were run from this session, per standing practice; the
+author's suite run is the record for red-then-green.
+
+**All sixteen fixes do what their status entries say.** Worth singling out: `UC-B1` was fixed at
+both unguarded writers rather than in the GUI, so the invariant now holds at the source -
+`setAddress` clears through the validating setter after the resize (correctly using the *new*
+`numF`, and only downward conversions are affected), and the full-state constructor validates
+exactly like the setters, which retroactively heals a database that already carries a stale value.
+`UC-C4`'s second-attempt shape - normalize at `fromJSON`, leave the serializer alone - was re-walked
+against this document's parser transcription across ten nested shapes, including the ones the fix's
+comment does not mention (bare cross-operator *right* children, same-operator left-nesting): the
+right-nested shapes are parser-native and round-trip unchanged, the associative reshapes are
+semantically inert, and the left-child wrap is applied recursively by construction. The
+`setActivateRouteIDs` defensive copy's premise was verified too: `testAutoLayout.java:43` passes
+`Collections.singletonList`, and `deleteRoute` mutates the stored list at
+MarklinControlStation.java:2715.
+
+The round also produced findings, most in the fixes themselves - the July cycle's expectation, met
+again. Numbering continues this document's C series.
+
+| ID | Finding | Status |
+|---|---|---|
+| UC-C16 | The `UC-C1` fix stranded `compareVersions`' javadoc inside `parseVersionComponent`'s body | **Fixed in this round** - comment moved back onto `compareVersions` |
+| UC-C17 | The `UC-C12` fix missed its twin: the sync guard at MarklinControlStation.java:1167 still skips adopting the CS image while a local override exists, so the across-restart offline case persists | Fixed - the sync adopts the CS image unconditionally; with the override in its own field and `getImageURL` falling back, the guard only starved the fallback.  The guard itself has no headless seam, so the Locomotive-level restore ordering it relies on is pinned instead, on the extended `testClearingTheLocalIconKeepsTheCentralStationImage` |
+| UC-C18 | The `UC-C5` fix guards with `isAutoRunning()`, the weakest of the three busy predicates - the staging planning window and the graceful-stop wind-down pass it | Fixed - the guard is now `isRunning() || isStagingInProgress()`, layout-local and the strongest available: it holds through the graceful-stop wind-down and the staging planning window.  Pinned by `testRenamingIsRefusedWhileStagingIsPlanning`, red against the first guard |
+| UC-C19 | The `UC-C6` fix logs a hardcoded English string in an i18n'd codebase | Fixed - `route.warningRouteNotExistCalledFrom` with "execRoute" as the caller, the same key `MarklinRoute.execRoute` uses one layer down |
+| UC-C20 | The `UC-C4` fix normalizes the JSON door only; conditions restored from the locomotive database bypass it | Fixed one level deeper than suggested: normalization became `NodeExpression.normalize`, applied at `fromJSON` and at the `MarklinRoute` constructor - the choke point every door shares, including database restore, which rebuilds routes through it.  The per-class inline wraps were removed so the rule has one home.  Pinned by `testALegacyDatabaseConditionTreeIsNormalizedOnRestore`, red against the fromJSON-only fix |
+| UC-D11 | Fix-round spot checks that came back clean | Clean |
+
+### UC-C16: the stranded javadoc (fixed in this round)
+
+The `parseVersionComponent` insertion split itself around `compareVersions`' existing javadoc: the
+new method's opening half landed above the doc block and its `return` and closing brace below it, so
+the block - `@param version1` and all - sat *inside* `parseVersionComponent`'s body, between the
+loop and the return. It compiled, because a block comment in a method body is legal, which is
+exactly why nothing noticed: the same shape as the July cycle's `PV-C5` (a reformat that still
+compiles) and the `SWC-C9`/`HP-C6`/`HP-C9` residue class, fourth round running. Fixed here by
+moving the comment; no code changed, verified by re-reading the method pair.
+
+### UC-C17: the sync guard is the `UC-C12` fix's missed twin
+
+`setLocalImageURL` now touches only the override, and `getImageURL` falls back to `imageURL` - but
+the fallback only helps if `imageURL` is ever populated while an override exists, and the sync
+deliberately refuses to do that: MarklinControlStation.java:1167 adopts the CS image only when
+`getLocalImageURL() == null`, a guard (its comment says so: "if a local icon is not set") whose
+reason was protecting the override *when the override lived in `imageURL`*. The fix moved the
+override out; the guard survived.
+
+Consequence: for any locomotive whose custom icon is restored from the locomotive database - that
+is, every custom icon across a restart - `imageURL` starts null and the guard keeps it null for as
+long as the override exists. Clear the icon offline in that state and the fallback lands on null:
+the exact scenario `UC-C12` described, one restart later. The fix genuinely covers the same-session
+case (the CS image adopted *before* the override was set is now retained, where it used to be
+overwritten), and the new test models exactly that case by calling `setImageURL` directly - which is
+why it passes while the sync path keeps the gap. Dropping the `getLocalImageURL() == null`
+condition (and its comment) closes it: adopting the CS URL into `imageURL` is now harmless while an
+override exists, because display preference lives in `getImageURL`. A red test would stage the
+restore ordering: build the locomotive with an override and no `imageURL`, run the sync merge,
+clear the icon, assert `getImageURL` is the CS image.
+
+### UC-C18: the rename guard's predicate is the weakest of three
+
+The new guard in `renamePoint` tests `isAutoRunning()`, which is the bare `running` flag. Two
+neighbouring predicates are stronger, and the difference is exactly the ground the July cycle
+mapped: `Layout.isRunning()` also counts active locomotives (so it stays true through the
+graceful-stop wind-down, when in-flight paths still walk the graph), and
+`MarklinControlStation.isAutonomyRunning()` also counts `isStagingInProgress()` - added by `IR-B1`
+precisely because "the planning phase of a staging run has nothing dispatched", and the staging
+planner calls `getPossiblePaths`, which runs `bfs` over the structures a rename mutates. The UI
+caller is still safe (`isAutonomyBusy` gates on the staging flag and `isRunning()`), so this is a
+trap with no live path - the same status `UC-C5` itself had - but the guard was added to stop
+trusting that one caller, and as written it re-trusts it for the two windows that matter most.
+`this.control.isAutonomyRunning()` (or `isRunning() || isStagingInProgress()`) is the predicate the
+fix's own comment describes.
+
+### UC-C19: the unknown-route log line is not internationalized
+
+The `execRoute` guard logs `"Route does not exist: " + name` as a bare English string. Every other
+message in this class goes through `I18n`/`logf`, and a key for almost exactly this already exists -
+`route.warningRouteNotExistCalledFrom`, used by `MarklinRoute.execRoute` for the same situation one
+layer down. `testMessageBundles` cannot catch a hardcoded string, so nothing will flag it later.
+One line plus no new keys if the existing key's two-argument shape fits ("execRoute" as the
+caller).
+
+### UC-C20: the third door for `UC-C4`'s trees
+
+`fromJSON` now normalizes, and text parsing never built the shape - but conditions stored in the
+locomotive database (`MarklinSimpleComponent` Java-serializes the `NodeExpression` tree) are
+restored without passing through either door. A cross-operator tree imported from hand-written
+JSON *before* this fix and saved into `trains.dat` comes back un-normalized, and the editor round
+trip still silently rewrites its meaning. Narrow by construction - it requires exactly that
+pre-fix import history, and no real data was available to check whether any such database exists -
+which is why this is a C and not the reopening of `UC-C4`. The shape of a fix, if wanted: apply the
+same left-child wrap when `MarklinRoute` receives conditions from a `MarklinSimpleComponent`, or
+normalize in `getConditions()` so every door shares it. This is `PC-P1`'s lesson verbatim: the
+change was assessed on the live call path, and the persistence path is the one that keeps the old
+shape alive.
+
+### UC-D11: fix-round spot checks that came back clean
+
+- `RightClickFunctionMenu`'s signature change (the unused `JToggleButton` dropped) has exactly one
+  constructor call site, and it was updated.
+- The `AncestorListener` focus fix matches the working `GraphLocAssign` pattern, and the stale
+  post-dialog call is gone.
+- `UsageHistogram`'s title computation moved to `createHistogramPanel`, which the constructor and
+  all three paging buttons already funnel through - title behaviour is unchanged, paint is now pure.
+- The nine `KEY_*` constants are `final`; nothing assigned them anywhere.
+- The selector menu omits (not disables) the assign item at keycode -1, per its comment's rationale.
+- `setDelay(0)` canonical-absence change: `toLine` only emits positive delays and `getDelay`
+  defaults to 0 when the key is absent, so removal is the representation the round trip already
+  produced; equality now agrees.
+- The examples compile against the real API after their edits (5-arg `init`, `mySwitch` acting on
+  the switch); all four failure paths exit 1.
+- The new tests assert their preconditions (the `UC-B1` pair asserts validity *before* conversion),
+  clean up by name in `finally`, and place their feedback addresses (468xx) clear of the ranges the
+  other suites document.
+- Two cosmetic notes, recorded rather than filed: the fix commit rewrote `NodeAnd`, `NodeOr`,
+  `TrainControl.java` and two examples to CRLF line endings, which will pollute future diffs and
+  blame; and `Point`'s new s88 validation parses the trimmed string but stores the raw one, so a
+  programmatic `" 1"` or `"-1"` is accepted yet matches no feedback name (`setS88`, by contrast,
+  normalizes through `Math.abs`). Neither changes behaviour reachable from the UI.
+
+### Validation of the second fix round - 2026-08-01
+
+The fixes for `UC-C17`..`UC-C20` (in the working tree at validation time, uncommitted) were read
+against their findings the same way. All four are correct, and their status entries above say
+what was done. What the reading added beyond the entries:
+
+- **`UC-C20`'s door coverage was traced exhaustively.** Every `MarklinRoute` construction site was
+  enumerated: both `newRoute` overloads and `MarklinRoute.fromJSON` reach the normalizing
+  constructor, and `CS2File`'s two sites use the simple constructor with conditions added later
+  via `addConditionS88`/`addConditionAccessory`. Those two assign the field directly, bypassing
+  the constructor - and are safe anyway, because `fromList` builds left-nested *same-operator*
+  AND chains, the one nesting `normalize` deliberately leaves alone.
+- **The rebuild cannot perturb the sync merge.** `syncWithCS2` deletes a route whose conditions
+  compare unequal, and its two sides now take different paths: the incoming CS-parsed tree skips
+  the constructor while the stored tree was normalized by it. Modelled: `fromList`-shaped chains
+  (2, 3 and 4 deep) pass `normalize` unchanged and the wrap is idempotent, so both sides stay
+  equal and no route is spuriously deleted as "changed".
+- **`UC-C18`'s new predicate is equivalent to the model's `isAutonomyRunning`** (`isRunning()`
+  plus the staging flag) while staying layout-local, and its test leaves the graph verifiably
+  untouched after the refusal.
+- **`UC-C17`'s test comment is honest about its seam** - the sync guard has no headless test path,
+  so the test pins the `Locomotive`-level restore ordering (override first, CS image second,
+  clear reveals it) and the guard removal itself was verified by reading its consumers: display
+  preference lives in `getImageURL`, and nothing persists `imageURL`, so adopting unconditionally
+  has no other reader to disturb.
+- **`UC-C19`** reuses the two-argument key exactly as `MarklinRoute.execRoute` does one layer down.
+
+**No new findings.** This is the first round of the chain to add none - the same terminating shape
+the July cycle recorded for its `PV` fix-validate chain. One repeat of an already-noted cosmetic:
+`MarklinRoute.java` flipped line endings this round, joining the five files from the last one.
+
+
+### Disposition of UC-C17 to UC-C20 - 2026-08-01
+
+All four fixed the same day.  `UC-C20` went one level deeper than the finding's sketch: rather
+than normalizing at each door, the rule became `NodeExpression.normalize`, applied at `fromJSON`
+and at the `MarklinRoute` constructor - which every door shares, including the database-restore
+path the finding identified, because restore rebuilds routes through that constructor.  The
+per-class inline wraps were removed so the rule cannot drift between copies.
+
+`UC-C17` carries a disclosed limitation: the sync guard runs deep inside `syncWithCS2` against
+parsed Central Station data, and no headless seam reaches it, so its test pins the
+Locomotive-level ordering the fix relies on (override first, CS image adopted second, clear
+reveals it) rather than the guard itself.
+
+The `UC-C16` shape - a javadoc block stranded inside a method body, which compiles and which the
+stacked-javadoc check cannot see - has a detector only in the assistant-side session tooling used
+to prepare these rounds (a validation script outside the repository, in ephemeral session
+storage), where it was proven by re-injecting the exact `compareVersions` stranding.  **That is
+not repository coverage**: no test class, script or harness in the tree contains it, and nothing
+a future reader can run reproduces the check.  The original wording here claimed "a detector in
+the fix-round validation harness" without saying where that harness lives - the record equivalent
+of the cycle's signature error, a claim of coverage the artifact does not have.  Corrected on the
+third round's flag, which stands above this paragraph in the history of the mistake: fourth
+instance of the residue class, still zero durable checks for it in the tree.
+
+*Record note, third round (the flag that prompted the correction above, kept per the
+withdrawn-findings rule):* that detector is not in the repository - no test class, script or
+harness file in the tree contains it, and the suite's only source-scanning test
+(`testMessageBundles`) checks bundles, not comment structure. If it lives in author-side tooling,
+this paragraph should say where, because a check a future reader cannot find reads as coverage the
+record does not have - the `FP-C3` lesson applied to a document instead of a thread count.
+
+### Validation of the third round - the launch-pad change, 2026-08-01
+
+One behaviour change arrived with this round, prompted by live use rather than by a finding:
+`HomeStaging.snapshot` now drops a POSITIONAL home claim whose station has zero incoming edges - a
+one-way staging track, a launch pad - so a locomotive dispatched from one no longer makes the
+all-or-nothing Return Home plan answer IMPOSSIBLE for the whole fleet (found in the wild: MV 1134
+on St99, one of nineteen such tracks on the author's graph). An ASSIGNED home keeps the strict
+contract and still answers IMPOSSIBLE with the locomotive named. Verified correct, and correctly
+placed:
+
+- **Snapshot-only, by construction.** The pruning edits a copy; the live `homeStations` map is
+  untouched, so the claim is not data-lost - it resurfaces in the very next snapshot if the
+  operator ever gives the pad an incoming edge. Pruning at the snapshot is also the only spot
+  where both consumers inherit it for free: `triageReturnToHome` (the Return Home button's
+  enable/tooltip predicate) and the planner build from the same snapshot, so the button and the
+  plan cannot disagree about who counts as misplaced.
+- **The assigned/positional discrimination is sound.** `getHomeLoc()` is null for a positional
+  claim, so the by-name equality is false exactly there; `claimHome`'s injectivity means a station
+  cannot simultaneously be one locomotive's assignment and another's claim, so the mixed case
+  cannot arise.
+- **The display already agreed.** `AutoLocomotiveStatus` deliberately badges only assigned homes
+  (its comment explains why positional fallbacks made the badges lie), so the planner ignoring
+  positional claims on unreachable stations aligns it with what the UI has shown since July -
+  no new contradiction between the badge, the button and the plan.
+- **The test covers both halves** - fleet freed with the launch-pad locomotive homeless and the
+  genuinely homed one still moved; then the same station assigned, and IMPOSSIBLE again with the
+  locomotive named - and asserts its preconditions (the pad really has no incoming edges, the
+  dispatch really succeeded) before relying on them.
+
+One finding, filed from the gap between the change and its changelog entry:
+
+| ID | Finding | Status |
+|---|---|---|
+| UC-C21 | The changelog promises launch-pad locomotives "simply stay where they are", but they join the free-agent class, which the A* expansion is allowed to move | Fixed by the second offered remedy - the sentence is made true: the A* expansion skips a free agent still standing on a zero-incoming station, one check against the pad set snapshot already computes (the home filter and the exemption now share one definition of a pad).  An assigned-home locomotive is not exempt, and one already dispatched is an ordinary free agent.  The changelog restates the guarantee precisely.  A cornered search answers NO_PLAN_FOUND, which claims less and is true.  Pinned by `testTheSearchNeverMovesALocomotiveOffItsLaunchPad`, red against the unexempted expansion |
+
+**Validation of the UC-C21 fix - 2026-08-01.** Verified correct, and the round is clean:
+
+- **The exemption sits at the only site that can move a free agent.** The twin check that mattered:
+  the greedy pass skips any locomotive without a home (`home == null ... continue`), so the A*
+  expansion was the sole mover of free agents, and one guard there covers every path into a move.
+- **The exceptions are scoped exactly right, and the code comment argues each one.** A locomotive
+  with an assigned home is not exempt - moving it off a pad is the operator's stated wish - and a
+  locomotive already dispatched from its pad is an ordinary free agent wherever it stands. A
+  positional pad-home locomotive still on its pad is both pruned from `homes` and exempt from
+  moves, the two rules sharing one pad-set definition computed once in `snapshot`.
+- **The cornered search now answers `NO_PLAN_FOUND`**, which the Outcome javadoc defines as "may
+  still be possible" - true, since the only way out required undoing hand-staging, which is the
+  operator's to undo. Claims less, and is honest.
+- **The test builds the cornering mechanism this finding predicted** - the pad sharing a detection
+  section with a transit point - asserts both preconditions, and pins both halves: no plan move
+  touches the pad locomotive, and the outcome is `NO_PLAN_FOUND`. Red against the unexempted
+  expansion per the status row.
+- **The reworded changelog now states the code's actual guarantee.** Its one simplification -
+  "never moved off it" elides the assigned-home exception - is the user's own explicit
+  instruction acting, not the planner meddling, and the entry's final clause covers that contract
+  in as many words. Checked and acceptable.
+
+The stranded-javadoc detector record note above remains open - unanswered as of this round.
+
+**UC-C21.** The pruned locomotive becomes a free agent, and `misplaced`'s own comment states the
+design: free agents "may end anywhere, which is what makes them useful for breaking a deadlock."
+The A* expansion generates moves for *every* locomotive in the state, free agents included - so a
+launch-pad locomotive still standing on its pad can be relocated by a Return Home plan when doing
+so unblocks a homed one. The reachable route to that: the pad's s88 shared with a point on another
+locomotive's path (shared addresses are routine on this layout - the `HS-B4` history), the sensor
+genuinely held, and the search cornered enough to need it. And because the pad has no incoming
+edges, a locomotive moved off it can never be planner-restored - the hand-staging the change
+exists to respect is undone by the plan, permanently. The behaviour is the pre-existing free-agent
+design, not a defect this round introduced; the defect is the changelog sentence claiming a
+guarantee the planner does not make. Two closures, author's choice: soften the sentence
+("...are left out of the plan"), or exempt locomotives standing on zero-incoming stations from
+the A* move generation - which would make the sentence true and costs one containsKey-shaped test
+in the expansion loop. C either way.
+### Post-round repairs, suite-caught - 2026-08-01
+
+Two errors in the launch-pad round itself, both found by the author's suite run and neither by
+the assistant's simulations:
+
+1. **`testALaunchPadPositionalHomeDoesNotBlockTheFleet` was never green.** Its fixture parked the
+   dispatched pad locomotive on the homed locomotive's own station with no siding anywhere - so
+   READY was impossible for any planner, the pad being un-re-enterable by definition.  The
+   green-side simulation forgot occupancy.  A bidirectional siding was added, and the fixture now
+   documents why it exists.
+2. **The snapshot filter was too aggressive.** Dropping every positional pad-home turned a
+   perfectly staged layout's ALREADY_HOME into NO_HOMES -
+   `testAlreadyHomeIsReportedOnALayoutWithNoWayBack` caught it, on the very fixture whose javadoc
+   tells the July war story about this exact shape.  Refined: the entry is dropped only once the
+   locomotive has LEFT the pad; standing there, the claim is simply satisfied.  The A* exemption
+   was re-keyed to match (pad plus own-home-here, not homelessness), or the kept entry would have
+   re-opened UC-C21 for the on-pad case.
+
+Three tests now triangulate the semantics: the no-way-back test pins kept-while-standing, the
+fleet test pins dropped-once-dispatched, and the UC-C21 test pins never-moved-off.  The
+assistant's per-change simulations missed both errors; the suite caught both - which is the
+system working as the README intends, and the calibration note this section exists to record.
