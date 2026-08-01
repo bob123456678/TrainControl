@@ -221,3 +221,79 @@ above.
   constructions do to the static version counter's other consumer sitting in the same class. The
   correction under `CP-C2` is the second entry in this document's error tally: one miss, one
   misattribution, both now in the record.
+
+---
+
+## Validation of `9fbc6d3` - 2026-08-01
+
+The commit carries the `CP-C2` correction into `loadSanityFixture`'s javadoc, adds the
+pickPath non-finding, and fixes one thing its own report section does not mention. All three
+checked:
+
+- **The un-recorded fix, recorded here: the `CP-C1` fence test could not run as committed.**
+  At `fc09a99` it called `setMinDelay(3)` on a fresh `Layout` whose `maxDelay` was still 0, and
+  `setMinDelay` throws `IllegalArgumentException` when the minimum exceeds the maximum - so the
+  test errored at setup on every run, and the `CP-C1` disposition's "pinned by
+  `testAClearFromARetiredLayoutStandsDown`" was false for exactly one commit. `9fbc6d3` sets max
+  before min (and swaps the race test's pair too, which was already legal at 0/0, so both read
+  the same). The pin is real from this commit on. Third entry in this document's error tally,
+  and this one is the validation round's alone: the `fc09a99` validation called the test's middle
+  assertion load-bearing without noticing that setup threw before any assertion could run - it
+  verified the test's *logic* and not its *executability*, which a suite run catches in seconds
+  and reading apparently does not.
+- **The correction-acceptance paragraph is accurate** - re-verified against the source
+  independently before this round read it: the quoted loop is in `executeTimetableInternal`,
+  `runLocomotive` spins on the bare flag, the entry fence at `executePathInternal` is what
+  starves a retired layout's dispatch.
+- **The pickPath non-finding's premise holds, with one precision nit.** `parseAuto` does call
+  `stopLocomotives()` on the outgoing layout before replacing it, and the only other production
+  construction - `getAutoLayout()`'s lazy create - is null-guarded, so no running layout can be
+  retired by the application itself. The nit: `FullAutonomyExample` is in-repo template code that
+  constructs `new Layout(data)` directly, so a programmatic user copying it into a session with a
+  live autonomy layout would reach exactly the state the note calls test-only. Not a finding -
+  the example's own scenario has no prior layout - but "nothing else in the codebase" is
+  precisely one example file short of true.
+
+Outstanding across the folder after this round: `SF-C1` (the four parking points, author's data,
+restore from the 07-27 backup) and the `UC` record note on the stranded-javadoc detector. Both
+`CP` findings and all residuals are closed or accepted; nothing in the last three commits is open.
+
+---
+
+## Review of this document's own record - 2026-08-01
+
+The `9fbc6d3` round was read back, because two of its three bullets make checkable claims about
+other test classes and neither claim had been checked against them. The nit is accepted and the
+conclusion survives - but the twin check reaches it through three wrong facts, one of them inside
+the paragraph that was itself correcting a misattribution.
+
+- **The `FullAutonomyExample` nit is accepted.**
+  `src/org/traincontrol/examples/FullAutonomyExample.java:24` constructs `new Layout(data)`
+  directly, so "nothing else in the codebase" in the pickPath non-finding is one file short of
+  true, exactly as the nit says. The javadoc carrying the same reasoning into the test file claims
+  only "a direct new Layout(model)" without the universal, so the code comment needs no change.
+- **Three wrong facts under the twin check.** (a) `isCurrentLayout()` is consulted in exactly three
+  methods - `executePathInternal`, `executeTimetableInternal`, and now `simClearBehind`. Every
+  graph-only API ignores it, so `testLayoutBfs`, `testLayoutBfsEquivalence`, `testLayoutPickPath`
+  and `testLayoutRenameKeys` are not safe because they "dispatch on the instance they just built" -
+  they never dispatch at all, and retirement cannot reach them. (b) `testLayoutTimetable` does not
+  construct "exactly once in `@BeforeClass` and never again": its single construction site is
+  inside `layoutWithOnePath()`, a private helper called per test. (c) The `CP-C2` correction places
+  `retired.executeTimetable()` in "this class" - it is in `testHomeStaging.java:1256`.
+- **Restated so it can be checked.** Only the seven dispatching classes were ever candidates. Of
+  those, `testAutonomyPathValidation`, `testLayoutTimetable`, `testHomeStaging` and
+  `testReturnHomeOnRealLayout` build a fresh layout per test and dispatch on it immediately, and
+  `testLayoutReloadFence` - plus `testHomeStaging` at :1256 - retires one deliberately, to test the
+  fence itself. The sanity class was the only one dispatching on a *class*-scoped fixture while
+  other methods constructed layouts, which is precisely what let TestNG's ordering decide the
+  result.
+- **The shape is closed here and still latent elsewhere - worth naming.** `testAutoLayoutRace`
+  dispatches on a class-scoped fixture too (`getAutoLayout()`'s lazy create, reused by every test
+  in the class), and is safe only because nothing in that class happens to construct a `Layout`.
+  It has no `@AfterMethod` reload, so the first test added there that builds one reintroduces
+  `CP-C2` in a class with no guard. Not a defect today and not worth a speculative fix; recorded
+  because the population is closed by a property of today's code rather than by a mechanism, and
+  the next person to add a test will not be told.
+
+Fourth entry in the error tally, and this one is the validation round's: checking a claim about
+seven other files is exactly the kind of work that reads as already done once it has been asserted.
