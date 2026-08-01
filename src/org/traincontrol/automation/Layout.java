@@ -843,6 +843,17 @@ public class Layout
     /** Clears a sensor behind the train, unless a later announcement has re-armed it. */
     private void simClearBehind(String s88, long stamp)
     {
+        // The clear is spawned detached with a delay of up to maxDelay SECONDS, so a run can end - and
+        // this Layout be replaced by a reload - while clears are still pending.  The epoch map is per
+        // instance, so an orphan's clear would consult a map the NEW run's announcements never bump,
+        // pass its own stand-down check, and clear a sensor the new run is waiting on: the same wedge,
+        // one Layout boundary later.  Only the clear side needs the fence - a run cannot span a
+        // reload, so an announcement can never come from an orphan.
+        if (!this.isCurrentLayout())
+        {
+            return;
+        }
+
         AtomicLong epoch = this.simFeedbackEpochs.get(s88);
 
         synchronized (epoch)

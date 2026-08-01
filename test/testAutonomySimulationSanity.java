@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
@@ -90,12 +91,33 @@ public class testAutonomySimulationSanity
         model.newSignal(6, MM2, false);
         model.newSignal(7, MM2, false);
 
-        // Load the frozen autonomy file from the test folder.
+        loadSanityFixture();
+    }
+
+    /**
+     * (Re)loads the frozen autonomy file from the test folder as the model's auto layout.
+     *
+     * Called after EVERY test method, not just at class setup, because Layout's version counter is
+     * static: every construction retires all earlier instances, and a retired Layout refuses to
+     * dispatch - runLocomotives spins only while isCurrentLayout().  So any test in this class that
+     * builds its own Layout silently disarms the soak test, which then fails with "should have executed
+     * at least one path" whenever TestNG happens to order it second.  Within-class order is arbitrary
+     * reflection order, so that failure comes and goes between runs of an unchanged suite.  Reloading
+     * makes the fixture the newest - and therefore current - instance again, whatever the order.
+     */
+    private static void loadSanityFixture() throws Exception
+    {
         String json = new BufferedReader(new InputStreamReader(
                 testAutonomySimulationSanity.class.getResource("autonomy_sanity.json").openStream()))
                 .lines().collect(Collectors.joining("\n"));
 
         model.parseAuto(json);
+    }
+
+    @AfterMethod
+    public void restoreSanityFixture() throws Exception
+    {
+        loadSanityFixture();
     }
 
     @AfterClass
@@ -278,7 +300,9 @@ public class testAutonomySimulationSanity
                         + "blocked on a sensor no producer will ever set again");
                 }
 
-                // Let the final detached clear threads settle before the next iteration resets state
+                // Let the final detached clear threads settle before the next iteration resets state.
+                // Belt and braces since the CP-C1 fence: constructing the next iteration's Layout
+                // retires this one, so its stragglers stand down on their own.
                 Thread.sleep(300);
             }
         }
@@ -286,6 +310,74 @@ public class testAutonomySimulationSanity
         {
             watchdog.shutdownNow();
             model.deleteLoc("Sim race loc");
+        }
+    }
+
+    /**
+     * CP-C1: a clear-behind that outlives its Layout must not clear a sensor the NEXT run needs.
+     *
+     * The clear is spawned detached after a delay of up to maxDelay SECONDS, so a run can end - and its
+     * Layout be replaced by a reload - with clears still pending.  The epoch map is per instance, so an
+     * orphan clear consults a map the new run never bumps: it passes its own stand-down check and
+     * clears the sensor anyway.  That is the SF-B1 wedge, one Layout boundary later.
+     *
+     * Deterministic, unlike its sibling: the delay makes the clear provably still pending when the
+     * Layout is retired, and the precondition below asserts exactly that - so if the timing margin were
+     * ever lost this test would fail loudly rather than start passing for the wrong reason.
+     */
+    @Test
+    public void testAClearFromARetiredLayoutStandsDown() throws Exception
+    {
+        final int CLEAR_DELAY_S = 3;
+
+        MarklinLocomotive loc = model.newMM2Locomotive("Sim orphan loc", 65);
+
+        if (!model.isFeedbackSet("47411")) model.newFeedback(47411, null);
+        if (!model.isFeedbackSet("47412")) model.newFeedback(47412, null);
+
+        try
+        {
+            model.setFeedbackState("47411", false);
+            model.setFeedbackState("47412", false);
+
+            Layout retiring = new Layout(model);
+
+            retiring.setMinDelay(CLEAR_DELAY_S);
+            retiring.setMaxDelay(CLEAR_DELAY_S);
+            retiring.setSimulate(true);
+
+            retiring.createPoint("SO A", true, "47411");
+            retiring.createPoint("SO B", true, "47412");
+
+            List<Edge> path = new LinkedList<>();
+
+            path.add(retiring.createEdge("SO A", "SO B"));
+
+            assertTrue(retiring.moveLocomotive("Sim orphan loc", "SO A", false),
+                "precondition: the locomotive must be placed");
+
+            // Returns once SO B is reached - its clear-behind thread is still sleeping off the delay.
+            assertTrue(retiring.executePath(path, loc, 30, null),
+                "precondition: the path must complete");
+
+            assertTrue(model.getFeedbackState("47412"),
+                "precondition: the destination sensor is still set and its clear-behind still pending");
+
+            // Retire the layout, exactly as loading another autonomy configuration would.
+            new Layout(model);
+
+            assertFalse(retiring.isCurrentLayout(),
+                "precondition: the first layout must now be retired");
+
+            Thread.sleep((CLEAR_DELAY_S + 3) * 1000L);
+
+            assertTrue(model.getFeedbackState("47412"),
+                "a clear-behind belonging to a retired Layout cleared a sensor that belongs to the "
+                    + "current one - the SF-B1 wedge, one reload later");
+        }
+        finally
+        {
+            model.deleteLoc("Sim orphan loc");
         }
     }
 }
