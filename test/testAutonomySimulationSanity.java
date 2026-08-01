@@ -99,11 +99,16 @@ public class testAutonomySimulationSanity
      *
      * Called after EVERY test method, not just at class setup, because Layout's version counter is
      * static: every construction retires all earlier instances, and a retired Layout refuses to
-     * dispatch - runLocomotives spins only while isCurrentLayout().  So any test in this class that
-     * builds its own Layout silently disarms the soak test, which then fails with "should have executed
-     * at least one path" whenever TestNG happens to order it second.  Within-class order is arbitrary
-     * reflection order, so that failure comes and goes between runs of an unchanged suite.  Reloading
-     * makes the fixture the newest - and therefore current - instance again, whatever the order.
+     * dispatch - executePathInternal turns every picked path away at its entry fence, while
+     * runLocomotive's own loop keeps spinning on the plain running flag.  So any test in this class
+     * that builds its own Layout silently disarms the soak test, which then fails with "should have
+     * executed at least one path" whenever TestNG happens to order it second.  Within-class order is
+     * arbitrary reflection order, so that failure comes and goes between runs of an unchanged suite.
+     * Reloading makes the fixture the newest - and therefore current - instance again, whatever the
+     * order.
+     *
+     * Only tests reach that state.  A real reload goes through parseAuto, which stops the outgoing
+     * layout before replacing it; retiring one that is still running takes a direct new Layout(model).
      */
     private static void loadSanityFixture() throws Exception
     {
@@ -266,8 +271,9 @@ public class testAutonomySimulationSanity
 
                 Layout layout = new Layout(model);
 
-                layout.setMinDelay(0);
+                // Max before min - setMinDelay rejects a value above the current maximum
                 layout.setMaxDelay(0);
+                layout.setMinDelay(0);
                 layout.setSimulate(true);
 
                 layout.createPoint("SR A", true, "47401");
@@ -342,8 +348,9 @@ public class testAutonomySimulationSanity
 
             Layout retiring = new Layout(model);
 
-            retiring.setMinDelay(CLEAR_DELAY_S);
+            // Max before min - setMinDelay rejects a value above the current maximum
             retiring.setMaxDelay(CLEAR_DELAY_S);
+            retiring.setMinDelay(CLEAR_DELAY_S);
             retiring.setSimulate(true);
 
             retiring.createPoint("SO A", true, "47411");

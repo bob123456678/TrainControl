@@ -116,6 +116,34 @@ and therefore current instance whatever the order. That is deliberately a proper
 rather than of the two tests in it: the next test added here will build a `Layout` too, and will
 not have to know why that matters.
 
+*Correction, validation round:* the mechanism sentence above names the wrong enforcing code. The
+loop it quotes - `while (this.running && this.isCurrentLayout())` - is in
+`executeTimetableInternal`, not `runLocomotives`, and it is not what starved the soak test, which
+runs full autonomy: `runLocomotive`'s own loop tests only `running`, and the refusal happens one
+layer down, at `executePathInternal`'s entry fence (Layout.java:3046, the July cycle's
+fence-abandoned-path work) - every picked path is refused, so the loop spins and nothing
+dispatches. The timetable loop the sentence quotes is the line this class's *other* retired-layout
+test (`retired.executeTimetable()`) exercises. Same outcome, two different fences; the README's
+"read the method that enforces the rule, not the one that looks like it should", filed against
+this document's own text.
+
+*Correction accepted, and its reach:* verified in the source before accepting - the
+`while (this.running && this.isCurrentLayout())` loop is inside `executeTimetableInternal`,
+`runLocomotive`'s own loop is a bare `while(running)` with no version test, and the entry fence at
+`Layout.java:3046` is what turns every picked path away. The same misattribution had propagated
+into `loadSanityFixture`'s javadoc, where it would have misled the next reader of the *code* rather
+than of this folder; corrected there too, which is the reason a wrong sentence in a review document
+is worth more than an erratum - it had already been copied.
+
+One fact the correction surfaces deserves its own line, because it looks like a finding and is not.
+A retired layout's full-autonomy threads keep calling `pickPath` rather than exiting, which is the
+shape of the very defect the July fence work fixed in the timetable loop. It is unreachable in
+production: `parseAuto` calls `stopLocomotives()` on the outgoing layout *before* replacing it, so
+`running` is already false by the time the successor exists. Only a direct `new Layout(model)` -
+what these tests do, and nothing else in the codebase - can retire a layout that is still running.
+Recorded as a non-finding so the next reader who notices the asymmetry between the two loops does
+not have to re-derive why it is safe.
+
 ## CP-D3: the `synchronized (null)` trap, unreachable today
 
 `simClearBehind` fetches the epoch with `get`, not `computeIfAbsent` - correct, since a clear is
@@ -154,3 +182,42 @@ from the 07-27 backup) and the `UC` document's record note on the uncommitted st
 detector. `CP-C1` and `CP-C2` are fixed above; `SF-B1`'s summary claim that "a sensor stays set
 until the last train activity on it has passed" is true without qualification now that the clear
 side is fenced at the layout boundary.
+
+---
+
+## Validation of the fix commit `fc09a99` - 2026-08-01
+
+The commit was read against `CP-C1` and `CP-C2` the way the earlier rounds were. Both fixes are
+correct; one record error in this document's own `CP-C2` section was found and corrected in place
+above.
+
+- **The `CP-C1` fence is at the right layer and only the layer that needs it.** The stand-down is
+  the first statement of `simClearBehind`, before the epoch fetch - which also removes the
+  `CP-D3` `synchronized (null)` path for orphans - and the announce side correctly has no fence,
+  since a run cannot span a reload. The deterministic test's middle assertion (destination sensor
+  still set *with its clear pending*, before the retirement) is genuinely load-bearing, as its
+  comment claims: without it, a lost timing margin would turn the test vacuous rather than red.
+  The test's own two `Layout` constructions would have re-broken the soak fixture, and the
+  `CP-C2` `@AfterMethod` reload heals exactly that - the two fixes are coherent as a pair.
+- **Two bounded residuals, recorded and accepted.** The fence is check-then-act: no lock is shared
+  across instances (each has its own epoch map), so between an orphan's `isCurrentLayout()` read
+  and its clear there is an instruction-scale window in which a reload plus a new run's
+  announcement on the same sensor could theoretically land - but those two events take a JSON
+  parse and a dispatch, orders of magnitude longer than the window, so the interleaving is not
+  schedulable in practice. Second, `layoutVersion` is a non-volatile static, so an orphan's read
+  could in principle miss a just-constructed layout's bump; same practical bound, same verdict.
+  Closing either airtight needs cross-instance state (static epochs or a global lock), which
+  `CP-C1`'s disposition already rejected for good reason. Recorded so nobody mistakes the fence
+  for a total order; neither residual is worth its fix.
+- **The `CP-C2` twin check passes.** Every other test class that constructs `Layout` objects
+  either dispatches on the instance it just built (newest, therefore current - the home-staging
+  and rename suites) or constructs exactly once in `@BeforeClass` and never again
+  (`testLayoutTimetable`), and cross-class order is safe because each class's setup runs after
+  the previous class finishes. The sanity class was the only one mixing a class fixture with
+  per-test constructions, so the `@AfterMethod` reload closes the defect's whole population.
+- **Calibration, owned.** `CP-C2`'s "missed by both readings" includes this one: the blind round
+  read the race test closely enough to note its per-iteration `Layout` constructions and reason
+  about their effect on *production* reloads (`CP-C1`), and still did not ask what those same
+  constructions do to the static version counter's other consumer sitting in the same class. The
+  correction under `CP-C2` is the second entry in this document's error tally: one miss, one
+  misattribution, both now in the record.
