@@ -1,3 +1,8 @@
+import org.json.JSONObject;
+import org.traincontrol.util.Util;
+import org.traincontrol.util.Conversion;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.marklin.MarklinLocomotive;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -537,5 +542,126 @@ public class testInvalidInput
 
         assertFalse(layout.getPoint("IN C").isDestination(),
             "defaulting to false means it is not a station");
+    }
+
+    /**
+     * UC-C1: the update check must survive a release name with a non-numeric version component.
+     *
+     * parseReleaseVersion returns everything after the first "v"; compareVersions then parses every
+     * dotted component as an integer.  The current beta is literally named
+     * "Marklin Train Control v2.8.0 (Beta)" - the exact breaking shape - and one stable release
+     * published like that makes every installed copy stop announcing updates, silently, with a log
+     * line blaming the network.
+     *
+     * Asserted on the pair, so the fix may live in either half (strip the suffix in
+     * parseReleaseVersion, or parse tolerantly in compareVersions).
+     */
+    @Test
+    public void testUpdateCheckSurvivesASuffixedReleaseName()
+    {
+        String parsed = Util.parseReleaseVersion(
+            new JSONObject().put("name", "Marklin Train Control v2.8.0 (Beta)"));
+
+        assertEquals(Conversion.compareVersions("2.7.4", parsed), -1,
+            "2.7.4 is older than the 2.8.0 beta, and saying so must not throw");
+
+        assertEquals(Conversion.compareVersions(parsed, "2.8.0"), 0,
+            "the suffix is not part of the version");
+
+        assertEquals(Conversion.compareVersions(parsed, "2.8.1"), -1,
+            "and ordering still works above it");
+    }
+
+    /**
+     * UC-C2: a space after the comma in a feedback line must not silently flip the state.
+     *
+     * The feedback branch tests "1".equals(token) untrimmed, so "Feedback 3, 1" - one space - parses
+     * as state CLEAR, and a condition waits for the opposite sensor edge.  The locfunc branch trims;
+     * this one is the odd one out.
+     */
+    @Test
+    public void testFeedbackStateTokenIsTrimmed() throws Exception
+    {
+        assertTrue(RouteCommand.fromLine("Feedback 3,1", false).getSetting(),
+            "control: the unspaced form is state set");
+
+        assertTrue(RouteCommand.fromLine("Feedback 3, 1", false).getSetting(),
+            "one space after the comma must not turn state 1 into state 0");
+
+        assertFalse(RouteCommand.fromLine("Feedback 3, 0", false).getSetting(),
+            "control: a spaced 0 is still clear");
+    }
+
+    /**
+     * UC-C3: a typo'd direction must be an error, not a silent reversal.
+     *
+     * The locdir branch maps every string that is not exactly "forward" to backward - "forwards",
+     * "fwd", any typo - and executes it.  Every other malformed field in this parser produces the
+     * friendly invalid-line error; the direction is the one mistake it drives instead.
+     */
+    @Test
+    public void testATypodDirectionIsRefusedNotReversed() throws Exception
+    {
+        assertEquals(RouteCommand.fromLine("locdir,UC Loco,forward", false).getDirection(),
+            Locomotive.locDirection.DIR_FORWARD, "control: forward parses");
+
+        assertEquals(RouteCommand.fromLine("locdir,UC Loco,BACKWARD", false).getDirection(),
+            Locomotive.locDirection.DIR_BACKWARD, "control: backward parses, case-insensitively");
+
+        try
+        {
+            RouteCommand rc = RouteCommand.fromLine("locdir,UC Loco,forwards", false);
+
+            fail("'forwards' must raise the invalid-line error, not quietly parse as "
+                + rc.getDirection());
+        }
+        catch (Exception expected)
+        {
+            // the friendly checked error every other malformed field already gets
+        }
+    }
+
+    /**
+     * UC-C11: Point must fail where the mistake is made, not at save time.
+     *
+     * The public constructor accepts any string as an s88, and toJSON later does
+     * Integer.valueOf(s88) - so new Point("x", true, "1a") explodes with an unchecked
+     * NumberFormatException at save, far from the call that caused it.
+     */
+    @Test
+    public void testAPointRejectsANonNumericS88AtConstruction()
+    {
+        try
+        {
+            new Point("UC bad s88", true, "1a");
+            fail("a non-numeric s88 must be rejected at construction, not at save time");
+        }
+        catch (Exception expected)
+        {
+            // rejected where the mistake was made
+        }
+    }
+
+    /**
+     * UC-C11, the other trap: setMaxTrainLength(null) passes an inert assert, stores null, and
+     * validateTrainLength later NPEs unboxing it.  Null must mean "no limit", like 0 does.
+     */
+    @Test
+    public void testANullMaxTrainLengthMeansNoLimit() throws Exception
+    {
+        Point station = new Point("UC null length", true, "4711");
+        MarklinLocomotive loc = model.newMM2Locomotive("UC C11 loco", 55);
+
+        try
+        {
+            station.setMaxTrainLength(null);
+
+            assertTrue(station.validateTrainLength(loc),
+                "a station with no stated limit accepts any train - it must not NPE");
+        }
+        finally
+        {
+            model.deleteLoc("UC C11 loco");
+        }
     }
 }

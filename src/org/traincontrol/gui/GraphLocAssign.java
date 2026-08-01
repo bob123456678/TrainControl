@@ -65,26 +65,21 @@ public class GraphLocAssign extends javax.swing.JPanel
             this.locAssign.setSelectedItem(p.getCurrentLocomotive().getName());
         }
         
-        // Always show
-        boolean visibility = true;
-                
         if (newOnly)
         {
             this.arrivalFunc.setSelectedIndex(0);
             this.departureFunc.setSelectedIndex(0);
             this.trainLength.setSelectedIndex(0);
-
-            visibility = true;
         }
         
         updateValues();
 
-        this.arrivalFunc.setVisible(visibility);
-        this.arrivalFuncLabel.setVisible(visibility);
-        this.departureFunc.setVisible(visibility);
-        this.departureFuncLabel.setVisible(visibility);
-        this.reversible.setVisible(visibility);
-        this.trainLength.setVisible(visibility);   
+        this.arrivalFunc.setVisible(true);
+        this.arrivalFuncLabel.setVisible(true);
+        this.departureFunc.setVisible(true);
+        this.departureFuncLabel.setVisible(true);
+        this.reversible.setVisible(true);
+        this.trainLength.setVisible(true);   
         
         // Give the dropdown focus so you can filter with the keyboard
         this.locAssign.addAncestorListener(new AncestorListener()

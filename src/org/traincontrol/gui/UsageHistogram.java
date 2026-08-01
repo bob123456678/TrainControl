@@ -46,6 +46,29 @@ public class UsageHistogram extends javax.swing.JFrame
         
         TreeMap<String, Long> data = tcui.getModel().getDailyRuntimeStats(perPage, offset);
         TreeMap<String, Integer> dataLocs = tcui.getModel().getDailyCountStats(perPage, offset);
+
+        // The title and its model queries used to live inside paintComponent, so every repaint hit
+        // the model and mutated the window.  This method is the refresh funnel - the constructor and
+        // all three paging buttons come through here - which is where per-page state belongs.
+        long cumulativeHours = 0;
+
+        for (Map.Entry<String, Long> entry : data.entrySet())
+        {
+            cumulativeHours += entry.getValue();
+        }
+
+        int numLocs = tcui.getModel().getTotalLocStats(perPage, offset);
+
+        setTitle(
+            I18n.f(
+                "stats.ui.titleCumulativeRuntime",
+                numLocs,
+                numLocs != 1 ? I18n.t("stats.ui.valuePluralSuffix") : "",
+                Conversion.convertSecondsToHMm(cumulativeHours),
+                offset,
+                offset + perPage
+            )
+        );
                 
         setLayout(new BorderLayout());
         
@@ -77,8 +100,6 @@ public class UsageHistogram extends javax.swing.JFrame
                     }
                 }
                 
-                long cumulativeHours = 0;
-
                 for (Map.Entry<String, Long> entry : data.entrySet())
                 {
                     String date = entry.getKey();
@@ -88,7 +109,6 @@ public class UsageHistogram extends javax.swing.JFrame
                     Integer locCount = dataLocs.getOrDefault(date, 0);
 
                     String hours = Conversion.convertSecondsToHMm(entry.getValue());
-                    cumulativeHours += entry.getValue();
 
                     if (maxVal > 0)
                     {
@@ -137,20 +157,6 @@ public class UsageHistogram extends javax.swing.JFrame
                     y / 2 + 65
                 );
                 g2d.rotate(-Math.toRadians(270), 17, y / 2 + 65);
-
-                int numLocs = tcui.getModel().getTotalLocStats(perPage, offset);
-
-                // Window title
-                setTitle(
-                    I18n.f(
-                        "stats.ui.titleCumulativeRuntime",
-                        numLocs,
-                        numLocs != 1 ? I18n.t("stats.ui.valuePluralSuffix") : "",
-                        Conversion.convertSecondsToHMm(cumulativeHours),
-                        offset,
-                        offset + perPage
-                    )
-                );
             }
         };
 

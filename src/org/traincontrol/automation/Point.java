@@ -65,6 +65,24 @@ public class Point
                 I18n.f("autolayout.errorDestinationPointMustHaveS88")
             );
         }
+
+        // Fail where the mistake is made.  toJSON does Integer.valueOf(s88), so a non-numeric
+        // value accepted here used to explode at save time as an unchecked NumberFormatException,
+        // far from the call that caused it.  createPoint validates that the feedback exists, but
+        // this constructor is public and validated nothing.
+        if (s88 != null)
+        {
+            try
+            {
+                Integer.parseInt(s88.trim());
+            }
+            catch (NumberFormatException e)
+            {
+                throw new Exception(
+                    I18n.f("autolayout.errorStationMustHaveValidS88Address")
+                );
+            }
+        }
         
         // Save the immutable unique ID
         this.uniqueId = ++id;
@@ -410,10 +428,11 @@ public class Point
      */
     public Point setMaxTrainLength(Integer maxTrainLength)
     {
-        assert maxTrainLength >= 0;
-        
-        this.maxTrainLength = maxTrainLength;
-        
+        // Null and negative both mean "no limit", the meaning 0 already has.  The assert this
+        // replaces was inert at runtime, so a null was stored and validateTrainLength later
+        // threw NullPointerException unboxing it.
+        this.maxTrainLength = (maxTrainLength == null || maxTrainLength < 0) ? 0 : maxTrainLength;
+
         return this;
     }
     

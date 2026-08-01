@@ -1,3 +1,5 @@
+import java.util.LinkedList;
+import java.util.Collections;
 import org.traincontrol.base.RouteCommand;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ACCESSORY;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTION;
@@ -1194,5 +1196,108 @@ public class testRoutes
             model.deleteRoute(renamed);
             model.deleteRoute(original);
         }
+    }
+
+    /**
+     * UC-C6: executing an unknown route name must be a no-op, not an NPE.
+     *
+     * execRoute is routeDB.getByName(name).execRoute(false) - null dereference.  The UI passes
+     * names from live lists, but the programmatic API reaches this directly, and
+     * ProgrammaticControlExample literally calls execRoute("SomeRoute").  getLocAddress twenty
+     * lines up was fixed for exactly this shape.
+     */
+    @Test
+    public void testExecutingAnUnknownRouteNameIsANoOp()
+    {
+        try
+        {
+            model.execRoute("UC-C6 no such route");
+        }
+        catch (NullPointerException e)
+        {
+            fail("an unknown route name must log and return, not NPE");
+        }
+    }
+
+    /**
+     * Deleting a route on the activation list must work whatever list the caller handed over.
+     *
+     * Layout.setActivateRouteIDs stores the caller's list verbatim, and deleteRoute later mutates it
+     * with remove().  testAutoLayout passes Collections.singletonList - immutable - and its teardown
+     * has thrown UnsupportedOperationException on every run since 2025-11-29, invisibly (a TestNG
+     * configuration error, not a failing test), leaving "Testcase Route 1" undeleted in the session.
+     *
+     * The model must not take ownership of a caller's list without copying it.
+     */
+    @Test
+    public void testDeletingAnActivationListedRouteSurvivesAnImmutableList() throws Exception
+    {
+        MarklinRoute r = new MarklinRoute(model, "UC immutable activation", 46901,
+            new LinkedList<>(), 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+            NodeExpression.fromList(new ArrayList<>()));
+
+        model.newRoute(r);
+
+        try
+        {
+            model.getAutoLayout().setActivateRouteIDs(Collections.singletonList(r.getId()));
+
+            try
+            {
+                model.deleteRoute("UC immutable activation");
+            }
+            catch (UnsupportedOperationException e)
+            {
+                fail("deleteRoute mutated the caller's own list - the model must copy what it is "
+                    + "handed, not take ownership of it");
+            }
+
+            assertNull(model.getRoute("UC immutable activation"),
+                "and the route is actually gone, not stranded by the failed removal");
+        }
+        finally
+        {
+            // Leave nothing behind for later tests in this class, whichever way it went
+            model.getAutoLayout().setActivateRouteIDs(new LinkedList<>());
+
+            if (model.getRoute("UC immutable activation") != null)
+            {
+                model.getAutoLayout().getActivateRouteIDs().clear();
+                model.deleteRoute("UC immutable activation");
+            }
+        }
+    }
+
+    /**
+     * A delay of zero is the same command as no delay at all.
+     *
+     * setDelay(0) used to store DELAY=0 in the config map, but toLine only emits positive delays -
+     * so a command built with an explicit zero stopped equalling its own line round trip.  The
+     * randomized JSON export test draws setDelay(random.nextInt(1000)) behind a coin flip, which is
+     * a 1-in-2000 flake per direction command; one seed finally hit it.
+     */
+    @Test
+    public void testAZeroDelayIsTheSameAsNoDelay() throws Exception
+    {
+        RouteCommand explicit = RouteCommand.RouteCommandLocomotiveDirection("Zero Delay Loc", DIR_FORWARD);
+        explicit.setDelay(0);
+
+        RouteCommand bare = RouteCommand.RouteCommandLocomotiveDirection("Zero Delay Loc", DIR_FORWARD);
+
+        assertEquals(explicit, bare, "an explicit zero delay is the same command as none");
+
+        assertEquals(RouteCommand.fromLine(explicit.toLine(null), false), explicit,
+            "and it survives its own line round trip");
+
+        // A positive delay still round-trips with its value
+        explicit.setDelay(250);
+
+        assertEquals(explicit.getDelay(), 250);
+        assertEquals(RouteCommand.fromLine(explicit.toLine(null), false), explicit);
+
+        // And setting it back to zero clears it again
+        explicit.setDelay(0);
+
+        assertEquals(explicit, bare, "zero clears a previously set delay");
     }
 }

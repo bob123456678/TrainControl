@@ -2677,9 +2677,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void execRoute(String name)
     {
-        //this.log("Executing " + this.routeDB.getByName(name).toString());
-        
-        this.routeDB.getByName(name).execRoute(false);
+        MarklinRoute r = this.routeDB.getByName(name);
+
+        // The programmatic API reaches this directly with caller-supplied names, and an unknown
+        // one used to NPE.  getLocAddress in this class was fixed for exactly this shape.
+        if (r == null)
+        {
+            this.log("Route does not exist: " + name);
+            return;
+        }
+
+        r.execRoute(false);
     }
     
     /**

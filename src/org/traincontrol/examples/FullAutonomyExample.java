@@ -98,16 +98,16 @@ public class FullAutonomyExample
                 MarklinControlStation model = init(); 
                 
                 // Or, initialize with a predetermined IP
-                // MarklinControlStation model = init("192.168.1.10", false, false, true); 
+                // MarklinControlStation model = init("192.168.1.10", false, false, true, false); 
                 
                 // Run custom code
                 execCode(model);
 	    } 
             catch (Exception e)
 	    {
-                JOptionPane.showMessageDialog(null, "Error ocurred: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Error occurred: " + e.getMessage());
 	    	e.printStackTrace();
-                System.exit(0);
+                System.exit(1);
 	    } 
 	}
 }

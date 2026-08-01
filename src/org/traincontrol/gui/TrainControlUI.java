@@ -11621,7 +11621,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Integer fNumber = this.functionMapping.get(b);
 
-                    RightClickFunctionMenu menu = new RightClickFunctionMenu(this, this.activeLoc, b, fNumber);
+                    RightClickFunctionMenu menu = new RightClickFunctionMenu(this, this.activeLoc, fNumber);
 
                     menu.showPopup(evt);      
                 };

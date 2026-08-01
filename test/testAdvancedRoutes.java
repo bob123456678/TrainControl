@@ -415,4 +415,59 @@ public class testAdvancedRoutes
             head.setSpeed(0);
         }
     }
+
+    /**
+     * UC-C4: a JSON-origin condition tree must mean the same thing after the editor round trip.
+     *
+     * The text parser applies stacked operators LIFO, so text-origin trees are right-nested - a bare
+     * binary node can never be a LEFT child.  Hand-written JSON can build exactly that shape,
+     * Or(And(a,b),c), and it used to render as "a AND b OR c", which reparses as And(a,Or(b,c)):
+     * opening and saving such a route silently changed when it fires.  The fix normalizes at the JSON
+     * door - a bare cross-operator left child is wrapped in a group on load, so the serializer emits
+     * the preserving parentheses - and deliberately NOT in the serializer, which must keep rendering
+     * text-origin trees byte-identically (testRoutes.testExpressions pins that identity).
+     */
+    @Test
+    public void testAnUngroupedConditionTreeSurvivesTheEditorRoundTrip() throws Exception
+    {
+        int[] sensors = {46801, 46802, 46803};
+
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+        }
+
+        // Or(And(a,b),c), built the only way it can exist: hand-written structural JSON
+        org.json.JSONObject a = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[0], true).toJSON());
+        org.json.JSONObject b = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[1], true).toJSON());
+        org.json.JSONObject c = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[2], true).toJSON());
+
+        org.json.JSONObject tree = new org.json.JSONObject()
+            .put("type", "NodeOr")
+            .put("left", new org.json.JSONObject()
+                .put("type", "NodeAnd").put("left", a).put("right", b))
+            .put("right", c);
+
+        NodeExpression loaded = NodeExpression.fromJSON(tree);
+
+        String text = NodeExpression.toTextRepresentation(loaded, model);
+        NodeExpression reparsed = NodeExpression.fromTextRepresentation(text, model);
+
+        for (int mask = 0; mask < 8; mask++)
+        {
+            model.setFeedbackState(String.valueOf(sensors[0]), (mask & 1) != 0);
+            model.setFeedbackState(String.valueOf(sensors[1]), (mask & 2) != 0);
+            model.setFeedbackState(String.valueOf(sensors[2]), (mask & 4) != 0);
+
+            assertEquals(reparsed.evaluate(model), loaded.evaluate(model),
+                "a=" + ((mask & 1) != 0) + " b=" + ((mask & 2) != 0) + " c=" + ((mask & 4) != 0)
+                + ": the reparse of \"" + text.replace("\n", " ") + "\" changed the meaning");
+        }
+    }
 }

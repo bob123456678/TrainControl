@@ -108,9 +108,9 @@ public class FeedbackEvents
 	    } 
             catch (Exception e)
 	    {
-                JOptionPane.showMessageDialog(null, "Error ocurred: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Error occurred: " + e.getMessage());
 	    	e.printStackTrace();
-                System.exit(0);
+                System.exit(1);
 	    } 
 	}
 }

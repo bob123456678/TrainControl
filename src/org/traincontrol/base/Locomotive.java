@@ -337,8 +337,14 @@ public abstract class Locomotive
         this.preferredFunctions = preferredFunctions;
         this.preferredSpeed = preferredSpeed;
         
-        this.departureFunc = departureFunc;
-        this.arrivalFunc = arrivalFunc;
+        // Validated like the setters below, because this constructor is how the locomotive database
+        // restores state - the one arrival/departure write that no bound used to guard.  A stale
+        // value (from a decoder converted downward before the setAddress clamp existed) would
+        // otherwise survive every restart and crash the assignment dialog forever.
+        this.departureFunc =
+            (departureFunc != null && departureFunc >= 0 && departureFunc < numF) ? departureFunc : null;
+        this.arrivalFunc =
+            (arrivalFunc != null && arrivalFunc >= 0 && arrivalFunc < numF) ? arrivalFunc : null;
         this.reversible = reversible;
         this.trainLength = trainLength;
         // Copy into a ConcurrentHashMap: this map is read (stats/CSV export) on background threads
@@ -1024,7 +1030,9 @@ public abstract class Locomotive
      */
     public String getImageURL()
     {
-        return this.imageURL;
+        // The local override wins while it is set; the Central Station image is the fallback
+        // and survives the override being cleared
+        return this.localImageURL != null ? this.localImageURL : this.imageURL;
     }
     
     /**
@@ -1051,8 +1059,11 @@ public abstract class Locomotive
      */
     public void setLocalImageURL(String u)
     {
-        this.imageURL = u;
-        this.localImageURL = this.imageURL;
+        // Only the override.  This used to assign imageURL too, so clearing the local icon also
+        // destroyed the Central Station image - compensated by an immediate syncWithCS2 at the
+        // one UI call site, which restores it only when connected; offline the locomotive showed
+        // no image for the rest of the session.  getImageURL now falls back instead.
+        this.localImageURL = u;
     }
          
     /**

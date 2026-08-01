@@ -433,6 +433,22 @@ public class MarklinLocomotive extends Locomotive
             preferredFunctions = Arrays.copyOf(preferredFunctions, getMaxNumF(newDecoderType));
             this.numF = getMaxNumF(newDecoderType);
 
+            // A decoder change can shrink the function count, and the arrival/departure functions
+            // were the only per-function state not revisited here - so converting MFX (32) to MM2 (5)
+            // left, say, arrival function 20 in place.  The one dialog that could repair it,
+            // GraphLocAssign, sizes its combo boxes to numF and crashed on the stale index - wedging
+            // the repair path.  Cleared through the setter, which is the only writer that validates;
+            // it cannot be used to clamp, since it refuses out-of-range values and keeps the old one.
+            if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF)
+            {
+                this.setArrivalFunc(null);
+            }
+
+            if (this.getDepartureFunc() != null && this.getDepartureFunc() >= this.numF)
+            {
+                this.setDepartureFunc(null);
+            }
+
             return true;
         }
         

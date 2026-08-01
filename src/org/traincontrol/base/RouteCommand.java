@@ -45,15 +45,15 @@ public class RouteCommand implements java.io.Serializable
     public static final String COMMAND_ALL_LIGHTS_ON = "All Lights On";
     public static final String COMMAND_ALL_FUNCTIONS_OFF = "All Functions Off";
         
-    public static String KEY_NAME = "NAME";
-    public static String KEY_ADDRESS = "ADDRESS";
-    public static String KEY_FUNCTION = "FUNCTION";
-    public static String KEY_SETTING = "SETTING";
-    public static String KEY_SPEED = "SPEED";
-    public static String KEY_DELAY = "DELAY";
-    public static String KEY_PROTOCOL = "PROTOCOL";
-    public static String KEY_DIRECTION = "DIRECTION";
-    public static String KEY_ACCESSORY_TYPE = "ACCESSORY_TYPE";
+    public static final String KEY_NAME = "NAME";
+    public static final String KEY_ADDRESS = "ADDRESS";
+    public static final String KEY_FUNCTION = "FUNCTION";
+    public static final String KEY_SETTING = "SETTING";
+    public static final String KEY_SPEED = "SPEED";
+    public static final String KEY_DELAY = "DELAY";
+    public static final String KEY_PROTOCOL = "PROTOCOL";
+    public static final String KEY_DIRECTION = "DIRECTION";
+    public static final String KEY_ACCESSORY_TYPE = "ACCESSORY_TYPE";
 
     // Settings
     
@@ -394,7 +394,19 @@ public class RouteCommand implements java.io.Serializable
     
     public void setDelay(int delay)
     {
-        this.commandConfig.put(KEY_DELAY, Integer.toString(delay));
+        // "No delay" is the ABSENCE of the key, canonically.  Storing DELAY=0 created a second
+        // representation that compared unequal to the first: the line round trip drops a zero delay
+        // (toLine only emits positive ones), so a command built with setDelay(0) stopped equalling
+        // its own toLine/fromLine round trip - a 1-in-2000 flake in the randomized route tests, and
+        // a real asymmetry for anything comparing commands.
+        if (delay <= 0)
+        {
+            this.commandConfig.remove(KEY_DELAY);
+        }
+        else
+        {
+            this.commandConfig.put(KEY_DELAY, Integer.toString(delay));
+        }
     }
     
     @Override
@@ -727,8 +739,25 @@ public class RouteCommand implements java.io.Serializable
             String name = parts[1].trim();
             String directionStr = parts[2].trim();
 
-            // Convert string to enum safely
-            Locomotive.locDirection direction = "forward".equals(directionStr.toLowerCase()) ? DIR_FORWARD : DIR_BACKWARD;
+            // Only the two real directions parse.  Everything else used to fall through to BACKWARD -
+            // "forwards", "fwd", any typo reversed the locomotive without a word of complaint, while
+            // every other malformed field in this parser produces the friendly invalid-line error.
+            Locomotive.locDirection direction;
+
+            if ("forward".equals(directionStr.toLowerCase()))
+            {
+                direction = DIR_FORWARD;
+            }
+            else if ("backward".equals(directionStr.toLowerCase()))
+            {
+                direction = DIR_BACKWARD;
+            }
+            else
+            {
+                throw new Exception(
+                    I18n.f("error.invalidLine", line.trim())
+                );
+            }
 
             RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(name, direction);
 
@@ -790,7 +819,10 @@ public class RouteCommand implements java.io.Serializable
             try
             {
                 int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                boolean state = "1".equals(line.split(",")[1]);
+                // Trimmed like every other state token in this parser: "Feedback 3, 1" - one space
+                // after the comma - used to parse as state CLEAR, silently, and a condition then
+                // waited for the opposite sensor edge.
+                boolean state = "1".equals(line.split(",")[1].trim());
                 
                 return RouteCommand.RouteCommandFeedback(address, state);
             }

@@ -32,15 +32,15 @@ public class TrainControl
         } 
         catch (Exception e)
         {
-            System.out.println("Error ocurred: " + e.getMessage());
+            System.out.println("Error occurred: " + e.getMessage());
             
             if (!GraphicsEnvironment.isHeadless())
             {
-                JOptionPane.showMessageDialog(null, "Error ocurred: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Error occurred: " + e.getMessage());
             }
 
             e.printStackTrace();
-            System.exit(0);
+            System.exit(1);
         }
     }
 }

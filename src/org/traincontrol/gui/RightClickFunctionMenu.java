@@ -17,7 +17,7 @@ public class RightClickFunctionMenu extends MouseAdapter
     private final Locomotive activeLoc;
     private final int fNumber;
 
-    public RightClickFunctionMenu(TrainControlUI tcui, Locomotive loc, JToggleButton b, int fNumber)
+    public RightClickFunctionMenu(TrainControlUI tcui, Locomotive loc, int fNumber)
     {
         this.tcui = tcui;
         this.activeLoc = loc;
@@ -104,6 +104,25 @@ public class RightClickFunctionMenu extends MouseAdapter
             LocomotiveFunctionAssign edit =
                 new LocomotiveFunctionAssign(activeLoc, tcui, fNumber, true);
 
+            // Focus the icon selector when the dialog actually shows.  This used to be a bare
+            // focusImages() after showOptionDialog returned - the modal was already disposed, so
+            // it never did anything.  The ancestor listener is the same pattern GraphLocAssign
+            // uses for its dropdown.
+            edit.addAncestorListener(new javax.swing.event.AncestorListener()
+            {
+                @Override
+                public void ancestorRemoved(javax.swing.event.AncestorEvent event) {}
+
+                @Override
+                public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
+
+                @Override
+                public void ancestorAdded(javax.swing.event.AncestorEvent event)
+                {
+                    edit.focusImages();
+                }
+            });
+
             int result = JOptionPane.showOptionDialog(
                 tcui,
                 edit,
@@ -115,7 +134,6 @@ public class RightClickFunctionMenu extends MouseAdapter
                 TrainControlUI.OK_CANCEL_OPTS[0]
             );
 
-            edit.focusImages();
 
             if (result == JOptionPane.OK_OPTION)
             {

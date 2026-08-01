@@ -1,3 +1,4 @@
+import org.traincontrol.automation.Edge;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -265,5 +266,41 @@ public class testLayoutRenameKeys
         layout.locDeleted(loc);
 
         assertTrue(b.getExcludedLocs().isEmpty(), "and deletion still removes it");
+    }
+
+    /**
+     * UC-C5: renaming a point onto an existing name must be refused by the model.
+     *
+     * renamePoint checks only that the OLD name exists.  points.put(newName, p) overwrites the
+     * existing point, and the edge-key rebuild below it drops colliding edges - graph corruption.
+     * Today the sole caller checks uniqueness in the dialog; the model must not depend on one
+     * dialog to protect its data (editRoute's own comment states the standard).
+     */
+    @Test
+    public void testRenamingOntoAnExistingPointIsRefused() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String s88A = model.newFeedback(feedbackBase++, null).getName();
+        String s88B = model.newFeedback(feedbackBase++, null).getName();
+
+        layout.createPoint("UCR_A", true, s88A);
+        layout.createPoint("UCR_B", true, s88B);
+
+        Edge e = layout.createEdge("UCR_A", "UCR_B");
+
+        try
+        {
+            layout.renamePoint("UCR_A", "UCR_B");
+            fail("renaming UCR_A onto the existing UCR_B must throw, not overwrite it");
+        }
+        catch (Exception expected)
+        {
+            // refused
+        }
+
+        assertNotNull(layout.getPoint("UCR_A"), "the source point is untouched after the refusal");
+        assertNotNull(layout.getPoint("UCR_B"), "the target point still exists");
+        assertTrue(layout.getEdges().contains(e), "and the edge between them survived");
     }
 }

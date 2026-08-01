@@ -23,14 +23,21 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) ui.getKeyForCurrentButton().intValue()))
-        );
-        menuItem.addActionListener(event -> {
-            ui.mapLocToCurrentButton(loc.getName());
-            ui.getLocSelector().refreshToolTips();
-        });
-        add(menuItem);
+        // No current button means no key to render - (char) -1 painted as U+FFFF garbage.
+        // Without a target the item is meaningless, so it is omitted rather than disabled.
+        Integer currentButtonKey = ui.getKeyForCurrentButton();
+
+        if (currentButtonKey != null && currentButtonKey != -1)
+        {
+            menuItem = new JMenuItem(
+                I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) currentButtonKey.intValue()))
+            );
+            menuItem.addActionListener(event -> {
+                ui.mapLocToCurrentButton(loc.getName());
+                ui.getLocSelector().refreshToolTips();
+            });
+            add(menuItem);
+        }
 
         menuItem = new JMenuItem(
             I18n.t("loc.ui.menuSetLocalLocomotiveIcon")

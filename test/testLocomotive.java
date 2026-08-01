@@ -746,4 +746,109 @@ public class testLocomotive
     public void tearDownMethod() throws Exception
     {
     }
+
+    /**
+     * UC-B1: converting a decoder type downward must not leave a stale arrival/departure function.
+     *
+     * setAddress resizes the function arrays and shrinks numF, but never revisits arrivalFunc or
+     * departureFunc - so an MFX locomotive with arrival function 20, converted to MM2 (5 functions),
+     * keeps the 20.  GraphLocAssign then calls setSelectedIndex(21) against a 6-entry combo model and
+     * the assignment dialog - the only place the value could be repaired - throws before it opens.
+     *
+     * The invariant: after a decoder change, both functions are either cleared or within numF.
+     */
+    @Test
+    public void testDecoderConversionClampsArrivalAndDepartureFunctions() throws Exception
+    {
+        MarklinLocomotive loc = model.newMFXLocomotive("UC B1 conv", 1000);
+
+        try
+        {
+            loc.setArrivalFunc(20);
+            loc.setDepartureFunc(25);
+
+            assertEquals(loc.getArrivalFunc(), Integer.valueOf(20), "precondition: valid for MFX");
+            assertEquals(loc.getDepartureFunc(), Integer.valueOf(25), "precondition: valid for MFX");
+
+            assertTrue(loc.setAddress(75, MarklinLocomotive.decoderType.MM2),
+                "precondition: the conversion itself must succeed");
+
+            assertTrue(loc.getArrivalFunc() == null || loc.getArrivalFunc() < loc.getNumF(),
+                "arrival function " + loc.getArrivalFunc() + " is out of range for numF "
+                + loc.getNumF() + " - the assignment dialog crashes on exactly this");
+
+            assertTrue(loc.getDepartureFunc() == null || loc.getDepartureFunc() < loc.getNumF(),
+                "departure function " + loc.getDepartureFunc() + " is out of range for numF "
+                + loc.getNumF());
+        }
+        finally
+        {
+            model.deleteLoc("UC B1 conv");
+        }
+    }
+
+    /**
+     * UC-B1, the other unguarded writer: the full-state constructor restores arrival/departure
+     * without validation, so a stale value survives restarts via the locomotive database.  The
+     * setter refuses out-of-range values; the constructor must not be the way around it.
+     */
+    @Test
+    public void testFullStateConstructorClampsArrivalAndDepartureFunctions()
+    {
+        MarklinLocomotive restored = new MarklinLocomotive(model, 80,
+            MarklinLocomotive.decoderType.MM2, "UC B1 restored",
+            MarklinLocomotive.locDirection.DIR_FORWARD,
+            new boolean[] {false, false, false, false, false},
+            new int[] {128, 10, 240, 241, 0},
+            new int[] {Locomotive.FUNCTION_PULSE, Locomotive.FUNCTION_TOGGLE,
+                Locomotive.FUNCTION_PULSE, Locomotive.FUNCTION_PULSE, 10},
+            new boolean[] {false, false, false, false, false},
+            50,
+            25,  // departure function - out of range for 5 MM2 functions
+            20,  // arrival function - out of range for 5 MM2 functions
+            false, 4, new HashMap<>());
+
+        assertTrue(restored.getArrivalFunc() == null || restored.getArrivalFunc() < restored.getNumF(),
+            "restored arrival function " + restored.getArrivalFunc()
+            + " is out of range for numF " + restored.getNumF());
+
+        assertTrue(restored.getDepartureFunc() == null || restored.getDepartureFunc() < restored.getNumF(),
+            "restored departure function " + restored.getDepartureFunc()
+            + " is out of range for numF " + restored.getNumF());
+    }
+
+    /**
+     * UC-C12: clearing the local icon must not wipe the Central Station image URL.
+     *
+     * setLocalImageURL assigns imageURL first and copies it to localImageURL, so clearing the local
+     * override also destroys the CS-provided image.  The caller compensates with an immediate
+     * syncWithCS2() - which restores it only when connected; offline the locomotive shows no image
+     * for the rest of the session.
+     */
+    @Test
+    public void testClearingTheLocalIconKeepsTheCentralStationImage() throws Exception
+    {
+        MarklinLocomotive loc = model.newMM2Locomotive("UC C12 icon", 60);
+
+        try
+        {
+            loc.setImageURL("http://cs/loc60.png");
+            loc.setLocalImageURL("file:///custom/icon.png");
+
+            assertEquals(loc.getLocalImageURL(), "file:///custom/icon.png",
+                "precondition: the local override is stored");
+
+            loc.setLocalImageURL(null);
+
+            assertNull(loc.getLocalImageURL(), "the local override is cleared");
+
+            assertEquals(loc.getImageURL(), "http://cs/loc60.png",
+                "the Central Station image must survive clearing the local override - offline "
+                + "there is no syncWithCS2 to bring it back");
+        }
+        finally
+        {
+            model.deleteLoc("UC C12 icon");
+        }
+    }
 }

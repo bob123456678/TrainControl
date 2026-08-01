@@ -1677,6 +1677,20 @@ public class Layout
         {
             throw new Exception(I18n.f("autolayout.errorPointDoesNotExist2", name));
         }
+
+        // Both preconditions used to live only in the one dialog that calls this.  A second caller -
+        // a keyboard shortcut, a bulk rename - would have inherited graph corruption: points.put
+        // overwrites a point that already carries the new name and the edge-key rebuild below then
+        // drops its edges, and a rename mid-run mutates Point.hashCode under live visited sets.
+        if (!newName.equals(name) && this.getPoint(newName) != null)
+        {
+            throw new Exception(I18n.f("autolayout.errorPointAlreadyExists", newName));
+        }
+
+        if (this.isAutoRunning())
+        {
+            throw new Exception(I18n.f("autolayout.errorCannotEditWhileRunning"));
+        }
         
         // Update the point name
         p.rename(newName);
@@ -3838,7 +3852,11 @@ public class Layout
 
     public void setActivateRouteIDs(List<Integer> activateRouteIDs)
     {
-        this.activateRouteIDs = activateRouteIDs;
+        // Copied, not adopted: deleteRoute mutates this list, and one caller passes
+        // Collections.singletonList - immutable, so the delete died with
+        // UnsupportedOperationException partway, leaving the route in the database.
+        this.activateRouteIDs =
+            activateRouteIDs == null ? new LinkedList<>() : new LinkedList<>(activateRouteIDs);
     }
     
     /**

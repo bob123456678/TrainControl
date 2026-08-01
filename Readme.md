@@ -413,9 +413,15 @@ Tab icons provided by Freepik.
         - Clicking a 3-way switch on a track diagram no longer briefly freezes TrainControl, and neither does clicking any switch or signal while the track power is off
     - Accessory Bug Fixes
         - A switch and a signal at the same address are the same device, so a route or autonomy command may now refer to either.  Previously "Signal 5" would not be recognized if the address was set up as "Switch 5", and the accessory was silently never switched
+        - Fixed bug where changing a locomotive to a decoder type with fewer functions could leave its arrival or departure function pointing past the end, which then made the locomotive impossible to edit or place on the autonomy graph
+        - Fixed bug where clearing a locomotive’s custom icon while not connected to the Central Station left it with no image for the rest of the session
+        - A stray space in a hand-typed sensor line no longer silently flips the state it waits for, and a mistyped direction is now reported as an error instead of quietly running the locomotive backward
+        - Fixed bug where opening and saving a route with certain combinations of AND and OR conditions could silently change when the route fires.  Only affected condition logic written directly into the configuration file
     - Central Station Sync Bug Fixes
         - Fixed bug where entering the Central Station's network name instead of its IP address would report it as unreachable, even though it had just responded
         - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
+    - General Bug Fixes
+        - Update notices now work even if a release name contains extra text after the version number
 
 * v2.7.4 [7/25/2026]   
     - Autonomy

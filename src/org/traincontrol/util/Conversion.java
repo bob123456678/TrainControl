@@ -104,12 +104,34 @@ public class Conversion
     }
     
     /**
+     * The numeric prefix of one dotted version component, so a suffixed release name cannot break
+     * the comparison.
+     *
+     * The update check feeds this everything after the first "v" of the GitHub release NAME, and the
+     * current beta is literally named "... v2.8.0 (Beta)" - so the last component arrives as
+     * "0 (Beta)".  Integer.parseInt threw, the update thread's catch-all blamed the network, and one
+     * stable release published with a suffix would have stopped every installed copy from ever
+     * announcing updates again.  A component with no leading digits counts as 0.
+     */
+    private static int parseVersionComponent(String component)
+    {
+        int end = 0;
+
+        while (end < component.length() && Character.isDigit(component.charAt(end)))
+        {
+            end++;
+        }
+
+    /**
      * Compared version numbers, i.e. 1.2.3
      * Returns 1 if version1 is higher than version2
      * @param version1
      * @param version2
      * @return 
      */
+        return end == 0 ? 0 : Integer.parseInt(component.substring(0, end));
+    }
+
     public static int compareVersions(String version1, String version2)
     {
         String[] v1 = version1.split("\\.");
@@ -119,8 +141,8 @@ public class Conversion
         
         for (int i = 0; i < length; i++)
         {
-            int v1Component = i < v1.length ? Integer.parseInt(v1[i]) : 0;
-            int v2Component = i < v2.length ? Integer.parseInt(v2[i]) : 0;
+            int v1Component = i < v1.length ? parseVersionComponent(v1[i]) : 0;
+            int v2Component = i < v2.length ? parseVersionComponent(v2[i]) : 0;
 
             if (v1Component < v2Component)
             {

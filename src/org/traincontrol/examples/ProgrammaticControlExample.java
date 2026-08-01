@@ -9,7 +9,6 @@ import org.traincontrol.marklin.MarklinAccessory;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.MarklinRoute;
 
 /**
  * This class contains example code showing how to control your layout programmatically
@@ -151,7 +150,7 @@ public class ProgrammaticControlExample
 
                 // These two are equivalent
                 mySwitch.straight();
-                mySignal.setSwitched(false);
+                mySwitch.setSwitched(false);
 
                 // These two are equivalent
                 mySwitch.turn();
@@ -288,9 +287,9 @@ public class ProgrammaticControlExample
 	    } 
             catch (Exception e)
 	    {
-                System.out.println("Error ocurred: " + e.getMessage());
+                System.out.println("Error occurred: " + e.getMessage());
 	    	e.printStackTrace();
-                System.exit(0);
+                System.exit(1);
 	    } 
 	}
 }
