@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -803,6 +804,54 @@ public class Layout
     public int getMaxLocInactiveSeconds()
     {
         return maxLocInactiveSeconds;
+    }
+
+    /**
+     * Per-sensor announcement epochs for simulation mode, so a stale clear-behind cannot destroy a
+     * later announcement on the SAME sensor.
+     *
+     * The simulation announces each path point by setting its s88, then spawns a detached thread to
+     * clear it behind the train after a delay.  That clear used to fire unconditionally.  When two
+     * consecutive path points share one sensor - BottomMainPost and TunnelLongParkReverse both
+     * report 2013 on the author's layout - the stale clear could land after the next point's
+     * announcement: inside the 201ms occupancy-hold window, or between the announcement and the
+     * wait.  Either way the waiter ended up blocked on a sensor no producer would ever set again -
+     * a permanent, silent stall of the run (observed live: cleared one millisecond after the
+     * milestone).  Real hardware is immune, because a physical sensor spanning both points simply
+     * stays held; only the per-point pulse model manufactures the false gap.
+     *
+     * The guard: each announcement bumps the sensor's epoch under the epoch's own lock; each clear
+     * re-checks under the same lock and stands down if any later announcement re-armed the sensor.
+     * The last occupant still clears, so the pulse-and-clear behaviour every other test relies on
+     * is unchanged for unshared sensors.
+     */
+    private final Map<String, AtomicLong> simFeedbackEpochs = new ConcurrentHashMap<>();
+
+    /** Announces a point's sensor in simulation and returns the epoch the clear must present. */
+    private long simAnnounce(String s88)
+    {
+        AtomicLong epoch = this.simFeedbackEpochs.computeIfAbsent(s88, k -> new AtomicLong());
+
+        synchronized (epoch)
+        {
+            long stamp = epoch.incrementAndGet();
+            this.control.setFeedbackState(s88, true);
+            return stamp;
+        }
+    }
+
+    /** Clears a sensor behind the train, unless a later announcement has re-armed it. */
+    private void simClearBehind(String s88, long stamp)
+    {
+        AtomicLong epoch = this.simFeedbackEpochs.get(s88);
+
+        synchronized (epoch)
+        {
+            if (epoch.get() == stamp)
+            {
+                this.control.setFeedbackState(s88, false);
+            }
+        }
     }
 
     /**
@@ -3100,10 +3149,12 @@ public class Layout
                 // Intermediate points - wait for feedback to be triggered and to clear
                 if (current.hasS88() && isCurrentLayout())
                 {
+                    long simEpoch = 0;
+
                     if (this.simulate)
                     {
                         loc.delay(this.getMinDelay(), this.getMaxDelay());
-                        this.control.setFeedbackState(current.getS88(), true);
+                        simEpoch = simAnnounce(current.getS88());
                     }
                     
                     this.updatePendingS88(loc, current.getS88());
@@ -3111,10 +3162,12 @@ public class Layout
                     
                     if (this.simulate)
                     {            
+                        final long announcedEpoch = simEpoch;
+
                         new Thread(() -> 
                         {
                             loc.delay(this.getMinDelay(), this.getMaxDelay());
-                            this.control.setFeedbackState(current.getS88(), false);
+                            simClearBehind(current.getS88(), announcedEpoch);
                         }).start();
                     }
                 }    
@@ -3207,10 +3260,12 @@ public class Layout
                         loc.getCallback(CB_PRE_ARRIVAL).accept(loc);
                     }
                     
+                    long simEpoch = 0;
+
                     if (this.simulate)
                     {
                         loc.delay(this.getMinDelay(), this.getMaxDelay());
-                        this.control.setFeedbackState(current.getS88(), true);
+                        simEpoch = simAnnounce(current.getS88());
                     }
                     
                     this.updatePendingS88(loc, current.getS88());
@@ -3219,10 +3274,12 @@ public class Layout
                        
                     if (this.simulate)
                     {            
+                        final long announcedEpoch = simEpoch;
+
                         new Thread( () -> 
                         {
                             loc.delay(this.getMinDelay(), this.getMaxDelay());
-                            this.control.setFeedbackState(current.getS88(), false);
+                            simClearBehind(current.getS88(), announcedEpoch);
                         }).start();
                     }
 

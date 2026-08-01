@@ -1,3 +1,12 @@
+import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.automation.Edge;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.List;
+import java.util.LinkedList;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -188,5 +197,95 @@ public class testAutonomySimulationSanity
         // And of course - no warning across the whole run.
         assertTrue(layout.getPathValidationFailureCount() == 0,
             "No path validation warning must occur during a simulated run");
+    }
+
+    /**
+     * Two consecutive path points sharing one s88 must not wedge the run.
+     *
+     * The simulation announces each point by setting its sensor, waits for the occupancy to hold
+     * 201ms, then spawns a DETACHED thread to clear it "behind the train" after a random delay.
+     * That clear has no relevance check.  When the next point shares the same sensor - routine on
+     * the real layout, where BottomMainPost and TunnelLongParkReverse both report 2013 - the stale
+     * clear can land after the next point's announcement: either inside the 201ms hold window
+     * (the waiter starts over) or between the announcement and the wait (the waiter never sees
+     * occupancy).  Both leave the waiter blocked on a sensor no producer will ever set again -
+     * observed live at 04:07:37.970, one millisecond after the milestone.
+     *
+     * Real hardware is immune: a physical sensor spanning both points simply stays held.  Only the
+     * per-point pulse model manufactures the false gap.
+     *
+     * This is a RACE, so the red is probabilistic per iteration; six iterations make a silent
+     * pre-fix pass astronomically unlikely, and the first wedge fails fast via the watchdog.  The
+     * executor thread is a daemon, so a wedged run cannot hold the JVM open past the class.
+     */
+    @Test
+    public void testSharedSensorPulsesDoNotWedgeThePath() throws Exception
+    {
+        MarklinLocomotive loc = model.newMM2Locomotive("Sim race loc", 64);
+
+        if (!model.isFeedbackSet("47401")) model.newFeedback(47401, null);
+        if (!model.isFeedbackSet("47402")) model.newFeedback(47402, null);
+        if (!model.isFeedbackSet("47403")) model.newFeedback(47403, null);
+
+        ExecutorService watchdog = Executors.newSingleThreadExecutor(r ->
+        {
+            Thread t = new Thread(r, "sim-race-watchdog");
+            t.setDaemon(true);
+            return t;
+        });
+
+        try
+        {
+            for (int i = 1; i <= 6; i++)
+            {
+                model.setFeedbackState("47401", false);
+                model.setFeedbackState("47402", false);
+                model.setFeedbackState("47403", false);
+
+                Layout layout = new Layout(model);
+
+                layout.setMinDelay(0);
+                layout.setMaxDelay(0);
+                layout.setSimulate(true);
+
+                layout.createPoint("SR A", true, "47401");
+                layout.createPoint("SR M1", false, "47402");
+                layout.createPoint("SR M2", false, "47402");
+                layout.createPoint("SR B", true, "47403");
+
+                List<Edge> path = new LinkedList<>();
+
+                path.add(layout.createEdge("SR A", "SR M1"));
+                path.add(layout.createEdge("SR M1", "SR M2"));
+                path.add(layout.createEdge("SR M2", "SR B"));
+
+                assertTrue(layout.moveLocomotive("Sim race loc", "SR A", false),
+                    "iteration " + i + ": precondition - the locomotive must be placed");
+
+                Future<Boolean> run = watchdog.submit(() -> layout.executePath(path, loc, 30, null));
+
+                try
+                {
+                    assertTrue(run.get(15, TimeUnit.SECONDS),
+                        "iteration " + i + ": the path reported failure rather than completing");
+                }
+                catch (TimeoutException e)
+                {
+                    layout.stopLocomotives();
+
+                    fail("iteration " + i + ": WEDGED - the stale clear-behind of SR M1 destroyed "
+                        + "the shared sensor 47402 after SR M2 was announced, and the waiter is now "
+                        + "blocked on a sensor no producer will ever set again");
+                }
+
+                // Let the final detached clear threads settle before the next iteration resets state
+                Thread.sleep(300);
+            }
+        }
+        finally
+        {
+            watchdog.shutdownNow();
+            model.deleteLoc("Sim race loc");
+        }
     }
 }
