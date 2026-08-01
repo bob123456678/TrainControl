@@ -2150,4 +2150,38 @@ public class testHomeStaging
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND,
             "with the pad exempt, the honest answer is that no plan was found: " + plan);
     }
+
+    /**
+     * "Return home" may still stage a locomotive onto a reversing station.
+     *
+     * This is the half of the rule that gives it its purpose.  Parking tracks are flagged reversing so
+     * full autonomy never sends a train to one at random; return home is what fills them deliberately.
+     * The exclusion therefore lives in pickPath alone - HomeStaging reaches its destinations through
+     * canRest and firstClearRoute, neither of which consults the flag.
+     *
+     * If the exclusion is ever moved somewhere shared - isPathClear, canRest, bfs - the two behaviours
+     * collapse into one and this fails, which is the whole reason it is written down.
+     */
+    @Test
+    public void testReturnHomeMayStillStageOntoAReversingStation() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        layout.getPoint("HS C").setReversing(true);
+
+        assertTrue(layout.getPoint("HS C").isReversing(),
+            "precondition: the destination under test must actually be a reversing station");
+
+        assign(layout, LOC_A, "HS C");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "a reversing station is a legitimate home for staging: " + plan);
+
+        assertTrue(plan.getMoves().stream()
+                .anyMatch(m -> m.getLocomotive().equals(loc(LOC_A))
+                    && "HS C".equals(m.getEnd().getName())),
+            "the plan must actually send the locomotive there: " + plan.getMoves());
+    }
 }

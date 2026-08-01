@@ -318,4 +318,90 @@ public class testLayoutPickPath
 
         assertNull(layout.pickPath(loc), "there is no edge leading to ISLAND");
     }
+
+    /**
+     * A reversing station is never chosen as a destination by full autonomy, whatever its priority.
+     *
+     * Reversing stations are how a layout marks track a train should not be sent to at random - on the
+     * author's layout every one of the sixteen is a parking track.  Marking them inactive would keep
+     * autonomy out, but it also puts them out of reach of "return home", which is precisely what is
+     * meant to fill them at the end of a session.  Excluding them here instead separates the two: the
+     * chooser skips them, and every other route to them stays open.
+     *
+     * The exclusion belongs in pickPath and nowhere else.  isPathClear cannot carry it, because
+     * executeTimetable sets running, so isAutoRunning() is true during staging too - a rule fenced
+     * that way would refuse the return-home run it exists to permit.
+     */
+    @Test(timeOut = 60000)
+    public void testReversingStationIsNeverChosenAsAnAutonomyDestination() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = twoDestinations(loc, 1, 5);
+
+        layout.getPoint("HIGH").setReversing(true);
+
+        for (int attempt = 0; attempt < 20; attempt++)
+        {
+            assertEquals(destinationOf(layout.pickPath(loc)), "LOW",
+                "attempt " + attempt + ": HIGH reverses, so autonomy must not park a train there "
+                    + "even though it outranks LOW");
+        }
+
+        // With both reversing there is nowhere left to go, and saying so is the right answer - falling
+        // back to one of them would defeat the rule exactly when it matters most.
+        layout.getPoint("LOW").setReversing(true);
+
+        assertNull(layout.pickPath(loc),
+            "every destination reverses, so full autonomy has nowhere to send this locomotive");
+    }
+
+    /**
+     * The rule restricts arrivals only: a train standing on an active reversing station still departs.
+     *
+     * Autonomy must never SEND a train to a parking track, but a train already on one is free to leave
+     * under its own power, exactly as it would from any other active station.  Holding a train in place
+     * is what deactivating the point is for - the two settings do different jobs, and this asserts they
+     * stay separate.
+     *
+     * Automation.md used to say paths starting from a reversing station were never chosen either.  That
+     * sentence was wrong rather than unimplemented, and was corrected alongside this test.
+     */
+    @Test(timeOut = 60000)
+    public void testALocomotiveStandingOnAReversingStationStillDeparts() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = twoDestinations(loc, 1, 5);
+
+        layout.getPoint("START").setReversing(true);
+
+        assertEquals(destinationOf(layout.pickPath(loc)), "HIGH",
+            "a locomotive standing on an active reversing station is still dispatched from it");
+    }
+
+    /**
+     * The manual route menu is a different tier from full autonomy, and keeps offering the station.
+     *
+     * getPossiblePaths is what the right-click menu and the locomotive status panel enumerate, and the
+     * user may still send a train to a reversing station by hand.  This guard is what stops the
+     * exclusion from being "simplified" down into isPathClear or bfs later, which would take the manual
+     * route and the staging run with it.
+     */
+    @Test(timeOut = 60000)
+    public void testAReversingStationRemainsManuallySelectable() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = twoDestinations(loc, 1, 5);
+
+        layout.getPoint("HIGH").setReversing(true);
+
+        Set<String> offered = new TreeSet<>();
+
+        for (List<Edge> path : layout.getPossiblePaths(loc, true))
+        {
+            offered.add(destinationOf(path));
+        }
+
+        assertTrue(offered.contains("HIGH"),
+            "a reversing station must stay reachable by hand - offered: " + offered);
+    }
 }

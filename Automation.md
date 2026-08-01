@@ -398,7 +398,11 @@ Stations can optionally be designated as "reversing" by setting `"reversing": tr
 
 Reversing stations are intended for parking/shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.  The train will automatically be reversed at each reversing station it reaches.
 
-If you want to designate a parking space without reversing functionality, simply change a station to a non-station. Paths that start from a non-station, or a reversing station, will never automatically be chosen.  When you want the locomotive to run again, manually trigger a path to another station, or change the point back to a station.
+"Return home" may also send a locomotive to a reversing station, which is what makes them usable as end-of-session parking: autonomous operation will never choose one, but return home will, and so will a route you pick yourself.  This means a parking track can be left active - deactivating it would put it out of reach of return home as well.
+
+If you want to designate a parking space without reversing functionality, simply change a station to a non-station. Paths that start from a non-station will never automatically be chosen.  When you want the locomotive to run again, manually trigger a path to another station, or change the point back to a station.
+
+A reversing station restricts arrivals only.  A train standing on an active reversing station will still depart under autonomous operation, just like one standing anywhere else; what autonomy will never do is send a train there.  If you want to hold a train in place instead, deactivate the point - that keeps it from departing, at the cost of putting the station out of reach of return home as well.
 
 # Advanced layouts and settings
 

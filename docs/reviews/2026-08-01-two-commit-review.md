@@ -297,3 +297,22 @@ the paragraph that was itself correcting a misattribution.
 
 Fourth entry in the error tally, and this one is the validation round's: checking a claim about
 seven other files is exactly the kind of work that reads as already done once it has been asserted.
+
+---
+
+## Status update - `SF-C1` is closed, and this document's "outstanding" lines are superseded
+
+Three places above list `SF-C1` as open with the remedy "restore `active: false` from the 07-27
+backup". That advice has since been withdrawn and inverted; those lines are stale and are left in
+place only because they record what was true when written.
+
+Full autonomy no longer selects reversing stations as destinations
+([Layout.java](../../src/org/traincontrol/automation/Layout.java), `pickPath`), which is the rule
+`Automation.md` had specified all along and the code had never implemented. The four parking points
+should now be left **active**: two of them are reversing stations and are structurally out of
+autonomy's reach, and the other two were never destinations at all. Deactivating them would only
+cost them their reachability from "return home", which is what fills them. `SF`'s own disposition
+carries the full reasoning and the point-by-point table.
+
+Outstanding across the folder after this update: the `UC` record note on the stranded-javadoc
+detector. Nothing else.

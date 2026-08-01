@@ -374,6 +374,7 @@ Tab icons provided by Freepik.
         - Stations that have a home locomotive are outlined in the graph: solid when that locomotive is standing there, dotted when it is elsewhere.  Can be switched off under Display Options
         - Double-clicking a locomotive in a station's excluded-locomotives window now moves it to the other side
         - New Display Options setting hides the connections leading into reversing points, which tidies up a busy graph.  Unlike hiding the reversing points themselves, the points stay on the graph and can still be clicked
+        - Reversing stations are no longer picked as destinations when autonomy is running on its own.  They are meant for parking and shunting, but were being used as ordinary stops, so trains were parked at random during normal operation.  You can still send a train to one yourself from the route menu, and “return home” can still park trains there
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off

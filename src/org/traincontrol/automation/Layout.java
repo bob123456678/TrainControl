@@ -2378,8 +2378,16 @@ public class Layout
             {
                 for (Point end : ends)
                 {                        
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive() &&
-                            !end.getExcludedLocs().contains(loc))
+                    // Reversing stations are parking, not traffic: Automation.md has always said they
+                    // are chosen only in semi-autonomous operation, where the user picks the route.
+                    // The exclusion belongs here and not in isPathClear, because executeTimetable sets
+                    // running - so an isAutoRunning() fence would also refuse the "return home" staging
+                    // run, which is precisely what is meant to fill these tracks at the end of a
+                    // session.  Filtering at selection, never refusing at execution, is the same tier
+                    // split the excluded-locomotive rule uses.
+                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive()
+                            && !end.isReversing()
+                            && !end.getExcludedLocs().contains(loc))
                     {
                         try 
                         {
