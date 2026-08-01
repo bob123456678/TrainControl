@@ -11,6 +11,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import static org.traincontrol.gui.TrainControlUI.HIDE_INACTIVE_PREF;
+import static org.traincontrol.gui.TrainControlUI.HIDE_REVERSING_EDGES_PREF;
 import static org.traincontrol.gui.TrainControlUI.HIDE_REVERSING_PREF;
 import static org.traincontrol.gui.TrainControlUI.SHOW_HOME_LOCOMOTIVES;
 import static org.traincontrol.gui.TrainControlUI.SHOW_STATION_LENGTH;
@@ -212,6 +213,29 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
             });
            
             submenu.add(hideRev);
+
+            JCheckBoxMenuItem hideRevEdges = new JCheckBoxMenuItem(
+                I18n.t("ui.main.hideReversingEdges"),
+                TrainControlUI.getPrefs().getBoolean(HIDE_REVERSING_EDGES_PREF, false)
+            );
+            hideRevEdges.setToolTipText(I18n.t("ui.main.tooltip.hideReversingEdges"));
+            hideRevEdges.addItemListener(event ->
+            {
+                try
+                {
+                    TrainControlUI.getPrefs().putBoolean(HIDE_REVERSING_EDGES_PREF,
+                        !TrainControlUI.getPrefs().getBoolean(HIDE_REVERSING_EDGES_PREF, false)
+                    );
+
+                    ui.updateVisiblePoints();
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(parent, ex.getMessage());
+                }
+            });
+
+            submenu.add(hideRevEdges);
             
             JCheckBoxMenuItem hideInactive = new JCheckBoxMenuItem(
                 I18n.t("ui.main.hideInactivePoints"), 

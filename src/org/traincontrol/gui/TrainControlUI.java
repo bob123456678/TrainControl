@@ -186,6 +186,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
+    public static final String HIDE_REVERSING_EDGES_PREF = "HideReversingEdges";
     public static final String SHOW_STATION_LENGTH = "ShowStationLength";
     public static final String SHOW_HOME_LOCOMOTIVES = "ShowHomeLocomotives";
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
@@ -14956,8 +14957,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.updateEdgeLength(e, g);
             
-            if (g.getNode(e.getEnd().getUniqueId()).getAttribute("ui.hide") != null || 
-                    g.getNode(e.getStart().getUniqueId()).getAttribute("ui.hide") != null)
+            // Incoming edges to a reversing point, hidden on their own account rather than because
+            // an endpoint is.  A reversing point is typically fed from several directions, so on a
+            // large layout these are most of the clutter - and unlike hiding the points themselves,
+            // this leaves them on the graph to be clicked, assigned homes and read.
+            boolean intoReversing = prefs.getBoolean(HIDE_REVERSING_EDGES_PREF, false)
+                && e.getEnd().isReversing();
+
+            if (intoReversing
+                    || g.getNode(e.getEnd().getUniqueId()).getAttribute("ui.hide") != null
+                    || g.getNode(e.getStart().getUniqueId()).getAttribute("ui.hide") != null)
             {
                 g.getEdge(e.getUniqueId()).setAttribute("ui.hide");
             }
