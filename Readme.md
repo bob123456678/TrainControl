@@ -373,6 +373,7 @@ Tab icons provided by Freepik.
         - A locomotive standing at the station you assigned it to now shows its location highlighted in teal; * marks one standing at its timetable starting point
         - Stations that have a home locomotive are outlined in the graph: solid when that locomotive is standing there, dotted when it is elsewhere.  Can be switched off under Display Options
         - Double-clicking a locomotive in a station's excluded-locomotives window now moves it to the other side
+        - New Display Options setting hides the connections leading into reversing points, which tidies up a busy graph.  Unlike hiding the reversing points themselves, the points stay on the graph and can still be clicked
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off
