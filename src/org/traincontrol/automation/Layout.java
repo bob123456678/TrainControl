@@ -1400,6 +1400,27 @@ public class Layout
             }
         }
         
+        // An INTERMEDIATE point that has been switched off may never be driven through, whatever asked
+        // for the route.  This one is deliberately NOT fenced behind isAutoRunning, unlike the endpoint
+        // rules above and below it: a manually chosen route may still START from a deactivated point,
+        // which is how a train held in place is driven out by hand, and may still FINISH on one, which
+        // is how a route to a parked-up berth is picked.  Passage is the absolute case, because a train
+        // crossing a point the operator switched off is the one place where nobody chose that point at
+        // all - the route was only trying to get past it.
+        //
+        // Intermediates are exactly the END of every edge but the last: any edge start other than the
+        // first is the previous edge end, so this visits each intermediate once and neither endpoint.
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            if (!path.get(i).getEnd().isActive())
+            {
+                logPathError(loc, path, logFailures,
+                    I18n.f("autolayout.errorInactiveIntermediatePoint", path.get(i).getEnd().getName())
+                );
+                return false;
+            }
+        }
+
         // Check train length
         if (!path.get(path.size() - 1).getEnd().validateTrainLength(loc))
         {

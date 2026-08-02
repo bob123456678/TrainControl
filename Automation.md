@@ -368,7 +368,7 @@ Point colors:
 * Blue - no active route.  Label indicates if locomotive is stationed.
 * Red - active route - locomotive soon to pass through
 * Green - active route - locomotive has passed through
-* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)
+* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)  A route you pick yourself is treated differently at the two ends: it may start from a disabled point, and may finish on one, but may never pass through one.  So disabling a station keeps autonomy away from it without putting it beyond your own reach, while disabling a point you only ever drive across takes it out of service completely.
 
 Point shapes:
 * Circle - regular station.  Any train can stop here.

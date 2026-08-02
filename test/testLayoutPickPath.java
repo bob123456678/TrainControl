@@ -604,20 +604,20 @@ public class testLayoutPickPath
     }
 
     /**
-     * An inactive point may not be driven through - but only once autonomy is running.
+     * An inactive point may never be driven through, by autonomy or by a route picked by hand.
      *
-     * Both halves matter and only the first is obvious.  The rule is fenced behind isAutoRunning(),
-     * and executeTimetable sets running, so this same gate governs the "return home" staging run as
-     * well as full autonomy - which is exactly why the reversing-station rule had to be placed in
-     * pickPath instead of here.  A test that only checked the refusal would keep passing if the fence
-     * were removed, and removing the fence would silently change what staging is allowed to do.
+     * This is the absolute half of the inactive rule, and the only absolute one.  Switching a point off
+     * says trains should not run over it; a manual route that crossed it anyway would be the one case
+     * where nobody chose that point at all - the route was merely trying to get past it.  The two
+     * ENDPOINT rules are deliberately softer and are pinned separately below: a manual route may still
+     * start from a deactivated point and still finish on one.
      *
      * Note this exercises the gate itself.  testInactiveDestinationIsSkippedDespitePriority looks like
      * coverage of the same rule but is not: it goes through pickPath, whose own end.isActive() filter
      * answers first, with running false so this gate never runs.
      */
     @Test(timeOut = 60000)
-    public void testAnInactiveIntermediateIsRefusedOnlyWhileAutonomyRuns() throws Exception
+    public void testAnInactiveIntermediateIsRefusedEvenByAManuallyPickedRoute() throws Exception
     {
         Locomotive loc = dummyLoc();
         Layout layout = threeInARow(loc);
@@ -627,19 +627,19 @@ public class testLayoutPickPath
 
         layout.getPoint("PC_B").setActive(false);
 
-        assertTrue(layout.isPathClear(wholeRun(layout), loc),
-            "the rule is fenced: with autonomy stopped, an inactive intermediate is still passable - "
-                + "this is what lets a manually chosen route cross one");
+        assertFalse(layout.isAutoRunning(), "precondition: autonomy is stopped, so no fence applies");
+
+        assertFalse(layout.isPathClear(wholeRun(layout), loc),
+            "a switched-off point may not be driven through even by a route the user picks - passage "
+                + "is the one part of the inactive rule that is not fenced behind autonomy");
 
         layout.setLocomotivesToRun(new LinkedList<>());
         layout.runLocomotives();
 
         try
         {
-            assertTrue(layout.isAutoRunning(), "precondition: the fence must be up");
-
             assertFalse(layout.isPathClear(wholeRun(layout), loc),
-                "an inactive point may not be driven through once autonomy is running");
+                "and it is refused under autonomy too, where the fenced rule catches it as well");
         }
         finally
         {
@@ -648,21 +648,31 @@ public class testLayoutPickPath
     }
 
     /**
-     * An inactive point at the END of a path is refused by the same gate, not by the one named for it.
+     * An inactive DESTINATION is refused to autonomy but allowed to a route picked by hand.
      *
-     * isPathClear carries a second, later check reporting errorInactiveStationInAutoRun, which names
-     * the offending station.  It cannot fire: the loop above it tests every edge END, and the last of
-     * those IS the destination, so the generic errorInactivePointInAutoRun always wins.  Asserted here
-     * as behaviour - a train is refused either way - with the shadowing recorded so nobody reads the
-     * friendlier message and assumes an operator has ever seen it.
+     * This asymmetry against the intermediate rule above is the point of the pair, not an oversight.
+     * Sending a train to a switched-off station is a deliberate act - it is how a train is put away on
+     * a berth that autonomy is meant to leave alone - whereas crossing one is never chosen for its own
+     * sake.  Deactivating a station therefore keeps autonomy out without putting it out of the
+     * operator's reach.
+     *
+     * A note on which rule fires: isPathClear carries a later check reporting
+     * errorInactiveStationInAutoRun, which names the offending station, but it cannot be reached.  The
+     * fenced loop above it tests every edge END, and the last of those IS the destination, so the
+     * generic errorInactivePointInAutoRun always wins.  Behaviour is asserted here - refused either
+     * way - with the shadowing recorded so nobody assumes an operator has seen the friendlier message.
      */
     @Test(timeOut = 60000)
-    public void testAnInactiveDestinationIsRefusedWhileAutonomyRuns() throws Exception
+    public void testAnInactiveDestinationIsRefusedOnlyWhileAutonomyRuns() throws Exception
     {
         Locomotive loc = dummyLoc();
         Layout layout = threeInARow(loc);
 
         layout.getPoint("PC_C").setActive(false);
+
+        assertTrue(layout.isPathClear(wholeRun(layout), loc),
+            "a route to a switched-off station may still be picked by hand - this is what makes a "
+                + "deactivated berth reachable at all");
 
         layout.setLocomotivesToRun(new LinkedList<>());
         layout.runLocomotives();
@@ -670,7 +680,7 @@ public class testLayoutPickPath
         try
         {
             assertFalse(layout.isPathClear(wholeRun(layout), loc),
-                "autonomy may not be sent to an inactive station");
+                "autonomy may not send a train to an inactive station");
         }
         finally
         {
