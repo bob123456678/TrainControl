@@ -2246,6 +2246,36 @@ public class Layout
     }
     
     /**
+     * Whether full autonomy would actually have somewhere to send this locomotive.
+     *
+     * getPossiblePaths answers the MANUAL question - what the right-click route menu offers - and by
+     * design that includes reversing stations and destinations that exclude the locomotive, neither of
+     * which pickPath will ever choose.  Yielding on the manual answer makes a train parked on purpose
+     * read as one merely waiting its turn: its idle time only grows, so it wins every "longest waiting"
+     * comparison from then on, and each running locomotive stops for YIELD_SECONDS to let it go first,
+     * over and over, for a dispatch that will never happen.
+     *
+     * pickPath itself cannot serve as the probe - it sleeps for minDelay when it finds nothing - so the
+     * enumeration is filtered instead.  Only the two clauses that diverge are re-tested here; active,
+     * unoccupied, is-a-destination and reachable-by-a-clear-path have already been applied by
+     * getPossiblePaths and isPathClear.
+     */
+    private boolean hasAutonomousDestination(Locomotive loc)
+    {
+        for (List<Edge> path : this.getPossiblePaths(loc, true))
+        {
+            Point end = path.get(path.size() - 1).getEnd();
+
+            if (!end.isReversing() && !end.getExcludedLocs().contains(loc))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Checks if any locomotive has been inactive longer than the threshold time, and returns the locomotive with the oldest timestamp
      * @param threshold seconds
      * @param currentLoc the current locomotive
@@ -2267,7 +2297,7 @@ public class Layout
         }
         
         if (minLoc != null && !currentLoc.equals(minLoc) && (currentLoc.getLastPathTime() - minLoc.getLastPathTime()) > threshold * 1000
-                && !this.getPossiblePaths(minLoc, true).isEmpty())
+                && this.hasAutonomousDestination(minLoc))
         {
             int waited = (int) ((currentLoc.getLastPathTime() - minLoc.getLastPathTime()) / 1000);
             

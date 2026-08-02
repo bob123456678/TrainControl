@@ -356,6 +356,57 @@ public class testLayoutPickPath
     }
 
     /**
+     * The fairness yield must not wait for a locomotive full autonomy will never dispatch.
+     *
+     * checkForSlowerLoc lets a finishing locomotive pause for YIELD_SECONDS so a longer-idle one can
+     * claim a path first.  It decided that with getPossiblePaths - the MANUAL tier, which offers
+     * reversing stations and destinations that exclude the locomotive.  A train parked on purpose
+     * answers "yes, I could go somewhere" to that question and "no, autonomy will never send me" to
+     * the one that matters, and because its idle time only grows it wins every later comparison too:
+     * every running train stops 30 seconds for it, indefinitely.
+     *
+     * The control assertion comes first on purpose.  The obvious wrong fix - filtering so hard that
+     * nothing is ever worth yielding to - would silently disable the fairness feature altogether, and
+     * a test that only checked the null case would call that a pass.
+     */
+    @Test(timeOut = 60000)
+    public void testYieldingIgnoresALocomotiveAutonomyWillNeverDispatch() throws Exception
+    {
+        Locomotive running = dummyLoc();
+        Locomotive parked = dummyLoc();
+
+        Layout layout = new Layout(model);
+
+        layout.createPoint("START", true, destinationS88);
+        layout.createPoint("MAIN", true, destinationS88);
+        layout.createEdge("START", "MAIN");
+
+        layout.createPoint("SIDING", true, destinationS88);
+        layout.createPoint("PARK", true, destinationS88);
+        layout.createEdge("SIDING", "PARK");
+
+        layout.getPoint("START").setLocomotive(running);
+        layout.getPoint("SIDING").setLocomotive(parked);
+
+        layout.setLocomotivesToRun(Arrays.asList(running, parked));
+
+        // The parked one has to be the longest idle, or it is not the locomotive under consideration
+        // at all and every assertion below would pass without testing anything.
+        Thread.sleep(30);
+        running.incrementNumPaths();
+
+        assertEquals(layout.checkForSlowerLoc(0, running), parked,
+            "control: an idle locomotive with a real destination is still worth yielding to");
+
+        // Now its only destination is one autonomy refuses to choose.
+        layout.getPoint("PARK").setReversing(true);
+
+        assertNull(layout.checkForSlowerLoc(0, running),
+            "a locomotive whose only destination reverses is parked, not waiting - yielding to it "
+                + "stops every running train for YIELD_SECONDS on a dispatch that never comes");
+    }
+
+    /**
      * The rule restricts arrivals only: a train standing on an active reversing station still departs.
      *
      * Autonomy must never SEND a train to a parking track, but a train already on one is free to leave
