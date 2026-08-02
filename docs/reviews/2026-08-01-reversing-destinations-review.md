@@ -14,7 +14,7 @@ Findings use the A/B/C/D convention in [README.md](README.md). One C, three D.
 
 | ID | Finding | Status |
 |---|---|---|
-| RV-C1 | `checkForSlowerLoc` decides yields from `getPossiblePaths`, the manual tier - a pre-existing divergence this change widens by one predicate, so autonomy can now repeatedly yield to a locomotive it will never dispatch | Open |
+| RV-C1 | `checkForSlowerLoc` decides yields from `getPossiblePaths`, the manual tier - a pre-existing divergence this change widens by one predicate, so autonomy can now repeatedly yield to a locomotive it will never dispatch | Fixed (`b43fd36`) - `hasAutonomousDestination` filters the enumeration on exactly the two divergent clauses; pinned by `testYieldingIgnoresALocomotiveAutonomyWillNeverDispatch`, control assertion first.  Two corrections to the finding's own prose accepted; see the validation sections |
 | RV-D1 | The exclusion is at the right tier, and only there - selection, not execution - with all four behavioural quadrants pinned by tests | Clean |
 | RV-D2 | The old Automation.md contradicted itself about reversing stations; the commit implements one sentence and repeals the other, and the record's "specified all along" claim is supported - by the sentence the diff does not show | Verified |
 | RV-D3 | The `SF-C1` disposition inversion (leave the four parking points active) cross-checked point by point | Concurs |
@@ -165,3 +165,43 @@ gives staging sixteen berths instead of two, and autonomy still declines every o
 One conflict to expect on doing so: `TopMainR0` and `TopMainR0Park` share s88 **1010**, so
 activating the latter makes them a single detection section and therefore mutually exclusive -
 staging will not place trains on both. The other fifteen have no shared-sensor partner.
+
+---
+
+## Validation of the `RV-C1` fix (`b43fd36`) - 2026-08-01
+
+The fix is correct, and its filter is exactly the divergent set - verified rather than assumed:
+
+- **The two clauses are complete for the context the probe runs in.** `checkForSlowerLoc` is
+  reachable only from `runLocomotive`'s loop behind `isAutoRunning() && maxLocInactiveSeconds > 0`
+  (Layout.java:2346), so `isPathClear`'s inactive-point gate is armed inside every
+  `getPossiblePaths` call the probe makes - `isActive` needs no re-test, exactly as the fix's
+  comment claims. Destination-side exclusions never reach `isPathClear` at all (its exclusion
+  guard at Layout.java:1346 tests non-station edge *starts* only, deliberately, per its own
+  comment), and reversing is the new predicate - so `!end.isReversing()` and the exclusion test
+  are the whole divergence, no more and no less.
+- **The rejected alternative is rightly rejected.** `pickPath` cannot serve as a dry-run probe:
+  its no-free-paths tail calls `loc.delay(minDelay, maxDelay)`, so probing with it would sleep
+  the caller - re-verified at the source.
+- **The test's control-first design is the "prove the guard actually guards" discipline.** The
+  obvious wrong fix - filtering until nothing is ever yield-worthy - would pass a null-only test;
+  the leading control assertion (a parked locomotive with a real destination is still yielded to)
+  fails on exactly that, and the idle-ordering precondition stops the assertions passing while
+  testing nothing. The test's `Layout` constructions cannot recreate the `CP-C2` shape: this
+  class exercises selection functions only, and none of them consult `isCurrentLayout()`.
+- **The validation section's two corrections to `RV-C1` are accepted, one now verified
+  independently**: the `isActive` overstatement (confirmed from the call-site guard) and the
+  exclusion-placement detail (confirmed at Layout.java:1346). The overstatement is this
+  document's tally entry: the finding's prose claimed a three-way divergence where the armed
+  context had two, and the error survived because the finding was drafted from
+  `getPossiblePaths`'s own filter without asking which of `isPathClear`'s gates are conditional
+  on the caller.
+- **The data claims spot-check clean against the live `autonomy.json`**: `TopMainR0` and
+  `TopMainR0Park` do share s88 1010 and are the only shared-sensor pair among the parking
+  berths (the other parking-adjacent shared sensors - 14, 2012, 2013 - pair a berth's
+  *reversing point* with through-track, not the berth itself); sixteen points are inactive and
+  every one of them is a reversing point, consistent with the parking-area note above.
+
+With `RV-C1` fixed, this document is closed. Open across the folder: the `UC` record note on the
+stranded-javadoc detector, and the parking-area activation above, which is an operational choice
+for the author rather than a finding.

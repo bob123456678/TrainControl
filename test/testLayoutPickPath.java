@@ -356,6 +356,79 @@ public class testLayoutPickPath
     }
 
     /**
+     * A reversing STATION is off the through-network too, not merely off the destination list.
+     *
+     * Barring berths as destinations left them usable as waypoints, so autonomy still routed through
+     * the parking area - and because executePathInternal reverses the train at every reversing point
+     * it reaches, a train bound for somewhere else would stop and change direction inside a berth on
+     * the way.  Reported from the layout as "BottomMainA to TopMainR2 via TunnelLongPark".
+     *
+     * The control assertion runs first: while the middle point is an ordinary station, the far
+     * destination must be reachable through it, so a fix that simply refused every multi-edge path
+     * could not pass this by doing nothing.
+     */
+    @Test(timeOut = 60000)
+    public void testAPathThroughAReversingStationIsNotChosen() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+
+        Layout layout = new Layout(model);
+
+        // The only way to FAR runs through BERTH.  FAR outranks BERTH so the walk tries it first.
+        layout.createPoint("START", true, destinationS88);
+        layout.createPoint("BERTH", true, destinationS88);
+        layout.createPoint("FAR", true, destinationS88);
+
+        layout.createEdge("START", "BERTH");
+        layout.createEdge("BERTH", "FAR");
+
+        layout.getPoint("BERTH").setPriority(1);
+        layout.getPoint("FAR").setPriority(5);
+        layout.getPoint("START").setLocomotive(loc);
+
+        assertEquals(destinationOf(layout.pickPath(loc)), "FAR",
+            "control: an ordinary station may be driven through to reach what lies beyond it");
+
+        layout.getPoint("BERTH").setReversing(true);
+
+        // BERTH is now barred as a destination, and FAR is only reachable by driving through it.
+        assertNull(layout.pickPath(loc),
+            "a parking berth is not through-traffic: autonomy must not route a train across one, "
+                + "which would stop and reverse it inside the parking area en route somewhere else");
+    }
+
+    /**
+     * A reversing NON-station stays usable as an intermediate - that is what it is for.
+     *
+     * Reversing loops and headshunts are non-stations carrying the reversing flag, and the mid-path
+     * direction change is their entire purpose.  Only berths - reversing points that are also
+     * stations - are barred, so this guards the distinction the rule rests on.
+     */
+    @Test(timeOut = 60000)
+    public void testAPathThroughAReversingPointIsStillChosen() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+
+        Layout layout = new Layout(model);
+
+        layout.createPoint("START", true, destinationS88);
+        layout.createPoint("LOOP", false, null);
+        layout.createPoint("FAR", true, destinationS88);
+
+        layout.createEdge("START", "LOOP");
+        layout.createEdge("LOOP", "FAR");
+
+        layout.getPoint("LOOP").setReversing(true);
+        layout.getPoint("START").setLocomotive(loc);
+
+        assertTrue(layout.getPoint("LOOP").isReversing() && !layout.getPoint("LOOP").isDestination(),
+            "precondition: LOOP must be a reversing point rather than a reversing station");
+
+        assertEquals(destinationOf(layout.pickPath(loc)), "FAR",
+            "a reversing loop is meant to be driven through - only berths are barred");
+    }
+
+    /**
      * The fairness yield must not wait for a locomotive full autonomy will never dispatch.
      *
      * checkForSlowerLoc lets a finishing locomotive pause for YIELD_SECONDS so a longer-idle one can

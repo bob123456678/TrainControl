@@ -79,6 +79,25 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
+     * The " -" suffix marking a station full autonomy will never send this locomotive to.
+     *
+     * Two reasons, one meaning to the operator.  The station may exclude this particular locomotive,
+     * or it may be a reversing station: a parking berth, which autonomy no longer chooses, leaving it
+     * to a route picked by hand or to "return home".  Both answer the same question,
+     * which is why they share a marker rather than accumulating a symbol each: this list offers the
+     * berth, because you may still choose it yourself, and the dash says autonomy will not.
+     *
+     * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
+     * the full predicate is spelled out to match the rule in Layout rather than relying on that.
+     */
+    private static String notChosenByAutonomy(Point p, Locomotive loc)
+    {
+        if (p == null) return "";
+
+        return (p.isReversing() && p.isDestination()) || p.getExcludedLocs().contains(loc) ? " -" : "";
+    }
+
+    /**
      * Refreshes the available routes shown in the UI
      * @param someLoc 
      */
@@ -188,7 +207,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
-                        + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
+                        + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
 
                     );
                 }
@@ -197,7 +216,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
-                        + (layout.getLocomotiveLocation(locomotive).getExcludedLocs().contains(locomotive) ? " -" : "")
+                        + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
                     );
                 }
                 else
@@ -215,7 +234,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
                         + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
-                        + (path.get(path.size() - 1).getEnd().getExcludedLocs().contains(locomotive) ? " -" : "")
+                        + notChosenByAutonomy(path.get(path.size() - 1).getEnd(), locomotive)
                     );
                     //Edge.pathToString(path));
                 }

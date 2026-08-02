@@ -402,7 +402,9 @@ Reversing stations are intended for parking/shunting.  For example, if you want 
 
 If you want to designate a parking space without reversing functionality, simply change a station to a non-station. Paths that start from a non-station will never automatically be chosen.  When you want the locomotive to run again, manually trigger a path to another station, or change the point back to a station.
 
-A reversing station restricts arrivals only.  A train standing on an active reversing station will still depart under autonomous operation, just like one standing anywhere else; what autonomy will never do is send a train there.  If you want to hold a train in place instead, deactivate the point - that keeps it from departing, at the cost of putting the station out of reach of return home as well.
+A reversing station restricts arrivals only.  A train standing on an active reversing station will still depart under autonomous operation, just like one standing anywhere else; what autonomy will never do is send a train to one, or route a train across one on its way somewhere else.  Both matter, because a train is stopped and reversed at every reversing point it reaches - so a berth left on the through-network would turn into an unwanted shunting move mid-journey.  If you want to hold a train in place instead, deactivate the point - that keeps it from departing, at the cost of putting the station out of reach of return home as well.
+
+This applies to reversing **stations** only.  A reversing point that is not a station - a reversing loop or headshunt - is still driven through by autonomous operation, since being driven through is exactly what it is for.  So mark a point "reversing" when trains should change direction there, and additionally mark it a station when trains should be able to park there.
 
 # Advanced layouts and settings
 

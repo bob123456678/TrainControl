@@ -2246,6 +2246,35 @@ public class Layout
     }
     
     /**
+     * Whether a path drives through a reversing STATION on its way somewhere else.
+     *
+     * A reversing station is a parking berth, and executePathInternal stops and reverses the train at
+     * every reversing point it reaches - so routing through one mid-journey turns a berth into a
+     * shunting move nobody asked for, with a train halting and changing direction inside the parking
+     * area en route to somewhere unrelated.  Barring them as destinations was not enough; a berth has
+     * to be off the through-network as well.
+     *
+     * Reversing NON-stations are deliberately still allowed.  Those are the reversing loops and
+     * headshunts that exist precisely to be driven through, and the mid-path flip is their purpose.
+     *
+     * The origin is exempt - a train standing on a berth is free to leave it - so only the END of each
+     * edge is tested.  The last of those is the destination, which pickPath's own filter has already
+     * refused for the same reason, so testing every end costs nothing and keeps the rule one shape.
+     */
+    private boolean passesThroughReversingStation(List<Edge> path)
+    {
+        for (Edge e : path)
+        {
+            if (e.getEnd().isReversing() && e.getEnd().isDestination())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether full autonomy would actually have somewhere to send this locomotive.
      *
      * getPossiblePaths answers the MANUAL question - what the right-click route menu offers - and by
@@ -2425,11 +2454,12 @@ public class Layout
                             List<Edge> path;
                             List<List<Edge>> seenPaths = new LinkedList<>();
 
-                            do 
+                            do
                             {
                                 path = this.bfs(start, end, seenPaths);
 
-                                if (path != null && this.isPathClear(path, loc, false))
+                                if (path != null && !this.passesThroughReversingStation(path)
+                                        && this.isPathClear(path, loc, false))
                                 {
                                     return path;
                                 }
