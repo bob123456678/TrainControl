@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -356,6 +357,53 @@ public class testLayoutPickPath
     }
 
     /**
+     * RV-C2: the yield probe must also refuse a locomotive whose only route out crosses a berth.
+     *
+     * The probe was aligned with pickPath so the two could not disagree, and then berths were barred
+     * as intermediates in pickPath alone - so they disagreed again, one commit later, in exactly the
+     * way the alignment existed to prevent.  Here the parked locomotive can reach BEYOND, an entirely
+     * ordinary station, but only by driving across BERTH; pickPath will therefore never dispatch it,
+     * and the probe has to reach the same answer or the false 30-second yields come back.
+     */
+    @Test(timeOut = 60000)
+    public void testYieldingIgnoresALocomotiveWhoseOnlyRouteCrossesABerth() throws Exception
+    {
+        Locomotive running = dummyLoc();
+        Locomotive parked = dummyLoc();
+
+        Layout layout = new Layout(model);
+
+        layout.createPoint("START", true, destinationS88);
+        layout.createPoint("MAIN", true, destinationS88);
+        layout.createEdge("START", "MAIN");
+
+        layout.createPoint("SIDING", true, destinationS88);
+        layout.createPoint("BERTH", true, destinationS88);
+        layout.createPoint("BEYOND", true, destinationS88);
+        layout.createEdge("SIDING", "BERTH");
+        layout.createEdge("BERTH", "BEYOND");
+
+        layout.getPoint("START").setLocomotive(running);
+        layout.getPoint("SIDING").setLocomotive(parked);
+
+        layout.setLocomotivesToRun(Arrays.asList(running, parked));
+
+        Thread.sleep(30);
+        running.incrementNumPaths();
+
+        assertEquals(layout.checkForSlowerLoc(0, running), parked,
+            "control: while BERTH is an ordinary station, BEYOND is genuinely reachable and the "
+                + "parked locomotive is worth yielding to");
+
+        layout.getPoint("BERTH").setReversing(true);
+
+        assertNull(layout.checkForSlowerLoc(0, running),
+            "BERTH is now a berth, so BEYOND is reachable only across one and BERTH itself is barred "
+                + "as a destination - pickPath will never dispatch this locomotive, and the probe "
+                + "that decides yields must agree with it");
+    }
+
+    /**
      * A reversing STATION is off the through-network too, not merely off the destination list.
      *
      * Barring berths as destinations left them usable as waypoints, so autonomy still routed through
@@ -527,5 +575,173 @@ public class testLayoutPickPath
 
         assertTrue(offered.contains("HIGH"),
             "a reversing station must stay reachable by hand - offered: " + offered);
+    }
+
+    /**
+     * A straight run of stations, every one of them active and clear.  Returned as a path so the
+     * isPathClear rules below can be exercised against it directly rather than through pickPath, whose
+     * own destination filters would answer first and hide which layer actually refused.
+     */
+    private Layout threeInARow(Locomotive loc) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("PC_A", true, destinationS88);
+        layout.createPoint("PC_B", true, destinationS88);
+        layout.createPoint("PC_C", true, destinationS88);
+
+        layout.createEdge("PC_A", "PC_B");
+        layout.createEdge("PC_B", "PC_C");
+
+        layout.getPoint("PC_A").setLocomotive(loc);
+
+        return layout;
+    }
+
+    private static List<Edge> wholeRun(Layout layout)
+    {
+        return Arrays.asList(layout.getEdge("PC_A -> PC_B"), layout.getEdge("PC_B -> PC_C"));
+    }
+
+    /**
+     * An inactive point may not be driven through - but only once autonomy is running.
+     *
+     * Both halves matter and only the first is obvious.  The rule is fenced behind isAutoRunning(),
+     * and executeTimetable sets running, so this same gate governs the "return home" staging run as
+     * well as full autonomy - which is exactly why the reversing-station rule had to be placed in
+     * pickPath instead of here.  A test that only checked the refusal would keep passing if the fence
+     * were removed, and removing the fence would silently change what staging is allowed to do.
+     *
+     * Note this exercises the gate itself.  testInactiveDestinationIsSkippedDespitePriority looks like
+     * coverage of the same rule but is not: it goes through pickPath, whose own end.isActive() filter
+     * answers first, with running false so this gate never runs.
+     */
+    @Test(timeOut = 60000)
+    public void testAnInactiveIntermediateIsRefusedOnlyWhileAutonomyRuns() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = threeInARow(loc);
+
+        assertTrue(layout.isPathClear(wholeRun(layout), loc),
+            "control: the run is clear while every point is active");
+
+        layout.getPoint("PC_B").setActive(false);
+
+        assertTrue(layout.isPathClear(wholeRun(layout), loc),
+            "the rule is fenced: with autonomy stopped, an inactive intermediate is still passable - "
+                + "this is what lets a manually chosen route cross one");
+
+        layout.setLocomotivesToRun(new LinkedList<>());
+        layout.runLocomotives();
+
+        try
+        {
+            assertTrue(layout.isAutoRunning(), "precondition: the fence must be up");
+
+            assertFalse(layout.isPathClear(wholeRun(layout), loc),
+                "an inactive point may not be driven through once autonomy is running");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * An inactive point at the END of a path is refused by the same gate, not by the one named for it.
+     *
+     * isPathClear carries a second, later check reporting errorInactiveStationInAutoRun, which names
+     * the offending station.  It cannot fire: the loop above it tests every edge END, and the last of
+     * those IS the destination, so the generic errorInactivePointInAutoRun always wins.  Asserted here
+     * as behaviour - a train is refused either way - with the shadowing recorded so nobody reads the
+     * friendlier message and assumes an operator has ever seen it.
+     */
+    @Test(timeOut = 60000)
+    public void testAnInactiveDestinationIsRefusedWhileAutonomyRuns() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = threeInARow(loc);
+
+        layout.getPoint("PC_C").setActive(false);
+
+        layout.setLocomotivesToRun(new LinkedList<>());
+        layout.runLocomotives();
+
+        try
+        {
+            assertFalse(layout.isPathClear(wholeRun(layout), loc),
+                "autonomy may not be sent to an inactive station");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * Autonomy may not set off from a point that is not a station, and that rule is fenced too.
+     *
+     * Reaching a non-station is ordinary - trains drive through them constantly - but starting a path
+     * on one is not, because nothing put the train there under autonomy.  Manual routes may still do
+     * it, which is what the fence preserves.
+     */
+    @Test(timeOut = 60000)
+    public void testAPathStartingAtANonStationIsRefusedOnlyWhileAutonomyRuns() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+
+        Layout layout = new Layout(model);
+
+        layout.createPoint("PC_A", false, null);
+        layout.createPoint("PC_B", true, destinationS88);
+        layout.createPoint("PC_C", true, destinationS88);
+
+        layout.createEdge("PC_A", "PC_B");
+        layout.createEdge("PC_B", "PC_C");
+
+        layout.getPoint("PC_A").setLocomotive(loc);
+
+        assertTrue(layout.isPathClear(wholeRun(layout), loc),
+            "control: with autonomy stopped, a route may be picked by hand from a non-station");
+
+        layout.setLocomotivesToRun(new LinkedList<>());
+        layout.runLocomotives();
+
+        try
+        {
+            assertFalse(layout.isPathClear(wholeRun(layout), loc),
+                "autonomy must not set off from a point that is not a station");
+        }
+        finally
+        {
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * A terminus may only be the END of a path, never a point driven through.
+     *
+     * Unlike the three rules above this one is NOT fenced behind isAutoRunning: a terminus is a dead
+     * end whatever asked for the route, so a manual route and a staging move are refused as well.  The
+     * control asserts the permitted case in the same graph, so the test cannot pass by refusing
+     * everything that mentions a terminus.
+     */
+    @Test(timeOut = 60000)
+    public void testATerminusMayNotBeDrivenThrough() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = threeInARow(loc);
+
+        // isPathClear refuses a terminus DESTINATION to a non-reversible locomotive - a separate rule.
+        // Made true so the control below tests the through-rule and not that one.
+        loc.setReversible(true);
+
+        layout.getPoint("PC_B").setTerminus(true);
+
+        assertFalse(layout.isPathClear(wholeRun(layout), loc),
+            "a terminus in the middle of a path is a dead end, not a through point");
+
+        assertTrue(layout.isPathClear(Arrays.asList(layout.getEdge("PC_A -> PC_B")), loc),
+            "control: the same terminus is a perfectly good place to finish");
     }
 }

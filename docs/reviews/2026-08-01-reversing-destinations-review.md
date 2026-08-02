@@ -2,20 +2,23 @@
 
 **Prefix for citing this document: `RV`.**
 
-**Version reviewed: `e04ef83` (HEAD), working tree clean, on 2026-08-01.** Scope: the commit
-"Revert automation behavior" - one predicate in `pickPath`, a documentation rewrite, four tests,
-and the `SF`/`CP` dispositions it carries. The intervening `9803969` commits this reviewer's own
-`9fbc6d3` validation section and contains no code. This review knows the change is **deliberate**:
-it implements an intended-behaviour decision, and the review's job is to verify the decision is
-implemented coherently and its record is accurate - not to file the behaviour change as a
-regression.
+**Version reviewed: `e04ef83`, extended through `b56b407` (HEAD) by the dated sections below; on
+2026-08-01.** Scope: the commit "Revert automation behavior" - one predicate in `pickPath`, a
+documentation rewrite, four tests, and the `SF`/`CP` dispositions it carries - then its two
+follow-ups: `b43fd36` (the `RV-C1` fix) and `b56b407` (berths barred as intermediates, correcting
+a judgment this document itself had endorsed). The intervening `9803969` commits this reviewer's
+own `9fbc6d3` validation section and contains no code. This review knows the original change is
+**deliberate**: it implements an intended-behaviour decision, and the review's job is to verify
+the decision is implemented coherently and its record is accurate - not to file the behaviour
+change as a regression.
 
 Findings use the A/B/C/D convention in [README.md](README.md). One C, three D.
 
 | ID | Finding | Status |
 |---|---|---|
 | RV-C1 | `checkForSlowerLoc` decides yields from `getPossiblePaths`, the manual tier - a pre-existing divergence this change widens by one predicate, so autonomy can now repeatedly yield to a locomotive it will never dispatch | Fixed (`b43fd36`) - `hasAutonomousDestination` filters the enumeration on exactly the two divergent clauses; pinned by `testYieldingIgnoresALocomotiveAutonomyWillNeverDispatch`, control assertion first.  Two corrections to the finding's own prose accepted; see the validation sections |
-| RV-D1 | The exclusion is at the right tier, and only there - selection, not execution - with all four behavioural quadrants pinned by tests | Clean |
+| RV-C2 | Filed while validating `b56b407`: the through-berth filter has one call site, so `hasAutonomousDestination` - aligned with `pickPath` one commit earlier - is one predicate behind again, and the yield probe can over-report dispatchability where every berth-free destination is only reachable across a berth | Fixed - the probe now applies `passesThroughReversingStation` and enumerates with `uniqueDest` false, which sidesteps the under-reporting trap at zero cost; pinned by `testYieldingIgnoresALocomotiveWhoseOnlyRouteCrossesABerth`.  Measured unreachable on the live graph.  See the disposition |
+| RV-D1 | The exclusion is at the right tier, and only there - selection, not execution - with all four behavioural quadrants pinned by tests | Clean - except its through-traffic bullet, whose judgment `b56b407` reverses; see "The third commit" |
 | RV-D2 | The old Automation.md contradicted itself about reversing stations; the commit implements one sentence and repeals the other, and the record's "specified all along" claim is supported - by the sentence the diff does not show | Verified |
 | RV-D3 | The `SF-C1` disposition inversion (leave the four parking points active) cross-checked point by point | Concurs |
 
@@ -202,6 +205,94 @@ The fix is correct, and its filter is exactly the divergent set - verified rathe
   *reversing point* with through-track, not the berth itself); sixteen points are inactive and
   every one of them is a reversing point, consistent with the parking-area note above.
 
-With `RV-C1` fixed, this document is closed. Open across the folder: the `UC` record note on the
-stranded-javadoc detector, and the parking-area activation above, which is an operational choice
-for the author rather than a finding.
+With `RV-C1` fixed, this document was briefly closed - reopened by the section below, which files
+`RV-C2`. Open across the folder: `RV-C2`, the `UC` record note on the stranded-javadoc detector,
+and the parking-area activation above, which is an operational choice for the author rather than
+a finding.
+
+---
+
+## The third commit: `b56b407`, and the judgment this review got wrong - 2026-08-01
+
+The author identified and fixed what this review had recorded and then endorsed: reversing
+STATIONS were usable as intermediate points, so full autonomy still routed trains *through* the
+parking area on their way somewhere else - observed live as "BottomMainA to TopMainR2 via
+TunnelLongPark".
+
+**The miss, owned precisely, because the evidence was in this document's own text.** RV-D1's
+through-traffic bullet cited `executePathInternal`'s mid-path handling of reversing points
+(Layout.java:3195) and still called a berth traversal "uneventful". Those two statements do not
+survive being read together: what happens at an intermediate reversing point is a stop and a
+direction flip, so "through-traffic" across a berth is a halt-and-shunt inside the parking area
+that nobody asked for - not a drive-through. The `SF` disposition's "autonomy may pass here"
+framing was the author's recorded intent at the time, and this review adopted it instead of asking
+what a pass physically is. Both the record and the concurrence were wrong; the correction came
+from the layout, not the reading. Third tally entry, and the costliest kind: not a missed fact - a
+recorded fact whose consequence went unexamined.
+
+**The fix is validated clean:**
+
+- `passesThroughReversingStation` bars exactly berths - `isReversing() && isDestination()` - and
+  deliberately spares reversing NON-stations, the loops and headshunts whose entire purpose is the
+  mid-path flip. Both halves are pinned, control-first (`testAPathThroughAReversingStationIsNotChosen`
+  proves an ordinary station still passes before flipping the flag;
+  `testAPathThroughAReversingPointIsStillChosen` asserts its precondition that the loop is not a
+  station).
+- The origin stays exempt by construction - only edge ENDS are tested, the path's start is never
+  one (BFS marks it visited first, so no edge can re-enter it), and departures from a berth remain
+  free, consistent with the arrivals-only rule.
+- The filter sits in `pickPath`'s selection loop, before `isPathClear`, and a refused path still
+  enters `seenPaths` so alternatives are tried - a berth-free route to the same destination is
+  found when one exists.
+- The tier split holds: manual routes and "return home" still cross berths when the user or the
+  stager chooses to, and the status panel now marks every station autonomy will not choose with
+  one " -" (excluded or berth alike), per-destination and at the current station, with the tooltip
+  updated in all eight bundles, ASCII-escaped.
+
+**RV-C2 - the fix's own missed twin, filed open.** `passesThroughReversingStation` has one call
+site. `hasAutonomousDestination` - the yield probe aligned with `pickPath` one commit earlier, in
+`b43fd36`, precisely so the two could not disagree - was not given the new predicate, so they
+disagree again: a locomotive whose berth-free destinations are all reachable only *across* a berth
+answers "dispatchable" to the probe and "nowhere to go" to `pickPath`, and the false 30-second
+yields `RV-C1` described return. Two honesty notes for whoever fixes it. First, the naive fix -
+applying the filter to `getPossiblePaths`' one-path-per-pair answer - errs the other way: the one
+returned path may cross a berth while a berth-free alternative exists, so the probe would
+under-report and the fairness feature would quietly skip a dispatchable locomotive; erring toward
+under-yielding is probably the better side, but it is a choice, not a free fix. Second, the
+severity is settleable by the same measurement the `RV-C1` round used: whether any station pair on
+the live graph has only berth-crossing routes. This is the cycle's signature error - instance
+eight was fixing one of several identical entrances; this is aligning two entrances and then
+moving one - and it is filed the day it was created rather than found by the next reader.
+
+### Disposition of `RV-C2` - 2026-08-01
+
+The finding is accepted in full, including its characterisation: the alignment existed precisely to
+stop these two drifting, and it drifted one commit later. `hasAutonomousDestination` now applies
+`passesThroughReversingStation` alongside the clauses it already mirrored.
+
+**Both honesty notes are answered, and the first turns out not to be a trade-off.** The warning was
+that filtering `getPossiblePaths`' one-path-per-pair answer would err the other way, under-reporting
+when the kept path crosses a berth but a berth-free alternative exists. That is correct for
+`uniqueDest` true - and avoidable, because the flag does not control the search. Reading the method
+through: the `do`/`while` calls `bfs` against a growing `seenPaths` until it is exhausted, and
+`uniqueDest` gates only whether a clear path is *added to the output*. Passing false therefore
+returns every clear path at identical cost, and the probe can then ask the exact question `pickPath`
+asks - does any clear, berth-free path to an eligible destination exist - with neither over- nor
+under-reporting. The choice the note offered did not have to be made.
+
+**The second note is answered by measurement, and settles the severity as the `RV-C1` round did.**
+Barring berths mid-path removes no destination from any origin on the live graph: all eighteen
+active origins keep their complete reachable set, so no station pair has only berth-crossing routes
+and the divergence was unreachable there. Both `RV-C1` and `RV-C2` are therefore insurance rather
+than repairs on this layout - real on a graph whose parking area sits on a through-route, which this
+one does not.
+
+**On the tally, the finding is right and the framing is worth keeping.** The lesson generalises past
+this pair: any clause added to `pickPath`'s selection has to be mirrored in the probe, because the
+probe's whole purpose is to predict what `pickPath` will do. That now lives in
+`hasAutonomousDestination`'s javadoc rather than only here, since the next person to extend the
+selection will be reading the code and not this folder.
+
+With `RV-C2` fixed, this document is closed. Open across the folder: the `UC` record note on the
+stranded-javadoc detector, and the parking-area activation, which remains an operational choice for
+the author rather than a finding.

@@ -2285,17 +2285,28 @@ public class Layout
      * over and over, for a dispatch that will never happen.
      *
      * pickPath itself cannot serve as the probe - it sleeps for minDelay when it finds nothing - so the
-     * enumeration is filtered instead.  Only the two clauses that diverge are re-tested here; active,
+     * enumeration is filtered instead.  Only the clauses that diverge are re-tested here; active,
      * unoccupied, is-a-destination and reachable-by-a-clear-path have already been applied by
      * getPossiblePaths and isPathClear.
+     *
+     * Every clause pickPath applies to its candidates has to be mirrored here, and that is the whole
+     * maintenance burden of this method: the two fell out of step once already, when berths were barred
+     * as intermediates in pickPath alone, and a locomotive whose only route out crossed a berth went
+     * back to collecting false yields.  Anything added to pickPath's selection belongs here too.
      */
     private boolean hasAutonomousDestination(Locomotive loc)
     {
-        for (List<Edge> path : this.getPossiblePaths(loc, true))
+        // uniqueDest false on purpose.  The flag only gates what the enumeration COLLECTS - the loop
+        // inside runs to exhaustion either way - so asking for every clear path costs nothing extra,
+        // and asking for one per start/end pair would make this probe under-report: the single path
+        // kept for a pair may be the one that crosses a berth while a berth-free alternative to the
+        // same destination exists, and pickPath would have found that alternative.
+        for (List<Edge> path : this.getPossiblePaths(loc, false))
         {
             Point end = path.get(path.size() - 1).getEnd();
 
-            if (!end.isReversing() && !end.getExcludedLocs().contains(loc))
+            if (!end.isReversing() && !end.getExcludedLocs().contains(loc)
+                    && !this.passesThroughReversingStation(path))
             {
                 return true;
             }
