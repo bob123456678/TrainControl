@@ -13160,6 +13160,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // graceful-stopped can still be unwinding when this runs, so the monitor is not
                 // reliably free here either
                 this.repaintTimetable();
+
+                // The locomotive panel has to be repainted HERE, and not by the end-of-path callback
+                // that normally maintains it, because that callback runs one step too early: the last
+                // staging path fires it from executePathInternal, and only afterwards does the entry
+                // thread call stopLocomotives().  So the final repaint of a staging run always sees
+                // isAutoRunning() still true and takes the "autonomy is driving" branch, which hides
+                // the available-paths list - and nothing repaints again, so it stays hidden until the
+                // operator starts autonomy and gracefully stops it, which ends with a callback that
+                // does see running false.  Full rather than Lite: the panels must be rebuilt, not just
+                // their route labels refreshed.
+                this.repaintAutoLocList(false);
             }
         }).start();
     }
