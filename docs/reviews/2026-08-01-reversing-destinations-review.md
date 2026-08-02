@@ -296,3 +296,40 @@ selection will be reading the code and not this folder.
 With `RV-C2` fixed, this document is closed. Open across the folder: the `UC` record note on the
 stranded-javadoc detector, and the parking-area activation, which remains an operational choice for
 the author rather than a finding.
+
+### Validation of the `RV-C2` fix (`b9ee563`) - 2026-08-01
+
+Verified correct, and the disposition's two central claims were re-derived independently rather
+than accepted:
+
+- **The `uniqueDest` claim holds at the source.** `getPossiblePaths`' `do`/`while` runs `bfs`
+  against its growing `seenPaths` to exhaustion regardless of the flag, which gates only whether a
+  clear path is added to the output - so passing false returns every clear path at identical cost,
+  exactly as the fix's comment says. The disposition is right that the trade-off this document's
+  honesty note offered did not have to be made: the note's premise was the one-path-per-pair
+  enumeration, and the fix removed the premise instead of choosing an error side. With every
+  alternative visible, the probe and `pickPath` now compute the same berth-free clear-path set -
+  both enumerate to exhaustion, and their different rejection orderings (`pickPath` filters before
+  `isPathClear`, the probe after collection) cannot change what that set contains. A locomotive
+  that is already running probes empty and is never yielded to, which is the right answer for the
+  other reason.
+- **The measurement reproduces.** An independent model of the live graph - digraph from
+  `autonomy.json`, transit barred through inactive points on both sides, the berth-transit bar as
+  the delta - confirms the disposition's numbers exactly: eighteen active station origins, and
+  zero of them lose any eligible destination when berth transit is barred. Two models built
+  separately from the same raw data agreeing on both the count and the no-loss claim is as close
+  to settled as a static check gets: on this layout, `RV-C1` and `RV-C2` were insurance.
+- **The test is the finding's own topology, control-first** - BEYOND genuinely reachable while
+  BERTH is ordinary, the yield asserted as the control, then the flag flipped and the probe
+  required to agree with `pickPath` - so a fix that over-filtered into never-yielding would fail
+  the control, and one that under-filtered would fail the flip.
+- **The commit also turns this round's load-bearing assumptions into guards.** The new
+  `isPathClear` battery pins the gates the `RV-C1`/`RV-C2` analysis rested on: the
+  inactive-intermediate and inactive-destination refusals armed only while `isAutoRunning()`, the
+  non-station-start fence, and terminus-never-driven-through (unfenced, and the test says why).
+  The armed-context reasoning that corrected `RV-C1`'s prose is now asserted by the suite instead
+  of by a reviewer's reading of a call-site guard.
+
+No new findings. The maintenance contract the fix writes into `hasAutonomousDestination`'s javadoc
+- anything added to `pickPath`'s selection belongs in the probe too - is the durable output of the
+`RV-C1`/`RV-C2` pair, and it lives where the next selection clause will be written.
