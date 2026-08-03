@@ -1,0 +1,10 @@
+[gleisbild]
+version
+ .major=1
+groesse
+seite
+ .id=1
+ .name=Main
+seite
+ .id=2
+ .name=Sub/Page

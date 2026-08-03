@@ -1,0 +1,7 @@
+[gleisbildseite]
+version
+ .major=1
+element
+ .id=0x8010
+ .typ=gerade
+ .drehung=0

@@ -377,6 +377,9 @@ Tab icons provided by Freepik.
         - Reversing stations are no longer used when autonomy is running on its own - neither as a destination nor as somewhere to drive through on the way elsewhere.  They are meant for parking and shunting, so trains were being parked there at random, and were stopping and changing direction inside the parking area while on their way somewhere else.  You can still send a train to one yourself from the route menu, and “return home” can still park trains there.  Reversing points that are not stations, such as reversing loops, are unaffected
         - The route list now marks a station autonomy will never send the locomotive to with a dash, whether because the station excludes that locomotive or because it is a reversing station
         - A route you pick yourself can no longer run a train through a point you switched off.  Switching a point off now always keeps trains from crossing it; you can still send a train to a switched-off station, and still drive one away from it, so a deactivated parking track stays reachable by hand
+    - Central Station Sync Bug Fixes
+        - A locomotive whose name contains an equals sign is no longer dropped from its multi-unit when importing from the Central Station
+        - Downloading the track diagram from the Central Station no longer fails part way through when a page name contains a slash, colon, or similar character.  Such pages are saved under a corrected filename, and are found again when the layout is loaded
     - Autonomy Bug Fixes
         - A path is no longer used if one of its switches or signals is missing from the database.  Previously the locomotive would depart anyway, running over an accessory that was never commanded
         - Fixed bug where a crossing could stay marked as occupied after a train finished its route, blocking every later path through it.  Only affected layouts using lock edges with atomic routes turned off

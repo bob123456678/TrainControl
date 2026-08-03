@@ -250,8 +250,35 @@ public final class CS2File
      */
     public String getLayoutURL(String dataPath, String layoutName)
     {
-        return dataPath + "/config/gleisbilder/" 
-                + (dataPath.contains("http://") ? sanitizeURL(layoutName) : layoutName) + ".cs2";
+        return dataPath + "/config/gleisbilder/"
+                + (dataPath.contains("http://") ? sanitizeURL(layoutName) : sanitizeFilename(layoutName))
+                + ".cs2";
+    }
+
+    /**
+     * Makes a page name safe to use as a local filename.
+     *
+     * Page names come out of the Central Station index and are free text: a name carrying a path
+     * separator or a character the filesystem forbids used to be joined straight onto the layouts
+     * folder.  On download that made the write land outside the folder - or fail outright, part way
+     * through, leaving a half-written layout the next sync reads as authoritative.
+     *
+     * Applied on BOTH sides on purpose.  The local read locates a page by the name in the index, so
+     * sanitizing only the write would produce a file the reader then could not find.  The remote read
+     * keeps sanitizeURL, which answers a different question - what is legal in a url - and is why the
+     * download half of this was the only one ever guarded.
+     *
+     * Only characters that are actually unusable are replaced, so ordinary names with spaces, dashes
+     * and accented letters are returned untouched and existing local layouts load exactly as before.
+     *
+     * @param name
+     * @return
+     */
+    public static String sanitizeFilename(String name)
+    {
+        if (name == null) return null;
+
+        return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
     }
     
     /**
@@ -444,7 +471,12 @@ public final class CS2File
                         
             if (s.matches("^ \\.\\.[a-z]+=.+$"))
             {
-                String[] parts = s.substring(3).split("=");
+                // Limit of 2, for the same reason as the ordinary key=value branch below: the one array
+                // key that carries free text is lokname, the name of a multi-unit member, which
+                // parseLocomotives matches against the locomotive database to assemble the consist.
+                // Split without a limit, a member named "BR 50 = Ep.III" was stored as "BR 50 ", matched
+                // nothing, and was dropped from its consist with only a log line to say so.
+                String[] parts = s.substring(3).split("=", 2);
 
                 array.put(parts[0], parts[1]);
             }
@@ -1828,7 +1860,9 @@ public final class CS2File
         
         for (String layoutName : parseLayoutList())
         {
-            File layoutFile = new File(layoutsDir, layoutName + ".cs2");
+            // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
+            // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
+            File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
             try (BufferedReader reader = fetchURL(getLayoutURL(layoutName));
             BufferedWriter writer = Files.newBufferedWriter(layoutFile.toPath()))
             {

@@ -1,4 +1,7 @@
 import java.net.URISyntaxException;
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.Map;
 import java.util.List;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.file.CS2File.parseJSONArray;
@@ -258,5 +261,59 @@ public class testParseCS3Loks
     @AfterMethod
     public void tearDownMethod() throws Exception
     {
+    }
+
+    /**
+     * RS-C1: a multi-unit member whose name contains an equals sign must survive parsing.
+     *
+     * parseFileContents handles two line shapes.  The ordinary one (" .key=value") splits with a limit
+     * of two, and its comment says why: a route or locomotive name may contain an equals sign.  The
+     * nested array shape (" ..key=value") splits without one - and the only array key carrying free
+     * text is lokname, the name of a multi-unit member, which parseLocomotives matches against the
+     * locomotive database to assemble the consist.  Truncated at its first equals sign it matches
+     * nothing, so the member is silently dropped and the consist comes back short.
+     *
+     * The second member is ordinary on purpose: a fix that mangled the array shape in general would
+     * lose it too, so it cannot pass by accident.
+     */
+    @Test
+    public void testAMultiUnitMemberNameContainingAnEqualsSignSurvivesParsing() throws Exception
+    {
+        final String awkward = "BR 50 = Ep.III";
+
+        String contents = String.join("\n",
+            "[lokomotive]",
+            "version",
+            " .minor=3",
+            "lokomotive",
+            " .name=Doppeltraktion",
+            " .uid=0x4001",
+            " .traktion",
+            " ..lok=0x400b",
+            " ..lokname=" + awkward,
+            " .traktion",
+            " ..lok=0x400a",
+            " ..lokname=Ordinary Name"
+        );
+
+        Map<String, String> consist = null;
+
+        for (Map<String, String> item : parseFile(new BufferedReader(new StringReader(contents))))
+        {
+            if ("Doppeltraktion".equals(item.get("name"))) consist = item;
+        }
+
+        assertNotNull(consist, "precondition: the multi-unit entry must parse at all");
+
+        String traktion = consist.get("traktion");
+
+        assertNotNull(traktion, "precondition: its traktion block must have been collected");
+
+        assertTrue(traktion.contains("lokname=" + awkward),
+            "the member name was truncated at its equals sign, so nothing in the locomotive database "
+                + "can match it and the member is dropped from the consist: " + traktion);
+
+        assertTrue(traktion.contains("lokname=Ordinary Name"),
+            "control: the ordinary member must still be present: " + traktion);
     }
 }
