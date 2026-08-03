@@ -147,6 +147,39 @@ has no Swing harness to hang one on - stated here rather than left to be inferre
 
 ---
 
+## Validation of the fixes (`795ce2c`) - 2026-08-02
+
+Validated independently, each fix read in the enforcing method rather than the diff alone.
+
+- **`FV-B1` - correct and complete.** `Util.writeAtomically` stages into the `.part` sibling,
+  flushes and closes before the move, deletes the staging file on a failed write (catching
+  `RuntimeException` as well as `IOException`, which the serialization case needs), and never
+  touches the target until the content is whole. All three exit-time writers verified converted -
+  `trains.dat`, the UI state file, `autonomy.json` - and the backup flow (`saveState(true)`)
+  inherits the guarantee for free, since it goes through the same writers. The retained inner
+  try-with-resources is load-bearing exactly as its comment says: without `close()`, the final
+  buffered block would miss the *staging* file and a truncated file would be moved into place.
+  The five tests match the disposition's description, the two guard tests do prevent a vacuous
+  pass, and the mid-stream serialization test exercises the writers' real shape. `testAtomicWrite`
+  is wired into `build.xml`.
+
+  Two observations, recorded not filed. If the write succeeds but `Files.move` itself fails
+  (target held open by another process), the staging file is left behind - which is arguably the
+  right outcome, since the data survives in it and the next save overwrites it. And the remaining
+  truncate-in-place writers (`AutoJSONExport`, the stats CSV export, `copyResource`) are all
+  user-triggered writes to user-chosen or non-user-data paths, where a failure is immediate and
+  visible - consistent with the finding's "three writers that matter most" scope, not a missed
+  twin.
+
+- **`FV-C1` - correct.** The trim runs inside the same `invokeLater` as the insert, so the length
+  read and the `remove` are EDT-serialized against each other; the arithmetic keeps characters
+  `[0, DEBUG_LOG_MAX_CHARS)` - the newest, given front insertion - and removes the tail. The
+  swallowed `BadLocationException` is genuinely unreachable for the reason its comment gives.
+
+- **The changelog entries** describe both fixes in operator terms, matching the project's
+  non-technical changelog convention, and the `FV-B1` entry correctly names the sync-masking
+  behaviour as what the user would have seen.
+
 ## Release verdict, revising `RS`'s
 
 `RS` closed its round with "no document in this folder carries an open code finding", which was
