@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.swing.JComboBox;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JComponent;
@@ -267,15 +268,54 @@ final class HomeLocomotiveMenu
         // clears an assignment, so the editor needs no separate clear action beside it.
         names.add(0, NONE);
 
-        String choice = (String) JOptionPane.showInputDialog(
+        // Built as an option dialog rather than showInputDialog so a third button fits.  Assigning the
+        // locomotive that is already standing here is the common case by a distance - it is how a
+        // layout is staged in the first place - and finding its name in a list of every locomotive is
+        // busywork when the station already knows the answer.
+        JComboBox<String> selector = new JComboBox<>(names.toArray(new String[0]));
+
+        selector.setSelectedItem(p.getHomeLoc() != null ? p.getHomeLoc() : NONE);
+
+        Locomotive standingHere = p.getCurrentLocomotive();
+
+        // One condition, and it is the only one that can matter: there has to be a locomotive here to
+        // use.  An earlier version also hid the button when the train standing here was already this
+        // station's home, on the grounds that pressing it would change nothing - which made the button
+        // come and go for reasons the operator cannot see from the dialog.  A button that is sometimes
+        // absent is worse than one that occasionally does nothing.
+        boolean offerCurrent = standingHere != null;
+
+        Object[] options = offerCurrent
+            ? new Object[]{I18n.t("ui.ok"), I18n.t("autolayout.ui.btnUseCurrentLocomotive"),
+                I18n.t("ui.cancel")}
+            : TrainControlUI.OK_CANCEL_OPTS;
+
+        int picked = JOptionPane.showOptionDialog(
             dialogParent,
-            I18n.f("autolayout.ui.promptChooseHomeLocomotive", p.getName()),
+            new Object[]{I18n.f("autolayout.ui.promptChooseHomeLocomotive", p.getName()), selector},
             I18n.t("autolayout.ui.dialogSetHomeLocomotive"),
+            JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
             null,
-            names.toArray(),
-            (p.getHomeLoc() != null ? p.getHomeLoc() : NONE)
+            options,
+            options[0]
         );
+
+        String choice;
+
+        if (picked == 0)
+        {
+            choice = (String) selector.getSelectedItem();
+        }
+        else if (offerCurrent && picked == 1)
+        {
+            choice = standingHere.getName();
+        }
+        else
+        {
+            // Cancel, or the window closed - CLOSED_OPTION is -1 and lands here too
+            return;
+        }
 
         if (choice == null) return;
 
