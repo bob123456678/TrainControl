@@ -342,6 +342,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Number of keys per page
     private static final int KEYBOARD_KEYS = 64;
+
+    /**
+     * How much of the debug log is kept.  Roughly a thousand lines - far more than anyone scrolls back
+     * through, and small enough that inserting at the front stays cheap for the life of a session.
+     */
+    private static final int DEBUG_LOG_MAX_CHARS = 100000;
         
     // Maximum number of functions
     private static final int NUM_FN = 32;
@@ -1110,12 +1116,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
             : (prefix + TrainControlUI.DATA_FILE_NAME);
 
-        // try-with-resources guarantees the stream is flushed and closed even on exception -
-        // without close() the final buffered block may never reach disk, truncating the file.
-        try (ObjectOutputStream obj_out = new ObjectOutputStream(new FileOutputStream(statePath)))
+        // Staged and moved into place for the same reason as the locomotive database: this is the only
+        // automatic save of the UI state, so a write interrupted part way used to leave nothing behind.
+        // try-with-resources inside still matters - without close() the final buffered block never
+        // reaches the staging file, and a truncated file would then be moved into place.
+        try
         {
-            // Write object out to disk
-            obj_out.writeObject(l);
+            Util.writeAtomically(new File(statePath), fileOut ->
+            {
+                try (ObjectOutputStream obj_out = new ObjectOutputStream(fileOut))
+                {
+                    // Write object out to disk
+                    obj_out.writeObject(l);
+                }
+            });
 
             this.model.logf(
                 "ui.logSavingUiState",
@@ -1176,7 +1190,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Write as raw JSON so the file (and its backups) is human-readable and importable via Load JSON.
                 // (Older versions wrote this via ObjectOutputStream; the auto-load below still reads those.)
-                Files.write(Paths.get(autonomyPath), this.autonomyJSON.getText().getBytes(StandardCharsets.UTF_8));
+                //
+                // Staged and moved into place: a truncated autonomy.json costs the operator their whole
+                // graph, and it is written on exit like the other two, so it shares their failure window.
+                Util.writeAtomically(new File(autonomyPath),
+                    out -> out.write(this.autonomyJSON.getText().getBytes(StandardCharsets.UTF_8)));
             }
             catch (IOException iOException)
             {
@@ -1384,6 +1402,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.debugArea.insert(message + "\n", 0);
             this.debugArea.setCaretPosition(0);
+
+            // Capped, because this document otherwise grows for the life of the session and every
+            // insert is at position 0 - which shifts everything already in it.  The per-message cost
+            // therefore rose with session age, on the thread that paints the whole UI, and with debug
+            // logging on a long session slowed the application down for a reason nothing pointed at.
+            // Trimming the tail keeps the newest-first presentation the front insert exists for.
+            int length = this.debugArea.getDocument().getLength();
+
+            if (length > DEBUG_LOG_MAX_CHARS)
+            {
+                try
+                {
+                    this.debugArea.getDocument().remove(DEBUG_LOG_MAX_CHARS, length - DEBUG_LOG_MAX_CHARS);
+                }
+                catch (javax.swing.text.BadLocationException e)
+                {
+                    // Only reachable if the offsets disagree with the document, which cannot happen
+                    // when both come from the document itself one statement earlier
+                }
+            }
         });
     }             
     

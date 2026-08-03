@@ -122,6 +122,7 @@
         <test-one-class class="testImportRename"/>
         <test-one-class class="testHomeStaging"/>
         <test-one-class class="testReturnHomeOnRealLayout"/>
+        <test-one-class class="testAtomicWrite"/>
         <test-one-class class="testInvalidInput"/>
         <test-one-class class="testLayoutBfs"/>
         <test-one-class class="testLayoutBfsEquivalence"/>

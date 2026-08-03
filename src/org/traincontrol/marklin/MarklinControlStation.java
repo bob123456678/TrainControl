@@ -8,7 +8,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -1289,12 +1288,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
             ? Util.getBackupPath(prefix + MarklinControlStation.DATA_FILE_NAME)
             : (prefix + MarklinControlStation.DATA_FILE_NAME);
 
-        // try-with-resources guarantees the stream is flushed and closed even on exception -
-        // without close() the final buffered block may never reach disk, truncating the file.
-        try (ObjectOutputStream obj_out = new ObjectOutputStream(new FileOutputStream(path)))
+        // Staged through a sibling file and moved into place, so that dying part way through the write
+        // leaves the previous database intact rather than a truncated one.  This is the only automatic
+        // save of the locomotive database, and an unreadable one reads as a first launch - the next
+        // sync then repopulates the locomotive list, so the lost customizations look mislaid rather
+        // than destroyed.  try-with-resources inside still matters: without close() the final buffered
+        // block never reaches the staging file, and a truncated file would be moved into place.
+        try
         {
-            // Write object out to disk
-            obj_out.writeObject(l);
+            Util.writeAtomically(new File(path), out ->
+            {
+                try (ObjectOutputStream obj_out = new ObjectOutputStream(out))
+                {
+                    // Write object out to disk
+                    obj_out.writeObject(l);
+                }
+            });
 
             this.logf("log.savingDatabaseState", new File(path).getAbsolutePath());
         }

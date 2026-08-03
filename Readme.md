@@ -428,6 +428,8 @@ Tab icons provided by Freepik.
         - A locomotive address change picked up from the Central Station is now postponed while trains are running, instead of being applied underneath them.  A message in the log says when this happens
     - General Bug Fixes
         - Update notices now work even if a release name contains extra text after the version number
+        - Your locomotive database, window layout, and autonomy graph are now saved safely when TrainControl closes.  Previously, if the computer shut down or lost power at the moment of saving, the file could be left unreadable and its contents lost - the locomotives themselves would come back from the Central Station on the next sync, but their function assignments, notes, and statistics would not
+        - The debug log no longer slows TrainControl down during a long session.  It used to grow without limit, making the whole application gradually less responsive
 
 * v2.7.4 [7/25/2026]   
     - Autonomy

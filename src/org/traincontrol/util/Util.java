@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -87,6 +88,62 @@ public class Util
     // fails instead of leaving the download running indefinitely.
     private static final int DOWNLOAD_CONNECT_TIMEOUT_MS = 5000;
     private static final int DOWNLOAD_READ_TIMEOUT_MS = 15000;
+
+    /**
+     * Receives the stream that writeAtomically is staging into.  A plain Consumer cannot be used
+     * because everything worth writing this way throws IOException.
+     */
+    @FunctionalInterface
+    public interface StreamWriter
+    {
+        void write(OutputStream out) throws IOException;
+    }
+
+    /**
+     * Writes a file without ever leaving the target truncated.
+     *
+     * Opening a file for writing empties it immediately, so from the first byte until the last is
+     * flushed the only copy of the data is incomplete - and if the process dies in that window, or the
+     * write throws part way, what was there before is gone.  For the files this exists to protect
+     * (the locomotive database, the UI state, autonomy.json) that is the operator's accumulated work,
+     * and the loss is silent: an unreadable database reads as a first launch, and the next Central
+     * Station sync repopulates the locomotive list so the customizations look mislaid rather than
+     * destroyed.
+     *
+     * The content is therefore staged in a sibling file and moved into place only once it is complete
+     * and closed - the same shape downloadFile uses so that an interrupted download never looks like a
+     * finished one.  A failed write deletes the staging file and leaves the previous contents exactly
+     * as they were.  REPLACE_EXISTING rather than ATOMIC_MOVE: the rename window is nanoseconds
+     * against a write window of milliseconds to seconds, and ATOMIC_MOVE is not supported everywhere.
+     *
+     * @param target the file to end up with
+     * @param body writes the content to the stream it is given; need not close it
+     * @throws IOException
+     */
+    public static void writeAtomically(File target, StreamWriter body) throws IOException
+    {
+        File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
+
+        try
+        {
+            try (FileOutputStream out = new FileOutputStream(staging))
+            {
+                body.write(out);
+
+                out.flush();
+            }
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // The half-written staging file is worthless and would otherwise accumulate beside the
+            // target.  The target itself has not been touched, which is the point of all this.
+            staging.delete();
+
+            throw e;
+        }
+
+        Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
 
     /**
      * Downloads a file from a URL
