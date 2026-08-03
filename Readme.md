@@ -363,7 +363,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v2.8.0 [Beta]
+* v2.8.0 [8/2/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
     - Locomotive Control Page
         - Removed copy-to-next/-previous page option from button right-click menus (now redundant with 2.7.3's drag and drop)

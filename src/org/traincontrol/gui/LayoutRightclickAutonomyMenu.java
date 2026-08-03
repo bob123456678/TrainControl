@@ -174,9 +174,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.isAutonomyBusy())
                     {
                         // Edit locomotive
-                        menuItem = new JMenuItem(
-                            I18n.t("autolayout.ui.labelEditLocomotiveAt")
-                        );
+                        menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
                         menuItem.addActionListener(event -> 
                         {
                             GraphLocAssign edit = new GraphLocAssign(ui, current, false);

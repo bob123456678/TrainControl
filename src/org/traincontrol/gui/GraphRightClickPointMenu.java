@@ -47,7 +47,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
             // Select the active locomotive
             if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
             {
-                menuItem = new JMenuItem(I18n.t("autolayout.ui.labelEditLocomotiveAt"));
+                menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(p));
                 menuItem.addActionListener(event -> 
                     {
                         GraphLocAssign edit = new GraphLocAssign(ui, p, false);
@@ -67,6 +67,23 @@ final class GraphRightClickPointMenu extends JPopupMenu
                             edit.commitChanges();
                             ui.updateVisiblePoints();
                         }
+                    }
+                );    
+
+                add(menuItem);
+            }
+            
+            if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && ui.getActiveLoc() != null)
+            {
+                menuItem = new JMenuItem(
+                    I18n.f("autolayout.ui.menuAssignLocomotiveToNode", ui.getActiveLoc().getName())
+                );
+                menuItem.setToolTipText("Control+V");
+                menuItem.addActionListener(event -> 
+                    {
+                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), nodeName, false);
+                        ui.updateVisiblePoints();
+                        ui.repaintAutoLocList(false);
                     }
                 );    
 
@@ -117,23 +134,6 @@ final class GraphRightClickPointMenu extends JPopupMenu
             }); 
 
             add(menuItem);
-
-            if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && ui.getActiveLoc() != null)
-            {
-                menuItem = new JMenuItem(
-                    I18n.f("autolayout.ui.menuAssignLocomotiveToNode", ui.getActiveLoc().getName())
-                );
-                menuItem.setToolTipText("Control+V");
-                menuItem.addActionListener(event -> 
-                    {
-                        ui.getModel().getAutoLayout().moveLocomotive(ui.getActiveLoc().getName(), nodeName, false);
-                        ui.updateVisiblePoints();
-                        ui.repaintAutoLocList(false);
-                    }
-                );    
-
-                add(menuItem);
-            }
 
             addSeparator();
 

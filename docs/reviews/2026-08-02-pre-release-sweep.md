@@ -205,9 +205,47 @@ half-done.
 
 ---
 
+## Validation of the fix commit `ae7c371` - 2026-08-02
+
+Both fixes read against their findings, both dispositions' claims re-derived rather than accepted.
+No new findings; the round is clean, and the release question is answered at the end.
+
+- **`RS-C1` is the prescribed one-token change, and the no-third-twin claim is concurred from this
+  reviewer's own sweep notes**: the three other unlimited `split("=")` sites sit in the route-item
+  and function-item loops, whose values (`magnetartikel`, `stellung`, `sekunde`, `nr`, `typ`,
+  `dauer`) are all numeric. The fix was also traced one step further downstream than the
+  disposition records: the equals-bearing name now survives `parseFileContents` into the flattened
+  `traktion` string, and `parseLocomotives`' reconstruction (`split(",lok=")` then strip
+  `lokname=`) preserves it - correctly, though that reconstruction depends on the flattening's
+  HashMap iteration putting `lokname` before `lok`, which is deterministic in practice and now
+  pinned by the new test. Recorded as a fragility, not filed: it predates this round and the test
+  guards it.
+- **`RS-C2`'s read-side extension is the finding done right.** The finding named only the write;
+  sanitising only there would have made `parseLayout`'s lookup miss the very file the download
+  just wrote - a loud failure traded for a silent one, exactly as the disposition says. The
+  reproduction insight deserves its keep too: a separator-bearing page name is the one shape
+  testable on every OS, because the source file can exist under it - the fixture carries the page
+  under both spellings so the write path is isolated from the read-path change.
+- **The declined folder-deletion is correctly declined, and its key premise was verified**: the
+  override preference is written at TrainControlUI.java:14257, the statement after
+  `downloadLayout(path)` returns - `downloadLayout` throws on failure, so a partial download can
+  never become the active layout. Deleting an operator-chosen folder that normally contains the
+  previous good download would indeed be worse than the disease; the stage-into-temp-and-move
+  shape is the right future fix and is recorded rather than half-done, which is the
+  `IR`-era standard for declined halves.
+- **Two theoretical residuals, recorded, not filed**: two page names that sanitise to the same
+  filename collide silently (`Sub/Page` and `Sub_Page` - the fixture's own pair), and Windows
+  reserved device names (`CON`, `NUL`) pass the character filter. Both require the operator's own
+  Central Station to serve an adversarial index; neither is worth its guard.
+- **The changelog entries are user-facing and accurate**, including the detail that a corrected
+  filename is found again on load - the round-trip the read-side fix exists for.
+
+**Release verdict.** With `RS-C1` and `RS-C2` closed, no document in this folder carries an open
+code finding: UC, SF, CP, RV and RS are all fixed, withdrawn, declined-with-reasoning, or
+informational. The two standing items below are not code.
+
 ## Standing items across the folder
 
-- `RS-C1`, `RS-C2`: fixed, see the disposition above.
 - The `UC` record note on the stranded-javadoc detector claimed in that document's disposition but
   absent from the repository.
 - The parking-area activation described in `RV` - sixteen berths reachable by "return home" instead
