@@ -462,6 +462,16 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
+            autonomyPanel.setLocomotiveNames(new java.util.function.Supplier<java.util.List<String>>()
+            {
+                @Override
+                public java.util.List<String> get()
+                {
+                    return parent.getModel() == null
+                        ? new java.util.ArrayList<String>() : parent.getModel().getLocList();
+                }
+            });
+
             this.newComponents.removeAll();
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);

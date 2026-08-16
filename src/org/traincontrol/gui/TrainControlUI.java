@@ -1749,6 +1749,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Draws the setup itself on the track diagram - stations, and track that has been restricted.
+     *
+     * Separate from monitoring, which only paints while trains are moving: before a run there is
+     * nothing moving to paint, which is why the checkbox looked inert. This is the same annotation the
+     * editor draws, minus anything to do with editing, so the two views agree by construction.
+     *
+     * @param show
+     */
+    public void showStaticAutonomyLayer(boolean show)
+    {
+        org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+        if (session == null || session.getGraph() == null) return;
+
+        for (org.traincontrol.base.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            getDiagramTileRegistry().annotate(tile,
+                show ? session.staticAnnotationFor(tile) : null);
+        }
+    }
+
+    /**
      * Shows the tab where locomotives are placed and autonomy is started.
      *
      * Offered only once a configuration has loaded, because that tab does not exist before then - which

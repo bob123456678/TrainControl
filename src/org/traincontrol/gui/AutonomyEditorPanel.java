@@ -103,6 +103,8 @@ public class AutonomyEditorPanel extends JPanel
     private final JList<String> findings = new JList<>(findingsModel);
 
     private final JCheckBox showDirections = new JCheckBox(I18n.t("autosetup.ui.btnShowDirections"), true);
+    private final JCheckBox showAllDirections =
+        new JCheckBox(I18n.t("autosetup.ui.btnShowAllDirections"), false);
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
     // Portal pairing takes two clicks, and the first is remembered here
@@ -114,6 +116,13 @@ public class AutonomyEditorPanel extends JPanel
     // The path test also takes two clicks; the first end and the last found route live here
     private TileKey testFrom;
     private final Set<TileKey> testPath = new LinkedHashSet<>();
+
+    // A one-way run started from the right-click menu, waiting for its far end
+    private TileKey oneWayFrom;
+
+    // Where the locomotive roster comes from.  Supplied rather than read here, because the session is
+    // headless and knows nothing about the control station.
+    private java.util.function.Supplier<List<String>> locomotiveNames;
 
     /**
      * @param session the setup being edited
@@ -166,9 +175,11 @@ public class AutonomyEditorPanel extends JPanel
 
         // the toggles change what is drawn, not what is decided, so all they do is redraw
         showDirections.addActionListener(e -> refresh());
+        showAllDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
         panel.add(AutonomyViewerPanel.styled(showDirections, false));
+        panel.add(AutonomyViewerPanel.styled(showAllDirections, false));
         panel.add(AutonomyViewerPanel.styled(showLengths, false));
 
         hint.setFont(AutonomyViewerPanel.FONT_LIST);
@@ -300,7 +311,36 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || session.getGraph() == null) return;
 
+        // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu
+        // whose every item would be a no-op.
+        if (isIgnored(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+            return;
+        }
+
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        if (component != null && component.isFeedback())
+        {
+            javax.swing.JMenuItem properties = new javax.swing.JMenuItem(
+                I18n.t("autosetup.ui.menuPointProperties"));
+            properties.addActionListener(e -> { pointProperties(tile); refresh(); });
+            menu.add(AutonomyViewerPanel.styled(properties, true));
+            menu.addSeparator();
+        }
+
+        // The gesture that per-tile cycling could not express: say where trains may run BETWEEN two
+        // places, and let the tiles in between work out what that means for each of them.
+        javax.swing.JMenuItem oneWay = new javax.swing.JMenuItem(
+            I18n.t("autosetup.ui.menuOneWayRun"));
+        oneWay.addActionListener(e ->
+        {
+            oneWayFrom = tile;
+            say(hint, I18n.t("autosetup.ui.promptOneWayTo"));
+        });
+        menu.add(AutonomyViewerPanel.styled(oneWay, false));
+        menu.addSeparator();
 
         Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -448,6 +488,30 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || session.getGraph() == null) return;
 
+        // A one-way run was started from a right-click menu and is waiting for its far end.
+        if (oneWayFrom != null)
+        {
+            TileKey from = oneWayFrom;
+            oneWayFrom = null;
+
+            int changed = session.setOneWayRun(from, tile);
+
+            say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
+                : I18n.f("autosetup.ui.oneWayDone", changed));
+
+            refresh();
+            return;
+        }
+
+        // Autonomy takes no notice of this square, so a click here changes nothing.  Route buttons are
+        // the case that matters: their connections are INFERRED from the track around them, so letting
+        // them be set by hand would offer a decision the next rebuild would silently discard.
+        if (isIgnored(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+            return;
+        }
+
         if (addToSelection)
         {
             if (!selection.remove(tile)) selection.add(tile);
@@ -551,6 +615,182 @@ public class AutonomyEditorPanel extends JPanel
             JOptionPane.YES_NO_OPTION);
 
         session.setStation(tile, station == JOptionPane.YES_OPTION);
+    }
+
+    /**
+     * Everything a Point can be, on one dialog.
+     *
+     * These are the distinctions autonomy actually runs on - whether a train may be SENT here, whether
+     * one arriving must leave the way it came, whether it turns round here - and none of them had any
+     * way to be set at all. They are per configuration, because they are what one configuration varies
+     * against another over the same track.
+     *
+     * "Reversing station" is not a fourth thing: it is a station that is also a reversing point, which
+     * is why they are checkboxes rather than a list to choose one from.
+     */
+    private void pointProperties(TileKey tile)
+    {
+        if (session.getReducer() == null || !session.getReducer().getPoints().containsKey(tile))
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNotAPoint"));
+            return;
+        }
+
+        JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
+
+        JCheckBox station = check(panel, "autosetup.ui.labelIsStation",
+            session.getStore().isStation(tile));
+        JCheckBox terminus = check(panel, "autosetup.ui.labelIsTerminus", flag(tile, "terminus"));
+        JCheckBox reversing = check(panel, "autosetup.ui.labelIsReversing", flag(tile, "reversing"));
+
+        // active defaults to true when nothing has been stored, matching parseAuto
+        Object storedActive = session.getPointProperty(tile, "active");
+        JCheckBox active = check(panel, "autosetup.ui.labelIsActive",
+            storedActive == null || Boolean.TRUE.equals(storedActive));
+
+        javax.swing.JTextField maxLength = field(panel, "autosetup.ui.labelMaxTrainLength",
+            number(tile, "maxTrainLength", 0));
+        javax.swing.JTextField multiplier = field(panel, "autosetup.ui.labelSpeedMultiplier",
+            number(tile, "speedMultiplier", 100));
+        javax.swing.JTextField priority = field(panel, "autosetup.ui.labelPriority",
+            number(tile, "priority", 0));
+
+        // Locomotive exclusions and homes, which the graph window used to own and which had no home at
+        // all after it went.  A multi-select list rather than free text: the names have to match the
+        // roster exactly or the exclusion silently does nothing.
+        javax.swing.JList<String> excluded = locomotiveList(panel, "autosetup.ui.labelExcludedLocs",
+            strings(tile, "excludedLocs"));
+
+        javax.swing.JList<String> home = locomotiveList(panel, "autosetup.ui.labelHomeFor",
+            strings(tile, "home"));
+
+        String name = session.getStore().getPointName(tile);
+
+        if (JOptionPane.showConfirmDialog(this, new JScrollPane(panel),
+            I18n.f("autosetup.ui.titlePointProperties",
+                name == null || name.trim().isEmpty() ? tile.toString() : name),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
+        {
+            return;
+        }
+
+        session.setStation(tile, station.isSelected());
+
+        // Stored only when set, so a configuration file records decisions rather than every default.
+        session.setPointProperty(tile, "terminus", terminus.isSelected() ? Boolean.TRUE : null);
+        session.setPointProperty(tile, "reversing", reversing.isSelected() ? Boolean.TRUE : null);
+        session.setPointProperty(tile, "active", active.isSelected() ? null : Boolean.FALSE);
+
+        session.setPointProperty(tile, "maxTrainLength", parse(maxLength, 0));
+        session.setPointProperty(tile, "speedMultiplier", parse(multiplier, 100));
+        session.setPointProperty(tile, "priority", parse(priority, 0));
+
+        session.setPointProperty(tile, "excludedLocs", selected(excluded));
+        session.setPointProperty(tile, "home", selected(home));
+    }
+
+    private JCheckBox check(JPanel panel, String key, boolean value)
+    {
+        JCheckBox box = new JCheckBox(I18n.t(key), value);
+        panel.add(AutonomyViewerPanel.styled(box, false));
+        return box;
+    }
+
+    private javax.swing.JTextField field(JPanel panel, String key, int value)
+    {
+        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t(key)), false));
+
+        javax.swing.JTextField text = new javax.swing.JTextField(String.valueOf(value));
+        panel.add(AutonomyViewerPanel.styled(text, false));
+
+        return text;
+    }
+
+    private javax.swing.JList<String> locomotiveList(JPanel panel, String key, Set<String> chosen)
+    {
+        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t(key)), false));
+
+        javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+
+        List<String> names = locomotiveNames == null
+            ? java.util.Collections.<String>emptyList() : locomotiveNames.get();
+
+        for (String name : names) model.addElement(name);
+
+        javax.swing.JList<String> list = new javax.swing.JList<>(model);
+        list.setVisibleRowCount(4);
+        AutonomyViewerPanel.styled(list, false);
+
+        List<Integer> indexes = new java.util.ArrayList<>();
+
+        for (int i = 0; i < names.size(); i++)
+        {
+            if (chosen.contains(names.get(i))) indexes.add(i);
+        }
+
+        int[] selection = new int[indexes.size()];
+
+        for (int i = 0; i < indexes.size(); i++) selection[i] = indexes.get(i);
+
+        list.setSelectedIndices(selection);
+
+        panel.add(new JScrollPane(list));
+
+        return list;
+    }
+
+    private boolean flag(TileKey tile, String key)
+    {
+        return Boolean.TRUE.equals(session.getPointProperty(tile, key));
+    }
+
+    private int number(TileKey tile, String key, int fallback)
+    {
+        Object value = session.getPointProperty(tile, key);
+
+        return value instanceof Number ? ((Number) value).intValue() : fallback;
+    }
+
+    private Set<String> strings(TileKey tile, String key)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        Object value = session.getPointProperty(tile, key);
+
+        if (value instanceof org.json.JSONArray)
+        {
+            for (Object o : (org.json.JSONArray) value) out.add(String.valueOf(o));
+        }
+        else if (value != null)
+        {
+            out.add(String.valueOf(value));
+        }
+
+        return out;
+    }
+
+    /**
+     * @return the number, or null when it is the default and so not worth storing
+     */
+    private Object parse(javax.swing.JTextField field, int ignoreWhen)
+    {
+        try
+        {
+            int value = Integer.parseInt(field.getText().trim());
+
+            return value == ignoreWhen ? null : value;
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
+
+    private Object selected(javax.swing.JList<String> list)
+    {
+        List<String> chosen = list.getSelectedValuesList();
+
+        return chosen.isEmpty() ? null : new org.json.JSONArray(chosen);
     }
 
     private void promptName(TileKey tile)
@@ -780,7 +1020,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         java.util.List<org.traincontrol.base.TileAnnotation.Mark> marks = new java.util.ArrayList<>();
 
-        if (showDirections.isSelected() && session.getGraph() != null)
+        boolean ignored = isIgnored(tile);
+
+        if (showDirections.isSelected() && session.getGraph() != null && !ignored)
         {
             for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry
                 : session.getRoutes(tile).entrySet())
@@ -797,6 +1039,12 @@ public class AutonomyEditorPanel extends JPanel
                     direction = route.getDirectedToward() == route.getA()
                         ? Direction.TOWARD_A : Direction.TOWARD_B;
                 }
+
+                // Only what RESTRICTS a train is drawn.  Track that runs both ways is the overwhelming
+                // majority of a layout and is also the default, so drawing it put an arrow on every
+                // square and left the handful of real decisions with nothing to stand out against.
+                // Bidirectional track is now simply unmarked - the same information, read by absence.
+                if (direction == Direction.BOTH && !showAllDirections.isSelected()) continue;
 
                 marks.add(new org.traincontrol.base.TileAnnotation.Mark(
                     route.getA(), route.getB(), direction));
@@ -823,7 +1071,30 @@ public class AutonomyEditorPanel extends JPanel
         String name = session.getStore().getPointName(tile);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined, station,
-            name != null && !name.trim().isEmpty());
+            name != null && !name.trim().isEmpty(), ignored);
+    }
+
+    /**
+     * Whether autonomy takes no notice of this square, so nothing here is the user's to decide.
+     *
+     * Three ways that happens, and the drawing does not distinguish them because the answer to all
+     * three is the same: leave it alone.
+     *   - the page is excluded
+     *   - the tile type cannot be routed over (turntables, scissors)
+     *   - the tile carries whatever line it sits on rather than a line of its own (route buttons),
+     *     which is INFERRED from its neighbours and so is not something to click
+     */
+    private boolean isIgnored(TileKey tile)
+    {
+        if (session.getStore().getExcludedPages().contains(tile.getPage())) return true;
+
+        org.traincontrol.base.LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (component == null) return false;
+
+        return org.traincontrol.base.TilePorts.isDisqualified(component.getType())
+            || org.traincontrol.base.TilePorts.isTransparent(component.getType());
     }
 
     /**
@@ -973,6 +1244,14 @@ public class AutonomyEditorPanel extends JPanel
     public void setOnReveal(java.util.function.Consumer<TileKey> onReveal)
     {
         this.onReveal = onReveal;
+    }
+
+    /**
+     * @param locomotiveNames supplies the roster, for exclusion and home lists
+     */
+    public void setLocomotiveNames(java.util.function.Supplier<List<String>> locomotiveNames)
+    {
+        this.locomotiveNames = locomotiveNames;
     }
 
     private String describe(String key, String subject)

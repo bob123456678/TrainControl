@@ -872,6 +872,112 @@ public class TileGraph
         return null;
     }
 
+    /**
+     * Which side of a tile faces one of its neighbours.
+     *
+     * Geometric, not routing: it answers "which way is that square from this one", including through a
+     * paired portal, where the two squares are neighbours without touching.
+     *
+     * @param tile
+     * @param other
+     * @return the side, or null when the two are not adjacent
+     */
+    public Side sideToward(TileKey tile, TileKey other)
+    {
+        if (tile == null || other == null) return null;
+
+        for (Side side : Side.values())
+        {
+            if (other.equals(neighbour(tile, side))) return side;
+        }
+
+        // A portal's partner is a neighbour reached through no side at all, so there is no side to
+        // name for it; callers that care about portals use landing() instead.
+        return null;
+    }
+
+    /**
+     * A route from one square to another over the track as DRAWN, ignoring which way trains may run.
+     *
+     * Deliberately blind to direction: this exists to change directions, so consulting them would mean
+     * a run that has already been set one way could only ever be re-drawn the same way round.
+     *
+     * @param from
+     * @param to
+     * @return the squares from one to the other inclusive, or null when no continuous track joins them
+     */
+    public List<TileKey> findUndirectedPath(TileKey from, TileKey to)
+    {
+        if (from == null || to == null || !tiles.containsKey(from) || !tiles.containsKey(to))
+        {
+            return null;
+        }
+
+        if (from.equals(to)) return new ArrayList<>(Collections.singletonList(from));
+
+        Map<TileKey, TileKey> cameFrom = new LinkedHashMap<>();
+        java.util.ArrayDeque<TileKey> frontier = new java.util.ArrayDeque<>();
+
+        frontier.add(from);
+        cameFrom.put(from, null);
+
+        while (!frontier.isEmpty())
+        {
+            TileKey here = frontier.poll();
+
+            for (TileKey next : undirectedNeighbours(here))
+            {
+                if (cameFrom.containsKey(next)) continue;
+
+                cameFrom.put(next, here);
+
+                if (next.equals(to))
+                {
+                    List<TileKey> path = new ArrayList<>();
+
+                    for (TileKey at = to; at != null; at = cameFrom.get(at)) path.add(0, at);
+
+                    return path;
+                }
+
+                frontier.add(next);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Every square this one shares a route with, whichever way trains are allowed to run.
+     */
+    private List<TileKey> undirectedNeighbours(TileKey tile)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        LayoutDiagramComponent component = tiles.get(tile);
+
+        if (component == null) return out;
+
+        Set<Side> sides = new LinkedHashSet<>();
+
+        for (Route route : getRoutes(tile).values())
+        {
+            sides.add(route.getA());
+            sides.add(route.getB());
+        }
+
+        for (Side side : sides)
+        {
+            if (side == null) continue;
+
+            Landing landing = landing(tile, side);
+
+            if (landing != null && tiles.containsKey(landing.getTile())) out.add(landing.getTile());
+        }
+
+        return out;
+    }
+
     private static TileKey neighbour(TileKey tile, Side side)
     {
         switch (side)

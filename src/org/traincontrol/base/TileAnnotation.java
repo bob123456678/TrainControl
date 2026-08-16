@@ -131,11 +131,20 @@ public class TileAnnotation
      */
     private static final Color STATION = new Color(0, 90, 180);
 
+    /**
+     * Autonomy takes no notice of this square.  Greyed rather than left plain, so that a tile nobody
+     * can configure looks different from one nobody has configured yet.
+     */
+    private static final Color IGNORED = new Color(120, 120, 120);
+
+    private static final float IGNORED_ALPHA = 0.45f;
+
     private final List<Mark> marks;
     private final int length;
     private final boolean selected;
     private final boolean station;
     private final boolean named;
+    private final boolean ignored;
 
     /**
      * @param marks the routes to draw, or empty to draw none
@@ -144,7 +153,7 @@ public class TileAnnotation
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected)
     {
-        this(marks, length, selected, false, true);
+        this(marks, length, selected, false, true, false);
     }
 
     /**
@@ -153,15 +162,22 @@ public class TileAnnotation
      * @param selected whether this tile is part of a bulk selection
      * @param station whether trains may be sent here
      * @param named whether this point has a name of its own
+     * @param ignored whether autonomy takes no notice of this square at all
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
-        boolean named)
+        boolean named, boolean ignored)
     {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
         this.station = station;
         this.named = named;
+        this.ignored = ignored;
+    }
+
+    public boolean isIgnored()
+    {
+        return ignored;
     }
 
     public boolean isStation()
@@ -195,7 +211,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && !station;
+        return marks.isEmpty() && length < 0 && !selected && !station && !ignored;
     }
 
     /**
@@ -218,6 +234,18 @@ public class TileAnnotation
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+            // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
+            // Nothing here is the user's to decide, so anything drawn would invite a click.
+            if (ignored)
+            {
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, IGNORED_ALPHA));
+                g.setColor(IGNORED);
+                g.fillRect(0, 0, width, height);
+
+                return;
+            }
+
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
             // contrast problem as writing on a photograph; this is the caption box behind the writing.
             if (!marks.isEmpty())
@@ -232,9 +260,15 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            for (Mark mark : marks)
+            // Routes are nudged off the centre when a tile carries more than one, so a crossing or a
+            // double curve shows two separate paths rather than one X of overlapping lines that says
+            // nothing about which of them is restricted.
+            for (int i = 0; i < marks.size(); i++)
             {
-                paintMark(g, width, height, mark);
+                int spread = marks.size() < 2 ? 0
+                    : Math.max(2, Math.min(width, height) / 8) * (i * 2 - (marks.size() - 1));
+
+                paintMark(g, width, height, marks.get(i), spread);
             }
 
             if (station) paintStation(g, width, height);
@@ -264,15 +298,30 @@ public class TileAnnotation
      * Through the middle rather than straight across, so a curve is drawn as a curve: a straight line
      * between the two sides of a curve tile would cut the corner and sit off the track it describes.
      */
-    private void paintMark(Graphics2D g, int width, int height, Mark mark)
+    private void paintMark(Graphics2D g, int width, int height, Mark mark, int spread)
     {
         int[] from = midpoint(mark.getA(), width, height);
         int[] to = midpoint(mark.getB(), width, height);
 
         if (from == null || to == null) return;
 
+        // The waypoint the route bends through.  Nudged perpendicular to the run when the tile carries
+        // more than one route, which is what keeps a crossing legible.
         int cx = width / 2;
         int cy = height / 2;
+
+        if (spread != 0)
+        {
+            double dx = to[0] - from[0];
+            double dy = to[1] - from[1];
+            double len = Math.sqrt(dx * dx + dy * dy);
+
+            if (len >= 1)
+            {
+                cx += (int) Math.round(-dy / len * spread);
+                cy += (int) Math.round(dx / len * spread);
+            }
+        }
 
         if (mark.getDirection() == Direction.NONE)
         {
@@ -436,20 +485,22 @@ public class TileAnnotation
         TileAnnotation other = (TileAnnotation) o;
 
         return length == other.length && selected == other.selected
-            && station == other.station && named == other.named && marks.equals(other.marks);
+            && station == other.station && named == other.named && ignored == other.ignored
+            && marks.equals(other.marks);
     }
 
     @Override
     public int hashCode()
     {
         return marks.hashCode() * 31 + length * 2
-            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0);
+            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0) + (ignored ? 16 : 0);
     }
 
     @Override
     public String toString()
     {
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
-            + (station ? (named ? " station" : " station(unnamed)") : "");
+            + (station ? (named ? " station" : " station(unnamed)") : "")
+            + (ignored ? " ignored" : "");
     }
 }

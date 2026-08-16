@@ -57,5 +57,10 @@ public class AutonomyOverlayToggle extends JPanel
     private void apply()
     {
         ui.getDiagramMonitorDriver().setEnabled(show.isSelected());
+
+        // Monitoring only paints while trains are moving, so before a run this checkbox appeared to do
+        // nothing at all.  It also switches the static layer - stations, and any track that has been
+        // restricted - which is what somebody looking at the diagram wants to see about their setup.
+        ui.showStaticAutonomyLayer(show.isSelected());
     }
 }

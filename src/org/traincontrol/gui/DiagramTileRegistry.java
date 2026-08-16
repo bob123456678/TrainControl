@@ -59,6 +59,10 @@ public class DiagramTileRegistry
         TileOverlay current = lastPublished.get(key);
 
         if (current != null) label.setAutonomyOverlay(current);
+
+        org.traincontrol.base.TileAnnotation annotation = lastAnnotated.get(key);
+
+        if (annotation != null && annotation != BLANK) label.setAutonomyAnnotation(annotation);
     }
 
     /**
@@ -107,6 +111,47 @@ public class DiagramTileRegistry
     }
 
     /**
+     * Sets what the setup says about one square, on every copy of it that is on screen.
+     *
+     * Separate from publish(), which is the whole-layout picture of what trains are doing.  This one is
+     * per tile and changes rarely, so it is pushed as it changes rather than republished wholesale.
+     *
+     * @param key
+     * @param annotation what to draw, or null for nothing
+     */
+    public void annotate(TileKey key, org.traincontrol.base.TileAnnotation annotation)
+    {
+        if (key == null) return;
+
+        lastAnnotated.put(key, annotation == null
+            ? BLANK : annotation);
+
+        Set<LayoutLabel> here = tiles.get(key);
+
+        if (here == null) return;
+
+        for (Iterator<LayoutLabel> i = here.iterator(); i.hasNext();)
+        {
+            LayoutLabel label = i.next();
+
+            if (!label.isParentVisible())
+            {
+                i.remove();
+                continue;
+            }
+
+            label.setAutonomyAnnotation(annotation);
+        }
+    }
+
+    // A stand-in for "nothing", because a ConcurrentHashMap cannot hold a null value
+    private static final org.traincontrol.base.TileAnnotation BLANK =
+        new org.traincontrol.base.TileAnnotation(null, -1, false);
+
+    private final Map<TileKey, org.traincontrol.base.TileAnnotation> lastAnnotated =
+        new ConcurrentHashMap<>();
+
+    /**
      * @return how many squares are registered, for diagnostics
      */
     public int size()
@@ -122,5 +167,6 @@ public class DiagramTileRegistry
     {
         tiles.clear();
         lastPublished.clear();
+        lastAnnotated.clear();
     }
 }

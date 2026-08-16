@@ -431,6 +431,119 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * One of a Point's operational properties, in the active configuration.
+     *
+     * Kept per configuration rather than beside the track, because these are what a configuration IS:
+     * the same railway with different rules about where trains may stand and turn.  The keys are the
+     * ones parseAuto reads, so nothing has to translate them on the way out.
+     *
+     * @param tile
+     * @param key terminus, reversing, active, maxTrainLength, speedMultiplier, priority, home,
+     *        excludedLocs
+     * @param value the value, or null to remove the property entirely
+     */
+    public void setPointProperty(TileKey tile, String key, Object value)
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return;
+
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        String id = tile.toString();
+
+        if (!points.has(id)) points.put(id, new org.json.JSONObject());
+
+        if (value == null) points.getJSONObject(id).remove(key);
+        else points.getJSONObject(id).put(key, value);
+
+        dirty = true;
+    }
+
+    /**
+     * @param tile
+     * @param key
+     * @return the stored value, or null when this Point has no such property
+     */
+    public Object getPointProperty(TileKey tile, String key)
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return null;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return null;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        String id = tile.toString();
+
+        if (!points.has(id)) return null;
+
+        org.json.JSONObject point = points.getJSONObject(id);
+
+        return point.has(key) ? point.get(key) : null;
+    }
+
+    /**
+     * Sets one direction across a whole run of track, from one square to another.
+     *
+     * The gesture the per-tile tools could not express.  A user does not think "close the westward
+     * route on eleven tiles"; they think "trains only go this way along here", and then have to work
+     * out which tiles that means and which way round each one's A and B happen to be.
+     *
+     * The route is found ignoring directions - the point is to change them - so an already one-way run
+     * can be reversed by drawing it the other way.
+     *
+     * @param from the square trains may leave
+     * @param to the square they may travel toward
+     * @return how many tiles were changed, or -1 if there is no continuous track between the two
+     */
+    public int setOneWayRun(TileKey from, TileKey to)
+    {
+        List<TileKey> path = graph.findUndirectedPath(from, to);
+
+        if (path == null) return -1;
+
+        int changed = 0;
+
+        // Only the track BETWEEN the two ends is restricted.  The ends themselves are the squares the
+        // user picked out; closing a route on them would also block traffic that never enters the run.
+        for (int i = 1; i < path.size() - 1; i++)
+        {
+            TileKey tile = path.get(i);
+
+            Side cameFrom = graph.sideToward(tile, path.get(i - 1));
+            Side goingTo = graph.sideToward(tile, path.get(i + 1));
+
+            if (cameFrom == null || goingTo == null) continue;
+
+            for (Map.Entry<RouteId, Route> entry : graph.getRoutes(tile).entrySet())
+            {
+                Route route = entry.getValue();
+
+                if (!route.touches(cameFrom) || !route.touches(goingTo)) continue;
+
+                record(tile, entry.getKey(),
+                    route.getA() == goingTo ? Direction.TOWARD_A : Direction.TOWARD_B);
+
+                changed++;
+            }
+        }
+
+        touched();
+
+        return changed;
+    }
+
     public void setTileLength(TileKey tile, int length)
     {
         store.setTileLength(tile, length);
@@ -459,6 +572,43 @@ public class AutonomySession
     {
         store.unpairPortal(tile);
         touched();
+    }
+
+    /**
+     * What the setup says about one square, for drawing on the ordinary track diagram.
+     *
+     * Only what a viewer needs: which sensors are stations, and which track has been restricted.  No
+     * selection, no lengths, no greying - those belong to editing, and this is drawn on the diagram
+     * people operate from.
+     *
+     * @param tile
+     * @return the annotation, or null when this square has nothing to say
+     */
+    public TileAnnotation staticAnnotationFor(TileKey tile)
+    {
+        if (graph == null) return null;
+
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        for (Map.Entry<RouteId, Route> entry : graph.getRoutes(tile).entrySet())
+        {
+            Direction direction = graph.getDirection(tile, entry.getKey());
+
+            // restrictions only: bidirectional track is the default and would mark the whole layout
+            if (direction == Direction.BOTH) continue;
+
+            marks.add(new TileAnnotation.Mark(
+                entry.getValue().getA(), entry.getValue().getB(), direction));
+        }
+
+        boolean station = store.isStation(tile);
+
+        if (marks.isEmpty() && !station) return null;
+
+        String name = store.getPointName(tile);
+
+        return new TileAnnotation(marks, -1, false, station,
+            name != null && !name.trim().isEmpty(), false);
     }
 
     /**
