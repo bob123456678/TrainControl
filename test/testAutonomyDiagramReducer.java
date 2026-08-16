@@ -263,6 +263,58 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * The connectivity test: a shortest run comes back in order, and it respects directions - the same
+     * pair of Points can be reachable one way and not the other on the same track.
+     */
+    @Test
+    public void testFindPathFollowsDirectionsAndReturnsAShortestRun() throws IOException
+    {
+        // three sensors in a row: A - B - C, with the track between B and C one-way toward C
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        TileGraph graph = graph(page);
+        TileKey oneWay = key("main", 4, 1);
+
+        RouteId only = graph.getRoutes(oneWay).keySet().iterator().next();
+        Route route = graph.getRoutes(oneWay).get(only);
+        graph.setDirection(oneWay, only,
+            route.getA() == Side.E ? Direction.TOWARD_A : Direction.TOWARD_B);
+
+        GraphReducer reducer = reduce(graph, null);
+
+        TileKey a = key("main", 1, 1);
+        TileKey b = key("main", 3, 1);
+        TileKey c = key("main", 5, 1);
+
+        // A to C crosses both edges, in order
+        List<ReducedEdge> run = reducer.findPath(a, c);
+        assertNotNull(run, "A should reach C");
+        assertEquals(run.size(), 2, "two edges: A-B then B-C");
+        assertEquals(run.get(0).getStart(), a);
+        assertEquals(run.get(0).getEnd(), b);
+        assertEquals(run.get(1).getStart(), b);
+        assertEquals(run.get(1).getEnd(), c);
+
+        // C cannot get back past the one-way tile, to B or to A
+        assertNull(reducer.findPath(c, a), "the one-way track should block the return");
+        assertNull(reducer.findPath(c, b), "even the single hop against it");
+
+        // but B still reaches A, because only the B-C stretch was restricted
+        assertNotNull(reducer.findPath(b, a));
+
+        // a Point trivially reaches itself, with an empty run rather than a null one
+        assertEquals(reducer.findPath(a, a).size(), 0);
+
+        // and a tile that is not a Point is a null, not an exception
+        assertNull(reducer.findPath(a, key("main", 2, 1)));
+    }
+
+    /**
      * A sensor with nothing next to it is counted and left out.  Emitting it would only produce an
      * unreachable node that fails validation later, with nothing to say about why.
      */

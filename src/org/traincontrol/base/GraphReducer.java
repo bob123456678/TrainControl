@@ -312,6 +312,66 @@ public class GraphReducer
         return isolatedFeedbackTiles;
     }
 
+    /**
+     * Whether, and how, a train could get from one Point to another.
+     *
+     * Breadth-first over the directed edges, so what comes back is a shortest run in edges - the one a
+     * user can most easily check against the diagram.  This is the connectivity TEST the editor offers;
+     * it deliberately ignores lengths, exclusions and locks, because the question it answers is "does
+     * the track as authored allow this at all", and a "no" from a longer answer would leave the user
+     * unsure which rule said it.
+     *
+     * @param from the tile of the starting Point
+     * @param to the tile of the destination Point
+     * @return the edges of a shortest run in order, or null when no run exists (or either end is not a
+     *         Point of this reduction)
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to)
+    {
+        if (!points.containsKey(from) || !points.containsKey(to)) return null;
+
+        if (from.equals(to)) return new ArrayList<ReducedEdge>();
+
+        Map<TileKey, ReducedEdge> arrivedBy = new LinkedHashMap<>();
+
+        java.util.ArrayDeque<TileKey> frontier = new java.util.ArrayDeque<>();
+        frontier.add(from);
+
+        while (!frontier.isEmpty())
+        {
+            TileKey here = frontier.poll();
+
+            for (ReducedEdge edge : edges)
+            {
+                if (!edge.getStart().equals(here)) continue;
+
+                TileKey next = edge.getEnd();
+
+                if (next.equals(from) || arrivedBy.containsKey(next)) continue;
+
+                arrivedBy.put(next, edge);
+
+                if (next.equals(to))
+                {
+                    List<ReducedEdge> path = new ArrayList<>();
+
+                    for (TileKey at = to; !at.equals(from);)
+                    {
+                        ReducedEdge step = arrivedBy.get(at);
+                        path.add(0, step);
+                        at = step.getStart();
+                    }
+
+                    return path;
+                }
+
+                frontier.add(next);
+            }
+        }
+
+        return null;
+    }
+
     public List<TileGraph.Problem> getProblems()
     {
         return Collections.unmodifiableList(problems);

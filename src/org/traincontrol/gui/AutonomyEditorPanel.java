@@ -68,7 +68,12 @@ public class AutonomyEditorPanel extends JPanel
         /**
          * Say how long a piece of track counts as.
          */
-        LENGTHS
+        LENGTHS,
+
+        /**
+         * Ask whether a train could get from one sensor to another, and see the route it would take.
+         */
+        TEST
     }
 
     private final AutonomySession session;
@@ -89,6 +94,10 @@ public class AutonomyEditorPanel extends JPanel
 
     // Bulk selection, so a one-way run is set in one gesture rather than forty
     private final Set<TileKey> selection = new LinkedHashSet<>();
+
+    // The path test also takes two clicks; the first end and the last found route live here
+    private TileKey testFrom;
+    private final Set<TileKey> testPath = new LinkedHashSet<>();
 
     /**
      * @param session the setup being edited
@@ -121,6 +130,7 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(toolButton(Tool.POINTS, I18n.t("autosetup.ui.toolPoints"), group, false));
         panel.add(toolButton(Tool.PORTALS, I18n.t("autosetup.ui.toolPortals"), group, false));
         panel.add(toolButton(Tool.LENGTHS, I18n.t("autosetup.ui.toolLengths"), group, false));
+        panel.add(toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"), group, false));
 
         // the toggles change what is drawn, not what is decided, so all they do is redraw
         showDirections.addActionListener(e -> refresh());
@@ -149,6 +159,11 @@ public class AutonomyEditorPanel extends JPanel
             tool = which;
             pendingPortal = null;
             selection.clear();
+            testFrom = null;
+            testPath.clear();
+
+            if (which == Tool.TEST) hint.setText(I18n.t("autosetup.ui.promptTestStart"));
+
             refresh();
         });
 
@@ -220,6 +235,7 @@ public class AutonomyEditorPanel extends JPanel
                 case POINTS: applyPoint(tile, component); break;
                 case PORTALS: applyPortal(tile, component); break;
                 case LENGTHS: applyLength(tile); break;
+                case TEST: applyTest(tile, component); break;
                 default: break;
             }
         }
@@ -406,6 +422,57 @@ public class AutonomyEditorPanel extends JPanel
         selection.clear();
     }
 
+    /**
+     * Asks whether a train could get from one sensor to another, and shows the route.
+     *
+     * Two clicks, like portal pairing.  The answer comes from the same reduction everything else uses,
+     * so what this says is what a running train would find - not a second opinion.
+     */
+    private void applyTest(TileKey tile, LayoutDiagramComponent component)
+    {
+        if (component == null || !component.isFeedback())
+        {
+            hint.setText(I18n.t("autosetup.ui.labelPointNotStation"));
+            return;
+        }
+
+        if (testFrom == null)
+        {
+            testFrom = tile;
+            testPath.clear();
+            hint.setText(I18n.t("autosetup.ui.promptTestDestination"));
+            return;
+        }
+
+        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run =
+            session.getReducer() == null ? null : session.getReducer().findPath(testFrom, tile);
+
+        testPath.clear();
+
+        if (run == null)
+        {
+            hint.setText(I18n.t("autosetup.ui.testUnreachable"));
+        }
+        else
+        {
+            // outline every tile the run covers, ends included, so the answer is on the track itself
+            testPath.add(testFrom);
+            testPath.add(tile);
+
+            for (org.traincontrol.base.GraphReducer.ReducedEdge edge : run)
+            {
+                for (org.traincontrol.base.GraphReducer.TileStep step : edge.getPath())
+                {
+                    testPath.add(step.getTile());
+                }
+            }
+
+            hint.setText(I18n.f("autosetup.ui.testReachable", run.size()));
+        }
+
+        testFrom = null;
+    }
+
     // --- state ------------------------------------------------------------------------------------
 
     public Tool getTool()
@@ -475,7 +542,12 @@ public class AutonomyEditorPanel extends JPanel
             if (stored > 0) length = stored;
         }
 
-        return new org.traincontrol.base.TileAnnotation(marks, length, selection.contains(tile));
+        // the found route borrows the selection outline: the two are never on screen together, because
+        // switching tools clears both
+        boolean outlined = selection.contains(tile)
+            || testPath.contains(tile) || tile.equals(testFrom);
+
+        return new org.traincontrol.base.TileAnnotation(marks, length, outlined);
     }
 
     /**
