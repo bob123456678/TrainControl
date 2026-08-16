@@ -266,6 +266,85 @@ renders or how its tiles behave at runtime.
   configuration's placements/homes referring to them; the store reports these as orphans under the
   existing orphan policy rather than deleting them, so re-including the page restores them.
 
+## Editing connections: click to cycle, bulk select, switches derive themselves
+
+**Author rulings, 2026-08-01.**
+
+- **Scale is a non-issue.** Most of a track diagram is blank, so there is no need to hide default
+  connections behind hover. Draw them all.
+- **Click a tile to cycle its connections**: both -> one way -> the other way -> none -> both.
+  The tile is the unit of interaction, not the connection, because a normal track tile has exactly
+  one route through it. The arrow drawn on the tile always shows the current meaning, so there is
+  still no convention to memorise.
+- **Bulk selection and editing**: rubber-band or shift-click a set of tiles and apply one state to
+  all of them. This is how a one-way loop gets set in one gesture instead of forty clicks.
+- **Switches need no user input at all.** A switch's traversability is **derived from its
+  neighbours**: a route through it is usable in a given direction only if the tile feeding the
+  entry side permits travel *toward* the switch and the tile at the exit side permits travel
+  *away*. Switches are therefore always locally bidirectional and are **not** part of the click
+  cycle; clicking one shows its derived state read-only. This removes the whole facing/trailing
+  authoring question for ordinary switches.
+  - The `CUSTOM_PERM_*` restriction is unaffected: it is a property of the broken hardware, not a
+    user choice, and it ANDs with whatever the neighbours imply.
+- Multi-route tiles (DOUBLE_CURVE, CROSSING, OVERPASS) hold one state per route; a click cycles
+  the route nearer the click point, and bulk apply sets both.
+
+## The autonomy editor replaces the graph window (author, 2026-08-01)
+
+**"The autonomy JSON becomes a bolt-on to any track diagram."** The diagram becomes the single
+place autonomy is defined, operated and watched, and the GraphStream window stops being required.
+
+**What the graph UI does today, and where each part goes.** Taken from
+`GraphRightClickPointMenu` (1249 lines), `GraphRightClickGeneralMenu`, `GraphEdgeEdit`,
+`GraphLocAssign`, `GraphLocExclude`:
+
+| Today (graph) | Fate |
+|---|---|
+| create point, delete point | **gone** — every s88 tile is a Point |
+| connect to point, add / delete / copy edge | **gone** — edges are derived from the tile graph |
+| edit edge (length, lock edges, config commands) | **gone** — lengths are per-tile, locks automatic, commands derived |
+| node drag / x-y layout | **gone** — position *is* the tile position |
+| rename point; mark station / terminus / reversing / active | **rehomes** to the Points tool |
+| max train length, speed multiplier, advanced parameters, excluded locomotives | **rehomes** to the Points tool |
+| place locomotive at node, clear locomotives | **rehomes** to the Locomotives tool |
+| home locomotives | **rehomes** to the Locomotives tool |
+| start / stop autonomy gracefully | **rehomes** to the autonomy toolbar |
+| hide inactive points, hide reversing edges/stations, show home locomotives, show lengths/exclusions | **rehome** as diagram overlay toggles |
+| **test connection** (valid/invalid paths from a point, with the reason each is invalid) | **must be rebuilt** — the one genuinely graph-shaped feature |
+
+**The editor, concretely.** `LayoutEditor` in Autonomy mode: the diagram rendered as it looks at
+runtime, with an overlay layer and a tool selector.
+
+1. **Connections** (default) — click a tile to cycle, rubber-band for bulk; switches show derived
+   state read-only; portals drawn as linked pairs.
+2. **Points** — s88 tiles are highlighted automatically since they are Points by definition.
+   Click one to name it, designate it a station, and set terminus / reversing / active,
+   max train length, speed multiplier and excluded locomotives.
+3. **Portals** — name link tiles and pair them; pair tunnels.
+4. **Lengths** — per-tile length, with the totals overlay.
+5. **Locomotives** — place, clear, and set homes, per named configuration.
+
+Standing UI beside the diagram: the configuration selector, the live validity banner
+(`validateScratch`), the warnings list, and the generated JSON read-only.
+
+**Path tester, rebuilt on the diagram.** Select a point, and every point reachable from it tints
+green while unreachable ones tint red; hovering an unreachable point gives the reason, reusing
+today's `labelValidPaths` / `labelInvalidPaths` / `labelReason` vocabulary. This is strictly more
+readable than the graph version because the answer lands on the real track geometry.
+
+**What happens to the graph window.** It is **not deleted**:
+- A **legacy hand-written `autonomy.json`** has no diagram behind it, so the graph stays its full
+  editor. Removing it would strand every user who has not migrated.
+- For a **diagram-derived configuration** the graph becomes an optional read-only view — it still
+  renders and still monitors, but its structural editing items are disabled, because editing them
+  would immediately be overwritten by the next build.
+- The gating is the same flag that already decides legacy vs diagram mode (presence of the
+  companion file), so there is one rule, not a per-menu-item judgement.
+
+**Consequence for monitoring.** `updateStationLabels` no longer depends on the graph window being
+open — already planned — and now that is not an enhancement but a requirement, since the graph may
+never be opened at all.
+
 ## Ground-truth gate: the generated graph must be diffed against the real `autonomy.json`
 
 **Author directive, 2026-08-01.** Virtual points are expected to be unnecessary *provided the
