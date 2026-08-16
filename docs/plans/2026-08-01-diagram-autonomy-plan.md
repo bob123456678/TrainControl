@@ -381,8 +381,11 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
   - **Stays, retargeted to files** (author correction, 2026-08-16): **import and export of a
     graph via `autonomy.json` files**, for users who set up their autonomy in pure code. Export
     dumps the currently loaded `Layout.toJSON()` to a chosen file; import reads a chosen file
-    through `parseAuto` exactly as pasting JSON used to. The `autosave` checkbox goes -
-    **autosave is implicit** (the author will adjust the Matisse form if needed).
+    through `parseAuto` exactly as pasting JSON used to. Import is **session-only** (author,
+    2026-08-16): code-only users do not use the UI, so nothing is remembered across restarts and
+    no "external configuration" concept exists - the file is the code-first user's own artifact.
+    The `autosave` checkbox goes - **autosave is implicit** (the author will adjust the Matisse
+    form if needed).
   - **Goes**: `autonomyJSON` (the `JTextArea` at `:3643`/`:5729`) and its scroll pane,
     `validateButton`, `loadDefaultBlankGraph`, `jsonDocumentationButton` (repoint or drop with the
     docs rewrite), and `reopenGraphButton` (no graph window).
@@ -633,16 +636,13 @@ when there is a train"), **without changing the autonomy model** (`automation/La
   track diagram folder** (author, 2026-08-16), replacing the old `Util.getBackupPath` single-file
   copy of `autonomy.json`: diagram pages and autonomy state are versioned together, so a restored
   backup is always internally consistent.
-- **Writing it is NOT gated on `isLocalLayout()`.** `isLocalLayout()` only means "a local layout
-  override path is set" (`TrainControlUI.java:16302`); when false the diagram is read from the
-  Central Station and the *diagram editor* is disabled. Autonomy setup must keep working there:
-  a user running a CS-sourced diagram must still be able to assign stations, because station
-  definitions are TrainControl's data about the CS's tiles, not a modification of them. Nothing in
-  the setup flow writes to `gleisbilder/` or to the Central Station.
-  - Optional convenience, not a requirement: when `isLocalLayout()` **is** true, also mirror the
-    companion to `config/autonomy-setup.json` in the layout folder so the setup can travel with
-    a shared diagram. The working-directory copy stays authoritative; the mirror is written on
-    save and read only if the working-directory copy is absent.
+- **Autonomy is LOCAL-LAYOUT ONLY** (author ruling, 2026-08-16, superseding the earlier
+  not-gated-on-`isLocalLayout()` decision). The autonomy files live inside the track diagram
+  folder, so a folder must exist. A user on a Central-Station-sourced layout who tries to
+  **Initialize autonomy** gets a warning explaining that autonomy needs a local copy of the
+  diagram, with an offer to download it; **on OK, TrainControl runs the existing Download CS
+  layout flow for them** (`:14219`), switches to the downloaded local layout, and proceeds with
+  initialization. No working-directory fallback, no mirror - one storage rule.
   - Because the diagram may be re-downloaded from the CS, anchors must survive a diagram refresh:
     they are keyed by `(page, x, y)` and re-resolved on load. A key that no longer names a
     suitable tile becomes an **orphan** — surfaced in the setup UI for re-anchoring, never
@@ -847,17 +847,16 @@ interaction, same undo affordance.
 | Mode | What it does | Requires `isLocalLayout()` |
 |---|---|---|
 | **Diagram** | today's editor exactly — place/rotate/erase tiles, addresses, text, row/col tools | **yes** (it writes `gleisbilder/`) |
-| **Autonomy** | Anchor / Portals / Length / Paint-override, Trace & Review, live validity banner | **no** — writes only TrainControl's companion |
+| **Autonomy** | Connections / Points / Portals / Lengths, live validity banner | **yes** (2026-08-16 ruling) — autonomy files live in the layout folder; a CS layout offers download-then-continue |
 
-**This is what unblocks Central Station layouts.** The restriction was never about the editor
-window; it is about writing the diagram files. Autonomy mode writes only
-`autonomy-setup.json`, so it is available for every layout, CS-sourced or local.
-Concretely, `editLayoutButtonActionPerformed` (`TrainControlUI.java:12461`) stops being a
-dead end: instead of refusing with `errorEditingOnlySupportedForLocalFiles`, a non-local layout
-**opens the editor in Autonomy mode** with the Diagram-mode toggle disabled and an inline
-explanation — "diagram editing needs a local copy" plus a button wired to the existing
-*Download CS layout* flow (`:14219`). A local layout opens in whichever mode was last used, both
-enabled. The error dialog is deleted, not merely bypassed.
+**Central Station layouts: download first** (author ruling, 2026-08-16, superseding the earlier
+open-in-autonomy-mode-anyway design). Autonomy is local-layout only, because its files live in
+the track diagram folder. `editLayoutButtonActionPerformed` (`TrainControlUI.java:12461`) and the
+**Initialize autonomy** button behave consistently on a CS-sourced layout: a warning explains
+that autonomy (and diagram editing) need a local copy, and offers to download it; on OK the
+existing *Download CS layout* flow (`:14219`) runs, the local layout is activated, and the
+original action continues. A local layout opens the editor in whichever mode was last used, both
+modes enabled.
 
 **Interaction plumbing (the load-bearing detail).** `LayoutLabel`'s listener block is binary: the
 `edit` flag hard-casts `parent` to `LayoutEditor` and routes clicks/drag there, otherwise clicks
@@ -1309,7 +1308,7 @@ layer toggle - user preference, never configuration data.
 | `testTilePorts` | port-map consistency: reciprocity, rotation coherence; **every switch's states are confirmed pairs, not supersets** — `SWITCH_LEFT` yields `{NS}` unswitched and `{SW}` switched with N unreachable when thrown, `SWITCH_Y` yields `{SW}` unswitched and `{SE}` switched with no straight route in either, `SWITCH_CROSSING` swaps throughs for diagonals; every confirmed connection pair contains S for turnouts (the toe invariant); `CUSTOM_PERM_*` permits only pairs entering S; base art maps to the unswitched state; **every one of the 28 `componentType` values has an entry** (loop the enum — a new type must fail the test, not silently trace as impassable); orientation domain matches `getNumOrientations()`; STRAIGHT `{EW}` at o=1 yields `{NS}` and CURVE `{ES}` at o=1 yields `{NE}`, pinning the `(4-o)` quarter-turn convention; CROSSING/OVERPASS expose two disjoint groups, never one |
 | `testDiagramTopology` | programmatic pages (no files): straight runs connect; rotation breaks adjacency as the art says; switch fork yields per-branch traces **with correct settings**; CROSSING two independent throughs; OVERPASS no interaction; unlinked TUNNEL stops, linked portal continues cross-page; anchors terminate traces; cycles bounded; **permanent turnouts**: a trace entering a `CUSTOM_PERM_*` at the toe produces no connection past it, the same pair traced from a branch toward the toe does connect, the resulting edge is one-directional, no config command is emitted for the tile, and a warning naming its coordinates is collected; `CUSTOM_SCISSORS` (switchable) is unaffected; **per-tile direction**: an all-`both` run traces both ways (parity with an unconfigured diagram), one `forward` tile mid-run suppresses exactly the opposing edge, `none` stops the trace at that tile, constraints AND along a path rather than the last one winning, a user direction cannot re-open a permanent turnout's facing direction, a two-group tile constrains only the group traversed, and a run made impossible in both directions is reported as a contradiction warning with coordinates |
 | `testDiagramMonitor` | dispatch→RESERVED, milestone→COMPLETED/CURRENT, completion fire (maps already cleared)→empty publish, 50-fire burst coalesces, throwing publisher never reaches the firing thread — simulated model + fake publisher + visible/hidden parents (the `testLayoutTiles` trick) |
-| `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **CS-sourced layouts**: anchors save and reload with no local layout path set (the `isLocalLayout()`-false case must NOT refuse), a station assigned on a non-feedback tile round-trips as a virtual point with no s88, and an anchor whose `(page,x,y)` no longer resolves after a simulated diagram re-download becomes a reportable orphan rather than a deletion |
+| `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **local-only**: the store refuses to initialize when no local layout folder exists (the UI layer owns the warn-then-download flow); **page rename** rewrites every tile key in the global file and every configuration file in one pass, and a rename plus rebuild loses nothing; a tile key whose tile no longer exists after an external diagram edit is dropped with a log line (author ruling: deleted tile = start over), while point-name references (placements, homes, timetable) orphan-and-report as before |
 | `testAutonomyBuilder` | companion + programmatic pages compile to JSON that `parseAuto` accepts and validates; deterministic output (two builds byte-identical); setup errors (unpaired portal, disqualified tile) invalidate through the normal flow; **startup**: the active configuration loads when one is defined, nothing loads when none is, and no code path reads or writes `autonomy.json`; generated-then-parsed Layout's `toJSON` is stable across a second build; **scratch build isolation**: `validateScratch()` on a deliberately broken companion reports invalid while `model.getAutoLayout()` remains the untouched previous instance (identity assert) and no locomotive was stopped; **lengths**: unassigned tiles yield length 0 on every edge (parity with today), assigned tiles sum along the traced path with endpoints excluded, a 0 on an intermediate tile contributes nothing without breaking the edge, and a legacy length distributed over N tiles sums back to exactly the original |
 | `testTileGraph` (revised) | **links**: an unnamed link forms no portal connection and no train can cross it; a named, mutually-paired link joins its partner's tile across pages; a half-pairing and an A-B-C collision are both setup errors naming the tiles; the geometric side of a LINK is W at orientation 0 and rotates with the tile; a pairing targeting an excluded page is an error, not a silent dead end. **Excluded pages**: an excluded page contributes no nodes, Points, edges or warnings, and re-including it restores the orphaned placements rather than having deleted them. geometry seeds candidate connections both ways; a user override survives a re-trace and is not overwritten by geometry; disallowed connections are absent in both directions; one-way connections are absent in exactly one; LINK and TUNNEL portal connections join the named tiles across pages and are never inferred from adjacency; a permanent turnout's facing connections are seeded disallowed and cannot be user-enabled |
 | `testGraphReducer` (revised) | **every** feedback tile becomes a Point without user action, while a station is a Point plus a designation; two feedback tiles sharing one s88 address both become Points with distinct generated names, and a user rename survives a rebuild and a change to the surrounding track; a duplicate name is refused at authoring time, not at build time; a name containing a quote character does not silently change on the way into `Point`; designating a station sets `isDestination` and never produces the model's no-s88 exception because every derived Point has one; a legacy virtual point (no s88) is reported as an unanchorable migration case rather than dropped; a feedback tile with no allowed connections is skipped (and counted) rather than emitted as an unreachable node, while one with a single connection is emitted; a `CUSTOM_SCISSORS` on a participating page fails the build with a coordinate-naming error; a degree-2 chain between two significant nodes collapses to exactly one edge with summed length and ANDed direction; a switch in the chain forks into one edge per branch carrying the correct `configCommands`; a `SWITCH_THREE` yields exactly three routes from its toe and **every** route commands both of its addresses with an explicit straight/throw (no address is ever left unspecified); a `SWITCH_CROSSING` contributes commands in **both** states — unswitched for its N-S/E-W throughs and switched for its N-W/S-E diagonals; an unpromoted s88 tile collapses away; **mutual exclusion**: two edges sharing a switch tile are locked against each other, two edges sharing a CROSSING are locked, two edges crossing an OVERPASS in different groups are **not** locked but in the same group are, a portal pair counts as one location; reduction is deterministic across two runs |
@@ -1328,10 +1327,11 @@ layer toggle - user preference, never configuration data.
 
 **R1 (UI)**:
 4. `testDiagramMonitor`, plus `testLayoutTiles`, `testHomeStaging`, `testAutoLayout` for regression.
-5. **CS-layout acceptance**: with no local layout path set, the Edit button opens Autonomy mode
-   instead of erroring; points, lengths and portals are editable and persist across a restart; the
-   Diagram-mode toggle is disabled with the download affordance visible; **no file under
-   `gleisbilder/` is written** (check timestamps).
+5. **CS-layout acceptance**: with no local layout path set, Initialize autonomy (and the Edit
+   button) warn that a local copy is needed and offer the download; accepting runs the download,
+   switches to the local layout, and continues into autonomy setup; declining changes nothing.
+   After setup, points, lengths and portals persist across a restart, and autonomy files appear
+   only inside the layout folder.
 6. **Connectivity acceptance**: open Autonomy mode on the author's real pages and confirm the drawn
    connections match the track - this is the editing surface now, not a debug overlay.
 7. Set up one page end to end, load it as a configuration, and confirm in simulate mode that
