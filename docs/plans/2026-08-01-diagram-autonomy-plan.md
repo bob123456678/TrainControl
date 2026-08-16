@@ -247,8 +247,15 @@ renders or how its tiles behave at runtime.
   - A switch has one direction state **per branch route** (`SWITCH_LEFT`: the `{NS}` route and the
     `{SW}` route; `SWITCH_THREE`: three; `SWITCH_CROSSING`: four across its two states), each
     cycling the same both / one way / other way / none.
+  - **Control is per branch, not per switch** (author, 2026-08-16). Each branch carries its own
+    state, and **most branches will not be bidirectional** - opening a whole switch at once is not
+    the common case, so there is no per-switch shortcut.
+  - **A branch can be set to none**, exactly like a straight tile with both directions off: that
+    branch is not traversable in either direction and no edge is derived through it. This is how a
+    physically-present but operationally-unused route is excluded.
   - Clicking a switch selects the branch nearest the click; the panel also lists that switch's
-    branches explicitly, since clicking accurately on a diagonal is fiddly.
+    branches explicitly, since clicking accurately on a diagonal is fiddly, and each branch shows
+    its state (both / one way / other way / none).
   - **Default is base -> forks** (author, 2026-08-16): flow runs from the base (the toe) out to
     the branches, and the opposite direction is off until the user enables it. This gives an
     implicit, deterministic reading of every switch on the diagram while leaving the user in
@@ -486,6 +493,21 @@ exclusions, placements and every configuration in the companion - not merely be 
 references exist. The known wrinkle is the `Point:` diagram label, which embeds the name inside the
 diagram file: resolve leniently and report a mismatch rather than rewriting the diagram file.
 
+### Reversing points and termini get no special casing
+
+Direction is uniform: a reversing point or terminus is subject to exactly the same per-tile
+direction rules as anything else. A reversal traverses tiles in the opposite direction, so **the
+user must set those tiles bidirectional**; if a reversal is blocked by a one-way tile, that is the
+user's to fix, not the reducer's to work around. No exemption, no implicit widening, no special
+path in `GraphReducer`.
+
+What the build does instead is **tell the user**: a **terminus with no path to any other station**
+raises an alert naming it. That is nearly always a direction mistake rather than an intended
+configuration, and it is cheap to detect once the reduced graph exists. The same check generalises
+usefully - any station that can reach no other station, or that nothing can reach, is worth
+reporting - and it belongs in the in-app check suite below alongside the static configuration
+check.
+
 ### The reduced graph is inspectable, in the UI
 
 The derived graph must be **visible and clear to the user**, not a black box - a readable view of
@@ -496,7 +518,14 @@ JSON anywhere).
 **Plus an in-app test suite**: user-runnable checks that validate the configuration is wired
 correctly, reporting a list of findings rather than a pass/fail. This is the home for the static
 configuration check and the A->B connectivity test, and the place to add more checks as failure
-modes are discovered.
+modes are discovered. Starting set:
+- **terminus with no path to any other station** (author, 2026-08-16) - almost always a direction
+  mistake;
+- any station that can reach nothing, or that nothing can reach;
+- points with no allowed connections (the isolated-feedback case);
+- direction contradictions - a run made impossible in both directions;
+- orphaned placements, homes and exclusions in the active configuration;
+- unpaired, half-paired or excluded-page-targeting portals.
 
 ## Ground-truth gate: the generated graph must be diffed against the real `autonomy.json`
 
