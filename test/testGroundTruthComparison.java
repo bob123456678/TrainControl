@@ -255,6 +255,49 @@ public class testGroundTruthComparison
     }
 
     /**
+     * The completeness question, asked properly.
+     *
+     * Comparing edges one for one understates the match badly, because the two graphs cut the railway at
+     * different places: every s88 is a Point here, whereas the hand-built graph skips the sensors nobody
+     * bothered with, so one legacy edge routinely spans several derived ones.  What matters is not
+     * whether a single derived edge has the same endpoints, but whether a train could still get from one
+     * end to the other.
+     *
+     * So: for every legacy edge, is its destination reachable from its origin in the derived graph?
+     * Anything unreachable is track the diagram failed to derive - or, until links are paired, a route
+     * that crosses pages.
+     */
+    @Test
+    public void testEveryLegacyConnectionIsStillReachable()
+    {
+        Map<Integer, Set<Integer>> adjacency = derivedAdjacency();
+
+        List<String> unreachable = new ArrayList<>();
+
+        for (Object o : legacy.getJSONArray("edges"))
+        {
+            JSONObject edge = (JSONObject) o;
+
+            Integer from = sensorOf(edge.getString("start"));
+            Integer to = sensorOf(edge.getString("end"));
+
+            if (from == null || to == null || from.equals(to)) continue;
+
+            if (!reachable(adjacency, from, to))
+            {
+                unreachable.add(edge.getString("start") + " -> " + edge.getString("end"));
+            }
+        }
+
+        System.out.println("\nlegacy connections unreachable in the derived graph: "
+            + unreachable.size() + "\n" + unreachable + "\n");
+
+        assertTrue(unreachable.isEmpty(),
+            "the derived graph cannot get from one end to the other of " + unreachable.size()
+            + " hand-built connections: " + unreachable);
+    }
+
+    /**
      * The generated file must be something parseAuto accepts - otherwise the compile step has produced
      * something only this test can read.
      */
@@ -297,6 +340,76 @@ public class testGroundTruthComparison
     {
         assertEquals(new AutonomyBuilder(reducer, null).build(),
                      new AutonomyBuilder(reducer, null).build());
+    }
+
+    /**
+     * The derived graph as sensor-to-sensor adjacency, which is the level the hand-built file speaks at.
+     */
+    private Map<Integer, Set<Integer>> derivedAdjacency()
+    {
+        Map<Integer, Set<Integer>> out = new LinkedHashMap<>();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            ReducedPoint start = reducer.getPoints().get(edge.getStart());
+            ReducedPoint end = reducer.getPoints().get(edge.getEnd());
+
+            if (start == null || end == null) continue;
+
+            Set<Integer> next = out.get(start.getS88());
+
+            if (next == null)
+            {
+                next = new LinkedHashSet<>();
+                out.put(start.getS88(), next);
+            }
+
+            next.add(end.getS88());
+        }
+
+        return out;
+    }
+
+    private Integer sensorOf(String legacyPointName)
+    {
+        for (Object o : legacy.getJSONArray("points"))
+        {
+            JSONObject point = (JSONObject) o;
+
+            if (legacyPointName.equals(point.getString("name")))
+            {
+                return point.has("s88") && !point.isNull("s88") ? point.getInt("s88") : null;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean reachable(Map<Integer, Set<Integer>> adjacency, int from, int to)
+    {
+        Set<Integer> seen = new HashSet<>();
+        LinkedList<Integer> queue = new LinkedList<>();
+
+        queue.add(from);
+        seen.add(from);
+
+        while (!queue.isEmpty())
+        {
+            Integer current = queue.removeFirst();
+
+            if (current == to) return true;
+
+            Set<Integer> next = adjacency.get(current);
+
+            if (next == null) continue;
+
+            for (Integer neighbour : next)
+            {
+                if (seen.add(neighbour)) queue.add(neighbour);
+            }
+        }
+
+        return false;
     }
 
     // --- the report -------------------------------------------------------------------------------
