@@ -272,7 +272,7 @@ public class AutonomyEditorPanel extends JPanel
             testPath.clear();
 
             say(hint, tool == Tool.TEST
-                ? I18n.t("autosetup.ui.promptTestStart") : I18n.t("autosetup.ui.hintRightClick"));
+                ? I18n.t("autosetup.ui.promptTestStart") : I18n.t("autosetup.ui.hintClickToCycle"));
 
             refresh();
         });
@@ -379,69 +379,70 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         // Right-clicking anywhere in a run opens the run's own menu, so the greyed tiles are not dead
-        // - they simply hand the question to the tile that answers it.
-        tile = leaderOf(tile);
+        // - they simply hand the question to the tile that answers it.  A new local rather than
+        // reassigning the parameter, which the lambdas below capture and so must stay effectively final.
+        final TileKey target = leaderOf(tile);
 
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         boolean isPoint = session.getReducer() != null
-            && session.getReducer().getPoints().containsKey(tile);
+            && session.getReducer().getPoints().containsKey(target);
 
-        title(menu, isPoint ? pointTitle(tile) : component == null
-            ? tile.getX() + "," + tile.getY() : component.getUserFriendlyTypeName());
+        title(menu, isPoint ? pointTitle(target) : component == null
+            ? target.getX() + "," + target.getY() : component.getUserFriendlyTypeName());
 
         if (isPoint)
         {
-            menu.add(item(I18n.t("autolayout.ui.menuRenamePoint"), () -> promptName(tile)));
+            menu.add(item(I18n.t("autolayout.ui.menuRenamePoint"), () -> promptName(target)));
 
             menu.addSeparator();
 
             // The four designations, in the graph window's own order and words.
             menu.add(toggle(I18n.t("autolayout.ui.markAsStation"),
                 "autolayout.ui.tooltip.Station",
-                session.getStore().isStation(tile), on -> setStation(tile, on)));
+                session.getStore().isStation(target), on -> setStation(target, on)));
 
             menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkTerminusStation"),
-                "autolayout.ui.tooltip.TerminusStation", flag(tile, "terminus"),
-                on -> session.setPointProperty(tile, "terminus", on ? Boolean.TRUE : null)));
+                "autolayout.ui.tooltip.TerminusStation", flag(target, "terminus"),
+                on -> session.setPointProperty(target, "terminus", on ? Boolean.TRUE : null)));
 
             menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkReversingPoint"),
-                "autolayout.ui.tooltip.ReversingPoint", flag(tile, "reversing"),
-                on -> session.setPointProperty(tile, "reversing", on ? Boolean.TRUE : null)));
+                "autolayout.ui.tooltip.ReversingPoint", flag(target, "reversing"),
+                on -> session.setPointProperty(target, "reversing", on ? Boolean.TRUE : null)));
 
             // "Active" in the model is what the user calls parking: autonomy will not choose it and
             // will not start a train standing there, while a route picked by hand still may.
             menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
                 "autosetup.ui.hintParking",
-                !Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
-                on -> session.setPointProperty(tile, "active", on ? null : Boolean.FALSE)));
+                !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
+                on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
 
             menu.addSeparator();
 
             menu.add(item(I18n.t("autolayout.ui.menuSpeedMultiplier"),
-                () -> promptNumber(tile, "speedMultiplier",
+                () -> promptNumber(target, "speedMultiplier",
                     "autolayout.ui.promptEnterSpeedMultiplier", 100)));
 
             menu.add(item(I18n.t("autolayout.ui.menuEditAdvancedParameters"),
-                () -> promptNumber(tile, "maxTrainLength",
+                () -> promptNumber(target, "maxTrainLength",
                     "autolayout.ui.promptEnterMaxTrainLength", 0)));
 
             menu.add(item(I18n.t("autosetup.ui.labelPriority"),
-                () -> promptNumber(tile, "priority",
+                () -> promptNumber(target, "priority",
                     "autolayout.ui.promptEnterStationPriority", 0)));
 
             javax.swing.JMenuItem excluded = item(I18n.t("autolayout.ui.menuExcludedLocomotives"),
-                () -> promptLocomotives(tile, "excludedLocs"));
+                () -> promptLocomotives(target, "excludedLocs"));
             excluded.setToolTipText(I18n.t("autolayout.ui.tooltip.ExcludedLocomotives"));
             menu.add(excluded);
 
             menu.add(item(I18n.t("autosetup.ui.labelHomeFor"),
-                () -> promptLocomotives(tile, "home")));
+                () -> promptLocomotives(target, "home")));
 
             menu.addSeparator();
         }
 
-        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(target);
 
         if (!routes.isEmpty())
         {
@@ -451,7 +452,7 @@ public class AutonomyEditorPanel extends JPanel
             {
                 org.traincontrol.base.TilePorts.Route route = entry.getValue();
 
-                // A switch's branches each get their own submenu; a plain tile puts its four answers
+                // A switch's branches each get their own submenu; a plain target puts its four answers
                 // straight on the menu rather than burying them one level down.
                 if (many)
                 {
@@ -460,7 +461,7 @@ public class AutonomyEditorPanel extends JPanel
                         I18n.f("autosetup.ui.menuBranch",
                             String.valueOf(route.getA()), String.valueOf(route.getB())));
 
-                    for (javax.swing.JMenuItem option : directionItems(tile, entry.getKey(), route))
+                    for (javax.swing.JMenuItem option : directionItems(target, entry.getKey(), route))
                     {
                         branch.add(option);
                     }
@@ -469,7 +470,7 @@ public class AutonomyEditorPanel extends JPanel
                 }
                 else
                 {
-                    for (javax.swing.JMenuItem option : directionItems(tile, entry.getKey(), route))
+                    for (javax.swing.JMenuItem option : directionItems(target, entry.getKey(), route))
                     {
                         menu.add(option);
                     }
@@ -482,9 +483,9 @@ public class AutonomyEditorPanel extends JPanel
                     I18n.t("autosetup.ui.menuAllBranches"));
 
                 all.add(item(I18n.t("autosetup.ui.menuRouteBoth"),
-                    () -> setAllBranches(tile, Direction.BOTH)));
+                    () -> setAllBranches(target, Direction.BOTH)));
                 all.add(item(I18n.t("autosetup.ui.menuRouteNone"),
-                    () -> setAllBranches(tile, Direction.NONE)));
+                    () -> setAllBranches(target, Direction.NONE)));
 
                 menu.add(all);
             }
@@ -494,24 +495,24 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
         {
-            oneWayFrom = tile;
+            oneWayFrom = target;
             say(hint, I18n.t("autosetup.ui.promptOneWayTo"));
         }));
 
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(tile)));
+        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
         {
             menu.addSeparator();
 
-            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(tile)));
-            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(tile)));
+            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
-            if (session.getStore().getPortalPartner(tile) != null)
+            if (session.getStore().getPortalPartner(target) != null)
             {
                 menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
-                    () -> session.unpairPortal(tile)));
+                    () -> session.unpairPortal(target)));
             }
         }
 
@@ -764,7 +765,7 @@ public class AutonomyEditorPanel extends JPanel
             switch (tool)
             {
                 case TEST: applyTest(tile, component); break;
-                default: say(hint, I18n.t("autosetup.ui.hintRightClick")); break;
+                default: cycle(tile); break;
             }
         }
         catch (RuntimeException e)
@@ -914,6 +915,68 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         selection.clear();
+    }
+
+    /**
+     * Left-click: change which way trains may run through this piece of track.
+     *
+     * The obvious gesture, and the one the tools used to provide - click the track, watch it change.
+     * It cycles both ways -> one way -> the other way -> closed, and says in words what it just became,
+     * so nobody has to infer the order from the arrows.
+     *
+     * A tile with more than one branch is not cycled: a click cannot say WHICH branch is meant, and
+     * changing all of them at once is how a switch ends up set in a way nobody chose.  Those say so and
+     * point at the menu, where the branches are listed separately.
+     *
+     * Whatever is clicked, the change lands on the run - clicking any tile of a straight run sets the
+     * whole run, which is what makes one click enough.
+     */
+    private void cycle(TileKey tile)
+    {
+        TileKey target = leaderOf(tile);
+
+        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(target);
+
+        if (routes.isEmpty()) return;
+
+        if (routes.size() > 1)
+        {
+            say(hint, I18n.t("autosetup.ui.infoPickABranch"));
+            return;
+        }
+
+        Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> only =
+            routes.entrySet().iterator().next();
+
+        org.traincontrol.base.TilePorts.Route route = only.getValue();
+
+        Direction next;
+
+        switch (session.getGraph().getDirection(target, only.getKey()))
+        {
+            case BOTH: next = Direction.TOWARD_A; break;
+            case TOWARD_A: next = Direction.TOWARD_B; break;
+            case TOWARD_B: next = Direction.NONE; break;
+            default: next = Direction.BOTH; break;
+        }
+
+        session.setRunDirection(target, only.getKey(), next);
+
+        say(hint, I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
+    }
+
+    /**
+     * What a direction means, in words, naming the side rather than an A or a B nobody can see.
+     */
+    private String describe(Direction direction, org.traincontrol.base.TilePorts.Route route)
+    {
+        switch (direction)
+        {
+            case TOWARD_A: return I18n.f("autosetup.ui.dirToward", String.valueOf(route.getA()));
+            case TOWARD_B: return I18n.f("autosetup.ui.dirToward", String.valueOf(route.getB()));
+            case NONE: return I18n.t("autosetup.ui.dirNone");
+            default: return I18n.t("autosetup.ui.dirBoth");
+        }
     }
 
     /**
