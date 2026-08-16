@@ -288,6 +288,12 @@ public class TileGraph
      */
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
+    /**
+     * The route identifier a portal traversal carries.  A portal is not one of the tile's drawn routes,
+     * so it needs an identity of its own to hang direction off - and it takes the default, both ways.
+     */
+    private static final RouteId PORTAL_ROUTE = new RouteId(0, -1);
+
     private final Map<TileKey, LayoutDiagramComponent> tiles = new LinkedHashMap<>();
     private final Map<TileKey, TileKey> portals = new HashMap<>();
     private final Map<TileKey, Map<RouteId, Direction>> directions = new HashMap<>();
@@ -469,6 +475,33 @@ public class TileGraph
 
         int orientation = component.getOrientation();
 
+        // A portal tile has two ports and only one of them is a side: the visible one, where it meets
+        // ordinary track, and the pairing, which leads to its partner.  The pairing has no direction on
+        // the grid, so it is addressed as a null side - arriving by null means arriving through the
+        // portal, and leaving by null means taking it.
+        //
+        // Without this a link is a hole: track can reach it and nothing can leave, because its only
+        // route is a stub and the loop below skips stubs.  That severed every cross-page route while
+        // looking exactly like a diagram that simply had none.
+        if (TilePorts.hasPortal(type))
+        {
+            Side stub = stubSide(component);
+
+            if (stub != null && portals.containsKey(tile))
+            {
+                if (entrySide == stub)
+                {
+                    out.add(new Exit(null, 0, PORTAL_ROUTE));
+                }
+                else if (entrySide == null)
+                {
+                    out.add(new Exit(stub, 0, PORTAL_ROUTE));
+                }
+            }
+
+            return out;
+        }
+
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
             List<Route> routes = TilePorts.ports(type, orientation, state);
@@ -513,20 +546,15 @@ public class TileGraph
 
         if (component == null) return null;
 
-        // A portal's visible side behaves like ordinary track; its second port is the pairing
-        if (TilePorts.hasPortal(component.getType()) && isStubSide(component, exitSide))
+        // Leaving by the pairing rather than by a side: the train emerges from the partner, having
+        // arrived through its portal rather than at any of its edges.
+        if (exitSide == null)
         {
             TileKey partner = portals.get(tile);
 
-            if (partner == null) return null;
+            if (partner == null || !tiles.containsKey(partner)) return null;
 
-            LayoutDiagramComponent partnerComponent = tiles.get(partner);
-
-            if (partnerComponent == null) return null;
-
-            Side partnerSide = stubSide(partnerComponent);
-
-            return partnerSide == null ? null : new Landing(partner, partnerSide);
+            return new Landing(partner, null);
         }
 
         TileKey neighbourKey = neighbour(tile, exitSide);
@@ -732,11 +760,6 @@ public class TileGraph
         }
 
         return false;
-    }
-
-    private static boolean isStubSide(LayoutDiagramComponent component, Side side)
-    {
-        return stubSide(component) == side;
     }
 
     /**

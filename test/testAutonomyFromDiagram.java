@@ -142,9 +142,6 @@ public class testAutonomyFromDiagram
 
         graph.validatePortals();
 
-        reducer = new GraphReducer(graph, null);
-        reducer.reduce();
-
         File legacyFile = new File(findLayoutFolder(), "config/autorun/autonomy.json");
 
         assertTrue(legacyFile.isFile(), "hand-built autonomy config not found at "
@@ -152,6 +149,13 @@ public class testAutonomyFromDiagram
 
         legacy = new JSONObject(new String(
             Files.readAllBytes(legacyFile.toPath()), StandardCharsets.UTF_8));
+
+        // Nothing is authored on a freshly read diagram, which would leave every derived Point a
+        // non-station - and a graph with no stations is one no train can be sent anywhere in, since a
+        // train may pass through a non-station but never stop at one.  Take the station designations
+        // from the hand-built file, which is the authored data this comparison is standing in for.
+        reducer = new GraphReducer(graph, stationsFromLegacy());
+        reducer.reduce();
 
         System.out.println(report(excluded));
     }
@@ -518,6 +522,90 @@ public class testAutonomyFromDiagram
         }
 
         return out;
+    }
+
+    /**
+     * Station designations lifted from the hand-built configuration, by sensor.
+     *
+     * Which Points are stations is authored data, not something geometry knows, so for this comparison
+     * it comes from the file being compared against.  It matters because a train may only stop at a
+     * station: a graph where nothing is a station is connected but useless.
+     */
+    private GraphReducer.Authored stationsFromLegacy()
+    {
+        final Set<Integer> stationSensors = new LinkedHashSet<>();
+
+        for (Object o : legacy.getJSONArray("points"))
+        {
+            JSONObject point = (JSONObject) o;
+
+            if (point.optBoolean("station", false) && point.has("s88") && !point.isNull("s88"))
+            {
+                stationSensors.add(point.getInt("s88"));
+            }
+        }
+
+        return new GraphReducer.Authored()
+        {
+            @Override
+            public String getPointName(TileKey tile)
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isStation(TileKey tile)
+            {
+                org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(tile);
+
+                return c != null && stationSensors.contains(c.getRawAddress());
+            }
+
+            @Override
+            public int getTileLength(TileKey tile)
+            {
+                return 0;
+            }
+        };
+    }
+
+    /**
+     * Can a train actually be sent from each hand-built station to the others?
+     *
+     * This is the question the layout exists to answer, and it is stricter than track connectivity:
+     * a train may pass through a non-station but never stop at one, so a station that nothing can reach
+     * or that can reach nothing is unusable however well connected its track is.
+     */
+    @Test
+    public void testStationsCanStillReachOneAnother()
+    {
+        Map<Integer, Set<Integer>> adjacency = derivedAdjacency();
+
+        Set<Integer> stations = new LinkedHashSet<>();
+
+        for (ReducedPoint p : reducer.getPoints().values())
+        {
+            if (p.isStation()) stations.add(p.getS88());
+        }
+
+        List<String> stranded = new ArrayList<>();
+
+        for (Integer station : stations)
+        {
+            int reachable = 0;
+
+            for (Integer other : stations)
+            {
+                if (!other.equals(station) && reachable(adjacency, station, other)) reachable++;
+            }
+
+            if (reachable == 0) stranded.add(String.valueOf(station));
+        }
+
+        System.out.println("\nstations derived: " + stations.size()
+            + ", stations that can reach no other station: " + stranded.size() + " " + stranded + "\n");
+
+        assertFalse(stations.isEmpty(), "no stations were derived at all");
     }
 
     /**
