@@ -668,7 +668,7 @@ about running autonomy moves.
 
 | Class | Responsibility | ~Size |
 |---|---|---|
-| `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below, which supersedes any earlier sketch. Per type × orientation: which sides connect, as one or more internal port groups, with switch branches tagged by the `Accessory` setting that selects them. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4. Data table + `connects(type, orient, side)`, `exits(type, orient, entrySide, accessoryState)` | 320 |
+| `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below. Uniformly state-indexed: `ports(type, orient, state)` returns the set of connected side pairs in that state (unswitched / switched, or the three-way's three states; one state for everything else). No common/branch/toe concepts. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4; encodes the directed restriction for `CUSTOM_PERM_*` (into S only) | 300 |
 | `base/DiagramTopology.java` | Builds the **directed** adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
 | `base/TraceResult.java` | Value type: endpoint anchors, ordered tile path, `Map<address, setting>` requirements | 60 |
 | `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {anchors, portals, paintOverrides}, configurations: {"<name>": {pointProperties, edgeOverrides, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; pages by name; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; `renamePoint` rewrites shared anchors and every configuration's override keys; orphans kept, never silently dropped | 380 |
@@ -745,6 +745,24 @@ SWITCH_CROSSING, OVERPASS (y-axis symmetric); **1** for TURNTABLE and CROSSING; 
 `TilePorts` must respect this — asking for orientation 3 of a STRAIGHT is a bug, not a rotation.
 *Check*: STRAIGHT `{E,W}` at o=0 → o=1 applies 3 CW turns → `{N,S}`, a vertical straight. Correct.
 
+**The port map is uniformly state-indexed.** Every switch confirmed by the author (2026-08-01)
+turns out to *replace* its connection set when thrown rather than add to it — `switch_left` is
+`{NS}` unswitched and `{SW}` switched, not `{NS}` plus a branch. `SWITCH_CROSSING` behaves the
+same way (`{NS}{EW}` unswitched, `{NW}{SE}` switched), and `SWITCH_THREE` is the three-state
+version of the identical idea. So `TilePorts` needs no notion of "common leg", "branch" or
+"toe" at all:
+
+> **`ports(type, orientation, state) -> set of connected side pairs`**
+
+where `state` is unswitched / switched (or the three-way's three states), and non-switch tiles
+have a single state. This is simpler than the earlier common-plus-branches model, removes the
+toe convention as a source of error, and makes `configCommands` generation fall out directly —
+traversing a pair that only exists in a given state emits exactly the command for that state.
+
+**The base icon is the default, unswitched position** (author, 2026-08-01); `_active` /
+`_active2` art is the switched state. This is a general rule across the icon set, not per-tile
+trivia, and it is what makes the table below readable directly off the art.
+
 **Ports at orientation 0, measured from `icons60/` by border-occupancy and intra-tile flood fill.**
 Confidence column: **M** = measured from the art and trustworthy; **D** = must be *declared* in the
 table because pixels cannot express it.
@@ -763,9 +781,9 @@ table because pixels cannot express it.
 | TUNNEL | `tunnel` | S | `{S}` + one **portal** port, user-paired | M |
 | CROSSING | `cross` | N E S W | `{NS}` `{EW}` — two independent straights | **D** |
 | OVERPASS | `overpass` | N E S W | `{EW}` `{NS}` permanently connected, **one track physically above the other** (author, 2026-08-01) — never meet, no accessory | author |
-| SWITCH_LEFT | `switch_left` | N S W | one group; common + 2 branches | M / **D** |
-| SWITCH_RIGHT | `switch_right` | N E S | one group; common + 2 branches | M / **D** |
-| SWITCH_Y | `switch_y` | E S W | one group; common + 2 branches | M / **D** |
+| SWITCH_LEFT | `switch_left` | N S W | unswitched `{NS}`; switched `{SW}` (author) | author |
+| SWITCH_RIGHT | `switch_right` | N E S | unswitched `{NS}`; switched `{SE}` (author) | author |
+| SWITCH_Y | `switch_y` | E S W | unswitched `{SW}`; switched `{SE}` (author) — no straight route | author |
 | SWITCH_THREE | `threeway` | N E S W | **three routes from a single toe at S** (author, 2026-08-01): S-N, S-E, S-W. Two addresses; see mapping below | author |
 | SWITCH_CROSSING | `crossswitch` | N E S W | **double slip** (author, 2026-08-01): unswitched `{NS}` `{EW}`; switched `{NW}` `{SE}`. State-dependent, 2 orientations | author |
 | CUSTOM_PERM_LEFT | `custom_perm_left` | N S W | **trailing only** (branch→toe); no accessory | M / **D** |
@@ -838,13 +856,16 @@ table because pixels cannot express it.
    errors block the build, warnings are surfaced in the validity banner and the review table and
    are logged, and the build proceeds.
 
-   *Toe convention (declared, confirm on the connectivity overlay):* at orientation 0 the toe is
-   the **S** side for `SWITCH_LEFT` (branch W), `SWITCH_RIGHT` (branch E), `SWITCH_Y` (branches
-   E and W) and `SWITCH_THREE` (straight N, branches E and W), and likewise for their
-   `CUSTOM_PERM_*` counterparts, which share the same open sides. Derived from the art's
-   handedness — for `switch_left` a toe at S diverges west when heading north, which is what
-   "left" means; a toe at N would make the same art a right-hand turnout. Run-length probing of
-   the icons was inconclusive, so this is a declaration to confirm, not a measurement.
+   *Toe convention — **confirmed** by the author (2026-08-01), no longer an inference:* at
+   orientation 0 the toe is the **S** side for every turnout — `SWITCH_LEFT`, `SWITCH_RIGHT`,
+   `SWITCH_Y`, `SWITCH_THREE` and their `CUSTOM_PERM_*` counterparts, which share the same open
+   sides. Every confirmed connection set contains S, which is what makes S the toe.
+
+   For the permanent variants this fixes the direction concretely: **S -> anything is forbidden**
+   (facing), **anything -> S is permitted** (trailing). A `CUSTOM_PERM_LEFT` therefore allows
+   `N->S` and `W->S` and nothing else. Note this admits *both* legs in the trailing direction
+   even though the blades are stuck in one position — which is the author's ruling that a trailing
+   move is safe regardless of blade position.
    **`CUSTOM_SCISSORS` is DISQUALIFIED from autonomy-enabled diagrams** (author ruling,
    2026-08-01). It is not a routing element at all: it is a **drawing convention** that lets two
    tiles depict one double slip switch. Its topology therefore cannot be expressed per-tile, and
@@ -953,7 +974,7 @@ Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
 
 | Class | Proves, headlessly |
 |---|---|
-| `testTilePorts` | port-map consistency: reciprocity, rotation coherence, switch branches exhaustive/disjoint per type; **every one of the 28 `componentType` values has an entry** (loop the enum — a new type must fail the test, not silently trace as impassable); orientation domain matches `getNumOrientations()`; STRAIGHT `{EW}` at o=1 yields `{NS}` and CURVE `{ES}` at o=1 yields `{NE}`, pinning the `(4-o)` quarter-turn convention; CROSSING/OVERPASS expose two disjoint groups, never one |
+| `testTilePorts` | port-map consistency: reciprocity, rotation coherence; **every switch's states are confirmed pairs, not supersets** — `SWITCH_LEFT` yields `{NS}` unswitched and `{SW}` switched with N unreachable when thrown, `SWITCH_Y` yields `{SW}` unswitched and `{SE}` switched with no straight route in either, `SWITCH_CROSSING` swaps throughs for diagonals; every confirmed connection pair contains S for turnouts (the toe invariant); `CUSTOM_PERM_*` permits only pairs entering S; base art maps to the unswitched state; **every one of the 28 `componentType` values has an entry** (loop the enum — a new type must fail the test, not silently trace as impassable); orientation domain matches `getNumOrientations()`; STRAIGHT `{EW}` at o=1 yields `{NS}` and CURVE `{ES}` at o=1 yields `{NE}`, pinning the `(4-o)` quarter-turn convention; CROSSING/OVERPASS expose two disjoint groups, never one |
 | `testDiagramTopology` | programmatic pages (no files): straight runs connect; rotation breaks adjacency as the art says; switch fork yields per-branch traces **with correct settings**; CROSSING two independent throughs; OVERPASS no interaction; unlinked TUNNEL stops, linked portal continues cross-page; anchors terminate traces; cycles bounded; **permanent turnouts**: a trace entering a `CUSTOM_PERM_*` at the toe produces no connection past it, the same pair traced from a branch toward the toe does connect, the resulting edge is one-directional, no config command is emitted for the tile, and a warning naming its coordinates is collected; `CUSTOM_SCISSORS` (switchable) is unaffected; **per-tile direction**: an all-`both` run traces both ways (parity with an unconfigured diagram), one `forward` tile mid-run suppresses exactly the opposing edge, `none` stops the trace at that tile, constraints AND along a path rather than the last one winning, a user direction cannot re-open a permanent turnout's facing direction, a two-group tile constrains only the group traversed, and a run made impossible in both directions is reported as a contradiction warning with coordinates |
 | `testDiagramMonitor` | dispatch→RESERVED, milestone→COMPLETED/CURRENT, completion fire (maps already cleared)→empty publish, 50-fire burst coalesces, throwing publisher never reaches the firing thread — simulated model + fake publisher + visible/hidden parents (the `testLayoutTiles` trick) |
 | `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **CS-sourced layouts**: anchors save and reload with no local layout path set (the `isLocalLayout()`-false case must NOT refuse), a station assigned on a non-feedback tile round-trips as a virtual point with no s88, and an anchor whose `(page,x,y)` no longer resolves after a simulated diagram re-download becomes a reportable orphan rather than a deletion |
