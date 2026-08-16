@@ -440,6 +440,7 @@ public class testAutonomyFromDiagram
         // --- the hand-built graph, judged by the same tiles ---------------------------------------
         Map<String, Set<TileKey>> legacyExtent = new LinkedHashMap<>();
         Map<String, JSONObject> legacyEdges = new LinkedHashMap<>();
+        int ambiguous = 0;
 
         for (Object o : legacy.getJSONArray("edges"))
         {
@@ -450,9 +451,24 @@ public class testAutonomyFromDiagram
 
             if (from == null || to == null) continue;
 
-            Set<TileKey> tiles = tilesAlong(wideOpen, from, to);
+            // Only judge edges whose physical extent is EXACT.
+            //
+            // A hand-built edge has no tiles of its own, so its extent has to be inferred - and where it
+            // spans several derived edges the inference is a guess, because with every branch open the
+            // graph offers many ways between two sensors and the shortest is not necessarily the one the
+            // author drew.  That guess produced nonsense: five separate hand-built edges came out sharing
+            // the same seventeen tiles, all of them routed down one corridor the walk happened to like.
+            //
+            // Where a single derived edge joins the two sensors there is no guess: that IS the track
+            // between them.  Judging only those covers less but says something true, which is worth more
+            // than a large number nobody can act on.
+            Set<TileKey> tiles = exactExtent(wideOpen, from, to);
 
-            if (tiles.isEmpty()) continue;
+            if (tiles == null)
+            {
+                ambiguous++;
+                continue;
+            }
 
             String id = edge.getString("start") + " -> " + edge.getString("end");
             legacyExtent.put(id, tiles);
@@ -505,6 +521,9 @@ public class testAutonomyFromDiagram
             System.out.println("   " + g);
         }
 
+        System.out.println("hand-built edges with an exact extent:      " + legacyExtent.size()
+            + " of " + (legacyExtent.size() + ambiguous) + "   (the rest span several derived edges, so "
+            + "their track cannot be pinned down)");
         System.out.println("hand-built: overlapping pairs sharing a point: " + sharedPoint
             + "   (kept apart by occupancy, no lock needed)");
         System.out.println("hand-built: overlapping pairs it does lock:    " + legacyCovered);
@@ -566,6 +585,39 @@ public class testAutonomyFromDiagram
      * Where several routes join the same pair it takes the shortest, which is an approximation - a
      * hand-built edge meant to describe a longer way round would be judged on the wrong track.
      */
+    /**
+     * The tiles between two sensors, but only when a single derived edge joins them.
+     *
+     * @return the tiles, or null when several routes or several edges could be meant - in which case any
+     *         answer would be a guess, and a guess here quietly accuses the layout of collision risks it
+     *         does not have
+     */
+    private Set<TileKey> exactExtent(GraphReducer from, int startS88, int endS88)
+    {
+        Set<TileKey> tiles = null;
+
+        for (ReducedEdge edge : from.getEdges())
+        {
+            ReducedPoint start = from.getPoints().get(edge.getStart());
+            ReducedPoint end = from.getPoints().get(edge.getEnd());
+
+            if (start == null || end == null) continue;
+            if (start.getS88() != startS88 || end.getS88() != endS88) continue;
+
+            // more than one derived edge joins these sensors, so which track is meant is not decidable
+            if (tiles != null) return null;
+
+            tiles = new LinkedHashSet<>();
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                tiles.add(step.getTile());
+            }
+        }
+
+        return tiles == null || tiles.isEmpty() ? null : tiles;
+    }
+
     private Set<TileKey> tilesAlong(GraphReducer from, int startS88, int endS88)
     {
         Map<Integer, ReducedEdge> arrivedBy = new LinkedHashMap<>();
