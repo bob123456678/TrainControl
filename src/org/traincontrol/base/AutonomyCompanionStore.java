@@ -541,6 +541,28 @@ public class AutonomyCompanionStore
         if (activeConfiguration == null) activeConfiguration = name;
     }
 
+    /**
+     * Brings in a configuration from a file somebody exported, under the given name.
+     *
+     * The counterpart of handing getConfiguration() to a file: the two together are what let a
+     * configuration travel between people running the same layout.  The name comes from the caller
+     * rather than the file, so importing does not silently overwrite whatever happened to share the
+     * exporter's name.
+     *
+     * @param name what to call it here
+     * @param configuration the exported object
+     */
+    public void importConfiguration(String name, JSONObject configuration)
+    {
+        JSONObject imported = new JSONObject(configuration.toString());
+
+        imported.put("name", name);
+
+        configurations.put(name, imported);
+
+        if (activeConfiguration == null) activeConfiguration = name;
+    }
+
     public void renameConfiguration(String from, String to) throws IOException
     {
         JSONObject configuration = configurations.remove(from);

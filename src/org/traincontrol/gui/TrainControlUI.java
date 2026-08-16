@@ -1467,26 +1467,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private DiagramMonitorDriver diagramMonitorDriver;
 
     /**
-     * The autonomy panel shown beside the track diagram.
+     * Puts the autonomy configuration panel where the JSON window used to be.
      *
-     * Mounted as the scroll pane's row header, which is unused today, so nothing generated has to be
-     * touched and nothing competes with the grid for the viewport - which LayoutGrid clears and
-     * re-lays out on every redraw.
+     * setViewportView swaps the text area for the panel without touching the generated layout, and the
+     * buttons that only made sense for JSON are hidden rather than removed - GroupLayout gives their
+     * space back, and phase 2 deletes them properly.  If this layout cannot hold an autonomy setup (no
+     * local copy), nothing changes and the JSON window remains, so nothing is lost while the old path
+     * still exists.
      */
-    public void showAutonomyPanel(boolean show)
+    public void mountAutonomyControls()
     {
-        if (!show)
-        {
-            this.LayoutArea.setRowHeaderView(null);
-            autonomyViewerPanel = null;
-
-            // stopped rather than merely hidden, so a closed panel is not still polling the layout every
-            // fifth of a second for a picture nobody can see
-            if (diagramMonitorDriver != null) diagramMonitorDriver.stop();
-
-            return;
-        }
-
         org.traincontrol.base.AutonomySession session = getAutonomySession();
 
         if (session == null) return;
@@ -1496,11 +1486,131 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             autonomyViewerPanel = new AutonomyViewerPanel(session, this);
         }
 
-        this.LayoutArea.setRowHeaderView(autonomyViewerPanel);
-        this.LayoutArea.revalidate();
+        this.jScrollPane2.setViewportView(autonomyViewerPanel);
 
+        // the JSON-era controls; everything they did has a home on the panel now
+        this.validateButton.setVisible(false);
+        this.loadDefaultBlankGraph.setVisible(false);
+        this.loadJSONButton.setVisible(false);
+        this.exportJSON.setVisible(false);
+        this.jsonDocumentationButton.setVisible(false);
+    }
+
+    /**
+     * Everything that follows an autonomy configuration loading successfully, in one place so the panel
+     * load and the startup resume cannot drift apart: the dependent tabs appear, the monitor follows the
+     * new layout, the overlay switches on, and the view jumps to the track it is all about.
+     *
+     * @param name the configuration that loaded, for the log
+     */
+    public void autonomyLoadedFromDiagram(String name)
+    {
+        setAutonomyDependentTabs(true);
+
+        org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+        // parseAuto replaced the Layout wholesale, so both the indexes and the callback have to follow
+        // it - a monitor left pointing at the old one would be watching a railway nobody runs
         getDiagramMonitorDriver().bind(session);
         getDiagramMonitorDriver().start();
+
+        if (autonomyOverlayToggle == null)
+        {
+            autonomyOverlayToggle = new AutonomyOverlayToggle(this);
+            this.LayoutArea.setColumnHeaderView(autonomyOverlayToggle);
+            this.LayoutArea.revalidate();
+        }
+
+        autonomyOverlayToggle.setSelected(true);
+
+        jumpToLayoutTab();
+
+        this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
+    }
+
+    /**
+     * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.
+     *
+     * Duplicated from validateButtonActionPerformed rather than extracted from it: that handler holds
+     * hard-won ordering (see its comments) and is deleted whole in phase 2, so restructuring it now
+     * would risk the old path to tidy a temporary seam.
+     *
+     * @return true to proceed, false if the user kept the running layout
+     */
+    public boolean prepareAutonomyReload()
+    {
+        if (this.model == null) return false;
+
+        if (this.model.hasAutoLayout() && this.isAutonomyBusy())
+        {
+            int result = JOptionPane.showOptionDialog(
+                this,
+                I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives"),
+                I18n.t("loc.ui.dialogConfirmReset"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[1] // default to leaving the running layout alone
+            );
+
+            if (result != JOptionPane.YES_OPTION) return false;
+
+            this.gracefulStopRequested = true;
+
+            // Order matters: clear the dispatch flag first, so no locomotive thread can pick up a new
+            // path in between, then stop everything that is currently moving.
+            this.model.getAutoLayout().stopLocomotives();
+
+            for (Locomotive active : this.model.getAutoLayout().getActiveLocomotives().keySet())
+            {
+                active.setSpeed(0);
+            }
+        }
+
+        resetLayoutStationLabels();
+
+        return true;
+    }
+
+    /**
+     * Shows or hides the tabs that only mean something with a valid autonomy layout loaded - the same
+     * set the JSON path manages, minus the graph window it would also have opened.
+     *
+     * @param valid
+     */
+    private void setAutonomyDependentTabs(boolean valid)
+    {
+        if (!valid)
+        {
+            locCommandPanels.remove(this.locCommandTab);
+            locCommandPanels.remove(this.timetablePanel);
+            locCommandPanels.remove(this.autoSettingsPanel);
+
+            this.startAutonomy.setEnabled(false);
+            this.returnHomeButton.setEnabled(false);
+
+            return;
+        }
+
+        // remove-then-insert so a second load does not stack duplicates
+        locCommandPanels.remove(this.locCommandTab);
+        locCommandPanels.remove(this.timetablePanel);
+        locCommandPanels.remove(this.autoSettingsPanel);
+
+        locCommandPanels.insertTab(I18n.t("autolayout.ui.tabLocomotiveCommands"),
+            null, this.locCommandTab, null, 0);
+        locCommandPanels.insertTab(I18n.t("autolayout.ui.tabTimetable"),
+            null, this.timetablePanel, null, 1);
+        locCommandPanels.insertTab(I18n.t("autolayout.ui.tabAutonomySettings"),
+            null, this.autoSettingsPanel, null, 2);
+
+        loadAutoLayoutSettings();
+
+        this.startAutonomy.setEnabled(true);
+        this.refreshReturnHomeButton();
+        this.executeTimetable.setEnabled(true);
+        this.gracefulStop.setEnabled(false);
     }
 
     public AutonomyViewerPanel getAutonomyViewerPanel()
@@ -1509,6 +1619,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private AutonomyViewerPanel autonomyViewerPanel;
+
+    private AutonomyOverlayToggle autonomyOverlayToggle;
 
     /**
      * Which on-screen tiles stand for which square of the diagram, for autonomy to light up.
@@ -2137,12 +2249,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }, 0, PING_INTERVAL);
         }
         
+        // Autonomy managed on the diagram replaces the JSON window wherever this layout can hold a
+        // setup; where it cannot (no local copy), the JSON window stays and nothing below changes.
+        this.mountAutonomyControls();
+
         // Load autonomy if requested
         if (this.AutoLoadAutonomyMenuItem.isSelected())
         {
-            javax.swing.SwingUtilities.invokeLater(() -> 
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
-                this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
+                // The active configuration resumes from the diagram when there is one; the JSON path
+                // remains the fallback for layouts that have never been set up the new way.
+                org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+                if (session != null && this.getAutonomyViewerPanel() != null
+                    && session.getStore().getActiveConfiguration() != null)
+                {
+                    this.getAutonomyViewerPanel().loadActive();
+                }
+                else
+                {
+                    this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
+                }
             });
         }
                 
@@ -12648,10 +12776,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
+        // One button, two editors: the track itself, or the autonomy drawn over it.  Only asked when an
+        // autonomy setup exists, so a user who has never touched autonomy never sees the question.
+        final org.traincontrol.base.AutonomySession autonomyToEdit;
+
+        org.traincontrol.base.AutonomySession candidateSession = getAutonomySession();
+
+        if (candidateSession != null && (candidateSession.exists()
+            || !candidateSession.getStore().getConfigurationNames().isEmpty()))
+        {
+            Object[] editChoices = {
+                I18n.t("autosetup.ui.editChoiceDiagram"),
+                I18n.t("autosetup.ui.editChoiceAutonomy")
+            };
+
+            int editChoice = JOptionPane.showOptionDialog(
+                this,
+                I18n.t("autosetup.ui.editChoiceMessage"),
+                I18n.t("autosetup.ui.editChoiceTitle"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                editChoices,
+                editChoices[0]
+            );
+
+            if (editChoice == JOptionPane.CLOSED_OPTION) return;
+
+            autonomyToEdit = editChoice == 1 ? candidateSession : null;
+        }
+        else
+        {
+            autonomyToEdit = null;
+        }
+
         this.editLayoutButton.setEnabled(false);
-        
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {    
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
             try
             {
                 // New native editor
@@ -12668,6 +12830,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
                 popup.render();
+
+                if (autonomyToEdit != null) popup.setAutonomyMode(autonomyToEdit);
             }
             catch (Exception e)
             {

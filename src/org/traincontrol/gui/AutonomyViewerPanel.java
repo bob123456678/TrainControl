@@ -10,7 +10,6 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -25,11 +24,13 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * Running a layout and watching it, from beside the diagram it runs on.
+ * Managing a layout's autonomy configurations, from the Auto tab.
  *
  * The counterpart to the editor panel: that one is for deciding how the railway is wired, this one is
- * for using it.  Which configuration is loaded, what is switched on, where the locomotives are, and
- * whether anything looks wrong before trusting trains to it.
+ * for using it.  Setting autonomy up for the first time, choosing which configuration runs, moving
+ * configurations between machines, and checking whether anything looks wrong before trusting trains
+ * to it.  It stands where the JSON window used to: the configuration IS the diagram now, so what was a
+ * text area becomes a list of named setups.
  *
  * Hand written and mounted into a container the main window already has, so no form changes and no new
  * window.
@@ -45,12 +46,7 @@ public class AutonomyViewerPanel extends JPanel
     private final DefaultListModel<String> roster = new DefaultListModel<>();
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
 
-    private final JCheckBox layerMonitoring =
-        new JCheckBox(I18n.t("autosetup.ui.layerMonitoring"), true);
-    private final JCheckBox layerLabels = new JCheckBox(I18n.t("autosetup.ui.layerLabels"), true);
-    private final JCheckBox layerLocomotives =
-        new JCheckBox(I18n.t("autosetup.ui.layerLocomotives"), true);
-    private final JCheckBox layerHomes = new JCheckBox(I18n.t("autosetup.ui.layerHomes"), false);
+    private final JButton initialize = new JButton(I18n.t("autosetup.ui.btnInitFromLayout"));
 
     private final JLabel status = new JLabel();
 
@@ -81,6 +77,11 @@ public class AutonomyViewerPanel extends JPanel
         heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
         panel.add(heading);
 
+        // The starting point for a layout that has no setup yet.  Everything else on the panel is about
+        // configurations, and until this is pressed there are none.
+        initialize.addActionListener(e -> initialize());
+        panel.add(initialize);
+
         // Choosing a configuration LOADS it, which is what makes it the one that runs next time too.
         // Refused while trains are moving, for the same reason any structural change is.
         configurations.addActionListener(e ->
@@ -110,15 +111,17 @@ public class AutonomyViewerPanel extends JPanel
 
         panel.add(buttons);
 
-        // Turning the layer off leaves the wiring in place and simply stops drawing, so switching it back
-        // on shows the current state rather than waiting for the next train to move.
-        layerMonitoring.addActionListener(e ->
-            ui.getDiagramMonitorDriver().setEnabled(layerMonitoring.isSelected()));
+        JPanel transfer = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
 
-        panel.add(layerMonitoring);
-        panel.add(layerLabels);
-        panel.add(layerLocomotives);
-        panel.add(layerHomes);
+        JButton importButton = new JButton(I18n.t("autosetup.ui.btnImportConfiguration"));
+        importButton.addActionListener(e -> importConfiguration());
+        transfer.add(importButton);
+
+        JButton exportButton = new JButton(I18n.t("autosetup.ui.btnExportConfiguration"));
+        exportButton.addActionListener(e -> exportConfiguration());
+        transfer.add(exportButton);
+
+        panel.add(transfer);
 
         return panel;
     }
@@ -171,11 +174,23 @@ public class AutonomyViewerPanel extends JPanel
      * motion leaves it running with nothing tracking it - the same gate the rest of the application
      * applies to structural changes.
      */
+    /**
+     * Loads the active configuration - the startup resume, which is the same as the user choosing what
+     * they chose last time.
+     */
+    public void loadActive()
+    {
+        String active = session.getStore().getActiveConfiguration();
+
+        if (active != null) load(active);
+    }
+
     private void load(String name)
     {
-        if (isRunning())
+        // The same gate the JSON path applies before replacing the layout: confirm, then stop whatever
+        // is moving.  Owned by the main window because stopping trains is its business, not a panel's.
+        if (!ui.prepareAutonomyReload())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorAutonomyRunning"));
             refresh();
             return;
         }
@@ -196,10 +211,12 @@ public class AutonomyViewerPanel extends JPanel
         {
             ui.getModel().parseAuto(session.buildConfiguration());
 
-            // parseAuto replaces the Layout wholesale, so both the indexes and the callback have to
-            // follow it - a monitor left pointing at the old one would be watching a railway nobody runs
-            ui.getDiagramMonitorDriver().bind(session);
-            ui.getDiagramMonitorDriver().start();
+            // remembered for next start, the way loading has always doubled as choosing
+            save();
+
+            // everything that follows success - dependent tabs, the monitor, the overlay toggle, the
+            // jump to the diagram - in one place, shared with the startup resume
+            ui.autonomyLoadedFromDiagram(name);
         }
         catch (RuntimeException e)
         {
@@ -207,6 +224,93 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         refresh();
+    }
+
+    /**
+     * Sets autonomy up for a layout that has none: one configuration, named by the user, which
+     * everything else on this panel then applies to.
+     */
+    private void initialize()
+    {
+        String name = JOptionPane.showInputDialog(this,
+            I18n.t("autosetup.ui.promptConfigurationName"));
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        try
+        {
+            session.initialize(name.trim());
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+        }
+
+        refresh();
+    }
+
+    /**
+     * Reads an exported configuration file in as a new named configuration.
+     *
+     * The file is the store's own format, so what one person exports another can import onto the same
+     * track - placements and settings travel, the track itself stays derived from each side's diagram.
+     */
+    private void importConfiguration()
+    {
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+
+        if (chooser.showOpenDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        String name = JOptionPane.showInputDialog(this, I18n.t("autosetup.ui.promptImportName"),
+            chooser.getSelectedFile().getName().replaceAll("\\.json$", ""));
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        try
+        {
+            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
+
+            session.getStore().importConfiguration(name.trim(),
+                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
+
+            save();
+        }
+        catch (IOException | RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+        }
+
+        refresh();
+    }
+
+    /**
+     * Writes the active configuration out where the user chooses, for another machine to import.
+     */
+    private void exportConfiguration()
+    {
+        String name = session.getStore().getActiveConfiguration();
+
+        if (name == null) return;
+
+        org.json.JSONObject configuration = session.getStore().getConfiguration(name);
+
+        if (configuration == null) return;
+
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        chooser.setSelectedFile(new java.io.File(name + ".json"));
+
+        if (chooser.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        try
+        {
+            java.nio.file.Files.write(chooser.getSelectedFile().toPath(),
+                configuration.toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+        }
     }
 
     private void duplicate()
@@ -307,38 +411,17 @@ public class AutonomyViewerPanel extends JPanel
 
     // --- state ------------------------------------------------------------------------------------
 
-    public boolean isShowingMonitoring()
-    {
-        return layerMonitoring.isSelected();
-    }
-
-    public boolean isShowingLabels()
-    {
-        return layerLabels.isSelected();
-    }
-
-    public boolean isShowingLocomotives()
-    {
-        return layerLocomotives.isSelected();
-    }
-
-    public boolean isShowingHomes()
-    {
-        return layerHomes.isSelected();
-    }
-
-    private boolean isRunning()
-    {
-        Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayout();
-
-        return layout != null && layout.isRunning();
-    }
-
     /**
      * Re-reads everything and shows it.
      */
     public final void refresh()
     {
+        // Until a setup exists there is nothing for the rest of the panel to act on, so it offers the
+        // one thing that can be done and nothing that cannot.
+        boolean exists = session.exists() || !session.getStore().getConfigurationNames().isEmpty();
+
+        initialize.setVisible(!exists);
+
         populating = true;
 
         try

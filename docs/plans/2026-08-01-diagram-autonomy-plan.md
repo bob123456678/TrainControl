@@ -1004,6 +1004,25 @@ runtime right-click menus, `LayoutRightclickAutonomyMenu` on a station label, an
 autonomy panel — and continue to mutate the live `Layout`, saving back to the active
 configuration. Nothing about running autonomy moves.
 
+## Surface placement (author ruling, 2026-08-16)
+
+Where each piece of the UX lives, decided during R1 integration. The panels are self-contained
+JPanels precisely so these mounts stay one-liners — **the author wants the ability to switch
+between placements as the UX shakes out**, and menu-based alternatives remain open for later.
+
+| Surface | Role | Mount |
+|---|---|---|
+| **Auto tab** | Configuration management only: initialize-from-layout, load/switch configurations (loading is what "validate and open the graph" used to be), import/export, runnable validation checks, roster | `AutonomyViewerPanel` replaces the JSON text area via `jScrollPane2.setViewportView()`; the JSON-era buttons are hidden (phase 2 deletes them). Layouts with no local copy keep the JSON window untouched. |
+| **Diag tab** | **View only.** One checkbox ("Show autonomy") toggling the monitoring overlay; checked automatically when a configuration loads. No editing affordances at all. | `AutonomyOverlayToggle` as `LayoutArea.setColumnHeaderView()`, mounted on first successful load. |
+| **Layout editor** | The only place autonomy is *edited*: arrows/connections, points, portals, lengths, and later loc placement, exclusions, homes. Reuses the existing `edit` mutual exclusion. | Clicking **the edit track diagram button** with a setup present asks "track diagram or autonomy?"; autonomy opens the editor and calls `setAutonomyMode(session)`. |
+
+Load flow: panel `load()` -> `TrainControlUI.prepareAutonomyReload()` (same confirm-and-stop gate
+as the JSON path; deliberately duplicated, not extracted — the old handler holds hard-won ordering
+and is deleted whole in phase 2) -> `parseAuto` -> `autonomyLoadedFromDiagram()` (dependent tabs,
+monitor rebind, overlay on, jump to the Diag tab, log line). Startup resume calls the same
+`loadActive()` path when an active configuration exists, and falls back to the JSON validate
+handler otherwise — so resuming with no error lands the user looking at the lit-up diagram.
+
 ## The user-facing setup workflow (what ships)
 
 Supersedes the anchor-based workflow this section used to describe.
