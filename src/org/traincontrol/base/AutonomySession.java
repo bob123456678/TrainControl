@@ -664,8 +664,12 @@ public class AutonomySession
 
         String name = store.getPointName(tile);
 
-        return new TileAnnotation(marks, -1, false, station,
-            name != null && !name.trim().isEmpty(), false);
+        return new TileAnnotation(marks, -1, false,
+            station ? new TileAnnotation.Station(
+                Boolean.TRUE.equals(getPointProperty(tile, "terminus")),
+                Boolean.FALSE.equals(getPointProperty(tile, "active")),
+                name != null && !name.trim().isEmpty()) : null,
+            false, false);
     }
 
     /**

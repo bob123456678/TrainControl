@@ -132,6 +132,73 @@ public class TileAnnotation
     private static final Color STATION = new Color(0, 90, 180);
 
     /**
+     * A station autonomy will not choose on its own - a parking berth.  A different colour rather than
+     * a different shape, because it is still a station in every other respect.
+     */
+    private static final Color PARKING = new Color(120, 85, 160);
+
+    /**
+     * What a sensor has been designated as.
+     *
+     * The five the user thinks in terms of are two independent questions over a station: whether a
+     * train arriving must leave the way it came (terminus), and whether autonomy picks it during
+     * normal running (parking).  A sensor that is not a station at all is simply a point trains run
+     * through, and carries no badge.
+     */
+    public static class Station
+    {
+        private final boolean terminus;
+        private final boolean parking;
+        private final boolean named;
+
+        public Station(boolean terminus, boolean parking, boolean named)
+        {
+            this.terminus = terminus;
+            this.parking = parking;
+            this.named = named;
+        }
+
+        public boolean isTerminus()
+        {
+            return terminus;
+        }
+
+        public boolean isParking()
+        {
+            return parking;
+        }
+
+        public boolean isNamed()
+        {
+            return named;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof Station)) return false;
+
+            Station other = (Station) o;
+
+            return terminus == other.terminus && parking == other.parking && named == other.named;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (terminus ? 1 : 0) + (parking ? 2 : 0) + (named ? 4 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            return (parking ? "parking" : "station") + (terminus ? " terminus" : "")
+                + (named ? "" : " (unnamed)");
+        }
+    }
+
+    /**
      * Autonomy takes no notice of this square.  Washed out rather than greyed over, so that a tile
      * nobody can configure recedes without becoming a dark block that draws the eye more than the
      * track does - which is what a heavier grey did on a page with forty route buttons on it.
@@ -149,8 +216,7 @@ public class TileAnnotation
     private final List<Mark> marks;
     private final int length;
     private final boolean selected;
-    private final boolean station;
-    private final boolean named;
+    private final Station station;
     private final boolean ignored;
     private final boolean muted;
 
@@ -161,34 +227,24 @@ public class TileAnnotation
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected)
     {
-        this(marks, length, selected, false, true, false);
+        this(marks, length, selected, null, false, false);
     }
 
     /**
      * @param marks the routes to draw, or empty to draw none
      * @param length the tile's length, or a negative number not to show one
      * @param selected whether this tile is part of a bulk selection
-     * @param station whether trains may be sent here
-     * @param named whether this point has a name of its own
+     * @param station what this sensor is designated as, or null when it is not a station
      * @param ignored whether autonomy takes no notice of this square at all
-     */
-    public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
-        boolean named, boolean ignored)
-    {
-        this(marks, length, selected, station, named, ignored, false);
-    }
-
-    /**
      * @param muted whether to push the tile art back without saying it cannot be configured
      */
-    public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
-        boolean named, boolean ignored, boolean muted)
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Station station,
+        boolean ignored, boolean muted)
     {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
         this.station = station;
-        this.named = named;
         this.ignored = ignored;
         this.muted = muted;
     }
@@ -203,14 +259,9 @@ public class TileAnnotation
         return muted;
     }
 
-    public boolean isStation()
+    public Station getStation()
     {
         return station;
-    }
-
-    public boolean isNamed()
-    {
-        return named;
     }
 
     public List<Mark> getMarks()
@@ -234,7 +285,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && !station && !ignored && !muted;
+        return marks.isEmpty() && length < 0 && !selected && station == null && !ignored && !muted;
     }
 
     /**
@@ -308,7 +359,7 @@ public class TileAnnotation
                 paintMark(g, width, height, marks.get(i), spread);
             }
 
-            if (station) paintStation(g, width, height);
+            if (station != null) paintStation(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
@@ -461,25 +512,67 @@ public class TileAnnotation
      * three never overlap.  Hollow-when-unnamed is the only cue anywhere that a station still needs a
      * name - nothing refuses to work without one, it just turns up as a coordinate in a timetable.
      */
+    /**
+     * Draws a station as a station rather than as a sensor with a dot on it.
+     *
+     * A station is the thing autonomy is FOR - it is where trains can be sent - and on the diagram it
+     * was previously the same tile as every other sensor with a small mark added.  It now takes the
+     * whole square: a coloured frame, a solid platform band, and a badge that says which kind it is.
+     *
+     *   plain station     blue frame, blank band
+     *   terminus          blue frame, band with a buffer stop across the closed end
+     *   parking           purple frame, band lettered P
+     *   parking terminus  purple frame, lettered band with the buffer stop
+     *
+     * Unnamed stations are drawn hollow, which stays the only cue anywhere that one still needs a name.
+     */
     private void paintStation(Graphics2D g, int width, int height)
     {
-        int size = Math.max(7, Math.min(width, height) / 3);
+        Color colour = station.isParking() ? PARKING : STATION;
 
+        // The frame is what makes a station findable from across the diagram; the band is what makes
+        // it readable close up.
         g.setStroke(new BasicStroke(2f));
+        g.setColor(colour);
+        g.drawRect(1, 1, width - 3, height - 3);
 
-        if (named)
+        int band = Math.max(6, height / 3);
+        int top = height - band - 1;
+
+        if (station.isNamed())
         {
-            g.setColor(STATION);
-            g.fillOval(2, 2, size, size);
-            g.setColor(Color.WHITE);
-            g.drawOval(2, 2, size, size);
+            g.setColor(colour);
+            g.fillRect(2, top, width - 4, band);
         }
         else
         {
+            // hollow: the station exists but has no name yet
             g.setColor(Color.WHITE);
-            g.fillOval(2, 2, size, size);
-            g.setColor(STATION);
-            g.drawOval(2, 2, size, size);
+            g.fillRect(2, top, width - 4, band);
+            g.setColor(colour);
+            g.setStroke(new BasicStroke(1f));
+            g.drawRect(2, top, width - 5, band - 1);
+        }
+
+        Color ink = station.isNamed() ? Color.WHITE : colour;
+
+        if (station.isParking())
+        {
+            g.setColor(ink);
+            g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, band * 0.9f));
+
+            java.awt.FontMetrics metrics = g.getFontMetrics();
+
+            g.drawString("P", (width - metrics.stringWidth("P")) / 2,
+                top + band - Math.max(1, (band - metrics.getAscent()) / 2) - 1);
+        }
+
+        if (station.isTerminus())
+        {
+            // a buffer stop: the bar a train cannot pass, drawn across the left end of the band
+            g.setColor(ink);
+            g.setStroke(new BasicStroke(2.5f));
+            g.drawLine(4, top + 1, 4, top + band - 2);
         }
     }
 
@@ -540,23 +633,23 @@ public class TileAnnotation
         TileAnnotation other = (TileAnnotation) o;
 
         return length == other.length && selected == other.selected
-            && station == other.station && named == other.named && ignored == other.ignored
-            && muted == other.muted && marks.equals(other.marks);
+            && (station == null ? other.station == null : station.equals(other.station))
+            && ignored == other.ignored && muted == other.muted && marks.equals(other.marks);
     }
 
     @Override
     public int hashCode()
     {
         return marks.hashCode() * 31 + length * 2
-            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0) + (ignored ? 16 : 0)
-            + (muted ? 32 : 0);
+            + (selected ? 1 : 0) + (station == null ? 0 : station.hashCode() * 4)
+            + (ignored ? 16 : 0) + (muted ? 32 : 0);
     }
 
     @Override
     public String toString()
     {
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
-            + (station ? (named ? " station" : " station(unnamed)") : "")
+            + (station == null ? "" : " " + station)
             + (ignored ? " ignored" : "");
     }
 }

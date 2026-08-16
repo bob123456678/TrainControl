@@ -652,15 +652,41 @@ public class AutonomyEditorPanel extends JPanel
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
 
-        JCheckBox station = check(panel, "autosetup.ui.labelIsStation",
-            session.getStore().isStation(tile));
-        JCheckBox terminus = check(panel, "autosetup.ui.labelIsTerminus", flag(tile, "terminus"));
-        JCheckBox reversing = check(panel, "autosetup.ui.labelIsReversing", flag(tile, "reversing"));
+        // Phrased as the five things a user thinks in: a point, a station, and the two questions that
+        // qualify a station.  Underneath they are three independent flags, which is why they are
+        // checkboxes rather than a list - a parking terminus is both, not a fifth kind.
+        panel.add(AutonomyViewerPanel.styled(
+            new JLabel(I18n.t("autosetup.ui.labelStationKind")), true));
 
-        // active defaults to true when nothing has been stored, matching parseAuto
+        final JCheckBox station = check(panel, "autosetup.ui.kindStation",
+            session.getStore().isStation(tile));
+
+        final JCheckBox terminus = check(panel, "autosetup.ui.labelTerminusShort",
+            flag(tile, "terminus"));
+
+        // Parking IS the model's "inactive": autonomy skips it when choosing where to send a train and
+        // will not start one standing there, while a route you pick yourself may still begin or end on
+        // it.  Not a new concept, just the one this flag was always for.
         Object storedActive = session.getPointProperty(tile, "active");
-        JCheckBox active = check(panel, "autosetup.ui.labelIsActive",
-            storedActive == null || Boolean.TRUE.equals(storedActive));
+
+        final JCheckBox parking = check(panel, "autosetup.ui.labelParking",
+            Boolean.FALSE.equals(storedActive));
+
+        JLabel parkingHint = new JLabel(I18n.t("autosetup.ui.hintParking"));
+        parkingHint.setFont(AutonomyViewerPanel.FONT_LIST);
+        panel.add(parkingHint);
+
+        // The two qualifiers only mean anything on a station, so they follow it.
+        terminus.setEnabled(station.isSelected());
+        parking.setEnabled(station.isSelected());
+
+        station.addActionListener(e ->
+        {
+            terminus.setEnabled(station.isSelected());
+            parking.setEnabled(station.isSelected());
+        });
+
+        JCheckBox reversing = check(panel, "autosetup.ui.labelIsReversing", flag(tile, "reversing"));
 
         javax.swing.JTextField maxLength = field(panel, "autosetup.ui.labelMaxTrainLength",
             number(tile, "maxTrainLength", 0));
@@ -691,9 +717,15 @@ public class AutonomyEditorPanel extends JPanel
         session.setStation(tile, station.isSelected());
 
         // Stored only when set, so a configuration file records decisions rather than every default.
-        session.setPointProperty(tile, "terminus", terminus.isSelected() ? Boolean.TRUE : null);
+        // The qualifiers are cleared with the station, so a sensor demoted back to a plain point does
+        // not keep a terminus flag nobody can see any more.
+        session.setPointProperty(tile, "terminus",
+            station.isSelected() && terminus.isSelected() ? Boolean.TRUE : null);
+
+        session.setPointProperty(tile, "active",
+            station.isSelected() && parking.isSelected() ? Boolean.FALSE : null);
+
         session.setPointProperty(tile, "reversing", reversing.isSelected() ? Boolean.TRUE : null);
-        session.setPointProperty(tile, "active", active.isSelected() ? null : Boolean.FALSE);
 
         session.setPointProperty(tile, "maxTrainLength", parse(maxLength, 0));
         session.setPointProperty(tile, "speedMultiplier", parse(multiplier, 100));
@@ -1129,12 +1161,8 @@ public class AutonomyEditorPanel extends JPanel
         boolean outlined = selection.contains(tile)
             || testPath.contains(tile) || tile.equals(testFrom);
 
-        boolean station = session.getStore().isStation(tile);
-
-        String name = session.getStore().getPointName(tile);
-
-        return new org.traincontrol.base.TileAnnotation(marks, length, outlined, station,
-            name != null && !name.trim().isEmpty(), ignored, isMuted(tile));
+        return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
+            stationFor(tile), ignored, isMuted(tile));
     }
 
     /**
@@ -1145,6 +1173,21 @@ public class AutonomyEditorPanel extends JPanel
      * important thing on a page where they are usually the least interesting.  Still configurable:
      * a signal can be restricted like any other tile, and a restriction on one still draws.
      */
+    /**
+     * What this sensor has been designated as, or null when it is not a station.
+     */
+    private org.traincontrol.base.TileAnnotation.Station stationFor(TileKey tile)
+    {
+        if (!session.getStore().isStation(tile)) return null;
+
+        String name = session.getStore().getPointName(tile);
+
+        return new org.traincontrol.base.TileAnnotation.Station(
+            flag(tile, "terminus"),
+            Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
+            name != null && !name.trim().isEmpty());
+    }
+
     private boolean isMuted(TileKey tile)
     {
         org.traincontrol.base.LayoutDiagramComponent component =
