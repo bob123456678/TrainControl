@@ -249,7 +249,22 @@ renders or how its tiles behave at runtime.
     cycling the same both / one way / other way / none.
   - Clicking a switch selects the branch nearest the click; the panel also lists that switch's
     branches explicitly, since clicking accurately on a diagonal is fiddly.
-  - Default is **both** on every branch, so an untouched diagram behaves exactly as today.
+  - **Default is base -> forks** (author, 2026-08-16): flow runs from the base (the toe) out to
+    the branches, and the opposite direction is off until the user enables it. This gives an
+    implicit, deterministic reading of every switch on the diagram while leaving the user in
+    control - nothing is guessed, and nothing silently permits a move the user did not intend.
+    The toe is the **S** side at orientation 0 for every turnout (verified port map), rotated with
+    the tile.
+  - **Note the deliberate asymmetry with `CUSTOM_PERM_*`**: a broken, address-less switch permits
+    *only* trailing moves (into the toe) because the blades cannot be commanded, whereas a working
+    switch *defaults* to only facing moves (out of the toe). They are exact opposites, and both
+    are correct for their own reason. Do not "harmonise" them.
+  - **Practical consequence, priced deliberately**: a great many layouts need trailing moves - a
+    passing siding is entered through a facing switch and rejoined through a trailing one, so with
+    this default the rejoin is blocked until enabled. Expect enabling the opposite direction to be
+    a routine part of setup, which makes the bulk-select affordance load-bearing rather than a
+    convenience. It also gives the ground-truth diff a useful signal: legacy edges that appear as
+    "only in legacy" will largely be the trailing moves not yet enabled.
   - The `CUSTOM_PERM_*` restriction still ANDs on top: it is broken hardware, not a user choice,
     and no per-branch setting can re-open a facing move.
 - Multi-route tiles (DOUBLE_CURVE, CROSSING, OVERPASS) hold one state per route; a click cycles
