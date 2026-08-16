@@ -1143,6 +1143,26 @@ building the review UI — its report calibrates the derivation work.
 
 ---
 
+## Deferred: a shippable migration tool (agreed 2026-08-01, later release)
+
+Not in scope for either phase, but agreed as a plausible follow-up — recorded so the insight is not
+rediscovered from scratch.
+
+**Station names are the join key, and mapping them is the whole problem.** A legacy `autonomy.json`
+keys everything it holds on point *names*: lengths, locks, homes, exclusions, placements,
+per-point properties and the timetable all reference points by name. So once each legacy name is
+matched to a diagram tile, **every other field transfers mechanically** — there is nothing else to
+resolve. Connections and locks are re-derived from geometry regardless, so they never need
+migrating at all.
+
+That reduces a migration tool to one screen: a two-column mapping of legacy point names to s88
+tiles, with obvious candidates pre-matched (identical names, or a name already assigned to a tile)
+and the rest picked by clicking the tile on the diagram. Everything downstream is a mechanical
+copy into the companion file.
+
+This is also why the developer-run seeder described above is cheap: it is the same mapping step
+performed once, by hand, for a single known layout.
+
 ## Explicit deferrals
 
 - `LAYOUT_STATION_PREFIX` hardcoded "Point:" vs localized key — pre-existing TODO, untouched.
