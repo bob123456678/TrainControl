@@ -578,8 +578,22 @@ Gate cleared against `cs2_sample_layout`.
 **Also done.** `AutonomyChecks` (the user-runnable checks), `DiagramTileRegistry` and the
 `LayoutLabel` paint hook.
 
-**Still to build.** The editor's autonomy panel; the viewer's autonomy panel; the path tester; the
-reduced-graph inspector; then Phase 2 removal and the documentation rewrite.
+**Built since (2026-08-16, second pass).** Both panels, mounted per the surface ruling above;
+`DiagramMonitorDriver` (poll loop: compute off-EDT, publish on it, exceptions contained);
+`TileAnnotation` + the annotation flow (editor walks its grid, panel answers per square);
+`AutonomyOverlayToggle` on the Diag tab; the edit-button choice dialog; startup resume through
+`loadActive()`; the path tester (`GraphReducer.findPath`, BFS, plus the TEST tool);
+`AutonomyBuilder.withPointExtras` + `AutonomySession.captureFromLayout` (configurations carry
+placements/homes/termini/globals, lifted back from the running layout on exit and before
+configuration switches, keyed by tile). Tests renamed under the `testAutonomyDiagram*` prefix
+and extended accordingly; all green as of the rename commit.
+
+**Still to build.** Phase 1 finish: sever the remaining old-path entries (graph window is no longer
+opened by the new path, but `startAutonomy`-adjacent flows and the right-click graph affordances
+still reference it). Phase 2 removal (graph window, GraphStream jars, `GRAPH_*` prefs, JSON-era
+buttons). Documentation rewrite (`Automation.md`, `Readme.md`). Editor-side placement/homes UI
+(runtime right-click menus already work and are captured; a setup-time UI in the editor remains
+wanted). Train icon last, per the author.
 
 ### Integration constraints, verified in the code (2026-08-16)
 
@@ -621,7 +635,18 @@ Decided by best guess, easy to reverse, each isolated to one place:
    the s88, which is not unique. Visible in the exported graph until points are named.
 5. **A page renumber is reported, not adopted.** The Central Station orders pages by the id we store
    against, so a renumber could reattach a page of settings to the wrong page. Reported via
-   `getPageIdConflicts()`; nothing consumes that report yet - the UI must show it.
+   `getPageIdConflicts()`; the viewer panel's findings list now shows it.
+6. **Import/export moves the store's own configuration format**, not legacy autonomy JSON. Two people
+   running the same layout can exchange placements; the track itself stays derived from each side's
+   diagram. Legacy JSON remains available read-only through the inspect export. If import of legacy
+   files is wanted, that is the deferred migration tool.
+7. **Capture trusts `Layout.toJSON()` and the builder's generated names.** A Point whose name was
+   disambiguated (`name (2)`) captures under the same disambiguated name the builder emitted, so the
+   round trip is stable; but a user-caused name collision created *after* a capture could re-key one
+   point's placements. Reported as acceptable because the editor warns about duplicate names.
+8. **The autosave-on-exit checkbox still governs only the legacy autonomy.json backup.** The
+   companion store saves eagerly and captures unconditionally on clean exit when a diagram
+   configuration is running. Whether the checkbox should also gate capture is an author call.
 
 ## BEFORE R1: what R0 left behind
 
