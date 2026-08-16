@@ -727,7 +727,7 @@ table because pixels cannot express it.
 | CUSTOM_PERM_THREEWAY | `custom_perm_threeway` | N E S W | **trailing only**; no accessory | M / **D** |
 | CUSTOM_PERM_SCISSORS | `custom_perm_scissors` | — | **DISQUALIFIED** (confirmed) — drawing convention, blocking error | ruling |
 | CUSTOM_SCISSORS | `custom_scissors` | — | **DISQUALIFIED** — a drawing convention for a double slip across two tiles, not a routing element; blocking setup error | ruling |
-| TURNTABLE | `turntable` | (art is dark-on-dark; occupancy unreliable) | **special — see below** | **D** |
+| TURNTABLE | `turntable` | — | **NOT SUPPORTED** (author, 2026-08-01) — trace terminator, nothing routes across it | author |
 | LINK | `link` | — art is a box graphic, **not track** | page portal, never traced through | **D** |
 | LAMP, ROUTE, TEXT | `lamp`/`route`/`text` | none | decorative, no ports | M |
 
@@ -817,10 +817,15 @@ table because pixels cannot express it.
      mid-height and merging into the vertical near the bottom. Toe S, straight N, branch E.
    - `switch_y`: no vertical bar; two diagonals from the W and E edges converging at bottom
      centre. Toe S, branches W and E.
-4. **TURNTABLE.** A turntable connects any radial to any other under manual control, has one
-   orientation, and cannot be expressed as a static port map. **R1 treats a turntable as a trace
-   terminator** (a trace that reaches one stops there), and connections across it are made by the
-   paint-override tool. Anything better is deferred.
+4. **TURNTABLE — not supported** (author ruling, 2026-08-01). A turntable connects any radial to
+   any other under manual control, has one orientation, and cannot be expressed as a static port
+   map. It is a **trace terminator**: a trace that reaches one stops there and nothing routes
+   across it. No port map entry, no accessory handling, no paint-override workaround (the
+   paint-override tool no longer exists under the revised architecture).
+   The build emits an informational **warning** naming the coordinates when a turntable sits on a
+   participating page, so it is clear that autonomy stops there by design rather than by a
+   misread. Unlike `CUSTOM_SCISSORS` this is **not** a blocking error — a turntable is a
+   legitimate part of a layout, it simply is not routable.
 
 `s88_active` shows 2 stray border pixels from its highlight box; the extraction threshold ignores
 runs of `<= 6` px, which cleanly separates real track from state decoration. `overpass` and
