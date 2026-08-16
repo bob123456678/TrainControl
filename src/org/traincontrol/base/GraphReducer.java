@@ -245,11 +245,6 @@ public class GraphReducer
     // A walk that runs longer than this is a diagram pathology, not a route
     private static final int MAX_PATH_TILES = 2000;
 
-    /**
-     * A tile whose position must be commanded but which carries no address.  Autonomy cannot use it, and
-     * says so rather than routing over it and hoping.
-     */
-    public static final String WARN_NO_ADDRESS = "autosetup.ui.warnTileHasNoAddress";
 
     private final TileGraph graph;
     private final Authored authored;
@@ -258,7 +253,6 @@ public class GraphReducer
     private final List<ReducedEdge> edges = new ArrayList<>();
     private final Map<ReducedEdge, Set<ReducedEdge>> locks = new LinkedHashMap<>();
     private final List<TileGraph.Problem> problems = new ArrayList<>();
-    private final Set<String> unaddressedReported = new HashSet<>();
     private int isolatedFeedbackTiles = 0;
 
     public GraphReducer(TileGraph graph, Authored authored)
@@ -277,7 +271,6 @@ public class GraphReducer
         edges.clear();
         locks.clear();
         problems.clear();
-        unaddressedReported.clear();
         isolatedFeedbackTiles = 0;
 
         buildPoints();
@@ -486,11 +479,10 @@ public class GraphReducer
             // this position is not usable.  Skipping the command instead would route trains over a switch
             // TrainControl is unable to throw, trusting it to already be lying the right way - which is
             // exactly the danger CUSTOM_PERM_* exists to describe, except here nobody said so.
-            if (accessory == null)
-            {
-                reportUnaddressed(tile);
-                return false;
-            }
+            // TileGraph already raised a blocking error for this tile, scanning every tile rather than
+            // only the ones a walk reaches.  Refusing the position here as well keeps the reducer honest
+            // if it is ever run on a graph whose problems were ignored.
+            if (accessory == null) return false;
 
             String name = accessory.getName();
             accessorySetting wanted = entry.getValue();
@@ -502,17 +494,6 @@ public class GraphReducer
         }
 
         return true;
-    }
-
-    /**
-     * Reports a tile that needs commanding but has no address, once per tile however many walks meet it.
-     */
-    private void reportUnaddressed(TileKey tile)
-    {
-        if (unaddressedReported.add(tile.toString()))
-        {
-            problems.add(new TileGraph.Problem(tile, WARN_NO_ADDRESS, false));
-        }
     }
 
     private int sumLength(List<TileStep> path)

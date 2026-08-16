@@ -271,6 +271,15 @@ public class TileGraph
     public static final String WARN_TURNTABLE = "autosetup.ui.warnTurntableNotRoutable";
     public static final String WARN_PERMANENT_TURNOUT = "autosetup.ui.warnPermanentTurnout";
 
+    /**
+     * A switch or signal that must be commanded to be passed, drawn without an address behind it.
+     *
+     * Blocking, by ruling: a diagram used for autonomy should not contain unmapped switches.  Routing
+     * over one would mean trusting it to already be lying the right way, which is the danger
+     * CUSTOM_PERM_* exists to declare - and here nobody declared it.
+     */
+    public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
+
     private final Map<TileKey, LayoutDiagramComponent> tiles = new LinkedHashMap<>();
     private final Map<TileKey, TileKey> portals = new HashMap<>();
     private final Map<TileKey, Map<RouteId, Direction>> directions = new HashMap<>();
@@ -317,6 +326,13 @@ public class TileGraph
                 else if (isPermanentTurnout(type))
                 {
                     problems.add(new Problem(key, WARN_PERMANENT_TURNOUT, false));
+                }
+                else if (missesAnAddress(component))
+                {
+                    // Scanned here rather than while walking, so an unaddressed switch on a siding no
+                    // route happens to reach is still reported.  A blocking error that depends on being
+                    // stumbled across is not a guarantee.
+                    problems.add(new Problem(key, ERROR_NO_ADDRESS, true));
                 }
             }
         }
@@ -639,6 +655,30 @@ public class TileGraph
     }
 
     // --- internals --------------------------------------------------------------------------------
+
+    /**
+     * Whether any position this tile can take requires an accessory it does not have.
+     *
+     * A three-way needs both of its addresses; a signal needs the one that lets it go green.  A tile that
+     * commands nothing - plain track, a crossing, a defective turnout - can never miss an address.
+     */
+    private static boolean missesAnAddress(LayoutDiagramComponent component)
+    {
+        componentType type = component.getType();
+
+        for (int state = 0; state < TilePorts.getStateCount(type); state++)
+        {
+            for (TilePorts.AccessorySlot slot : TilePorts.commands(type, state).keySet())
+            {
+                Accessory accessory = slot == TilePorts.AccessorySlot.PRIMARY
+                    ? component.getAccessory() : component.getAccessory2();
+
+                if (accessory == null) return true;
+            }
+        }
+
+        return false;
+    }
 
     private static boolean isPermanentTurnout(componentType type)
     {

@@ -362,14 +362,18 @@ public class testGraphReducer
         assertTrue(reducer.getEdges().isEmpty(),
             "no edge may cross a switch that cannot be commanded");
 
+        // and the diagram is refused outright: an autonomy diagram should not contain unmapped switches
+        TileGraph graph = graph(page);
+
         boolean reported = false;
 
-        for (TileGraph.Problem p : reducer.getProblems())
+        for (TileGraph.Problem p : graph.getProblems())
         {
-            if (GraphReducer.WARN_NO_ADDRESS.equals(p.getMessageKey())) reported = true;
+            if (TileGraph.ERROR_NO_ADDRESS.equals(p.getMessageKey()) && p.isBlocking()) reported = true;
         }
 
-        assertTrue(reported, "the unaddressed switch should be reported, not silently skipped");
+        assertTrue(reported, "an unaddressed switch should block the build, not merely be skipped");
+        assertTrue(graph.hasBlockingProblems());
     }
 
     /**
