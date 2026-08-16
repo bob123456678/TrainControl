@@ -21,6 +21,11 @@ import org.traincontrol.util.I18n;
 public class LayoutDiagram
 {
     private final String name;
+
+    // The id gleisbild.cs2 gives this page.  The Central Station uses it for ordering and TrainControl
+    // has never needed it - but autonomy stores its setup against pages, and a name is what a user
+    // renames while an id is not, so keeping it lets that setup survive a rename.
+    private String pageId;
     
     // Size
     private int sx;
@@ -129,6 +134,25 @@ public class LayoutDiagram
         grid.get(x).set(y, l);
     }
     
+    /**
+     * The id of this page in gleisbild.cs2, or null if the index did not give one.
+     *
+     * Not an identity to lean on blindly: the Central Station uses it for sorting, so reordering pages
+     * there could renumber them.  Anything storing against it should record the name too and check the
+     * two still agree, or a renumber would silently reattach data to the wrong page - which is worse
+     * than losing it, because nothing looks wrong.
+     * @return
+     */
+    public String getPageId()
+    {
+        return pageId;
+    }
+
+    public void setPageId(String pageId)
+    {
+        this.pageId = pageId;
+    }
+
     public String getName()
     {
         return this.name;

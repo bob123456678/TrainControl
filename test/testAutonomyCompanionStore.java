@@ -218,6 +218,81 @@ public class testAutonomyCompanionStore
     }
 
     /**
+     * A page rename costs nothing, because entries are stored against the page id rather than its name.
+     *
+     * Every key here begins with a page, so keying on the name meant a rename orphaned a whole page of
+     * names, lengths, directions and pairings at once - and nothing connected the loss to the rename.
+     * The id is what gleisbild.cs2 has always identified a page by, and a user renaming a page does not
+     * change it.
+     */
+    @Test
+    public void testRenamingAPageCostsNothingBecauseIdsAreStored() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Old Name", "2");
+
+        store.setPageIds(before);
+
+        TileKey tile = new TileKey("Old Name", 4, 7);
+
+        store.setPointName(tile, "Yard throat");
+        store.setStation(tile, true);
+        store.setTileLength(tile, 12);
+        store.setTileDirection(tile, new RouteId(0, 0), Direction.TOWARD_B);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        // the same page, renamed: same id, new name
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("New Name", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        TileKey renamed = new TileKey("New Name", 4, 7);
+
+        assertEquals(reloaded.getPointName(renamed), "Yard throat");
+        assertTrue(reloaded.isStation(renamed));
+        assertEquals(reloaded.getTileLength(renamed), 12);
+        assertEquals(reloaded.getTileDirection(renamed, new RouteId(0, 0)), Direction.TOWARD_B);
+
+        assertTrue(reloaded.getPageIdConflicts().isEmpty(), "a rename is not a conflict");
+    }
+
+    /**
+     * A page RENUMBERED is reported rather than adopted.
+     *
+     * The Central Station orders pages by this id, so reordering them there can renumber the pages - and
+     * that fails worse than a rename: a page of settings would silently reattach to the WRONG page, with
+     * nothing looking amiss.  So the name each id had is recorded, and a mismatch is surfaced.
+     */
+    @Test
+    public void testAPageRenumberIsReportedRatherThanAdopted() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Yard", "2");
+
+        store.setPageIds(before);
+        store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
+        store.createConfiguration("Default", null);
+        store.save();
+
+        // id 2 now belongs to an entirely different page
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main Line", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertFalse(reloaded.getPageIdConflicts().isEmpty(),
+            "an id belonging to a different page must be reported");
+        assertEquals(reloaded.getPageIdConflicts().get("Yard"), "Main Line");
+    }
+
+    /**
      * A page rename must carry everything on that page with it.
      *
      * Every key here begins with a page name, so without this the user would see a page worth of names,

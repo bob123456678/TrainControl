@@ -1898,18 +1898,43 @@ public final class CS2File
      */
     private List<String> parseLayoutList() throws Exception
     {
+        return new ArrayList<>(parseLayoutIndex().keySet());
+    }
+
+    /**
+     * The pages named in gleisbild.cs2, with the id each carries.
+     *
+     * The id is what the Central Station orders pages by, and TrainControl has never used it.  Autonomy
+     * does: it stores its setup against pages, and a page name is something a user renames while an id
+     * is not, so keeping the id lets a setup survive a rename.
+     *
+     * The first page carries no id of its own and is page 1, which is what the Central Station assumes.
+     *
+     * @return page name -> id, in file order
+     * @throws Exception
+     */
+    private Map<String, String> parseLayoutIndex() throws Exception
+    {
         List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
-        
-        List<String> out = new ArrayList<>();
-        
+
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+
+        int position = 0;
+
         for (Map<String, String> m : l)
         {
             if ("seite".equals(m.get("_type")))
             {
-                out.add(m.get("name"));
+                position++;
+
+                String name = m.get("name");
+
+                if (name == null) continue;
+
+                out.put(name, m.get("id") != null ? m.get("id") : String.valueOf(position));
             }
-        }        
-        
+        }
+
         return out;
     }
     
@@ -2094,7 +2119,8 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
-        List<String> names = this.parseLayoutList();
+        Map<String, String> index = this.parseLayoutIndex();
+        List<String> names = new ArrayList<>(index.keySet());
         
         List<LayoutDiagram> out = new ArrayList<>();
         
@@ -2157,6 +2183,8 @@ public final class CS2File
             }
             
             LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+            layout.setPageId(index.get(name));
                         
             for (Map<String, String> m : l)
             {

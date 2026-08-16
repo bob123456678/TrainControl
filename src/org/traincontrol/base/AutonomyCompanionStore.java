@@ -78,12 +78,66 @@ public class AutonomyCompanionStore
 
     private final Map<String, JSONObject> configurations = new LinkedHashMap<>();
 
+    // Pages are keyed on disk by the id the Central Station gave them, not by their name.  A name is
+    // what a user changes on a whim; an id is what gleisbild.cs2 has always used to identify a page, so
+    // it survives the rename that would otherwise orphan every entry on that page at once.
+    private final Map<String, String> pageNameToId = new LinkedHashMap<>();
+    private final Map<String, String> pageIdToName = new LinkedHashMap<>();
+
+    // The name each page id had when the setup was last written, so a renumber can be told from a rename
+    private final Map<String, String> pageNamesWhenWritten = new LinkedHashMap<>();
+    private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
+
     /**
      * @param layoutFolder the local layout folder - the one holding config/gleisbilder
      */
     public AutonomyCompanionStore(File layoutFolder)
     {
         this.layoutFolder = layoutFolder;
+    }
+
+    /**
+     * Tells the store which page id belongs to which page name.
+     *
+     * Entries are stored against the page ID, not the page name.  A name is something a user renames on
+     * a whim, and every key here begins with one, so a rename would otherwise orphan a whole page of
+     * names, lengths, directions and pairings at once - with nothing to connect the loss to the rename.
+     *
+     * The id is NOT trusted on its own.  The Central Station orders pages by it, so reordering them
+     * there could renumber the pages - and a renumber would silently reattach a page of settings to the
+     * WRONG page, which is worse than losing them, because nothing looks wrong.  So the name each id had
+     * is recorded alongside, and a mismatch is reported at load rather than acted on.
+     *
+     * @param nameToId from the parsed layouts, LayoutDiagram.getPageId()
+     */
+    public void setPageIds(Map<String, String> nameToId)
+    {
+        pageNameToId.clear();
+        pageIdToName.clear();
+
+        if (nameToId == null) return;
+
+        for (Map.Entry<String, String> entry : nameToId.entrySet())
+        {
+            if (entry.getValue() == null) continue;
+
+            pageNameToId.put(entry.getKey(), entry.getValue());
+            pageIdToName.put(entry.getValue(), entry.getKey());
+        }
+    }
+
+    /**
+     * Pages whose id now belongs to a different name than when the setup was written.
+     *
+     * Empty in normal use.  A page renamed keeps its id and appears here not at all - that is the point.
+     * A page RENUMBERED appears here, and its settings must not be adopted blindly, because they belong
+     * to whatever page used to hold that id.
+     *
+     * @return recorded name -> name that id now has
+     */
+    public Map<String, String> getPageIdConflicts()
+    {
+        return Collections.unmodifiableMap(pageIdConflicts);
     }
 
     /**
@@ -144,11 +198,34 @@ public class AutonomyCompanionStore
         {
             for (String key : lengths.keySet())
             {
-                tileLengths.put(key, lengths.getInt(key));
+                tileLengths.put(fromStored(key), lengths.getInt(key));
             }
         }
 
         activeConfiguration = root.optString("activeConfiguration", null);
+
+        readStringMap(root, "pages", pageNamesWhenWritten);
+
+        // stored against page ids; brought back to the names the rest of the application uses
+        untranslate(pointNames);
+        untranslate(tileDirections);
+        untranslate(linkNames);
+        untranslatePortals();
+        untranslateSet(stations);
+
+        pageIdConflicts.clear();
+
+        for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
+        {
+            String nowCalled = pageIdToName.get(entry.getKey());
+
+            // absent is fine - the page may simply not be loaded.  Present and different is not: that id
+            // belongs to another page now, so its settings are not ours to adopt.
+            if (nowCalled != null && !nowCalled.equals(entry.getValue()))
+            {
+                pageIdConflicts.put(entry.getValue(), nowCalled);
+            }
+        }
 
         for (String key : root.keySet())
         {
@@ -207,12 +284,22 @@ public class AutonomyCompanionStore
         // written first so a human opening the file meets the readable part before the coordinate maps
         if (activeConfiguration != null) root.put("activeConfiguration", activeConfiguration);
 
-        root.put("pointNames", new JSONObject(pointNames));
-        root.put("stations", new JSONArray(stations));
-        root.put("tileLengths", new JSONObject(tileLengths));
-        root.put("tileDirections", new JSONObject(tileDirections));
-        root.put("portals", new JSONObject(portals));
-        root.put("linkNames", new JSONObject(linkNames));
+        // what each id was called when this was written, so a renumber can be told from a rename
+        Map<String, String> pages = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : pageIdToName.entrySet())
+        {
+            pages.put(entry.getKey(), entry.getValue());
+        }
+
+        root.put("pages", new JSONObject(pages));
+
+        root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
+        root.put("stations", new JSONArray(translateSet(stations)));
+        root.put("tileLengths", new JSONObject(translateLengths()));
+        root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
+        root.put("portals", new JSONObject(translatePortals()));
+        root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
         root.put("excludedPages", new JSONArray(excludedPages));
 
         for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
@@ -744,7 +831,7 @@ public class AutonomyCompanionStore
 
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "portals", "linkNames", "excludedPages"));
+        "portals", "linkNames", "excludedPages", "pages"));
 
     private void clear()
     {
@@ -756,6 +843,8 @@ public class AutonomyCompanionStore
         linkNames.clear();
         excludedPages.clear();
         unknownSharedFields.clear();
+        pageNamesWhenWritten.clear();
+        pageIdConflicts.clear();
         configurations.clear();
         activeConfiguration = null;
     }
@@ -787,6 +876,121 @@ public class AutonomyCompanionStore
                 out.write(bytes);
             }
         });
+    }
+
+    /**
+     * A key as it is stored: the page id where one is known, the page name otherwise.
+     *
+     * Ids are numeric and names are not, so the two never collide, and a page added since the index was
+     * last read still round trips - by name, which is no worse than before.
+     */
+    private String toStored(String key)
+    {
+        int colon = key.indexOf(':');
+
+        if (colon < 0) return key;
+
+        String id = pageNameToId.get(key.substring(0, colon));
+
+        return id == null ? key : id + key.substring(colon);
+    }
+
+    private String fromStored(String key)
+    {
+        int colon = key.indexOf(':');
+
+        if (colon < 0) return key;
+
+        String name = pageIdToName.get(key.substring(0, colon));
+
+        return name == null ? key : name + key.substring(colon);
+    }
+
+    private Map<String, String> translateKeys(Map<String, String> map, boolean storing)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            out.put(storing ? toStored(entry.getKey()) : fromStored(entry.getKey()), entry.getValue());
+        }
+
+        return out;
+    }
+
+    private void untranslate(Map<String, String> map)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            out.put(fromStored(entry.getKey()), entry.getValue());
+        }
+
+        map.clear();
+        map.putAll(out);
+    }
+
+    private void untranslatePortals()
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : portals.entrySet())
+        {
+            out.put(fromStored(entry.getKey()), fromStored(entry.getValue()));
+        }
+
+        portals.clear();
+        portals.putAll(out);
+    }
+
+    private void untranslateSet(Set<String> set)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String key : set)
+        {
+            out.add(fromStored(key));
+        }
+
+        set.clear();
+        set.addAll(out);
+    }
+
+    private Set<String> translateSet(Set<String> set)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String key : set)
+        {
+            out.add(toStored(key));
+        }
+
+        return out;
+    }
+
+    private Map<String, Integer> translateLengths()
+    {
+        Map<String, Integer> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Integer> entry : tileLengths.entrySet())
+        {
+            out.put(toStored(entry.getKey()), entry.getValue());
+        }
+
+        return out;
+    }
+
+    private Map<String, String> translatePortals()
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : portals.entrySet())
+        {
+            out.put(toStored(entry.getKey()), toStored(entry.getValue()));
+        }
+
+        return out;
     }
 
     private static String directionKey(TileKey tile, RouteId routeId)
