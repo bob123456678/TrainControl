@@ -293,6 +293,74 @@ public class testTileGraph
     }
 
     /**
+     * A train must actually be able to cross a paired portal, in both directions.
+     *
+     * The test above checks that landing() knows where the partner is, which is not the same thing and
+     * passed happily while portals were unusable: exits() skipped stub routes, so a link offered no way
+     * out at all and nothing ever asked landing() the question.  Track could reach a portal and stop
+     * dead there, and every cross-page route silently vanished.
+     *
+     * So this walks the whole way through - approach track, portal tile, the jump, the partner, and out
+     * onto the track beyond - which is the only version of the question that would have failed.
+     */
+    @Test
+    public void testATrainCanWalkThroughAPairedPortalBothWays() throws IOException
+    {
+        // one: straight at (1,1), tunnel below it at (1,2) opening south
+        LayoutDiagram one = page("one", 4, 4);
+        add(one, componentType.STRAIGHT, 1, 1, 1);          // vertical, so it meets the tunnel
+        add(one, componentType.TUNNEL, 1, 2, 0);            // opens south
+
+        // two: tunnel at (2,2) opening south, straight below at (2,3)
+        LayoutDiagram two = page("two", 4, 4);
+        add(two, componentType.TUNNEL, 2, 2, 0);
+        add(two, componentType.STRAIGHT, 2, 3, 1);
+
+        TileGraph graph = graph(one, two);
+
+        TileKey tunnelOne = key("one", 1, 2);
+        TileKey tunnelTwo = key("two", 2, 2);
+
+        // unpaired, the portal is a dead end: you can arrive and never leave
+        assertTrue(graph.exits(tunnelOne, Side.S).isEmpty(),
+            "an unpaired portal must offer no way through");
+
+        graph.pairPortals(tunnelOne, tunnelTwo);
+
+        // entering the portal from its track side, the only way on is the pairing
+        List<Exit> intoPortal = graph.exits(tunnelOne, Side.S);
+        assertEquals(intoPortal.size(), 1, "a paired portal should offer the jump");
+        assertNull(intoPortal.get(0).getSide(), "the jump has no side on the grid");
+
+        Landing atPartner = graph.landing(tunnelOne, intoPortal.get(0).getSide());
+        assertNotNull(atPartner);
+        assertEquals(atPartner.getTile(), tunnelTwo);
+        assertNull(atPartner.getEntrySide(), "arriving through a portal is not arriving at a side");
+
+        // and from there back out onto the track beyond
+        List<Exit> outOfPartner = graph.exits(tunnelTwo, atPartner.getEntrySide());
+        assertEquals(outOfPartner.size(), 1, "the partner should put the train back on the track");
+        assertEquals(outOfPartner.get(0).getSide(), Side.S);
+
+        Landing beyond = graph.landing(tunnelTwo, outOfPartner.get(0).getSide());
+        assertNotNull(beyond, "the track beyond the partner should be reachable");
+        assertEquals(beyond.getTile(), key("two", 2, 3));
+
+        // the same walk must work in the other direction, since a pairing is mutual
+        List<Exit> backIn = graph.exits(tunnelTwo, Side.S);
+        assertEquals(backIn.size(), 1);
+        assertNull(backIn.get(0).getSide());
+
+        Landing back = graph.landing(tunnelTwo, backIn.get(0).getSide());
+        assertNotNull(back);
+        assertEquals(back.getTile(), tunnelOne);
+
+        List<Exit> outOfOne = graph.exits(tunnelOne, back.getEntrySide());
+        assertEquals(outOfOne.size(), 1);
+        assertEquals(outOfOne.get(0).getSide(), Side.S);
+    }
+
+    /**
      * A half pairing is an error rather than a one-way jump: a train that can get in but never out is a
      * worse outcome than being told the pairing is wrong.
      */
