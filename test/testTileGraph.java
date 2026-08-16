@@ -274,18 +274,30 @@ public class testTileGraph
         TileKey tunnelOne = key("one", 1, 2);
         TileKey tunnelTwo = key("two", 2, 2);
 
+        // A portal has two ports and only one of them is a side.  S is the visible one, where the tunnel
+        // meets ordinary track; the pairing is the other, and it has no direction on the grid, so it is
+        // addressed as a null side.  (This test used to ask for the partner at S, which conflated the
+        // two - and passed while portals were in fact impassable.)
+
         // unpaired, the tunnel goes nowhere
-        assertNull(graph.landing(tunnelOne, Side.S));
+        assertTrue(graph.exits(tunnelOne, Side.S).isEmpty(), "an unpaired tunnel offers no way through");
 
         graph.pairPortals(tunnelOne, tunnelTwo);
 
-        Landing landing = graph.landing(tunnelOne, Side.S);
+        List<Exit> takeIt = graph.exits(tunnelOne, Side.S);
+        assertEquals(takeIt.size(), 1, "a paired tunnel should continue");
+        assertNull(takeIt.get(0).getSide(), "the jump is not a side");
+
+        Landing landing = graph.landing(tunnelOne, takeIt.get(0).getSide());
         assertNotNull(landing, "a paired tunnel should continue");
         assertEquals(landing.getTile(), tunnelTwo);
-        assertEquals(landing.getEntrySide(), Side.S);
+        assertNull(landing.getEntrySide(), "arriving through a portal is not arriving at a side");
 
         // and it is mutual
-        Landing back = graph.landing(tunnelTwo, Side.S);
+        List<Exit> backAgain = graph.exits(tunnelTwo, Side.S);
+        assertEquals(backAgain.size(), 1);
+
+        Landing back = graph.landing(tunnelTwo, backAgain.get(0).getSide());
         assertNotNull(back);
         assertEquals(back.getTile(), tunnelOne);
 

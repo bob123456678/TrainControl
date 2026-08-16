@@ -429,16 +429,22 @@ public class testTilePorts
      * that merely meet at it.
      */
     @Test
-    public void testARouteButtonConductsAlongWhicheverLineItSitsIn()
+    public void testARouteButtonDeclaresItselfTransparentRatherThanClaimingTrack()
     {
-        assertEquals(sidesAt(componentType.ROUTE, 0, 0), pairs("NS", "EW"));
+        assertTrue(TilePorts.isTransparent(componentType.ROUTE),
+            "a route button carries no track of its own");
+
+        // it claims no sides here, because which sides it conducts is not a property of the tile: the
+        // same button appears in horizontal and vertical runs at the same orientation, and beside the
+        // rails carrying nothing at all.  TileGraph settles it from the neighbours.
+        assertTrue(TilePorts.ports(componentType.ROUTE, 0, 0).isEmpty(),
+            "a transparent tile must not claim sides the art does not have");
+
+        // but it is still routable - trains do pass over it, unlike a lamp
         assertTrue(TilePorts.isRoutable(componentType.ROUTE));
+        assertFalse(TilePorts.isRoutable(componentType.LAMP));
 
-        // two independent routes, never joining: entering from the north leaves south and nowhere else
-        List<Route> routes = TilePorts.ports(componentType.ROUTE, 0, 0);
-        assertEquals(routes.size(), 2);
-
-        // and it commands nothing - a button on the line is not a condition of passing it
+        // and it commands nothing: a button on the line is not a condition of passing it
         assertTrue(TilePorts.commands(componentType.ROUTE, 0).isEmpty());
     }
 
