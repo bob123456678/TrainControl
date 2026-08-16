@@ -92,6 +92,10 @@ public final class LayoutLabel extends JLabel
      * Volatile: written from the monitor's publish and read while painting.
      */
     private volatile TileOverlay autonomyOverlay;
+
+    // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
+    // because they answer different questions and are cleared at different times.
+    private volatile org.traincontrol.base.TileAnnotation autonomyAnnotation;
     
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
@@ -542,6 +546,26 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * Sets what the autonomy editor is showing on this square - directions, lengths, selection -
+     * repainting if it changed.  Same discipline as the overlay, for the same reason: none of it
+     * changes the icon name, so updateImage would show nothing.
+     *
+     * @param annotation what to show, or null for nothing
+     */
+    public void setAutonomyAnnotation(org.traincontrol.base.TileAnnotation annotation)
+    {
+        org.traincontrol.base.TileAnnotation effective =
+            annotation == null || annotation.isBlank() ? null : annotation;
+
+        if (effective == null ? autonomyAnnotation == null
+            : effective.equals(autonomyAnnotation)) return;
+
+        autonomyAnnotation = effective;
+
+        this.repaint();
+    }
+
+    /**
      * Draws the tile, then whatever autonomy is saying about it.
      *
      * After super, so it lands over the icon and never touches setIcon - which is what lets it coexist
@@ -556,14 +580,19 @@ public final class LayoutLabel extends JLabel
         super.paintComponent(g);
 
         TileOverlay overlay = autonomyOverlay;
+        org.traincontrol.base.TileAnnotation annotation = autonomyAnnotation;
 
-        if (overlay == null || overlay.isBlank()) return;
+        if ((overlay == null || overlay.isBlank())
+            && (annotation == null || annotation.isBlank())) return;
 
         java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
         try
         {
-            overlay.paint(g2, getWidth(), getHeight());
+            if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
+
+            // over the wash, so the editing marks stay legible while monitoring is also on
+            if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
         }
         finally
         {

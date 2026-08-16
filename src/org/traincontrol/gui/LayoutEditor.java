@@ -436,7 +436,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 @Override
                 public void run()
                 {
-                    repaint();
+                    refreshAutonomyAnnotations();
                 }
             });
 
@@ -447,6 +447,34 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.newComponents.revalidate();
         this.newComponents.repaint();
+
+        // entering the mode draws what is already decided; leaving it takes the marks with it
+        refreshAutonomyAnnotations();
+    }
+
+    /**
+     * Redraws what the autonomy editor is saying over every tile - directions, lengths, selection.
+     *
+     * The editor walks its own grid and asks the panel about each square, because only the editor knows
+     * which labels exist right now; the panel only knows what has been decided.  Grid indexes equal
+     * diagram coordinates here because edit mode pins minx and miny to 0 (LayoutDiagram.checkBounds);
+     * anything drawing over a NON-edit grid would have to add the layout's own offsets.
+     */
+    public void refreshAutonomyAnnotations()
+    {
+        if (grid == null) return;
+
+        boolean active = autonomyPanel != null && autonomyPanel.isVisible();
+
+        for (int x = 0; grid.getValueAt(x, 0) != null; x++)
+        {
+            for (int y = 0; grid.getValueAt(x, y) != null; y++)
+            {
+                grid.getValueAt(x, y).setAutonomyAnnotation(!active ? null
+                    : autonomyPanel.annotationFor(
+                        new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y)));
+            }
+        }
     }
 
     /**
@@ -1334,14 +1362,18 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {       
             grid = new LayoutGrid(this.layout, size,
-                this.ExtLayoutPanel, 
+                this.ExtLayoutPanel,
                 this,
                 true, parent);
-            
+
             grid.getContainer().revalidate();
             this.ExtLayoutPanel.revalidate();
             grid.getContainer().repaint();
             this.ExtLayoutPanel.repaint();
+
+            // a rebuilt grid is all new labels, which know nothing about what the autonomy editor was
+            // showing on their squares
+            refreshAutonomyAnnotations();
         }
         catch (Exception e)
         {

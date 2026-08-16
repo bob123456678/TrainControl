@@ -122,6 +122,10 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(toolButton(Tool.PORTALS, I18n.t("autosetup.ui.toolPortals"), group, false));
         panel.add(toolButton(Tool.LENGTHS, I18n.t("autosetup.ui.toolLengths"), group, false));
 
+        // the toggles change what is drawn, not what is decided, so all they do is redraw
+        showDirections.addActionListener(e -> refresh());
+        showLengths.addActionListener(e -> refresh());
+
         panel.add(showDirections);
         panel.add(showLengths);
 
@@ -422,6 +426,56 @@ public class AutonomyEditorPanel extends JPanel
     public Set<TileKey> getSelection()
     {
         return java.util.Collections.unmodifiableSet(selection);
+    }
+
+    /**
+     * What the editor should draw over one square: its routes and their directions, its length, and
+     * whether it is part of the bulk selection.
+     *
+     * Computed per tile on request rather than published as a map, because the editor already walks its
+     * own grid to redraw and knows exactly which page is showing - this panel does not.
+     *
+     * @param tile
+     * @return the annotation, possibly blank, never null
+     */
+    public org.traincontrol.base.TileAnnotation annotationFor(TileKey tile)
+    {
+        java.util.List<org.traincontrol.base.TileAnnotation.Mark> marks = new java.util.ArrayList<>();
+
+        if (showDirections.isSelected() && session.getGraph() != null)
+        {
+            for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry
+                : session.getRoutes(tile).entrySet())
+            {
+                org.traincontrol.base.TilePorts.Route route = entry.getValue();
+
+                Direction direction = session.getGraph().getDirection(tile, entry.getKey());
+
+                // A route the hardware restricts is one-way whatever the user chose: the graph leaves the
+                // authored direction BOTH there (see defaultDirection), but a train still cannot pass
+                // against the blades, and the drawing has to say what a train can actually do.
+                if (route.getDirectedToward() != null && direction != Direction.NONE)
+                {
+                    direction = route.getDirectedToward() == route.getA()
+                        ? Direction.TOWARD_A : Direction.TOWARD_B;
+                }
+
+                marks.add(new org.traincontrol.base.TileAnnotation.Mark(
+                    route.getA(), route.getB(), direction));
+            }
+        }
+
+        // 0 means "does not count" and is the default everywhere, so drawing it would number every tile
+        int length = -1;
+
+        if (showLengths.isSelected())
+        {
+            int stored = session.getStore().getTileLength(tile);
+
+            if (stored > 0) length = stored;
+        }
+
+        return new org.traincontrol.base.TileAnnotation(marks, length, selection.contains(tile));
     }
 
     /**
