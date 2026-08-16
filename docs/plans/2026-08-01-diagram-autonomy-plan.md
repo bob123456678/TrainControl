@@ -1083,7 +1083,7 @@ table because pixels cannot express it.
 | FEEDBACK | `s88` | E W | `{EW}` | M |
 | FEEDBACK_CURVE | `s88_curve` | E S | `{ES}` | M |
 | FEEDBACK_DOUBLE_CURVE | `s88_double_curve` | N E S W | `{NW}` `{ES}` | M |
-| SIGNAL | `signal` | E W | `{EW}` — topologically a straight | M |
+| SIGNAL | `signal` | E W | `{EW}` — topologically a straight, but **crossing one commands it GREEN** (author, 2026-08-16), carried in the port map so the reducer gathers signal and switch commands uniformly. Setting other signals RED for safety stays with conditional routes. An UNCOUPLER keeps its address but commands nothing — firing it is something the user asks for | M / author |
 | UNCOUPLER | `decouple` | E W | `{EW}` | M |
 | END | `end` | N | `{N}` — terminates a trace | M |
 | TUNNEL | `tunnel` | S | `{S}` + one **portal** port, user-paired | M |
