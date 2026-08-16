@@ -124,6 +124,11 @@ public class AutonomyEditorPanel extends JPanel
     // headless and knows nothing about the control station.
     private java.util.function.Supplier<List<String>> locomotiveNames;
 
+    // One arrow per run of track between sensors.  Recomputed on refresh rather than per tile, because
+    // it is derived from the whole reduction and the editor asks about every square in turn.
+    private Map<TileKey, org.traincontrol.base.TileAnnotation.Mark> flowMarks =
+        new java.util.LinkedHashMap<>();
+
     /**
      * @param session the setup being edited
      * @param page the diagram page this editor window is showing
@@ -157,6 +162,15 @@ public class AutonomyEditorPanel extends JPanel
     {
         label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>"
             + text.replace("&", "&amp;").replace("<", "&lt;") + "</body></html>");
+    }
+
+    /**
+     * The same, for a message that carries its own mark-up.  Only for text this class builds itself -
+     * never for anything a user typed, which is what say() escapes.
+     */
+    private void sayRich(JLabel label, String html)
+    {
+        label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>" + html + "</body></html>");
     }
 
     private JPanel buildTools()
@@ -946,33 +960,75 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run =
+        if (testFrom.equals(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.testSameTile"));
+            return;
+        }
+
+        // Both ways, always.  Asking the user to nominate a direction only makes them run the test
+        // twice to learn the thing they actually wanted to know - a one-way run looks identical to a
+        // broken one until you have tried it from the other end.
+        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null : session.getReducer().findPath(testFrom, tile);
+
+        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> back =
+            session.getReducer() == null ? null : session.getReducer().findPath(tile, testFrom);
 
         testPath.clear();
 
-        if (run == null)
-        {
-            say(hint, I18n.t("autosetup.ui.testUnreachable"));
-        }
-        else
-        {
-            // outline every tile the run covers, ends included, so the answer is on the track itself
-            testPath.add(testFrom);
-            testPath.add(tile);
+        // The outline shows whichever direction works, so there is something on the track to look at
+        // even when only one way is possible.
+        outline(there != null ? there : back, testFrom, tile);
 
-            for (org.traincontrol.base.GraphReducer.ReducedEdge edge : run)
-            {
-                for (org.traincontrol.base.GraphReducer.TileStep step : edge.getPath())
-                {
-                    testPath.add(step.getTile());
-                }
-            }
-
-            say(hint, I18n.f("autosetup.ui.testReachable", run.size()));
-        }
+        sayRich(hint, I18n.f("autosetup.ui.testBothWays",
+            escape(describeTile(testFrom)), escape(describeTile(tile)), leg(there), leg(back)));
 
         testFrom = null;
+    }
+
+    private static String escape(String text)
+    {
+        return text.replace("&", "&amp;").replace("<", "&lt;");
+    }
+
+    private String leg(java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run)
+    {
+        return run == null ? I18n.t("autosetup.ui.testLegBlocked")
+            : I18n.f("autosetup.ui.testLegReachable", run.size());
+    }
+
+    private void outline(java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run,
+        TileKey from, TileKey to)
+    {
+        if (run == null) return;
+
+        testPath.add(from);
+        testPath.add(to);
+
+        for (org.traincontrol.base.GraphReducer.ReducedEdge edge : run)
+        {
+            for (org.traincontrol.base.GraphReducer.TileStep step : edge.getPath())
+            {
+                testPath.add(step.getTile());
+            }
+        }
+    }
+
+    /**
+     * What a square is, for a message that would otherwise be a coordinate.
+     */
+    private String describeTile(TileKey tile)
+    {
+        String named = session.getStore().getPointName(tile);
+
+        if (named != null && !named.trim().isEmpty()) return named.trim();
+
+        org.traincontrol.base.LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        return component != null && component.isFeedback()
+            ? "s88 " + component.getRawAddress() : tile.getX() + "," + tile.getY();
     }
 
     // --- state ------------------------------------------------------------------------------------
@@ -1049,6 +1105,13 @@ public class AutonomyEditorPanel extends JPanel
                 marks.add(new org.traincontrol.base.TileAnnotation.Mark(
                     route.getA(), route.getB(), direction));
             }
+
+            // ...but a bare layout cannot answer "does this sensor reach that one, and which way", so
+            // each run of track between two sensors carries one arrow in the middle of it.
+            if (marks.isEmpty() && flowMarks.containsKey(tile))
+            {
+                marks.add(flowMarks.get(tile));
+            }
         }
 
         // 0 means "does not count" and is the default everywhere, so drawing it would number every tile
@@ -1071,7 +1134,23 @@ public class AutonomyEditorPanel extends JPanel
         String name = session.getStore().getPointName(tile);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined, station,
-            name != null && !name.trim().isEmpty(), ignored);
+            name != null && !name.trim().isEmpty(), ignored, isMuted(tile));
+    }
+
+    /**
+     * Whether a tile should be pushed back rather than drawn at full strength.
+     *
+     * Signals only.  They sit on almost every run, their art is the heaviest on the diagram, and
+     * autonomy commands them green as a matter of course - so at full strength they read as the most
+     * important thing on a page where they are usually the least interesting.  Still configurable:
+     * a signal can be restricted like any other tile, and a restriction on one still draws.
+     */
+    private boolean isMuted(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        return component != null && component.isSignal();
     }
 
     /**
@@ -1106,6 +1185,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     public final void refresh()
     {
+        flowMarks = session.flowMarks();
+
         findingsModel.clear();
         findingTiles.clear();
 

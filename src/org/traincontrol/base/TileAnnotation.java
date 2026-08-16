@@ -132,12 +132,19 @@ public class TileAnnotation
     private static final Color STATION = new Color(0, 90, 180);
 
     /**
-     * Autonomy takes no notice of this square.  Greyed rather than left plain, so that a tile nobody
-     * can configure looks different from one nobody has configured yet.
+     * Autonomy takes no notice of this square.  Washed out rather than greyed over, so that a tile
+     * nobody can configure recedes without becoming a dark block that draws the eye more than the
+     * track does - which is what a heavier grey did on a page with forty route buttons on it.
      */
-    private static final Color IGNORED = new Color(120, 120, 120);
+    private static final Color IGNORED = Color.WHITE;
 
-    private static final float IGNORED_ALPHA = 0.45f;
+    private static final float IGNORED_ALPHA = 0.62f;
+
+    /**
+     * Pushed back but still the user's to set - signals, which sit on almost every run and whose art
+     * is the heaviest on the diagram, so at full strength they read as the most important thing on it.
+     */
+    private static final float MUTED_ALPHA = 0.45f;
 
     private final List<Mark> marks;
     private final int length;
@@ -145,6 +152,7 @@ public class TileAnnotation
     private final boolean station;
     private final boolean named;
     private final boolean ignored;
+    private final boolean muted;
 
     /**
      * @param marks the routes to draw, or empty to draw none
@@ -167,17 +175,32 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
         boolean named, boolean ignored)
     {
+        this(marks, length, selected, station, named, ignored, false);
+    }
+
+    /**
+     * @param muted whether to push the tile art back without saying it cannot be configured
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
+        boolean named, boolean ignored, boolean muted)
+    {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
         this.station = station;
         this.named = named;
         this.ignored = ignored;
+        this.muted = muted;
     }
 
     public boolean isIgnored()
     {
         return ignored;
+    }
+
+    public boolean isMuted()
+    {
+        return muted;
     }
 
     public boolean isStation()
@@ -211,7 +234,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && !station && !ignored;
+        return marks.isEmpty() && length < 0 && !selected && !station && !ignored && !muted;
     }
 
     /**
@@ -244,6 +267,16 @@ public class TileAnnotation
                 g.fillRect(0, 0, width, height);
 
                 return;
+            }
+
+            // Signals and the like: pushed back, but still drawn on and still clickable.
+            if (muted)
+            {
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, MUTED_ALPHA));
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, width, height);
+                g.setComposite(java.awt.AlphaComposite.getSrcOver());
             }
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
@@ -348,35 +381,45 @@ public class TileAnnotation
         g.drawLine(from[0], from[1], cx, cy);
         g.drawLine(cx, cy, to[0], to[1]);
 
-        g.setStroke(new BasicStroke(CHEVRON_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
         if (bidirectional)
         {
-            // one at each end, pointing out: the shape says "either way" without needing a legend
-            chevron(g, cx, cy, from[0], from[1], width, height);
-            chevron(g, cx, cy, to[0], to[1], width, height);
+            // one head at each end of the run, pointing out
+            head(g, cx, cy, from[0], from[1], width, height);
+            head(g, cx, cy, to[0], to[1], width, height);
         }
         else
         {
-            // TOWARD_A means trains may travel toward side A, so the chevron points at A
+            // TOWARD_A means trains may travel toward side A, so the head points at A.  Drawn ON the
+            // bend rather than out near the edge: an arrowhead sitting at the tile boundary reads as a
+            // mark between two squares rather than as the flow through this one, which is what made a
+            // page of them look like scattered ticks instead of a direction of travel.
             int[] target = mark.getDirection() == Direction.TOWARD_A ? from : to;
 
-            chevron(g, cx, cy, target[0], target[1], width, height);
+            head(g, from[0], from[1], to[0], to[1], width, height,
+                cx + (target[0] - cx) / 4, cy + (target[1] - cy) / 4, target);
         }
     }
 
     /**
-     * Draws an arrowhead partway along the line from the centre toward a side, pointing that way.
+     * A solid arrowhead partway along the line from the centre toward a side, pointing that way.
      */
-    private void chevron(Graphics2D g, int cx, int cy, int tx, int ty, int width, int height)
+    private void head(Graphics2D g, int cx, int cy, int tx, int ty, int width, int height)
     {
-        // Placed at three quarters rather than at the edge so two tiles meeting do not put their heads
-        // against each other and read as one shape.
-        double px = cx + (tx - cx) * 0.75;
-        double py = cy + (ty - cy) * 0.75;
+        head(g, cx, cy, tx, ty, width, height,
+            (int) Math.round(cx + (tx - cx) * 0.6), (int) Math.round(cy + (ty - cy) * 0.6),
+            new int[] {tx, ty});
+    }
 
-        double dx = tx - cx;
-        double dy = ty - cy;
+    /**
+     * @param px where the head sits
+     * @param py
+     * @param target the point it aims at
+     */
+    private void head(Graphics2D g, int fx, int fy, int lx, int ly, int width, int height,
+        int px, int py, int[] target)
+    {
+        double dx = target[0] - px;
+        double dy = target[1] - py;
         double len = Math.sqrt(dx * dx + dy * dy);
 
         if (len < 1) return;
@@ -384,19 +427,27 @@ public class TileAnnotation
         dx /= len;
         dy /= len;
 
-        double size = Math.max(3.0, Math.min(width, height) / 5.0);
+        double size = Math.max(4.0, Math.min(width, height) / 3.5);
 
-        // the two barbs are the direction vector rotated by +/- 140 degrees
+        // A filled triangle rather than two strokes: at tile size a pair of thin barbs is two marks
+        // that happen to meet, and a solid head is one shape that obviously points somewhere.
         double angle = Math.atan2(dy, dx);
 
-        for (double offset : new double[] {2.443, -2.443})
-        {
-            double bx = px + Math.cos(angle + offset) * size;
-            double by = py + Math.sin(angle + offset) * size;
+        int[] xs = new int[3];
+        int[] ys = new int[3];
 
-            g.drawLine((int) Math.round(px), (int) Math.round(py),
-                       (int) Math.round(bx), (int) Math.round(by));
+        xs[0] = (int) Math.round(px + dx * size * 0.6);
+        ys[0] = (int) Math.round(py + dy * size * 0.6);
+
+        for (int i = 0; i < 2; i++)
+        {
+            double offset = i == 0 ? 2.6 : -2.6;
+
+            xs[i + 1] = (int) Math.round(xs[0] + Math.cos(angle + offset) * size);
+            ys[i + 1] = (int) Math.round(ys[0] + Math.sin(angle + offset) * size);
         }
+
+        g.fillPolygon(xs, ys, 3);
     }
 
     /**
@@ -486,14 +537,15 @@ public class TileAnnotation
 
         return length == other.length && selected == other.selected
             && station == other.station && named == other.named && ignored == other.ignored
-            && marks.equals(other.marks);
+            && muted == other.muted && marks.equals(other.marks);
     }
 
     @Override
     public int hashCode()
     {
         return marks.hashCode() * 31 + length * 2
-            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0) + (ignored ? 16 : 0);
+            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0) + (ignored ? 16 : 0)
+            + (muted ? 32 : 0);
     }
 
     @Override

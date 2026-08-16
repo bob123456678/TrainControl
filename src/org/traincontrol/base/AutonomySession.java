@@ -576,6 +576,62 @@ public class AutonomySession
     }
 
     /**
+     * One arrow per run of track between two sensors, on a square in the middle of it.
+     *
+     * Marking only what is RESTRICTED leaves a layout almost bare, which is right for spotting
+     * decisions and wrong for the first question anybody asks: does this sensor reach that one, and
+     * which way round.  This puts a single arrow on each derived connection - enough to read the flow
+     * of the whole railway at a glance, without an arrow on every square.
+     *
+     * A pair of runs that face each other collapses into one double-headed arrow, because two arrows
+     * on the same piece of track pointing opposite ways is how bidirectional track already looks.
+     *
+     * @return the square to mark, and what to draw there
+     */
+    public Map<TileKey, TileAnnotation.Mark> flowMarks()
+    {
+        Map<TileKey, TileAnnotation.Mark> out = new LinkedHashMap<>();
+
+        if (reducer == null || graph == null) return out;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            List<GraphReducer.TileStep> path = edge.getPath();
+
+            if (path.isEmpty()) continue;
+
+            // the middle of the run, so the arrow is not crowded against either sensor
+            int at = path.size() / 2;
+
+            TileKey tile = path.get(at).getTile();
+
+            // where a train standing here is heading next
+            TileKey next = at + 1 < path.size() ? path.get(at + 1).getTile() : edge.getEnd();
+            TileKey previous = at > 0 ? path.get(at - 1).getTile() : edge.getStart();
+
+            Side toward = graph.sideToward(tile, next);
+            Side from = graph.sideToward(tile, previous);
+
+            if (toward == null || from == null) continue;
+
+            Route route = graph.getRoutes(tile).get(path.get(at).getRouteId());
+
+            if (route == null || !route.touches(toward) || !route.touches(from)) continue;
+
+            Direction direction = route.getA() == toward ? Direction.TOWARD_A : Direction.TOWARD_B;
+
+            TileAnnotation.Mark existing = out.get(tile);
+
+            // the opposing run over the same track: one arrow with two heads, not two arrows
+            out.put(tile, existing != null && existing.getDirection() != direction
+                ? new TileAnnotation.Mark(route.getA(), route.getB(), Direction.BOTH)
+                : new TileAnnotation.Mark(route.getA(), route.getB(), direction));
+        }
+
+        return out;
+    }
+
+    /**
      * What the setup says about one square, for drawing on the ordinary track diagram.
      *
      * Only what a viewer needs: which sensors are stations, and which track has been restricted.  No
