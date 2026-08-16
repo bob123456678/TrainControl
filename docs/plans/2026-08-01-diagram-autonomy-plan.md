@@ -725,45 +725,11 @@ the panels are written directly, so names and layout are an implementation detai
 
 ---
 
-## Scaffolding inventory (author builds these in the NetBeans designer, first step)
+## ~~Scaffolding inventory~~ — OBSOLETE (2026-08-01)
 
-### `LayoutEditor.form` — additions to the existing form
-
-| Field | Type | Purpose |
-|---|---|---|
-| `modeDiagramButton` | `JToggleButton` | selects today's editor; one `ButtonGroup` with the next |
-| `modeAutonomyButton` | `JToggleButton` | selects autonomy mode |
-| `modeCardPanel` | `JPanel` (CardLayout) | holds the existing edit grid as one card, `autonomyCard` as the other |
-| `autonomyCard` | `JPanel` (empty, BorderLayout) | `AutonomySetupPanel` is added here at runtime |
-| `localOnlyNotice` | `JLabel` | shown when `!isLocalLayout()`: diagram editing needs a local copy |
-| `downloadCSLayoutButton` | `JButton` | beside the notice; triggers the existing download flow |
-
-Existing edit controls keep their names. The mode toggles need action handlers generated
-(empty `GEN-FIRST/GEN-LAST` bodies are enough — the logic goes in them).
-
-### `AutonomySetupPanel.form` / `.java` — new, `extends javax.swing.JPanel`
-
-| Field | Type | Purpose |
-|---|---|---|
-| `configurationCombo` | `JComboBox<String>` | active named configuration |
-| `newConfigButton` / `renameConfigButton` / `deleteConfigButton` | `JButton` | configuration CRUD |
-| `loadConfigurationButton` | `JButton` | compile + validate + install this configuration |
-| `toolAnchorButton` / `toolPortalButton` / `toolLengthButton` / `toolConnectionButton` / `toolPlacementButton` / `toolPropertiesButton` | `JToggleButton` | one `ButtonGroup`; the active tool. (Revised architecture: `toolConnectionButton` replaces the former Direction and Paint tools — it edits tile-to-tile connections, which is where direction now lives) |
-| `pageCombo` | `JComboBox<String>` | which diagram page is shown |
-| `diagramHostPanel` | `JPanel` (empty, BorderLayout) | the `JLayer`-wrapped `LayoutGrid` is inserted here at runtime; **give this the resizable weight** |
-| `pointsTable` + `pointsScrollPane` | `JTable` | points: anchored / unanchored / orphaned |
-| `orphanLabel` | `JLabel` | orphan count and warning |
-| `reviewTable` + `reviewScrollPane` | `JTable` | Trace & Review: connection, status, summed length |
-| `traceButton` | `JButton` | run the trace |
-| `showConnectivityCheckbox` | `JCheckBox` | debug port/adjacency overlay |
-| `showLengthsCheckbox` | `JCheckBox` | overlay per-tile lengths and edge totals |
-| `showDirectionsCheckbox` | `JCheckBox` | overlay every connection's arrows at once — the instrument for confirming a continuous one-way segment reads correctly |
-| `showReducedGraphCheckbox` | `JCheckBox` | highlight the reduced graph over the tile graph: significant nodes marked, each reduced edge's tile path tinted as one segment |
-| `validityBanner` | `JLabel` | live scratch-build result; opaque, colored at runtime |
-| `applyButton` / `undoButton` | `JButton` | write to companion / step back |
-
-No table models, renderers, listeners or data need to exist in the scaffolding — empty tables and
-inert buttons are exactly right. Both `JTable`s must sit inside their scroll panes.
+Removed. All new UI is hand-written `JPanel`s inside existing frames, so there is no designer
+handoff and no widget-name contract to agree in advance. Panel contents are specified in the class
+table (`AutonomyEditorPanel`, `AutonomyViewerPanel`); field names are an implementation detail.
 
 ## Where autonomy editing lives: a mode of the existing diagram editor
 
@@ -813,69 +779,72 @@ about running autonomy moves.
 
 ## The user-facing setup workflow (what ships)
 
-1. **Anchor points (stations)** — new "Autonomy setup" mode over the diagram: right-click **any
-   tile at any coordinate** → "Assign autonomy point" → name it and set flags
-   (station/terminus/reversing/active) and any per-point properties.
+Supersedes the anchor-based workflow this section used to describe.
 
-   **Superseded by the revised architecture**: Points are no longer anchored by hand — every s88
-   feedback tile *is* a Point automatically, and this step reduces to **naming** Points and
-   **designating** which of them are stations. Only s88 tiles are eligible, matching the model's
-   own invariant. What follows describes the interaction that survives (naming, flags, the
-   relationship to the legacy `Point:` label).
+1. **Open the diagram editor, switch to Autonomy mode.** Works for Central-Station-sourced layouts
+   too; only Diagram mode needs a local copy.
+2. **Points already exist.** Every s88 feedback tile is a Point automatically. Name the ones that
+   matter, designate stations, and set properties (terminus / reversing / active, max train length,
+   speed multiplier, exclusions, home).
+3. **Check the connections.** Geometry has already proposed them. Click a tile to cycle
+   `both -> one way -> other way -> none`; rubber-band to bulk-set a one-way run. Switches derive
+   themselves from their neighbours and need no attention.
+4. **Pair the portals.** Name each link tile and say which link it jumps to; pair tunnels likewise.
+   Unnamed links simply do not connect.
+5. **Set lengths** where train-length limits matter - per tile, 0 and up, summed per edge.
+6. **Exclude duplicated pages** from autonomy.
+7. **Validate as you go.** The banner re-derives the whole graph after every edit against the real
+   `Layout` semantics; run the static configuration check and the A->B connectivity test to confirm
+   anything specific.
+8. **Save as a named configuration** and pick the active one. Duplicate it for variants that differ
+   only in where locomotives start.
+9. **Run and watch.** The same diagram lights up - reserved / current / completed / locked - with
+   locomotive positions and homes on toggleable layers.
 
-   Stations are **always authored in TrainControl and never come from the Central Station**: no CS
-   file defines them, no CS sync creates or removes them, and a CS diagram re-download cannot
-   change one (only orphan it, if its tile is gone). The name is free text typed by the user, not
-   chosen from a CS-derived list.
+## Milestones (restructured 2026-08-01)
 
-   Anchors are 1:1 (a tile carries at most one point; a point at most one anchor). Everything
-   lands in the companion file — there is no autonomy.json to hand-edit.
+**R0 - the engine, headless, no UI.** `TilePorts`, `TileGraph`, `GraphReducer`,
+`AutonomyCompanionStore`, `AutonomyBuilder`, plus the ground-truth comparison harness and its
+starter-companion output. Ships nothing user-visible; its deliverable is the **diff report against
+the real `autonomy.json`** and a companion file the author keeps. This proves the architecture
+before a panel is written, and is the natural place to stop if the report shows something
+structural.
 
-   *Relationship to today's `Point:` label*: the existing mechanism stores the station name **in
-   the diagram file** as a component label (`LayoutGrid.LAYOUT_STATION_PREFIX` :162,
-   `LayoutEditor` :872), so it requires a local editable layout and is lost on a CS re-download.
-   Anchors supersede it as the source of truth. The label is downgraded to optional display:
-   assignment offers to auto-place it when the layout is local, and an existing `Point:` label is
-   read once at migration to pre-seed anchors. Diagrams that already use the label keep rendering
-   exactly as they do today.
-2. **Pair portals** — click a TUNNEL (or page-edge LINK) tile, then its continuation tile,
-   page-switching allowed between clicks.
-3. **Trace & review** — the connectivity engine walks tile ports from every anchor to the next
-   anchors, following every switch branch; each traced connection carries the tile path **and the
-   switch settings that select it** (derived configCommands). The review table shows every
-   connection; the user picks direction (one/both) per connection and sets per-edge overrides
-   (extra locks). Lengths are authored per tile in Length mode, not per edge; the review table
-   shows each connection's summed length so the effect of tile assignments is visible. In
-   migration mode, traces are matched to the legacy file's edges and their locks/homes are
-   imported; a legacy edge length is **distributed** onto its traced tiles (whole-division
-   remainder onto the first tile, so the sum is exact) and reported in the review table as
-   imported-and-distributed, since the old file had no per-tile data to recover.
-4. **Validate & run — unchanged.** The setup compiles to generated JSON behind the existing
-   Validate button; errors surface in the same flow; start/stop autonomy works exactly as today.
-   The autonomy tab shows the generated JSON read-only.
-5. **Derive locks** — traced paths sharing tiles conflict (CROSSING yes, OVERPASS no, linked
-   portal pair = one location); review dialog proposes minimal additions; exposure linter reports
-   uncovered directions of already-declared conflicts.
-6. **Monitor** — segments light by state; a centered dot marks the train's current block.
-   Manual segment painting remains as an override for stylised diagrams.
+**R1 - the UI.** The editor's autonomy mode, the viewer's autonomy panel and layers, monitoring,
+and the two test affordances. Phase 1 of the delivery split (implement new, disable old).
 
----
+**R2 - removal.** Phase 2 of the delivery split: the graph window, the JSON form, the
+`autonomy.json` paths, `GRAPH_*` preferences and the GraphStream jars. Gated on the author's
+layout being re-created on the diagram. *(Replaces the former "Release 2 - lock-edge derivation",
+deleted outright - see below.)*
 
-## Release 1 — Connectivity engine, anchoring/setup UI, monitoring
+### Component fates (author rulings, 2026-08-01)
+
+| Component | Fate |
+|---|---|
+| `AutoLocomotiveStatus` | **Keep as-is.** It is for *watching operation*, not editing the graph. It coexists with the viewer's locomotive roster rather than being replaced by it. |
+| `HomeLocomotiveMenu` | **Moves into the diagram** - home assignment happens while editing stations in autonomy editing mode, alongside the point's other properties. |
+| `LayoutRightclickAutonomyMenu` | **Functionality stays**, largely unchanged - the quick operational menu on a station label at runtime. |
+| Timetable | **Stays where it is**, unchanged; it references whatever points now exist, resolving by name as before. |
+| Global autonomy settings (`minDelay`, `maxDelay`, `defaultLocSpeed`, route activation) | **Per configuration**, as today. They live on the slimmed autonomy tab, which edits the *active* configuration. |
+| Layer visibility toggles | **User preferences**, not configuration data - a configuration describes the layout, not how someone likes to look at it. |
+| `Point:` diagram labels | **Kept as-is.** They are a *placement* mechanism, not a naming one: they say where on the diagram a station's label and train location appear, which nothing else expresses. Naming lives in the companion; placement stays in the diagram file. **Known wrinkle**: the label embeds the name, so renaming leaves it stale - resolve leniently and report a mismatch rather than rewriting the diagram file. |
+| Simulation | **Unchanged** - simulate mode keeps working exactly as it does now. |
 
 ### New classes (`org.traincontrol.gui` unless noted; engine classes are pure/headless)
 
 | Class | Responsibility | ~Size |
 |---|---|---|
 | `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below. Uniformly state-indexed: `ports(type, orient, state)` returns the set of connected side pairs in that state (unswitched / switched, or the three-way's three states; one state for everything else). No common/branch/toe concepts. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4; encodes the directed restriction for `CUSTOM_PERM_*` (into S only) | 300 |
-| `base/DiagramTopology.java` | Builds the **directed** adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
-| `base/TraceResult.java` | Value type: endpoint anchors, ordered tile path, `Map<address, setting>` requirements | 60 |
-| `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {anchors, portals, paintOverrides}, configurations: {"<name>": {pointProperties, edgeOverrides, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; pages by name; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; `renamePoint` rewrites shared anchors and every configuration's override keys; orphans kept, never silently dropped | 380 |
-| `AutonomyBuilder.java` | The compile step: companion + `DiagramTopology` traces → generated autonomy JSON string fed to the existing `parseAuto` (reusing the whole validate pipeline unchanged); deterministic ordering so output is diffable; emits setup errors (unanchored point, unpaired portal, untraceable connection) as validate-visible failures, and **warnings** (permanent turnout present, with coordinates) that surface in the banner/review table and the log **without blocking the build**; graph x/y derived from anchor tile positions; edge length = sum of the traced path's per-tile lengths, endpoints excluded (0 when unassigned). Exposes `build()` (JSON string) and `validateScratch()` — `Layout.fromJSON(build(), model)` into a throwaway, returning validity + message **without** `parseAuto`, so the setup UI can re-infer the graph live after every edit | 340 |
+| ~~`base/DiagramTopology.java`~~ | **Folded into `TileGraph` + `GraphReducer`** (there is no separate trace step: the tile graph *is* the adjacency and reduction is what walks it). Former text: builds the directed adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
+| `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, `Map<address, setting>` requirements, summed length, direction | 70 |
+| `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths, connectionOverrides}, configurations: {"<name>": {pointProperties, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; renaming a point rewrites its shared name entry and every configuration that references it; orphans kept, never silently dropped | 380 |
+| `AutonomyBuilder.java` | The compile step: companion + `DiagramTopology` traces → generated autonomy JSON string fed to the existing `parseAuto` (reusing the whole validate pipeline unchanged); deterministic ordering so output is diffable; emits setup errors (unpaired or half-paired portal, portal targeting an excluded page, disqualified scissors tile) as validate-visible failures, and **warnings** (permanent turnout, turntable, isolated feedback tile, direction contradiction - each with coordinates) that surface in the banner and the log **without blocking the build**; **no graph x/y is emitted** - the graph window is gone and position is the tile position; edge length = sum of the traced path's per-tile lengths, endpoints excluded (0 when unassigned). Exposes `build()` (JSON string) and `validateScratch()` — `Layout.fromJSON(build(), model)` into a throwaway, returning validity + message **without** `parseAuto`, so the setup UI can re-infer the graph live after every edit | 340 |
 | `TileOverlay.java` | `enum SegmentState {RESERVED, CURRENT, COMPLETED, LOCKED}` + marker kind (WASH, DOT, WASH_AND_DOT) + colors + static `paint(Graphics2D,w,h,state,kind)` | 80 |
 | `DiagramTileRegistry.java` | `(page,absX,absY) → Set<LayoutLabel>` plus accessory and s88 indexes; `ConcurrentHashMap`/`newKeySet`; prunes `!isParentVisible()` on iteration | 150 |
 | `DiagramMonitor.java` | Owns `"DiagramCallback"`: fire = try-catch'd `markDirty()` (AtomicBoolean+semaphore) only; single daemon worker drains, 100 ms debounce, full idempotent recompute, diff-publish to EDT in one `invokeLater`; `republish()` after grid rebuilds; constructor `(Supplier<Layout>, registry, publisher)` for headless tests | 350 |
-| `AutonomySetupPanel.java` (+ `.form`, **author-scaffolded**) | The Autonomy-mode **panel inside `LayoutEditor`** (not a window): configuration selector at the top (choose which named configuration is being edited; manage = new-as-copy/rename/delete); non-edit `LayoutGrid` under a `JLayer` that consumes all mouse events (clicks can't throw switches); tools Anchor / Portals / Length / **Direction** / Paint-override (shared) and Placements / Properties (per-configuration); Direction tool: click cycles a tile `both -> forward -> back -> none`, drag or shift-click applies the same value along a run, and the arrow drawn on the tile always shows exactly what the value means (no convention to memorize); Length tool: click a tile to type its integer length (0+, blank = 0), drag or shift-click a run to set many at once, and a toggle overlays every non-zero tile's number plus each traced edge's running total so the sum is visible where it is authored; side panel lists points (anchored/unanchored) and orphans; **Trace & Review** table (adopted / new-edge candidates / mismatches) with per-row "show on diagram", each row showing its summed length; Apply writes to the companion; "Load this configuration" compiles it through the normal validate flow (refused while `layout.isRunning()`); per-tool undo deque mirroring `snapshotLayout()`; **live validity banner** driven by `AutonomyBuilder.validateScratch()` after every edit (debounced, off-EDT), so the inferred graph is continuously checked against the real `Layout` semantics before anything is committed | 800 |
+| `AutonomyEditorPanel.java` (hand-written `JPanel`, no `.form`) | The Autonomy-mode panel inside `LayoutEditor`: non-edit `LayoutGrid` under a `JLayer` that consumes all mouse events (clicks can't throw switches); tools **Connections / Points / Portals / Lengths**; Connections: click a tile to cycle `both -> one way -> other way -> none`, rubber-band for bulk, switches read-only (derived from neighbours); Points: every s88 tile highlighted, click to name, designate station, set terminus/reversing/active, max train length, speed multiplier, exclusions **and home**; Portals: name and pair links/tunnels; Lengths: per-tile integer with a totals overlay; per-tool undo deque mirroring `snapshotLayout()`; **live validity banner** from `AutonomyBuilder.validateScratch()` after every edit (debounced, off-EDT) | 700 |
+| `AutonomyViewerPanel.java` (hand-written `JPanel`, no `.form`) | The autonomy panel beside the main diagram tab: configuration dropdown (select / save / duplicate / rename / delete), layer-visibility toggles (labels, locomotives, homes, directions, lengths, exclusions, monitoring), locomotive roster (locomotive -> point, home, exclusion count), start/stop autonomy, and the two test affordances (connectivity A->B, static configuration check) | 450 |
 | ~~`SegmentFloodFill.java`~~ | **Deleted by the revised architecture** — paint-overrides no longer exist | — |
 | `base/TileGraph.java` (new, revised architecture) | Layer 1: nodes = `(page,x,y)` tiles, candidate connections from facing ports, plus explicit LINK/TUNNEL portal connections; each connection carries a state (disallowed / one-way either way / both) defaulted from geometry and overridable by the user; `neighbors(tile, direction)` honors those states | 260 |
 | `base/GraphReducer.java` (new, revised architecture) | Layer 2: contracts the tile graph to the autonomy graph — significant nodes survive, degree-2 chains collapse to one edge, switches fork transparently and contribute `configCommands`, lengths sum, directions AND, tile paths retained; then derives mutual exclusion from shared tiles (OVERPASS cross-group excepted, portal pair = one location) and emits the lock references | 340 |
@@ -900,11 +869,13 @@ about running autonomy moves.
    (`x + offsetX, y + offsetY`, page = `layout.getName()`) inside the device-registration block
    (:318-341); pass master container to `addLayoutStation` for pruning.
 3. `gui/TrainControlUI.java` — fields+getters (registry, monitor, store); attach all three at the
-   validate-success funnel before `renderAutoLayoutGraph()` (~:12940; per-Layout callbacks →
-   re-attach per `parseAuto`); extract `updatePoint` tail (:15109-15197) into
-   `updateStationLabels(Point)` minus the graph-window gate; `layoutStations` pruning (:389,
-   :852, :893); `repaintLayout` tail (:16526) → `republish()`; store save in `saveState`
-   (:1163-1188).
+   validate-success funnel (~:12940, where `renderAutoLayoutGraph()` is called today — that call
+   goes away; per-Layout callbacks → re-attach per `parseAuto`); extract the `updatePoint` tail
+   (now ~:14985 — **re-verify the range**) into `updateStationLabels(Point)` **minus the
+   graph-window gate, now mandatory since the graph may never exist**; `layoutStations` pruning
+   (:389, :852, :893); `repaintLayout` tail → `republish()`; **replace** the `autonomyJSON`
+   save/load path (:1161, :1177-1197, :1784) with `AutonomyCompanionStore` — this must land
+   *before* the text area is disabled; host `AutonomyViewerPanel` in the diagram tab.
 4. `gui/LayoutPopupUI.java` — `drawGrid()` tail → `republish()`.
 5. `gui/LayoutRightclickAutonomyMenu.java` — "Autonomy setup..." menu item (opens the editor in
    Autonomy mode, scrolled to the clicked tile).
@@ -912,19 +883,27 @@ about running autonomy moves.
    `AutonomySetupPanel` in a card layout beside the existing edit grid; **Autonomy mode must not
    call `layout.setEdit()`** (`:1409`) so station labels and text keep rendering as in the runtime
    view; Diagram-mode controls disabled and visibly explained when `!isLocalLayout()`; the
-   `snapshotLayout()` undo idiom (`:1321`) extended with a companion-state deque. The widgets
-   arrive via the author's designer pass (inventory above); this work fills the handler bodies and
-   the hand-written regions only — no direct edits to `initComponents`, `variables`, or the
-   `.form` XML.
+   `snapshotLayout()` undo idiom (`:1321`) extended with a companion-state deque. **All of it in
+   hand-written code**, mounting `AutonomyEditorPanel` into an existing container — no `.form`
+   edit, no `initComponents`/`variables` edit, no new frame.
 5c. `gui/TrainControlUI.java` (entry point) — `editLayoutButtonActionPerformed` (`:12461`) no
    longer refuses non-local layouts; it opens the editor in Autonomy mode with Diagram mode
    disabled and a *Download CS layout* affordance pointing at the existing flow (`:14219`). The
    `errorEditingOnlySupportedForLocalFiles` call at `:12465` is removed. **The bundle key stays** —
    verified 2026-08-01, it has a second caller at `:14106` (the legacy external editor path), which
    is unaffected. No bundle deletions in any of the 8 files.
-6. `gui/GraphRightClickPointMenu.java` — after `renamePoint` (:1134) → `store.renamePoint(...)`.
-7. `build.xml` — new test lines (below).
-8. All 8 bundles — keys (below).
+6. `gui/AutoLocomotiveStatus.java` — untouched (kept as-is, per the component-fates table).
+7. `gui/HomeLocomotiveMenu.java` — home assignment **moves** into the Points tool; its logic is
+   reused from there rather than duplicated.
+8. `gui/LayoutRightclickAutonomyMenu.java` — functionality retained; gains an "Autonomy setup..."
+   item that opens the editor in Autonomy mode scrolled to the clicked tile.
+9. `build.xml` — new test lines (below).
+10. All 8 bundles — keys (below).
+
+**Phase 2 only** (deletions): `GraphViewer`, `GraphEdgeEdit`, `GraphRightClickPointMenu`,
+`GraphRightClickGeneralMenu`, `GraphLocAssign`, `GraphLocExclude`, `graph.css`, `autonomyJSON` and
+its scroll pane, the `autonomy.json` read/write paths, `GRAPH_*` preferences, and the two
+GraphStream jars in `nbproject/project.properties` (:36-37, :47-48).
 
 No change to `automation/` model classes; `base/TilePorts` etc. are new read-only classes beside
 the diagram model, not changes to it.
@@ -1130,16 +1109,16 @@ re-reading the art by eye.
 
 ---
 
-## Release 2 — Lock-edge derivation + exposure linter
+## ~~Release 2 — Lock-edge derivation + exposure linter~~ — DELETED (author, 2026-08-01)
 
-| Class | Responsibility | ~Size |
-|---|---|---|
-| `automation/LockEdgeAnalyzer.java` (read-only) | `lintExposure(Layout)` — needs no geometry; `computeConflicts(traced segments, portals)` — shared tile ⇒ conflict, OVERPASS groups don't meet, CROSSING's two groups DO conflict (one physical crossing), linked portal pair = one location; `suggest(...)` minimal canonical additions per uncovered ordered direction (candidate-own-list rule: covered iff `c.lock ∩ ({h} ∪ h.lock) ≠ ∅` or `h.lock ∩ {c, opp(c)} ≠ ∅`); dedupe before `Edge.addLockEdge` (bare LinkedList add) | 300 |
-| `LockEdgeReviewUI.java` (+ `.form`, **author-scaffolded** at R2 start) | Review table (conflict pair, shared tiles, existing refs, proposed additions pre-checked; "show on diagram" flashes the intersection); add-only apply + `refreshUI()`; "possibly stale" informational rows for refs whose traced paths don't intersect — never deletes | 400 |
+Both classes are dropped. `LockEdgeAnalyzer`'s exposure linter existed to audit **hand-authored**
+locks in a legacy `autonomy.json`; with legacy gone and locks derived from shared tiles there are
+no coverage gaps to find - a derived configuration is correct by construction. `LockEdgeReviewUI`
+proposed additions for a user to approve, equally meaningless when nothing is hand-authored.
 
-Entry points: buttons in `AutonomySetupUI` + "Check lock-edge coverage..." in
-`LayoutRightclickAutonomyMenu`. Run the linter against the real 104-edge layout **before**
-building the review UI — its report calibrates the derivation work.
+What survives is a **lock explainer**, not a linter: selecting two edges (or a locked pair during
+monitoring) shows *why* they are mutually exclusive - the shared tile(s), highlighted on the
+diagram. A small feature inside the diagram view, not a release.
 
 ---
 
@@ -1174,32 +1153,40 @@ performed once, by hand, for a single known layout.
 
 ## i18n keys (all 8 bundles, one commit)
 
-`layout.ui.menuAutonomySetup`, `layout.ui.menuToggleOverlays`, `autosetup.ui.title`,
-`.modeDiagram`, `.modeAutonomy`, `.infoDiagramEditingNeedsLocalCopy`, `.btnDownloadCSLayout`,
-`.modeAnchor`, `.modePortals`, `.modePaint`, `.modeLength`, `.promptTileLength`,
-`.errorNegativeLength`, `.btnShowLengths`, `.colLength`, `.statusLengthImported`,
-`.warnPermanentTurnout`, `.warnPermanentTurnoutCount`, `.colWarnings`,
-`.modeConnection`, `.btnShowDirections`, `.btnShowReducedGraph`, `.dirBoth`, `.dirForward`,
-`.dirBack`, `.dirNone`, `.warnDirectionContradiction`, `.errorScissorsNotSupported`,
-`.infoIsolatedFeedbackSkipped`, `.labelPointNotStation`, `.menuDesignateStation`,
-`.menuExcludePageFromAutonomy`, `.labelPageExcluded`, `.promptLinkName`,
-`.errorDuplicateLinkName`, `.errorLinkNotMutuallyPaired`, `.errorLinkTargetShared`,
-`.errorPortalTargetsExcludedPage`, `.infoUnnamedLinkNotConnected`, `.warnTurntableNotRoutable`,
-`.promptPointName`, `.errorDuplicatePointName`,
-`.errorEmptyPointName`, `.warnQuotesStrippedFromName`, `.labelGeneratedName`,
-`.warnLegacyVirtualPoint`, `.assignPoint`, `.createPoint`, `.clearAnchor`,
-`.labelPoints`, `.statusAnchored`, `.statusUnanchored`, `.orphanCount`, `.adoptOrphan`,
-`.btnTrace`, `.reviewTitle`, `.colConnection`, `.colStatus`, `.statusAdopted`, `.statusNewEdge`,
-`.statusMismatch`, `.btnApply`, `.btnUndo`, `.btnShowConnectivity`, `.confirmDiscardChanges`,
-`.errorAutonomyRunning`, `.tooltipGestures`, `.labelConfiguration`, `.btnLoadConfiguration`,
-`.menuNewConfiguration`, `.menuRenameConfiguration`, `.menuDeleteConfiguration`,
-`.errorLastConfiguration`, `.promptConfigurationName`, `autolayout.infoDisplayStoreLoaded`,
-`.infoDisplayStoreOrphans`, `.errorDisplayStoreVersion`; R2: `lockassist.ui.title`, `.menuSuggest`,
-`.menuLint`, `.colTrackPair`, `.colSharedTiles`, `.colExisting`, `.colProposed`,
-`.btnApplySelected`, `.btnShowOnDiagram`, `.infoNoConflicts`, `.infoPossiblyStale`, `.lintClean`,
-`.lintExposedPair`.
+Pruned 2026-08-01: anchor / paint / trace-review / adopt / orphan and all `lockassist.*` keys are
+gone with the features that needed them.
 
-Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
+**Editor** - `layout.ui.menuAutonomySetup`, `.modeDiagram`, `.modeAutonomy`,
+`.infoDiagramEditingNeedsLocalCopy`, `.btnDownloadCSLayout`; `autosetup.ui.title`,
+`.toolConnections`, `.toolPoints`, `.toolPortals`, `.toolLengths`, `.btnUndo`,
+`.confirmDiscardChanges`, `.errorAutonomyRunning`, `.tooltipGestures`.
+
+**Connections** - `.dirBoth`, `.dirForward`, `.dirBack`, `.dirNone`, `.labelSwitchDerived`,
+`.warnDirectionContradiction`.
+
+**Points** - `.promptPointName`, `.errorDuplicatePointName`, `.errorEmptyPointName`,
+`.warnQuotesStrippedFromName`, `.labelGeneratedName`, `.labelPointNotStation`,
+`.menuDesignateStation`, `.infoIsolatedFeedbackSkipped`.
+
+**Portals** - `.promptLinkName`, `.errorDuplicateLinkName`, `.errorLinkNotMutuallyPaired`,
+`.errorLinkTargetShared`, `.errorPortalTargetsExcludedPage`, `.infoUnnamedLinkNotConnected`.
+
+**Lengths** - `.promptTileLength`, `.errorNegativeLength`, `.btnShowLengths`, `.colLength`.
+
+**Pages** - `.menuExcludePageFromAutonomy`, `.labelPageExcluded`.
+
+**Build messages** - `.errorScissorsNotSupported`, `.warnPermanentTurnout`,
+`.warnPermanentTurnoutCount`, `.warnTurntableNotRoutable`, `.colWarnings`,
+`autolayout.infoCompanionLoaded`, `.infoCompanionOrphans`, `.errorCompanionVersion`.
+
+**Viewer** - `.labelConfiguration`, `.btnLoadConfiguration`, `.menuNewConfiguration`,
+`.menuRenameConfiguration`, `.menuDeleteConfiguration`, `.errorLastConfiguration`,
+`.promptConfigurationName`, `.layerLabels`, `.layerLocomotives`, `.layerHomes`, `.layerDirections`,
+`.layerLengths`, `.layerExclusions`, `.layerMonitoring`, `.btnTestConnectivity`,
+`.btnCheckConfiguration`, `.labelLocomotiveRoster`, `.explainLockedPair`.
+
+Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true), plus one persisted key per
+layer toggle - user preference, never configuration data.
 
 ## Tests (one class = one JVM = one `build.xml` line)
 
@@ -1216,26 +1203,40 @@ Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
 
 ## Verification
 
-1. NetBeans compile; new test classes + `testLayoutTiles`, `testHomeStaging`, `testAutoLayout`.
-1b. **CS-layout acceptance** (the point of the editor-mode work): with no local layout path set,
-   the Edit button must open the editor in Autonomy mode rather than showing an error; anchors,
-   lengths and portals must be assignable and must persist across a restart; the Diagram-mode
-   toggle must be disabled with the download affordance visible; and no file under `gleisbilder/`
-   may be written (check timestamps).
-2. **Connectivity acceptance**: open setup mode on the author's real pages, enable "Show
-   connectivity", and visually confirm the engine's reading of the diagram (the debug overlay is
-   the point of contact between port maps and reality).
-3. Anchor a handful of points on one page → Trace → confirm the review matches known edges,
-   adopted segments light correctly in simulate mode (graph window closed), dot follows the train,
-   popups/page switches survive via `republish()`.
-4. R2: linter report on the real layout first; then confirm suggestions at one known crossing
-   match what was authored by hand.
+**R0 (engine, no UI)** - the milestone's whole point:
+1. NetBeans compile; `testTilePorts`, `testTileGraph`, `testGraphReducer`,
+   `testAutonomyCompanionStore`, `testAutonomyBuilder`.
+2. **Ground-truth diff** against the author's real `autonomy.json`: points, edges, config commands,
+   lock references, lengths. "Only in legacy" is a defect; config-command disagreements are
+   port-map defects; legacy lock refs with no derived counterpart are the evidence on whether
+   virtual points were load-bearing. Keep the report.
+3. Harness emits a starter companion file for the author to review.
+
+**R1 (UI)**:
+4. `testDiagramMonitor`, plus `testLayoutTiles`, `testHomeStaging`, `testAutoLayout` for regression.
+5. **CS-layout acceptance**: with no local layout path set, the Edit button opens Autonomy mode
+   instead of erroring; points, lengths and portals are editable and persist across a restart; the
+   Diagram-mode toggle is disabled with the download affordance visible; **no file under
+   `gleisbilder/` is written** (check timestamps).
+6. **Connectivity acceptance**: open Autonomy mode on the author's real pages and confirm the drawn
+   connections match the track - this is the editing surface now, not a debug overlay.
+7. Set up one page end to end, load it as a configuration, and confirm in simulate mode that
+   segments light correctly **with no graph window in existence**, the dot follows the train, and
+   popups / page switches survive via `republish()`.
+8. Configuration switching: duplicate a configuration, move locomotives, switch between them, and
+   confirm structural data is shared while placements are not.
+
+**R2 (removal)**:
+9. Author's layout re-created on the diagram and running **before** removal starts.
+10. After each deletion, compile *and run* - not grep. `autonomyJSON` is the proof that a field's
+    name does not reveal what it does.
 
 ## Changelog drafts (non-technical)
 
-- R1: "Autonomy can now be set up directly on the track diagram: assign your stations to sensor
-  tiles, and TrainControl reads the track itself to find the connections between them — switches,
-  crossings and all. Running trains light up the actual track on the diagram, with the train's
-  position marked."
-- R2: "TrainControl can now propose crossing and shared-track locks from the diagram, and check
-  existing locks for gaps."
+- R1: "Autonomy now lives on the track diagram. TrainControl reads the track itself - switches,
+  crossings, curves and all - so your stations and the connections between them come from the
+  diagram you already drew. Name your stations, check which way trains may travel, and you are
+  done. Running trains light up the actual track, with each train's position marked, and you can
+  save several setups for different starting arrangements."
+- R2: "The separate autonomy graph window has been retired. Everything it did now happens on the
+  track diagram."
