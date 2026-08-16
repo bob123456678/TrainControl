@@ -361,6 +361,97 @@ public class testTileGraph
     }
 
     /**
+     * A route button carries whatever line it is sitting on, and nothing when it sits beside the rails.
+     *
+     * It is a control someone put on the diagram, not track: its art touches no border and its
+     * orientation is the same in horizontal and vertical runs alike.  So what it conducts cannot come
+     * from the tile - it comes from the neighbours.
+     */
+    @Test
+    public void testARouteButtonCarriesWhateverLineItSitsOn() throws IOException
+    {
+        // dropped into a horizontal run
+        LayoutDiagram page = page("main", 8, 8);
+        straight(page, 1, 1);
+        add(page, componentType.ROUTE, 2, 1, 0);
+        straight(page, 3, 1);
+
+        TileGraph graph = graph(page);
+
+        List<Exit> through = graph.exits(key("main", 2, 1), Side.W);
+        assertEquals(through.size(), 1, "a button in a straight run should carry it");
+        assertEquals(through.get(0).getSide(), Side.E);
+
+        // and the run is walkable end to end
+        Landing beyond = graph.landing(key("main", 2, 1), Side.E);
+        assertNotNull(beyond);
+        assertEquals(beyond.getTile(), key("main", 3, 1));
+    }
+
+    /**
+     * The same button dropped into a vertical run carries that instead - which a fixed north-south or
+     * east-west reading could only ever get right half the time, since the orientation does not say.
+     */
+    @Test
+    public void testARouteButtonCarriesAVerticalRunToo() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 8);
+        add(page, componentType.STRAIGHT, 2, 1, 1);
+        add(page, componentType.ROUTE, 2, 2, 0);
+        add(page, componentType.STRAIGHT, 2, 3, 1);
+
+        TileGraph graph = graph(page);
+
+        List<Exit> through = graph.exits(key("main", 2, 2), Side.N);
+        assertEquals(through.size(), 1);
+        assertEquals(through.get(0).getSide(), Side.S);
+    }
+
+    /**
+     * A button on a curve follows the curve.  This is what the fixed-crossing reading could not do: it
+     * would have offered a straight through the corner and broken the curve entirely.
+     */
+    @Test
+    public void testARouteButtonOnACurveFollowsTheCurve() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 8);
+
+        // track arriving from the west, and leaving to the south
+        straight(page, 1, 2);
+        add(page, componentType.ROUTE, 2, 2, 0);
+        add(page, componentType.STRAIGHT, 2, 3, 1);
+
+        TileGraph graph = graph(page);
+
+        List<Exit> around = graph.exits(key("main", 2, 2), Side.W);
+        assertEquals(around.size(), 1, "a button between a westward and a southward neighbour turns");
+        assertEquals(around.get(0).getSide(), Side.S);
+    }
+
+    /**
+     * A button placed beside the rails carries nothing - which is the honest reading of a control that
+     * has no track meaning, and the case a fixed crossing would have invented track for.
+     */
+    @Test
+    public void testARouteButtonBesideTheRailsCarriesNothing() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 8);
+        straight(page, 1, 1);
+        straight(page, 2, 1);
+
+        // sitting below the run, touched by it on one side only
+        add(page, componentType.ROUTE, 2, 2, 0);
+
+        TileGraph graph = graph(page);
+
+        for (Side side : Side.values())
+        {
+            assertTrue(graph.exits(key("main", 2, 2), side).isEmpty(),
+                "a button with one neighbour should carry nothing, but it exits " + side);
+        }
+    }
+
+    /**
      * A half pairing is an error rather than a one-way jump: a train that can get in but never out is a
      * worse outcome than being told the pairing is wrong.
      */
