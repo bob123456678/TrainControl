@@ -575,8 +575,36 @@ direction, disqualification), `GraphReducer` (Points, edges, commands, lengths, 
 ids, reconciliation), `TileOverlay` + `DiagramMonitor` (what each tile should show).
 Gate cleared against `cs2_sample_layout`.
 
-**Still to build.** The tile registry and the `LayoutLabel` paint hook; the editor's autonomy panel;
-the viewer's autonomy panel; the in-app check suite; the path tester; the reduced-graph inspector.
+**Also done.** `AutonomyChecks` (the user-runnable checks), `DiagramTileRegistry` and the
+`LayoutLabel` paint hook.
+
+**Still to build.** The editor's autonomy panel; the viewer's autonomy panel; the path tester; the
+reduced-graph inspector; then Phase 2 removal and the documentation rewrite.
+
+### Integration constraints, verified in the code (2026-08-16)
+
+Investigated before writing any UI, because several plan assumptions turned out to be wrong:
+
+- **There are no hand-written `JPanel` subclasses in `gui/` at all.** Every one has a matching `.form`.
+  The plan's "18 of 37 are hand-written" counted popup menus and plain classes; the two autonomy panels
+  will be the first hand-written panels in the project. The style to follow is `LayoutGrid`
+  (constructor-built widgets, `GridBagLayout`, `TrainControlUI` passed in) rather than any panel.
+- **Mount points that work without touching generated code**: the editor's `newComponents`, whose
+  layout manager is already replaced from hand-written code (`LayoutEditor.java:126`), and the viewer's
+  `LayoutArea.setRowHeaderView(...)`, whose row and column headers are unused. The precedent for
+  mutating a form container by hand is `autoLocPanel` (`TrainControlUI.java:15657, :15691`).
+- **Mount points that do NOT work**: `layoutPanel` has a populated generated `GroupLayout`;
+  `InnerLayoutPanel` and `ExtLayoutPanel` are `removeAll()`ed and have their layout manager replaced on
+  every grid rebuild (`LayoutGrid:77, :86-94`).
+- **`LayoutLabel` is `final`**, so the paint hook had to go in the class itself - no decorator.
+- **`updateImage` short-circuits on an unchanged icon name** (`LayoutLabel:509`), confirming that an
+  overlay cannot ride the existing repaint path and must trigger its own.
+- **The layout cache re-adds a grid without running `LayoutGrid`'s constructor**
+  (`TrainControlUI:16519-16523`), so registration placed there does not re-run on a cache hit. Harmless
+  because the cached labels are the same objects and keep their registrations - but a registry that is
+  ever cleared wholesale would come back empty, which is why it prunes instead of resetting.
+- **Overlays cannot cover station or address text**, which is z-ordered above tiles
+  (`LayoutGrid:233, :315`). Acceptable: the wash is background, the text is information.
 
 ### Open questions, for review rather than blocking
 
