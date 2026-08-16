@@ -368,14 +368,21 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
   graph-window gates).
 - **The GraphStream dependency goes with it.** `org.graphstream` appears in only three files
   (`GraphViewer`, `GraphEdgeEdit`, `TrainControlUI`), and two jars leave the classpath:
-  `resources/gs-core-2.0.jar` and `resources/gs-ui-swing-2.0.jar`
-  (`nbproject/project.properties:36-37, 47-48`). Smaller distribution, one less library to keep
-  current.
+  **three** jars leave the classpath: `resources/gs-core-2.0.jar`, `resources/gs-algo-2.0.jar`
+  and `resources/gs-ui-swing-2.0.jar` (`nbproject/project.properties:35-37, 47-49`; the Readme's
+  dependency list names all three). Smaller distribution, three fewer libraries to keep current.
 - **The JSON form and import go too** (author, 2026-08-01). The autonomy tab becomes **control and
-  settings only**: `autonomyJSON` (the `JTextArea` at `:3643`/`:5729`) and its scroll pane are
-  removed along with the load/import path, leaving `autoLocPanel` (locomotive control) and
-  `autoSettingsPanel`. There is no user-facing autonomy JSON anywhere — consistent with the
-  original directive that the configuration *is* the track diagram.
+  settings only**. Verified against the actual widget tree (`locCommandTab` and its panels):
+  - **Stays**: `startAutonomy`, `gracefulStop`, `returnHomeButton`, the whole `timetablePanel`
+    (`timetableCapture` + `executeTimetable` - the timetable's capture button is a *control*
+    feature, unrelated to `GraphEdgeEdit`'s retired capture-commands), `autoLocPanel` (semi-
+    autonomous locomotive commands), `autoSettingsPanel` (the per-configuration globals), and the
+    `autosave` checkbox (still gates saving locomotive state on exit, now to the companion).
+  - **Goes**: `autonomyJSON` (the `JTextArea` at `:3643`/`:5729`) and its scroll pane,
+    `exportJSON`, `loadJSONButton`, `validateButton`, `loadDefaultBlankGraph` (onboarding is now
+    "draw a diagram"), `jsonDocumentationButton`, and `reopenGraphButton` (no graph window).
+  There is no user-facing autonomy JSON anywhere — consistent with the original directive that
+  the configuration *is* the track diagram.
 - **Persistence must move first.** `autonomyJSON` is not just a view: `saveState` populates it from
   `getAutoLayout().toJSON()` (`:1161`) and writes that text to `autonomy.json` (`:1177-1197`), with
   `:1784` reading it back. Deleting the text area without first rerouting save/load through
@@ -895,6 +902,15 @@ and the two test affordances. Phase 1 of the delivery split (implement new, disa
 layout being re-created on the diagram. *(Replaces the former "Release 2 - lock-edge derivation",
 deleted outright - see below.)*
 
+**R2 also carries the documentation.** `Automation.md` is today a JSON-authoring tutorial end to
+end - sample JSON, "paste into the Autonomy tab", "Validate Graph", graph colors/shapes, graph
+prettification - and most of it is obsoleted by this design; the Java-API sections stay valid
+because the model does not change. `Readme.md` needs: the feature list and autonomy blurb
+(:126-142, :164-175), the backup-file list (:333 - `autonomy.json` becomes `autonomy-setup.json`),
+the dependency list (:346 - three GraphStream jars leave), and fresh screenshots (`graphview.png`,
+`graph2b.png`, `ui_autonomy.png`, `easyauto.png`, `graph*.png` all show the graph window). The
+non-technical changelog rule applies to the Readme changelog only, not to these docs.
+
 ### Component fates (author rulings, 2026-08-01)
 
 | Component | Fate |
@@ -903,7 +919,7 @@ deleted outright - see below.)*
 | `HomeLocomotiveMenu` | **Moves into the diagram** - home assignment happens while editing stations in autonomy editing mode, alongside the point's other properties. |
 | `LayoutRightclickAutonomyMenu` | **Functionality stays**, largely unchanged - the quick operational menu on a station label at runtime. |
 | Timetable | **Stays where it is**, unchanged; it references whatever points now exist, resolving by name as before. |
-| Global autonomy settings (`minDelay`, `maxDelay`, `defaultLocSpeed`, route activation) | **Per configuration**, as today. They live on the slimmed autonomy tab, which edits the *active* configuration. |
+| Global autonomy settings | **Per configuration**, as today; edited on the slimmed autonomy tab against the *active* configuration. The full set the builder must emit (from `Automation.md` + `fromJSON`): `minDelay`, `maxDelay`, `defaultLocSpeed`, `preArrivalSpeedReduction`, `turnOffFunctionsOnArrival`, `turnOnFunctionsOnDeparture`, `atomicRoutes`, `maxLocInactiveSeconds`, `maxLatency`, `activateRoutes`, `activateRouteIDs`. (`maxActiveTrains` is a UI preference, not a JSON key.) |
 | Layer visibility toggles | **User preferences**, not configuration data - a configuration describes the layout, not how someone likes to look at it. |
 | `Point:` diagram labels | **Kept as-is.** They are a *placement* mechanism, not a naming one: they say where on the diagram a station's label and train location appear, which nothing else expresses. Naming lives in the companion; placement stays in the diagram file. **Known wrinkle**: the label embeds the name, so renaming leaves it stale - resolve leniently and report a mismatch rather than rewriting the diagram file. |
 | Simulation | **Unchanged** - simulate mode keeps working exactly as it does now. |
@@ -914,7 +930,7 @@ deleted outright - see below.)*
 |---|---|---|
 | `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below. Uniformly state-indexed: `ports(type, orient, state)` returns the set of connected side pairs in that state (unswitched / switched, or the three-way's three states; one state for everything else). No common/branch/toe concepts. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4; encodes the directed restriction for `CUSTOM_PERM_*` (into S only) | 300 |
 | ~~`base/DiagramTopology.java`~~ | **Folded into `TileGraph` + `GraphReducer`** (there is no separate trace step: the tile graph *is* the adjacency and reduction is what walks it). Former text: builds the directed adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
-| `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, `Map<address, setting>` requirements, summed length, direction | 70 |
+| `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, accessory requirements, summed length, direction. **Requirements are keyed by accessory NAME, not address**: `Edge.getConfigCommands()` is `Map<String, accessorySetting>` resolved via `getAccessoryByName` (`Layout.java:1542`), and the generated JSON's `commands` use names like `"Switch 10"`. The builder maps tile -> name via `MarklinAccessory.getNameWithProtocol(address, type, decoder)` (`MarklinAccessory.java:315`) - note the documented trap that the database is keyed on the **logical** address (raw + 1, see `MarklinAccessory.java:322-328`), and that DCC accessories carry a protocol suffix in the name. Signals and switches at one address are the same device, so either name resolves | 80 |
 | `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths, tileDirections}, configurations: {"<name>": {pointProperties, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; renaming a point rewrites its shared name entry and every configuration that references it; orphans kept, never silently dropped | 380 |
 | `AutonomyBuilder.java` | The compile step: companion + `DiagramTopology` traces → generated autonomy JSON string fed to the existing `parseAuto` (reusing the whole validate pipeline unchanged); deterministic ordering so output is diffable; emits setup errors (unpaired or half-paired portal, portal targeting an excluded page, disqualified scissors tile) as validate-visible failures, and **warnings** (permanent turnout, turntable, isolated feedback tile, direction contradiction - each with coordinates) that surface in the banner and the log **without blocking the build**; **no graph x/y is emitted** - the graph window is gone and position is the tile position; edge length = sum of the traced path's per-tile lengths, endpoints excluded (0 when unassigned). Exposes `build()` (JSON string) and `validateScratch()` — `Layout.fromJSON(build(), model)` into a throwaway, returning validity + message **without** `parseAuto`, so the setup UI can re-infer the graph live after every edit | 340 |
 | `TileOverlay.java` | `enum SegmentState {RESERVED, CURRENT, COMPLETED, LOCKED}` + marker kind (WASH, DOT, WASH_AND_DOT) + colors + static `paint(Graphics2D,w,h,state,kind)` | 80 |
