@@ -70,6 +70,43 @@ public class testTilePorts
     }
 
     /**
+     * The rotation direction, pinned against the art rather than against reasoning about it.
+     *
+     * getImage rotates by (4 - orientation) * 90 degrees, and Java2D's positive angle is clockwise on
+     * screen because y points down - so orientation 1 is three quarter turns clockwise, which looks like
+     * one turn anticlockwise.  Getting that backwards would still produce a self-consistent port map, and
+     * every edge in the layout would be wrong.
+     *
+     * These values were measured by applying the same transform to the icons and reading which sides the
+     * track touches (docs/plans/portmap-verification.py has the extraction).
+     */
+    @Test
+    public void testRotationDirectionMatchesTheRenderedArt()
+    {
+        // curve: ES -> NE -> NW -> SW
+        assertEquals(sidesAt(componentType.CURVE, 1, 0), pairs("NE"));
+        assertEquals(sidesAt(componentType.CURVE, 2, 0), pairs("NW"));
+        assertEquals(sidesAt(componentType.CURVE, 3, 0), pairs("SW"));
+
+        // end stub: N -> W -> S -> E
+        assertEquals(singleStub(componentType.END, 0), Side.N);
+        assertEquals(singleStub(componentType.END, 1), Side.W);
+        assertEquals(singleStub(componentType.END, 2), Side.S);
+        assertEquals(singleStub(componentType.END, 3), Side.E);
+
+        // tunnel stub: S -> E -> N -> W
+        assertEquals(singleStub(componentType.TUNNEL, 1), Side.E);
+        assertEquals(singleStub(componentType.TUNNEL, 2), Side.N);
+        assertEquals(singleStub(componentType.TUNNEL, 3), Side.W);
+
+        // switch_left occupies NSW drawn, and ESW / NES / NEW as it turns
+        assertEquals(occupiedSides(componentType.SWITCH_LEFT, 0), "NSW");
+        assertEquals(occupiedSides(componentType.SWITCH_LEFT, 1), "ESW");
+        assertEquals(occupiedSides(componentType.SWITCH_LEFT, 2), "NES");
+        assertEquals(occupiedSides(componentType.SWITCH_LEFT, 3), "NEW");
+    }
+
+    /**
      * A double curve is two independent curves in one tile, not a crossing.
      */
     @Test
@@ -300,9 +337,14 @@ public class testTilePorts
         assertEquals(singleStub(componentType.TUNNEL, 0), Side.S);
         assertEquals(singleStub(componentType.LINK, 0), Side.W);
 
-        // and they rotate
+        // and they rotate - orientation 1 is three quarter turns clockwise, i.e. one counter-clockwise,
+        // so S goes to E and W goes to S
         assertEquals(singleStub(componentType.TUNNEL, 1), Side.E);
-        assertEquals(singleStub(componentType.LINK, 1), Side.N);
+        assertEquals(singleStub(componentType.LINK, 1), Side.S);
+
+        // a second rotation moves each on by one more counter-clockwise step
+        assertEquals(singleStub(componentType.TUNNEL, 2), Side.N);
+        assertEquals(singleStub(componentType.LINK, 2), Side.E);
 
         // An END is a stub too, but with no continuation at all
         assertEquals(singleStub(componentType.END, 0), Side.N);
@@ -423,6 +465,33 @@ public class testTilePorts
     private String canonical(Side a, Side b)
     {
         return a.ordinal() <= b.ordinal() ? a.toString() + b.toString() : b.toString() + a.toString();
+    }
+
+    /**
+     * Every side the tile touches across all of its states, in NESW order - the reading the icon
+     * extraction produces, so it can be compared against measured art.
+     */
+    private String occupiedSides(componentType type, int orientation)
+    {
+        Set<Side> seen = new HashSet<>();
+
+        for (int state = 0; state < TilePorts.getStateCount(type); state++)
+        {
+            for (Route r : TilePorts.ports(type, orientation, state))
+            {
+                seen.add(r.getA());
+                seen.add(r.getB());
+            }
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        for (Side s : new Side[]{Side.N, Side.E, Side.S, Side.W})
+        {
+            if (seen.contains(s)) out.append(s.toString());
+        }
+
+        return out.toString();
     }
 
     /**
