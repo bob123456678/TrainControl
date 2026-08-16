@@ -138,9 +138,8 @@ public class testParseCS2Layout
 
         assertNotNull(exported);
         assertTrue(exported.contains("[gleisbildseite]"),
-            "an exported page should carry the CS2 header:
-" + exported.substring(0,
-                Math.min(200, exported.length())));
+            "an exported page should carry the CS2 header: "
+                + exported.substring(0, Math.min(200, exported.length())));
 
         // every component that went in comes back out
         int elements = 0;

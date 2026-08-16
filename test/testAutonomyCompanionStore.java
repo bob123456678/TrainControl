@@ -279,9 +279,11 @@ public class testAutonomyCompanionStore
         store.createConfiguration("Default", null);
         store.save();
 
-        // id 2 now belongs to an entirely different page
+        // id 2 now belongs to a different page - and crucially "Yard" is STILL THERE, under another id.
+        // That is what separates a renumber from a rename: after a rename the old name is simply gone.
         java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
         after.put("Main Line", "2");
+        after.put("Yard", "3");
 
         AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
         reloaded.setPageIds(after);

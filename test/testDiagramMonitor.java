@@ -109,10 +109,10 @@ public class testDiagramMonitor
 
         assertTrue(published.isEmpty(), "firing must not publish, however many times it fires");
 
-        // and a burst collapses into one recompute rather than fifty
-        assertFalse(monitor.refreshIfDirty(),
-            "with no layout there is nothing to publish, but the flag should still have cleared");
-        assertFalse(monitor.refreshIfDirty(), "a second call with nothing new does nothing");
+        // and a burst collapses into ONE recompute rather than fifty: the flag says something moved,
+        // not how often, so the first call does the work and the second finds nothing to do
+        assertTrue(monitor.refreshIfDirty(), "fifty firings should leave exactly one recompute owed");
+        assertFalse(monitor.refreshIfDirty(), "and nothing owed after it");
     }
 
     /**

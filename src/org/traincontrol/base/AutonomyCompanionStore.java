@@ -219,9 +219,19 @@ public class AutonomyCompanionStore
         {
             String nowCalled = pageIdToName.get(entry.getKey());
 
-            // absent is fine - the page may simply not be loaded.  Present and different is not: that id
-            // belongs to another page now, so its settings are not ours to adopt.
-            if (nowCalled != null && !nowCalled.equals(entry.getValue()))
+            // Absent is fine - the page may simply not be loaded.
+            if (nowCalled == null || nowCalled.equals(entry.getValue())) continue;
+
+            // The id now carries a different name, and that alone cannot tell the two cases apart:
+            //
+            //   renamed    - the same page, called something else.  The old name is gone from the index,
+            //                and the settings are still that page's.  This is the case ids exist for.
+            //   renumbered - a DIFFERENT page now holds this id.  The old name is still in the index
+            //                under some other id, and adopting these settings would attach a page of
+            //                names and lengths to the wrong track.
+            //
+            // So the deciding question is whether the old name still exists somewhere.
+            if (pageNameToId.containsKey(entry.getValue()))
             {
                 pageIdConflicts.put(entry.getValue(), nowCalled);
             }
