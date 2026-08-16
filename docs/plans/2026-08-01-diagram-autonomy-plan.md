@@ -91,8 +91,14 @@ path; the graph window, the autonomy JSON form and import, and the legacy editin
 
 **Phase 2 — remove the old.** Once Phase 1 has run against the real layout, delete the disabled
 code: `GraphViewer`, `GraphEdgeEdit`, `GraphRightClick*`, `GraphLocAssign`, `GraphLocExclude`,
-`graph.css`, `autonomyJSON` and its import path, the `GRAPH_*` preferences, and the two
-GraphStream jars from `nbproject/project.properties`.
+`graph.css`, `autonomyJSON` and its import path, the `autonomy.json` read/write paths, the
+`GRAPH_*` preferences, and the two GraphStream jars from `nbproject/project.properties`.
+
+**Startup behaviour changes at the Phase 1/2 boundary**, so state it explicitly in each phase:
+Phase 1 still auto-loads `autonomy.json` when no companion configuration exists (so an upgrade
+mid-phase never leaves a working layout unusable); Phase 2 drops that fallback and the active
+companion configuration becomes the only thing that loads. The author's own layout must be
+re-created on the diagram — with the harness-emitted starter file — **before** Phase 2 lands.
 
 **Why this order:** a dependency that was only reachable through the old UI shows up as a *disabled
 feature that turns out to be load-bearing*, not as a compile error or a silent data-loss bug. The
@@ -417,11 +423,26 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
   `:1784` reading it back. Deleting the text area without first rerouting save/load through
   `AutonomyCompanionStore` silently breaks saving. This is the clearest instance of the hazard the
   two-phase plan below exists to catch.
-- **Legacy configurations are deprecated.** An existing `autonomy.json` continues to **auto-load
-  and run** so nobody's layout stops working on upgrade, but it can no longer be viewed, edited or
-  imported through the UI; migration is to set the layout up on the diagram.
-  *Confirm*: is continued auto-loading wanted, or should legacy files be read once into a
-  companion configuration and then ignored? The plan assumes the former.
+- **Legacy autonomy goes away entirely** (author ruling, 2026-08-01). `autonomy.json` is no longer
+  read or written by the application. There is no legacy mode, no dual path, no import, and no
+  migration feature — which removes a large amount of conditional complexity the earlier draft
+  carried (mode detection, trace-and-match adoption, legacy-vs-derived gating throughout).
+- **What auto-loads instead**: on startup, the **active configuration** recorded in the companion
+  file is compiled and loaded through the normal build -> `parseAuto` -> validate flow, *if*
+  configurations have been defined and saved. If none exist, autonomy is simply not configured and
+  nothing is loaded — the same state a fresh install is in today. The user chooses which
+  configuration is the default via the viewer's dropdown.
+- **The cost this carries, which should be priced deliberately**: with no import, an existing setup
+  is not transferred — every point name, length, home, exclusion and per-point property must be
+  re-entered on the diagram. For the author's own layout that is ~104 edges, 212 lock references,
+  plus names and homes. Connections and locks are re-derived automatically, so the geometry is
+  free; what is lost is the **authored** data.
+  *Recommendation*: have the ground-truth comparison harness (which already parses the real
+  `autonomy.json` to diff against) also **emit a starter companion file** — matched point names,
+  lengths distributed onto tiles, homes and exclusions carried over. This is a **developer-run
+  one-off**, not a shipped feature or a UI: it produces a file the author reviews and keeps, and
+  it disappears with the harness. That preserves the clean cutover in the product while avoiding
+  a day of retyping.
 - Retire `GRAPH_*` preferences and the always-on-top coordination between the graph window and the
   main window as part of the same removal.
 
@@ -628,9 +649,9 @@ can actually answer, and no further:
 - **Runtime edits** (homes, exclusions, placements from either window) keep mutating the live
   Layout; save writes the authored subset back to the companion instead of regenerating
   `autonomy.json`.
-- **Legacy mode**: an existing `autonomy.json` loads exactly as today. Migration = the anchor
-  pass + trace-and-match, importing lengths/locks/homes/placements from the old file into the
-  companion. Mode is decided by the presence of the companion file.
+- ~~**Legacy mode**~~ — **removed 2026-08-01.** `autonomy.json` is neither read nor written; there
+  is no mode detection, no user-facing migration, and no legacy-vs-derived branching anywhere.
+  The only thing that loads at startup is the active configuration from the companion file.
 
 **Hard facts from exploration (verified in source):**
 - `Layout.fromJSON` ignores unknown keys, `toJSON` re-emits only known ones → display/anchor
@@ -1168,7 +1189,7 @@ Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
 | `testDiagramTopology` | programmatic pages (no files): straight runs connect; rotation breaks adjacency as the art says; switch fork yields per-branch traces **with correct settings**; CROSSING two independent throughs; OVERPASS no interaction; unlinked TUNNEL stops, linked portal continues cross-page; anchors terminate traces; cycles bounded; **permanent turnouts**: a trace entering a `CUSTOM_PERM_*` at the toe produces no connection past it, the same pair traced from a branch toward the toe does connect, the resulting edge is one-directional, no config command is emitted for the tile, and a warning naming its coordinates is collected; `CUSTOM_SCISSORS` (switchable) is unaffected; **per-tile direction**: an all-`both` run traces both ways (parity with an unconfigured diagram), one `forward` tile mid-run suppresses exactly the opposing edge, `none` stops the trace at that tile, constraints AND along a path rather than the last one winning, a user direction cannot re-open a permanent turnout's facing direction, a two-group tile constrains only the group traversed, and a run made impossible in both directions is reported as a contradiction warning with coordinates |
 | `testDiagramMonitor` | dispatch→RESERVED, milestone→COMPLETED/CURRENT, completion fire (maps already cleared)→empty publish, 50-fire burst coalesces, throwing publisher never reaches the firing thread — simulated model + fake publisher + visible/hidden parents (the `testLayoutTiles` trick) |
 | `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **CS-sourced layouts**: anchors save and reload with no local layout path set (the `isLocalLayout()`-false case must NOT refuse), a station assigned on a non-feedback tile round-trips as a virtual point with no s88, and an anchor whose `(page,x,y)` no longer resolves after a simulated diagram re-download becomes a reportable orphan rather than a deletion |
-| `testAutonomyBuilder` | companion + programmatic pages compile to JSON that `parseAuto` accepts and validates; deterministic output (two builds byte-identical); setup errors (unanchored point, unpaired portal) invalidate through the normal flow; **migration**: legacy `autonomy.json` fixture + matching diagram → traced edges adopt the legacy lengths/locks/homes; generated-then-parsed Layout's `toJSON` is stable across a second build; **scratch build isolation**: `validateScratch()` on a deliberately broken companion reports invalid while `model.getAutoLayout()` remains the untouched previous instance (identity assert) and no locomotive was stopped; **lengths**: unassigned tiles yield length 0 on every edge (parity with today), assigned tiles sum along the traced path with endpoints excluded, a 0 on an intermediate tile contributes nothing without breaking the edge, and a legacy length distributed over N tiles sums back to exactly the original |
+| `testAutonomyBuilder` | companion + programmatic pages compile to JSON that `parseAuto` accepts and validates; deterministic output (two builds byte-identical); setup errors (unpaired portal, disqualified tile) invalidate through the normal flow; **startup**: the active configuration loads when one is defined, nothing loads when none is, and no code path reads or writes `autonomy.json`; generated-then-parsed Layout's `toJSON` is stable across a second build; **scratch build isolation**: `validateScratch()` on a deliberately broken companion reports invalid while `model.getAutoLayout()` remains the untouched previous instance (identity assert) and no locomotive was stopped; **lengths**: unassigned tiles yield length 0 on every edge (parity with today), assigned tiles sum along the traced path with endpoints excluded, a 0 on an intermediate tile contributes nothing without breaking the edge, and a legacy length distributed over N tiles sums back to exactly the original |
 | `testTileGraph` (revised) | **links**: an unnamed link forms no portal connection and no train can cross it; a named, mutually-paired link joins its partner's tile across pages; a half-pairing and an A-B-C collision are both setup errors naming the tiles; the geometric side of a LINK is W at orientation 0 and rotates with the tile; a pairing targeting an excluded page is an error, not a silent dead end. **Excluded pages**: an excluded page contributes no nodes, Points, edges or warnings, and re-including it restores the orphaned placements rather than having deleted them. geometry seeds candidate connections both ways; a user override survives a re-trace and is not overwritten by geometry; disallowed connections are absent in both directions; one-way connections are absent in exactly one; LINK and TUNNEL portal connections join the named tiles across pages and are never inferred from adjacency; a permanent turnout's facing connections are seeded disallowed and cannot be user-enabled |
 | `testGraphReducer` (revised) | **every** feedback tile becomes a Point without user action, while a station is a Point plus a designation; two feedback tiles sharing one s88 address both become Points with distinct generated names, and a user rename survives a rebuild and a change to the surrounding track; a duplicate name is refused at authoring time, not at build time; a name containing a quote character does not silently change on the way into `Point`; designating a station sets `isDestination` and never produces the model's no-s88 exception because every derived Point has one; a legacy virtual point (no s88) is reported as an unanchorable migration case rather than dropped; a feedback tile with no allowed connections is skipped (and counted) rather than emitted as an unreachable node, while one with a single connection is emitted; a `CUSTOM_SCISSORS` on a participating page fails the build with a coordinate-naming error; a degree-2 chain between two significant nodes collapses to exactly one edge with summed length and ANDed direction; a switch in the chain forks into one edge per branch carrying the correct `configCommands`; a `SWITCH_THREE` yields exactly three routes from its toe and **every** route commands both of its addresses with an explicit straight/throw (no address is ever left unspecified); a `SWITCH_CROSSING` contributes commands in **both** states — unswitched for its N-S/E-W throughs and switched for its N-W/S-E diagonals; an unpromoted s88 tile collapses away; **mutual exclusion**: two edges sharing a switch tile are locked against each other, two edges sharing a CROSSING are locked, two edges crossing an OVERPASS in different groups are **not** locked but in the same group are, a portal pair counts as one location; reduction is deterministic across two runs |
 | `testLockEdgeAnalyzer` (R2) | exposure invariant: asymmetric-but-covered pair → zero suggestions; hand-built unsafe config → exactly the uncovered ordered pairs; portal-pair conflicts; pinned run against `test/autonomy_sanity.json` |
