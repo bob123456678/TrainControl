@@ -312,6 +312,44 @@ place autonomy is defined, operated and watched, and the GraphStream window stop
 | hide inactive points, hide reversing edges/stations, show home locomotives, show lengths/exclusions | **rehome** as diagram overlay toggles |
 | **test connection** (valid/invalid paths from a point, with the reason each is invalid) | **must be rebuilt** — the one genuinely graph-shaped feature |
 
+**Two surfaces, not one** (author, 2026-08-01). Autonomy work happens on the track diagram in
+*both* places it appears, split by what the user is doing:
+
+| Surface | Purpose | Carries |
+|---|---|---|
+| **Viewer** — the normal track diagram tab | day-to-day operation and watching | configuration dropdown (select / save / duplicate), layer-visibility toggles, locomotive placement and homes, point/station labels, start/stop autonomy, connectivity and configuration tests, live monitoring |
+| **Editor** — `LayoutEditor` in Autonomy mode | structural setup, done once and revisited rarely | connections, point properties, portals, per-tile lengths |
+
+Point properties and locomotive placement are reachable from **either** surface — the viewer for
+"put this loco here right now", the editor for "set this point up properly".
+
+**Configurations are tied to diagrams.** A dropdown in the viewer selects, saves and duplicates
+named configurations, which live in the companion file beside the diagram they belong to. Their
+primary use is **placing locomotives in different places** — the same physical layout, different
+starting arrangements. Structural data (connections, lengths, point properties, portals) is shared
+across all configurations; only placements, homes, exclusions, globals and the timetable vary.
+
+**Layer visibility toggles (viewer).** Rather than fixed decoration, the user turns components on
+and off. At minimum: point/station **labels**, **locomotive positions**, **home locations**,
+connection **directions**, per-tile **lengths**, **exclusions**, and the live **monitoring**
+states. These replace the graph's `hideInactivePoints` / `hideReversingEdges` /
+`hideReversingStations` / `showHomeLocomotives` / `showLengthsExclusions` options, which map onto
+the same mechanism.
+
+**Locomotive overview.** The user needs to see at a glance *where locomotives live*. On the
+diagram that is the locomotive layer: each occupied point badged with its locomotive, homes shown
+distinctly from current positions. Pair it with a compact list beside the diagram (locomotive ->
+point, home, excluded-from count) so the answer is available both spatially and as a roster —
+the roster is what survives when locomotives sit on pages the user is not currently looking at.
+
+**Testing (replaces "capture commands").** `GraphEdgeEdit`'s capture-commands feature is **not**
+carried over — derivation makes it unnecessary. Two test affordances replace it:
+- **Test connectivity between two points**: pick A and B, get the path(s) A->B with the switch
+  settings each requires, or the reason none exists. Directional, so A->B and B->A are asked
+  separately.
+- **Test a configuration**: validate the whole thing — every point reachable, no orphaned
+  placements, no contradictions — and report as a list rather than a single pass/fail.
+
 **The editor, concretely.** `LayoutEditor` in Autonomy mode: the diagram rendered as it looks at
 runtime, with an overlay layer and a tool selector.
 
@@ -329,17 +367,28 @@ Standing UI beside the diagram: the configuration selector, the live validity ba
 
 **Path tester, rebuilt on the diagram.** Select a point, and every point reachable from it tints
 green while unreachable ones tint red; hovering an unreachable point gives the reason, reusing
-today's `labelValidPaths` / `labelInvalidPaths` / `labelReason` vocabulary. This is strictly more
-readable than the graph version because the answer lands on the real track geometry.
+today's `labelValidPaths` / `labelInvalidPaths` / `labelReason` vocabulary. Selecting a second
+point narrows it to the A->B case above, showing the actual tile path lit on the diagram. This is
+strictly more readable than the graph version because the answer lands on the real track geometry.
 
-**What happens to the graph window.** It is **not deleted**:
-- A **legacy hand-written `autonomy.json`** has no diagram behind it, so the graph stays its full
-  editor. Removing it would strand every user who has not migrated.
-- For a **diagram-derived configuration** the graph becomes an optional read-only view — it still
-  renders and still monitors, but its structural editing items are disabled, because editing them
-  would immediately be overwritten by the next build.
-- The gating is the same flag that already decides legacy vs diagram mode (presence of the
-  companion file), so there is one rule, not a per-menu-item judgement.
+**The graph window is REMOVED** (author ruling, 2026-08-01). The track diagram view shows the same
+information, so the GraphStream window is not kept as a legacy editor or as a read-only view.
+- Scope of the deletion: `GraphViewer`, `GraphEdgeEdit`, `GraphRightClickPointMenu` (1249 lines),
+  `GraphRightClickGeneralMenu`, `GraphLocAssign`, `GraphLocExclude`, `graph.css`, and the graph
+  plumbing in `TrainControlUI` (`renderAutoLayoutGraph`, the `"GraphCallback"` registration, the
+  graph-window gates).
+- **The GraphStream dependency goes with it.** `org.graphstream` appears in only three files
+  (`GraphViewer`, `GraphEdgeEdit`, `TrainControlUI`), and two jars leave the classpath:
+  `resources/gs-core-2.0.jar` and `resources/gs-ui-swing-2.0.jar`
+  (`nbproject/project.properties:36-37, 47-48`). Smaller distribution, one less library to keep
+  current.
+- **Legacy configurations are deprecated, not stranded.** A hand-written `autonomy.json` still
+  loads and still runs. What it loses is *graphical* editing — and the safety net is the feature
+  that already exists: the autonomy tab's **JSON text editor**, which is how such a file was
+  authored in the first place. So the legacy path is exactly what it always was minus a view,
+  while the diagram path is the supported way forward.
+- Retire `GRAPH_*` preferences and the always-on-top coordination between the graph window and the
+  main window as part of the same removal.
 
 **Consequence for monitoring.** `updateStationLabels` no longer depends on the graph window being
 open — already planned — and now that is not an enhancement but a requirement, since the graph may
