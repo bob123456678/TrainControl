@@ -1435,6 +1435,42 @@ public class testAutonomyFromDiagram
             if (edge.has("lockedges")) legacyLockRefs += edge.getJSONArray("lockedges").length();
         }
 
+        // How much of each graph runs both ways.
+        //
+        // The two defaults pull in opposite directions: switches default to base-to-forks, which is
+        // restrictive, but plain track defaults to both ways, which is permissive.  A hand-built file
+        // contains only the directions somebody chose to create, while the diagram offers every direction
+        // the track physically allows - so a derived graph is MORE permissive about direction of travel
+        // even while being less permissive about switches.
+        //
+        // The gap is the one-way running still to be marked, and it is the safety-relevant half of the
+        // authoring work: it is what stops autonomy sending a train the wrong way up a line the author
+        // never meant to be bidirectional.
+        int legacyBoth = 0;
+
+        for (String pair : legacyPairs)
+        {
+            String[] ends = pair.split("->");
+
+            if (legacyPairs.contains(ends[1] + "->" + ends[0])) legacyBoth++;
+        }
+
+        int derivedBoth = 0;
+
+        for (String pair : derivedPairs)
+        {
+            String[] ends = pair.split("->");
+
+            if (derivedPairs.contains(ends[1] + "->" + ends[0])) derivedBoth++;
+        }
+
+        out.append("\n--- how much runs both ways ---\n");
+        out.append(String.format("%-36s %4d of %4d%n", "hand-built, reversible connections",
+            legacyBoth, legacyPairs.size()));
+        out.append(String.format("%-36s %4d of %4d%n", "derived, reversible connections",
+            derivedBoth, derivedPairs.size()));
+        out.append("(the difference is one-way running still to be marked, not a defect)\n");
+
         out.append("\n--- lock references ---\n");
         out.append("legacy:             ").append(legacyLockRefs).append("\n");
         out.append("derived:            ").append(derivedLockRefs).append("\n");
