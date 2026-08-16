@@ -276,7 +276,11 @@ public class TileAnnotation
                     java.awt.AlphaComposite.SRC_OVER, MUTED_ALPHA));
                 g.setColor(Color.WHITE);
                 g.fillRect(0, 0, width, height);
-                g.setComposite(java.awt.AlphaComposite.getSrcOver());
+
+                // back to fully opaque for whatever is drawn next; the finally block restores the
+                // caller's own composite when this method returns
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 1f));
             }
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
