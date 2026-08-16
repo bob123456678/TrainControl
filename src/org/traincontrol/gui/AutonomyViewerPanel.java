@@ -110,6 +110,11 @@ public class AutonomyViewerPanel extends JPanel
 
         panel.add(buttons);
 
+        // Turning the layer off leaves the wiring in place and simply stops drawing, so switching it back
+        // on shows the current state rather than waiting for the next train to move.
+        layerMonitoring.addActionListener(e ->
+            ui.getDiagramMonitorDriver().setEnabled(layerMonitoring.isSelected()));
+
         panel.add(layerMonitoring);
         panel.add(layerLabels);
         panel.add(layerLocomotives);
@@ -190,6 +195,11 @@ public class AutonomyViewerPanel extends JPanel
         try
         {
             ui.getModel().parseAuto(session.buildConfiguration());
+
+            // parseAuto replaces the Layout wholesale, so both the indexes and the callback have to
+            // follow it - a monitor left pointing at the old one would be watching a railway nobody runs
+            ui.getDiagramMonitorDriver().bind(session);
+            ui.getDiagramMonitorDriver().start();
         }
         catch (RuntimeException e)
         {

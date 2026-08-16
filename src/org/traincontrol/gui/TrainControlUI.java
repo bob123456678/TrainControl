@@ -1438,9 +1438,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void resetAutonomySession()
     {
         autonomySession = null;
+
+        // The driver holds indexes derived from the old session, so leaving it running would light tiles
+        // up from a graph that no longer describes the diagram on screen.
+        if (diagramMonitorDriver != null) diagramMonitorDriver.stop();
     }
 
     private org.traincontrol.base.AutonomySession autonomySession;
+
+    /**
+     * What keeps the diagram showing where the trains are.
+     *
+     * Created on demand and kept for the life of the window: it survives configurations being loaded and
+     * pages being switched, because tearing it down and rebuilding it would leave a window in which
+     * movement went unnoticed.
+     * @return
+     */
+    public DiagramMonitorDriver getDiagramMonitorDriver()
+    {
+        if (diagramMonitorDriver == null)
+        {
+            diagramMonitorDriver = new DiagramMonitorDriver(this, getDiagramTileRegistry());
+        }
+
+        return diagramMonitorDriver;
+    }
+
+    private DiagramMonitorDriver diagramMonitorDriver;
 
     /**
      * The autonomy panel shown beside the track diagram.
@@ -1455,6 +1479,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.LayoutArea.setRowHeaderView(null);
             autonomyViewerPanel = null;
+
+            // stopped rather than merely hidden, so a closed panel is not still polling the layout every
+            // fifth of a second for a picture nobody can see
+            if (diagramMonitorDriver != null) diagramMonitorDriver.stop();
+
             return;
         }
 
@@ -1469,6 +1498,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.LayoutArea.setRowHeaderView(autonomyViewerPanel);
         this.LayoutArea.revalidate();
+
+        getDiagramMonitorDriver().bind(session);
+        getDiagramMonitorDriver().start();
     }
 
     public AutonomyViewerPanel getAutonomyViewerPanel()
