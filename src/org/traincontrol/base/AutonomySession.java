@@ -210,7 +210,11 @@ public class AutonomySession
      */
     public List<AutonomyChecks.Finding> check()
     {
-        return AutonomyChecks.run(graph, reducer);
+        // Guarded because a panel builds its list in its constructor, and nothing yet forces open() to
+        // have been called first - so an unopened session would throw out of a constructor, which is a
+        // much harder failure to read than an empty list.
+        return graph == null || reducer == null
+            ? new ArrayList<AutonomyChecks.Finding>() : AutonomyChecks.run(graph, reducer);
     }
 
     /**
@@ -254,14 +258,21 @@ public class AutonomySession
 
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
     {
+        record(tile, routeId, direction);
+        touched();
+    }
+
+    /**
+     * Records a direction without re-deriving, for callers that are about to set several.
+     */
+    private void record(TileKey tile, RouteId routeId, Direction direction)
+    {
         graph.setDirection(tile, routeId, direction);
 
         // stored only when it differs from what the graph would default to, so a default never looks
         // like a decision somebody made
         store.setTileDirection(tile, routeId,
             direction == graph.defaultDirection(tile, routeId) ? null : direction);
-
-        touched();
     }
 
     /**
@@ -276,13 +287,18 @@ public class AutonomySession
      */
     public void setDirection(Set<TileKey> tiles, Direction direction)
     {
+        // Recorded first and re-derived once at the end.  Going through the single-tile setter would
+        // rebuild the entire graph per route - forty tiles meaning forty full rebuilds on the event
+        // thread, for the gesture that exists precisely because it is the common one.
         for (TileKey tile : tiles)
         {
             for (RouteId routeId : graph.getRoutes(tile).keySet())
             {
-                setDirection(tile, routeId, direction);
+                record(tile, routeId, direction);
             }
         }
+
+        touched();
     }
 
     public void setPointName(TileKey tile, String name)

@@ -185,6 +185,8 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        if (ui.getModel() == null) return;
+
         try
         {
             ui.getModel().parseAuto(session.buildConfiguration());

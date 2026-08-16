@@ -1,12 +1,10 @@
 package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +20,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import javax.swing.SwingUtilities;
 import org.traincontrol.base.AutonomyChecks;
 import org.traincontrol.base.AutonomyCompanionStore;
 import org.traincontrol.base.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.base.TileGraph;
 import org.traincontrol.base.TileGraph.Direction;
 import org.traincontrol.base.TileGraph.RouteId;
 import org.traincontrol.base.TileGraph.TileKey;
@@ -370,9 +366,13 @@ public class AutonomyEditorPanel extends JPanel
         Set<TileKey> targets = selection.isEmpty()
             ? new LinkedHashSet<>(java.util.Arrays.asList(tile)) : new LinkedHashSet<>(selection);
 
+        // read from a tile that is actually going to change: with a selection the clicked tile is not
+        // necessarily among them, and prefilling from it would show a number the dialog will not touch
+        TileKey sample = targets.iterator().next();
+
         String entered = JOptionPane.showInputDialog(this,
             I18n.t("autosetup.ui.promptTileLength"),
-            String.valueOf(session.getStore().getTileLength(tile)));
+            String.valueOf(session.getStore().getTileLength(sample)));
 
         if (entered == null) return;
 
@@ -460,7 +460,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!selection.isEmpty())
         {
-            hint.setText(selection.size() + " selected");
+            hint.setText(I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
         }
 
         if (onChanged != null) onChanged.run();
