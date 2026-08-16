@@ -1534,11 +1534,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.jScrollPane2.setBorder(javax.swing.BorderFactory.createEmptyBorder());
         this.jScrollPane2.getViewport().setBackground(java.awt.Color.WHITE);
 
-        // Never sideways.  The panel is pinned narrow and the one thing genuinely wider than it - the
-        // findings list - scrolls inside its own pane, so the whole tab sliding left and right was
-        // only ever a long sentence dragging every control with it.
+        // The tab itself never scrolls, in either direction.  With both switched off the viewport
+        // hands the panel exactly the space there is, so the layout has to fit rather than push - and
+        // the one thing that genuinely overflows, the findings list, scrolls inside its own box.
         this.jScrollPane2.setHorizontalScrollBarPolicy(
             javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        this.jScrollPane2.setVerticalScrollBarPolicy(
+            javax.swing.JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 
         // the JSON-era controls; everything they did has a home on the panel now
         this.validateButton.setVisible(false);

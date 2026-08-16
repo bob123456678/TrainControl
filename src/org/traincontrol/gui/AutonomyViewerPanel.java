@@ -90,34 +90,34 @@ public class AutonomyViewerPanel extends JPanel
         add(buildSteps(), BorderLayout.NORTH);
         add(buildFindings(), BorderLayout.CENTER);
 
-        // Pinned, so the panel never asks its scroll pane for more width than the tab has.  Without
-        // this a single long finding widened the whole panel and the entire tab scrolled sideways.
-        setPreferredSize(new Dimension(PANEL_WIDTH, 620));
-        setMaximumSize(new Dimension(PANEL_WIDTH, Integer.MAX_VALUE));
+        // No preferred size at all: the scroll pane it lives in has scrolling switched off in both
+        // directions, so the viewport hands this panel exactly the space the tab has and the findings
+        // list - the one thing that can overflow - scrolls inside its own box instead.
+        setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
 
         refresh();
     }
 
-    /**
-     * How wide the panel asks to be.  Everything inside is bounded by this; only the findings list is
-     * allowed to overflow it, and it does so inside its own scroll pane.
-     */
-    static final int PANEL_WIDTH = 420;
-
-    // Taken from the rest of the window rather than chosen here: section headings are plain 14 in navy
-    // (layoutListLabel, sizeLabel, "Locomotive Key Mapping"), buttons are bold 12 (editLayoutButton,
-    // validateButton), ordinary labels are plain 14.
+    // Copied from the Autonomy Settings tab rather than invented here, so the two read as one design:
+    //   group heading  jLabel51 "Train Behavior"        Segoe UI Semibold 13, navy, above a boxed panel
+    //   field label    jLabel46 "Minimum Action Delay"  Segoe UI plain 14, navy
+    //   control        minDelay, atomicRoutes           Segoe UI plain 14, default colour
+    //   button         validateButton, editLayoutButton Segoe UI bold 12
+    //   box            jPanel3, jPanel4                 white, 1px line border in (204,204,204)
     static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+
+    static final java.awt.Font FONT_GROUP = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
 
     static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
 
     /**
-     * The findings list only.  It is dense tabular reading rather than a label, and at 14 a real
-     * layout's list stops fitting on a screen.
+     * The findings and roster lists only.  They are dense reading rather than labels, and at 14 a real
+     * layout's list stops fitting in the space there is.
      */
     static final java.awt.Font FONT_LIST = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
 
     static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
+    static final java.awt.Color BOX_BORDER = new java.awt.Color(204, 204, 204);
 
     static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
     static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
@@ -127,7 +127,7 @@ public class AutonomyViewerPanel extends JPanel
      * Applies the application's control font to a component, and returns it.
      *
      * @param component
-     * @param bold true for a button, false for a label
+     * @param bold true for a button, false for a label or control
      */
     static <T extends javax.swing.JComponent> T styled(T component, boolean bold)
     {
@@ -136,56 +136,113 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * A section heading in the window's own style: plain 14, navy, as used everywhere else.
+     * A group heading, sitting above a boxed panel - the "Train Behavior" style.
+     */
+    private JLabel group(String text)
+    {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT_GROUP);
+        label.setForeground(HEADING_COLOUR);
+        label.setAlignmentX(LEFT_ALIGNMENT);
+        return label;
+    }
+
+    /**
+     * A field label inside a box - the "Minimum Action Delay (s)" style.
      */
     private JLabel step(String text)
     {
         JLabel label = new JLabel(text);
         label.setFont(FONT);
         label.setForeground(HEADING_COLOUR);
-        label.setBorder(BorderFactory.createEmptyBorder(8, 0, 2, 0));
         return label;
     }
 
+    /**
+     * A white box with the window's own hairline border, as the settings tab uses.
+     */
+    private JPanel box()
+    {
+        JPanel panel = new JPanel();
+        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BOX_BORDER),
+            BorderFactory.createEmptyBorder(8, 10, 10, 10)));
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        return panel;
+    }
+
+    /**
+     * A row of controls that sits flush left under its field label.
+     */
     private JPanel row()
     {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         panel.setOpaque(false);
         return panel;
     }
 
     /**
-     * The three steps, in order, each doing one thing.
+     * All the step buttons share a width, so the left edge of the box reads as one column rather than
+     * as three buttons that happen to start in the same place and end wherever their text did.
+     */
+    private JButton sized(JButton button)
+    {
+        styled(button, true);
+        button.setPreferredSize(new Dimension(BUTTON_WIDTH, 26));
+        return button;
+    }
+
+    static final int BUTTON_WIDTH = 170;
+
+    /**
+     * The workflow: choose, scope, enable, run - each step a field label with its controls beneath it,
+     * laid out on one grid so every label and every control starts on the same left edge.
      *
-     * Laid out as a sequence rather than as a panel of controls because the order is not obvious from
-     * the controls themselves - the first version had no visible path at all from "I have a
-     * configuration" to "it is running", and every button looked equally like the next thing to press.
+     * Built as a boxed group under a heading, which is how the Autonomy Settings tab next door presents
+     * exactly this kind of content.
      */
     private JPanel buildSteps()
     {
-        JPanel panel = new JPanel();
-        panel.setOpaque(false);
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+        JPanel outer = new JPanel();
+        outer.setOpaque(false);
+        outer.setLayout(new javax.swing.BoxLayout(outer, javax.swing.BoxLayout.Y_AXIS));
+
+        outer.add(group(I18n.t("autosetup.ui.headingConfiguration")));
+        outer.add(javax.swing.Box.createVerticalStrut(3));
+
+        JPanel panel = box();
+        panel.setLayout(new java.awt.GridBagLayout());
+
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = java.awt.GridBagConstraints.WEST;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
 
         // --- step 1: which configuration ---
-        stepChoose.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(stepChoose);
+        add(panel, gbc, stepChoose, 0);
 
         initialize.addActionListener(e -> initialize());
-        panel.add(leftAligned(styled(initialize, true)));
+
+        JPanel initRow = row();
+        initRow.add(sized(initialize));
+        add(panel, gbc, initRow, 0);
 
         JPanel choose = row();
 
+        configurations.setFont(FONT);
         configurations.setMaximumRowCount(12);
-        configurations.setPreferredSize(new Dimension(190, 24));
-        choose.add(styled(configurations, false));
+        configurations.setPreferredSize(new Dimension(BUTTON_WIDTH, 26));
+        choose.add(configurations);
 
         // Everything that manages configurations lives behind one button and the combo's own context
         // menu, rather than as five peers competing with the step that matters.  They are all rare:
         // a configuration is made once and chosen thereafter.
         final JButton manage = new JButton(I18n.t("autosetup.ui.btnManage"));
         manage.addActionListener(e -> manageMenu().show(manage, 0, manage.getHeight()));
-        choose.add(styled(manage, false));
+        choose.add(styled(manage, true));
 
         configurations.addMouseListener(new java.awt.event.MouseAdapter()
         {
@@ -199,29 +256,25 @@ public class AutonomyViewerPanel extends JPanel
             }
         });
 
-        panel.add(leftAligned(choose));
+        add(panel, gbc, choose, 0);
 
         // --- which pages count ---
         // On the surface rather than on the Manage menu: it decides which track is considered at all,
         // so it is the first thing to reach for when the list below is full of findings about a page
         // that is not part of the railway being automated.
-        stepPages.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(stepPages);
+        add(panel, gbc, stepPages, 10);
 
         JPanel pageRow = row();
 
         JButton pages = new JButton(I18n.t("autosetup.ui.btnExcludePage"));
         pages.addActionListener(e -> choosePages());
-        pageRow.add(styled(pages, true));
-
-        pagesSummary.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
+        pageRow.add(sized(pages));
         pageRow.add(styled(pagesSummary, false));
 
-        panel.add(leftAligned(pageRow));
+        add(panel, gbc, pageRow, 0);
 
         // --- step 2: turn it on ---
-        stepEnable.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(stepEnable);
+        add(panel, gbc, stepEnable, 10);
 
         enable.setToolTipText(I18n.t("autosetup.ui.tooltipLoadConfiguration"));
         enable.addActionListener(e ->
@@ -231,40 +284,45 @@ public class AutonomyViewerPanel extends JPanel
             if (selected != null) load(String.valueOf(selected), true);
         });
 
-        panel.add(leftAligned(styled(enable, true)));
+        JPanel enableRow = row();
+        enableRow.add(sized(enable));
+        enableRow.add(styled(status, false));
 
-        status.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
-        panel.add(leftAligned(styled(status, false)));
+        add(panel, gbc, enableRow, 0);
 
         // --- step 3: run ---
-        stepRun.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(stepRun);
+        add(panel, gbc, stepRun, 10);
 
         JPanel run = row();
 
         // Sends the user where placing actually happens.  That tab does not exist until a configuration
         // has loaded, which is precisely why the feature looked missing.
         placeLocomotives.addActionListener(e -> ui.showAutonomyRunTab());
-        run.add(styled(placeLocomotives, false));
+        run.add(sized(placeLocomotives));
 
         if (ui.getModel() != null && ui.getModel().isDebug())
         {
             JButton inspect = new JButton(I18n.t("autosetup.ui.btnInspectGraph"));
             inspect.addActionListener(e -> inspect());
-            run.add(styled(inspect, false));
+            run.add(styled(inspect, true));
         }
 
-        panel.add(leftAligned(run));
+        add(panel, gbc, run, 0);
 
-        return panel;
+        outer.add(panel);
+
+        return outer;
     }
 
-    private JPanel leftAligned(java.awt.Component component)
+    /**
+     * Adds one full-width row to a GridBagLayout, with a gap above it.
+     */
+    private void add(JPanel panel, java.awt.GridBagConstraints gbc, java.awt.Component component,
+        int gapAbove)
     {
-        JPanel holder = row();
-        holder.setAlignmentX(LEFT_ALIGNMENT);
-        holder.add(component);
-        return holder;
+        gbc.insets = new java.awt.Insets(gapAbove, 0, 2, 0);
+        panel.add(component, gbc);
+        gbc.gridy++;
     }
 
     /**
@@ -303,25 +361,29 @@ public class AutonomyViewerPanel extends JPanel
 
     /**
      * The list of things to look at, errors first, each one clickable.
+     *
+     * A boxed group like the one above it, and the only part of this tab that is allowed to overflow:
+     * the list scrolls inside its own box, so the tab itself never does.
      */
     private JPanel buildFindings()
     {
-        JPanel panel = new JPanel(new BorderLayout(0, 2));
-        panel.setOpaque(false);
+        JPanel outer = new JPanel(new BorderLayout(0, 3));
+        outer.setOpaque(false);
 
         JPanel heading = new JPanel();
         heading.setOpaque(false);
         heading.setLayout(new javax.swing.BoxLayout(heading, javax.swing.BoxLayout.Y_AXIS));
-
-        JLabel title = step(I18n.t("autosetup.ui.headingFindings"));
-        title.setAlignmentX(LEFT_ALIGNMENT);
-        heading.add(title);
+        heading.add(group(I18n.t("autosetup.ui.headingFindings")));
 
         hint.setFont(FONT_LIST);
+        hint.setForeground(SUBHEADING_COLOUR);
         hint.setAlignmentX(LEFT_ALIGNMENT);
         heading.add(hint);
 
-        panel.add(heading, BorderLayout.NORTH);
+        outer.add(heading, BorderLayout.NORTH);
+
+        JPanel panel = box();
+        panel.setLayout(new BorderLayout(0, 6));
 
         findings.setCellRenderer(new FindingRenderer());
         findings.setBackground(java.awt.Color.WHITE);
@@ -343,22 +405,20 @@ public class AutonomyViewerPanel extends JPanel
             }
         });
 
-        // The findings are the only thing here that is genuinely wider than the panel, so this is the
-        // only thing that scrolls sideways.  Everything else is pinned narrow (see setPanelWidth), so
-        // the whole tab no longer slides left and right because one sentence was long.
+        // The findings are the only thing here genuinely wider than the tab, so this is the only thing
+        // that scrolls sideways.  Everything else is bounded, so the tab itself never scrolls at all.
         JScrollPane scroll = new JScrollPane(findings,
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(java.awt.Color.WHITE);
-        scroll.setPreferredSize(new Dimension(PANEL_WIDTH, 260));
 
         panel.add(scroll, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new BorderLayout(0, 2));
         bottom.setOpaque(false);
 
-        // A navy label rather than a titled border: there is not one titled border anywhere else in
-        // this window, and a box around a list is a second frame inside a frame.
+        // A field label rather than a titled border: the settings tab labels its groups this way, and a
+        // box around a list inside a boxed group is a frame inside a frame.
         bottom.add(step(I18n.t("autosetup.ui.labelLocomotiveRoster")), BorderLayout.NORTH);
 
         JList<String> locomotives = new JList<>(roster);
@@ -366,15 +426,17 @@ public class AutonomyViewerPanel extends JPanel
 
         JScrollPane rosterScroll = new JScrollPane(locomotives,
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        rosterScroll.setBorder(BorderFactory.createEmptyBorder());
-        rosterScroll.setPreferredSize(new Dimension(PANEL_WIDTH, 90));
+        rosterScroll.setBorder(BorderFactory.createLineBorder(BOX_BORDER));
+        rosterScroll.setPreferredSize(new Dimension(10, 80));
         rosterScroll.getViewport().setBackground(java.awt.Color.WHITE);
 
         bottom.add(rosterScroll, BorderLayout.CENTER);
 
         panel.add(bottom, BorderLayout.SOUTH);
 
-        return panel;
+        outer.add(panel, BorderLayout.CENTER);
+
+        return outer;
     }
 
     /**
