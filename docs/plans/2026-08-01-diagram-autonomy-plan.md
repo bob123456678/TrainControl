@@ -567,6 +567,25 @@ modes are discovered. Starting set:
 - orphaned placements, homes and exclusions in the active configuration;
 - unpaired, half-paired or excluded-page-targeting portals.
 
+## BEFORE R1: what R0 left behind
+
+**1. Message bundle keys do not exist yet.** The engine names keys - `errorScissorsNotSupported`,
+`warnTurntableNotRoutable`, `errorTileHasNoAddress`, `errorLinkNotMutuallyPaired` and the rest - but
+carries them as plain constants, so nothing looks them up and nothing fails today. `I18n.t()` is
+`bundle.getString(key)` with **no fallback**, so the first UI that renders one throws
+`MissingResourceException` at runtime rather than showing a blank. Every key must exist in all 8
+bundles before any of it is displayed. *Open question for the author: put English text in all eight
+pending translation (a German user reads English, but nothing crashes), or only in
+`messages.properties`?*
+
+**2. `AutonomyCompanionStore` is not written.** The reducer takes what it needs through an `Authored`
+interface, and the harness supplies it directly, which is why R0 could finish without persistence.
+The UI has nowhere to save to until this exists, so it is the next piece rather than an R1 one.
+
+**3. A train icon on the diagram** is now possible and is wanted - author, 2026-08-16 - but comes
+**last**, after the state overlay works. The overlay answers which track is claimed and reached; an
+icon answers which locomotive is where, and is decoration until the first question is right.
+
 ## GATE CLEARED, 2026-08-16
 
 Run against `cs2_sample_layout` (`testAutonomyFromDiagram`): **every hand-built connection is
