@@ -413,22 +413,8 @@ public class AutonomyEditorPanel extends JPanel
             menu.addSeparator();
         }
 
-        if (component != null && component.isFeedback())
-        {
-            javax.swing.JMenuItem name = new javax.swing.JMenuItem(
-                I18n.t("autosetup.ui.menuSetName"));
-            name.addActionListener(e -> { promptName(tile); refresh(); });
-            menu.add(AutonomyViewerPanel.styled(name, false));
-
-            javax.swing.JCheckBoxMenuItem station = new javax.swing.JCheckBoxMenuItem(
-                I18n.t("autosetup.ui.menuToggleStation"), session.getStore().isStation(tile));
-            station.addActionListener(e ->
-            {
-                session.setStation(tile, station.isSelected());
-                refresh();
-            });
-            menu.add(AutonomyViewerPanel.styled(station, false));
-        }
+        // Nothing here for a sensor: naming and every designation live on the properties dialog above,
+        // and a second, shorter way to set two of them is how the full breakdown went unnoticed.
 
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
@@ -622,13 +608,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        promptName(tile);
-
-        int station = JOptionPane.showConfirmDialog(this,
-            I18n.t("autosetup.ui.menuDesignateStation"), I18n.t("autosetup.ui.title"),
-            JOptionPane.YES_NO_OPTION);
-
-        session.setStation(tile, station == JOptionPane.YES_OPTION);
+        // Straight to the full dialog.  A name prompt followed by a yes/no could not express the five
+        // kinds at all, and the dialog that can was reachable only by right-click - which is why the
+        // breakdown looked missing.
+        pointProperties(tile);
     }
 
     /**
@@ -655,6 +638,13 @@ public class AutonomyEditorPanel extends JPanel
         // Phrased as the five things a user thinks in: a point, a station, and the two questions that
         // qualify a station.  Underneath they are three independent flags, which is why they are
         // checkboxes rather than a list - a parking terminus is both, not a fifth kind.
+        javax.swing.JTextField name = new javax.swing.JTextField(
+            session.getStore().getPointName(tile) == null
+                ? "" : session.getStore().getPointName(tile));
+
+        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t("autosetup.ui.menuSetName")), true));
+        panel.add(AutonomyViewerPanel.styled(name, false));
+
         panel.add(AutonomyViewerPanel.styled(
             new JLabel(I18n.t("autosetup.ui.labelStationKind")), true));
 
@@ -704,15 +694,18 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JList<String> home = locomotiveList(panel, "autosetup.ui.labelHomeFor",
             strings(tile, "home"));
 
-        String name = session.getStore().getPointName(tile);
+        String existing = session.getStore().getPointName(tile);
 
         if (JOptionPane.showConfirmDialog(this, new JScrollPane(panel),
             I18n.f("autosetup.ui.titlePointProperties",
-                name == null || name.trim().isEmpty() ? tile.toString() : name),
+                existing == null || existing.trim().isEmpty() ? tile.toString() : existing),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
             return;
         }
+
+        // quotes are stripped by Point itself, so a name carrying one would change under the user
+        session.setPointName(tile, name.getText().trim().replace("\"", ""));
 
         session.setStation(tile, station.isSelected());
 
@@ -1112,8 +1105,14 @@ public class AutonomyEditorPanel extends JPanel
 
         if (showDirections.isSelected() && session.getGraph() != null && !ignored)
         {
+            Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+
+            // more than one route means a switch, a crossing or a double curve - somewhere a train has
+            // a choice, and somewhere the user needs to see every option rather than only the closed
+            boolean branching = routes.size() > 1;
+
             for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry
-                : session.getRoutes(tile).entrySet())
+                : routes.entrySet())
             {
                 org.traincontrol.base.TilePorts.Route route = entry.getValue();
 
@@ -1128,11 +1127,17 @@ public class AutonomyEditorPanel extends JPanel
                         ? Direction.TOWARD_A : Direction.TOWARD_B;
                 }
 
-                // Only what RESTRICTS a train is drawn.  Track that runs both ways is the overwhelming
+                // Only what RESTRICTS a train is drawn on plain track.  Both-ways is the overwhelming
                 // majority of a layout and is also the default, so drawing it put an arrow on every
-                // square and left the handful of real decisions with nothing to stand out against.
-                // Bidirectional track is now simply unmarked - the same information, read by absence.
-                if (direction == Direction.BOTH && !showAllDirections.isSelected()) continue;
+                // square and left the real decisions with nothing to stand out against.
+                //
+                // A switch is the exception, and always shows every branch: a switch is WHERE the
+                // decisions are, and a branch drawn only when restricted leaves the user unable to see
+                // that the other branches exist, let alone which of them they have already dealt with.
+                if (direction == Direction.BOTH && !branching && !showAllDirections.isSelected())
+                {
+                    continue;
+                }
 
                 marks.add(new org.traincontrol.base.TileAnnotation.Mark(
                     route.getA(), route.getB(), direction));
@@ -1162,7 +1167,7 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
-            stationFor(tile), ignored, isMuted(tile));
+            badgeFor(tile), ignored, isMuted(tile));
     }
 
     /**
@@ -1176,14 +1181,20 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What this sensor has been designated as, or null when it is not a station.
      */
-    private org.traincontrol.base.TileAnnotation.Station stationFor(TileKey tile)
+    private org.traincontrol.base.TileAnnotation.Badge badgeFor(TileKey tile)
     {
-        if (!session.getStore().isStation(tile)) return null;
+        // Every sensor that made it into the graph gets a badge, not only the stations.  A plain point
+        // is a thing the user has decided NOT to make a station, and it should look like a decision
+        // rather than like an ordinary tile nobody has reached yet.
+        if (session.getReducer() == null
+            || !session.getReducer().getPoints().containsKey(tile)) return null;
 
         String name = session.getStore().getPointName(tile);
 
-        return new org.traincontrol.base.TileAnnotation.Station(
+        return new org.traincontrol.base.TileAnnotation.Badge(
+            session.getStore().isStation(tile),
             flag(tile, "terminus"),
+            flag(tile, "reversing"),
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
             name != null && !name.trim().isEmpty());
     }

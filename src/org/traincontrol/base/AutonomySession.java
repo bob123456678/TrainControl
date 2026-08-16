@@ -634,41 +634,29 @@ public class AutonomySession
     /**
      * What the setup says about one square, for drawing on the ordinary track diagram.
      *
-     * Only what a viewer needs: which sensors are stations, and which track has been restricted.  No
-     * selection, no lengths, no greying - those belong to editing, and this is drawn on the diagram
-     * people operate from.
+     * Points only - no direction arrows at all.  The diagram tab is where trains are WATCHED, and the
+     * question there is where they are and where they are heading next, which the running overlay
+     * answers.  Directions belong to the editor, where they are being decided; drawn here they were
+     * just a page of green arrows over a railway nobody was configuring.
      *
      * @param tile
      * @return the annotation, or null when this square has nothing to say
      */
     public TileAnnotation staticAnnotationFor(TileKey tile)
     {
-        if (graph == null) return null;
+        if (graph == null || reducer == null) return null;
 
-        List<TileAnnotation.Mark> marks = new ArrayList<>();
-
-        for (Map.Entry<RouteId, Route> entry : graph.getRoutes(tile).entrySet())
-        {
-            Direction direction = graph.getDirection(tile, entry.getKey());
-
-            // restrictions only: bidirectional track is the default and would mark the whole layout
-            if (direction == Direction.BOTH) continue;
-
-            marks.add(new TileAnnotation.Mark(
-                entry.getValue().getA(), entry.getValue().getB(), direction));
-        }
-
-        boolean station = store.isStation(tile);
-
-        if (marks.isEmpty() && !station) return null;
+        if (!reducer.getPoints().containsKey(tile)) return null;
 
         String name = store.getPointName(tile);
 
-        return new TileAnnotation(marks, -1, false,
-            station ? new TileAnnotation.Station(
+        return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false,
+            new TileAnnotation.Badge(
+                store.isStation(tile),
                 Boolean.TRUE.equals(getPointProperty(tile, "terminus")),
+                Boolean.TRUE.equals(getPointProperty(tile, "reversing")),
                 Boolean.FALSE.equals(getPointProperty(tile, "active")),
-                name != null && !name.trim().isEmpty()) : null,
+                name != null && !name.trim().isEmpty()),
             false, false);
     }
 

@@ -125,42 +125,59 @@ public class TileAnnotation
     private static final Color DIM_COLOUR = Color.WHITE;
 
     /**
-     * A designated station.  Drawn as its own mark rather than left to the sensor icon, because a
-     * sensor and a station look identical on the diagram and mean very different things: a train can be
-     * SENT to a station, and only passes through everything else.
+     * The graph window's own colours, so somebody who has read one view can read the other.
+     * TrainControlUI paints an active point rgb(0,0,200) and an inactive one rgb(255,102,0).
      */
-    private static final Color STATION = new Color(0, 90, 180);
+    private static final Color POINT_ACTIVE = new Color(0, 0, 200);
+    private static final Color POINT_INACTIVE = new Color(255, 102, 0);
 
     /**
-     * A station autonomy will not choose on its own - a parking berth.  A different colour rather than
-     * a different shape, because it is still a station in every other respect.
+     * The home ring, matching TrainControlUI.COLOR_AT_HOME.
      */
-    private static final Color PARKING = new Color(120, 85, 160);
+    private static final Color AT_HOME = new Color(0, 200, 210);
 
     /**
-     * What a sensor has been designated as.
+     * What a sensor has been designated as, drawn as a badge on its tile.
      *
-     * The five the user thinks in terms of are two independent questions over a station: whether a
-     * train arriving must leave the way it came (terminus), and whether autonomy picks it during
-     * normal running (parking).  A sensor that is not a station at all is simply a point trains run
-     * through, and carries no badge.
+     * Shapes and colours follow the graph window exactly, because that is the vocabulary the user
+     * already reads: a station is a circle, a terminus a square, a reversing point a cross, and a plain
+     * point a small diamond; blue means autonomy uses it, orange means it does not.
+     *
+     * The five kinds the user thinks in are two questions over a station - must a train leave the way
+     * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are
+     * independent flags rather than one enum.
      */
-    public static class Station
+    public static class Badge
     {
+        private final boolean station;
         private final boolean terminus;
+        private final boolean reversing;
         private final boolean parking;
         private final boolean named;
 
-        public Station(boolean terminus, boolean parking, boolean named)
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named)
         {
+            this.station = station;
             this.terminus = terminus;
+            this.reversing = reversing;
             this.parking = parking;
             this.named = named;
+        }
+
+        public boolean isStation()
+        {
+            return station;
         }
 
         public boolean isTerminus()
         {
             return terminus;
+        }
+
+        public boolean isReversing()
+        {
+            return reversing;
         }
 
         public boolean isParking()
@@ -177,23 +194,26 @@ public class TileAnnotation
         public boolean equals(Object o)
         {
             if (this == o) return true;
-            if (!(o instanceof Station)) return false;
+            if (!(o instanceof Badge)) return false;
 
-            Station other = (Station) o;
+            Badge other = (Badge) o;
 
-            return terminus == other.terminus && parking == other.parking && named == other.named;
+            return station == other.station && terminus == other.terminus
+                && reversing == other.reversing && parking == other.parking && named == other.named;
         }
 
         @Override
         public int hashCode()
         {
-            return (terminus ? 1 : 0) + (parking ? 2 : 0) + (named ? 4 : 0);
+            return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
+                + (parking ? 8 : 0) + (named ? 16 : 0);
         }
 
         @Override
         public String toString()
         {
-            return (parking ? "parking" : "station") + (terminus ? " terminus" : "")
+            return (station ? (parking ? "parking" : "station") : "point")
+                + (terminus ? " terminus" : "") + (reversing ? " reversing" : "")
                 + (named ? "" : " (unnamed)");
         }
     }
@@ -216,7 +236,7 @@ public class TileAnnotation
     private final List<Mark> marks;
     private final int length;
     private final boolean selected;
-    private final Station station;
+    private final Badge badge;
     private final boolean ignored;
     private final boolean muted;
 
@@ -234,17 +254,17 @@ public class TileAnnotation
      * @param marks the routes to draw, or empty to draw none
      * @param length the tile's length, or a negative number not to show one
      * @param selected whether this tile is part of a bulk selection
-     * @param station what this sensor is designated as, or null when it is not a station
+     * @param badge what this sensor is, or null when the square is not a point at all
      * @param ignored whether autonomy takes no notice of this square at all
      * @param muted whether to push the tile art back without saying it cannot be configured
      */
-    public TileAnnotation(List<Mark> marks, int length, boolean selected, Station station,
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored, boolean muted)
     {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
-        this.station = station;
+        this.badge = badge;
         this.ignored = ignored;
         this.muted = muted;
     }
@@ -259,9 +279,9 @@ public class TileAnnotation
         return muted;
     }
 
-    public Station getStation()
+    public Badge getBadge()
     {
-        return station;
+        return badge;
     }
 
     public List<Mark> getMarks()
@@ -285,7 +305,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && station == null && !ignored && !muted;
+        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !muted;
     }
 
     /**
@@ -359,7 +379,7 @@ public class TileAnnotation
                 paintMark(g, width, height, marks.get(i), spread);
             }
 
-            if (station != null) paintStation(g, width, height);
+            if (badge != null) paintBadge(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
@@ -386,6 +406,14 @@ public class TileAnnotation
      * Through the middle rather than straight across, so a curve is drawn as a curve: a straight line
      * between the two sides of a curve tile would cut the corner and sit off the track it describes.
      */
+    /**
+     * Draws one route as an arrow lying along the track, rather than as a line spanning the tile.
+     *
+     * The lines were the problem.  The tile art already shows where the track goes, so drawing it
+     * again added a second set of lines that met the neighbouring tile's lines at every boundary - and
+     * with a head near each edge, a page of them read as scattered ticks rather than as flow.  What is
+     * left is the part that carries information: a head, on the track, pointing the way a train may go.
+     */
     private void paintMark(Graphics2D g, int width, int height, Mark mark, int spread)
     {
         int[] from = midpoint(mark.getA(), width, height);
@@ -393,36 +421,29 @@ public class TileAnnotation
 
         if (from == null || to == null) return;
 
-        // The waypoint the route bends through.  Nudged perpendicular to the run when the tile carries
-        // more than one route, which is what keeps a crossing legible.
+        // Where the arrow sits.  Nudged perpendicular to its own run when a tile carries more than one
+        // route, so a switch shows one arrow per branch instead of three on top of each other.
         int cx = width / 2;
         int cy = height / 2;
 
-        if (spread != 0)
-        {
-            double dx = to[0] - from[0];
-            double dy = to[1] - from[1];
-            double len = Math.sqrt(dx * dx + dy * dy);
+        double dx = to[0] - from[0];
+        double dy = to[1] - from[1];
+        double len = Math.sqrt(dx * dx + dy * dy);
 
-            if (len >= 1)
-            {
-                cx += (int) Math.round(-dy / len * spread);
-                cy += (int) Math.round(dx / len * spread);
-            }
+        if (len >= 1 && spread != 0)
+        {
+            cx += (int) Math.round(-dy / len * spread);
+            cy += (int) Math.round(dx / len * spread);
         }
 
         if (mark.getDirection() == Direction.NONE)
         {
-            // A closed route is drawn as the two stubs it has become, with a bar across the middle.  The
-            // stubs are what say WHICH route is closed on a tile that has more than one.
-            g.setStroke(new BasicStroke(LINE_WIDTH));
+            // A bar across the run: the one mark that means a train cannot get through at all.
+            int bar = Math.max(3, Math.min(width, height) / 5);
+
             g.setColor(CLOSED);
-            g.drawLine(from[0], from[1], cx, cy);
-            g.drawLine(to[0], to[1], cx, cy);
-
-            int bar = Math.max(3, Math.min(width, height) / 6);
-
-            g.setStroke(new BasicStroke(CHEVRON_WIDTH));
+            g.setStroke(new BasicStroke(CHEVRON_WIDTH + 1f, BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND));
             g.drawLine(cx - bar, cy - bar, cx + bar, cy + bar);
             g.drawLine(cx - bar, cy + bar, cx + bar, cy - bar);
 
@@ -431,50 +452,33 @@ public class TileAnnotation
 
         boolean bidirectional = mark.getDirection() == Direction.BOTH;
 
-        g.setStroke(new BasicStroke(LINE_WIDTH));
         g.setColor(bidirectional ? BOTH_WAYS : ONE_WAY);
-        g.drawLine(from[0], from[1], cx, cy);
-        g.drawLine(cx, cy, to[0], to[1]);
 
         if (bidirectional)
         {
-            // one head at each end of the run, pointing out
-            head(g, cx, cy, from[0], from[1], width, height);
-            head(g, cx, cy, to[0], to[1], width, height);
+            // back to back, so the shape itself says "either way" without a line between them
+            head(g, cx, cy, from, width, height, 0.55);
+            head(g, cx, cy, to, width, height, 0.55);
         }
         else
         {
-            // TOWARD_A means trains may travel toward side A, so the head points at A.  Drawn ON the
-            // bend rather than out near the edge: an arrowhead sitting at the tile boundary reads as a
-            // mark between two squares rather than as the flow through this one, which is what made a
-            // page of them look like scattered ticks instead of a direction of travel.
-            int[] target = mark.getDirection() == Direction.TOWARD_A ? from : to;
-
-            head(g, from[0], from[1], to[0], to[1], width, height,
-                cx + (target[0] - cx) / 4, cy + (target[1] - cy) / 4, target);
+            head(g, cx, cy, mark.getDirection() == Direction.TOWARD_A ? from : to, width, height, 0);
         }
     }
 
     /**
-     * A solid arrowhead partway along the line from the centre toward a side, pointing that way.
+     * A solid arrowhead centred on a point, aimed at a side of the tile.
+     *
+     * @param cx where the arrow sits
+     * @param cy
+     * @param target the side midpoint it points at
+     * @param offset how far toward the target to push it, as a fraction of the way there
      */
-    private void head(Graphics2D g, int cx, int cy, int tx, int ty, int width, int height)
+    private void head(Graphics2D g, int cx, int cy, int[] target, int width, int height,
+        double offset)
     {
-        head(g, cx, cy, tx, ty, width, height,
-            (int) Math.round(cx + (tx - cx) * 0.6), (int) Math.round(cy + (ty - cy) * 0.6),
-            new int[] {tx, ty});
-    }
-
-    /**
-     * @param px where the head sits
-     * @param py
-     * @param target the point it aims at
-     */
-    private void head(Graphics2D g, int fx, int fy, int lx, int ly, int width, int height,
-        int px, int py, int[] target)
-    {
-        double dx = target[0] - px;
-        double dy = target[1] - py;
+        double dx = target[0] - cx;
+        double dy = target[1] - cy;
         double len = Math.sqrt(dx * dx + dy * dy);
 
         if (len < 1) return;
@@ -482,98 +486,113 @@ public class TileAnnotation
         dx /= len;
         dy /= len;
 
-        double size = Math.max(4.0, Math.min(width, height) / 3.5);
+        double size = Math.max(4.0, Math.min(width, height) / 3.2);
 
-        // A filled triangle rather than two strokes: at tile size a pair of thin barbs is two marks
-        // that happen to meet, and a solid head is one shape that obviously points somewhere.
+        double px = cx + dx * size * offset;
+        double py = cy + dy * size * offset;
+
         double angle = Math.atan2(dy, dx);
 
         int[] xs = new int[3];
         int[] ys = new int[3];
 
-        xs[0] = (int) Math.round(px + dx * size * 0.6);
-        ys[0] = (int) Math.round(py + dy * size * 0.6);
+        xs[0] = (int) Math.round(px + dx * size * 0.5);
+        ys[0] = (int) Math.round(py + dy * size * 0.5);
 
         for (int i = 0; i < 2; i++)
         {
-            double offset = i == 0 ? 2.6 : -2.6;
+            double barb = i == 0 ? 2.55 : -2.55;
 
-            xs[i + 1] = (int) Math.round(xs[0] + Math.cos(angle + offset) * size);
-            ys[i + 1] = (int) Math.round(ys[0] + Math.sin(angle + offset) * size);
+            xs[i + 1] = (int) Math.round(xs[0] + Math.cos(angle + barb) * size);
+            ys[i + 1] = (int) Math.round(ys[0] + Math.sin(angle + barb) * size);
         }
 
         g.fillPolygon(xs, ys, 3);
     }
 
     /**
-     * A platform mark in the top left: a filled roundel, hollow when the station has no name yet.
+     * Draws what a sensor IS, in the graph window's own shapes and colours.
      *
-     * Top left because the length sits bottom right and the route lines run through the middle, so the
-     * three never overlap.  Hollow-when-unnamed is the only cue anywhere that a station still needs a
-     * name - nothing refuses to work without one, it just turns up as a coordinate in a timetable.
+     *   plain point       small diamond
+     *   station           circle
+     *   terminus          square
+     *   reversing         cross
+     *   blue              autonomy uses it
+     *   orange            autonomy leaves it alone (parking, or switched off)
+     *
+     * Parity on purpose: the shapes and the two colours are exactly what TrainControlUI already paints
+     * on the graph, so nobody has to learn a second vocabulary to read the same railway.
+     *
+     * Unnamed points are drawn hollow, which remains the only cue that one still needs a name.
      */
-    /**
-     * Draws a station as a station rather than as a sensor with a dot on it.
-     *
-     * A station is the thing autonomy is FOR - it is where trains can be sent - and on the diagram it
-     * was previously the same tile as every other sensor with a small mark added.  It now takes the
-     * whole square: a coloured frame, a solid platform band, and a badge that says which kind it is.
-     *
-     *   plain station     blue frame, blank band
-     *   terminus          blue frame, band with a buffer stop across the closed end
-     *   parking           purple frame, band lettered P
-     *   parking terminus  purple frame, lettered band with the buffer stop
-     *
-     * Unnamed stations are drawn hollow, which stays the only cue anywhere that one still needs a name.
-     */
-    private void paintStation(Graphics2D g, int width, int height)
+    private void paintBadge(Graphics2D g, int width, int height)
     {
-        Color colour = station.isParking() ? PARKING : STATION;
+        Color colour = badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
 
-        // The frame is what makes a station findable from across the diagram; the band is what makes
-        // it readable close up.
-        g.setStroke(new BasicStroke(2f));
-        g.setColor(colour);
-        g.drawRect(1, 1, width - 3, height - 3);
+        // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
+        // 17px there, the same proportion here.
+        int size = Math.max(badge.isStation() ? 11 : 8,
+            Math.min(width, height) / (badge.isStation() ? 2 : 3));
 
-        int band = Math.max(6, height / 3);
-        int top = height - band - 1;
+        int x = (width - size) / 2;
+        int y = (height - size) / 2;
 
-        if (station.isNamed())
+        g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
+
+        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.
+        Color fill = badge.isNamed() ? colour : Color.WHITE;
+        Color line = badge.isNamed() ? Color.WHITE : colour;
+
+        if (badge.isReversing())
         {
-            g.setColor(colour);
-            g.fillRect(2, top, width - 4, band);
+            cross(g, x, y, size, fill, line);
+        }
+        else if (badge.isTerminus())
+        {
+            g.setColor(fill);
+            g.fillRect(x, y, size, size);
+            g.setColor(line);
+            g.drawRect(x, y, size, size);
+        }
+        else if (badge.isStation())
+        {
+            g.setColor(fill);
+            g.fillOval(x, y, size, size);
+            g.setColor(line);
+            g.drawOval(x, y, size, size);
         }
         else
         {
-            // hollow: the station exists but has no name yet
-            g.setColor(Color.WHITE);
-            g.fillRect(2, top, width - 4, band);
-            g.setColor(colour);
-            g.setStroke(new BasicStroke(1f));
-            g.drawRect(2, top, width - 5, band - 1);
+            diamond(g, x, y, size, fill, line);
         }
+    }
 
-        Color ink = station.isNamed() ? Color.WHITE : colour;
+    private void cross(Graphics2D g, int x, int y, int size, Color fill, Color line)
+    {
+        int arm = size / 3;
 
-        if (station.isParking())
-        {
-            g.setColor(ink);
-            g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, band * 0.9f));
+        int[] xs = {x + arm, x + size - arm, x + size - arm, x + size, x + size,
+                    x + size - arm, x + size - arm, x + arm, x + arm, x, x, x + arm};
+        int[] ys = {y, y, y + arm, y + arm, y + size - arm, y + size - arm, y + size,
+                    y + size, y + size - arm, y + size - arm, y + arm, y + arm};
 
-            java.awt.FontMetrics metrics = g.getFontMetrics();
+        g.setColor(fill);
+        g.fillPolygon(xs, ys, xs.length);
+        g.setColor(line);
+        g.drawPolygon(xs, ys, xs.length);
+    }
 
-            g.drawString("P", (width - metrics.stringWidth("P")) / 2,
-                top + band - Math.max(1, (band - metrics.getAscent()) / 2) - 1);
-        }
+    private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
+    {
+        int half = size / 2;
 
-        if (station.isTerminus())
-        {
-            // a buffer stop: the bar a train cannot pass, drawn across the left end of the band
-            g.setColor(ink);
-            g.setStroke(new BasicStroke(2.5f));
-            g.drawLine(4, top + 1, 4, top + band - 2);
-        }
+        int[] xs = {x + half, x + size, x + half, x};
+        int[] ys = {y, y + half, y + size, y + half};
+
+        g.setColor(fill);
+        g.fillPolygon(xs, ys, 4);
+        g.setColor(line);
+        g.drawPolygon(xs, ys, 4);
     }
 
     private void paintLength(Graphics2D g, int width, int height)
@@ -633,7 +652,7 @@ public class TileAnnotation
         TileAnnotation other = (TileAnnotation) o;
 
         return length == other.length && selected == other.selected
-            && (station == null ? other.station == null : station.equals(other.station))
+            && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && muted == other.muted && marks.equals(other.marks);
     }
 
@@ -641,7 +660,7 @@ public class TileAnnotation
     public int hashCode()
     {
         return marks.hashCode() * 31 + length * 2
-            + (selected ? 1 : 0) + (station == null ? 0 : station.hashCode() * 4)
+            + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (muted ? 32 : 0);
     }
 
@@ -649,7 +668,7 @@ public class TileAnnotation
     public String toString()
     {
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
-            + (station == null ? "" : " " + station)
+            + (badge == null ? "" : " " + badge)
             + (ignored ? " ignored" : "");
     }
 }
