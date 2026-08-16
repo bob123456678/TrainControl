@@ -378,11 +378,19 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
     feature, unrelated to `GraphEdgeEdit`'s retired capture-commands), `autoLocPanel` (semi-
     autonomous locomotive commands), `autoSettingsPanel` (the per-configuration globals), and the
     `autosave` checkbox (still gates saving locomotive state on exit, now to the companion).
+  - **Stays, retargeted to files** (author correction, 2026-08-16): **import and export of a
+    graph via `autonomy.json` files**, for users who set up their autonomy in pure code. Export
+    dumps the currently loaded `Layout.toJSON()` to a chosen file; import reads a chosen file
+    through `parseAuto` exactly as pasting JSON used to. The `autosave` checkbox goes -
+    **autosave is implicit** (the author will adjust the Matisse form if needed).
   - **Goes**: `autonomyJSON` (the `JTextArea` at `:3643`/`:5729`) and its scroll pane,
-    `exportJSON`, `loadJSONButton`, `validateButton`, `loadDefaultBlankGraph` (onboarding is now
-    "draw a diagram"), `jsonDocumentationButton`, and `reopenGraphButton` (no graph window).
-  There is no user-facing autonomy JSON anywhere — consistent with the original directive that
-  the configuration *is* the track diagram.
+    `validateButton`, `loadDefaultBlankGraph`, `jsonDocumentationButton` (repoint or drop with the
+    docs rewrite), and `reopenGraphButton` (no graph window).
+  - **Added**: an **Initialize autonomy** button - the entry point that creates the autonomy files
+    and first configuration for the current diagram and opens the editor in Autonomy mode. It
+    replaces `loadDefaultBlankGraph` as onboarding.
+  There is no JSON *editing* in the UI - the configuration is the track diagram; the JSON file
+  import/export exists for the code-first workflow, not as an editing surface.
 - **Persistence must move first.** `autonomyJSON` is not just a view: `saveState` populates it from
   `getAutoLayout().toJSON()` (`:1161`) and writes that text to `autonomy.json` (`:1177-1197`), with
   `:1784` reading it back. Deleting the text area without first rerouting save/load through
@@ -458,10 +466,22 @@ runs of tiles are walked, not stored.
 | station designation (`isDestination`) | **shared** | ditto |
 | terminus, reversing | **shared** | physical characteristics of the track there |
 | max train length | **shared** | a physical capacity |
-| **speed multiplier** | **per configuration** | author ruling; **copied automatically** when a configuration is duplicated |
+| **speed multiplier** | **per configuration** | author ruling |
+| **priority** | **per configuration** | author ruling, 2026-08-16 |
 | active | **per configuration** | operational - a point may be taken out of use for a session |
 | excluded locomotives | **per configuration** | operational |
 | placements, homes | **per configuration** | the reason configurations exist |
+
+**New configuration = copy of everything** (author, 2026-08-16): every per-configuration field -
+point properties, priority, speed multipliers, placements, homes, exclusions, globals, timetable -
+is copied when a configuration is created from an existing one. With one file per configuration,
+that is a file copy.
+
+**Locomotive autonomy properties stay editable in the UI** (author, 2026-08-16): `reversible`,
+`arrivalFunc`, `departureFunc`, `trainLength` and preferred speed are stored on the `Locomotive`
+(LocDB), not in the autonomy files - but the placement UI (viewer and editor Points tool) must
+still expose editing them, as the graph right-click and the diagram edit-locomotive-properties
+shortcut do today. Placements themselves store only the locomotive name.
 
 ### Saving
 
@@ -519,8 +539,8 @@ check.
 
 The derived graph must be **visible and clear to the user**, not a black box - a readable view of
 points, edges, lengths, config commands and derived locks. This is a normal part of the UI, not a
-developer dump, and it replaces the read-only generated-JSON idea (there is no user-facing autonomy
-JSON anywhere).
+developer dump, and it replaces the read-only generated-JSON idea (no JSON editing in the UI; the
+file-based import/export for code-first users is separate).
 
 **Plus an in-app test suite**: user-runnable checks that validate the configuration is wired
 correctly, reporting a list of findings rather than a pass/fail. This is the home for the static
@@ -607,11 +627,12 @@ when there is a train"), **without changing the autonomy model** (`automation/La
   view, nameable/renamable by the user.
 
 **Persistence architecture (follows from the last directive):**
-- **Source of truth** = diagram pages + a companion file **owned by TrainControl**, never by the
-  Central Station. It is written to TrainControl's working directory as
-  `autonomy-setup.json`, exactly the precedent `autonomy.json` already sets
-  (`AUTONOMY_FILE_NAME`, `TrainControlUI.saveState` :1163-1188), and it backs up through the same
-  `Util.getBackupPath` path.
+- **Source of truth** = diagram pages + autonomy files **owned by TrainControl**, never by the
+  Central Station. **Location (superseded 2026-08-16): inside the track diagram folder** - one
+  global file for general state, one file per user configuration. **Backups snapshot the entire
+  track diagram folder** (author, 2026-08-16), replacing the old `Util.getBackupPath` single-file
+  copy of `autonomy.json`: diagram pages and autonomy state are versioned together, so a restored
+  backup is always internally consistent.
 - **Writing it is NOT gated on `isLocalLayout()`.** `isLocalLayout()` only means "a local layout
   override path is set" (`TrainControlUI.java:16302`); when false the diagram is read from the
   Central Station and the *diagram editor* is disabled. Autonomy setup must keep working there:
@@ -930,8 +951,8 @@ non-technical changelog rule applies to the Readme changelog only, not to these 
 |---|---|---|
 | `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below. Uniformly state-indexed: `ports(type, orient, state)` returns the set of connected side pairs in that state (unswitched / switched, or the three-way's three states; one state for everything else). No common/branch/toe concepts. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4; encodes the directed restriction for `CUSTOM_PERM_*` (into S only) | 300 |
 | ~~`base/DiagramTopology.java`~~ | **Folded into `TileGraph` + `GraphReducer`** (there is no separate trace step: the tile graph *is* the adjacency and reduction is what walks it). Former text: builds the directed adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
-| `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, accessory requirements, summed length, direction. **Requirements are keyed by accessory NAME, not address**: `Edge.getConfigCommands()` is `Map<String, accessorySetting>` resolved via `getAccessoryByName` (`Layout.java:1542`), and the generated JSON's `commands` use names like `"Switch 10"`. The builder maps tile -> name via `MarklinAccessory.getNameWithProtocol(address, type, decoder)` (`MarklinAccessory.java:315`) - note the documented trap that the database is keyed on the **logical** address (raw + 1, see `MarklinAccessory.java:322-328`), and that DCC accessories carry a protocol suffix in the name. Signals and switches at one address are the same device, so either name resolves | 80 |
-| `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths, tileDirections}, configurations: {"<name>": {pointProperties, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; renaming a point rewrites its shared name entry and every configuration that references it; orphans kept, never silently dropped | 380 |
+| `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, accessory requirements, summed length, direction. **No name reverse-engineering** (author, 2026-08-16): the diagram tile knows its exact accessory address and its type (switch, signal), and the loaded tile already holds a live `Accessory` reference (`LayoutDiagramComponent.getAccessory()`), so the builder takes the requirement straight from the tile and emits that accessory's own name into the generated JSON's `commands` (which are name-keyed, as `parseAuto` expects) | 80 |
+| `AutonomyCompanionStore.java` | Owns the autonomy files **inside the track diagram folder** (author ruling, 2026-08-16, superseding the working-directory location): one **global** file for general state - `{version, pointNames, stations, portals, linkNames, excludedPages, tileLengths, tileDirections, activeConfiguration}` - plus **one file per user configuration** holding `{pointProperties (active, excluded locomotives, speed multiplier, priority), placements, homes, exclusions, globals, timetable}`. Per-file benefits: a configuration is individually copyable, and new-configuration-as-copy is a file copy. Unknown fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy copies **everything**, rename, delete - never the last one); save on editor close + the exit save path (locomotive state read back from the live Layout into the **active** configuration, implicitly - no autosave checkbox); **page rename propagates universally** - every tile key in the global file and in every configuration file is rewritten in one pass; point rename likewise; orphans kept, never silently dropped | 400 |
 | `AutonomyBuilder.java` | The compile step: companion + `DiagramTopology` traces → generated autonomy JSON string fed to the existing `parseAuto` (reusing the whole validate pipeline unchanged); deterministic ordering so output is diffable; emits setup errors (unpaired or half-paired portal, portal targeting an excluded page, disqualified scissors tile) as validate-visible failures, and **warnings** (permanent turnout, turntable, isolated feedback tile, direction contradiction - each with coordinates) that surface in the banner and the log **without blocking the build**; **no graph x/y is emitted** - the graph window is gone and position is the tile position; edge length = sum of the traced path's per-tile lengths, endpoints excluded (0 when unassigned). Exposes `build()` (JSON string) and `validateScratch()` — `Layout.fromJSON(build(), model)` into a throwaway, returning validity + message **without** `parseAuto`, so the setup UI can re-infer the graph live after every edit | 340 |
 | `TileOverlay.java` | `enum SegmentState {RESERVED, CURRENT, COMPLETED, LOCKED}` + marker kind (WASH, DOT, WASH_AND_DOT) + colors + static `paint(Graphics2D,w,h,state,kind)` | 80 |
 | `DiagramTileRegistry.java` | `(page,absX,absY) → Set<LayoutLabel>` plus accessory and s88 indexes; `ConcurrentHashMap`/`newKeySet`; prunes `!isParentVisible()` on iteration | 150 |
