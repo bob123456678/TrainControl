@@ -368,15 +368,16 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            // Routes are nudged off the centre when a tile carries more than one, so a crossing or a
-            // double curve shows two separate paths rather than one X of overlapping lines that says
-            // nothing about which of them is restricted.
-            for (int i = 0; i < marks.size(); i++)
+            // On a tile with one route the arrow sits in the middle.  On a tile with several - a
+            // switch, a crossing, a double curve - each arrow moves out toward the side its own route
+            // leads to, so the branches separate by going where they actually go.
+            //
+            // They used to be nudged PERPENDICULAR to each route instead, which is right for two
+            // parallel paths and wrong for a switch: its branches are alternatives sharing a toe, so a
+            // sideways offset put each arrow somewhere that corresponded to nothing on the tile.
+            for (Mark mark : marks)
             {
-                int spread = marks.size() < 2 ? 0
-                    : Math.max(2, Math.min(width, height) / 8) * (i * 2 - (marks.size() - 1));
-
-                paintMark(g, width, height, marks.get(i), spread);
+                paintMark(g, width, height, mark, marks.size() > 1);
             }
 
             if (badge != null) paintBadge(g, width, height);
@@ -414,38 +415,34 @@ public class TileAnnotation
      * with a head near each edge, a page of them read as scattered ticks rather than as flow.  What is
      * left is the part that carries information: a head, on the track, pointing the way a train may go.
      */
-    private void paintMark(Graphics2D g, int width, int height, Mark mark, int spread)
+    private void paintMark(Graphics2D g, int width, int height, Mark mark, boolean fanOut)
     {
         int[] from = midpoint(mark.getA(), width, height);
         int[] to = midpoint(mark.getB(), width, height);
 
         if (from == null || to == null) return;
 
-        // Where the arrow sits.  Nudged perpendicular to its own run when a tile carries more than one
-        // route, so a switch shows one arrow per branch instead of three on top of each other.
         int cx = width / 2;
         int cy = height / 2;
 
-        double dx = to[0] - from[0];
-        double dy = to[1] - from[1];
-        double len = Math.sqrt(dx * dx + dy * dy);
-
-        if (len >= 1 && spread != 0)
-        {
-            cx += (int) Math.round(-dy / len * spread);
-            cy += (int) Math.round(dx / len * spread);
-        }
-
         if (mark.getDirection() == Direction.NONE)
         {
-            // A bar across the run: the one mark that means a train cannot get through at all.
-            int bar = Math.max(3, Math.min(width, height) / 5);
-
             g.setColor(CLOSED);
             g.setStroke(new BasicStroke(CHEVRON_WIDTH + 1f, BasicStroke.CAP_ROUND,
                 BasicStroke.JOIN_ROUND));
-            g.drawLine(cx - bar, cy - bar, cx + bar, cy + bar);
-            g.drawLine(cx - bar, cy + bar, cx + bar, cy - bar);
+
+            // One cross in the middle of a plain tile.  On a tile with several routes, a cross at each
+            // end of THIS branch instead - a single mark in the middle could not say which of a
+            // switch's branches is the shut one, which is the only thing worth saying.
+            if (fanOut)
+            {
+                closedMark(g, cx, cy, from, width, height);
+                closedMark(g, cx, cy, to, width, height);
+            }
+            else
+            {
+                closedMark(g, cx, cy, new int[] {cx, cy}, width, height);
+            }
 
             return;
         }
@@ -456,14 +453,39 @@ public class TileAnnotation
 
         if (bidirectional)
         {
-            // back to back, so the shape itself says "either way" without a line between them
-            head(g, cx, cy, from, width, height, 0.55);
-            head(g, cx, cy, to, width, height, 0.55);
+            // one head toward each end of this route: back to back in the middle of a plain tile, or
+            // out along both ends of this particular branch on a tile that has several
+            head(g, cx, cy, from, width, height, fanOut ? FAN : 0.55);
+            head(g, cx, cy, to, width, height, fanOut ? FAN : 0.55);
         }
         else
         {
-            head(g, cx, cy, mark.getDirection() == Direction.TOWARD_A ? from : to, width, height, 0);
+            int[] target = mark.getDirection() == Direction.TOWARD_A ? from : to;
+
+            head(g, cx, cy, target, width, height, fanOut ? FAN : 0);
         }
+    }
+
+    /**
+     * How far out along its own route a branch's arrow sits, as a fraction of the way from the middle
+     * of the tile to the edge.  Far enough that branches separate, short enough that the arrow still
+     * plainly belongs to this square rather than to the boundary with the next one.
+     */
+    private static final double FAN = 0.5;
+
+    /**
+     * The mark for a route no train may use: a small cross, on the line from the middle of the
+     * tile toward a point.
+     */
+    private void closedMark(Graphics2D g, int cx, int cy, int[] target, int width, int height)
+    {
+        int x = (int) Math.round(cx + (target[0] - cx) * FAN);
+        int y = (int) Math.round(cy + (target[1] - cy) * FAN);
+
+        int bar = Math.max(3, Math.min(width, height) / 6);
+
+        g.drawLine(x - bar, y - bar, x + bar, y + bar);
+        g.drawLine(x - bar, y + bar, x + bar, y - bar);
     }
 
     /**
