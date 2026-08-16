@@ -376,8 +376,7 @@ public class testTilePorts
     @Test
     public void testDecorationCarriesNoTrack()
     {
-        for (componentType type : new componentType[]{
-            componentType.LAMP, componentType.ROUTE, componentType.TEXT})
+        for (componentType type : new componentType[]{componentType.LAMP, componentType.TEXT})
         {
             assertTrue(TilePorts.ports(type, 0, 0).isEmpty(), type + " must carry no routes");
             assertFalse(TilePorts.isRoutable(type), type + " must not be routable");
@@ -415,6 +414,32 @@ public class testTilePorts
 
         assertTrue(TilePorts.commands(componentType.UNCOUPLER, 0).isEmpty(),
             "passing over an uncoupler must not fire it");
+    }
+
+    /**
+     * A route button sits ON the line rather than beside it, and the track runs beneath it.
+     *
+     * Its own art carries no track - it is a pair of arrows - so this cannot be read off the icon.  It
+     * comes from how layouts use them: the sample layout threads 43 through its running lines and its
+     * hand-built graph connects straight across every one.  Treating them as decoration severed every
+     * run that contained one.
+     *
+     * Orientation says nothing here - the same drehung appears in horizontal and vertical runs - so it
+     * conducts both ways like a crossing, continuing whatever line it sits in without joining two lines
+     * that merely meet at it.
+     */
+    @Test
+    public void testARouteButtonConductsAlongWhicheverLineItSitsIn()
+    {
+        assertEquals(sidesAt(componentType.ROUTE, 0, 0), pairs("NS", "EW"));
+        assertTrue(TilePorts.isRoutable(componentType.ROUTE));
+
+        // two independent routes, never joining: entering from the north leaves south and nowhere else
+        List<Route> routes = TilePorts.ports(componentType.ROUTE, 0, 0);
+        assertEquals(routes.size(), 2);
+
+        // and it commands nothing - a button on the line is not a condition of passing it
+        assertTrue(TilePorts.commands(componentType.ROUTE, 0).isEmpty());
     }
 
     /**

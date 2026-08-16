@@ -319,9 +319,18 @@ public class TilePorts
         // A turntable connects any radial to any other under manual control and has no static port map.
         TERMINATOR.put(componentType.TURNTABLE, Boolean.TRUE);
 
+        // A route button is drawn as a pair of arrows and carries no track in its own art - but it is
+        // placed ON the line, not beside it, and the track runs beneath it.  The sample layout threads 43
+        // of them through its running lines, and its hand-built graph connects straight across every one.
+        //
+        // Its orientation says nothing about which way the track runs: the same drehung=0 appears in
+        // horizontal and vertical runs alike.  So it conducts like a crossing - two independent through
+        // routes - which continues whichever line it sits in without ever joining two lines that merely
+        // meet at it.  (Confirm: this is inferred from how the sample layout uses them, not from the art.)
+        fixed(componentType.ROUTE, route(Side.N, Side.S), route(Side.E, Side.W));
+
         // --- decoration --------------------------------------------------------------------------
         fixed(componentType.LAMP);
-        fixed(componentType.ROUTE);
         fixed(componentType.TEXT);
     }
 

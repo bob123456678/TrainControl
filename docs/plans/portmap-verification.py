@@ -33,7 +33,7 @@ TILES = [
  ('custom_perm_scissors','CUSTOM_PERM_SCISSORS',  [], [], 'DISQUALIFIED'),
  ('turntable',           'TURNTABLE',             [], [], 'TERMINATOR'),
  ('lamp',                'LAMP',                  [], [], 'decorative'),
- ('route',               'ROUTE',                 [], [], 'decorative'),
+ ('route',               'ROUTE',                 [('N','S'),('E','W')], [], 'button on the line'),
  ('text',                'TEXT',                  [], [], 'decorative'),
 ]
 
