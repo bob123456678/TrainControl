@@ -1019,7 +1019,49 @@ non-technical changelog rule applies to the Readme changelog only, not to these 
 | `base/TileGraph.java` (new, revised architecture) | Layer 1: nodes = `(page,x,y)` tiles, candidate connections from facing ports, plus explicit LINK/TUNNEL portal connections; each connection carries a state (disallowed / one-way either way / both) defaulted from geometry and overridable by the user; `neighbors(tile, direction)` honors those states | 260 |
 | `base/GraphReducer.java` (new, revised architecture) | Layer 2: contracts the tile graph to the autonomy graph — significant nodes survive, degree-2 chains collapse to one edge, switches fork transparently and contribute `configCommands`, lengths sum, directions AND, tile paths retained; then derives mutual exclusion from shared tiles (OVERPASS cross-group excepted, portal pair = one location) and emits the lock references | 340 |
 
-### Monitoring semantics (unchanged from prior draft)
+### Monitoring: an overlay, in the graph's own colours (author, 2026-08-16)
+
+**Requirement.** With autonomy running, the track diagram must show what the graph window shows: where
+each train is, which track its path has already covered, and which it has not reached yet. Segments
+light red while active and green once reached.
+
+**Drawn as an overlay, not by recolouring the tile art** (author preference, and the code agrees -
+this is not a close call):
+
+1. `imageCache` is a **static map shared by every tile** (`TrainControlUI.getImageCache()`), keyed by
+   icon name and size. Recolouring a tile's grey interior means either mutating an image every other
+   tile of that type is also using, or minting a cache entry per state per orientation per size -
+   defeating the cache to render four colours.
+2. `updateImage` short-circuits on an unchanged icon name (`LayoutLabel.java:501-513`). Autonomy state
+   does not change the icon name, so a recolour would not repaint at all without a forced refresh path
+   built alongside it.
+3. The transient yellow highlight already works by **replacing** the icon and restoring it from a
+   one-slot `lastIcon` (`:435-455`). A second icon-replacing effect would fight it for that slot; an
+   overlay painted after `super.paintComponent` simply coexists.
+
+So: `LayoutLabel` gains `volatile TileOverlay overlay` plus a `paintComponent` override that paints
+after the icon. Roughly 25 lines, no change to the cache, no interaction with the highlight.
+
+**Colours are the graph's, exactly** - a user who has learned one has learned the other. Read from
+`graph.css`:
+
+| State | Colour | Meaning |
+|---|---|---|
+| active, not yet reached | `rgb(196,0,0)` red | the path is claimed and the train is still coming |
+| reached | `rgb(0,196,33)` green | the train has passed this point |
+| locked | `rgb(238,238,238)` pale grey | held to keep another path clear |
+| idle | none | no wash at all, so a running layout reads at a glance |
+
+Precedence where a tile qualifies for more than one: reached > active > locked.
+
+**Where the train is** needs its own mark, since a wash says which track is claimed but not which
+part of it holds the train: the current point is marked distinctly (a centred dot over the wash),
+which is the diagram's equivalent of the graph labelling its node.
+
+**Segments, not points.** The wash covers every tile of the edge, which is what the plan means by
+segments lighting up - a reduced edge retains its tile path precisely so monitoring can paint it.
+
+### Monitoring semantics (superseded above where they differ)
 
 - `LayoutLabel`: `volatile TileOverlay overlay` + `setOverlay()` + `paintComponent` override
   (paint after `super`; coexists with the transient yellow highlight). ~25 lines.
