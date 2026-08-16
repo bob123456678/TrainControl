@@ -432,6 +432,59 @@ public class TilePorts
     }
 
     /**
+     * The side every route of this type touches in every position - the toe of a turnout.
+     *
+     * Derived, not declared: it is whatever the port map already says, so it cannot drift away from the
+     * table above.  A turnout has one because every position fans out from the same place; a double slip
+     * has none, and neither does plain track with more than one route.
+     *
+     * Used for one thing only - the direction default runs base to forks, i.e. away from this side - so a
+     * type with no toe simply defaults to bidirectional.
+     *
+     * @param type
+     * @param orientation
+     * @return the common side, or null if the routes share none
+     */
+    public static Side deriveToe(componentType type, int orientation)
+    {
+        int states = getStateCount(type);
+
+        if (states == 0) return null;
+
+        List<Side> candidates = new ArrayList<>();
+        Collections.addAll(candidates, Side.values());
+
+        boolean sawRoute = false;
+
+        for (int state = 0; state < states; state++)
+        {
+            for (Route r : ports(type, orientation, state))
+            {
+                // a stub touches one side; it is not a fan-out, so it has no toe
+                if (r.getA() == r.getB()) return null;
+
+                sawRoute = true;
+
+                List<Side> next = new ArrayList<>();
+
+                for (Side s : candidates)
+                {
+                    if (r.touches(s)) next.add(s);
+                }
+
+                candidates = next;
+
+                if (candidates.isEmpty()) return null;
+            }
+        }
+
+        // A single route shares both its sides, which says nothing about fanning out
+        if (!sawRoute || candidates.size() != 1) return null;
+
+        return candidates.get(0);
+    }
+
+    /**
      * Guards the orientation against the type's rotational symmetry.  A STRAIGHT has two distinct
      * orientations, a CROSSING one; asking beyond that is a caller bug, so it is reduced rather than
      * silently producing a rotation the diagram can never contain.

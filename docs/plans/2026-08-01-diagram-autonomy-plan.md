@@ -921,6 +921,15 @@ structural.
 **R1 - the UI.** The editor's autonomy mode, the viewer's autonomy panel and layers, monitoring,
 and the two test affordances. Phase 1 of the delivery split (implement new, disable old).
 
+> **Link naming and pairing is a migration gate** (author, 2026-08-16), not just one tool among
+> several. A link tile today stores only the index of the diagram it points at, which cannot say
+> *which tile* on that page continues the track - so until the editor can give each link a unique
+> name and name the link it jumps to, a layout that uses links **cannot be expressed in the new
+> format at all**. Any layout with links therefore cannot be converted, and the ground-truth diff
+> will show its cross-page routes as missing for a reason that has nothing to do with the
+> reduction being wrong. Build this early in R1 and confirm it against the author's real pages
+> before reading anything into the diff.
+
 **R2 - removal.** Phase 2 of the delivery split: the graph window, the JSON form, the
 `autonomy.json` paths, `GRAPH_*` preferences and the GraphStream jars. Gated on the author's
 layout being re-created on the diagram. *(Replaces the former "Release 2 - lock-edge derivation",
