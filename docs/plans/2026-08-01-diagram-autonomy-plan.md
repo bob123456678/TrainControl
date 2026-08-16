@@ -134,20 +134,20 @@ cases and are handled by the general rule rather than as special cases:
   allow a genuine collision;
 - a linked **portal pair** (tunnel/link) counts as one location for this purpose.
 
-This retires most of Release 2. What remains there is the **exposure linter** for layouts still
-using a legacy hand-written `autonomy.json`, where locks were authored by hand and may have gaps.
-A diagram-derived configuration cannot have gaps by construction.
+This retires Release 2 entirely (see its section below). A diagram-derived configuration cannot
+have lock gaps by construction, and with legacy gone there is nothing hand-authored left to audit.
 
 ## What this simplifies
 
 - `SegmentFloodFill` — **deleted**, no longer needed.
 - Paint-overrides — **deleted** from the companion schema and the UI.
-- `tileDirections` — **replaced** by `connectionOverrides`, keyed by the ordered tile pair.
+- `tileDirections` — **retained** and keyed by tile (2026-08-16 ruling); the briefly-considered
+  `connectionOverrides` keyed by tile pair is dropped.
 - The Trace & Review table stops being the primary instrument. Review happens on the diagram,
   where the connections are. The table survives only as a summary of the *reduced* graph
   (edges, lengths, config commands, derived locks) for a final read-through before load.
-- `LockEdgeReviewUI` (R2) shrinks to a linter report; no add/apply workflow is needed for
-  diagram-derived configurations.
+- `LockEdgeAnalyzer` and `LockEdgeReviewUI` are **deleted outright**; what survives is a lock
+  *explainer* (why are these two edges exclusive - which tile do they share).
 - The debug "show connectivity" overlay is no longer a debug aid — it **is** the editing surface.
 
 ## Significant nodes: every s88 is a Point (author ruling, 2026-08-01)
@@ -166,14 +166,15 @@ throws `autolayout.errorDestinationPointMustHaveS88` when `isDestination` is set
   all collapsed away by reduction), so every derived Point is *eligible* to be a station and the
   "this tile cannot be a station" error state is unreachable from the UI. The designation is a
   simple toggle on a Point.
-- Virtual points (a Point with no s88) can no longer be authored from the diagram at all. They
-  remain legal in the model, so a **legacy `autonomy.json` containing one is a migration case**:
-  it has no tile to anchor to and must be reported for the user to resolve, not silently dropped.
-  This retires the earlier draft's "virtual points anchor on a plain track tile" idea.
+- Virtual points (a Point with no s88) can no longer be authored from the diagram at all, and
+  with legacy autonomy removed nothing in the product produces them. They remain legal in the
+  model, so the **ground-truth harness** reports any it finds in the author's old file as
+  unanchorable - the evidence for whether they were load-bearing. This retires the earlier draft's
+  "virtual points anchor on a plain track tile" idea.
 
 **Naming (author directive, 2026-08-01).** Every derived Point is **user-nameable**, and stations
-carry meaningful names such as "Track 14 entrance", so that logs, the graph window, timetable
-output and autonomy debug messages are readable rather than coordinate soup.
+carry meaningful names such as "Track 14 entrance", so that logs, timetable output, the graph
+inspector and autonomy debug messages are readable rather than coordinate soup.
 - Default name is generated from the tile coordinate, which is unique by construction. An s88
   address is *not* a usable name source — station and Pre/Post guard tiles legitimately share
   sensors, so several Points carry the same s88.
@@ -196,8 +197,8 @@ output and autonomy debug messages are readable rather than coordinate soup.
   tiles were skipped, so a wrongly-disconnected sensor is noticeable rather than silent.
 - **Graph size.** This produces a materially larger graph than the author's hand-built ~104-edge
   config, which is expected and correct: hand-authoring omitted sensors that the diagram knows
-  about. Migration must therefore *match* legacy edges onto a subset of the derived graph rather
-  than expect a 1:1 correspondence.
+  about. The ground-truth harness must therefore *match* legacy edges onto a **subset** of the
+  derived graph rather than expect a 1:1 correspondence.
 
 ## Per-diagram "exclude from autonomy" (author directive, 2026-08-01)
 
@@ -328,7 +329,8 @@ runtime, with an overlay layer and a tool selector.
 5. **Locomotives** — place, clear, and set homes, per named configuration.
 
 Standing UI beside the diagram: the configuration selector, the live validity banner
-(`validateScratch`), the warnings list, and the generated JSON read-only.
+(`validateScratch`), the warnings list, and the **reduced-graph inspector** (points, edges,
+lengths, config commands, derived locks) - a readable view, **not** JSON.
 
 **Path tester, rebuilt on the diagram.** Select a point, and every point reachable from it tints
 green while unreachable ones tint red; hovering an unreachable point gives the reason, reusing
@@ -579,7 +581,7 @@ when there is a train"), **without changing the autonomy model** (`automation/La
   properties, per-edge overrides (manual lock additions), locomotive placements, homes, exclusions,
   global autonomy settings, timetable. Schema top level:
   `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths,
-  connectionOverrides}, configurations: {"<name>": {...}}, activeConfiguration}`. `tileLengths` is a sparse map keyed
+  tileDirections}, configurations: {"<name>": {...}}, activeConfiguration}`. `tileLengths` is a sparse map keyed
   `"<page>:<x>,<y>"` → int — only non-zero tiles are written. `tileDirections` is sparse the same
   way, keyed `"<page>:<x>,<y>"` (or `"<page>:<x>,<y>#<group>"` for two-group tiles) →
   `"forward" | "back" | "none"`; the default `both` is never written. Both maps are absent
@@ -869,7 +871,7 @@ deleted outright - see below.)*
 | `base/TilePorts.java` | The port map for **all 28 `componentType` values** — see the derived table below. Uniformly state-indexed: `ports(type, orient, state)` returns the set of connected side pairs in that state (unswitched / switched, or the three-way's three states; one state for everything else). No common/branch/toe concepts. Honors `getNumOrientations()` (2 / 1 / 4 by type) rather than assuming 4; encodes the directed restriction for `CUSTOM_PERM_*` (into S only) | 300 |
 | ~~`base/DiagramTopology.java`~~ | **Folded into `TileGraph` + `GraphReducer`** (there is no separate trace step: the tile graph *is* the adjacency and reduction is what walks it). Former text: builds the directed adjacency for a set of `LayoutDiagram` pages + portal pairs: nodes = (page,x,y) tiles with ports; `trace(anchorTile)` walks to neighbouring anchors, forking per switch branch, recording tile path + required accessory settings; respects one-way traversal (a facing entry into a `CUSTOM_PERM_*` turnout yields no exits, so that direction produces no connection at all); collects warnings (permanent turnouts encountered) alongside results; cycle-guarded, bounded | 340 |
 | `base/ReducedEdge.java` (was `TraceResult`) | Value type: endpoint Points, ordered tile path, `Map<address, setting>` requirements, summed length, direction | 70 |
-| `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths, connectionOverrides}, configurations: {"<name>": {pointProperties, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; renaming a point rewrites its shared name entry and every configuration that references it; orphans kept, never silently dropped | 380 |
+| `AutonomyCompanionStore.java` | Owns `autonomy-setup.json` in TrainControl's working directory (never the Central Station; **not** gated on `isLocalLayout()`), optionally mirrored to `config/autonomy-setup.json` when the layout is local: `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths, tileDirections}, configurations: {"<name>": {pointProperties, placements, homes, exclusions, globals, timetable}}, activeConfiguration}`; unknown top-level fields preserved; `version>1` refuses load; configuration CRUD (create-as-copy, rename, delete — never the last one); save on setup Apply + the exit save path (authored subset read back from the live Layout into the **active** configuration), alongside `autonomy.json` in `saveState` and backed up the same way; renaming a point rewrites its shared name entry and every configuration that references it; orphans kept, never silently dropped | 380 |
 | `AutonomyBuilder.java` | The compile step: companion + `DiagramTopology` traces → generated autonomy JSON string fed to the existing `parseAuto` (reusing the whole validate pipeline unchanged); deterministic ordering so output is diffable; emits setup errors (unpaired or half-paired portal, portal targeting an excluded page, disqualified scissors tile) as validate-visible failures, and **warnings** (permanent turnout, turntable, isolated feedback tile, direction contradiction - each with coordinates) that surface in the banner and the log **without blocking the build**; **no graph x/y is emitted** - the graph window is gone and position is the tile position; edge length = sum of the traced path's per-tile lengths, endpoints excluded (0 when unassigned). Exposes `build()` (JSON string) and `validateScratch()` — `Layout.fromJSON(build(), model)` into a throwaway, returning validity + message **without** `parseAuto`, so the setup UI can re-infer the graph live after every edit | 340 |
 | `TileOverlay.java` | `enum SegmentState {RESERVED, CURRENT, COMPLETED, LOCKED}` + marker kind (WASH, DOT, WASH_AND_DOT) + colors + static `paint(Graphics2D,w,h,state,kind)` | 80 |
 | `DiagramTileRegistry.java` | `(page,absX,absY) → Set<LayoutLabel>` plus accessory and s88 indexes; `ConcurrentHashMap`/`newKeySet`; prunes `!isParentVisible()` on iteration | 150 |
