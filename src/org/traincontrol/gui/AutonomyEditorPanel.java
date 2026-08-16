@@ -97,6 +97,37 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static final int WIDTH = 280;
 
+    // The EDITOR window's own conventions, which are not quite the main window's: its headings are
+    // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", jLabel2 "Toggle Visibility") and its
+    // buttons are bold 11 (saveButton, cancelButton), a size down from the main window's 12.
+    static final java.awt.Font FONT_HEADING =
+        new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
+
+    static final java.awt.Font FONT_BUTTON = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 11);
+
+    static final java.awt.Font FONT_CONTROL = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+
+    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 155);
+
+    /**
+     * The findings list and the sentences beside it, one size down: they are dense reading rather than
+     * labels, and at 14 a real layout's list does not fit the column.
+     */
+    static final java.awt.Font FONT_HINT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
+
+    private static <T extends javax.swing.JComponent> T control(T component)
+    {
+        component.setFont(FONT_CONTROL);
+        return component;
+    }
+
+    private static <T extends javax.swing.AbstractButton> T button(T component)
+    {
+        component.setFont(FONT_BUTTON);
+        component.setFocusable(false);
+        return component;
+    }
+
     private final JLabel banner = new JLabel();
     private final JLabel hint = new JLabel();
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
@@ -176,9 +207,10 @@ public class AutonomyEditorPanel extends JPanel
     private JPanel buildTools()
     {
         JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
+        panel.setOpaque(false);
 
-        panel.add(heading(I18n.t("autosetup.ui.title")));
-
+        // No heading of its own: the editor already prints one above this column, and setAutonomyMode
+        // retitles it, so a second said the same thing twice.
         ButtonGroup group = new ButtonGroup();
 
         panel.add(toolButton(Tool.CONNECTIONS, I18n.t("autosetup.ui.toolConnections"), group, true));
@@ -192,15 +224,15 @@ public class AutonomyEditorPanel extends JPanel
         showAllDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
-        panel.add(AutonomyViewerPanel.styled(showDirections, false));
-        panel.add(AutonomyViewerPanel.styled(showAllDirections, false));
-        panel.add(AutonomyViewerPanel.styled(showLengths, false));
+        panel.add(control(showDirections));
+        panel.add(control(showAllDirections));
+        panel.add(control(showLengths));
 
-        hint.setFont(AutonomyViewerPanel.FONT_LIST);
+        hint.setFont(FONT_HINT);
         panel.add(hint);
 
         banner.setOpaque(true);
-        banner.setFont(AutonomyViewerPanel.FONT_BOLD);
+        banner.setFont(FONT_HEADING);
         banner.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
         panel.add(banner);
 
@@ -211,8 +243,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         JToggleButton button = new JToggleButton(text, selected);
 
-        AutonomyViewerPanel.styled(button, true);
-        button.setFocusable(false);
+        button(button);
         button.addActionListener(e ->
         {
             tool = which;
@@ -234,7 +265,7 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
-        findings.setFont(AutonomyViewerPanel.FONT_LIST);
+        findings.setFont(FONT_HINT);
 
         // Clicking a finding goes to the tile it is about.  Reading "no train can leave Platform 3" is
         // only half an answer; the other half is which square that is, on a page of two hundred.
@@ -263,15 +294,15 @@ public class AutonomyEditorPanel extends JPanel
 
         JButton check = new JButton(I18n.t("autosetup.ui.btnCheckConfiguration"));
         check.addActionListener(e -> recheck());
-        panel.add(AutonomyViewerPanel.styled(check, false));
+        panel.add(button(check));
 
         JButton nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
-        panel.add(AutonomyViewerPanel.styled(nameAll, false));
+        panel.add(button(nameAll));
 
         JButton save = new JButton(I18n.t("autosetup.ui.btnApply"));
         save.addActionListener(e -> save());
-        panel.add(AutonomyViewerPanel.styled(save, true));
+        panel.add(button(save));
 
         return panel;
     }
@@ -279,8 +310,8 @@ public class AutonomyEditorPanel extends JPanel
     private JLabel heading(String text)
     {
         JLabel label = new JLabel(text);
-        label.setFont(AutonomyViewerPanel.FONT);
-        label.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
+        label.setFont(FONT_HEADING);
+        label.setForeground(HEADING_COLOUR);
         return label;
     }
 
@@ -340,7 +371,7 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenuItem properties = new javax.swing.JMenuItem(
                 I18n.t("autosetup.ui.menuPointProperties"));
             properties.addActionListener(e -> { pointProperties(tile); refresh(); });
-            menu.add(AutonomyViewerPanel.styled(properties, true));
+            menu.add(button(properties));
             menu.addSeparator();
         }
 
@@ -353,15 +384,14 @@ public class AutonomyEditorPanel extends JPanel
             oneWayFrom = tile;
             say(hint, I18n.t("autosetup.ui.promptOneWayTo"));
         });
-        menu.add(AutonomyViewerPanel.styled(oneWay, false));
+        menu.add(button(oneWay));
         menu.addSeparator();
 
         Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
 
         if (!routes.isEmpty())
         {
-            menu.add(AutonomyViewerPanel.styled(
-                new JLabel("  " + I18n.t("autosetup.ui.menuRouteHeading")), true));
+            menu.add(heading("  " + I18n.t("autosetup.ui.menuRouteHeading")));
 
             // One submenu per branch, so a switch's branches are visibly separate things rather than
             // one gesture that changes all of them without saying so.
@@ -381,7 +411,7 @@ public class AutonomyEditorPanel extends JPanel
                     if (holder == null) menu.add(item); else ((javax.swing.JMenu) holder).add(item);
                 }
 
-                if (holder != null) menu.add(AutonomyViewerPanel.styled(holder, false));
+                if (holder != null) menu.add(button(holder));
             }
 
             if (many)
@@ -404,10 +434,10 @@ public class AutonomyEditorPanel extends JPanel
                         refresh();
                     });
 
-                    all.add(AutonomyViewerPanel.styled(item, false));
+                    all.add(button(item));
                 }
 
-                menu.add(AutonomyViewerPanel.styled(all, false));
+                menu.add(button(all));
             }
 
             menu.addSeparator();
@@ -422,26 +452,26 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenuItem name = new javax.swing.JMenuItem(
                 I18n.t("autosetup.ui.menuSetName"));
             name.addActionListener(e -> { promptLinkName(tile); refresh(); });
-            menu.add(AutonomyViewerPanel.styled(name, false));
+            menu.add(button(name));
 
             javax.swing.JMenuItem pair = new javax.swing.JMenuItem(
                 I18n.t("autosetup.ui.menuPairLink"));
             pair.addActionListener(e -> { pairFromList(tile); refresh(); });
-            menu.add(AutonomyViewerPanel.styled(pair, false));
+            menu.add(button(pair));
 
             if (session.getStore().getPortalPartner(tile) != null)
             {
                 javax.swing.JMenuItem unpair = new javax.swing.JMenuItem(
                     I18n.t("autosetup.ui.menuUnpairLink"));
                 unpair.addActionListener(e -> { session.unpairPortal(tile); refresh(); });
-                menu.add(AutonomyViewerPanel.styled(unpair, false));
+                menu.add(button(unpair));
             }
         }
 
         javax.swing.JMenuItem length = new javax.swing.JMenuItem(
             I18n.t("autosetup.ui.menuSetLength"));
         length.addActionListener(e -> { applyLength(tile); refresh(); });
-        menu.add(AutonomyViewerPanel.styled(length, false));
+        menu.add(button(length));
 
         menu.show(invoker, x, y);
     }
@@ -481,7 +511,7 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        return AutonomyViewerPanel.styled(item, false);
+        return button(item);
     }
 
     public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
@@ -642,11 +672,10 @@ public class AutonomyEditorPanel extends JPanel
             session.getStore().getPointName(tile) == null
                 ? "" : session.getStore().getPointName(tile));
 
-        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t("autosetup.ui.menuSetName")), true));
-        panel.add(AutonomyViewerPanel.styled(name, false));
+        panel.add(heading(I18n.t("autosetup.ui.menuSetName")));
+        panel.add(control(name));
 
-        panel.add(AutonomyViewerPanel.styled(
-            new JLabel(I18n.t("autosetup.ui.labelStationKind")), true));
+        panel.add(heading(I18n.t("autosetup.ui.labelStationKind")));
 
         final JCheckBox station = check(panel, "autosetup.ui.kindStation",
             session.getStore().isStation(tile));
@@ -663,7 +692,7 @@ public class AutonomyEditorPanel extends JPanel
             Boolean.FALSE.equals(storedActive));
 
         JLabel parkingHint = new JLabel(I18n.t("autosetup.ui.hintParking"));
-        parkingHint.setFont(AutonomyViewerPanel.FONT_LIST);
+        parkingHint.setFont(FONT_HINT);
         panel.add(parkingHint);
 
         // The two qualifiers only mean anything on a station, so they follow it.
@@ -731,23 +760,23 @@ public class AutonomyEditorPanel extends JPanel
     private JCheckBox check(JPanel panel, String key, boolean value)
     {
         JCheckBox box = new JCheckBox(I18n.t(key), value);
-        panel.add(AutonomyViewerPanel.styled(box, false));
+        panel.add(control(box));
         return box;
     }
 
     private javax.swing.JTextField field(JPanel panel, String key, int value)
     {
-        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t(key)), false));
+        panel.add(control(new JLabel(I18n.t(key))));
 
         javax.swing.JTextField text = new javax.swing.JTextField(String.valueOf(value));
-        panel.add(AutonomyViewerPanel.styled(text, false));
+        panel.add(control(text));
 
         return text;
     }
 
     private javax.swing.JList<String> locomotiveList(JPanel panel, String key, Set<String> chosen)
     {
-        panel.add(AutonomyViewerPanel.styled(new JLabel(I18n.t(key)), false));
+        panel.add(control(new JLabel(I18n.t(key))));
 
         javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
 
@@ -758,7 +787,7 @@ public class AutonomyEditorPanel extends JPanel
 
         javax.swing.JList<String> list = new javax.swing.JList<>(model);
         list.setVisibleRowCount(4);
-        AutonomyViewerPanel.styled(list, false);
+        control(list);
 
         List<Integer> indexes = new java.util.ArrayList<>();
 

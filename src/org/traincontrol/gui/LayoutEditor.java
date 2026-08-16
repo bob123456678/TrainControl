@@ -475,6 +475,10 @@ public class LayoutEditor extends PositionAwareJFrame
             this.newComponents.removeAll();
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
+
+            // The column heading belongs to the window, not to the palette that used to fill it - in
+            // autonomy mode "New Components" describes something that is no longer there.
+            this.jLabel1.setText(I18n.t("autosetup.ui.title"));
         }
 
         this.newComponents.revalidate();
