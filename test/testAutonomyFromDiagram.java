@@ -135,10 +135,16 @@ public class testAutonomyFromDiagram
         // The CS2 file records only a destination PAGE, never a destination tile, which is why pairing
         // has to be authored at all: had Top Parking stayed in, its two arrows back to Main would have
         // made the pairing genuinely ambiguous and no amount of reading the file would settle it.
-        TileKey mainLink = findLink("1 - Main", 14, 5);
+        TileKey mainLink = findLink("1 - Main", 15, 5);
         TileKey bottomLink = findLink("2 - Bottom", 10, 9);
 
-        if (mainLink != null && bottomLink != null) graph.pairPortals(mainLink, bottomLink);
+        // Fail rather than carry on unpaired.  Tolerating a missing link tile let a wrong coordinate
+        // masquerade as a diagram with no cross-page routes at all, which is indistinguishable in the
+        // output from the pairing working and the two pages genuinely not connecting.
+        assertNotNull(mainLink, "no link tile on Main at 15,5 - the pairing coordinates are stale");
+        assertNotNull(bottomLink, "no link tile on Bottom at 10,9 - the pairing coordinates are stale");
+
+        graph.pairPortals(mainLink, bottomLink);
 
         graph.validatePortals();
 
@@ -441,7 +447,7 @@ public class testAutonomyFromDiagram
     {
         TileGraph open = new TileGraph(pages, excludedPages);
 
-        TileKey mainLink = linkAt(open, "1 - Main", 14, 5);
+        TileKey mainLink = linkAt(open, "1 - Main", 15, 5);
         TileKey bottomLink = linkAt(open, "2 - Bottom", 10, 9);
 
         if (mainLink != null && bottomLink != null) open.pairPortals(mainLink, bottomLink);
