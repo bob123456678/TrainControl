@@ -21,6 +21,7 @@ import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.base.TileOverlay;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -77,6 +78,20 @@ public final class LayoutLabel extends JLabel
     
     private Icon lastIcon;
     private boolean edit;
+
+    /**
+     * What autonomy says is happening on this square, or null for nothing.
+     *
+     * Painted over the icon rather than baked into it, for three reasons that are all about the existing
+     * rendering.  The icon cache is shared by every tile of a type, so recolouring one would recolour
+     * them all or need a cache entry per state.  updateImage only refreshes when the icon NAME changes,
+     * which autonomy state never does - hence the repaint below, which cannot ride that path.  And the
+     * transient yellow highlight already works by swapping the icon out and back from lastIcon, so a
+     * second effect doing the same would fight it for the one slot it restores from.
+     *
+     * Volatile: written from the monitor's publish and read while painting.
+     */
+    private volatile TileOverlay autonomyOverlay;
     
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
@@ -498,6 +513,64 @@ public final class LayoutLabel extends JLabel
      * Refreshes the tile's image
      * @param highlight
      */
+    /**
+     * Sets what autonomy is showing on this square, repainting if it changed.
+     *
+     * Repaints here rather than through updateImage, which returns early unless the icon name changed -
+     * and autonomy state does not change the icon name, so riding that path would show nothing.
+     *
+     * @param overlay what to show, or null for nothing
+     */
+    public void setAutonomyOverlay(TileOverlay overlay)
+    {
+        TileOverlay effective = overlay == null || overlay.isBlank() ? null : overlay;
+
+        if (effective == null ? autonomyOverlay == null : effective.equals(autonomyOverlay)) return;
+
+        autonomyOverlay = effective;
+
+        // repaint() is safe from any thread; the monitor publishes from its own worker
+        this.repaint();
+    }
+
+    /**
+     * @return what autonomy is showing here, or null
+     */
+    public TileOverlay getAutonomyOverlay()
+    {
+        return autonomyOverlay;
+    }
+
+    /**
+     * Draws the tile, then whatever autonomy is saying about it.
+     *
+     * After super, so it lands over the icon and never touches setIcon - which is what lets it coexist
+     * with the transient highlight.  Note that station and address labels are z-ordered above tiles by
+     * LayoutGrid, so this can never cover their text.
+     *
+     * @param g
+     */
+    @Override
+    protected void paintComponent(java.awt.Graphics g)
+    {
+        super.paintComponent(g);
+
+        TileOverlay overlay = autonomyOverlay;
+
+        if (overlay == null || overlay.isBlank()) return;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+        try
+        {
+            overlay.paint(g2, getWidth(), getHeight());
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
     public void updateImage(boolean highlight)
     {
         // TODO improve the way highlighting is done, delete global variables

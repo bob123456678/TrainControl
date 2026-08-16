@@ -315,6 +315,18 @@ public class LayoutGrid
                     container.setComponentZOrder(text, 0);
                 }
                                                                               
+                // Register the tile with autonomy, if it is watching.
+                //
+                // Here because this is the only place that knows both the page and the square: a
+                // LayoutLabel is told neither, and LayoutGrid keeps no reference to the LayoutDiagram
+                // after the constructor returns.
+                if (c != null && ui != null && ui.getDiagramTileRegistry() != null)
+                {
+                    ui.getDiagramTileRegistry().register(
+                        new org.traincontrol.base.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
+                        grid[x][y]);
+                }
+
                 // Set references for each tile accessory
                 if (c != null)
                 {

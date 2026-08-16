@@ -1386,6 +1386,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * left to guard, and this is called once per tile per repaint.
      * @return
      */
+    /**
+     * Which on-screen tiles stand for which square of the diagram, for autonomy to light up.
+     *
+     * Held here because LayoutGrid builds tiles for both the main window and any popup, and both have to
+     * show the same picture.  Created lazily and never cleared wholesale: it prunes itself as windows
+     * close, the way the accessory and feedback tile sets do, which also means the layout cache re-adding
+     * an existing grid keeps its registrations rather than losing them.
+     * @return
+     */
+    public DiagramTileRegistry getDiagramTileRegistry()
+    {
+        if (diagramTileRegistry == null) diagramTileRegistry = new DiagramTileRegistry();
+
+        return diagramTileRegistry;
+    }
+
+    private DiagramTileRegistry diagramTileRegistry;
+
     public static Map<String,Image> getImageCache()
     {
         return imageCache;
