@@ -146,6 +146,7 @@
         <test-one-class class="testRoutes"/>
         <test-one-class class="testGraphReducer"/>
         <test-one-class class="testAutonomyCompanionStore"/>
+        <test-one-class class="testDiagramMonitor"/>
         <test-one-class class="testAutonomyFromDiagram"/>
         <test-one-class class="testTileGraph"/>
         <test-one-class class="testTilePorts"/>
