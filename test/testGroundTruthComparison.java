@@ -54,7 +54,6 @@ import org.traincontrol.marklin.file.CS2File;
 public class testGroundTruthComparison
 {
     private static final String LAYOUT = "cs2_sample_layout";
-    private static final String LEGACY = "cs2_sample_layout/config/autorun/autonomy.json";
 
     private MarklinControlStation model;
     private List<LayoutDiagram> pages;
@@ -65,15 +64,39 @@ public class testGroundTruthComparison
     @BeforeClass
     public void setUp() throws Exception
     {
+        try
+        {
+            build();
+        }
+        catch (Exception e)
+        {
+            // A configuration failure otherwise reports as five skipped tests and nothing else, which
+            // says only that something went wrong somewhere
+            System.out.println("\nGROUND TRUTH SETUP FAILED: " + e);
+            e.printStackTrace(System.out);
+            throw e;
+        }
+    }
+
+    private void build() throws Exception
+    {
         model = init(null, true, false, false, false);
 
-        String path = new File(LAYOUT).toURI().toString();
+        File folder = findLayoutFolder();
+
+        assertTrue(folder.isDirectory(), "sample layout not found at " + folder.getAbsolutePath());
+
+        // The same URL shape syncLayoutsFromConfiguredSource builds for a local layout
+        String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        List<MarklinAccessory> accessories = parser.getMagList(true);
-        pages = parser.parseLayout(accessories);
+        // This layout has no magnetartikel.cs2 - it ships only the diagram and its autonomy file - and
+        // the accessory list is used solely to pick a decoder protocol, so an empty one is correct here.
+        pages = parser.parseLayout(new LinkedList<MarklinAccessory>());
+
+        wireAccessories();
 
         // "4 - Combined" redraws tiles from the other pages.  Left in, it would mint a second Point for
         // every sensor it shows and a parallel set of edges - which is exactly what the exclusion flag
@@ -91,10 +114,73 @@ public class testGroundTruthComparison
         reducer = new GraphReducer(graph, null);
         reducer.reduce();
 
+        File legacyFile = new File(findLayoutFolder(), "config/autorun/autonomy.json");
+
+        assertTrue(legacyFile.isFile(), "hand-built autonomy config not found at "
+            + legacyFile.getAbsolutePath());
+
         legacy = new JSONObject(new String(
-            Files.readAllBytes(Paths.get(LEGACY)), StandardCharsets.UTF_8));
+            Files.readAllBytes(legacyFile.toPath()), StandardCharsets.UTF_8));
 
         System.out.println(report(excluded));
+    }
+
+    /**
+     * Finds the sample layout whether the tests run from the project root or from a build directory.
+     */
+    private File findLayoutFolder()
+    {
+        File candidate = new File(LAYOUT);
+
+        for (int up = 0; up < 4 && !candidate.isDirectory(); up++)
+        {
+            candidate = new File("../" + candidate.getPath());
+        }
+
+        return candidate;
+    }
+
+    /**
+     * Attaches an accessory to every switch and signal, the way syncLayouts does when the application
+     * loads a layout.
+     *
+     * parseLayout deliberately does not do this - it uses the accessory database only to pick a decoder
+     * protocol - so a diagram parsed in isolation has addresses on its tiles but no Accessory objects
+     * behind them.  Names are built exactly as the application builds them, since the name is what both
+     * the model and the hand-written configuration key on.
+     */
+    private void wireAccessories()
+    {
+        for (LayoutDiagram page : pages)
+        {
+            for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
+            {
+                if (!c.isSwitch() && !c.isSignal()) continue;
+
+                // the application skips tiles drawn without a digital address, and so does this
+                if (c.getAddress() <= 0) continue;
+
+                org.traincontrol.base.Accessory.accessoryType type = c.isSignal()
+                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
+                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
+
+                c.setAccessory(accessory(c.getAddress(), type, c.getProtocol()));
+
+                if (c.isThreeWay())
+                {
+                    c.setAccessory2(accessory(c.getAddress() + 1,
+                        org.traincontrol.base.Accessory.accessoryType.SWITCH, c.getProtocol()));
+                }
+            }
+        }
+    }
+
+    private MarklinAccessory accessory(int logicalAddress,
+        org.traincontrol.base.Accessory.accessoryType type,
+        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
+    {
+        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
+            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
     /**
