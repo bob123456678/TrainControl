@@ -109,12 +109,36 @@ tile to another. The per-tile requirement is still met as a convenience gesture:
 and choosing a direction applies it to all of that tile's connections at once.
 
 **Special connections** (not derivable from adjacency):
-- **LINK** — jumps to another page. Its art is a box graphic, not track, so it is never traced
-  through; it carries exactly one user-paired connection to a tile on another page.
-- **TUNNEL** — connects normally on its one visible side, plus one user-paired connection to its
-  partner tunnel, possibly on another page.
-Both are authored with the same click-source-then-target gesture and stored as explicit
-connections in the companion, not inferred.
+
+- **LINK — jumps to another track diagram** (author, 2026-08-01). A link tile has **two** ports:
+  - a **geometric** one, joining the adjacent track tile on its arrow side. The art is a box
+    containing a left-pointing arrow whose tip reaches the **W** edge, so the connecting side is
+    W at orientation 0 and **rotates with the tile** (LINK has 4 orientations). This side behaves
+    like any ordinary adjacency.
+  - a **portal** one, joining its partner link on another page.
+
+  Today a link only stores the index of the diagram it points at, which is too weak for autonomy —
+  several links can target the same page, leaving the destination *tile* ambiguous. Autonomy
+  therefore requires, per link tile:
+  - a **unique name**, and
+  - an explicit statement of **which link it jumps to**.
+
+  Rules:
+  - **Unnamed links do not connect.** The graph simply has no portal edge there and no train ever
+    passes over it. This is a silent, safe default: adding autonomy to an existing diagram cannot
+    invent connections the user did not confirm.
+  - **Pairing is strictly mutual and exclusive** — if A jumps to B then B jumps to A, and nothing
+    else may target either. **No A-B-C sharing a common B.** The store validates this and reports
+    a violation as a setup error naming both tiles; a half-pairing (A names B, B names something
+    else or nothing) is likewise an error rather than a silently one-way jump.
+  - Names are unique across the whole layout, not per page, since the pairing is cross-page.
+
+- **TUNNEL** — connects normally on its one visible side (**S** at orientation 0, confirmed from
+  the art), plus one user-paired portal connection to its partner tunnel, possibly on another page.
+  Same mutual-and-exclusive pairing rule.
+
+Portal connections are stored explicitly in the companion, never inferred, and are authored with
+the same click-source-then-target gesture (page switching allowed between the two clicks).
 
 **Layer 2 — reduction to the autonomy graph.**
 The autonomy `Layout` is a *contraction* of the tile graph:
@@ -204,9 +228,8 @@ output and autonomy debug messages are readable rather than coordinate soup.
 - The points table shows generated vs user-assigned names distinguishably, so it is obvious which
   Points have been given real names and which are still coordinates.
 - **Duplicate-tile pages.** A "Combined" page that redraws tiles from other pages would mint a
-  second Point for the same physical sensor. This makes the per-page *participates in tracing*
-  flag mandatory rather than a nicety — it is the mechanism that keeps a display-only page out of
-  the graph.
+  second Point for the same physical sensor. This is what the per-page **exclude from autonomy**
+  flag exists for (see its section) — such a page is excluded and never walked.
 - **Isolated feedback tiles** (author: "it depends on whether or not it is connected to
   anything"): a feedback tile with **no** allowed connections is not emitted as a Point at all —
   an unreachable node would only fail validation. A feedback tile with exactly one connection is
@@ -216,6 +239,30 @@ output and autonomy debug messages are readable rather than coordinate soup.
   config, which is expected and correct: hand-authoring omitted sensors that the diagram knows
   about. Migration must therefore *match* legacy edges onto a subset of the derived graph rather
   than expect a 1:1 correspondence.
+
+## Per-diagram "exclude from autonomy" (author directive, 2026-08-01)
+
+Users legitimately **duplicate a track diagram** — for example to show more or less of the layout
+in one view. A duplicated page would otherwise mint a second Point for every s88 it redraws and a
+parallel set of edges, corrupting the graph.
+
+Each diagram page therefore carries an **exclude from autonomy** flag. An excluded page is not
+walked at all: no tile graph nodes, no Points, no edges, no warnings about its contents. It
+remains fully usable as a display and control surface — excluding it changes nothing about how it
+renders or how its tiles behave at runtime.
+
+- Stored in the companion, **shared per layout** (it describes the diagram, not a configuration),
+  as a set of excluded page names; default is *included*, so behavior is unsurprising.
+- Toggled from the autonomy mode's page selector and from the page's right-click menu.
+- **This supersedes the earlier "participates in tracing" idea** and is the mechanism that solves
+  the "Combined" page problem recorded in the exploration notes (a page that redraws tiles from
+  other pages). That page is simply excluded.
+- Interaction with links and tunnels: a portal pairing that targets a tile on an **excluded** page
+  is a setup error, not a silent dead end — otherwise excluding a page would quietly sever routes
+  elsewhere. The error names both tiles so the user can either re-pair or re-include.
+- Excluding a page that contributes Points to the **active** configuration invalidates that
+  configuration's placements/homes referring to them; the store reports these as orphans under the
+  existing orphan policy rather than deleting them, so re-including the page restores them.
 
 ## Ground-truth gate: the generated graph must be diffed against the real `autonomy.json`
 
@@ -314,8 +361,8 @@ when there is a train"), **without changing the autonomy model** (`automation/La
   portal pairs, paint-overrides, **tile lengths**, **tile directions**; **per named configuration**: point flags and
   properties, per-edge overrides (manual lock additions), locomotive placements, homes, exclusions,
   global autonomy settings, timetable. Schema top level:
-  `{version, shared: {anchors, portals, paintOverrides, tileLengths, tileDirections},
-  configurations: {"<name>": {...}}, activeConfiguration}`. `tileLengths` is a sparse map keyed
+  `{version, shared: {pointNames, stations, portals, linkNames, excludedPages, tileLengths,
+  connectionOverrides}, configurations: {"<name>": {...}}, activeConfiguration}`. `tileLengths` is a sparse map keyed
   `"<page>:<x>,<y>"` → int — only non-zero tiles are written. `tileDirections` is sparse the same
   way, keyed `"<page>:<x>,<y>"` (or `"<page>:<x>,<y>#<group>"` for two-group tiles) →
   `"forward" | "back" | "none"`; the default `both` is never written. Both maps are absent
@@ -728,7 +775,7 @@ table because pixels cannot express it.
 | CUSTOM_PERM_SCISSORS | `custom_perm_scissors` | — | **DISQUALIFIED** (confirmed) — drawing convention, blocking error | ruling |
 | CUSTOM_SCISSORS | `custom_scissors` | — | **DISQUALIFIED** — a drawing convention for a double slip across two tiles, not a routing element; blocking setup error | ruling |
 | TURNTABLE | `turntable` | — | **NOT SUPPORTED** (author, 2026-08-01) — trace terminator, nothing routes across it | author |
-| LINK | `link` | — art is a box graphic, **not track** | page portal, never traced through | **D** |
+| LINK | `link` | **W** at o=0, 4 orientations | connects the adjacent track on its arrow side **plus** one named portal connection to another page (author, 2026-08-01) | M / author |
 | LAMP, ROUTE, TEXT | `lamp`/`route`/`text` | none | decorative, no ports | M |
 
 **What the pixels could not answer, and why (this is the honest limit).**
@@ -883,7 +930,10 @@ building the review UI — its report calibrates the derivation work.
 `.modeConnection`, `.btnShowDirections`, `.btnShowReducedGraph`, `.dirBoth`, `.dirForward`,
 `.dirBack`, `.dirNone`, `.warnDirectionContradiction`, `.errorScissorsNotSupported`,
 `.infoIsolatedFeedbackSkipped`, `.labelPointNotStation`, `.menuDesignateStation`,
-`.pageParticipatesInTracing`, `.promptPointName`, `.errorDuplicatePointName`,
+`.menuExcludePageFromAutonomy`, `.labelPageExcluded`, `.promptLinkName`,
+`.errorDuplicateLinkName`, `.errorLinkNotMutuallyPaired`, `.errorLinkTargetShared`,
+`.errorPortalTargetsExcludedPage`, `.infoUnnamedLinkNotConnected`, `.warnTurntableNotRoutable`,
+`.promptPointName`, `.errorDuplicatePointName`,
 `.errorEmptyPointName`, `.warnQuotesStrippedFromName`, `.labelGeneratedName`,
 `.warnLegacyVirtualPoint`, `.assignPoint`, `.createPoint`, `.clearAnchor`,
 `.labelPoints`, `.statusAnchored`, `.statusUnanchored`, `.orphanCount`, `.adoptOrphan`,
@@ -908,7 +958,7 @@ Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
 | `testDiagramMonitor` | dispatch→RESERVED, milestone→COMPLETED/CURRENT, completion fire (maps already cleared)→empty publish, 50-fire burst coalesces, throwing publisher never reaches the firing thread — simulated model + fake publisher + visible/hidden parents (the `testLayoutTiles` trick) |
 | `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **CS-sourced layouts**: anchors save and reload with no local layout path set (the `isLocalLayout()`-false case must NOT refuse), a station assigned on a non-feedback tile round-trips as a virtual point with no s88, and an anchor whose `(page,x,y)` no longer resolves after a simulated diagram re-download becomes a reportable orphan rather than a deletion |
 | `testAutonomyBuilder` | companion + programmatic pages compile to JSON that `parseAuto` accepts and validates; deterministic output (two builds byte-identical); setup errors (unanchored point, unpaired portal) invalidate through the normal flow; **migration**: legacy `autonomy.json` fixture + matching diagram → traced edges adopt the legacy lengths/locks/homes; generated-then-parsed Layout's `toJSON` is stable across a second build; **scratch build isolation**: `validateScratch()` on a deliberately broken companion reports invalid while `model.getAutoLayout()` remains the untouched previous instance (identity assert) and no locomotive was stopped; **lengths**: unassigned tiles yield length 0 on every edge (parity with today), assigned tiles sum along the traced path with endpoints excluded, a 0 on an intermediate tile contributes nothing without breaking the edge, and a legacy length distributed over N tiles sums back to exactly the original |
-| `testTileGraph` (revised) | geometry seeds candidate connections both ways; a user override survives a re-trace and is not overwritten by geometry; disallowed connections are absent in both directions; one-way connections are absent in exactly one; LINK and TUNNEL portal connections join the named tiles across pages and are never inferred from adjacency; a permanent turnout's facing connections are seeded disallowed and cannot be user-enabled |
+| `testTileGraph` (revised) | **links**: an unnamed link forms no portal connection and no train can cross it; a named, mutually-paired link joins its partner's tile across pages; a half-pairing and an A-B-C collision are both setup errors naming the tiles; the geometric side of a LINK is W at orientation 0 and rotates with the tile; a pairing targeting an excluded page is an error, not a silent dead end. **Excluded pages**: an excluded page contributes no nodes, Points, edges or warnings, and re-including it restores the orphaned placements rather than having deleted them. geometry seeds candidate connections both ways; a user override survives a re-trace and is not overwritten by geometry; disallowed connections are absent in both directions; one-way connections are absent in exactly one; LINK and TUNNEL portal connections join the named tiles across pages and are never inferred from adjacency; a permanent turnout's facing connections are seeded disallowed and cannot be user-enabled |
 | `testGraphReducer` (revised) | **every** feedback tile becomes a Point without user action, while a station is a Point plus a designation; two feedback tiles sharing one s88 address both become Points with distinct generated names, and a user rename survives a rebuild and a change to the surrounding track; a duplicate name is refused at authoring time, not at build time; a name containing a quote character does not silently change on the way into `Point`; designating a station sets `isDestination` and never produces the model's no-s88 exception because every derived Point has one; a legacy virtual point (no s88) is reported as an unanchorable migration case rather than dropped; a feedback tile with no allowed connections is skipped (and counted) rather than emitted as an unreachable node, while one with a single connection is emitted; a `CUSTOM_SCISSORS` on a participating page fails the build with a coordinate-naming error; a degree-2 chain between two significant nodes collapses to exactly one edge with summed length and ANDed direction; a switch in the chain forks into one edge per branch carrying the correct `configCommands`; a `SWITCH_THREE` yields exactly three routes from its toe and **every** route commands both of its addresses with an explicit straight/throw (no address is ever left unspecified); a `SWITCH_CROSSING` contributes commands in **both** states — unswitched for its N-S/E-W throughs and switched for its N-W/S-E diagonals; an unpromoted s88 tile collapses away; **mutual exclusion**: two edges sharing a switch tile are locked against each other, two edges sharing a CROSSING are locked, two edges crossing an OVERPASS in different groups are **not** locked but in the same group are, a portal pair counts as one location; reduction is deterministic across two runs |
 | `testLockEdgeAnalyzer` (R2) | exposure invariant: asymmetric-but-covered pair → zero suggestions; hand-built unsafe config → exactly the uncovered ordered pairs; portal-pair conflicts; pinned run against `test/autonomy_sanity.json` |
 
