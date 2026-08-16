@@ -1387,6 +1387,98 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      */
     /**
+     * The autonomy setup for the layout currently loaded, or null if there is none.
+     *
+     * Created on demand from the local layout folder, because autonomy is local-layout only: its files
+     * live beside the diagram, and a layout read from the Central Station has nowhere to put them until
+     * it is downloaded.
+     *
+     * @return the session, or null when this layout cannot hold one
+     */
+    public org.traincontrol.base.AutonomySession getAutonomySession()
+    {
+        if (autonomySession != null) return autonomySession;
+
+        String path = getLocalLayoutPath();
+
+        if (path == null || path.isEmpty()) return null;
+
+        org.traincontrol.base.AutonomySession session =
+            new org.traincontrol.base.AutonomySession(new java.io.File(path));
+
+        if (!session.isUsable()) return null;
+
+        try
+        {
+            java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
+
+            for (String name : this.model.getLayoutList())
+            {
+                pages.add(this.model.getLayout(name));
+            }
+
+            session.open(pages);
+        }
+        catch (Exception e)
+        {
+            this.model.log(e);
+            return null;
+        }
+
+        autonomySession = session;
+
+        return autonomySession;
+    }
+
+    /**
+     * Drops the autonomy setup, so the next request reads it again.  Called when the layout changes
+     * underneath it - a session holding pages that are no longer loaded would describe a diagram nobody
+     * is looking at.
+     */
+    public void resetAutonomySession()
+    {
+        autonomySession = null;
+    }
+
+    private org.traincontrol.base.AutonomySession autonomySession;
+
+    /**
+     * The autonomy panel shown beside the track diagram.
+     *
+     * Mounted as the scroll pane's row header, which is unused today, so nothing generated has to be
+     * touched and nothing competes with the grid for the viewport - which LayoutGrid clears and
+     * re-lays out on every redraw.
+     */
+    public void showAutonomyPanel(boolean show)
+    {
+        if (!show)
+        {
+            this.LayoutArea.setRowHeaderView(null);
+            autonomyViewerPanel = null;
+            return;
+        }
+
+        org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+        if (session == null) return;
+
+        if (autonomyViewerPanel == null)
+        {
+            autonomyViewerPanel = new AutonomyViewerPanel(session, this);
+        }
+
+        this.LayoutArea.setRowHeaderView(autonomyViewerPanel);
+        this.LayoutArea.revalidate();
+    }
+
+    public AutonomyViewerPanel getAutonomyViewerPanel()
+    {
+        return autonomyViewerPanel;
+    }
+
+    private AutonomyViewerPanel autonomyViewerPanel;
+
+    /**
      * Which on-screen tiles stand for which square of the diagram, for autonomy to light up.
      *
      * Held here because LayoutGrid builds tiles for both the main window and any popup, and both have to

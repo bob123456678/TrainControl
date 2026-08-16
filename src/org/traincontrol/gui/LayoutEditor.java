@@ -401,8 +401,84 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    /**
+     * The autonomy tools, shown in place of the component palette when autonomy mode is on.
+     *
+     * Mounted into newComponents - the palette container - because that is one of the few containers in
+     * this form whose layout manager is already replaced from hand-written code, so nothing generated has
+     * to be touched.  Deliberately NOT ExtLayoutPanel, which LayoutGrid clears and re-lays out on every
+     * redraw.
+     */
+    private AutonomyEditorPanel autonomyPanel;
+
+    /**
+     * Turns autonomy setup on or off.
+     *
+     * Does not call layout.setEdit(), so the diagram keeps looking the way it does when trains are
+     * running - station labels and text stay visible, which is what the user is reasoning about.
+     *
+     * @param session the setup to edit, or null to go back to editing the diagram
+     */
+    public void setAutonomyMode(org.traincontrol.base.AutonomySession session)
+    {
+        if (session == null)
+        {
+            if (autonomyPanel != null)
+            {
+                this.newComponents.remove(autonomyPanel);
+                autonomyPanel = null;
+            }
+        }
+        else if (autonomyPanel == null)
+        {
+            autonomyPanel = new AutonomyEditorPanel(session, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    repaint();
+                }
+            });
+
+            this.newComponents.removeAll();
+            this.newComponents.setLayout(new java.awt.BorderLayout());
+            this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
+        }
+
+        this.newComponents.revalidate();
+        this.newComponents.repaint();
+    }
+
+    /**
+     * @return the autonomy tools, or null when the editor is editing the diagram
+     */
+    public AutonomyEditorPanel getAutonomyPanel()
+    {
+        return autonomyPanel;
+    }
+
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {    
+        // In autonomy mode a click configures the track rather than editing it.  Routed here rather
+        // than through a second listener because LayoutLabel hard-casts its parent to this class and
+        // calls this method - so this is where a click already arrives, and adding a branch is smaller
+        // and less surprising than intercepting events before they get here.
+        if (autonomyPanel != null && autonomyPanel.isVisible())
+        {
+            int x = getX(label);
+            int y = getY(label);
+
+            if (x >= 0 && y >= 0)
+            {
+                autonomyPanel.tileClicked(
+                    new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y),
+                    layout.getComponent(x, y),
+                    e.isShiftDown());
+            }
+
+            return;
+        }
+
         // New label to place
         if (getX(label) == -1 && getY(label) == -1)
         {
