@@ -79,7 +79,23 @@ public class AutonomyEditorPanel extends JPanel
     private final AutonomySession session;
     private final Runnable onChanged;
 
+    // Which page the editor is showing, so findings can be about the page in front of the user
+    private final String page;
+
+    // Called to scroll to and flash a tile, when a finding is clicked
+    private java.util.function.Consumer<TileKey> onReveal;
+
+    // Which tile each findings row is about; null for a heading or a finding with no tile
+    private final List<TileKey> findingTiles = new java.util.ArrayList<>();
+
     private Tool tool = Tool.CONNECTIONS;
+
+    /**
+     * How wide the panel is allowed to get.  The messages here are sentences rather than labels, and a
+     * plain JLabel asks for however wide its text is - which stretched the editor's palette column
+     * across the window the first time a long one appeared.
+     */
+    private static final int WIDTH = 280;
 
     private final JLabel banner = new JLabel();
     private final JLabel hint = new JLabel();
@@ -101,11 +117,13 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * @param session the setup being edited
+     * @param page the diagram page this editor window is showing
      * @param onChanged run after every edit, so the diagram can redraw itself
      */
-    public AutonomyEditorPanel(AutonomySession session, Runnable onChanged)
+    public AutonomyEditorPanel(AutonomySession session, String page, Runnable onChanged)
     {
         this.session = session;
+        this.page = page;
         this.onChanged = onChanged;
 
         setLayout(new BorderLayout(4, 4));
@@ -115,7 +133,21 @@ public class AutonomyEditorPanel extends JPanel
         add(buildFindings(), BorderLayout.CENTER);
         add(buildActions(), BorderLayout.SOUTH);
 
+        // Pinned, so a long sentence in the hint or a finding cannot widen the column it lives in.
+        setPreferredSize(new Dimension(WIDTH, 640));
+        setMinimumSize(new Dimension(WIDTH, 240));
+        setMaximumSize(new Dimension(WIDTH, Integer.MAX_VALUE));
+
         refresh();
+    }
+
+    /**
+     * Wraps a sentence to the panel's width instead of demanding a column as wide as the sentence.
+     */
+    private void say(JLabel label, String text)
+    {
+        label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>"
+            + text.replace("&", "&amp;").replace("<", "&lt;") + "</body></html>");
     }
 
     private JPanel buildTools()
@@ -136,13 +168,14 @@ public class AutonomyEditorPanel extends JPanel
         showDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
-        panel.add(showDirections);
-        panel.add(showLengths);
+        panel.add(AutonomyViewerPanel.styled(showDirections, false));
+        panel.add(AutonomyViewerPanel.styled(showLengths, false));
 
-        hint.setFont(hint.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
+        hint.setFont(AutonomyViewerPanel.FONT);
         panel.add(hint);
 
         banner.setOpaque(true);
+        banner.setFont(AutonomyViewerPanel.FONT_BOLD);
         banner.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
         panel.add(banner);
 
@@ -153,6 +186,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         JToggleButton button = new JToggleButton(text, selected);
 
+        AutonomyViewerPanel.styled(button, false);
         button.setFocusable(false);
         button.addActionListener(e ->
         {
@@ -162,7 +196,7 @@ public class AutonomyEditorPanel extends JPanel
             testFrom = null;
             testPath.clear();
 
-            if (which == Tool.TEST) hint.setText(I18n.t("autosetup.ui.promptTestStart"));
+            if (which == Tool.TEST) say(hint, I18n.t("autosetup.ui.promptTestStart"));
 
             refresh();
         });
@@ -175,10 +209,25 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
+        AutonomyViewerPanel.styled(findings, false);
+
+        // Clicking a finding goes to the tile it is about.  Reading "no train can leave Platform 3" is
+        // only half an answer; the other half is which square that is, on a page of two hundred.
+        findings.addListSelectionListener(e ->
+        {
+            if (e.getValueIsAdjusting()) return;
+
+            int row = findings.getSelectedIndex();
+
+            if (row >= 0 && row < findingTiles.size() && findingTiles.get(row) != null)
+            {
+                if (onReveal != null) onReveal.accept(findingTiles.get(row));
+            }
+        });
 
         JScrollPane scroll = new JScrollPane(findings);
         scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings")));
-        scroll.setPreferredSize(new Dimension(260, 160));
+        scroll.setPreferredSize(new Dimension(WIDTH - 20, 160));
 
         return scroll;
     }
@@ -188,12 +237,16 @@ public class AutonomyEditorPanel extends JPanel
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
         JButton check = new JButton(I18n.t("autosetup.ui.btnCheckConfiguration"));
-        check.addActionListener(e -> refresh());
-        panel.add(check);
+        check.addActionListener(e -> recheck());
+        panel.add(AutonomyViewerPanel.styled(check, false));
+
+        JButton nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
+        nameAll.addActionListener(e -> nameEverything());
+        panel.add(AutonomyViewerPanel.styled(nameAll, false));
 
         JButton save = new JButton(I18n.t("autosetup.ui.btnApply"));
         save.addActionListener(e -> save());
-        panel.add(save);
+        panel.add(AutonomyViewerPanel.styled(save, true));
 
         return panel;
     }
@@ -201,8 +254,21 @@ public class AutonomyEditorPanel extends JPanel
     private JLabel heading(String text)
     {
         JLabel label = new JLabel(text);
-        label.setFont(label.getFont().deriveFont(java.awt.Font.BOLD));
+        label.setFont(AutonomyViewerPanel.FONT_BOLD);
         return label;
+    }
+
+    /**
+     * Re-runs the checks and says so, so that pressing it twice does not look like a button that does
+     * nothing the second time.
+     */
+    private void recheck()
+    {
+        refresh();
+
+        say(hint, findingsModel.isEmpty()
+            ? I18n.t("autosetup.ui.labelCheckedClean")
+            : I18n.f("autosetup.ui.labelCheckedNow", findingsModel.size()));
     }
 
     // --- what a click does ------------------------------------------------------------------------
@@ -215,6 +281,168 @@ public class AutonomyEditorPanel extends JPanel
      * @param addToSelection whether the click was a shift-click, which adds to a bulk selection instead
      *        of acting immediately
      */
+    /**
+     * A tile was right-clicked: everything that can be set on it, named, on one menu.
+     *
+     * The reason this exists alongside the tools: cycling a tile is quick once you know the order, and
+     * opaque before then - a switch has a route per branch, so a click can change three things at once
+     * and the user is left inferring the rule from the arrows. The menu says what the options ARE.
+     *
+     * @param tile which square
+     * @param component what is drawn there
+     * @param invoker the component to show the menu over
+     * @param x where on it
+     * @param y
+     */
+    public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
+        java.awt.Component invoker, int x, int y)
+    {
+        if (tile == null || session.getGraph() == null) return;
+
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+
+        if (!routes.isEmpty())
+        {
+            menu.add(AutonomyViewerPanel.styled(
+                new JLabel("  " + I18n.t("autosetup.ui.menuRouteHeading")), true));
+
+            // One submenu per branch, so a switch's branches are visibly separate things rather than
+            // one gesture that changes all of them without saying so.
+            boolean many = routes.size() > 1;
+
+            for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry : routes.entrySet())
+            {
+                org.traincontrol.base.TilePorts.Route route = entry.getValue();
+
+                javax.swing.JMenuItem holder = many
+                    ? new javax.swing.JMenu(I18n.f("autosetup.ui.menuBranch",
+                        String.valueOf(route.getA()), String.valueOf(route.getB())))
+                    : null;
+
+                for (javax.swing.JMenuItem item : directionItems(tile, entry.getKey(), route))
+                {
+                    if (holder == null) menu.add(item); else ((javax.swing.JMenu) holder).add(item);
+                }
+
+                if (holder != null) menu.add(AutonomyViewerPanel.styled(holder, false));
+            }
+
+            if (many)
+            {
+                javax.swing.JMenu all = new javax.swing.JMenu(
+                    I18n.t("autosetup.ui.menuAllBranches"));
+
+                for (final Direction direction : new Direction[] {Direction.BOTH, Direction.NONE})
+                {
+                    javax.swing.JMenuItem item = new javax.swing.JMenuItem(
+                        direction == Direction.BOTH
+                            ? I18n.t("autosetup.ui.menuRouteBoth")
+                            : I18n.t("autosetup.ui.menuRouteNone"));
+
+                    final TileKey target = tile;
+                    item.addActionListener(e ->
+                    {
+                        session.setDirection(new LinkedHashSet<>(
+                            java.util.Arrays.asList(target)), direction);
+                        refresh();
+                    });
+
+                    all.add(AutonomyViewerPanel.styled(item, false));
+                }
+
+                menu.add(AutonomyViewerPanel.styled(all, false));
+            }
+
+            menu.addSeparator();
+        }
+
+        if (component != null && component.isFeedback())
+        {
+            javax.swing.JMenuItem name = new javax.swing.JMenuItem(
+                I18n.t("autosetup.ui.menuSetName"));
+            name.addActionListener(e -> { promptName(tile); refresh(); });
+            menu.add(AutonomyViewerPanel.styled(name, false));
+
+            javax.swing.JCheckBoxMenuItem station = new javax.swing.JCheckBoxMenuItem(
+                I18n.t("autosetup.ui.menuToggleStation"), session.getStore().isStation(tile));
+            station.addActionListener(e ->
+            {
+                session.setStation(tile, station.isSelected());
+                refresh();
+            });
+            menu.add(AutonomyViewerPanel.styled(station, false));
+        }
+
+        if (component != null && (component.isLink()
+            || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
+        {
+            javax.swing.JMenuItem name = new javax.swing.JMenuItem(
+                I18n.t("autosetup.ui.menuSetName"));
+            name.addActionListener(e -> { promptLinkName(tile); refresh(); });
+            menu.add(AutonomyViewerPanel.styled(name, false));
+
+            javax.swing.JMenuItem pair = new javax.swing.JMenuItem(
+                I18n.t("autosetup.ui.menuPairLink"));
+            pair.addActionListener(e -> { pairFromList(tile); refresh(); });
+            menu.add(AutonomyViewerPanel.styled(pair, false));
+
+            if (session.getStore().getPortalPartner(tile) != null)
+            {
+                javax.swing.JMenuItem unpair = new javax.swing.JMenuItem(
+                    I18n.t("autosetup.ui.menuUnpairLink"));
+                unpair.addActionListener(e -> { session.unpairPortal(tile); refresh(); });
+                menu.add(AutonomyViewerPanel.styled(unpair, false));
+            }
+        }
+
+        javax.swing.JMenuItem length = new javax.swing.JMenuItem(
+            I18n.t("autosetup.ui.menuSetLength"));
+        length.addActionListener(e -> { applyLength(tile); refresh(); });
+        menu.add(AutonomyViewerPanel.styled(length, false));
+
+        menu.show(invoker, x, y);
+    }
+
+    /**
+     * The three answers for one route, with the two one-way options named by where they lead rather
+     * than by an A and a B nobody can see.
+     */
+    private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
+        org.traincontrol.base.TilePorts.Route route)
+    {
+        List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+        Direction current = session.getGraph().getDirection(tile, routeId);
+
+        items.add(directionItem(tile, routeId, Direction.BOTH,
+            I18n.t("autosetup.ui.menuRouteBoth"), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
+        items.add(directionItem(tile, routeId, Direction.NONE,
+            I18n.t("autosetup.ui.menuRouteNone"), current));
+
+        return items;
+    }
+
+    private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
+        final Direction direction, String text, Direction current)
+    {
+        javax.swing.JRadioButtonMenuItem item =
+            new javax.swing.JRadioButtonMenuItem(text, direction == current);
+
+        item.addActionListener(e ->
+        {
+            session.setDirection(tile, routeId, direction);
+            refresh();
+        });
+
+        return AutonomyViewerPanel.styled(item, false);
+    }
+
     public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
     {
         if (tile == null || session.getGraph() == null) return;
@@ -311,10 +539,21 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (component == null || !component.isFeedback())
         {
-            hint.setText(I18n.t("autosetup.ui.labelPointNotStation"));
+            say(hint, I18n.t("autosetup.ui.labelPointNotStation"));
             return;
         }
 
+        promptName(tile);
+
+        int station = JOptionPane.showConfirmDialog(this,
+            I18n.t("autosetup.ui.menuDesignateStation"), I18n.t("autosetup.ui.title"),
+            JOptionPane.YES_NO_OPTION);
+
+        session.setStation(tile, station == JOptionPane.YES_OPTION);
+    }
+
+    private void promptName(TileKey tile)
+    {
         String current = session.getStore().getPointName(tile);
 
         String name = JOptionPane.showInputDialog(this,
@@ -330,55 +569,77 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         session.setPointName(tile, name);
+    }
 
-        int station = JOptionPane.showConfirmDialog(this,
-            I18n.t("autosetup.ui.menuDesignateStation"), I18n.t("autosetup.ui.title"),
-            JOptionPane.YES_NO_OPTION);
+    private void promptLinkName(TileKey tile)
+    {
+        String current = session.getStore().getLinkName(tile);
 
-        session.setStation(tile, station == JOptionPane.YES_OPTION);
+        String name = JOptionPane.showInputDialog(this,
+            I18n.t("autosetup.ui.promptLinkName"), current == null ? "" : current);
+
+        if (name != null) session.setLinkName(tile, name);
     }
 
     /**
-     * Names a link, then pairs it with the next one clicked.
+     * Pairs a link by choosing its partner from a list of every link on the layout.
      *
-     * Two clicks rather than a dialog listing candidates, because the second click can be on another
-     * page - and the CS2 file records only which page a link points at, never which tile, which is why
-     * this has to be authored at all.
+     * A list rather than a second click, because a link almost always leads to ANOTHER PAGE - and the
+     * other page is not on screen, so there is nothing there to click. Two-click pairing only ever
+     * worked for the rare same-page case.
+     */
+    private void pairFromList(TileKey tile)
+    {
+        List<TileKey> candidates = new java.util.ArrayList<>();
+        List<String> labels = new java.util.ArrayList<>();
+
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry
+            : session.getGraph().getTiles().entrySet())
+        {
+            LayoutDiagramComponent component = entry.getValue();
+
+            if (component == null || entry.getKey().equals(tile)) continue;
+
+            if (!component.isLink()
+                && component.getType() != LayoutDiagramComponent.componentType.TUNNEL) continue;
+
+            String named = session.getStore().getLinkName(entry.getKey());
+
+            candidates.add(entry.getKey());
+            labels.add(named == null || named.trim().isEmpty()
+                ? I18n.f("autosetup.ui.labelUnnamedLink", entry.getKey().toString())
+                : named + "  -  " + entry.getKey().toString());
+        }
+
+        if (candidates.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoOtherLinks"));
+            return;
+        }
+
+        Object chosen = JOptionPane.showInputDialog(this,
+            I18n.t("autosetup.ui.promptPickPartner"), I18n.t("autosetup.ui.toolPortals"),
+            JOptionPane.PLAIN_MESSAGE, null, labels.toArray(), labels.get(0));
+
+        if (chosen == null) return;
+
+        session.pairPortals(tile, candidates.get(labels.indexOf(String.valueOf(chosen))));
+    }
+
+    /**
+     * The portal tool: name the link, then pick its partner from the list.
      */
     private void applyPortal(TileKey tile, LayoutDiagramComponent component)
     {
         if (component == null || !(component.isLink() || component.getType()
             == LayoutDiagramComponent.componentType.TUNNEL))
         {
-            hint.setText(I18n.t("autosetup.ui.infoUnnamedLinkNotConnected"));
+            say(hint, I18n.t("autosetup.ui.infoUnnamedLinkNotConnected"));
             return;
         }
 
-        if (pendingPortal == null)
-        {
-            String current = session.getStore().getLinkName(tile);
-
-            String name = JOptionPane.showInputDialog(this,
-                I18n.t("autosetup.ui.promptLinkName"), current == null ? "" : current);
-
-            if (name != null) session.setLinkName(tile, name);
-
-            pendingPortal = tile;
-            hint.setText(I18n.t("autosetup.ui.tooltipGestures"));
-
-            return;
-        }
-
-        if (pendingPortal.equals(tile))
-        {
-            // clicking the same one again releases it rather than pairing it with itself
-            session.unpairPortal(tile);
-            pendingPortal = null;
-            return;
-        }
-
-        session.pairPortals(pendingPortal, tile);
-        pendingPortal = null;
+        promptLinkName(tile);
+        pairFromList(tile);
     }
 
     private void applyLength(TileKey tile)
@@ -432,7 +693,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (component == null || !component.isFeedback())
         {
-            hint.setText(I18n.t("autosetup.ui.labelPointNotStation"));
+            say(hint, I18n.t("autosetup.ui.labelPointNotStation"));
             return;
         }
 
@@ -440,7 +701,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             testFrom = tile;
             testPath.clear();
-            hint.setText(I18n.t("autosetup.ui.promptTestDestination"));
+            say(hint, I18n.t("autosetup.ui.promptTestDestination"));
             return;
         }
 
@@ -451,7 +712,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (run == null)
         {
-            hint.setText(I18n.t("autosetup.ui.testUnreachable"));
+            say(hint, I18n.t("autosetup.ui.testUnreachable"));
         }
         else
         {
@@ -467,7 +728,7 @@ public class AutonomyEditorPanel extends JPanel
                 }
             }
 
-            hint.setText(I18n.f("autosetup.ui.testReachable", run.size()));
+            say(hint, I18n.f("autosetup.ui.testReachable", run.size()));
         }
 
         testFrom = null;
@@ -556,7 +817,12 @@ public class AutonomyEditorPanel extends JPanel
         boolean outlined = selection.contains(tile)
             || testPath.contains(tile) || tile.equals(testFrom);
 
-        return new org.traincontrol.base.TileAnnotation(marks, length, outlined);
+        boolean station = session.getStore().isStation(tile);
+
+        String name = session.getStore().getPointName(tile);
+
+        return new org.traincontrol.base.TileAnnotation(marks, length, outlined, station,
+            name != null && !name.trim().isEmpty());
     }
 
     /**
@@ -569,53 +835,156 @@ public class AutonomyEditorPanel extends JPanel
     public final void refresh()
     {
         findingsModel.clear();
-
-        List<AutonomyChecks.Finding> found = session.check();
+        findingTiles.clear();
 
         int errors = 0;
 
-        for (AutonomyChecks.Finding finding : found)
+        // Only this page.  An editor window shows one page, and a finding about a different one cannot
+        // be acted on here - it would just be a line the reader has to learn to skip.  The whole-layout
+        // view lives in the Auto tab, grouped by page.
+        for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph() == null
+            ? java.util.Collections.<org.traincontrol.base.TileGraph.Problem>emptyList()
+            : session.getGraph().getProblems())
         {
+            if (!onThisPage(problem.getTile())) continue;
+
+            if (problem.isBlocking()) errors++;
+
+            findingsModel.addElement(describe(problem.getMessageKey(),
+                problem.getTile() == null ? "" : problem.getTile().toString()));
+            findingTiles.add(problem.getTile());
+        }
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (!onThisPage(finding.getTile())) continue;
+
             if (finding.getSeverity() == AutonomyChecks.Severity.ERROR) errors++;
 
-            findingsModel.addElement(describe(finding));
+            findingsModel.addElement(describe(finding.getMessageKey(), finding.getSubject()));
+            findingTiles.add(finding.getTile());
         }
+
+        // Unnamed points are the one thing the checks cannot see: a generated name is a valid name, it
+        // is just useless in a timetable.  Counted here so the panel can offer to fix them all at once.
+        int unnamed = unnamedPoints().size();
 
         if (errors > 0)
         {
-            banner.setText(errors + " " + I18n.t("autosetup.ui.colWarnings"));
+            banner.setText(I18n.f("autosetup.ui.labelBlockingCount", errors));
             banner.setBackground(new java.awt.Color(255, 210, 210));
+        }
+        else if (unnamed > 0)
+        {
+            banner.setText(I18n.f("autosetup.ui.labelUnnamedCount", unnamed));
+            banner.setBackground(new java.awt.Color(255, 240, 200));
         }
         else
         {
-            banner.setText(session.getReducer().getPoints().size() + " / "
-                + session.getReducer().getEdges().size());
+            banner.setText(I18n.f("autosetup.ui.labelGraphSize",
+                session.getReducer().getPoints().size(),
+                session.getReducer().getEdges().size()));
             banner.setBackground(new java.awt.Color(214, 245, 214));
         }
 
         if (!selection.isEmpty())
         {
-            hint.setText(I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
+            say(hint, I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
         }
 
         if (onChanged != null) onChanged.run();
     }
 
-    private String describe(AutonomyChecks.Finding finding)
+    private boolean onThisPage(TileKey tile)
     {
-        String message;
+        return tile == null || page == null || page.equals(tile.getPage());
+    }
 
+    /**
+     * The sensors on this page that nobody has named, in reading order.
+     */
+    private List<TileKey> unnamedPoints()
+    {
+        List<TileKey> out = new java.util.ArrayList<>();
+
+        if (session.getReducer() == null) return out;
+
+        for (org.traincontrol.base.GraphReducer.ReducedPoint point
+            : session.getReducer().getPoints().values())
+        {
+            if (!onThisPage(point.getTile())) continue;
+
+            String named = session.getStore().getPointName(point.getTile());
+
+            if (named == null || named.trim().isEmpty()) out.add(point.getTile());
+        }
+
+        java.util.Collections.sort(out, new java.util.Comparator<TileKey>()
+        {
+            @Override
+            public int compare(TileKey a, TileKey b)
+            {
+                return a.getY() != b.getY() ? a.getY() - b.getY() : a.getX() - b.getX();
+            }
+        });
+
+        return out;
+    }
+
+    /**
+     * Walks the unnamed sensors on this page, one prompt each, highlighting the one being named.
+     *
+     * The alternative is hunting for them: a generated name is a valid name, so nothing refuses to work
+     * and nothing points at them - they simply turn up as coordinates in a timetable weeks later.
+     */
+    private void nameEverything()
+    {
+        List<TileKey> unnamed = unnamedPoints();
+
+        if (unnamed.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoEverythingNamed"));
+            return;
+        }
+
+        for (int i = 0; i < unnamed.size(); i++)
+        {
+            TileKey tile = unnamed.get(i);
+
+            // shown before asking, so the question is about a square the user can see
+            if (onReveal != null) onReveal.accept(tile);
+
+            String name = JOptionPane.showInputDialog(this,
+                I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size()), "");
+
+            // cancel stops the walk rather than skipping one, because a walk of forty needs a way out
+            if (name == null) break;
+
+            if (!name.trim().isEmpty()) session.setPointName(tile, name.trim());
+        }
+
+        refresh();
+    }
+
+    /**
+     * @param onReveal called with a tile that should be scrolled to and flashed
+     */
+    public void setOnReveal(java.util.function.Consumer<TileKey> onReveal)
+    {
+        this.onReveal = onReveal;
+    }
+
+    private String describe(String key, String subject)
+    {
         try
         {
-            message = I18n.f(finding.getMessageKey(), finding.getSubject());
+            return I18n.f(key, subject);
         }
         catch (RuntimeException e)
         {
             // a key that has not reached the bundles yet should not blank the whole list
-            message = finding.getMessageKey() + " " + finding.getSubject();
+            return key + " " + subject;
         }
-
-        return message;
     }
 
     public void save()

@@ -698,7 +698,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
-        this.autosave.setSelected(prefs.getBoolean(AUTOSAVE_SETTING_PREF, true));
+        // Always on, and no longer offered as a choice - the stored preference is deliberately ignored
+        // rather than read.  Turning it off only ever meant losing work: what it saves is the state of
+        // the railway, and nobody sets a layout up in order to discard it on exit.
+        this.autosave.setSelected(true);
+        this.autosave.setVisible(false);
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));

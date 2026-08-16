@@ -443,12 +443,22 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (autonomyPanel == null)
         {
-            autonomyPanel = new AutonomyEditorPanel(session, new Runnable()
+            autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
             {
                 @Override
                 public void run()
                 {
                     refreshAutonomyAnnotations();
+                }
+            });
+
+            autonomyPanel.setOnReveal(new java.util.function.Consumer<
+                org.traincontrol.base.TileGraph.TileKey>()
+            {
+                @Override
+                public void accept(org.traincontrol.base.TileGraph.TileKey tile)
+                {
+                    reveal(tile);
                 }
             });
 
@@ -482,6 +492,25 @@ public class LayoutEditor extends PositionAwareJFrame
     public boolean isAutonomyMode()
     {
         return autonomyPanel != null && autonomyPanel.isVisible();
+    }
+
+    /**
+     * Scrolls a square into view and flashes it, so that a finding or a naming prompt is about a tile
+     * the user can actually see.
+     *
+     * @param tile
+     */
+    public void reveal(org.traincontrol.base.TileGraph.TileKey tile)
+    {
+        if (grid == null || tile == null || !layout.getName().equals(tile.getPage())) return;
+
+        LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+
+        if (label == null) return;
+
+        label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
+
+        highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
     }
 
     public void refreshAutonomyAnnotations()
@@ -522,10 +551,21 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (x >= 0 && y >= 0)
             {
-                autonomyPanel.tileClicked(
-                    new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y),
-                    layout.getComponent(x, y),
-                    e.isShiftDown());
+                org.traincontrol.base.TileGraph.TileKey tile =
+                    new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y);
+
+                // Right-click opens the properties menu, the way it does on the graph.  Left-click
+                // applies the selected tool.  Without this branch a right-click ran the tool as well,
+                // which looked like a menu that failed to appear.
+                if (javax.swing.SwingUtilities.isRightMouseButton(e))
+                {
+                    autonomyPanel.tileRightClicked(tile, layout.getComponent(x, y),
+                        label, e.getX(), e.getY());
+                }
+                else
+                {
+                    autonomyPanel.tileClicked(tile, layout.getComponent(x, y), e.isShiftDown());
+                }
             }
 
             return;

@@ -113,9 +113,29 @@ public class TileAnnotation
      */
     private static final Color SELECTED = new Color(255, 140, 0);
 
+    /**
+     * How much the tile art is dimmed under the marks.
+     *
+     * The lines are thin and the icons are busy, so at 0 the chevrons disappear into the track they
+     * describe.  A wash of the tile's own background separates the two layers without hiding either -
+     * the track stays legible, the marks stop competing with it.
+     */
+    private static final float DIM = 0.55f;
+
+    private static final Color DIM_COLOUR = Color.WHITE;
+
+    /**
+     * A designated station.  Drawn as its own mark rather than left to the sensor icon, because a
+     * sensor and a station look identical on the diagram and mean very different things: a train can be
+     * SENT to a station, and only passes through everything else.
+     */
+    private static final Color STATION = new Color(0, 90, 180);
+
     private final List<Mark> marks;
     private final int length;
     private final boolean selected;
+    private final boolean station;
+    private final boolean named;
 
     /**
      * @param marks the routes to draw, or empty to draw none
@@ -124,9 +144,34 @@ public class TileAnnotation
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected)
     {
+        this(marks, length, selected, false, true);
+    }
+
+    /**
+     * @param marks the routes to draw, or empty to draw none
+     * @param length the tile's length, or a negative number not to show one
+     * @param selected whether this tile is part of a bulk selection
+     * @param station whether trains may be sent here
+     * @param named whether this point has a name of its own
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, boolean station,
+        boolean named)
+    {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
+        this.station = station;
+        this.named = named;
+    }
+
+    public boolean isStation()
+    {
+        return station;
+    }
+
+    public boolean isNamed()
+    {
+        return named;
     }
 
     public List<Mark> getMarks()
@@ -150,7 +195,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected;
+        return marks.isEmpty() && length < 0 && !selected && !station;
     }
 
     /**
@@ -173,10 +218,26 @@ public class TileAnnotation
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+            // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
+            // contrast problem as writing on a photograph; this is the caption box behind the writing.
+            if (!marks.isEmpty())
+            {
+                java.awt.Composite before = g.getComposite();
+
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, DIM));
+                g.setColor(DIM_COLOUR);
+                g.fillRect(0, 0, width, height);
+
+                g.setComposite(before);
+            }
+
             for (Mark mark : marks)
             {
                 paintMark(g, width, height, mark);
             }
+
+            if (station) paintStation(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
@@ -289,6 +350,35 @@ public class TileAnnotation
         }
     }
 
+    /**
+     * A platform mark in the top left: a filled roundel, hollow when the station has no name yet.
+     *
+     * Top left because the length sits bottom right and the route lines run through the middle, so the
+     * three never overlap.  Hollow-when-unnamed is the only cue anywhere that a station still needs a
+     * name - nothing refuses to work without one, it just turns up as a coordinate in a timetable.
+     */
+    private void paintStation(Graphics2D g, int width, int height)
+    {
+        int size = Math.max(7, Math.min(width, height) / 3);
+
+        g.setStroke(new BasicStroke(2f));
+
+        if (named)
+        {
+            g.setColor(STATION);
+            g.fillOval(2, 2, size, size);
+            g.setColor(Color.WHITE);
+            g.drawOval(2, 2, size, size);
+        }
+        else
+        {
+            g.setColor(Color.WHITE);
+            g.fillOval(2, 2, size, size);
+            g.setColor(STATION);
+            g.drawOval(2, 2, size, size);
+        }
+    }
+
     private void paintLength(Graphics2D g, int width, int height)
     {
         String text = String.valueOf(length);
@@ -345,18 +435,21 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
-        return length == other.length && selected == other.selected && marks.equals(other.marks);
+        return length == other.length && selected == other.selected
+            && station == other.station && named == other.named && marks.equals(other.marks);
     }
 
     @Override
     public int hashCode()
     {
-        return marks.hashCode() * 31 + length * 2 + (selected ? 1 : 0);
+        return marks.hashCode() * 31 + length * 2
+            + (selected ? 1 : 0) + (station ? 4 : 0) + (named ? 8 : 0);
     }
 
     @Override
     public String toString()
     {
-        return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "");
+        return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
+            + (station ? (named ? " station" : " station(unnamed)") : "");
     }
 }
