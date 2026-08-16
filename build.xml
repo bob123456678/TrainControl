@@ -144,6 +144,7 @@
         <test-one-class class="testParseWebServer"/>
         <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
+        <test-one-class class="testTilePorts"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
