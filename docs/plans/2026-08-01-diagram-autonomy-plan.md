@@ -567,6 +567,34 @@ modes are discovered. Starting set:
 - orphaned placements, homes and exclusions in the active configuration;
 - unpaired, half-paired or excluded-page-targeting portals.
 
+## IMPLEMENTATION STATUS (living, 2026-08-16)
+
+**Done and tested headlessly.** `TilePorts` (verified port map), `TileGraph` (tile adjacency, portals,
+direction, disqualification), `GraphReducer` (Points, edges, commands, lengths, derived locks),
+`AutonomyBuilder` (generated JSON + inspection export), `AutonomyCompanionStore` (persistence, page
+ids, reconciliation), `TileOverlay` + `DiagramMonitor` (what each tile should show).
+Gate cleared against `cs2_sample_layout`.
+
+**Still to build.** The tile registry and the `LayoutLabel` paint hook; the editor's autonomy panel;
+the viewer's autonomy panel; the in-app check suite; the path tester; the reduced-graph inspector.
+
+### Open questions, for review rather than blocking
+
+Decided by best guess, easy to reverse, each isolated to one place:
+
+1. **A route button is transparent** - it carries whatever line it sits on, inferred from its
+   neighbours, and nothing when it sits beside the rails. Inferred from how layouts use them, not
+   from the art, which shows no track at all. `TilePorts.isTransparent` / `TileGraph.transparentRoutes`.
+2. **A signal on a path is commanded green.** Matches the hand-written configurations; the alternative
+   is leaving signals entirely to conditional routes. One line in `TilePorts`.
+3. **Overlay opacity and the train dot.** A 45% wash and a centred dot, chosen so a whole diagram reads
+   at a glance without hiding the track. Nothing depends on the numbers; `TileOverlay`.
+4. **Point names default to the coordinate** (`1 - Main 9,12`). Readable but ugly; the alternative is
+   the s88, which is not unique. Visible in the exported graph until points are named.
+5. **A page renumber is reported, not adopted.** The Central Station orders pages by the id we store
+   against, so a renumber could reattach a page of settings to the wrong page. Reported via
+   `getPageIdConflicts()`; nothing consumes that report yet - the UI must show it.
+
 ## BEFORE R1: what R0 left behind
 
 **1. Message bundle keys do not exist yet.** The engine names keys - `errorScissorsNotSupported`,
