@@ -435,33 +435,11 @@ public class testAutonomyFromDiagram
     }
 
     /**
-     * Reduces the same diagram again with every switch branch traversable both ways, and reports which
-     * hand-built connections are still unreachable.
-     *
-     * This separates the two kinds of gap.  A connection that appears here is one the geometry cannot
-     * express at all - a real defect in the port map, the walk, or the pairing.  A connection that is
-     * unreachable under the default but reachable here is simply a trailing move nobody has opened yet,
-     * which is authoring work rather than a fault.
+     * The wide-open graph as sensor-to-sensor adjacency.
      */
-    private List<String> unreachableWithEveryBranchOpen()
+    private Map<Integer, Set<Integer>> wideOpenAdjacency()
     {
-        TileGraph open = new TileGraph(pages, excludedPages);
-
-        TileKey mainLink = linkAt(open, "1 - Main", 15, 5);
-        TileKey bottomLink = linkAt(open, "2 - Bottom", 10, 9);
-
-        if (mainLink != null && bottomLink != null) open.pairPortals(mainLink, bottomLink);
-
-        for (TileKey tile : open.getTiles().keySet())
-        {
-            for (TileGraph.RouteId routeId : open.getRoutes(tile).keySet())
-            {
-                open.setDirection(tile, routeId, TileGraph.Direction.BOTH);
-            }
-        }
-
-        GraphReducer wideOpen = new GraphReducer(open, null);
-        wideOpen.reduce();
+        GraphReducer wideOpen = reduceWithEveryBranchOpen();
 
         Map<Integer, Set<Integer>> adjacency = new LinkedHashMap<>();
 
@@ -482,6 +460,50 @@ public class testAutonomyFromDiagram
 
             next.add(end.getS88());
         }
+
+        return adjacency;
+    }
+
+    /**
+     * The same diagram reduced again with every switch branch traversable both ways.
+     */
+    private GraphReducer reduceWithEveryBranchOpen()
+    {
+        TileGraph open = new TileGraph(pages, excludedPages);
+
+        TileKey mainLink = linkAt(open, "1 - Main", 15, 5);
+        TileKey bottomLink = linkAt(open, "2 - Bottom", 10, 9);
+
+        if (mainLink != null && bottomLink != null) open.pairPortals(mainLink, bottomLink);
+
+        for (TileKey tile : open.getTiles().keySet())
+        {
+            for (TileGraph.RouteId routeId : open.getRoutes(tile).keySet())
+            {
+                open.setDirection(tile, routeId, TileGraph.Direction.BOTH);
+            }
+        }
+
+        GraphReducer wideOpen = new GraphReducer(open, stationsFromLegacy());
+        wideOpen.reduce();
+
+        return wideOpen;
+    }
+
+    /**
+     * Reduces the same diagram again with every switch branch traversable both ways, and reports which
+     * hand-built connections are still unreachable.
+     *
+     * This separates the two kinds of gap.  A connection that appears here is one the geometry cannot
+     * express at all - a real defect in the port map, the walk, or the pairing.  A connection that is
+     * unreachable under the default but reachable here is simply a trailing move nobody has opened yet,
+     * which is authoring work rather than a fault.
+     */
+    private List<String> unreachableWithEveryBranchOpen()
+    {
+        GraphReducer wideOpen = reduceWithEveryBranchOpen();
+
+        Map<Integer, Set<Integer>> adjacency = wideOpenAdjacency();
 
         Set<Integer> derivable = new LinkedHashSet<>();
 
@@ -608,10 +630,38 @@ public class testAutonomyFromDiagram
             if (reachable == 0) stranded.add(String.valueOf(station));
         }
 
-        System.out.println("\nstations derived: " + stations.size()
-            + ", stations that can reach no other station: " + stranded.size() + " " + stranded + "\n");
+        // The same count with every branch open.  Measured as authored it says only that trailing moves
+        // are closed, which is the default doing its job rather than anything about the layout - so both
+        // numbers are printed and the gap between them is the authoring still to do.
+        Map<Integer, Set<Integer>> wideOpen = wideOpenAdjacency();
+
+        List<String> strandedWideOpen = new ArrayList<>();
+
+        for (Integer station : stations)
+        {
+            int reachable = 0;
+
+            for (Integer other : stations)
+            {
+                if (!other.equals(station) && reachable(wideOpen, station, other)) reachable++;
+            }
+
+            if (reachable == 0) strandedWideOpen.add(String.valueOf(station));
+        }
+
+        System.out.println("\nstations derived: " + stations.size());
+        System.out.println("   reaching no other station, as authored:      " + stranded.size()
+            + "   (trailing moves closed by default)");
+        System.out.println("   reaching no other station, all branches open: " + strandedWideOpen.size()
+            + "   <- this is the one that matters");
+
+        if (!strandedWideOpen.isEmpty()) System.out.println("   " + strandedWideOpen);
+
+        System.out.println();
 
         assertFalse(stations.isEmpty(), "no stations were derived at all");
+        assertTrue(strandedWideOpen.isEmpty(),
+            "with every branch open these stations can still reach nowhere: " + strandedWideOpen);
     }
 
     /**

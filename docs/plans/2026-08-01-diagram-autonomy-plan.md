@@ -567,6 +567,44 @@ modes are discovered. Starting set:
 - orphaned placements, homes and exclusions in the active configuration;
 - unpaired, half-paired or excluded-page-targeting portals.
 
+## GATE CLEARED, 2026-08-16
+
+Run against `cs2_sample_layout` (`testAutonomyFromDiagram`): **every hand-built connection is
+reachable in the derived graph** once switch branches are open, and **every sensor** the
+hand-built configuration relies on is derived. The architecture holds on a real diagram.
+
+Four defects had to be fixed to get there, none of which any unit test could have found - each
+needed a real layout with a hand-built graph beside it:
+
+1. **A Point's s88 is the RAW address**, not the halved logical one. `CS2File` divides the CS2
+   `artikel` value by two for accessories, but feedback is registered by `getRawAddress()`. Using
+   the wrong one made 36 of 44 sensors unmatchable, and the 8 that matched were coincidences.
+2. **Portals never continued.** `exits()` skipped stub routes and a link's only route is a stub,
+   so a link offered no way out; every cross-page route was severed while looking exactly like a
+   diagram that had none. A portal now has two ports, the pairing addressed as a null side.
+3. **Route buttons sit ON the line.** Treating `fahrstrasse` as decoration severed every run
+   containing one - 43 of them in this layout. They are now *transparent*: `TilePorts` declares
+   them so, and `TileGraph` reads what they carry off the neighbours.
+4. **Unaddressed switches** are refused rather than routed over as though already set right.
+
+Two lessons worth carrying into R1, both about tests rather than code:
+- Fixtures that set raw and logical addresses equal agreed with defect 1; a portal test that asked
+  `landing()` for the partner rather than walking through agreed with defect 2. **A test that
+  exercises the piece just written, rather than what a train needs, will agree with the bug.**
+- Tolerating a missing link tile made a stale coordinate indistinguishable from a diagram with no
+  cross-page routes, costing a whole round. **A portal that cannot be resolved must be loud.**
+
+Remaining differences are not defects and are expected to persist:
+- **52 connections unreachable as authored** vs 0 with branches open - the base-to-forks default,
+  i.e. the trailing moves a user has still to enable. This is the authoring workload, and it is
+  large: expect enabling trailing to be most of the setup effort on a real layout.
+- **4 config-command disagreements**, all of them differences in authoring convention rather than
+  wrong readings: the hand-built file commands signals beyond an edge's own extent (e.g. an exit
+  signal ahead of the stopping point), and some derived paths take a shorter route between the
+  same two sensors than the hand-built edge did.
+- **Derived edges outnumber legacy ones** once branches are open (164 vs 92), and Points 58 vs 62,
+  both expected: every s88 becomes a Point and every branch becomes an edge.
+
 ## Ground-truth gate: the generated graph must be diffed against the real `autonomy.json`
 
 **Author directive, 2026-08-01.** Virtual points are expected to be unnecessary *provided the
