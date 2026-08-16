@@ -277,6 +277,14 @@ public class TileGraph
      * Blocking, by ruling: a diagram used for autonomy should not contain unmapped switches.  Routing
      * over one would mean trusting it to already be lying the right way, which is the danger
      * CUSTOM_PERM_* exists to declare - and here nobody declared it.
+     *
+     * **This only ever fires when autonomy is being built.**  A track diagram may contain address-less
+     * tiles quite legitimately and go on working as a diagram: the application already tolerates them,
+     * skipping them when it wires accessories.  Nothing on the display or control path constructs a
+     * TileGraph, so drawing an unaddressed switch costs the user nothing until they ask autonomy to make
+     * a graph out of that diagram.  Keep it that way - this check must not migrate into layout parsing
+     * or into anything that runs on load.  A page that carries such tiles deliberately can be excluded
+     * from autonomy instead.
      */
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
