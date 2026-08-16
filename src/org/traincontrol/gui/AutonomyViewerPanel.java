@@ -52,8 +52,20 @@ public class AutonomyViewerPanel extends JPanel
     private final List<org.traincontrol.base.TileGraph.TileKey> findingRows =
         new java.util.ArrayList<>();
 
+    // What each findings row is, so the renderer can colour it and a click can act on it.  Parallel
+    // lists rather than a richer element type, so the list still renders as plain strings.
+    private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
+
     private final JButton initialize = new JButton(I18n.t("autosetup.ui.btnInitFromLayout"));
-    private final JButton load = new JButton(I18n.t("autosetup.ui.btnLoadConfiguration"));
+    private final JButton enable = new JButton(I18n.t("autosetup.ui.btnEnable"));
+    private final JButton placeLocomotives =
+        new JButton(I18n.t("autosetup.ui.btnPlaceLocomotives"));
+
+    private final JLabel stepChoose = step(I18n.t("autosetup.ui.stepChoose"));
+    private final JLabel stepEnable = step(I18n.t("autosetup.ui.stepEnable"));
+    private final JLabel stepRun = step(I18n.t("autosetup.ui.stepRun"));
+
+    private final JLabel hint = new JLabel(I18n.t("autosetup.ui.hintClickToFix"));
 
     private final JLabel status = new JLabel();
 
@@ -66,12 +78,14 @@ public class AutonomyViewerPanel extends JPanel
         this.session = session;
         this.ui = ui;
 
-        setLayout(new BorderLayout(4, 4));
-        setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        // White, and no inset border: this panel stands inside a white container, and a default grey
+        // JPanel with padding read as a second surface floating on top of it.
+        setOpaque(true);
+        setBackground(java.awt.Color.WHITE);
+        setLayout(new BorderLayout(0, 6));
 
-        add(buildTop(), BorderLayout.NORTH);
-        add(buildMiddle(), BorderLayout.CENTER);
-        add(buildBottom(), BorderLayout.SOUTH);
+        add(buildSteps(), BorderLayout.NORTH);
+        add(buildFindings(), BorderLayout.CENTER);
 
         refresh();
     }
@@ -83,6 +97,10 @@ public class AutonomyViewerPanel extends JPanel
 
     static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
 
+    static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
+    static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
+    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(60, 60, 60);
+
     /**
      * Applies the application's control font to a component, and returns it.
      */
@@ -92,108 +110,227 @@ public class AutonomyViewerPanel extends JPanel
         return component;
     }
 
-    private JPanel buildTop()
+    private JLabel step(String text)
     {
-        JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
+        JLabel label = styled(new JLabel(text), true);
+        label.setForeground(HEADING_COLOUR);
+        label.setBorder(BorderFactory.createEmptyBorder(6, 0, 1, 0));
+        return label;
+    }
 
-        panel.add(styled(new JLabel(I18n.t("autosetup.ui.labelConfiguration")), true));
+    private JPanel row()
+    {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false);
+        return panel;
+    }
 
-        // The starting point for a layout that has no setup yet.  Everything else on the panel is about
-        // configurations, and until this is pressed there are none.
+    /**
+     * The three steps, in order, each doing one thing.
+     *
+     * Laid out as a sequence rather than as a panel of controls because the order is not obvious from
+     * the controls themselves - the first version had no visible path at all from "I have a
+     * configuration" to "it is running", and every button looked equally like the next thing to press.
+     */
+    private JPanel buildSteps()
+    {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+
+        // --- step 1: which configuration ---
+        stepChoose.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(stepChoose);
+
         initialize.addActionListener(e -> initialize());
-        panel.add(styled(initialize, false));
+        panel.add(leftAligned(styled(initialize, true)));
 
-        // Choosing a configuration only SELECTS it.  Loading is a button, because loading rebuilds the
-        // graph and stops whatever is running - too much to happen because a list scrolled past an
-        // entry, and impossible to reach at all when there is only one configuration to pick from.
-        panel.add(styled(configurations, false));
+        JPanel choose = row();
 
-        load.setToolTipText(I18n.t("autosetup.ui.tooltipLoadConfiguration"));
-        load.addActionListener(e ->
+        configurations.setMaximumRowCount(12);
+        configurations.setPreferredSize(new Dimension(190, 24));
+        choose.add(styled(configurations, false));
+
+        // Everything that manages configurations lives behind one button and the combo's own context
+        // menu, rather than as five peers competing with the step that matters.  They are all rare:
+        // a configuration is made once and chosen thereafter.
+        final JButton manage = new JButton(I18n.t("autosetup.ui.btnManage"));
+        manage.addActionListener(e -> manageMenu().show(manage, 0, manage.getHeight()));
+        choose.add(styled(manage, false));
+
+        configurations.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                if (javax.swing.SwingUtilities.isRightMouseButton(e))
+                {
+                    manageMenu().show(configurations, e.getX(), e.getY());
+                }
+            }
+        });
+
+        panel.add(leftAligned(choose));
+
+        // --- step 2: turn it on ---
+        stepEnable.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(stepEnable);
+
+        enable.setToolTipText(I18n.t("autosetup.ui.tooltipLoadConfiguration"));
+        enable.addActionListener(e ->
         {
             Object selected = configurations.getSelectedItem();
 
             if (selected != null) load(String.valueOf(selected), true);
         });
 
-        panel.add(styled(load, true));
+        panel.add(leftAligned(styled(enable, true)));
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        status.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        panel.add(leftAligned(styled(status, false)));
 
-        JButton duplicate = new JButton(I18n.t("autosetup.ui.menuNewConfiguration"));
-        duplicate.addActionListener(e -> duplicate());
-        buttons.add(styled(duplicate, false));
+        // --- step 3: run ---
+        stepRun.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(stepRun);
 
-        JButton rename = new JButton(I18n.t("autosetup.ui.menuRenameConfiguration"));
-        rename.addActionListener(e -> rename());
-        buttons.add(styled(rename, false));
+        JPanel run = row();
 
-        JButton delete = new JButton(I18n.t("autosetup.ui.menuDeleteConfiguration"));
-        delete.addActionListener(e -> delete());
-        buttons.add(styled(delete, false));
+        // Sends the user where placing actually happens.  That tab does not exist until a configuration
+        // has loaded, which is precisely why the feature looked missing.
+        placeLocomotives.addActionListener(e -> ui.showAutonomyRunTab());
+        run.add(styled(placeLocomotives, false));
 
-        panel.add(buttons);
-
-        JPanel transfer = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
-
-        JButton importButton = new JButton(I18n.t("autosetup.ui.btnImportConfiguration"));
-        importButton.addActionListener(e -> importConfiguration());
-        transfer.add(styled(importButton, false));
-
-        JButton exportButton = new JButton(I18n.t("autosetup.ui.btnExportConfiguration"));
-        exportButton.addActionListener(e -> exportConfiguration());
-        transfer.add(styled(exportButton, false));
-
-        JButton pages = new JButton(I18n.t("autosetup.ui.btnExcludePage"));
-        pages.addActionListener(e -> choosePages());
-        transfer.add(styled(pages, false));
-
-        panel.add(transfer);
-
-        return panel;
-    }
-
-    private JPanel buildMiddle()
-    {
-        JPanel panel = new JPanel(new GridLayout(2, 1, 4, 4));
-
-        JList<String> locomotives = new JList<>(roster);
-        JScrollPane rosterScroll = new JScrollPane(styled(locomotives, false));
-        rosterScroll.setBorder(BorderFactory.createTitledBorder(
-            I18n.t("autosetup.ui.labelLocomotiveRoster")));
-        panel.add(rosterScroll);
-
-        JScrollPane findingsScroll = new JScrollPane(styled(findings, false));
-        findingsScroll.setBorder(BorderFactory.createTitledBorder(
-            I18n.t("autosetup.ui.colWarnings")));
-        panel.add(findingsScroll);
-
-        panel.setPreferredSize(new Dimension(260, 280));
-
-        return panel;
-    }
-
-    private JPanel buildBottom()
-    {
-        JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
-
-        JButton check = new JButton(I18n.t("autosetup.ui.btnCheckConfiguration"));
-        check.addActionListener(e -> recheck());
-        panel.add(styled(check, false));
-
-        // Reading the graph as a graph is a diagnostic, not part of setting autonomy up - the diagram
-        // is the layout now.  Shown only in debug mode, where the old window is still worth having.
         if (ui.getModel() != null && ui.getModel().isDebug())
         {
             JButton inspect = new JButton(I18n.t("autosetup.ui.btnInspectGraph"));
             inspect.addActionListener(e -> inspect());
-            panel.add(styled(inspect, false));
+            run.add(styled(inspect, false));
         }
 
-        status.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
-        panel.add(styled(status, false));
+        panel.add(leftAligned(run));
 
         return panel;
+    }
+
+    private JPanel leftAligned(java.awt.Component component)
+    {
+        JPanel holder = row();
+        holder.setAlignmentX(LEFT_ALIGNMENT);
+        holder.add(component);
+        return holder;
+    }
+
+    /**
+     * Everything that manages configurations, on one menu.
+     */
+    private javax.swing.JPopupMenu manageMenu()
+    {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
+            { public void run() { duplicate(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
+            { public void run() { rename(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
+            { public void run() { delete(); } }));
+        menu.addSeparator();
+        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
+            { public void run() { importConfiguration(); } }));
+        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
+            { public void run() { exportConfiguration(); } }));
+        menu.addSeparator();
+        menu.add(item(I18n.t("autosetup.ui.btnExcludePage"), new Runnable()
+            { public void run() { choosePages(); } }));
+        menu.add(item(I18n.t("autosetup.ui.btnCheckConfiguration"), new Runnable()
+            { public void run() { recheck(); } }));
+
+        return menu;
+    }
+
+    private javax.swing.JMenuItem item(String text, final Runnable action)
+    {
+        javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
+        menuItem.addActionListener(e -> action.run());
+        return styled(menuItem, false);
+    }
+
+    /**
+     * The list of things to look at, errors first, each one clickable.
+     */
+    private JPanel buildFindings()
+    {
+        JPanel panel = new JPanel(new BorderLayout(0, 2));
+        panel.setOpaque(false);
+
+        panel.add(styled(hint, false), BorderLayout.NORTH);
+
+        findings.setCellRenderer(new FindingRenderer());
+        findings.setBackground(java.awt.Color.WHITE);
+        styled(findings, false);
+
+        // One click, straight to the square it is about, with the tools that can fix it already open.
+        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                int row = findings.locationToIndex(e.getPoint());
+
+                if (row < 0 || row >= findingRows.size()) return;
+
+                org.traincontrol.base.TileGraph.TileKey tile = findingRows.get(row);
+
+                if (tile != null) ui.openAutonomyEditor(tile);
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(findings);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(java.awt.Color.WHITE);
+
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JScrollPane rosterScroll = new JScrollPane(styled(new JList<>(roster), false));
+        rosterScroll.setBorder(BorderFactory.createTitledBorder(
+            I18n.t("autosetup.ui.labelLocomotiveRoster")));
+        rosterScroll.setPreferredSize(new Dimension(240, 110));
+        rosterScroll.getViewport().setBackground(java.awt.Color.WHITE);
+
+        panel.add(rosterScroll, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * Colours a row by what it is: a section heading, something that must be fixed, or something worth
+     * checking.  Colour rather than a prefix, because the list is scanned rather than read.
+     */
+    private class FindingRenderer extends javax.swing.DefaultListCellRenderer
+    {
+        @Override
+        public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+            int index, boolean isSelected, boolean cellHasFocus)
+        {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            AutonomyChecks.Severity severity =
+                index < findingSeverity.size() ? findingSeverity.get(index) : null;
+
+            boolean heading = index < findingRows.size()
+                && findingRows.get(index) == null && severity == null;
+
+            setFont(heading ? FONT_BOLD : FONT);
+
+            if (!isSelected)
+            {
+                setForeground(heading ? HEADING_COLOUR
+                    : severity == AutonomyChecks.Severity.ERROR ? ERROR_COLOUR
+                    : severity == AutonomyChecks.Severity.WARNING ? WARNING_COLOUR
+                    : java.awt.Color.DARK_GRAY);
+            }
+
+            return this;
+        }
     }
 
     /**
@@ -206,7 +343,10 @@ public class AutonomyViewerPanel extends JPanel
     {
         refresh();
 
-        status.setText(findingsModel.isEmpty()
+        // into the hint above the list, not the status line: that one says which configuration is
+        // running, and a check result overwriting it would lose the more important fact
+        hint.setVisible(true);
+        hint.setText(findingsModel.isEmpty()
             ? I18n.t("autosetup.ui.labelCheckedClean")
             : I18n.f("autosetup.ui.labelCheckedNow", countFindings()));
     }
@@ -350,7 +490,7 @@ public class AutonomyViewerPanel extends JPanel
 
             // everything that follows success - dependent tabs, the monitor, the overlay toggle, the
             // jump to the diagram - in one place, shared with the startup resume
-            ui.autonomyLoadedFromDiagram(name);
+            ui.autonomyLoadedFromDiagram(name, !interactive);
         }
         catch (RuntimeException e)
         {
@@ -581,11 +721,27 @@ public class AutonomyViewerPanel extends JPanel
      */
     public final void refresh()
     {
-        // Until a setup exists there is nothing for the rest of the panel to act on, so it offers the
-        // one thing that can be done and nothing that cannot.
+        // Each step shows only when it is reachable.  Before a setup exists there is nothing to choose
+        // and nothing to enable; before a configuration is running there is nowhere to place a train.
         boolean exists = session.exists() || !session.getStore().getConfigurationNames().isEmpty();
+        boolean running = ui.getActiveDiagramConfiguration() != null;
 
         initialize.setVisible(!exists);
+        stepChoose.setText(I18n.t(exists
+            ? "autosetup.ui.stepChoose" : "autosetup.ui.stepInitialize"));
+
+        configurations.setVisible(exists);
+        stepEnable.setVisible(exists);
+        enable.setVisible(exists);
+
+        // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
+        // which does not exist is what made placing look missing in the first place.
+        stepRun.setVisible(running);
+        placeLocomotives.setVisible(running);
+
+        status.setText(!exists ? I18n.t("autosetup.ui.statusNeverSetUp")
+            : running ? I18n.f("autosetup.ui.statusEnabled", ui.getActiveDiagramConfiguration())
+            : I18n.t("autosetup.ui.statusNotEnabled"));
 
         populating = true;
 
@@ -639,79 +795,101 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * The list of things to look at, grouped under the page each one is on.
+     * The list of things to look at: what must be fixed first, then what is only worth checking.
      *
-     * Grouped because on a multi-page layout most findings belong to pages the reader is not working
-     * on, and a flat list makes them read every line to discover that.  A page heading also makes the
-     * commonest fix visible: a page that is nothing but findings usually wants leaving out altogether.
+     * Severity leads and the page groups within it, rather than the other way round.  The question a
+     * reader arrives with is "why will this not run", and a list led by page makes them read every
+     * line of every page to find the two that answer it.  Anything below the first section is by
+     * definition optional, which is what makes the list skimmable rather than a wall.
      */
     private void refreshFindings()
     {
         findingsModel.clear();
         findingRows.clear();
+        findingSeverity.clear();
 
-        // page -> its findings, in the order the checks produced them
-        Map<String, List<String>> byPage = new java.util.LinkedHashMap<>();
-        Map<String, List<org.traincontrol.base.TileGraph.TileKey>> tilesByPage =
-            new java.util.LinkedHashMap<>();
+        List<Object[]> errors = new java.util.ArrayList<>();
+        List<Object[]> warnings = new java.util.ArrayList<>();
 
+        // A graph problem is what stops the build, so it is always an error.
         for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph() == null
             ? java.util.Collections.<org.traincontrol.base.TileGraph.Problem>emptyList()
             : session.getGraph().getProblems())
         {
-            add(byPage, tilesByPage, problem.getTile(),
+            (problem.isBlocking() ? errors : warnings).add(new Object[]
+            {
+                problem.getTile(),
                 describe(problem.getMessageKey(),
-                    problem.getTile() == null ? "" : problem.getTile().toString()));
+                    problem.getTile() == null ? "" : problem.getTile().toString())
+            });
         }
 
         for (AutonomyChecks.Finding finding : session.check())
         {
-            add(byPage, tilesByPage, finding.getTile(),
-                describe(finding.getMessageKey(), finding.getSubject()));
+            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
+                new Object[] {finding.getTile(), describe(finding.getMessageKey(),
+                    finding.getSubject())});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
         // is said out loud rather than left in a getter nobody calls
         for (Map.Entry<String, String> entry : session.getStore().getPageIdConflicts().entrySet())
         {
-            add(byPage, tilesByPage, null,
-                I18n.f("autosetup.ui.warnPageRenumbered", entry.getKey(), entry.getValue()));
+            warnings.add(new Object[] {null,
+                I18n.f("autosetup.ui.warnPageRenumbered", entry.getKey(), entry.getValue())});
         }
 
-        for (Map.Entry<String, List<String>> entry : byPage.entrySet())
-        {
-            findingsModel.addElement(I18n.f("autosetup.ui.labelPageHeading", entry.getKey()));
-            findingRows.add(null);
+        section(I18n.f("autosetup.ui.headingErrors", errors.size()), errors,
+            AutonomyChecks.Severity.ERROR);
+        section(I18n.f("autosetup.ui.headingWarnings", warnings.size()), warnings,
+            AutonomyChecks.Severity.WARNING);
 
-            List<org.traincontrol.base.TileGraph.TileKey> tiles = tilesByPage.get(entry.getKey());
-
-            for (int i = 0; i < entry.getValue().size(); i++)
-            {
-                findingsModel.addElement("   " + entry.getValue().get(i));
-                findingRows.add(tiles.get(i));
-            }
-        }
-
-        status.setText(session.getReducer() == null ? "" :
-            I18n.f("autosetup.ui.labelGraphSize",
-                session.getReducer().getPoints().size(),
-                session.getReducer().getEdges().size()));
+        hint.setVisible(!errors.isEmpty() || !warnings.isEmpty());
     }
 
-    private void add(Map<String, List<String>> byPage,
-        Map<String, List<org.traincontrol.base.TileGraph.TileKey>> tilesByPage,
-        org.traincontrol.base.TileGraph.TileKey tile, String message)
+    /**
+     * Adds one severity section, with its findings grouped under the page each is on.
+     */
+    private void section(String heading, List<Object[]> rows, AutonomyChecks.Severity severity)
     {
-        String page = tile == null ? "" : tile.getPage();
+        if (rows.isEmpty()) return;
 
-        if (!byPage.containsKey(page))
+        findingsModel.addElement(heading);
+        findingRows.add(null);
+        findingSeverity.add(null);
+
+        Map<String, List<Object[]>> byPage = new java.util.LinkedHashMap<>();
+
+        for (Object[] row : rows)
         {
-            byPage.put(page, new java.util.ArrayList<String>());
-            tilesByPage.put(page, new java.util.ArrayList<org.traincontrol.base.TileGraph.TileKey>());
+            org.traincontrol.base.TileGraph.TileKey tile =
+                (org.traincontrol.base.TileGraph.TileKey) row[0];
+
+            String page = tile == null ? "" : tile.getPage();
+
+            if (!byPage.containsKey(page)) byPage.put(page, new java.util.ArrayList<Object[]>());
+
+            byPage.get(page).add(row);
         }
 
-        byPage.get(page).add(message);
-        tilesByPage.get(page).add(tile);
+        for (Map.Entry<String, List<Object[]>> entry : byPage.entrySet())
+        {
+            // no page heading for findings that belong to the whole layout rather than a square
+            if (!entry.getKey().isEmpty())
+            {
+                findingsModel.addElement("  " + I18n.f("autosetup.ui.labelPageHeading",
+                    entry.getKey()));
+                findingRows.add(null);
+                findingSeverity.add(null);
+            }
+
+            for (Object[] row : entry.getValue())
+            {
+                findingsModel.addElement("     " + row[1]);
+                findingRows.add((org.traincontrol.base.TileGraph.TileKey) row[0]);
+                findingSeverity.add(severity);
+            }
+        }
     }
 
     private String describe(String key, String subject)
@@ -727,17 +905,17 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * How many rows are actual findings rather than page headings.
+     * How many rows are actual findings rather than headings.
      */
     private int countFindings()
     {
         int count = 0;
 
-        for (org.traincontrol.base.TileGraph.TileKey tile : findingRows)
+        for (AutonomyChecks.Severity severity : findingSeverity)
         {
-            if (tile != null || findingRows.isEmpty()) count++;
+            if (severity != null) count++;
         }
 
-        return count == 0 ? findingsModel.size() : count;
+        return count;
     }
 }

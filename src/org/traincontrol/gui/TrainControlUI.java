@@ -1529,12 +1529,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.jScrollPane2.setViewportView(autonomyViewerPanel);
 
+        // The scroll pane framed a text area; framing a panel of controls just draws a box around
+        // them, and its grey viewport showed through as a second surface behind the white panel.
+        this.jScrollPane2.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+        this.jScrollPane2.getViewport().setBackground(java.awt.Color.WHITE);
+
         // the JSON-era controls; everything they did has a home on the panel now
         this.validateButton.setVisible(false);
         this.loadDefaultBlankGraph.setVisible(false);
         this.loadJSONButton.setVisible(false);
         this.exportJSON.setVisible(false);
         this.jsonDocumentationButton.setVisible(false);
+
+        // The panel names its own first step; a heading above it just says the same thing twice.
+        this.jLabel6.setVisible(false);
     }
 
     /**
@@ -1543,8 +1551,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * new layout, the overlay switches on, and the view jumps to the track it is all about.
      *
      * @param name the configuration that loaded, for the log
+     * @param resumed whether this was the startup resume rather than the user pressing the button
      */
-    public void autonomyLoadedFromDiagram(String name)
+    public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
         // both from the JSON path, and for the same reasons: the route list repaints against the new
         // layout, and the unconditional stop catches hand-throttled trains that isAutonomyBusy() does
@@ -1571,10 +1580,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autonomyOverlayToggle.setSelected(true);
 
-        jumpToLayoutTab();
-
-        // remembered so that exit knows which configuration the running layout's state belongs to
+        // remembered so that exit knows which configuration the running layout's state belongs to,
+        // and so the panel knows to offer the step that follows this one
         this.activeDiagramConfiguration = name;
+
+        // Only on a resume.  Somebody who just pressed the button is standing in front of the next
+        // step - placing locomotives - and jumping them away from it hides the thing they need next.
+        if (resumed) jumpToLayoutTab();
 
         this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
     }
@@ -1674,6 +1686,74 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.refreshReturnHomeButton();
         this.executeTimetable.setEnabled(true);
         this.gracefulStop.setEnabled(false);
+    }
+
+    /**
+     * Opens the diagram editor in autonomy mode on the page a tile is on, and reveals that tile.
+     *
+     * This is what makes a finding actionable: reading "no train can leave Platform 3" is half an
+     * answer, and the other half is being taken to the square it is about, on the right page, with the
+     * tools that can fix it already open.
+     *
+     * @param tile the square to go to, or null just to open the editor on the current page
+     */
+    public void openAutonomyEditor(final org.traincontrol.base.TileGraph.TileKey tile)
+    {
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"));
+            return;
+        }
+
+        final org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+        if (session == null) return;
+
+        // the editor edits one page, so the page has to be selected before it is opened
+        if (tile != null) this.LayoutList.setSelectedItem(tile.getPage());
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                LayoutEditor editor = new LayoutEditor(
+                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
+                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
+                    this,
+                    this.LayoutList.getSelectedIndex()
+                );
+
+                this.setAlwaysOnTop(false);
+
+                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
+
+                editor.render();
+                editor.setAutonomyMode(session);
+
+                if (tile != null) editor.reveal(tile);
+            }
+            catch (Exception e)
+            {
+                if (this.model.isDebug()) this.model.log(e);
+            }
+        });
+    }
+
+    /**
+     * Shows the tab where locomotives are placed and autonomy is started.
+     *
+     * Offered only once a configuration has loaded, because that tab does not exist before then - which
+     * is exactly the dead end that made the feature unreachable.
+     */
+    public void showAutonomyRunTab()
+    {
+        this.KeyboardTab.setSelectedIndex(2);
+
+        if (locCommandPanels.indexOfComponent(this.locCommandTab) >= 0)
+        {
+            this.locCommandPanels.setSelectedComponent(this.locCommandTab);
+        }
     }
 
     public AutonomyViewerPanel getAutonomyViewerPanel()
