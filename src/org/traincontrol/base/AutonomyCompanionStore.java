@@ -1,0 +1,766 @@
+package org.traincontrol.base;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.traincontrol.base.TileGraph.Direction;
+import org.traincontrol.base.TileGraph.RouteId;
+import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.marklin.file.CS2File;
+import org.traincontrol.util.Util;
+
+/**
+ * What the diagram cannot say: the names, the stations, the lengths, the directions, and where the
+ * locomotives go.
+ *
+ * Everything geometric is re-derived from the track on every build, so nothing here describes shape.
+ * What it holds is the handful of decisions a person made that no amount of reading the diagram would
+ * recover - which sensor is a station, what to call it, which way trains may run, how long a piece of
+ * track counts as - plus the named configurations that vary only in where the locomotives start.
+ *
+ * The files live inside the track diagram folder, so the setup travels with the layout it describes:
+ *
+ *   config/autonomy/setup.json                 one per layout: names, stations, lengths, directions,
+ *                                              portal pairings, excluded pages, which configuration
+ *                                              is active
+ *   config/autonomy/configuration-<name>.json  one per configuration: point properties, placements,
+ *                                              homes, exclusions, globals, timetable
+ *
+ * One file per configuration rather than one file holding them all, because it makes the operations
+ * users actually perform cheap and obvious: duplicating a configuration is a file copy, and a
+ * configuration can be handed to somebody else on its own.
+ *
+ * @author Adam
+ */
+public class AutonomyCompanionStore
+{
+    /**
+     * The schema this class writes.  A file claiming a higher version was written by a newer
+     * TrainControl and is refused rather than read partially - silently dropping fields it does not
+     * recognise would lose the user's work on the next save.
+     */
+    public static final int VERSION = 1;
+
+    public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
+    public static final String ERROR_LAST_CONFIGURATION = "autosetup.ui.errorLastConfiguration";
+    public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
+
+    private static final String FOLDER = "config/autonomy";
+    private static final String SETUP_FILE = "setup.json";
+    private static final String CONFIGURATION_PREFIX = "configuration-";
+
+    private final File layoutFolder;
+
+    // --- shared: one copy per layout, describing the physical diagram ---------------------------
+    private final Map<String, String> pointNames = new LinkedHashMap<>();
+    private final Set<String> stations = new LinkedHashSet<>();
+    private final Map<String, Integer> tileLengths = new LinkedHashMap<>();
+    private final Map<String, String> tileDirections = new LinkedHashMap<>();
+    private final Map<String, String> portals = new LinkedHashMap<>();
+    private final Map<String, String> linkNames = new LinkedHashMap<>();
+    private final Set<String> excludedPages = new LinkedHashSet<>();
+
+    private String activeConfiguration = null;
+
+    // Anything a newer version wrote that this one does not understand, kept so a round trip through an
+    // older TrainControl does not quietly delete it
+    private final Map<String, Object> unknownSharedFields = new LinkedHashMap<>();
+
+    private final Map<String, JSONObject> configurations = new LinkedHashMap<>();
+
+    /**
+     * @param layoutFolder the local layout folder - the one holding config/gleisbilder
+     */
+    public AutonomyCompanionStore(File layoutFolder)
+    {
+        this.layoutFolder = layoutFolder;
+    }
+
+    /**
+     * Whether this layout can hold an autonomy setup at all.
+     *
+     * Autonomy is local-layout only: the files live beside the diagram, so there has to be a diagram
+     * folder to put them in.  A layout read from the Central Station has none until it is downloaded.
+     * @return
+     */
+    public boolean isUsable()
+    {
+        return layoutFolder != null && layoutFolder.isDirectory();
+    }
+
+    /**
+     * Whether a setup has been created for this layout yet.
+     * @return
+     */
+    public boolean exists()
+    {
+        return isUsable() && setupFile().isFile();
+    }
+
+    // --- loading and saving -----------------------------------------------------------------------
+
+    /**
+     * Reads the setup and every configuration beside it.  A layout with no setup loads as empty rather
+     * than failing: that is a layout nobody has set autonomy up on yet.
+     *
+     * @throws IOException if a file exists but cannot be read or understood
+     */
+    public void load() throws IOException
+    {
+        clear();
+
+        if (!exists()) return;
+
+        JSONObject root = new JSONObject(
+            new String(Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8));
+
+        int version = root.optInt("version", VERSION);
+
+        if (version > VERSION)
+        {
+            throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
+        }
+
+        readStringMap(root, "pointNames", pointNames);
+        readStringSet(root, "stations", stations);
+        readStringMap(root, "tileDirections", tileDirections);
+        readStringMap(root, "portals", portals);
+        readStringMap(root, "linkNames", linkNames);
+        readStringSet(root, "excludedPages", excludedPages);
+
+        JSONObject lengths = root.optJSONObject("tileLengths");
+
+        if (lengths != null)
+        {
+            for (String key : lengths.keySet())
+            {
+                tileLengths.put(key, lengths.getInt(key));
+            }
+        }
+
+        activeConfiguration = root.optString("activeConfiguration", null);
+
+        for (String key : root.keySet())
+        {
+            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, root.get(key));
+        }
+
+        File[] files = folder().listFiles();
+
+        if (files != null)
+        {
+            for (File file : files)
+            {
+                String name = file.getName();
+
+                if (!name.startsWith(CONFIGURATION_PREFIX) || !name.endsWith(".json")) continue;
+
+                JSONObject configuration = new JSONObject(
+                    new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+                configurations.put(
+                    configuration.optString("name",
+                        name.substring(CONFIGURATION_PREFIX.length(), name.length() - 5)),
+                    configuration);
+            }
+        }
+
+        if (activeConfiguration != null && !configurations.containsKey(activeConfiguration))
+        {
+            activeConfiguration = null;
+        }
+
+        if (activeConfiguration == null && !configurations.isEmpty())
+        {
+            activeConfiguration = configurations.keySet().iterator().next();
+        }
+    }
+
+    /**
+     * Writes the setup and every configuration.
+     *
+     * Written through Util.writeAtomically, for the same reason the locomotive database is: this is the
+     * operator's accumulated work, and a half-written file would read as a layout nobody had set up.
+     *
+     * @throws IOException
+     */
+    public void save() throws IOException
+    {
+        if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
+
+        folder().mkdirs();
+
+        final JSONObject root = new JSONObject();
+
+        root.put("version", VERSION);
+
+        // written first so a human opening the file meets the readable part before the coordinate maps
+        if (activeConfiguration != null) root.put("activeConfiguration", activeConfiguration);
+
+        root.put("pointNames", new JSONObject(pointNames));
+        root.put("stations", new JSONArray(stations));
+        root.put("tileLengths", new JSONObject(tileLengths));
+        root.put("tileDirections", new JSONObject(tileDirections));
+        root.put("portals", new JSONObject(portals));
+        root.put("linkNames", new JSONObject(linkNames));
+        root.put("excludedPages", new JSONArray(excludedPages));
+
+        for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
+        {
+            root.put(entry.getKey(), entry.getValue());
+        }
+
+        writeJson(setupFile(), root);
+
+        for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
+        {
+            JSONObject configuration = entry.getValue();
+            configuration.put("name", entry.getKey());
+
+            writeJson(configurationFile(entry.getKey()), configuration);
+        }
+    }
+
+    // --- shared data ------------------------------------------------------------------------------
+
+    public String getPointName(TileKey tile)
+    {
+        return pointNames.get(tile.toString());
+    }
+
+    public void setPointName(TileKey tile, String name)
+    {
+        if (name == null || name.trim().isEmpty())
+        {
+            pointNames.remove(tile.toString());
+        }
+        else
+        {
+            pointNames.put(tile.toString(), name.trim());
+        }
+    }
+
+    public boolean isStation(TileKey tile)
+    {
+        return stations.contains(tile.toString());
+    }
+
+    public void setStation(TileKey tile, boolean station)
+    {
+        if (station)
+        {
+            stations.add(tile.toString());
+        }
+        else
+        {
+            stations.remove(tile.toString());
+        }
+    }
+
+    /**
+     * @param tile
+     * @return the length assigned to this tile, 0 if none
+     */
+    public int getTileLength(TileKey tile)
+    {
+        Integer value = tileLengths.get(tile.toString());
+
+        return value == null ? 0 : value;
+    }
+
+    /**
+     * Lengths of 0 are not stored.  A layout where nobody has assigned any adds nothing to the file, and
+     * 0 is what an unassigned tile means anyway.
+     * @param tile
+     * @param length
+     */
+    public void setTileLength(TileKey tile, int length)
+    {
+        if (length <= 0)
+        {
+            tileLengths.remove(tile.toString());
+        }
+        else
+        {
+            tileLengths.put(tile.toString(), length);
+        }
+    }
+
+    public Direction getTileDirection(TileKey tile, RouteId routeId)
+    {
+        String value = tileDirections.get(directionKey(tile, routeId));
+
+        if (value == null) return null;
+
+        try
+        {
+            return Direction.valueOf(value);
+        }
+        catch (IllegalArgumentException e)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Records a direction.  Null clears it, returning the route to whatever the graph defaults it to -
+     * which is not always BOTH, so a default is never written as if it were a choice.
+     * @param tile
+     * @param routeId
+     * @param direction
+     */
+    public void setTileDirection(TileKey tile, RouteId routeId, Direction direction)
+    {
+        if (direction == null)
+        {
+            tileDirections.remove(directionKey(tile, routeId));
+        }
+        else
+        {
+            tileDirections.put(directionKey(tile, routeId), direction.name());
+        }
+    }
+
+    public String getLinkName(TileKey tile)
+    {
+        return linkNames.get(tile.toString());
+    }
+
+    public void setLinkName(TileKey tile, String name)
+    {
+        if (name == null || name.trim().isEmpty())
+        {
+            linkNames.remove(tile.toString());
+        }
+        else
+        {
+            linkNames.put(tile.toString(), name.trim());
+        }
+    }
+
+    public TileKey getPortalPartner(TileKey tile)
+    {
+        return parseTileKey(portals.get(tile.toString()));
+    }
+
+    /**
+     * Pairs two portals, mutually and exclusively.  Whatever either was paired with before is released,
+     * so a pairing can be changed without leaving a stranded half behind.
+     * @param a
+     * @param b
+     */
+    public void pairPortals(TileKey a, TileKey b)
+    {
+        unpairPortal(a);
+        unpairPortal(b);
+
+        portals.put(a.toString(), b.toString());
+        portals.put(b.toString(), a.toString());
+    }
+
+    public void unpairPortal(TileKey tile)
+    {
+        String partner = portals.remove(tile.toString());
+
+        if (partner != null) portals.remove(partner);
+    }
+
+    public Set<String> getExcludedPages()
+    {
+        return Collections.unmodifiableSet(excludedPages);
+    }
+
+    public void setPageExcluded(String page, boolean excluded)
+    {
+        if (excluded)
+        {
+            excludedPages.add(page);
+        }
+        else
+        {
+            excludedPages.remove(page);
+        }
+    }
+
+    // --- configurations ---------------------------------------------------------------------------
+
+    public List<String> getConfigurationNames()
+    {
+        return new ArrayList<>(configurations.keySet());
+    }
+
+    public String getActiveConfiguration()
+    {
+        return activeConfiguration;
+    }
+
+    /**
+     * Records which configuration is in use.  This is what loads on the next start, so it is set
+     * whenever one is loaded rather than being a separate thing to remember.
+     * @param name
+     */
+    public void setActiveConfiguration(String name)
+    {
+        if (name == null || configurations.containsKey(name)) activeConfiguration = name;
+    }
+
+    public JSONObject getConfiguration(String name)
+    {
+        return configurations.get(name);
+    }
+
+    /**
+     * Creates a configuration, optionally as a copy of an existing one.
+     *
+     * A copy takes everything - point properties, placements, homes, exclusions, globals, timetable -
+     * because a configuration exists to differ in where the locomotives are, and starting from a blank
+     * one would mean re-entering every decision that had nothing to do with that.
+     *
+     * @param name
+     * @param copyFrom the configuration to copy, or null for an empty one
+     */
+    public void createConfiguration(String name, String copyFrom)
+    {
+        JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
+
+        JSONObject created = source == null
+            ? new JSONObject()
+            : new JSONObject(source.toString());
+
+        created.put("name", name);
+
+        configurations.put(name, created);
+
+        if (activeConfiguration == null) activeConfiguration = name;
+    }
+
+    public void renameConfiguration(String from, String to) throws IOException
+    {
+        JSONObject configuration = configurations.remove(from);
+
+        if (configuration == null) return;
+
+        configuration.put("name", to);
+        configurations.put(to, configuration);
+
+        if (from.equals(activeConfiguration)) activeConfiguration = to;
+
+        File old = configurationFile(from);
+
+        if (old.isFile()) old.delete();
+    }
+
+    /**
+     * Deletes a configuration, refusing the last one: a layout with a setup but no configuration is a
+     * state nothing in the UI could act on.
+     * @param name
+     * @throws IOException if it is the only configuration left
+     */
+    public void deleteConfiguration(String name) throws IOException
+    {
+        if (configurations.size() <= 1) throw new IOException(ERROR_LAST_CONFIGURATION);
+
+        if (configurations.remove(name) == null) return;
+
+        File file = configurationFile(name);
+
+        if (file.isFile()) file.delete();
+
+        if (name.equals(activeConfiguration))
+        {
+            activeConfiguration = configurations.keySet().iterator().next();
+        }
+    }
+
+    // --- keeping up with the diagram --------------------------------------------------------------
+
+    /**
+     * Follows a page being renamed.
+     *
+     * Every key here begins with a page name, so a rename would otherwise orphan every name, length,
+     * direction and pairing on that page at once - the user would see their entire setup vanish for a
+     * page and have no way to tell that a rename caused it.  So it is rewritten universally, across the
+     * shared file and every configuration.
+     *
+     * @param from
+     * @param to
+     */
+    public void renamePage(String from, String to)
+    {
+        rekey(pointNames, from, to);
+        rekey(tileLengths, from, to);
+        rekey(tileDirections, from, to);
+        rekeyValues(portals, from, to);
+        rekey(portals, from, to);
+        rekey(linkNames, from, to);
+
+        Set<String> renamedStations = new LinkedHashSet<>();
+
+        for (String key : stations)
+        {
+            renamedStations.add(rekeyOne(key, from, to));
+        }
+
+        stations.clear();
+        stations.addAll(renamedStations);
+
+        if (excludedPages.remove(from)) excludedPages.add(to);
+
+        // configurations reference points by name rather than by tile, so they are untouched by a page
+        // rename - but any that grows a tile key later must be rewritten here too
+    }
+
+    /**
+     * Drops everything remembered about tiles that are no longer on the diagram.
+     *
+     * A tile carries its own length and direction, so when it is deleted those go with it - the author
+     * ruled that a deleted tile starts over rather than leaving an orphan to re-adopt.  Point names and
+     * stations are kept, because a Point is referenced by name elsewhere (timetables, homes) and
+     * silently dropping one would break those references without saying so.
+     *
+     * @param existing every tile currently on the diagram
+     * @return how many entries were dropped
+     */
+    public int forgetMissingTiles(Set<TileKey> existing)
+    {
+        Set<String> keys = new LinkedHashSet<>();
+
+        for (TileKey tile : existing)
+        {
+            keys.add(tile.toString());
+        }
+
+        int dropped = 0;
+
+        dropped += dropMissing(tileLengths, keys, false);
+        dropped += dropMissing(tileDirections, keys, true);
+
+        return dropped;
+    }
+
+    /**
+     * Adapts this store to what the reducer asks for.
+     * @return
+     */
+    public GraphReducer.Authored asAuthored()
+    {
+        return new GraphReducer.Authored()
+        {
+            @Override
+            public String getPointName(TileKey tile)
+            {
+                return AutonomyCompanionStore.this.getPointName(tile);
+            }
+
+            @Override
+            public boolean isStation(TileKey tile)
+            {
+                return AutonomyCompanionStore.this.isStation(tile);
+            }
+
+            @Override
+            public int getTileLength(TileKey tile)
+            {
+                return AutonomyCompanionStore.this.getTileLength(tile);
+            }
+        };
+    }
+
+    /**
+     * Applies everything stored here to a tile graph: the portal pairings and the directions.
+     * @param graph
+     */
+    public void applyTo(TileGraph graph)
+    {
+        for (Map.Entry<String, String> entry : portals.entrySet())
+        {
+            TileKey from = parseTileKey(entry.getKey());
+            TileKey to = parseTileKey(entry.getValue());
+
+            if (from != null && to != null) graph.pairPortals(from, to);
+        }
+
+        for (Map.Entry<String, String> entry : tileDirections.entrySet())
+        {
+            int hash = entry.getKey().lastIndexOf('#');
+
+            if (hash < 0) continue;
+
+            TileKey tile = parseTileKey(entry.getKey().substring(0, hash));
+
+            if (tile == null) continue;
+
+            String[] route = entry.getKey().substring(hash + 1).split(",");
+
+            if (route.length != 2) continue;
+
+            try
+            {
+                graph.setDirection(tile,
+                    new RouteId(Integer.parseInt(route[0]), Integer.parseInt(route[1])),
+                    Direction.valueOf(entry.getValue()));
+            }
+            catch (RuntimeException e)
+            {
+                // a direction naming a route the tile no longer has is simply not applied
+            }
+        }
+    }
+
+    // --- internals --------------------------------------------------------------------------------
+
+    private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
+        "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
+        "portals", "linkNames", "excludedPages"));
+
+    private void clear()
+    {
+        pointNames.clear();
+        stations.clear();
+        tileLengths.clear();
+        tileDirections.clear();
+        portals.clear();
+        linkNames.clear();
+        excludedPages.clear();
+        unknownSharedFields.clear();
+        configurations.clear();
+        activeConfiguration = null;
+    }
+
+    private File folder()
+    {
+        return new File(layoutFolder, FOLDER);
+    }
+
+    private File setupFile()
+    {
+        return new File(folder(), SETUP_FILE);
+    }
+
+    private File configurationFile(String name)
+    {
+        return new File(folder(), CONFIGURATION_PREFIX + CS2File.sanitizeFilename(name) + ".json");
+    }
+
+    private void writeJson(File target, final JSONObject json) throws IOException
+    {
+        final byte[] bytes = json.toString(2).getBytes(StandardCharsets.UTF_8);
+
+        Util.writeAtomically(target, new Util.StreamWriter()
+        {
+            @Override
+            public void write(java.io.OutputStream out) throws IOException
+            {
+                out.write(bytes);
+            }
+        });
+    }
+
+    private static String directionKey(TileKey tile, RouteId routeId)
+    {
+        return tile.toString() + "#" + routeId.getState() + "," + routeId.getIndex();
+    }
+
+    private static TileKey parseTileKey(String key)
+    {
+        if (key == null) return null;
+
+        int colon = key.lastIndexOf(':');
+        int comma = key.lastIndexOf(',');
+
+        if (colon < 0 || comma < colon) return null;
+
+        try
+        {
+            return new TileKey(key.substring(0, colon),
+                Integer.parseInt(key.substring(colon + 1, comma)),
+                Integer.parseInt(key.substring(comma + 1)));
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
+
+    private static String rekeyOne(String key, String fromPage, String toPage)
+    {
+        return key.startsWith(fromPage + ":")
+            ? toPage + key.substring(fromPage.length())
+            : key;
+    }
+
+    private static <T> void rekey(Map<String, T> map, String fromPage, String toPage)
+    {
+        Map<String, T> renamed = new LinkedHashMap<>();
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            renamed.put(rekeyOne(entry.getKey(), fromPage, toPage), entry.getValue());
+        }
+
+        map.clear();
+        map.putAll(renamed);
+    }
+
+    private static void rekeyValues(Map<String, String> map, String fromPage, String toPage)
+    {
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            entry.setValue(rekeyOne(entry.getValue(), fromPage, toPage));
+        }
+    }
+
+    private static <T> int dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)
+    {
+        List<String> gone = new ArrayList<>();
+
+        for (String key : map.keySet())
+        {
+            String tile = suffixed && key.lastIndexOf('#') >= 0
+                ? key.substring(0, key.lastIndexOf('#')) : key;
+
+            if (!existing.contains(tile)) gone.add(key);
+        }
+
+        for (String key : gone)
+        {
+            map.remove(key);
+        }
+
+        return gone.size();
+    }
+
+    private static void readStringMap(JSONObject root, String field, Map<String, String> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            into.put(key, object.getString(key));
+        }
+    }
+
+    private static void readStringSet(JSONObject root, String field, Set<String> into)
+    {
+        JSONArray array = root.optJSONArray(field);
+
+        if (array == null) return;
+
+        for (int i = 0; i < array.length(); i++)
+        {
+            into.add(array.getString(i));
+        }
+    }
+}

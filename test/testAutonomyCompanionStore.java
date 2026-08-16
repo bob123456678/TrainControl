@@ -1,0 +1,352 @@
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import static org.testng.Assert.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.traincontrol.base.AutonomyCompanionStore;
+import org.traincontrol.base.TileGraph.Direction;
+import org.traincontrol.base.TileGraph.RouteId;
+import org.traincontrol.base.TileGraph.TileKey;
+
+/**
+ * The autonomy setup files: what the diagram cannot say, kept beside the diagram it describes.
+ *
+ * Nothing geometric lives here - shape is re-derived from the track every build - so these tests are
+ * about the handful of human decisions that would otherwise be lost, and about the ways a diagram can
+ * change underneath them.
+ *
+ * No hardware, no UI: a temporary folder and files.
+ *
+ * @author Adam
+ */
+public class testAutonomyCompanionStore
+{
+    private File layout;
+    private AutonomyCompanionStore store;
+
+    @BeforeMethod
+    public void setUp() throws IOException
+    {
+        layout = Files.createTempDirectory("tc-autonomy-store").toFile();
+        store = new AutonomyCompanionStore(layout);
+    }
+
+    @AfterMethod
+    public void tearDown()
+    {
+        delete(layout);
+    }
+
+    /**
+     * A layout nobody has set autonomy up on loads as empty rather than failing.  That is the state every
+     * layout starts in, so it cannot be an error.
+     */
+    @Test
+    public void testALayoutWithNoSetupLoadsEmpty() throws IOException
+    {
+        assertTrue(store.isUsable());
+        assertFalse(store.exists());
+
+        store.load();
+
+        assertTrue(store.getConfigurationNames().isEmpty());
+        assertNull(store.getActiveConfiguration());
+    }
+
+    /**
+     * Autonomy needs somewhere to put its files, and a layout read from the Central Station has no folder
+     * until it is downloaded.  The store says so rather than pretending to save.
+     */
+    @Test
+    public void testALayoutWithNoFolderCannotHoldASetup()
+    {
+        AutonomyCompanionStore nowhere = new AutonomyCompanionStore(null);
+
+        assertFalse(nowhere.isUsable());
+        assertFalse(nowhere.exists());
+
+        try
+        {
+            nowhere.save();
+            fail("saving without a layout folder should fail rather than silently do nothing");
+        }
+        catch (IOException expected)
+        {
+            // and it names the reason, so the UI can offer the download
+            assertTrue(expected.getMessage().contains("autosetup"), expected.getMessage());
+        }
+    }
+
+    /**
+     * Everything a person decided survives a round trip.  This is the whole job of the class.
+     */
+    @Test
+    public void testEveryAuthoredDecisionSurvivesARoundTrip() throws IOException
+    {
+        TileKey station = new TileKey("1 - Main", 4, 7);
+        TileKey plain = new TileKey("1 - Main", 5, 7);
+        TileKey linkA = new TileKey("1 - Main", 9, 1);
+        TileKey linkB = new TileKey("2 - Bottom", 2, 3);
+
+        store.setPointName(station, "Track 14 entrance");
+        store.setStation(station, true);
+        store.setTileLength(plain, 42);
+        store.setTileDirection(plain, new RouteId(0, 0), Direction.TOWARD_A);
+        store.setLinkName(linkA, "to the yard");
+        store.pairPortals(linkA, linkB);
+        store.setPageExcluded("4 - Combined", true);
+        store.createConfiguration("Evening", null);
+        store.setActiveConfiguration("Evening");
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(station), "Track 14 entrance");
+        assertTrue(reloaded.isStation(station));
+        assertEquals(reloaded.getTileLength(plain), 42);
+        assertEquals(reloaded.getTileDirection(plain, new RouteId(0, 0)), Direction.TOWARD_A);
+        assertEquals(reloaded.getLinkName(linkA), "to the yard");
+        assertEquals(reloaded.getPortalPartner(linkA), linkB);
+        assertEquals(reloaded.getPortalPartner(linkB), linkA, "a pairing is mutual");
+        assertTrue(reloaded.getExcludedPages().contains("4 - Combined"));
+        assertEquals(reloaded.getActiveConfiguration(), "Evening");
+    }
+
+    /**
+     * A default is never written as though it were a choice.  A tile with no length assigned means zero
+     * anyway, so storing it would add noise to the file and, worse, make a later change of default look
+     * like a decision somebody made.
+     */
+    @Test
+    public void testDefaultsAreNotStored() throws IOException
+    {
+        TileKey tile = new TileKey("1 - Main", 3, 3);
+
+        store.setTileLength(tile, 5);
+        store.setTileLength(tile, 0);
+        store.setTileDirection(tile, new RouteId(0, 0), Direction.NONE);
+        store.setTileDirection(tile, new RouteId(0, 0), null);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        String written = new String(Files.readAllBytes(
+            new File(layout, "config/autonomy/setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertFalse(written.contains("1 - Main:3,3"),
+            "a tile back at its default should leave nothing behind:\n" + written);
+    }
+
+    /**
+     * Duplicating a configuration takes everything, because a configuration exists to differ in where the
+     * locomotives are - starting blank would mean re-entering every decision that has nothing to do with
+     * that.
+     */
+    @Test
+    public void testDuplicatingAConfigurationTakesEverything() throws IOException
+    {
+        store.createConfiguration("Morning", null);
+        store.getConfiguration("Morning").put("placements", new org.json.JSONObject().put("Loc1", "A"));
+        store.getConfiguration("Morning").put("globals", new org.json.JSONObject().put("minDelay", 7));
+
+        store.createConfiguration("Evening", "Morning");
+
+        assertEquals(store.getConfiguration("Evening").getJSONObject("globals").getInt("minDelay"), 7);
+        assertEquals(store.getConfiguration("Evening").getJSONObject("placements").getString("Loc1"), "A");
+
+        // and it is a copy, not a shared reference - editing one must not edit the other
+        store.getConfiguration("Evening").getJSONObject("globals").put("minDelay", 1);
+
+        assertEquals(store.getConfiguration("Morning").getJSONObject("globals").getInt("minDelay"), 7,
+            "duplicating must copy, not alias");
+    }
+
+    /**
+     * The last configuration cannot be deleted: a setup with no configuration is a state nothing in the
+     * UI could act on.
+     */
+    @Test
+    public void testTheLastConfigurationCannotBeDeleted() throws IOException
+    {
+        store.createConfiguration("Only", null);
+
+        try
+        {
+            store.deleteConfiguration("Only");
+            fail("deleting the last configuration should be refused");
+        }
+        catch (IOException expected)
+        {
+            assertTrue(expected.getMessage().contains("autosetup"));
+        }
+
+        store.createConfiguration("Second", "Only");
+        store.deleteConfiguration("Only");
+
+        assertEquals(store.getConfigurationNames().size(), 1);
+        assertEquals(store.getActiveConfiguration(), "Second",
+            "deleting the active configuration should leave another one active");
+    }
+
+    /**
+     * Renaming a configuration does not leave the old file behind, which would come back as a duplicate
+     * on the next load.
+     */
+    @Test
+    public void testRenamingAConfigurationDoesNotLeaveTheOldFile() throws IOException
+    {
+        store.createConfiguration("Morning", null);
+        store.setActiveConfiguration("Morning");
+        store.save();
+
+        store.renameConfiguration("Morning", "Evening");
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(reloaded.getConfigurationNames().size(), 1);
+        assertEquals(reloaded.getConfigurationNames().get(0), "Evening");
+        assertEquals(reloaded.getActiveConfiguration(), "Evening");
+    }
+
+    /**
+     * A page rename must carry everything on that page with it.
+     *
+     * Every key here begins with a page name, so without this the user would see a page worth of names,
+     * lengths, directions and pairings vanish at once, with nothing to connect it to the rename.
+     */
+    @Test
+    public void testRenamingAPageCarriesEverythingOnIt() throws IOException
+    {
+        TileKey before = new TileKey("Old Name", 4, 7);
+        TileKey partner = new TileKey("2 - Bottom", 1, 1);
+
+        store.setPointName(before, "Yard throat");
+        store.setStation(before, true);
+        store.setTileLength(before, 12);
+        store.setTileDirection(before, new RouteId(0, 0), Direction.TOWARD_B);
+        store.setLinkName(before, "yard link");
+        store.pairPortals(before, partner);
+        store.setPageExcluded("Old Name", true);
+
+        store.renamePage("Old Name", "New Name");
+
+        TileKey after = new TileKey("New Name", 4, 7);
+
+        assertEquals(store.getPointName(after), "Yard throat");
+        assertTrue(store.isStation(after));
+        assertEquals(store.getTileLength(after), 12);
+        assertEquals(store.getTileDirection(after, new RouteId(0, 0)), Direction.TOWARD_B);
+        assertEquals(store.getLinkName(after), "yard link");
+        assertTrue(store.getExcludedPages().contains("New Name"));
+
+        // both ends of the pairing follow, including the one recorded on the other page
+        assertEquals(store.getPortalPartner(after), partner);
+        assertEquals(store.getPortalPartner(partner), after,
+            "the partner records the renamed page too");
+
+        // and nothing is left under the old name
+        assertNull(store.getPointName(before));
+        assertFalse(store.getExcludedPages().contains("Old Name"));
+    }
+
+    /**
+     * A tile carries its own length and direction, so deleting it takes those with it - the author ruled
+     * that a deleted tile starts over.  Names and stations are kept, because a Point is referenced by
+     * name from timetables and homes, and dropping one silently would break those.
+     */
+    @Test
+    public void testDeletedTilesLoseTheirLengthAndDirectionButNotTheirName() throws IOException
+    {
+        TileKey kept = new TileKey("1 - Main", 1, 1);
+        TileKey removed = new TileKey("1 - Main", 9, 9);
+
+        store.setTileLength(kept, 3);
+        store.setTileLength(removed, 8);
+        store.setTileDirection(removed, new RouteId(0, 0), Direction.NONE);
+        store.setPointName(removed, "Was a station once");
+
+        Set<TileKey> stillThere = new LinkedHashSet<>();
+        stillThere.add(kept);
+
+        assertEquals(store.forgetMissingTiles(stillThere), 2, "the length and the direction both go");
+
+        assertEquals(store.getTileLength(kept), 3);
+        assertEquals(store.getTileLength(removed), 0);
+        assertNull(store.getTileDirection(removed, new RouteId(0, 0)));
+
+        assertEquals(store.getPointName(removed), "Was a station once",
+            "a name is referenced elsewhere, so it is not dropped silently");
+    }
+
+    /**
+     * A file from a newer TrainControl is refused rather than read partially.  Reading what it recognises
+     * and dropping the rest would lose the user's work on the next save.
+     */
+    @Test
+    public void testAFileFromANewerVersionIsRefused() throws IOException
+    {
+        File folder = new File(layout, "config/autonomy");
+        folder.mkdirs();
+
+        Files.write(new File(folder, "setup.json").toPath(),
+            "{\"version\": 99, \"pointNames\": {}}".getBytes(StandardCharsets.UTF_8));
+
+        try
+        {
+            store.load();
+            fail("a newer schema should be refused");
+        }
+        catch (IOException expected)
+        {
+            assertTrue(expected.getMessage().contains("autosetup"), expected.getMessage());
+        }
+    }
+
+    /**
+     * Fields this version does not know are kept, so a layout opened in an older TrainControl and saved
+     * again does not come back stripped.
+     */
+    @Test
+    public void testUnknownFieldsSurviveARoundTrip() throws IOException
+    {
+        File folder = new File(layout, "config/autonomy");
+        folder.mkdirs();
+
+        Files.write(new File(folder, "setup.json").toPath(),
+            "{\"version\": 1, \"somethingNewer\": {\"a\": 1}}".getBytes(StandardCharsets.UTF_8));
+
+        store.load();
+        store.createConfiguration("Default", null);
+        store.save();
+
+        String written = new String(Files.readAllBytes(
+            new File(folder, "setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(written.contains("somethingNewer"),
+            "a field from a newer version must not be dropped:\n" + written);
+    }
+
+    private void delete(File file)
+    {
+        File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (File child : children)
+            {
+                delete(child);
+            }
+        }
+
+        file.delete();
+    }
+}
