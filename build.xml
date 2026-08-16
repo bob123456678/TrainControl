@@ -145,7 +145,7 @@
         <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
         <test-one-class class="testGraphReducer"/>
-        <test-one-class class="testGroundTruthComparison"/>
+        <test-one-class class="testAutonomyFromDiagram"/>
         <test-one-class class="testTileGraph"/>
         <test-one-class class="testTilePorts"/>
     </target>
