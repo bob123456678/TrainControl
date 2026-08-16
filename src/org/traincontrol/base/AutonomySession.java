@@ -13,6 +13,7 @@ import org.traincontrol.base.TileGraph.Direction;
 import org.traincontrol.base.TileGraph.RouteId;
 import org.traincontrol.base.TileGraph.TileKey;
 import org.traincontrol.base.TilePorts.Route;
+import org.traincontrol.base.TilePorts.Side;
 
 /**
  * One layout's autonomy setup, from the files on disk to the graph a train can run on.
