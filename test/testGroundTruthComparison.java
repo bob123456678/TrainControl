@@ -109,9 +109,9 @@ public class testGroundTruthComparison
         //   double slip across two tiles, which cannot be expressed per tile and so disqualifies any
         //   page it appears on.  Finding one here is the disqualification working, not failing.
         //
-        //   "3 - Top Parking" is a convenience view.  Only two of the hand-built configuration's 56
-        //   sensors live there and nowhere else (TopR1ParkLong, TopR1ParkShort), so excluding it costs
-        //   almost nothing - and it removes the one genuine pairing ambiguity in this layout.
+        //   "3 - Top Parking" is a convenience view.  Every sensor the hand-built configuration uses is
+        //   drawn on Main or Bottom, so excluding it costs nothing - and it removes the one genuine
+        //   pairing ambiguity in this layout.
         Set<String> excluded = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
