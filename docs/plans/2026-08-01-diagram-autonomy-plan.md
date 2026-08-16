@@ -274,6 +274,12 @@ renders or how its tiles behave at runtime.
     "only in legacy" will largely be the trailing moves not yet enabled.
   - The `CUSTOM_PERM_*` restriction still ANDs on top: it is broken hardware, not a user choice,
     and no per-branch setting can re-open a facing move.
+  - **The base-to-forks default does not apply to a route the hardware already restricts** (found in
+    implementation, 2026-08-16). On a defective turnout the default would say "out of the toe only"
+    while the blades say "into the toe only"; ANDing those leaves the tile impassable in both
+    directions, silently deleting track that is perfectly usable trailing. Being unable to choose a
+    fork is precisely why driving out of the base is not a sensible default there, so such routes
+    default to unconstrained and let the hardware restriction stand alone.
 - Multi-route tiles (DOUBLE_CURVE, CROSSING, OVERPASS) hold one state per route; a click cycles
   the route nearer the click point, and bulk apply sets both.
 

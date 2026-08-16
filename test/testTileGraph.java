@@ -186,6 +186,15 @@ public class testTileGraph
         TileGraph graph = graph(page);
         TileKey sw = key("main", 1, 1);
 
+        // The base-to-forks default must not apply here.  It would say "out of the toe only" while the
+        // blades say "into the toe only", and the two together would leave the tile impassable both ways -
+        // silently deleting a piece of track that is perfectly usable in the trailing direction.
+        for (Map.Entry<RouteId, Route> entry : graph.getRoutes(sw).entrySet())
+        {
+            assertEquals(graph.defaultDirection(sw, entry.getKey()), Direction.BOTH,
+                "a route the hardware already restricts should add no default of its own");
+        }
+
         // trailing works: entering at a fork leaves at the toe
         List<Exit> fromStraight = graph.exits(sw, Side.N);
         assertEquals(fromStraight.size(), 1);

@@ -403,6 +403,12 @@ public class TileGraph
 
         if (route == null) return Direction.BOTH;
 
+        // A route the hardware already restricts sets no default of its own.  A defective turnout is the
+        // case: base to forks would say "out of the toe only" while the blades say "into the toe only",
+        // and ANDing those leaves the tile impassable in both directions.  Being unable to choose a fork
+        // is exactly why driving out of the base is not a sensible default there.
+        if (route.getDirectedToward() != null) return Direction.BOTH;
+
         Side toe = TilePorts.deriveToe(component.getType(), component.getOrientation());
 
         if (toe == null) return Direction.BOTH;
