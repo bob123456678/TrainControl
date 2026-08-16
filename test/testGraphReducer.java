@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.base.GraphReducer;
 import org.traincontrol.base.GraphReducer.ReducedEdge;
 import org.traincontrol.base.GraphReducer.ReducedPoint;
@@ -86,10 +88,12 @@ public class testGraphReducer
     public void testASwitchForksIntoOneEdgePerBranchWithItsCommand() throws IOException
     {
         // sensor - switch - two sensors, one straight ahead and one to the west
+        // SWITCH_LEFT at orientation 0 has its toe south, straight ahead north, and its branch west
         LayoutDiagram page = page("main", 6, 6);
-        feedback(page, 2, 3, 11);
+        feedbackNS(page, 2, 3, 11);
         add(page, componentType.SWITCH_LEFT, 2, 2, 0, 7);
-        feedback(page, 2, 1, 12);
+        wire(page, 2, 2, 7, Accessory.accessoryType.SWITCH);
+        feedbackNS(page, 2, 1, 12);
         feedback(page, 1, 2, 13);
 
         GraphReducer reducer = reduce(graph(page), null);
@@ -125,6 +129,7 @@ public class testGraphReducer
         LayoutDiagram page = page("main", 6, 3);
         feedback(page, 1, 1, 11);
         add(page, componentType.SIGNAL, 2, 1, 0, 21);
+        wire(page, 2, 1, 21, Accessory.accessoryType.SIGNAL);
         feedback(page, 3, 1, 12);
 
         GraphReducer reducer = reduce(graph(page), null);
@@ -170,8 +175,8 @@ public class testGraphReducer
     {
         // two routes meeting at a crossing: north-south and east-west
         LayoutDiagram page = page("main", 6, 6);
-        feedback(page, 2, 1, 11);
-        feedback(page, 2, 3, 12);
+        feedbackNS(page, 2, 1, 11);
+        feedbackNS(page, 2, 3, 12);
         add(page, componentType.CROSSING, 2, 2, 0);
         feedback(page, 1, 2, 13);
         feedback(page, 3, 2, 14);
@@ -194,8 +199,8 @@ public class testGraphReducer
     public void testAnOverpassDoesNotLockItsTwoLevelsAgainstEachOther() throws IOException
     {
         LayoutDiagram page = page("main", 6, 6);
-        feedback(page, 2, 1, 11);
-        feedback(page, 2, 3, 12);
+        feedbackNS(page, 2, 1, 11);
+        feedbackNS(page, 2, 3, 12);
         add(page, componentType.OVERPASS, 2, 2, 0);
         feedback(page, 1, 2, 13);
         feedback(page, 3, 2, 14);
@@ -323,9 +328,9 @@ public class testGraphReducer
     {
         // sensor north of the turnout, sensor south of its toe
         LayoutDiagram page = page("main", 6, 6);
-        feedback(page, 2, 1, 11);
+        feedbackNS(page, 2, 1, 11);
         add(page, componentType.CUSTOM_PERM_LEFT, 2, 2, 0);
-        feedback(page, 2, 3, 12);
+        feedbackNS(page, 2, 3, 12);
 
         GraphReducer reducer = reduce(graph(page), null);
 
@@ -339,6 +344,35 @@ public class testGraphReducer
     }
 
     /**
+     * A switch drawn without an address cannot be thrown, so autonomy must not route over it trusting it
+     * to already be lying the right way.  It is reported instead - the same danger CUSTOM_PERM_* exists
+     * to describe, except here nobody said so.
+     */
+    @Test
+    public void testASwitchWithNoAddressIsRefusedRatherThanAssumed() throws IOException
+    {
+        LayoutDiagram page = page("main", 6, 6);
+        feedbackNS(page, 2, 3, 11);
+        // no wire() call: the switch has no accessory behind it
+        add(page, componentType.SWITCH_LEFT, 2, 2, 0, 7);
+        feedbackNS(page, 2, 1, 12);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        assertTrue(reducer.getEdges().isEmpty(),
+            "no edge may cross a switch that cannot be commanded");
+
+        boolean reported = false;
+
+        for (TileGraph.Problem p : reducer.getProblems())
+        {
+            if (GraphReducer.WARN_NO_ADDRESS.equals(p.getMessageKey())) reported = true;
+        }
+
+        assertTrue(reported, "the unaddressed switch should be reported, not silently skipped");
+    }
+
+    /**
      * The same diagram must reduce to the same graph twice - otherwise two builds cannot be compared,
      * and the ground truth diff against the existing layout is meaningless.
      */
@@ -346,9 +380,10 @@ public class testGraphReducer
     public void testReductionIsDeterministic() throws IOException
     {
         LayoutDiagram page = page("main", 8, 6);
-        feedback(page, 2, 3, 11);
+        feedbackNS(page, 2, 3, 11);
         add(page, componentType.SWITCH_LEFT, 2, 2, 0, 7);
-        feedback(page, 2, 1, 12);
+        wire(page, 2, 2, 7, Accessory.accessoryType.SWITCH);
+        feedbackNS(page, 2, 1, 12);
         feedback(page, 1, 2, 13);
 
         GraphReducer first = reduce(graph(page), null);
@@ -381,9 +416,32 @@ public class testGraphReducer
         add(page, componentType.STRAIGHT, x, y, 0);
     }
 
+    /**
+     * A feedback tile lying east-west, which is how FEEDBACK is drawn at orientation 0.
+     */
     private void feedback(LayoutDiagram page, int x, int y, int address) throws IOException
     {
         add(page, componentType.FEEDBACK, x, y, 0, address);
+    }
+
+    /**
+     * A feedback tile lying north-south.  Orientation matters as much here as it does on the diagram: a
+     * horizontal sensor placed above a vertical switch has no port facing it and simply does not connect.
+     */
+    private void feedbackNS(LayoutDiagram page, int x, int y, int address) throws IOException
+    {
+        add(page, componentType.FEEDBACK, x, y, 1, address);
+    }
+
+    /**
+     * Wires an accessory onto a tile, as parsing a real layout does.  Without one a switch or signal has
+     * no address to command, and autonomy refuses to route over it.
+     */
+    private void wire(LayoutDiagram page, int x, int y, int address, Accessory.accessoryType type)
+    {
+        page.getComponent(x, y).setAccessory(
+            new MarklinAccessory(null, address, type, accessoryDecoderType.MM2,
+                (type == Accessory.accessoryType.SIGNAL ? "Signal " : "Switch ") + address, false, 0));
     }
 
     private TileGraph graph(LayoutDiagram... pages)
