@@ -501,7 +501,57 @@ public class testAutonomyFromDiagram
         System.out.println("(with every branch open: " + wideOpen.getPoints().size() + " points, "
             + wideOpen.getEdges().size() + " edges)");
 
+        // For each remaining failure, say enough to find it on the diagram.  "Unreachable" on its own
+        // cannot distinguish a sensor the walk never leaves from one that simply does not connect to
+        // that particular destination, and those need different fixes.
+        int explained = 0;
+
+        for (String failure : out)
+        {
+            if (explained++ >= 8) break;
+
+            String[] ends = failure.split(" -> ");
+
+            System.out.println("\n   " + failure);
+            describeSensor(wideOpen, "from", sensorOf(ends[0]));
+            describeSensor(wideOpen, "to  ", sensorOf(ends[1]));
+        }
+
         return out;
+    }
+
+    /**
+     * Where a sensor lives and what the derived graph joins it to.
+     *
+     * A sensor can carry more than one tile - the same s88 legitimately appears at a station and at its
+     * approach guards - so this lists every tile bearing it, with the sensors each one reaches.
+     */
+    private void describeSensor(GraphReducer from, String label, Integer s88)
+    {
+        if (s88 == null)
+        {
+            System.out.println("      " + label + ": (no sensor)");
+            return;
+        }
+
+        for (Map.Entry<TileKey, ReducedPoint> entry : from.getPoints().entrySet())
+        {
+            if (entry.getValue().getS88() != s88) continue;
+
+            List<String> reaches = new ArrayList<>();
+
+            for (ReducedEdge edge : from.getEdges())
+            {
+                if (!edge.getStart().equals(entry.getKey())) continue;
+
+                ReducedPoint end = from.getPoints().get(edge.getEnd());
+                reaches.add((end == null ? "?" : String.valueOf(end.getS88()))
+                    + " (" + edge.getEnd() + ")");
+            }
+
+            System.out.println("      " + label + " s88 " + s88 + " at " + entry.getKey()
+                + " -> " + (reaches.isEmpty() ? "NOTHING" : reaches.toString()));
+        }
     }
 
     private TileKey linkAt(TileGraph g, String page, int x, int y)
