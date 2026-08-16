@@ -699,21 +699,47 @@ public class AutonomySession
         {
             List<TileKey> tiles = new ArrayList<>();
 
+            // Where the current stretch began: the Point the edge starts from, or the last branch
+            // tile passed.  A run is a stretch of PLAIN track, so anything with a choice in it ends
+            // the stretch and starts a new one - without this, the tiles on both sides of a switch
+            // were collected into one run and greying spilled past the switch onto unrelated track.
+            TileKey from = edge.getStart();
+
             for (GraphReducer.TileStep step : edge.getPath())
             {
-                if (graph.getRoutes(step.getTile()).size() > 1) continue;
+                TileKey tile = step.getTile();
 
-                tiles.add(step.getTile());
+                if (graph.getRoutes(tile).size() > 1)
+                {
+                    add(out, claimed, from, tile, tiles);
+
+                    from = tile;
+                    tiles = new ArrayList<>();
+
+                    continue;
+                }
+
+                tiles.add(tile);
             }
 
-            if (tiles.isEmpty() || claimed.contains(tiles.get(0))) continue;
-
-            claimed.addAll(tiles);
-
-            out.put(tiles.get(0), new Run(edge.getStart(), edge.getEnd(), tiles));
+            add(out, claimed, from, edge.getEnd(), tiles);
         }
 
         return out;
+    }
+
+    /**
+     * Records one stretch of plain track, if it is not already part of a run found from another edge.
+     */
+    private void add(Map<TileKey, Run> out, Set<TileKey> claimed, TileKey from, TileKey to,
+        List<TileKey> tiles)
+    {
+        // The reverse edge walks the same tiles the other way, so whichever is seen first keeps them.
+        if (tiles.isEmpty() || claimed.contains(tiles.get(0))) return;
+
+        claimed.addAll(tiles);
+
+        out.put(tiles.get(0), new Run(from, to, tiles));
     }
 
     /**

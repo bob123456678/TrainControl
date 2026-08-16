@@ -978,15 +978,20 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.size() > 1)
         {
-            // A switch cycles as a whole: every branch together, driven by what the FIRST branch is
-            // now, so the same click on the same switch always does the same thing.  Setting one
-            // branch on its own is still the menu's job, which is what the message says.
-            Direction next = after(session.getGraph().getDirection(target,
-                routes.keySet().iterator().next()));
+            // A switch toggles as a whole between open and shut.
+            //
+            // A toggle rather than a four-state cycle, and expressed as "is anything open?" rather than
+            // as the next state after the first branch: only both-ways and closed mean the same thing
+            // on every branch - a one-way is toward a SIDE, and branches do not share sides - so a
+            // cycle through four states had two of them collapse onto a third and could sit down.
+            boolean anyOpen = false;
 
-            // Only both-ways and closed can be applied to every branch at once and still mean the same
-            // thing on each: a "one way" is toward a side, and the branches do not share their sides.
-            if (next != Direction.BOTH && next != Direction.NONE) next = Direction.NONE;
+            for (RouteId routeId : routes.keySet())
+            {
+                if (session.getGraph().getDirection(target, routeId) != Direction.NONE) anyOpen = true;
+            }
+
+            Direction next = anyOpen ? Direction.NONE : Direction.BOTH;
 
             session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(target)), next);
 
