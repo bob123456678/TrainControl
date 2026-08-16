@@ -714,7 +714,7 @@ table because pixels cannot express it.
 | SWITCH_LEFT | `switch_left` | N S W | one group; common + 2 branches | M / **D** |
 | SWITCH_RIGHT | `switch_right` | N E S | one group; common + 2 branches | M / **D** |
 | SWITCH_Y | `switch_y` | E S W | one group; common + 2 branches | M / **D** |
-| SWITCH_THREE | `threeway` | N E S W | one group; common + 3 branches, **two addresses** (`threeway_active`, `threeway_active2`) | M / **D** |
+| SWITCH_THREE | `threeway` | N E S W | **three routes from a single toe at S** (author, 2026-08-01): S-N, S-E, S-W. Two addresses; see mapping below | author |
 | SWITCH_CROSSING | `crossswitch` | N E S W | **double slip** (author, 2026-08-01): unswitched `{NS}` `{EW}`; switched `{NW}` `{SE}`. State-dependent, 2 orientations | author |
 | CUSTOM_PERM_LEFT | `custom_perm_left` | N S W | **trailing only** (branch→toe); no accessory | M / **D** |
 | CUSTOM_PERM_RIGHT | `custom_perm_right` | N E S | **trailing only**; no accessory | M / **D** |
@@ -734,8 +734,27 @@ table because pixels cannot express it.
 2. **Branch → accessory setting.** Diffing each `_active` variant against its base shows the
    changed leg (e.g. `switch_left`'s change centroid sits toward W, `switch_right`'s toward E),
    which identifies *that* a leg is highlighted but not reliably which `accessorySetting`
-   (STRAIGHT/TURN, GREEN/RED) selects it. The common leg vs branch legs assignment, and the
-   setting that picks each, are **declared and must be confirmed against real hardware behavior**.
+   (STRAIGHT/TURN, GREEN/RED) selects it. For two-address `SWITCH_THREE` the mapping **is**
+   settled — see below. For the two-leg switches the branch/straight assignment is declared and
+   should be confirmed on real hardware.
+
+   **`SWITCH_THREE` address mapping (resolved 2026-08-01).** `getImageName`
+   (`LayoutDiagramComponent.java:321-327`) selects `_active` when `getAccessory()` is switched and
+   `_active2` when `getAccessory2()` is switched, base art when neither is. Cross-checked against
+   the pixel diff, which puts `_active`'s changed leg toward **W** and `_active2`'s toward **E**.
+   Therefore:
+   - **S-N (straight)**: address 1 *not* switched **and** address 2 *not* switched;
+   - **S-W**: address 1 switched;
+   - **S-E**: address 2 switched.
+
+   Two consequences for `configCommands` generation:
+   - the straight route must command **both** addresses to straight — commanding neither would
+     leave a previously-thrown branch selected;
+   - each branch route should command the other address to straight as well, since **both
+     addresses switched at once is not a valid physical state**. The display code resolves that
+     tie by checking address 1 first, which is a rendering fallback, not a real position. The
+     builder must never emit that combination, and the reducer must never trace a path that
+     requires it.
 3. **`CUSTOM_PERM_*` semantics — resolved by the author (2026-08-01).** These represent
    **defective switches that lack an address and cannot be thrown**. Traversal is therefore
    **directional**:
@@ -875,7 +894,7 @@ Preference: `DIAGRAM_OVERLAYS_PREF = "DiagramOverlays"` (default true).
 | `testAutonomyCompanionStore` | shared + per-configuration round-trip; `tileLengths` and `tileDirections` sparsity (zeros and `both` are never written, a cleared value round-trips as absent, and both survive configuration switches because they are shared); a two-group tile's per-group direction keys round-trip independently; configuration CRUD (copy-on-create, rename, refuse deleting the last); version gate; unknown-field preservation; orphan policy; `renamePoint` rewrites shared anchors and every configuration; save-back targets only the active configuration; **CS-sourced layouts**: anchors save and reload with no local layout path set (the `isLocalLayout()`-false case must NOT refuse), a station assigned on a non-feedback tile round-trips as a virtual point with no s88, and an anchor whose `(page,x,y)` no longer resolves after a simulated diagram re-download becomes a reportable orphan rather than a deletion |
 | `testAutonomyBuilder` | companion + programmatic pages compile to JSON that `parseAuto` accepts and validates; deterministic output (two builds byte-identical); setup errors (unanchored point, unpaired portal) invalidate through the normal flow; **migration**: legacy `autonomy.json` fixture + matching diagram → traced edges adopt the legacy lengths/locks/homes; generated-then-parsed Layout's `toJSON` is stable across a second build; **scratch build isolation**: `validateScratch()` on a deliberately broken companion reports invalid while `model.getAutoLayout()` remains the untouched previous instance (identity assert) and no locomotive was stopped; **lengths**: unassigned tiles yield length 0 on every edge (parity with today), assigned tiles sum along the traced path with endpoints excluded, a 0 on an intermediate tile contributes nothing without breaking the edge, and a legacy length distributed over N tiles sums back to exactly the original |
 | `testTileGraph` (revised) | geometry seeds candidate connections both ways; a user override survives a re-trace and is not overwritten by geometry; disallowed connections are absent in both directions; one-way connections are absent in exactly one; LINK and TUNNEL portal connections join the named tiles across pages and are never inferred from adjacency; a permanent turnout's facing connections are seeded disallowed and cannot be user-enabled |
-| `testGraphReducer` (revised) | **every** feedback tile becomes a Point without user action, while a station is a Point plus a designation; two feedback tiles sharing one s88 address both become Points with distinct generated names, and a user rename survives a rebuild and a change to the surrounding track; a duplicate name is refused at authoring time, not at build time; a name containing a quote character does not silently change on the way into `Point`; designating a station sets `isDestination` and never produces the model's no-s88 exception because every derived Point has one; a legacy virtual point (no s88) is reported as an unanchorable migration case rather than dropped; a feedback tile with no allowed connections is skipped (and counted) rather than emitted as an unreachable node, while one with a single connection is emitted; a `CUSTOM_SCISSORS` on a participating page fails the build with a coordinate-naming error; a degree-2 chain between two significant nodes collapses to exactly one edge with summed length and ANDed direction; a switch in the chain forks into one edge per branch carrying the correct `configCommands`; an unpromoted s88 tile collapses away; **mutual exclusion**: two edges sharing a switch tile are locked against each other, two edges sharing a CROSSING are locked, two edges crossing an OVERPASS in different groups are **not** locked but in the same group are, a portal pair counts as one location; reduction is deterministic across two runs |
+| `testGraphReducer` (revised) | **every** feedback tile becomes a Point without user action, while a station is a Point plus a designation; two feedback tiles sharing one s88 address both become Points with distinct generated names, and a user rename survives a rebuild and a change to the surrounding track; a duplicate name is refused at authoring time, not at build time; a name containing a quote character does not silently change on the way into `Point`; designating a station sets `isDestination` and never produces the model's no-s88 exception because every derived Point has one; a legacy virtual point (no s88) is reported as an unanchorable migration case rather than dropped; a feedback tile with no allowed connections is skipped (and counted) rather than emitted as an unreachable node, while one with a single connection is emitted; a `CUSTOM_SCISSORS` on a participating page fails the build with a coordinate-naming error; a degree-2 chain between two significant nodes collapses to exactly one edge with summed length and ANDed direction; a switch in the chain forks into one edge per branch carrying the correct `configCommands`; a `SWITCH_THREE` yields exactly three routes from its toe, the straight route commands **both** addresses to straight, and no generated command set ever switches both addresses at once; a `SWITCH_CROSSING` contributes commands in **both** states — unswitched for its N-S/E-W throughs and switched for its N-W/S-E diagonals; an unpromoted s88 tile collapses away; **mutual exclusion**: two edges sharing a switch tile are locked against each other, two edges sharing a CROSSING are locked, two edges crossing an OVERPASS in different groups are **not** locked but in the same group are, a portal pair counts as one location; reduction is deterministic across two runs |
 | `testLockEdgeAnalyzer` (R2) | exposure invariant: asymmetric-but-covered pair → zero suggestions; hand-built unsafe config → exactly the uncovered ordered pairs; portal-pair conflicts; pinned run against `test/autonomy_sanity.json` |
 
 ## Verification
