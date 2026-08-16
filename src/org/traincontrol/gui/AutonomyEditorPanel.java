@@ -171,7 +171,7 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(AutonomyViewerPanel.styled(showDirections, false));
         panel.add(AutonomyViewerPanel.styled(showLengths, false));
 
-        hint.setFont(AutonomyViewerPanel.FONT);
+        hint.setFont(AutonomyViewerPanel.FONT_LIST);
         panel.add(hint);
 
         banner.setOpaque(true);
@@ -186,7 +186,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         JToggleButton button = new JToggleButton(text, selected);
 
-        AutonomyViewerPanel.styled(button, false);
+        AutonomyViewerPanel.styled(button, true);
         button.setFocusable(false);
         button.addActionListener(e ->
         {
@@ -209,7 +209,7 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
-        AutonomyViewerPanel.styled(findings, false);
+        findings.setFont(AutonomyViewerPanel.FONT_LIST);
 
         // Clicking a finding goes to the tile it is about.  Reading "no train can leave Platform 3" is
         // only half an answer; the other half is which square that is, on a page of two hundred.
@@ -254,7 +254,8 @@ public class AutonomyEditorPanel extends JPanel
     private JLabel heading(String text)
     {
         JLabel label = new JLabel(text);
-        label.setFont(AutonomyViewerPanel.FONT_BOLD);
+        label.setFont(AutonomyViewerPanel.FONT);
+        label.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
         return label;
     }
 

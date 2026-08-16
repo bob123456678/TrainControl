@@ -62,8 +62,11 @@ public class AutonomyViewerPanel extends JPanel
         new JButton(I18n.t("autosetup.ui.btnPlaceLocomotives"));
 
     private final JLabel stepChoose = step(I18n.t("autosetup.ui.stepChoose"));
+    private final JLabel stepPages = step(I18n.t("autosetup.ui.stepPages"));
     private final JLabel stepEnable = step(I18n.t("autosetup.ui.stepEnable"));
     private final JLabel stepRun = step(I18n.t("autosetup.ui.stepRun"));
+
+    private final JLabel pagesSummary = new JLabel();
 
     private final JLabel hint = new JLabel(I18n.t("autosetup.ui.hintClickToFix"));
 
@@ -87,22 +90,44 @@ public class AutonomyViewerPanel extends JPanel
         add(buildSteps(), BorderLayout.NORTH);
         add(buildFindings(), BorderLayout.CENTER);
 
+        // Pinned, so the panel never asks its scroll pane for more width than the tab has.  Without
+        // this a single long finding widened the whole panel and the entire tab scrolled sideways.
+        setPreferredSize(new Dimension(PANEL_WIDTH, 620));
+        setMaximumSize(new Dimension(PANEL_WIDTH, Integer.MAX_VALUE));
+
         refresh();
     }
 
     /**
-     * The window's own font, one size down - what the rest of the application uses for controls.
+     * How wide the panel asks to be.  Everything inside is bounded by this; only the findings list is
+     * allowed to overflow it, and it does so inside its own scroll pane.
      */
-    static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
+    static final int PANEL_WIDTH = 420;
+
+    // Taken from the rest of the window rather than chosen here: section headings are plain 14 in navy
+    // (layoutListLabel, sizeLabel, "Locomotive Key Mapping"), buttons are bold 12 (editLayoutButton,
+    // validateButton), ordinary labels are plain 14.
+    static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
 
     static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
 
+    /**
+     * The findings list only.  It is dense tabular reading rather than a label, and at 14 a real
+     * layout's list stops fitting on a screen.
+     */
+    static final java.awt.Font FONT_LIST = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
+
+    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
+
     static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
     static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
-    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(60, 60, 60);
+    static final java.awt.Color SUBHEADING_COLOUR = new java.awt.Color(70, 70, 70);
 
     /**
      * Applies the application's control font to a component, and returns it.
+     *
+     * @param component
+     * @param bold true for a button, false for a label
      */
     static <T extends javax.swing.JComponent> T styled(T component, boolean bold)
     {
@@ -110,11 +135,15 @@ public class AutonomyViewerPanel extends JPanel
         return component;
     }
 
+    /**
+     * A section heading in the window's own style: plain 14, navy, as used everywhere else.
+     */
     private JLabel step(String text)
     {
-        JLabel label = styled(new JLabel(text), true);
+        JLabel label = new JLabel(text);
+        label.setFont(FONT);
         label.setForeground(HEADING_COLOUR);
-        label.setBorder(BorderFactory.createEmptyBorder(6, 0, 1, 0));
+        label.setBorder(BorderFactory.createEmptyBorder(8, 0, 2, 0));
         return label;
     }
 
@@ -171,6 +200,24 @@ public class AutonomyViewerPanel extends JPanel
         });
 
         panel.add(leftAligned(choose));
+
+        // --- which pages count ---
+        // On the surface rather than on the Manage menu: it decides which track is considered at all,
+        // so it is the first thing to reach for when the list below is full of findings about a page
+        // that is not part of the railway being automated.
+        stepPages.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(stepPages);
+
+        JPanel pageRow = row();
+
+        JButton pages = new JButton(I18n.t("autosetup.ui.btnExcludePage"));
+        pages.addActionListener(e -> choosePages());
+        pageRow.add(styled(pages, true));
+
+        pagesSummary.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
+        pageRow.add(styled(pagesSummary, false));
+
+        panel.add(leftAligned(pageRow));
 
         // --- step 2: turn it on ---
         stepEnable.setAlignmentX(LEFT_ALIGNMENT);
@@ -262,11 +309,23 @@ public class AutonomyViewerPanel extends JPanel
         JPanel panel = new JPanel(new BorderLayout(0, 2));
         panel.setOpaque(false);
 
-        panel.add(styled(hint, false), BorderLayout.NORTH);
+        JPanel heading = new JPanel();
+        heading.setOpaque(false);
+        heading.setLayout(new javax.swing.BoxLayout(heading, javax.swing.BoxLayout.Y_AXIS));
+
+        JLabel title = step(I18n.t("autosetup.ui.headingFindings"));
+        title.setAlignmentX(LEFT_ALIGNMENT);
+        heading.add(title);
+
+        hint.setFont(FONT_LIST);
+        hint.setAlignmentX(LEFT_ALIGNMENT);
+        heading.add(hint);
+
+        panel.add(heading, BorderLayout.NORTH);
 
         findings.setCellRenderer(new FindingRenderer());
         findings.setBackground(java.awt.Color.WHITE);
-        styled(findings, false);
+        findings.setFont(FONT_LIST);
 
         // One click, straight to the square it is about, with the tools that can fix it already open.
         findings.addMouseListener(new java.awt.event.MouseAdapter()
@@ -284,19 +343,36 @@ public class AutonomyViewerPanel extends JPanel
             }
         });
 
-        JScrollPane scroll = new JScrollPane(findings);
+        // The findings are the only thing here that is genuinely wider than the panel, so this is the
+        // only thing that scrolls sideways.  Everything else is pinned narrow (see setPanelWidth), so
+        // the whole tab no longer slides left and right because one sentence was long.
+        JScrollPane scroll = new JScrollPane(findings,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(java.awt.Color.WHITE);
+        scroll.setPreferredSize(new Dimension(PANEL_WIDTH, 260));
 
         panel.add(scroll, BorderLayout.CENTER);
 
-        JScrollPane rosterScroll = new JScrollPane(styled(new JList<>(roster), false));
-        rosterScroll.setBorder(BorderFactory.createTitledBorder(
-            I18n.t("autosetup.ui.labelLocomotiveRoster")));
-        rosterScroll.setPreferredSize(new Dimension(240, 110));
+        JPanel bottom = new JPanel(new BorderLayout(0, 2));
+        bottom.setOpaque(false);
+
+        // A navy label rather than a titled border: there is not one titled border anywhere else in
+        // this window, and a box around a list is a second frame inside a frame.
+        bottom.add(step(I18n.t("autosetup.ui.labelLocomotiveRoster")), BorderLayout.NORTH);
+
+        JList<String> locomotives = new JList<>(roster);
+        locomotives.setFont(FONT_LIST);
+
+        JScrollPane rosterScroll = new JScrollPane(locomotives,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        rosterScroll.setBorder(BorderFactory.createEmptyBorder());
+        rosterScroll.setPreferredSize(new Dimension(PANEL_WIDTH, 90));
         rosterScroll.getViewport().setBackground(java.awt.Color.WHITE);
 
-        panel.add(rosterScroll, BorderLayout.SOUTH);
+        bottom.add(rosterScroll, BorderLayout.CENTER);
+
+        panel.add(bottom, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -734,6 +810,11 @@ public class AutonomyViewerPanel extends JPanel
         stepEnable.setVisible(exists);
         enable.setVisible(exists);
 
+        int total = session.getPages().size();
+
+        pagesSummary.setText(I18n.f("autosetup.ui.labelPagesSummary",
+            total - session.getStore().getExcludedPages().size(), total));
+
         // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
         // which does not exist is what made placing look missing in the first place.
         stepRun.setVisible(running);
@@ -819,16 +900,20 @@ public class AutonomyViewerPanel extends JPanel
             (problem.isBlocking() ? errors : warnings).add(new Object[]
             {
                 problem.getTile(),
-                describe(problem.getMessageKey(),
-                    problem.getTile() == null ? "" : problem.getTile().toString())
+                describe(problem.getMessageKey(), problem.getTile() == null
+                    ? "" : describeTile(problem.getTile()))
             });
         }
 
         for (AutonomyChecks.Finding finding : session.check())
         {
+            // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
+            // where there is a tile, say what the tile is instead.
+            String subject = finding.getTile() == null
+                ? finding.getSubject() : describeTile(finding.getTile());
+
             (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
-                new Object[] {finding.getTile(), describe(finding.getMessageKey(),
-                    finding.getSubject())});
+                new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
@@ -841,10 +926,46 @@ public class AutonomyViewerPanel extends JPanel
 
         section(I18n.f("autosetup.ui.headingErrors", errors.size()), errors,
             AutonomyChecks.Severity.ERROR);
-        section(I18n.f("autosetup.ui.headingWarnings", warnings.size()), warnings,
+        section(I18n.f("autosetup.ui.headingWarningsShort", warnings.size()), warnings,
             AutonomyChecks.Severity.WARNING);
 
         hint.setVisible(!errors.isEmpty() || !warnings.isEmpty());
+    }
+
+    /**
+     * What a square IS, for a message that would otherwise name a coordinate.
+     *
+     * A finding that says "nothing connects to 1 - Main 8,6" tells the reader where to look and nothing
+     * about what they will find when they get there.  Naming the tile - a sensor with an s88 address, a
+     * switch with its address, a piece of plain track - is usually enough to recognise the spot without
+     * going to it, and is what makes a list of eleven skimmable.
+     */
+    private String describeTile(org.traincontrol.base.TileGraph.TileKey tile)
+    {
+        String where = tile.getX() + "," + tile.getY();
+
+        org.traincontrol.base.LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (component == null) return where;
+
+        // a name the user gave it beats anything derived
+        String named = session.getStore().getPointName(tile);
+
+        if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
+
+        if (component.isFeedback())
+        {
+            return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
+        }
+
+        if (component.getAccessory() != null)
+        {
+            return I18n.f("autosetup.ui.describeAccessory",
+                component.getUserFriendlyTypeName(), where, component.getAddress());
+        }
+
+        return I18n.f("autosetup.ui.describeTile", component.getUserFriendlyTypeName(), where);
     }
 
     /**
