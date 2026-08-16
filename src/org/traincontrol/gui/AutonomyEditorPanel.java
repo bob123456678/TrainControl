@@ -832,25 +832,6 @@ public class AutonomyEditorPanel extends JPanel
         return chosen.isEmpty() ? null : new org.json.JSONArray(chosen);
     }
 
-    private void promptName(TileKey tile)
-    {
-        String current = session.getStore().getPointName(tile);
-
-        String name = JOptionPane.showInputDialog(this,
-            I18n.t("autosetup.ui.promptPointName"), current == null ? "" : current);
-
-        if (name == null) return;
-
-        if (name.contains("\""))
-        {
-            // Point strips quotes from names, so a name containing one would change under the user
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.warnQuotesStrippedFromName"));
-            name = name.replace("\"", "");
-        }
-
-        session.setPointName(tile, name);
-    }
-
     private void promptLinkName(TileKey tile)
     {
         String current = session.getStore().getLinkName(tile);
