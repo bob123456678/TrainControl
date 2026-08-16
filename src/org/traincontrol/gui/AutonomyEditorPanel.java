@@ -496,6 +496,15 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether there are edits the user has not saved - what decides whether closing has to ask.
+     * @return
+     */
+    public boolean isDirty()
+    {
+        return session.isDirty();
+    }
+
+    /**
      * What the editor should draw over one square: its routes and their directions, its length, and
      * whether it is part of the bulk selection.
      *
@@ -609,7 +618,7 @@ public class AutonomyEditorPanel extends JPanel
         return message;
     }
 
-    private void save()
+    public void save()
     {
         try
         {

@@ -272,9 +272,12 @@ public class LayoutEditor extends PositionAwareJFrame
     }
    
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
-    {        
+    {
+        // hover previews what a diagram edit would place; in autonomy mode nothing is being placed
+        if (isAutonomyMode()) return;
+
         if (this.popup != null && this.popup.isVisible()) return;
-        
+
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
      
@@ -348,6 +351,11 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void beginDrag(MouseEvent e, LayoutLabel label)
     {
+        // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not
+        // rearranging their railway, and a drag that quietly relaid the diagram would be the worst kind
+        // of accident: silent, and to the thing everything else is derived from.
+        if (isAutonomyMode()) return;
+
         if (label != null && label.getComponent() != null)
         {
             if (getX(label) == -1 && getY(label) == -1)
@@ -381,6 +389,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void updateDrag(MouseEvent e, LayoutLabel label)
     {
+        if (isAutonomyMode()) return;
+
         if (dragWindow != null)
         {
             java.awt.Point screenPoint = e.getLocationOnScreen();
@@ -391,6 +401,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void endDrag(MouseEvent e, LayoutLabel label)
     {
+        if (isAutonomyMode()) return;
+
         if (dragWindow != null)
         {
             dragWindow.dispose();
@@ -460,6 +472,18 @@ public class LayoutEditor extends PositionAwareJFrame
      * diagram coordinates here because edit mode pins minx and miny to 0 (LayoutDiagram.checkBounds);
      * anything drawing over a NON-edit grid would have to add the layout's own offsets.
      */
+    /**
+     * Whether this editor window is setting autonomy up rather than editing the track.
+     *
+     * The single question every mouse path asks, so that "autonomy mode" cannot mean one thing to
+     * clicking and another to dragging.
+     * @return
+     */
+    public boolean isAutonomyMode()
+    {
+        return autonomyPanel != null && autonomyPanel.isVisible();
+    }
+
     public void refreshAutonomyAnnotations()
     {
         if (grid == null) return;
@@ -491,7 +515,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // than through a second listener because LayoutLabel hard-casts its parent to this class and
         // calls this method - so this is where a click already arrives, and adding a branch is smaller
         // and less surprising than intercepting events before they get here.
-        if (autonomyPanel != null && autonomyPanel.isVisible())
+        if (isAutonomyMode())
         {
             int x = getX(label);
             int y = getY(label);
@@ -1563,6 +1587,30 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void confirmExit()
     {
+        // In autonomy mode the diagram was never touched, so the undo stack is empty and the question
+        // that matters is whether the autonomy setup has unsaved edits.
+        if (isAutonomyMode())
+        {
+            if (autonomyPanel.isDirty())
+            {
+                int result = JOptionPane.showOptionDialog(
+                    this,
+                    I18n.t("layout.ui.confirmExitWithoutSaving"),
+                    I18n.t("layout.ui.dialogExitConfirmation"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    TrainControlUI.YES_NO_OPTS,
+                    TrainControlUI.YES_NO_OPTS[0]
+                );
+
+                if (result != JOptionPane.YES_OPTION) return;
+            }
+
+            dispose();
+            return;
+        }
+
         if (canUndo())
         {
             int result = JOptionPane.showOptionDialog(
@@ -1766,6 +1814,10 @@ public class LayoutEditor extends PositionAwareJFrame
         // Handle key shortcuts
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // Every shortcut below places, cuts, rotates or retextures a tile.  None of them mean
+            // anything while setting autonomy up, and all of them would edit the diagram silently.
+            if (isAutonomyMode()) return;
+
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
                 if (this.hasToolFlag() && getLastHoveredLabel() != null)
@@ -1844,9 +1896,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
                 return;
             }
-            
+
+            // In autonomy mode this window never touched the diagram, so Save means the autonomy setup
+            // - the thing the user has actually been editing.
+            if (isAutonomyMode())
+            {
+                autonomyPanel.save();
+                dispose();
+                return;
+            }
+
             layout.saveChanges(null, false);
-            
+
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 parent.layoutEditingComplete();
