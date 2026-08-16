@@ -240,8 +240,15 @@ public class TilePorts
         fixed(componentType.FEEDBACK_CURVE, route(Side.E, Side.S));
         fixed(componentType.FEEDBACK_DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
 
-        // A signal carries an address but does not branch; topologically it is a straight.
-        fixed(componentType.SIGNAL, route(Side.E, Side.W));
+        // A signal does not branch - topologically it is a straight - but it must be GREEN for a train to
+        // pass, so traversing one carries a command just as throwing a switch does.  Expressing that here
+        // rather than in the reducer means the reducer needs no special case: it gathers commands along a
+        // path uniformly, and a signal contributes one like anything else.  Setting other signals to RED
+        // for safety is left to conditional routes, which is where users already do it.
+        signalled(componentType.SIGNAL, accessorySetting.GREEN, route(Side.E, Side.W));
+
+        // An uncoupler has an address too, but firing it is an operation the user asks for, not a
+        // condition of passing over the tile, so nothing is commanded when a path crosses one.
         fixed(componentType.UNCOUPLER, route(Side.E, Side.W));
 
         // --- crossings ---------------------------------------------------------------------------
@@ -500,6 +507,20 @@ public class TilePorts
         List<Route> list = new ArrayList<>();
         Collections.addAll(list, routes);
         return new TileState(list, commands);
+    }
+
+    /**
+     * A fixed tile that nonetheless requires an accessory setting to be passed - a signal.
+     */
+    private static void signalled(componentType type, accessorySetting setting, Route... routes)
+    {
+        List<Route> list = new ArrayList<>();
+        Collections.addAll(list, routes);
+
+        List<TileState> states = new ArrayList<>();
+        states.add(new TileState(list, commands(setting)));
+
+        PORTS.put(type, Collections.unmodifiableList(states));
     }
 
     private static void fixed(componentType type, Route... routes)

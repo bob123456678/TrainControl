@@ -357,6 +357,25 @@ public class testTilePorts
     }
 
     /**
+     * A train cannot pass a red signal, so crossing a signal tile commands it green - the same shape as a
+     * switch command, which is what lets the reducer gather both without a special case.  Setting other
+     * signals red for safety stays with conditional routes.
+     *
+     * An uncoupler is not a condition of passing: firing it is something the user asks for.
+     */
+    @Test
+    public void testCrossingASignalCommandsItGreen()
+    {
+        assertEquals(TilePorts.commands(componentType.SIGNAL, 0).get(AccessorySlot.PRIMARY),
+            accessorySetting.GREEN);
+        assertEquals(TilePorts.commands(componentType.SIGNAL, 0).size(), 1,
+            "a signal has one address");
+
+        assertTrue(TilePorts.commands(componentType.UNCOUPLER, 0).isEmpty(),
+            "passing over an uncoupler must not fire it");
+    }
+
+    /**
      * Feedback tiles are plain track that also carries an s88.  Every one becomes a Point, so their
      * topology has to match their non-feedback equivalents exactly.
      */
