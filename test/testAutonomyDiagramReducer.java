@@ -34,7 +34,7 @@ import org.traincontrol.base.TilePorts.Side;
  *
  * @author Adam
  */
-public class testGraphReducer
+public class testAutonomyDiagramReducer
 {
     /**
      * Every feedback tile becomes a Point without anyone asking, and a run of plain track between two of

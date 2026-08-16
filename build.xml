@@ -144,13 +144,16 @@
         <test-one-class class="testParseWebServer"/>
         <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
-        <test-one-class class="testGraphReducer"/>
-        <test-one-class class="testAutonomyCompanionStore"/>
-        <test-one-class class="testAutonomySession"/>
-        <test-one-class class="testDiagramMonitor"/>
-        <test-one-class class="testAutonomyFromDiagram"/>
-        <test-one-class class="testTileGraph"/>
-        <test-one-class class="testTilePorts"/>
+
+        <!-- Autonomy from the track diagram: the port map, then everything built on it, then
+             the whole chain against a real layout with a hand-built graph beside it. -->
+        <test-one-class class="testAutonomyDiagramPorts"/>
+        <test-one-class class="testAutonomyDiagramTiles"/>
+        <test-one-class class="testAutonomyDiagramReducer"/>
+        <test-one-class class="testAutonomyDiagramStore"/>
+        <test-one-class class="testAutonomyDiagramSession"/>
+        <test-one-class class="testAutonomyDiagramMonitor"/>
+        <test-one-class class="testAutonomyDiagramSampleLayout"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

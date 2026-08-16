@@ -24,7 +24,7 @@ import org.traincontrol.base.TileGraph.TileKey;
  *
  * @author Adam
  */
-public class testAutonomyCompanionStore
+public class testAutonomyDiagramStore
 {
     private File layout;
     private AutonomyCompanionStore store;

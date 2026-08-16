@@ -21,7 +21,7 @@ import org.traincontrol.base.TileOverlay.State;
  *
  * @author Adam
  */
-public class testDiagramMonitor
+public class testAutonomyDiagramMonitor
 {
     /**
      * A tile that qualifies twice shows the more urgent claim.

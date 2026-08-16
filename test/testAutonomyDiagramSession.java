@@ -27,7 +27,7 @@ import org.traincontrol.base.TileGraph.TileKey;
  *
  * @author Adam
  */
-public class testAutonomySession
+public class testAutonomyDiagramSession
 {
     private File layout;
     private AutonomySession session;

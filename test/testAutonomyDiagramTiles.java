@@ -30,7 +30,7 @@ import org.traincontrol.base.TilePorts.Side;
  *
  * @author Adam
  */
-public class testTileGraph
+public class testAutonomyDiagramTiles
 {
     /**
      * A run of straights connects end to end, and stops where the track stops.  Nothing connects to a

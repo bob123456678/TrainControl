@@ -24,7 +24,7 @@ import org.traincontrol.base.TilePorts.Side;
  *
  * @author Adam
  */
-public class testTilePorts
+public class testAutonomyDiagramPorts
 {
     /**
      * Every componentType must be accounted for.  A new tile type that nobody classifies would return no
