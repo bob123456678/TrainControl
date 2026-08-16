@@ -469,6 +469,46 @@ public class testGroundTruthComparison
         out.append("only derived:       ").append(edgesOnlyDerived.size())
            .append("   <- expected in bulk\n");
 
+        // Trailing moves are closed by default, so a legacy edge whose reverse IS derived is almost
+        // certainly that rather than a reduction defect.  Separating the two makes the remainder - the
+        // edges with no derived counterpart in either direction - the list actually worth reading.
+        int reverseExists = 0;
+        List<String> neitherDirection = new ArrayList<>();
+
+        for (String pair : edgesOnlyLegacy)
+        {
+            String[] ends = pair.split("->");
+            String reversed = ends[1] + "->" + ends[0];
+
+            if (derivedPairs.contains(reversed))
+            {
+                reverseExists++;
+            }
+            else
+            {
+                neitherDirection.add(pair + "  " + legacyByPair.get(pair).getString("start")
+                    + " -> " + legacyByPair.get(pair).getString("end"));
+            }
+        }
+
+        out.append("   of those, reverse IS derived: ").append(reverseExists)
+           .append("   <- a trailing move, not a defect\n");
+        out.append("   NEITHER direction derived:    ").append(neitherDirection.size())
+           .append("   <- the real list to work through\n");
+
+        int neither = 0;
+
+        for (String line : neitherDirection)
+        {
+            if (neither++ >= 25)
+            {
+                out.append("      ... and ").append(neitherDirection.size() - 25).append(" more\n");
+                break;
+            }
+
+            out.append("      ").append(line).append("\n");
+        }
+
         // --- accessory commands on matched edges: the highest value signal ---
         out.append("\n--- config commands on matched edges ---\n");
 
