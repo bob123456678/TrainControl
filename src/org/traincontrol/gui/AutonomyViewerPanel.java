@@ -196,13 +196,16 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         // What was set while the outgoing configuration ran - placements, homes, settings - goes back
-        // into it before it is replaced, or switching configurations would quietly discard it.
+        // into THAT configuration, by name, before anything is replaced.  By name because store-active
+        // and what-is-running can disagree after a refused load, and capturing into the store's idea
+        // of active would overwrite a configuration with another one's state.
         if (ui.getActiveDiagramConfiguration() != null && ui.getModel() != null
             && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
         {
             try
             {
-                session.captureFromLayout(ui.getModel().getAutoLayout().toJSON());
+                session.captureFromLayout(ui.getModel().getAutoLayout().toJSON(),
+                    ui.getActiveDiagramConfiguration());
             }
             catch (Exception e)
             {
@@ -211,17 +214,26 @@ public class AutonomyViewerPanel extends JPanel
             }
         }
 
+        // remembered so a failed load can put the store back: what loads on the next start must be
+        // something that actually loaded, not something that was refused partway
+        String previous = session.getStore().getActiveConfiguration();
+
         session.getStore().setActiveConfiguration(name);
         session.rebuild();
 
         if (session.hasBlockingProblems())
         {
             JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorCannotBuild"));
+            revert(previous);
             refresh();
             return;
         }
 
-        if (ui.getModel() == null) return;
+        if (ui.getModel() == null)
+        {
+            revert(previous);
+            return;
+        }
 
         try
         {
@@ -237,9 +249,16 @@ public class AutonomyViewerPanel extends JPanel
         catch (RuntimeException e)
         {
             JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            revert(previous);
         }
 
         refresh();
+    }
+
+    private void revert(String previous)
+    {
+        session.getStore().setActiveConfiguration(previous);
+        session.rebuild();
     }
 
     /**
@@ -281,6 +300,16 @@ public class AutonomyViewerPanel extends JPanel
             chooser.getSelectedFile().getName().replaceAll("\\.json$", ""));
 
         if (name == null || name.trim().isEmpty()) return;
+
+        // importing over an existing name replaces it, which is sometimes wanted and never silent
+        if (session.getStore().getConfigurationNames().contains(name.trim()))
+        {
+            int replace = JOptionPane.showConfirmDialog(this,
+                I18n.f("autosetup.ui.confirmImportOverwrites", name.trim()),
+                I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION);
+
+            if (replace != JOptionPane.YES_OPTION) return;
+        }
 
         try
         {

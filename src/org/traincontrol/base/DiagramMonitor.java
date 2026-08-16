@@ -59,12 +59,16 @@ public class DiagramMonitor
 
     private final LayoutSource layoutSource;
     private final Publisher publisher;
-    private final Map<String, ReducedEdge> edgesByName = new LinkedHashMap<>();
-    private final Map<String, TileKey> pointTiles = new LinkedHashMap<>();
+
+    // Swapped wholesale rather than mutated: setEdges runs on the event thread while compute iterates
+    // on the driver's timer thread, and clearing a map under an iterator is a ConcurrentModification
+    // that the tick would swallow silently - the overlay would just quietly stop being right.
+    private volatile Map<String, ReducedEdge> edgesByName = new LinkedHashMap<>();
+    private volatile Map<String, TileKey> pointTiles = new LinkedHashMap<>();
 
     private final AtomicBoolean dirty = new AtomicBoolean(false);
 
-    private Map<TileKey, TileOverlay> published = Collections.emptyMap();
+    private volatile Map<TileKey, TileOverlay> published = Collections.emptyMap();
 
     /**
      * @param layoutSource where the running layout comes from
@@ -94,11 +98,26 @@ public class DiagramMonitor
      */
     public final void setEdges(Map<String, ReducedEdge> edgesByName, Map<String, TileKey> pointTiles)
     {
-        this.edgesByName.clear();
-        this.pointTiles.clear();
+        Map<String, ReducedEdge> newEdges = new LinkedHashMap<>();
+        Map<String, TileKey> newPoints = new LinkedHashMap<>();
 
-        if (edgesByName != null) this.edgesByName.putAll(edgesByName);
-        if (pointTiles != null) this.pointTiles.putAll(pointTiles);
+        if (edgesByName != null) newEdges.putAll(edgesByName);
+        if (pointTiles != null) newPoints.putAll(pointTiles);
+
+        this.edgesByName = newEdges;
+        this.pointTiles = newPoints;
+    }
+
+    /**
+     * Forgets what was last published, so the next refresh publishes even an identical picture.
+     *
+     * For after the screen has been cleared behind this class's back: refresh() suppresses a publish
+     * whose picture has not changed, which is right for a burst of movement and wrong for tiles that
+     * were wiped and now show nothing - to them, the same picture is news.
+     */
+    public void invalidate()
+    {
+        published = Collections.emptyMap();
     }
 
     /**

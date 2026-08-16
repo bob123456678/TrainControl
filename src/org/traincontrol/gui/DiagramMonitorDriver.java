@@ -40,12 +40,14 @@ public class DiagramMonitorDriver
     private final TrainControlUI ui;
     private final DiagramTileRegistry registry;
 
-    private DiagramMonitor monitor;
-    private Timer timer;
+    // Volatile because both are written on the event thread (bind, setEnabled, stop) and read on the
+    // timer thread (tick); without the fence the timer could legally see a stale monitor forever.
+    private volatile DiagramMonitor monitor;
+    private volatile Timer timer;
 
     // Whether monitoring is wanted at all.  Kept separate from whether the timer is running, so turning
     // the layer off does not tear down the wiring that a train arriving would need.
-    private boolean enabled = true;
+    private volatile boolean enabled = true;
 
     public DiagramMonitorDriver(TrainControlUI ui, DiagramTileRegistry registry)
     {
@@ -232,6 +234,11 @@ public class DiagramMonitorDriver
             @Override
             public void run()
             {
+                // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already
+                // running, so that tick's publish can arrive after stop()'s clear - and painting it
+                // would put stale trains back on a diagram that was just wiped.
+                if (timer == null || !enabled) return;
+
                 registry.publish(overlays);
             }
         });
@@ -240,6 +247,13 @@ public class DiagramMonitorDriver
     private void clear()
     {
         if (registry == null) return;
+
+        // The monitor suppresses publishing an unchanged picture, which is right for movement and wrong
+        // for a screen that was just wiped - to it, the same picture is news.  Forgetting what was
+        // published is what makes the next refresh actually arrive.
+        DiagramMonitor current = monitor;
+
+        if (current != null) current.invalidate();
 
         SwingUtilities.invokeLater(new Runnable()
         {

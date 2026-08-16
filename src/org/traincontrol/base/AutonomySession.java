@@ -228,13 +228,23 @@ public class AutonomySession
      */
     public void captureFromLayout(String layoutJson)
     {
-        if (layoutJson == null || reducer == null) return;
+        captureFromLayout(layoutJson, store.getActiveConfiguration());
+    }
 
-        String active = store.getActiveConfiguration();
+    /**
+     * The same, into a named configuration - for callers that know which configuration the running
+     * layout was generated from.  The two can differ: a load that was refused partway leaves the store
+     * pointing at a configuration that never ran, and capturing into it would overwrite it with another
+     * configuration's state.
+     *
+     * @param layoutJson
+     * @param configurationName which configuration this layout's state belongs to
+     */
+    public void captureFromLayout(String layoutJson, String configurationName)
+    {
+        if (layoutJson == null || reducer == null || configurationName == null) return;
 
-        if (active == null) return;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = store.getConfiguration(configurationName);
 
         if (configuration == null) return;
 

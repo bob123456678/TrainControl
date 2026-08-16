@@ -1147,7 +1147,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // When the running layout came from the diagram, what was changed while it ran - placements,
         // homes, settings - is lifted back into the configuration it came from, so it is what loads next
         // time.  The legacy autosave below still runs too; autonomy.json doubles as a readable backup.
-        if (this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+        //
+        // Not on backup: backups run this method from their own thread, and the session is an event
+        // thread object - and "Backup data" silently rewriting the active configuration would surprise
+        // anybody who pressed it to get a copy, not to commit their session.
+        if (!backup && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().isRunning())
         {
@@ -1157,7 +1161,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (session != null)
                 {
-                    session.captureFromLayout(this.model.getAutoLayout().toJSON());
+                    // by name: store-active can point elsewhere after a refused load
+                    session.captureFromLayout(this.model.getAutoLayout().toJSON(),
+                        this.activeDiagramConfiguration);
                     session.save();
                 }
             }
@@ -1465,6 +1471,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The driver holds indexes derived from the old session, so leaving it running would light tiles
         // up from a graph that no longer describes the diagram on screen.
         if (diagramMonitorDriver != null) diagramMonitorDriver.stop();
+
+        // The panel holds the old session too, so it is rebuilt rather than reused; and the running
+        // layout no longer corresponds to any configuration of the new session, so nothing should be
+        // captured into one at exit.
+        autonomyViewerPanel = null;
+        activeDiagramConfiguration = null;
+
+        mountAutonomyControls();
     }
 
     private org.traincontrol.base.AutonomySession autonomySession;
@@ -1528,6 +1542,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void autonomyLoadedFromDiagram(String name)
     {
+        // both from the JSON path, and for the same reasons: the route list repaints against the new
+        // layout, and the unconditional stop catches hand-throttled trains that isAutonomyBusy() does
+        // not cover - a train somebody was driving keeps rolling while the new layout thinks everything
+        // is parked
+        this.refreshRouteList();
+        AltEmergencyStopActionPerformed(null);
+
         setAutonomyDependentTabs(true);
 
         org.traincontrol.base.AutonomySession session = getAutonomySession();
@@ -2548,8 +2569,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
         javax.swing.SwingUtilities.invokeLater(()->
-        { 
+        {
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
+
+            // the pages just changed wholesale, so a session describing the old ones - and anything
+            // still monitoring or capturing against it - has to go
+            this.resetAutonomySession();
 
             if (!this.model.getLayoutList().isEmpty())
             {

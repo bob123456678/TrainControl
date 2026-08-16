@@ -272,6 +272,20 @@ public class testAutonomyDiagramSession
                 assertEquals(p.getJSONObject("loc").getString("name"), "BR 218");
             }
         }
+
+        // capture by NAME lands in that configuration even when another one is active - which is what
+        // keeps a refused load from having another configuration's state written over it at exit
+        session.getStore().createConfiguration("Other", null);
+
+        assertEquals(session.getStore().getActiveConfiguration(), "Default");
+
+        session.captureFromLayout(running.toString(), "Other");
+
+        assertTrue(session.getStore().getConfiguration("Other").has("points"),
+            "the named configuration should receive the capture");
+        assertEquals(session.getStore().getConfiguration("Default")
+            .getJSONObject("globals").getInt("minDelay"), 3,
+            "and the active one should keep what it already had");
     }
 
     /**
