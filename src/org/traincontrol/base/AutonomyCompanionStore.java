@@ -521,18 +521,78 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Drops everything remembered about tiles that are no longer on the diagram.
+     * What a reconciliation found.  Nothing here is acted on silently: the whole point is that a diagram
+     * changing under a setup should be visible.
+     */
+    public static class Reconciliation
+    {
+        private final List<String> droppedTileProperties = new ArrayList<>();
+        private final List<String> forgottenNames = new ArrayList<>();
+        private final Map<String, List<String>> namesStillReferenced = new LinkedHashMap<>();
+
+        /**
+         * Lengths and directions removed because their tile is gone.  A tile carries these, so they go
+         * with it - the author ruled a deleted tile starts over.
+         * @return
+         */
+        public List<String> getDroppedTileProperties()
+        {
+            return Collections.unmodifiableList(droppedTileProperties);
+        }
+
+        /**
+         * Names dropped because their tile is gone and nothing referred to them.  Harmless, but reported
+         * so a diagram edit that quietly cost a page of names is visible.
+         * @return
+         */
+        public List<String> getForgottenNames()
+        {
+            return Collections.unmodifiableList(forgottenNames);
+        }
+
+        /**
+         * Names whose tile is gone but which are still referenced - by a timetable, a home, or a
+         * locomotive placement.
+         *
+         * These are the ones that matter and the only ones kept.  Dropping one would break the thing
+         * referring to it with no explanation; keeping it silently would leave a Point that can never be
+         * reached wired into a timetable.  So it is kept AND named, for a person to resolve.
+         *
+         * @return name -> what still refers to it
+         */
+        public Map<String, List<String>> getNamesStillReferenced()
+        {
+            return Collections.unmodifiableMap(namesStillReferenced);
+        }
+
+        public boolean isClean()
+        {
+            return droppedTileProperties.isEmpty() && forgottenNames.isEmpty()
+                && namesStillReferenced.isEmpty();
+        }
+    }
+
+    /**
+     * Brings the setup back into line with a diagram that has changed underneath it.
      *
-     * A tile carries its own length and direction, so when it is deleted those go with it - the author
-     * ruled that a deleted tile starts over rather than leaving an orphan to re-adopt.  Point names and
-     * stations are kept, because a Point is referenced by name elsewhere (timetables, homes) and
-     * silently dropping one would break those references without saying so.
+     * Tile properties and names have different lifetimes, which is why this is not one rule:
+     *
+     *   - a length or a direction belongs to a tile.  When the tile goes, so do they, and nothing else
+     *     in the setup referred to them;
+     *   - a NAME is referred to from elsewhere - timetables, homes and placements all name Points - so
+     *     dropping one breaks whatever refers to it, while keeping one silently leaves a Point wired
+     *     into a timetable that no train can ever reach.
+     *
+     * So a name whose tile has gone is kept only if something still refers to it, and either way it is
+     * reported.  That is the reconciliation the caller has to show somebody.
      *
      * @param existing every tile currently on the diagram
-     * @return how many entries were dropped
+     * @return what was found
      */
-    public int forgetMissingTiles(Set<TileKey> existing)
+    public Reconciliation reconcile(Set<TileKey> existing)
     {
+        Reconciliation report = new Reconciliation();
+
         Set<String> keys = new LinkedHashSet<>();
 
         for (TileKey tile : existing)
@@ -540,12 +600,75 @@ public class AutonomyCompanionStore
             keys.add(tile.toString());
         }
 
-        int dropped = 0;
+        report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
+        report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
 
-        dropped += dropMissing(tileLengths, keys, false);
-        dropped += dropMissing(tileDirections, keys, true);
+        List<String> goneTiles = new ArrayList<>();
 
-        return dropped;
+        for (String key : pointNames.keySet())
+        {
+            if (!keys.contains(key)) goneTiles.add(key);
+        }
+
+        for (String key : goneTiles)
+        {
+            String name = pointNames.get(key);
+
+            List<String> referrers = whatReferences(name);
+
+            if (referrers.isEmpty())
+            {
+                pointNames.remove(key);
+                stations.remove(key);
+                report.forgottenNames.add(name + " (" + key + ")");
+            }
+            else
+            {
+                report.namesStillReferenced.put(name, referrers);
+            }
+        }
+
+        // a portal whose partner is gone is half a pairing, which is worse than none
+        List<String> brokenPairings = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : portals.entrySet())
+        {
+            if (!keys.contains(entry.getKey()) || !keys.contains(entry.getValue()))
+            {
+                brokenPairings.add(entry.getKey());
+            }
+        }
+
+        for (String key : brokenPairings)
+        {
+            unpairPortal(parseTileKey(key));
+            report.droppedTileProperties.add("pairing at " + key);
+        }
+
+        return report;
+    }
+
+    /**
+     * Everything in the configurations that names this Point.
+     *
+     * Deliberately textual: a configuration is stored as it was written, and a placement, a home and a
+     * timetable entry all refer to a Point by its name.  Parsing each shape would mean this class
+     * knowing the schema of things it only stores.
+     */
+    private List<String> whatReferences(String pointName)
+    {
+        List<String> out = new ArrayList<>();
+
+        if (pointName == null || pointName.isEmpty()) return out;
+
+        String quoted = JSONObject.quote(pointName);
+
+        for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
+        {
+            if (entry.getValue().toString().contains(quoted)) out.add(entry.getKey());
+        }
+
+        return out;
     }
 
     /**
@@ -720,7 +843,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    private static <T> int dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)
+    private static <T> List<String> dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)
     {
         List<String> gone = new ArrayList<>();
 
@@ -737,7 +860,7 @@ public class AutonomyCompanionStore
             map.remove(key);
         }
 
-        return gone.size();
+        return gone;
     }
 
     private static void readStringMap(JSONObject root, String field, Map<String, String> into)

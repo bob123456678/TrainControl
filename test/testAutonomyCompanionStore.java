@@ -259,12 +259,11 @@ public class testAutonomyCompanionStore
     }
 
     /**
-     * A tile carries its own length and direction, so deleting it takes those with it - the author ruled
-     * that a deleted tile starts over.  Names and stations are kept, because a Point is referenced by
-     * name from timetables and homes, and dropping one silently would break those.
+     * A deleted tile takes its length and direction with it.  Those belong to the tile, nothing else in
+     * the setup referred to them, and a deleted tile starts over.
      */
     @Test
-    public void testDeletedTilesLoseTheirLengthAndDirectionButNotTheirName() throws IOException
+    public void testADeletedTileTakesItsLengthAndDirection() throws IOException
     {
         TileKey kept = new TileKey("1 - Main", 1, 1);
         TileKey removed = new TileKey("1 - Main", 9, 9);
@@ -272,19 +271,101 @@ public class testAutonomyCompanionStore
         store.setTileLength(kept, 3);
         store.setTileLength(removed, 8);
         store.setTileDirection(removed, new RouteId(0, 0), Direction.NONE);
-        store.setPointName(removed, "Was a station once");
 
-        Set<TileKey> stillThere = new LinkedHashSet<>();
-        stillThere.add(kept);
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(only(kept));
 
-        assertEquals(store.forgetMissingTiles(stillThere), 2, "the length and the direction both go");
-
-        assertEquals(store.getTileLength(kept), 3);
+        assertEquals(store.getTileLength(kept), 3, "a tile still on the diagram keeps everything");
         assertEquals(store.getTileLength(removed), 0);
         assertNull(store.getTileDirection(removed, new RouteId(0, 0)));
 
-        assertEquals(store.getPointName(removed), "Was a station once",
-            "a name is referenced elsewhere, so it is not dropped silently");
+        assertEquals(report.getDroppedTileProperties().size(), 2, "both are reported, not just removed");
+    }
+
+    /**
+     * A name whose tile is gone, that nothing refers to, is forgotten - but said out loud, so a diagram
+     * edit that quietly cost a page of names is visible rather than discovered later.
+     */
+    @Test
+    public void testAnUnreferencedNameIsForgottenButReported() throws IOException
+    {
+        TileKey kept = new TileKey("1 - Main", 1, 1);
+        TileKey removed = new TileKey("1 - Main", 9, 9);
+
+        store.createConfiguration("Evening", null);
+        store.setPointName(removed, "Was a station once");
+        store.setStation(removed, true);
+
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(only(kept));
+
+        assertNull(store.getPointName(removed), "nothing referred to it, so it goes");
+        assertFalse(store.isStation(removed));
+
+        assertEquals(report.getForgottenNames().size(), 1);
+        assertTrue(report.getForgottenNames().get(0).contains("Was a station once"));
+        assertTrue(report.getNamesStillReferenced().isEmpty());
+    }
+
+    /**
+     * A name whose tile is gone but which a timetable still uses is KEPT, and named.
+     *
+     * This is the case both obvious answers get wrong.  Dropping it breaks the timetable with no
+     * explanation; keeping it silently leaves a Point wired into a timetable no train can reach.  So it
+     * survives and is reported, for a person to resolve.
+     */
+    @Test
+    public void testAReferencedNameSurvivesAndIsReported() throws IOException
+    {
+        TileKey kept = new TileKey("1 - Main", 1, 1);
+        TileKey removed = new TileKey("1 - Main", 9, 9);
+
+        store.setPointName(removed, "Yard throat");
+
+        store.createConfiguration("Evening", null);
+        store.getConfiguration("Evening").put("timetable",
+            new org.json.JSONArray().put(new org.json.JSONObject().put("point", "Yard throat")));
+
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(only(kept));
+
+        assertEquals(store.getPointName(removed), "Yard throat", "something still refers to it");
+
+        assertTrue(report.getForgottenNames().isEmpty());
+        assertEquals(report.getNamesStillReferenced().size(), 1);
+        assertEquals(report.getNamesStillReferenced().get("Yard throat").get(0), "Evening",
+            "the report says WHICH configuration still refers to it");
+    }
+
+    /**
+     * A pairing with only one end left is worse than no pairing: a train could cross and be unable to
+     * return.  So a portal whose partner has gone is released, and reported.
+     */
+    @Test
+    public void testAPairingLosingOneEndIsReleased() throws IOException
+    {
+        TileKey kept = new TileKey("1 - Main", 1, 1);
+        TileKey removed = new TileKey("2 - Bottom", 9, 9);
+
+        store.pairPortals(kept, removed);
+
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(only(kept));
+
+        assertNull(store.getPortalPartner(kept), "half a pairing is released, not left dangling");
+        assertFalse(report.getDroppedTileProperties().isEmpty());
+    }
+
+    /**
+     * A diagram that has not changed reconciles to nothing at all.
+     */
+    @Test
+    public void testAnUnchangedDiagramReconcilesCleanly() throws IOException
+    {
+        TileKey tile = new TileKey("1 - Main", 1, 1);
+
+        store.setTileLength(tile, 4);
+        store.setPointName(tile, "Platform 1");
+
+        assertTrue(store.reconcile(only(tile)).isClean());
+        assertEquals(store.getTileLength(tile), 4);
+        assertEquals(store.getPointName(tile), "Platform 1");
     }
 
     /**
@@ -333,6 +414,18 @@ public class testAutonomyCompanionStore
 
         assertTrue(written.contains("somethingNewer"),
             "a field from a newer version must not be dropped:\n" + written);
+    }
+
+    private Set<TileKey> only(TileKey... tiles)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (TileKey tile : tiles)
+        {
+            out.add(tile);
+        }
+
+        return out;
     }
 
     private void delete(File file)
