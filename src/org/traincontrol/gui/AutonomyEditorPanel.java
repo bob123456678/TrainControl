@@ -182,9 +182,40 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void say(JLabel label, String text)
     {
+        // Straight to the banner across the top of the window, which has the width a sentence needs.
+        // The label stays as the fallback for a panel mounted without one, and is wrapped so that it
+        // cannot drag its column out of shape the way it used to.
+        if (messageBanner != null && label == hint)
+        {
+            messageBanner.show(text);
+            return;
+        }
+
         label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>"
             + text.replace("&", "&amp;").replace("<", "&lt;") + "</body></html>");
     }
+
+    /**
+     * Says something that has to stay until the user acts on it - a prompt for a second click, which a
+     * message that faded after six seconds would leave them stranded halfway through.
+     */
+    private void waitFor(String text)
+    {
+        if (messageBanner != null) messageBanner.showUntilChanged(text);
+        else say(hint, text);
+    }
+
+    /**
+     * @param banner the strip across the top of the editor, where messages go
+     */
+    public void setBanner(AutonomyBanner messageBanner)
+    {
+        this.messageBanner = messageBanner;
+    }
+
+    // The strip across the top of the window.  Named apart from the status banner in the tools column,
+    // which is a different thing: that one shows what the setup IS, this one what just happened.
+    private AutonomyBanner messageBanner;
 
     /**
      * The same, for a message that carries its own mark-up.  Only for text this class builds itself -
@@ -192,6 +223,12 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void sayRich(JLabel label, String html)
     {
+        if (messageBanner != null && label == hint)
+        {
+            messageBanner.show("<html>" + html + "</html>");
+            return;
+        }
+
         label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>" + html + "</body></html>");
     }
 
@@ -496,7 +533,7 @@ public class AutonomyEditorPanel extends JPanel
         menu.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
         {
             oneWayFrom = target;
-            say(hint, I18n.t("autosetup.ui.promptOneWayTo"));
+            waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
         }));
 
         menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
@@ -941,7 +978,23 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.size() > 1)
         {
-            say(hint, I18n.t("autosetup.ui.infoPickABranch"));
+            // A switch cycles as a whole: every branch together, driven by what the FIRST branch is
+            // now, so the same click on the same switch always does the same thing.  Setting one
+            // branch on its own is still the menu's job, which is what the message says.
+            Direction next = after(session.getGraph().getDirection(target,
+                routes.keySet().iterator().next()));
+
+            // Only both-ways and closed can be applied to every branch at once and still mean the same
+            // thing on each: a "one way" is toward a side, and the branches do not share their sides.
+            if (next != Direction.BOTH && next != Direction.NONE) next = Direction.NONE;
+
+            session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(target)), next);
+
+            say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target),
+                next == Direction.NONE ? I18n.t("autosetup.ui.dirNone")
+                                       : I18n.t("autosetup.ui.dirBoth")));
+
+            refresh();
             return;
         }
 
@@ -950,19 +1003,25 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.base.TilePorts.Route route = only.getValue();
 
-        Direction next;
-
-        switch (session.getGraph().getDirection(target, only.getKey()))
-        {
-            case BOTH: next = Direction.TOWARD_A; break;
-            case TOWARD_A: next = Direction.TOWARD_B; break;
-            case TOWARD_B: next = Direction.NONE; break;
-            default: next = Direction.BOTH; break;
-        }
+        Direction next = after(session.getGraph().getDirection(target, only.getKey()));
 
         session.setRunDirection(target, only.getKey(), next);
 
         say(hint, I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
+    }
+
+    /**
+     * The next state in the cycle: both ways -> one way -> the other way -> closed -> both ways.
+     */
+    private static Direction after(Direction current)
+    {
+        switch (current)
+        {
+            case BOTH: return Direction.TOWARD_A;
+            case TOWARD_A: return Direction.TOWARD_B;
+            case TOWARD_B: return Direction.NONE;
+            default: return Direction.BOTH;
+        }
     }
 
     /**
@@ -997,7 +1056,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             testFrom = tile;
             testPath.clear();
-            say(hint, I18n.t("autosetup.ui.promptTestDestination"));
+            waitFor(I18n.t("autosetup.ui.promptTestDestination"));
             return;
         }
 

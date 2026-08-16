@@ -86,13 +86,12 @@ public class TileAnnotation
     }
 
     /**
-     * Passable both ways.  Deliberately unobtrusive: on a finished layout most track is this, and a
-     * default drawn loudly would bury the decisions somebody actually made.
-     */
-    private static final Color BOTH_WAYS = new Color(0, 110, 200);
-
-    /**
-     * One way only - the case the chevrons exist for.
+     * Trains may go this way.
+     *
+     * There used to be a second colour for track that runs both ways, which asked the reader to hold
+     * three meanings when there are only two: an arrow says one thing, whether or not the arrow beside
+     * it says the same.  Both ways is now simply two green arrows, one way is a green and a red, and
+     * closed is two reds - one rule, read the same way everywhere.
      */
     private static final Color ONE_WAY = new Color(0, 140, 60);
 
@@ -449,13 +448,9 @@ public class TileAnnotation
 
         Direction direction = mark.getDirection();
 
-        // Blue when a route runs both ways, green when it is one-way - the same two colours as before,
-        // now decided per ROUTE so that the pair of arrows on one piece of track agree with each other.
-        Color colour = direction == Direction.BOTH ? BOTH_WAYS : ONE_WAY;
-
         // toward A is allowed unless the route runs the other way only, and vice versa
-        arrow(g, width, height, from, direction != Direction.TOWARD_B, colour);
-        arrow(g, width, height, to, direction != Direction.TOWARD_A, colour);
+        arrow(g, width, height, from, direction != Direction.TOWARD_B);
+        arrow(g, width, height, to, direction != Direction.TOWARD_A);
     }
 
     /**
@@ -464,10 +459,8 @@ public class TileAnnotation
      *
      * @param target the midpoint of the side this direction leads to
      * @param allowed whether trains may travel this way
-     * @param colour the route's colour
      */
-    private void arrow(Graphics2D g, int width, int height, int[] target, boolean allowed,
-        Color colour)
+    private void arrow(Graphics2D g, int width, int height, int[] target, boolean allowed)
     {
         int cx = width / 2;
         int cy = height / 2;
@@ -481,7 +474,10 @@ public class TileAnnotation
         dx /= len;
         dy /= len;
 
-        double size = Math.max(4.0, Math.min(width, height) / 3.2);
+        // A blocked arrow is drawn smaller and hollow as well as red, so that the difference survives
+        // being printed, being looked at on a poor screen, and being read by somebody who cannot tell
+        // red from green.  Colour alone is never the only thing carrying the meaning.
+        double size = Math.max(4.0, Math.min(width, height) / 3.2) * (allowed ? 1.0 : 0.72);
 
         // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
         // a hairline between them rather than touching and reading as one shape.
@@ -507,8 +503,21 @@ public class TileAnnotation
             ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
-        g.setColor(allowed ? colour : CLOSED);
-        g.fillPolygon(xs, ys, 3);
+        if (allowed)
+        {
+            g.setColor(ONE_WAY);
+            g.fillPolygon(xs, ys, 3);
+        }
+        else
+        {
+            // hollow, so it reads as an outline even where the colour does not come through
+            g.setColor(Color.WHITE);
+            g.fillPolygon(xs, ys, 3);
+
+            g.setColor(CLOSED);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawPolygon(xs, ys, 3);
+        }
     }
 
     /**

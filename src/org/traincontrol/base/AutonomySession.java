@@ -633,42 +633,101 @@ public class AutonomySession
     }
 
     /**
-     * Which square speaks for each run of plain track between two points.
+     * One run of plain track: the tiles between two points, in order, and the points at either end.
+     */
+    public static class Run
+    {
+        private final TileKey start;
+        private final TileKey end;
+        private final List<TileKey> tiles;
+
+        Run(TileKey start, TileKey end, List<TileKey> tiles)
+        {
+            this.start = start;
+            this.end = end;
+            this.tiles = tiles;
+        }
+
+        public TileKey getStart()
+        {
+            return start;
+        }
+
+        public TileKey getEnd()
+        {
+            return end;
+        }
+
+        /**
+         * @return the tiles between the two points, in order from start to end
+         */
+        public List<TileKey> getTiles()
+        {
+            return Collections.unmodifiableList(tiles);
+        }
+
+        /**
+         * The tile that speaks for this run - the first of them, as the author asked.
+         */
+        public TileKey getLeader()
+        {
+            return tiles.isEmpty() ? null : tiles.get(0);
+        }
+    }
+
+    /**
+     * Every run of plain track, keyed by the tile that speaks for it.
      *
      * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
      * worse, a run that disagrees with itself is a silent trap - the arrows look set and no train can
      * pass.  So one tile in each run is the one to set, and the rest follow it.
      *
-     * The first tile of the run is the speaker, as the author asked.  Tiles that carry a choice - any
-     * tile with more than one route, so every switch and crossing - are never followers: their
-     * branches are decisions in their own right.
+     * Tiles that carry a choice - anything with more than one route, so every switch and crossing -
+     * are never part of a run: their branches are decisions in their own right.
      *
+     * @return leader tile to the run it leads
+     */
+    public Map<TileKey, Run> runs()
+    {
+        Map<TileKey, Run> out = new LinkedHashMap<>();
+
+        if (reducer == null || graph == null) return out;
+
+        Set<TileKey> claimed = new LinkedHashSet<>();
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            List<TileKey> tiles = new ArrayList<>();
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (graph.getRoutes(step.getTile()).size() > 1) continue;
+
+                tiles.add(step.getTile());
+            }
+
+            if (tiles.isEmpty() || claimed.contains(tiles.get(0))) continue;
+
+            claimed.addAll(tiles);
+
+            out.put(tiles.get(0), new Run(edge.getStart(), edge.getEnd(), tiles));
+        }
+
+        return out;
+    }
+
+    /**
      * @return every tile of every run, mapped to the tile that speaks for it
      */
     public Map<TileKey, TileKey> runLeaders()
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();
 
-        if (reducer == null || graph == null) return out;
-
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        for (Map.Entry<TileKey, Run> entry : runs().entrySet())
         {
-            List<GraphReducer.TileStep> path = edge.getPath();
-
-            TileKey leader = null;
-
-            for (GraphReducer.TileStep step : path)
+            for (TileKey tile : entry.getValue().getTiles())
             {
-                TileKey tile = step.getTile();
-
-                // a tile where a train could go more than one way is nobody's follower
-                if (graph.getRoutes(tile).size() > 1) continue;
-
-                if (leader == null) leader = tile;
-
-                // The reverse edge walks the same tiles the other way round, so whichever edge is seen
-                // first fixes the leader; putIfAbsent keeps the two from disagreeing.
-                if (!out.containsKey(tile)) out.put(tile, leader);
+                out.put(tile, entry.getKey());
             }
         }
 
@@ -684,81 +743,50 @@ public class AutonomySession
      */
     public void setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
-        Route route = graph.getRoutes(leader).get(routeId);
+        Run run = runs().get(leader);
 
-        if (route == null) return;
-
-        // BOTH and NONE mean the same everywhere; a one-way choice has to be carried along the run in
-        // terms of each tile's own sides, which is what setOneWayRun already knows how to do.
-        if (direction == Direction.BOTH || direction == Direction.NONE)
-        {
-            Set<TileKey> run = new LinkedHashSet<>();
-
-            for (Map.Entry<TileKey, TileKey> entry : runLeaders().entrySet())
-            {
-                if (leader.equals(entry.getValue())) run.add(entry.getKey());
-            }
-
-            if (run.isEmpty()) run.add(leader);
-
-            setDirection(run, direction);
-
-            return;
-        }
-
-        // one way: from the far end of the run toward the side the user picked
-        Side toward = direction == Direction.TOWARD_A ? route.getA() : route.getB();
-
-        Landing landing = graph.landing(leader, toward);
-
-        if (landing == null)
+        // Not part of a run at all - a lone tile, or a point.  Set it and nothing else.
+        if (run == null)
         {
             setDirection(leader, routeId, direction);
             return;
         }
 
-        setOneWayRun(farEnd(leader, toward), landing.getTile());
+        // Both ways and closed mean the same on every tile, so they go on directly.
+        if (direction == Direction.BOTH || direction == Direction.NONE)
+        {
+            setDirection(new LinkedHashSet<>(run.getTiles()), direction);
+            return;
+        }
+
+        Route route = graph.getRoutes(leader).get(routeId);
+
+        if (route == null) return;
+
+        Side toward = direction == Direction.TOWARD_A ? route.getA() : route.getB();
+
+        Landing landing = graph.landing(leader, toward);
+
+        // Which way along the run the user pointed: toward the far point, or back toward the near one.
+        // setOneWayRun then translates that into each tile's own sides, which is the part nobody should
+        // have to do by hand.
+        boolean towardEnd = landing == null
+            || !run.getTiles().isEmpty() && landing.getTile().equals(nextAfter(run, leader));
+
+        setOneWayRun(towardEnd ? run.getStart() : run.getEnd(),
+            towardEnd ? run.getEnd() : run.getStart());
     }
 
     /**
-     * Walks backwards along a run from a tile, away from the side given, to the last tile still in it.
+     * The tile after this one along a run, or the run's far point when it is the last.
      */
-    private TileKey farEnd(TileKey from, Side toward)
+    private TileKey nextAfter(Run run, TileKey tile)
     {
-        Map<TileKey, TileKey> leaders = runLeaders();
+        int at = run.getTiles().indexOf(tile);
 
-        TileKey run = leaders.get(from);
-        TileKey here = from;
+        if (at < 0) return run.getEnd();
 
-        Side back = opposite(toward);
-
-        for (int guard = 0; guard < 500 && back != null; guard++)
-        {
-            Landing landing = graph.landing(here, back);
-
-            if (landing == null || !run.equals(leaders.get(landing.getTile()))) return here;
-
-            Route route = firstRoute(landing.getTile());
-
-            if (route == null) return here;
-
-            here = landing.getTile();
-            back = route.other(landing.getEntrySide());
-        }
-
-        return here;
-    }
-
-    private static Side opposite(Side side)
-    {
-        switch (side)
-        {
-            case N: return Side.S;
-            case S: return Side.N;
-            case E: return Side.W;
-            case W: return Side.E;
-            default: return null;
-        }
+        return at + 1 < run.getTiles().size() ? run.getTiles().get(at + 1) : run.getEnd();
     }
 
     /**

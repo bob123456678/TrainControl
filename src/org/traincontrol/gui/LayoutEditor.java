@@ -423,6 +423,8 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private AutonomyEditorPanel autonomyPanel;
 
+    private AutonomyBanner autonomyBanner;
+
     /**
      * Turns autonomy setup on or off.
      *
@@ -439,6 +441,12 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.newComponents.remove(autonomyPanel);
                 autonomyPanel = null;
+            }
+
+            if (autonomyBanner != null)
+            {
+                this.jScrollPane1.setColumnHeaderView(null);
+                autonomyBanner = null;
             }
         }
         else if (autonomyPanel == null)
@@ -475,6 +483,18 @@ public class LayoutEditor extends PositionAwareJFrame
             this.newComponents.removeAll();
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
+
+            // A strip across the top of the diagram for messages.  Mounted as the scroll pane's column
+            // header - the same unused slot the main window's "Show autonomy" checkbox uses - because
+            // the content pane is a generated GroupLayout that would ignore a BorderLayout constraint.
+            //
+            // Width is the point: a sentence needs the window, and the tools column is 280px, which is
+            // how a three-line message used to pull that column apart.
+            autonomyBanner = new AutonomyBanner();
+
+            this.jScrollPane1.setColumnHeaderView(autonomyBanner);
+
+            autonomyPanel.setBanner(autonomyBanner);
 
             // The column heading belongs to the window, not to the palette that used to fill it - in
             // autonomy mode "New Components" describes something that is no longer there.
