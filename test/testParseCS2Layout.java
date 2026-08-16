@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
@@ -59,6 +60,102 @@ public class testParseCS2Layout
         layouts_nomags = parser.parseLayout(new LinkedList<>());
     }
     
+    /**
+     * The page id from gleisbild.cs2 reaches the parsed layout.
+     *
+     * Autonomy stores its setup against this id rather than the page name, because a name is what a user
+     * renames and an id is not.  Nothing else in TrainControl reads it, so nothing else would notice if
+     * parsing stopped carrying it - hence a test.
+     */
+    @Test
+    public void testPageIdIsParsed()
+    {
+        assertEquals(layouts.size(), 1);
+        assertEquals(layouts.get(0).getPageId(), "1",
+            "the id in gleisbild.cs2 should reach the layout");
+    }
+
+    /**
+     * Reading the index must not change which pages come back, or in what order.
+     *
+     * parseLayoutList was rewritten to keep the page id alongside the name.  An index keyed by name
+     * would have been the obvious shape and is wrong: two pages may share a name, and collapsing them
+     * would silently drop one from every caller - including the download that writes the files back
+     * out.  So the list is one entry per page, in file order, duplicates and all.
+     */
+    @Test
+    public void testEveryPageInTheIndexComesBackInFileOrder() throws Exception
+    {
+        List<String> fromIndex = new ArrayList<>();
+
+        for (Map<String, String> entry : CS2File.parseFile(CS2File.fetchURL(
+            CS2File.getLayoutMasterURL(cs2_layout))))
+        {
+            if ("seite".equals(entry.get("_type")) && entry.get("name") != null)
+            {
+                fromIndex.add(entry.get("name"));
+            }
+        }
+
+        assertEquals(layouts.size(), fromIndex.size(),
+            "one layout per page in the index, including any sharing a name");
+
+        for (int i = 0; i < fromIndex.size(); i++)
+        {
+            assertEquals(layouts.get(i).getName(), fromIndex.get(i),
+                "page " + i + " should keep its position in the file");
+        }
+    }
+
+    /**
+     * The page list a user sees is sorted, and stays sorted.
+     *
+     * File order is what parsing returns; lexicographic order is what the layout selector shows.  The
+     * two are different on purpose, and the parsing change must not have quietly swapped one for the
+     * other.
+     */
+    @Test
+    public void testTheLayoutListIsStillSortedLexicographically()
+    {
+        List<String> shown = model.getLayoutList();
+
+        List<String> sorted = new ArrayList<>(shown);
+        java.util.Collections.sort(sorted);
+
+        assertEquals(shown, sorted, "the layout selector should list pages in lexicographic order");
+    }
+
+    /**
+     * A parsed layout still writes back out as valid CS2 text.
+     *
+     * The page id lives in the index file rather than in a page, so exporting a page must be unchanged
+     * by carrying it - and this is the path a diagram edit saves through.
+     */
+    @Test
+    public void testAParsedLayoutStillExportsAsCS2Text() throws Exception
+    {
+        String exported = layouts.get(0).exportToCS2TextFormat();
+
+        assertNotNull(exported);
+        assertTrue(exported.contains("[gleisbildseite]"),
+            "an exported page should carry the CS2 header:
+" + exported.substring(0,
+                Math.min(200, exported.length())));
+
+        // every component that went in comes back out
+        int elements = 0;
+        int index = exported.indexOf("element");
+
+        while (index >= 0)
+        {
+            elements++;
+            index = exported.indexOf("element", index + 1);
+        }
+
+        assertEquals(elements, layouts.get(0).getAll().size(),
+            "every tile should be written back");
+    }
+
     /**
      * Checks the number of layout pages
      */

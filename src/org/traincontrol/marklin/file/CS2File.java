@@ -1898,7 +1898,14 @@ public final class CS2File
      */
     private List<String> parseLayoutList() throws Exception
     {
-        return new ArrayList<>(parseLayoutIndex().keySet());
+        List<String> out = new ArrayList<>();
+
+        for (Map<String, String> page : parseLayoutIndex())
+        {
+            out.add(page.get("name"));
+        }
+
+        return out;
     }
 
     /**
@@ -1910,14 +1917,19 @@ public final class CS2File
      *
      * The first page carries no id of its own and is page 1, which is what the Central Station assumes.
      *
-     * @return page name -> id, in file order
+     * A list rather than a map from name to id: two pages may carry the same name, and collapsing them
+     * here would silently drop one from every caller, including the download that writes the files back.
+     * Duplicate names already alias later, in layoutDB, but that is a decision made elsewhere and this
+     * method should not make it for it.
+     *
+     * @return one entry per page, in file order, each with "name" and "id"
      * @throws Exception
      */
-    private Map<String, String> parseLayoutIndex() throws Exception
+    private List<Map<String, String>> parseLayoutIndex() throws Exception
     {
         List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
 
-        Map<String, String> out = new java.util.LinkedHashMap<>();
+        List<Map<String, String>> out = new ArrayList<>();
 
         int position = 0;
 
@@ -1931,7 +1943,11 @@ public final class CS2File
 
                 if (name == null) continue;
 
-                out.put(name, m.get("id") != null ? m.get("id") : String.valueOf(position));
+                Map<String, String> page = new java.util.LinkedHashMap<>();
+                page.put("name", name);
+                page.put("id", m.get("id") != null ? m.get("id") : String.valueOf(position));
+
+                out.add(page);
             }
         }
 
@@ -2119,13 +2135,25 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
-        Map<String, String> index = this.parseLayoutIndex();
-        List<String> names = new ArrayList<>(index.keySet());
+        List<Map<String, String>> index = this.parseLayoutIndex();
+
+        List<String> names = new ArrayList<>();
+
+        for (Map<String, String> page : index)
+        {
+            names.add(page.get("name"));
+        }
         
         List<LayoutDiagram> out = new ArrayList<>();
         
+        // by position, not by looking the name up: two pages may share a name, and a lookup would give
+        // them both the first one's id
+        int pageIndex = -1;
+        
         for (String name : names)
-        { 
+        {
+            pageIndex++;
+ 
             String url = getLayoutURL(name);
             
             if (control.isDebug())
@@ -2184,7 +2212,7 @@ public final class CS2File
             
             LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
 
-            layout.setPageId(index.get(name));
+            layout.setPageId(index.get(pageIndex).get("id"));
                         
             for (Map<String, String> m : l)
             {
