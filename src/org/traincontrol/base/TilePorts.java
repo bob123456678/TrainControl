@@ -228,6 +228,9 @@ public class TilePorts
     // Types whose second port is a user-paired portal to another tile, possibly on another page
     private static final Map<componentType, Boolean> PORTAL = new EnumMap<>(componentType.class);
 
+    // Types that carry no track of their own but let whatever line they sit on run beneath them
+    private static final Map<componentType, Boolean> TRANSPARENT = new EnumMap<>(componentType.class);
+
     static
     {
         // --- plain track -------------------------------------------------------------------------
@@ -319,15 +322,20 @@ public class TilePorts
         // A turntable connects any radial to any other under manual control and has no static port map.
         TERMINATOR.put(componentType.TURNTABLE, Boolean.TRUE);
 
-        // A route button is drawn as a pair of arrows and carries no track in its own art - but it is
-        // placed ON the line, not beside it, and the track runs beneath it.  The sample layout threads 43
-        // of them through its running lines, and its hand-built graph connects straight across every one.
+        // A route button is TRANSPARENT: it carries no track meaning of its own, and whatever line it is
+        // sitting on runs beneath it.
         //
-        // Its orientation says nothing about which way the track runs: the same drehung=0 appears in
-        // horizontal and vertical runs alike.  So it conducts like a crossing - two independent through
-        // routes - which continues whichever line it sits in without ever joining two lines that merely
-        // meet at it.  (Confirm: this is inferred from how the sample layout uses them, not from the art.)
-        fixed(componentType.ROUTE, route(Side.N, Side.S), route(Side.E, Side.W));
+        // It is drawn as a pair of arrows and its art touches no border, so nothing about which sides
+        // connect can be read from the icon - and its orientation says nothing either, the same drehung
+        // appearing in horizontal and vertical runs alike.  What it conducts therefore depends on what is
+        // next to it, which is not something this class can see: TilePorts is a pure function of type and
+        // orientation.  TileGraph resolves it from the neighbours.
+        //
+        // This matters because layouts thread them through running lines - the sample layout has 43 - so
+        // treating them as decoration severs those lines, while treating them as a fixed crossing invents
+        // track for a button someone placed beside the rails and breaks any button placed on a curve.
+        fixed(componentType.ROUTE);
+        TRANSPARENT.put(componentType.ROUTE, Boolean.TRUE);
 
         // --- decoration --------------------------------------------------------------------------
         fixed(componentType.LAMP);
@@ -423,6 +431,20 @@ public class TilePorts
     }
 
     /**
+     * True if this type carries no track of its own but lets whatever line it sits on pass beneath it.
+     *
+     * A route button is the case: it is a control placed on the diagram, and what it conducts - a
+     * straight run, a curve, or nothing at all if it was placed beside the rails - is decided entirely by
+     * what is next to it.  That is context this class cannot see, so callers resolve it themselves.
+     * @param type
+     * @return
+     */
+    public static boolean isTransparent(componentType type)
+    {
+        return TRANSPARENT.containsKey(type);
+    }
+
+    /**
      * True if this type has any routes at all in any state - false for decoration, turntables and
      * disqualified tiles.
      * @param type
@@ -431,6 +453,7 @@ public class TilePorts
     public static boolean isRoutable(componentType type)
     {
         if (isDisqualified(type) || isTerminator(type)) return false;
+        if (isTransparent(type)) return true;
 
         for (int state = 0; state < getStateCount(type); state++)
         {

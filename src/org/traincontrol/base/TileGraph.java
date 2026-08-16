@@ -502,6 +502,24 @@ public class TileGraph
             return out;
         }
 
+        // A transparent tile - a route button - carries whatever line it happens to be sitting on, which
+        // is decided by what is next to it rather than by anything in the tile itself.
+        if (TilePorts.isTransparent(type))
+        {
+            for (Route route : transparentRoutes(tile))
+            {
+                if (!route.touches(entrySide)) continue;
+
+                RouteId routeId = transparentRouteId(route);
+
+                if (!directionAllows(getDirection(tile, routeId), route, entrySide)) continue;
+
+                out.add(new Exit(route.other(entrySide), 0, routeId));
+            }
+
+            return out;
+        }
+
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
             List<Route> routes = TilePorts.ports(type, orientation, state);
@@ -677,6 +695,16 @@ public class TileGraph
 
         componentType type = component.getType();
 
+        if (TilePorts.isTransparent(type))
+        {
+            for (Route route : transparentRoutes(tile))
+            {
+                out.put(transparentRouteId(route), route);
+            }
+
+            return out;
+        }
+
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
             List<Route> routes = TilePorts.ports(type, component.getOrientation(), state);
@@ -716,6 +744,68 @@ public class TileGraph
         return false;
     }
 
+    /**
+     * What a transparent tile conducts, read off its neighbours.
+     *
+     * A route button is a control someone put on the diagram; it says nothing about track.  So the track
+     * beneath it is whatever the tiles around it imply:
+     *
+     *   - opposite sides that both face track become a through route.  A button dropped into a straight
+     *     run carries that run, which is how layouts actually use them;
+     *   - failing that, exactly two adjacent sides facing track become a corner, so a button on a curve
+     *     works rather than silently breaking the curve;
+     *   - anything else - nothing beside it, one neighbour only, or an ambiguous three-way - carries
+     *     nothing, which is the honest answer for a button placed beside the rails.
+     *
+     * The user can still author a connection the inference declines to make; this only decides the seed.
+     */
+    public List<Route> transparentRoutes(TileKey tile)
+    {
+        List<Route> out = new ArrayList<>();
+
+        List<Side> facing = new ArrayList<>();
+
+        for (Side side : Side.values())
+        {
+            TileKey neighbourKey = neighbour(tile, side);
+            LayoutDiagramComponent neighbourComponent = tiles.get(neighbourKey);
+
+            if (neighbourComponent == null) continue;
+
+            // a transparent neighbour presents a face on every side, which stops two adjacent buttons
+            // from each waiting on the other to decide
+            if (TilePorts.isTransparent(neighbourComponent.getType())
+                || hasPortOn(neighbourComponent, side.opposite()))
+            {
+                facing.add(side);
+            }
+        }
+
+        for (Side side : new Side[]{Side.N, Side.E})
+        {
+            if (facing.contains(side) && facing.contains(side.opposite()))
+            {
+                out.add(new Route(side, side.opposite(), null));
+            }
+        }
+
+        if (out.isEmpty() && facing.size() == 2)
+        {
+            out.add(new Route(facing.get(0), facing.get(1), null));
+        }
+
+        return out;
+    }
+
+    /**
+     * Transparent routes are not drawn routes, so they are identified by the axis they turned out to
+     * carry rather than by an index into the port map.
+     */
+    private static RouteId transparentRouteId(Route route)
+    {
+        return new RouteId(0, 100 + route.getA().ordinal() * 4 + route.getB().ordinal());
+    }
+
     private static boolean isPermanentTurnout(componentType type)
     {
         return type == componentType.CUSTOM_PERM_LEFT
@@ -727,6 +817,9 @@ public class TileGraph
 
     private Route routeOf(LayoutDiagramComponent component, RouteId routeId)
     {
+        // transparent routes are not in the port map; they take the default, both ways
+        if (routeId.getIndex() >= 100 || routeId.getIndex() < 0) return null;
+
         List<Route> routes = TilePorts.ports(
             component.getType(), component.getOrientation(), routeId.getState());
 
@@ -750,6 +843,10 @@ public class TileGraph
         componentType type = component.getType();
 
         if (TilePorts.isDisqualified(type) || TilePorts.isTerminator(type)) return false;
+
+        // A transparent tile presents a face everywhere; what it actually conducts is settled when it is
+        // walked, not when a neighbour asks whether it is there
+        if (TilePorts.isTransparent(type)) return true;
 
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
