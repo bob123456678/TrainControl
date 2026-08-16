@@ -1,87 +1,13 @@
-# ACTIVE ROUND: Fix the 2026-08-01 (UC) review findings — 12 red tests confirmed, user authorized all fixes
+# Autonomy on the Track Diagram
 
-## Context
+Design plan. Started 2026-07-31, substantially revised 2026-08-01. Not yet approved for
+implementation.
 
-The UC review (docs/reviews/2026-08-01-untouched-code-review.md) produced 1 B + 15 C findings.
-I verified each, added 12 red tests, the user ran the suite: **all 12 red for the predicted
-reasons**, everything else green. The user then said "Proceed with all fixes." This plan is that
-fix round. (The diagram-autonomy design further down this file is a separate, parked plan — not
-part of this approval.)
-
-## Fixes that flip the 12 red tests green
-
-1. **UC-B1** — `MarklinLocomotive.setAddress` (after `numF` update): clear out-of-range functions
-   via `if (getArrivalFunc() != null && getArrivalFunc() >= getNumF()) setArrivalFunc(null);`
-   (same for departure). NOTE: must use `setArrivalFunc(null)` — the setter *refuses* out-of-range
-   values, so it cannot be used to clamp. And `Locomotive`'s full-state constructor: assign
-   `arrivalFunc`/`departureFunc` only when `>= 0 && < numF`, else null (fields are assigned after
-   `this.numF = numF`, so the bound is available).
-2. **UC-C1** — `Conversion.compareVersions`: parse each dotted component's leading digit run
-   (empty → 0) instead of raw `Integer.parseInt`. `Util.parseReleaseVersion` unchanged.
-3. **UC-C2** — `RouteCommand` feedback branch: `.trim()` the state token.
-4. **UC-C3** — `RouteCommand` locdir branch: `forward` → FORWARD, `backward` → BACKWARD, anything
-   else throws the checked friendly error (same `error.invalidLine` message `fromLine` uses).
-5. **UC-C4** — `NodeExpression.toTextRepresentationHelper`: when serializing `NodeAnd`, wrap a
-   child that is `NodeOr` in `(`/`)` lines; when serializing `NodeOr`, wrap a `NodeAnd` child.
-   Match `NodeGroup`'s exact bracket emission (read it in situ). Cross-operator nesting is the
-   only unstable case; same-operator chains re-associate harmlessly.
-6. **UC-C5** — `Layout.renamePoint`: throw on duplicate target
-   (`autolayout.errorPointAlreadyExists`, existing key) and while running
-   (`autolayout.errorCannotEditWhileRunning`, existing key). No new bundle keys.
-7. **UC-C6** — `MarklinControlStation.execRoute`: null-check `getByName`; log + return
-   (reuse an existing route-not-found key if one exists, else `this.log(...)` plain).
-8. **UC-C11a** — `Point` constructor: non-null s88 must parse as an integer, else throw
-   (`autolayout.errorStationMustHaveValidS88Address`, existing key). JSON loads pass numeric
-   strings built from Integers, so no load regression.
-9. **UC-C11b** — `Point.setMaxTrainLength`: null or negative → 0 (no limit); drop the inert assert.
-10. **UC-C12** — `Locomotive.setLocalImageURL` touches only `localImageURL`; `getImageURL()`
-    returns `localImageURL != null ? localImageURL : imageURL`. Verified against all persistence
-    and sync callers (`MarklinSimpleComponent:157`, restore `:2323`, sync guard `:1167`) —
-    effective-URL semantics are preserved everywhere; the change is that clearing no longer
-    destroys the CS URL in-session.
-11. **Activation list** — `Layout.setActivateRouteIDs`: defensive copy
-    (`new LinkedList<>(...)`, null → empty). Fixes the 8-month `testAutoLayout` teardown UOE.
-
-## No-test batch (user authorized)
-
-- **UC-C7**: `FullAutonomyExample:101` comment → real 5-arg `init`; `ProgrammaticControlExample:154`
-  `mySignal.setSwitched(false)` → `mySwitch.setSwitched(false)`; "Error ocurred" → "Error occurred"
-  (3 examples + the main class — locate main by grep, it is not at src/org/traincontrol/TrainControl.java);
-  `System.exit(0)` → `System.exit(1)` on the 4 failure paths.
-- **UC-C8**: delete `ImageUtil.textToImage` + `rotateImage` (zero callers, verified);
-  **keep `MarklinRoute.equalsUnordered`** — the review's zero-caller claim is wrong, it has two
-  callers in `testParseCS3Routes` (correct this in the review doc); remove `GraphLocAssign`'s
-  inert `visibility` conditional (fold to the plain `setVisible(true)` calls); remove
-  `RightClickFunctionMenu`'s unused `JToggleButton b` constructor param + update its caller.
-- **UC-C9**: replace the post-dispose `edit.focusImages()` with the `AncestorListener` pattern
-  from `GraphLocAssign:90` (focus when the panel is added to the dialog).
-- **UC-C10**: `ImageUtil.getScaledImage`: destination type
-  `image.getType() == 0 ? TYPE_INT_ARGB : image.getType()`.
-- **UC-C13**: `UsageHistogram`: hoist `getTotalLocStats` + `setTitle` out of `paintComponent`
-  into a refresh method called at construction and wherever `offset`/`perPage` change.
-- **UC-C14**: `final` on the nine `RouteCommand.KEY_*` fields.
-- **UC-C15**: `RightClickSelectorMenu`: when `getKeyForCurrentButton()` is null/-1, omit the
-  assign-to-button item instead of rendering `(char) -1`.
-
-## Closeout
-
-- Mark all UC statuses Fixed in the review doc (one status, one location), with a resolution note
-  recording: the `equalsUnordered` correction, the additional activation-list defect found while
-  confirming red (pinned by `testDeletingAnActivationListedRouteSurvivesAnImmutableList`), and
-  which fix shape each contested finding took (B1 model-level, C1 compareVersions-side).
-- Readme changelog (non-technical): B1 (function-assignment dialog after decoder conversion),
-  C1 (update notices survive suffixed release names), C2+C3 (hand-typed route lines: spaces no
-  longer flip sensor state; typo'd directions are errors), C4 (conditions keep their meaning
-  through the editor), C12 (clearing a custom icon offline no longer loses the CS image).
-- `validate_all.py` after each batch; expected end state: all 12 tests green in NetBeans, no
-  other test moves.
-
-## Verification
-
-Run in NetBeans: `testLocomotive`, `testInvalidInput`, `testLayoutRenameKeys`, `testRoutes`,
-`testAdvancedRoutes`, `testAutoLayout` (teardown error gone), plus full suite for regressions.
-
----
+Read the top three sections first - **Delivery**, **Revised architecture**, and the rulings that
+follow them. The **PARKED** section further down is the original anchor-and-trace draft; it is kept
+for the persistence model, the editor UX, the NetBeans rules, the monitoring semantics and the
+verified port map, and anything in it that conflicts with the revised architecture is marked
+superseded.
 
 # DELIVERY: two phases, add-then-remove (author, 2026-08-01)
 
@@ -303,20 +229,28 @@ renders or how its tiles behave at runtime.
 
 - **Scale is a non-issue.** Most of a track diagram is blank, so there is no need to hide default
   connections behind hover. Draw them all.
-- **Click a tile to cycle its connections**: both -> one way -> the other way -> none -> both.
-  The tile is the unit of interaction, not the connection, because a normal track tile has exactly
-  one route through it. The arrow drawn on the tile always shows the current meaning, so there is
-  still no convention to memorise.
+- **Direction is a property OF THE TILE** (author, 2026-08-16): it specifies which way you may
+  move *through that tile*. Clicking cycles both -> one way -> the other way -> none -> both, and
+  the arrow drawn on the tile always shows the current meaning.
+  - This settles the storage question: the companion holds **`tileDirections`**, keyed by
+    `"<page>:<x>,<y>"` (plus a route index for multi-route tiles), **not** `connectionOverrides`
+    keyed by tile pairs. A tile owns its own state, so two neighbours can never disagree about the
+    link between them, and traversal simply requires every tile on a path to permit the direction
+    (the AND rule already specified).
 - **Bulk selection and editing**: rubber-band or shift-click a set of tiles and apply one state to
   all of them. This is how a one-way loop gets set in one gesture instead of forty clicks.
-- **Switches need no user input at all.** A switch's traversability is **derived from its
-  neighbours**: a route through it is usable in a given direction only if the tile feeding the
-  entry side permits travel *toward* the switch and the tile at the exit side permits travel
-  *away*. Switches are therefore always locally bidirectional and are **not** part of the click
-  cycle; clicking one shows its derived state read-only. This removes the whole facing/trailing
-  authoring question for ordinary switches.
-  - The `CUSTOM_PERM_*` restriction is unaffected: it is a property of the broken hardware, not a
-    user choice, and it ANDs with whatever the neighbours imply.
+- **Switches: the user specifies allowed directions per branch** (author, 2026-08-16).
+  **This supersedes the earlier "switches derive themselves from their neighbours" ruling.**
+  Derivation could not answer what happens when a switch's neighbour is another switch - there is
+  no non-switch authority anywhere in such a run - so a switch is authored directly instead.
+  - A switch has one direction state **per branch route** (`SWITCH_LEFT`: the `{NS}` route and the
+    `{SW}` route; `SWITCH_THREE`: three; `SWITCH_CROSSING`: four across its two states), each
+    cycling the same both / one way / other way / none.
+  - Clicking a switch selects the branch nearest the click; the panel also lists that switch's
+    branches explicitly, since clicking accurately on a diagonal is fiddly.
+  - Default is **both** on every branch, so an untouched diagram behaves exactly as today.
+  - The `CUSTOM_PERM_*` restriction still ANDs on top: it is broken hardware, not a user choice,
+    and no per-branch setting can re-open a facing move.
 - Multi-route tiles (DOUBLE_CURVE, CROSSING, OVERPASS) hold one state per route; a click cycles
   the route nearer the click point, and bulk apply sets both.
 
@@ -449,6 +383,103 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
 **Consequence for monitoring.** `updateStationLabels` no longer depends on the graph window being
 open — already planned — and now that is not an enhancement but a requirement, since the graph may
 never be opened at all.
+
+## Rulings, 2026-08-16
+
+### Model APIs do not change (invariant)
+
+The author expects **no material change to `Layout`, `Point` or `Edge`**. Verified against the
+source: everything this design needs is already public - `Layout.getActiveLocomotives()`,
+`getPointsInActivePath()`, `getEdges()`, `getPoints()`, `getLocomotiveLocation()`, `isRunning()`,
+`setCallback()`, `renamePoint()`; `Edge.getName()`, `getStart()`, `getEnd()`, `getLength()`/
+`setLength()`, `getConfigCommands()`, `getLockEdges()`, `addLockEdge()`; and `Point`'s name,
+`isDestination`, terminus/reversing/active, s88 and max-train-length accessors. Construction runs
+entirely through `Layout.fromJSON`, so nothing new is required there either.
+
+Three invariants keep it that way - without them the implementation will drift into the model:
+
+1. **The edge -> tile-path map lives outside `Edge`.** Each reduced edge retains the tiles it
+   covers, for monitoring and lock derivation. That is a **side index owned by the builder**, keyed
+   by `Edge.getName()` (which already exists and is stable) - never a new field on `Edge`.
+2. **Warnings live in the build result, not on `Layout`.** `Layout` has `invalidate(msg)` for
+   blocking errors and nothing for non-blocking warnings. Adding a warnings channel to `Layout`
+   would be a model change; returning them from the builder is not.
+3. **One-way is the absence of the reverse edge.** The model's edges are already directed, so
+   directionality needs no new field, flag or API.
+
+### What is a node (author, 2026-08-16)
+
+**Only s88 tiles are nodes in the reduced graph.** A run of straight/curve/feedback-free tiles
+collapses into one continuous segment, and **a switch is not a node either** - it is a branch point
+that forks the walk and contributes `configCommands`. So the reduced graph's vertices are exactly
+the s88 Points, which is what the autonomy model wants.
+
+The **tile graph** still deals in individual tiles, because direction and length are per-tile
+properties and monitoring lights individual tiles - but nothing needs a materialised node object
+per straight tile. It is computed from the diagram plus the companion's per-tile overrides, and
+runs of tiles are walked, not stored.
+
+### Point properties: shared vs per-configuration
+
+| Property | Where | Why |
+|---|---|---|
+| name | **shared** | describes the physical location |
+| station designation (`isDestination`) | **shared** | ditto |
+| terminus, reversing | **shared** | physical characteristics of the track there |
+| max train length | **shared** | a physical capacity |
+| **speed multiplier** | **per configuration** | author ruling; **copied automatically** when a configuration is duplicated |
+| active | **per configuration** | operational - a point may be taken out of use for a session |
+| excluded locomotives | **per configuration** | operational |
+| placements, homes | **per configuration** | the reason configurations exist |
+
+### Saving
+
+- **The editor saves explicitly when closed.** Structural edits (connections, lengths, points,
+  portals) are written to the companion on close, not continuously.
+- **Locomotive location state auto-saves on exit**, and a warning is shown if autonomy is still
+  running - **matching today's behaviour exactly**, not a new pattern.
+
+### Selecting a configuration loads it
+
+Choosing a configuration in the viewer's dropdown **compiles and loads** it - directly analogous to
+reading `autonomy.json` today. It is therefore **refused while autonomy is running**, the same gate
+that already guards structural changes.
+
+### Tile properties move with the tile
+
+Direction and length are **properties of the tile** and **move with it** when the diagram editor
+moves it. If the tile is **deleted**, its properties go with it - start over for that tile. No
+orphan-and-report machinery for tile properties (unlike point references, where orphans are
+preserved).
+
+### Overlays: excluded pages and popup windows
+
+- **Not on excluded pages.** An excluded page is outside autonomy entirely - no derivation and no
+  overlays.
+- **Yes in popup windows.** `LayoutPopupUI` popups must show **the same controls as the main
+  window and stay in sync** with it.
+- **This needs extensive parity test cases.** A popup is a second live view of the same tiles, so
+  every layer toggle, overlay state and interaction has to behave identically and update together.
+  Treat popup/main-window parity as its own test area rather than a detail of the monitor tests.
+
+### Renaming a point propagates
+
+A rename **must propagate** everywhere the name is referenced - timetable entries, homes,
+exclusions, placements and every configuration in the companion - not merely be refused when
+references exist. The known wrinkle is the `Point:` diagram label, which embeds the name inside the
+diagram file: resolve leniently and report a mismatch rather than rewriting the diagram file.
+
+### The reduced graph is inspectable, in the UI
+
+The derived graph must be **visible and clear to the user**, not a black box - a readable view of
+points, edges, lengths, config commands and derived locks. This is a normal part of the UI, not a
+developer dump, and it replaces the read-only generated-JSON idea (there is no user-facing autonomy
+JSON anywhere).
+
+**Plus an in-app test suite**: user-runnable checks that validate the configuration is wired
+correctly, reporting a list of findings rather than a pass/fail. This is the home for the static
+configuration check and the A->B connectivity test, and the place to add more checks as failure
+modes are discovered.
 
 ## Ground-truth gate: the generated graph must be diffed against the real `autonomy.json`
 
