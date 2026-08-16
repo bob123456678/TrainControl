@@ -1140,6 +1140,15 @@ table because pixels cannot express it.
    - **S-W**: address 1 switched;
    - **S-E**: address 2 switched.
 
+   **A switch or signal with no address blocks the build** (author, 2026-08-16): routing over one
+   means trusting it to already be lying the right way - the danger `CUSTOM_PERM_*` exists to declare,
+   except undeclared. **It fires only when autonomy is built.** A diagram may carry address-less tiles
+   and keep working as a diagram exactly as it does today; nothing on the display or control path
+   builds a tile graph, and the application already skips such tiles when wiring accessories. A page
+   that deliberately contains them can be excluded from autonomy. The check scans every tile rather
+   than being raised while walking, since an unaddressed switch on a siding no route reaches would
+   otherwise never be reported - a blocking error that depends on being stumbled across is not one.
+
    **Rule for `configCommands` generation (author, 2026-08-01): straight vs throw always
    differentiate.** Every command states a position explicitly — `accessorySetting` is
    `{GREEN, RED, STRAIGHT, TURN}`, there is no "leave as-is" value — so a two-address turnout is
@@ -1312,7 +1321,7 @@ gone with the features that needed them.
 
 **Pages** - `.menuExcludePageFromAutonomy`, `.labelPageExcluded`.
 
-**Build messages** - `.errorScissorsNotSupported`, `.warnPermanentTurnout`,
+**Build messages** - `.errorTileHasNoAddress`, `.errorScissorsNotSupported`, `.warnPermanentTurnout`,
 `.warnPermanentTurnoutCount`, `.warnTurntableNotRoutable`, `.colWarnings`,
 `autolayout.infoCompanionLoaded`, `.infoCompanionOrphans`, `.errorCompanionVersion`.
 
