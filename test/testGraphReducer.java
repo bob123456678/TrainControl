@@ -313,8 +313,12 @@ public class testGraphReducer
         assertNotNull(generated.getName());
         assertFalse(generated.isStation(), "a Point is not a station until the user says so");
 
+        // a Point's s88 is the RAW address, the number feedback is registered under - not the halved
+        // logical address CS2File derives for accessories
+        assertEquals(named.getS88(), 11);
+        assertEquals(generated.getS88(), 11);
+
         // the two share an s88 and must still be distinguishable
-        assertEquals(named.getS88(), generated.getS88());
         assertNotEquals(named.getName(), generated.getName(),
             "two sensors sharing an address still need distinct names");
     }
@@ -423,18 +427,27 @@ public class testGraphReducer
     /**
      * A feedback tile lying east-west, which is how FEEDBACK is drawn at orientation 0.
      */
-    private void feedback(LayoutDiagram page, int x, int y, int address) throws IOException
+    /**
+     * A feedback tile lying east-west, which is how FEEDBACK is drawn at orientation 0.
+     *
+     * The address given is the RAW one, as it appears in the CS2 file - which is what a Point's s88
+     * means.  The logical address is deliberately different here (CS2File halves the raw value), so a
+     * Point built from the wrong one shows up immediately rather than agreeing by coincidence.
+     */
+    private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
-        add(page, componentType.FEEDBACK, x, y, 0, address);
+        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
+            accessoryDecoderType.MM2, null);
     }
 
     /**
      * A feedback tile lying north-south.  Orientation matters as much here as it does on the diagram: a
      * horizontal sensor placed above a vertical switch has no port facing it and simply does not connect.
      */
-    private void feedbackNS(LayoutDiagram page, int x, int y, int address) throws IOException
+    private void feedbackNS(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
-        add(page, componentType.FEEDBACK, x, y, 1, address);
+        page.addComponent(componentType.FEEDBACK, x, y, 1, 0, rawAddress / 2, rawAddress,
+            accessoryDecoderType.MM2, null);
     }
 
     /**

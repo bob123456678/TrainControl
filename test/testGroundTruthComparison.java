@@ -98,14 +98,23 @@ public class testGroundTruthComparison
 
         wireAccessories();
 
-        // "4 - Combined" redraws tiles from the other pages.  Left in, it would mint a second Point for
-        // every sensor it shows and a parallel set of edges - which is exactly what the exclusion flag
-        // exists for, and this layout is the reason the plan predicted it.
+        // Two pages are not part of the running layout, and both are excluded the way a user would
+        // exclude them:
+        //
+        //   "4 - Combined" redraws tiles from the other pages.  Left in, it would mint a second Point
+        //   for every sensor it shows and a parallel set of edges - exactly what the exclusion flag
+        //   exists for, and this layout is the reason the plan predicted the case.
+        //
+        //   "5 - Test" is a scratch page, and it carries a scissors tile - a drawing convention for a
+        //   double slip across two tiles, which cannot be expressed per tile and so disqualifies any
+        //   page it appears on.  Finding one here is the disqualification working, not failing.
         Set<String> excluded = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
         {
-            if (page.getName().toLowerCase().contains("combined")) excluded.add(page.getName());
+            String name = page.getName().toLowerCase();
+
+            if (name.contains("combined") || name.contains("test")) excluded.add(page.getName());
         }
 
         graph = new TileGraph(pages, excluded);

@@ -342,7 +342,11 @@ public class GraphReducer
                 name = generatedName(tile);
             }
 
-            points.put(tile, new ReducedPoint(tile, component.getAddress(), name,
+            // Feedback is keyed on the RAW address, not the halved one.  CS2File divides the artikel
+            // value by two for everything except routes, giving accessories their logical address, but
+            // MarklinControlStation registers and looks up feedback by getRawAddress() - so that is the
+            // number an autonomy Point's s88 has always meant.
+            points.put(tile, new ReducedPoint(tile, component.getRawAddress(), name,
                 authored.isStation(tile)));
         }
     }
