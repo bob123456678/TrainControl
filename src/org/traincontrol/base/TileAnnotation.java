@@ -104,7 +104,6 @@ public class TileAnnotation
 
     private static final Color LENGTH = new Color(90, 60, 140);
 
-    private static final float LINE_WIDTH = 1.6f;
     private static final float CHEVRON_WIDTH = 1.8f;
 
     /**
@@ -130,11 +129,6 @@ public class TileAnnotation
      */
     private static final Color POINT_ACTIVE = new Color(0, 0, 200);
     private static final Color POINT_INACTIVE = new Color(255, 102, 0);
-
-    /**
-     * The home ring, matching TrainControlUI.COLOR_AT_HOME.
-     */
-    private static final Color AT_HOME = new Color(0, 200, 210);
 
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.
@@ -408,12 +402,15 @@ public class TileAnnotation
      * between the two sides of a curve tile would cut the corner and sit off the track it describes.
      */
     /**
-     * Draws one route as an arrow lying along the track, rather than as a line spanning the tile.
+     * Draws one route as a pair of arrows, one per direction of travel, out at the ends of the route.
      *
-     * The lines were the problem.  The tile art already shows where the track goes, so drawing it
-     * again added a second set of lines that met the neighbouring tile's lines at every boundary - and
-     * with a head near each edge, a page of them read as scattered ticks rather than as flow.  What is
-     * left is the part that carries information: a head, on the track, pointing the way a train may go.
+     * Two arrows rather than one, because a route has two directions and they are set independently:
+     * with a single mark in the middle there was nowhere to say WHICH way is shut, and a red cross laid
+     * over a blue arrow said both things at once in the same place.
+     *
+     * Each arrow sits just inside the edge its direction leads to, so a run of one-way track reads as a
+     * line of arrows all pointing the same way, and a switch's branches separate by going where they
+     * actually go rather than by being nudged sideways.
      */
     private void paintMark(Graphics2D g, int width, int height, Mark mark, boolean fanOut)
     {
@@ -422,83 +419,31 @@ public class TileAnnotation
 
         if (from == null || to == null) return;
 
+        Direction direction = mark.getDirection();
+
+        // Blue when a route runs both ways, green when it is one-way - the same two colours as before,
+        // now decided per ROUTE so that the pair of arrows on one piece of track agree with each other.
+        Color colour = direction == Direction.BOTH ? BOTH_WAYS : ONE_WAY;
+
+        // toward A is allowed unless the route runs the other way only, and vice versa
+        arrow(g, width, height, from, direction != Direction.TOWARD_B, colour);
+        arrow(g, width, height, to, direction != Direction.TOWARD_A, colour);
+    }
+
+    /**
+     * One direction of one route: an arrowhead pointing out of the tile at the side it leads to, or the
+     * same place crossed out when trains may not go that way.
+     *
+     * @param target the midpoint of the side this direction leads to
+     * @param allowed whether trains may travel this way
+     * @param colour the route's colour
+     */
+    private void arrow(Graphics2D g, int width, int height, int[] target, boolean allowed,
+        Color colour)
+    {
         int cx = width / 2;
         int cy = height / 2;
 
-        if (mark.getDirection() == Direction.NONE)
-        {
-            g.setColor(CLOSED);
-            g.setStroke(new BasicStroke(CHEVRON_WIDTH + 1f, BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND));
-
-            // One cross in the middle of a plain tile.  On a tile with several routes, a cross at each
-            // end of THIS branch instead - a single mark in the middle could not say which of a
-            // switch's branches is the shut one, which is the only thing worth saying.
-            if (fanOut)
-            {
-                closedMark(g, cx, cy, from, width, height);
-                closedMark(g, cx, cy, to, width, height);
-            }
-            else
-            {
-                closedMark(g, cx, cy, new int[] {cx, cy}, width, height);
-            }
-
-            return;
-        }
-
-        boolean bidirectional = mark.getDirection() == Direction.BOTH;
-
-        g.setColor(bidirectional ? BOTH_WAYS : ONE_WAY);
-
-        if (bidirectional)
-        {
-            // one head toward each end of this route: back to back in the middle of a plain tile, or
-            // out along both ends of this particular branch on a tile that has several
-            head(g, cx, cy, from, width, height, fanOut ? FAN : 0.55);
-            head(g, cx, cy, to, width, height, fanOut ? FAN : 0.55);
-        }
-        else
-        {
-            int[] target = mark.getDirection() == Direction.TOWARD_A ? from : to;
-
-            head(g, cx, cy, target, width, height, fanOut ? FAN : 0);
-        }
-    }
-
-    /**
-     * How far out along its own route a branch's arrow sits, as a fraction of the way from the middle
-     * of the tile to the edge.  Far enough that branches separate, short enough that the arrow still
-     * plainly belongs to this square rather than to the boundary with the next one.
-     */
-    private static final double FAN = 0.5;
-
-    /**
-     * The mark for a route no train may use: a small cross, on the line from the middle of the
-     * tile toward a point.
-     */
-    private void closedMark(Graphics2D g, int cx, int cy, int[] target, int width, int height)
-    {
-        int x = (int) Math.round(cx + (target[0] - cx) * FAN);
-        int y = (int) Math.round(cy + (target[1] - cy) * FAN);
-
-        int bar = Math.max(3, Math.min(width, height) / 6);
-
-        g.drawLine(x - bar, y - bar, x + bar, y + bar);
-        g.drawLine(x - bar, y + bar, x + bar, y - bar);
-    }
-
-    /**
-     * A solid arrowhead centred on a point, aimed at a side of the tile.
-     *
-     * @param cx where the arrow sits
-     * @param cy
-     * @param target the side midpoint it points at
-     * @param offset how far toward the target to push it, as a fraction of the way there
-     */
-    private void head(Graphics2D g, int cx, int cy, int[] target, int width, int height,
-        double offset)
-    {
         double dx = target[0] - cx;
         double dy = target[1] - cy;
         double len = Math.sqrt(dx * dx + dy * dy);
@@ -510,27 +455,52 @@ public class TileAnnotation
 
         double size = Math.max(4.0, Math.min(width, height) / 3.2);
 
-        double px = cx + dx * size * offset;
-        double py = cy + dy * size * offset;
+        // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
+        // a hairline between them rather than touching and reading as one shape.
+        double tipX = target[0] - dx * EDGE_GAP;
+        double tipY = target[1] - dy * EDGE_GAP;
+
+        if (!allowed)
+        {
+            int bar = (int) Math.round(size * 0.45);
+
+            int x = (int) Math.round(tipX - dx * size * 0.5);
+            int y = (int) Math.round(tipY - dy * size * 0.5);
+
+            g.setColor(CLOSED);
+            g.setStroke(new BasicStroke(CHEVRON_WIDTH + 0.6f, BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND));
+            g.drawLine(x - bar, y - bar, x + bar, y + bar);
+            g.drawLine(x - bar, y + bar, x + bar, y - bar);
+
+            return;
+        }
 
         double angle = Math.atan2(dy, dx);
 
         int[] xs = new int[3];
         int[] ys = new int[3];
 
-        xs[0] = (int) Math.round(px + dx * size * 0.5);
-        ys[0] = (int) Math.round(py + dy * size * 0.5);
+        xs[0] = (int) Math.round(tipX);
+        ys[0] = (int) Math.round(tipY);
 
         for (int i = 0; i < 2; i++)
         {
             double barb = i == 0 ? 2.55 : -2.55;
 
-            xs[i + 1] = (int) Math.round(xs[0] + Math.cos(angle + barb) * size);
-            ys[i + 1] = (int) Math.round(ys[0] + Math.sin(angle + barb) * size);
+            xs[i + 1] = (int) Math.round(tipX + Math.cos(angle + barb) * size);
+            ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
+        g.setColor(colour);
         g.fillPolygon(xs, ys, 3);
     }
+
+    /**
+     * How far short of the tile edge an arrowhead stops.  One pixel, so that the arrows on two
+     * neighbouring tiles are visibly separate marks rather than one continuous shape.
+     */
+    private static final int EDGE_GAP = 1;
 
     /**
      * Draws what a sensor IS, in the graph window's own shapes and colours.

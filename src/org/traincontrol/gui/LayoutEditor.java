@@ -478,7 +478,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // The column heading belongs to the window, not to the palette that used to fill it - in
             // autonomy mode "New Components" describes something that is no longer there.
-            this.jLabel1.setText(I18n.t("autosetup.ui.title"));
+            this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
         }
 
         this.newComponents.revalidate();
