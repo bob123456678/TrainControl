@@ -302,13 +302,11 @@ public class testGroundTruthComparison
             }
         }
 
-        // Two of this layout's sensors live only on Top Parking, which is excluded from autonomy by
-        // choice.  Being out of scope is not the same as being underived, so they are named rather than
-        // failed on - but anything BEYOND them is a real gap.
-        System.out.println("\nlegacy sensors not derived (expected: only those on excluded pages): "
-            + missing + "\n");
-
-        assertTrue(missing.size() <= 2,
+        // Every sensor the hand-built configuration uses is now drawn on a participating page, so this
+        // is a plain requirement again: one it relies on that the diagram does not derive means the
+        // diagram failed to read something real.  (An allowance lived here while two parking sensors
+        // appeared only on the excluded page; the layout was corrected instead.)
+        assertTrue(missing.isEmpty(),
             "sensors the hand-built graph uses but the diagram did not derive: " + missing);
     }
 
