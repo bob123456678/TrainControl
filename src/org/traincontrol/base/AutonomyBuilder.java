@@ -61,6 +61,10 @@ public class AutonomyBuilder
 
     private List<String> coordinatePages = null;
 
+    // Per-point operational data from the active configuration - placements, homes, termini and the
+    // rest - keyed by TileKey.toString().  See withPointExtras.
+    private Map<String, JSONObject> pointExtras = null;
+
     public AutonomyBuilder(GraphReducer reducer, Globals globals)
     {
         this.reducer = reducer;
@@ -83,6 +87,25 @@ public class AutonomyBuilder
     public AutonomyBuilder withCoordinatesFromTiles(List<String> pagesInOrder)
     {
         this.coordinatePages = pagesInOrder;
+        return this;
+    }
+
+    /**
+     * Merges per-point operational data into the generated Points.
+     *
+     * This is how a configuration differs from the track: where the locomotives start, which Points are
+     * termini or reversing, homes, exclusions, speed multipliers.  The keys are TileKey.toString(), so
+     * the data survives a Point being renamed; the values are whatever parseAuto accepts on a point.
+     *
+     * What the reduction itself decides - name, station, s88 - cannot be overridden from here, because
+     * a configuration that quietly changed the track would be the JSON window all over again.
+     *
+     * @param extras tile key string to the point's extra properties, or null for none
+     * @return this
+     */
+    public AutonomyBuilder withPointExtras(Map<String, JSONObject> extras)
+    {
+        this.pointExtras = extras;
         return this;
     }
 
@@ -132,6 +155,20 @@ public class AutonomyBuilder
 
                 json.put("x", point.getTile().getX() * 60);
                 json.put("y", point.getTile().getY() * 60 + page * 1800);
+            }
+
+            JSONObject extras = pointExtras == null
+                ? null : pointExtras.get(point.getTile().toString());
+
+            if (extras != null)
+            {
+                for (String key : extras.keySet())
+                {
+                    // never the structural fields: those are the reduction's to decide
+                    if (json.has(key)) continue;
+
+                    json.put(key, extras.get(key));
+                }
             }
 
             pointList.put(json);

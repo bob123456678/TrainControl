@@ -155,12 +155,20 @@ public class AutonomySession
     }
 
     /**
+     * The per-point keys a configuration owns: everything operational parseAuto accepts on a point.
+     * Structural keys (name, station, s88, coordinates) belong to the reduction and are not here.
+     */
+    private static final List<String> POINT_OPERATIONAL_KEYS = java.util.Arrays.asList(
+        "loc", "terminus", "reversing", "active", "maxTrainLength", "speedMultiplier",
+        "priority", "home", "excludedLocs");
+
+    /**
      * The generated configuration, in the format the autonomy model already reads.
      * @return
      */
     public String buildConfiguration()
     {
-        return new AutonomyBuilder(reducer, globals()).build();
+        return new AutonomyBuilder(reducer, globals()).withPointExtras(pointExtras()).build();
     }
 
     /**
@@ -177,6 +185,106 @@ public class AutonomySession
         }
 
         return new AutonomyBuilder(reducer, globals()).withCoordinatesFromTiles(pageOrder).build();
+    }
+
+    /**
+     * The per-point operational data of the active configuration, for the builder to merge in.
+     */
+    private Map<String, org.json.JSONObject> pointExtras()
+    {
+        Map<String, org.json.JSONObject> out = new LinkedHashMap<>();
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return out;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            out.put(key, points.getJSONObject(key));
+        }
+
+        return out;
+    }
+
+    /**
+     * Lifts what the running layout knows into the active configuration - placements, homes, termini,
+     * pace settings - so that what was set while trains were running is what loads next time.
+     *
+     * Takes the layout's own JSON rather than the layout, for two reasons: toJSON is the serialization
+     * the legacy path trusted for years, so anything it captures is by definition loadable; and a
+     * string can be tested without a control station.
+     *
+     * Keyed by tile rather than by name, so a Point renamed between sessions keeps its placements.
+     * Points whose names no longer match any tile are dropped silently - they belong to track that no
+     * longer exists, and carrying them forward would place a locomotive on nothing.
+     *
+     * @param layoutJson what the running Layout serialized to
+     */
+    public void captureFromLayout(String layoutJson)
+    {
+        if (layoutJson == null || reducer == null) return;
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return;
+
+        org.json.JSONObject root = new org.json.JSONObject(layoutJson);
+
+        // name -> tile, through the same naming the builder used to generate the file
+        Map<String, TileKey> tilesByName = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry
+            : new AutonomyBuilder(reducer, null).uniqueNames().entrySet())
+        {
+            tilesByName.put(entry.getValue(), entry.getKey());
+        }
+
+        org.json.JSONObject points = new org.json.JSONObject();
+
+        if (root.has("points"))
+        {
+            for (Object o : root.getJSONArray("points"))
+            {
+                org.json.JSONObject point = (org.json.JSONObject) o;
+
+                TileKey tile = tilesByName.get(point.optString("name"));
+
+                if (tile == null) continue;
+
+                org.json.JSONObject extras = new org.json.JSONObject();
+
+                for (String key : POINT_OPERATIONAL_KEYS)
+                {
+                    if (point.has(key) && !point.isNull(key)) extras.put(key, point.get(key));
+                }
+
+                if (extras.length() > 0) points.put(tile.toString(), extras);
+            }
+        }
+
+        configuration.put("points", points);
+
+        // and the top of the file: pace, speeds, and the rest of the settings panel
+        org.json.JSONObject globals = new org.json.JSONObject();
+
+        for (String key : root.keySet())
+        {
+            if (!"points".equals(key) && !"edges".equals(key)) globals.put(key, root.get(key));
+        }
+
+        configuration.put("globals", globals);
+
+        dirty = true;
     }
 
     /**

@@ -165,6 +165,116 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A configuration's per-point data - placements, termini, homes - rides into the generated file,
+     * without being able to touch what the reduction decided.
+     */
+    @Test
+    public void testConfigurationPointDataRidesIntoTheGeneratedFile() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey first = new TileKey("main", 1, 1);
+
+        org.json.JSONObject config = session.getStore().getConfiguration("Default");
+
+        org.json.JSONObject extras = new org.json.JSONObject();
+        extras.put("terminus", true);
+        extras.put("loc", new org.json.JSONObject().put("name", "BR 218"));
+
+        // an attempt to override a structural field, which must lose
+        extras.put("s88", 999);
+
+        config.put("points",
+            new org.json.JSONObject().put(first.toString(), extras));
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        org.json.JSONObject builtPoint = null;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject p = (org.json.JSONObject) o;
+
+            if (p.getInt("s88") == 11) builtPoint = p;
+        }
+
+        assertNotNull(builtPoint, "the sensor should still be a Point, keyed by its real s88");
+        assertTrue(builtPoint.getBoolean("terminus"), "the configuration's terminus flag should ride in");
+        assertEquals(builtPoint.getJSONObject("loc").getString("name"), "BR 218");
+        assertEquals(builtPoint.getInt("s88"), 11, "a configuration cannot override the reduction");
+    }
+
+    /**
+     * What the running layout knew is lifted back into the active configuration, keyed by tile, with
+     * points that no longer exist dropped rather than carried forward onto nothing.
+     */
+    @Test
+    public void testCaptureLiftsTheRunningLayoutIntoTheConfiguration() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        // what a running Layout would serialize: the generated names, plus operational state
+        String generatedName = pointName(11);
+
+        org.json.JSONObject running = new org.json.JSONObject();
+        running.put("minDelay", 3);
+        running.put("maxDelay", 9);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        org.json.JSONObject known = new org.json.JSONObject();
+        known.put("name", generatedName);
+        known.put("terminus", true);
+        known.put("loc", new org.json.JSONObject().put("name", "BR 218"));
+        known.put("station", true); // structural - must not be captured
+        points.put(known);
+
+        org.json.JSONObject vanished = new org.json.JSONObject();
+        vanished.put("name", "a point whose track was deleted");
+        vanished.put("terminus", true);
+        points.put(vanished);
+
+        running.put("points", points);
+        running.put("edges", new org.json.JSONArray());
+
+        session.captureFromLayout(running.toString());
+
+        org.json.JSONObject config = session.getStore().getConfiguration("Default");
+        org.json.JSONObject captured = config.getJSONObject("points");
+
+        assertEquals(captured.length(), 1, "only the point that still exists should be captured");
+
+        org.json.JSONObject extras = captured.getJSONObject(
+            new TileKey("main", 1, 1).toString());
+
+        assertTrue(extras.getBoolean("terminus"));
+        assertEquals(extras.getJSONObject("loc").getString("name"), "BR 218");
+        assertFalse(extras.has("station"), "structural fields are the reduction's, not captured");
+
+        // pace settings land in globals, and points/edges do not
+        org.json.JSONObject globals = config.getJSONObject("globals");
+        assertEquals(globals.getInt("minDelay"), 3);
+        assertFalse(globals.has("points"));
+
+        // and the round trip: what was captured is what the next build emits
+        org.json.JSONObject rebuilt = new org.json.JSONObject(session.buildConfiguration());
+        assertEquals(rebuilt.getInt("minDelay"), 3, "captured globals should feed the next build");
+
+        for (Object o : rebuilt.getJSONArray("points"))
+        {
+            org.json.JSONObject p = (org.json.JSONObject) o;
+
+            if (p.getInt("s88") == 11)
+            {
+                assertTrue(p.getBoolean("terminus"));
+                assertEquals(p.getJSONObject("loc").getString("name"), "BR 218");
+            }
+        }
+    }
+
+    /**
      * Editing marks the setup unsaved, and saving clears it - which is what decides whether closing the
      * editor has to ask.
      */
@@ -202,6 +312,23 @@ public class testAutonomyDiagramSession
     }
 
     // --- helpers ----------------------------------------------------------------------------------
+
+    /**
+     * The name the builder generated for the Point with this s88 - what a running Layout would call it.
+     */
+    private String pointName(int s88)
+    {
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject p = (org.json.JSONObject) o;
+
+            if (p.getInt("s88") == s88) return p.getString("name");
+        }
+
+        throw new IllegalStateException("no Point with s88 " + s88);
+    }
 
     /**
      * Two sensors with two plain tiles between them.

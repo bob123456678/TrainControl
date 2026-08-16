@@ -1143,8 +1143,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 iOException.getMessage()
             );
         }
-        
-        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
+
+        // When the running layout came from the diagram, what was changed while it ran - placements,
+        // homes, settings - is lifted back into the configuration it came from, so it is what loads next
+        // time.  The legacy autosave below still runs too; autonomy.json doubles as a readable backup.
+        if (this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+                && this.model.getAutoLayout().isValid()
+                && !this.model.getAutoLayout().isRunning())
+        {
+            try
+            {
+                org.traincontrol.base.AutonomySession session = getAutonomySession();
+
+                if (session != null)
+                {
+                    session.captureFromLayout(this.model.getAutoLayout().toJSON());
+                    session.save();
+                }
+            }
+            catch (Exception e)
+            {
+                this.model.log(e);
+            }
+        }
+
+        if (this.autosave.isSelected() && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -1525,8 +1548,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         jumpToLayoutTab();
 
+        // remembered so that exit knows which configuration the running layout's state belongs to
+        this.activeDiagramConfiguration = name;
+
         this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
     }
+
+    /**
+     * Which configuration the current auto layout was generated from, or null when it came from the
+     * legacy JSON path (whose state then has nowhere diagram-side to be captured to).
+     * @return
+     */
+    public String getActiveDiagramConfiguration()
+    {
+        return activeDiagramConfiguration;
+    }
+
+    private String activeDiagramConfiguration;
 
     /**
      * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.

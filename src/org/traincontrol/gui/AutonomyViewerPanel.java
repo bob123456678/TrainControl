@@ -195,6 +195,22 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        // What was set while the outgoing configuration ran - placements, homes, settings - goes back
+        // into it before it is replaced, or switching configurations would quietly discard it.
+        if (ui.getActiveDiagramConfiguration() != null && ui.getModel() != null
+            && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+        {
+            try
+            {
+                session.captureFromLayout(ui.getModel().getAutoLayout().toJSON());
+            }
+            catch (Exception e)
+            {
+                // capture is a courtesy; failing to capture must not block loading
+                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+            }
+        }
+
         session.getStore().setActiveConfiguration(name);
         session.rebuild();
 
