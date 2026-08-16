@@ -149,14 +149,41 @@ public class TileAnnotation
         private final boolean parking;
         private final boolean named;
 
+        // Which route the badge sits on, so it can be drawn where the rails are rather than in the
+        // middle of the square.  Null for a tile whose route is unknown, which falls back to centre.
+        private final Side a;
+        private final Side b;
+
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named)
+        {
+            this(station, terminus, reversing, parking, named, null, null);
+        }
+
+        /**
+         * @param a one side of the route this point sits on
+         * @param b the other
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b)
         {
             this.station = station;
             this.terminus = terminus;
             this.reversing = reversing;
             this.parking = parking;
             this.named = named;
+            this.a = a;
+            this.b = b;
+        }
+
+        public Side getA()
+        {
+            return a;
+        }
+
+        public Side getB()
+        {
+            return b;
         }
 
         public boolean isStation()
@@ -193,7 +220,8 @@ public class TileAnnotation
             Badge other = (Badge) o;
 
             return station == other.station && terminus == other.terminus
-                && reversing == other.reversing && parking == other.parking && named == other.named;
+                && reversing == other.reversing && parking == other.parking && named == other.named
+                && a == other.a && b == other.b;
         }
 
         @Override
@@ -460,22 +488,9 @@ public class TileAnnotation
         double tipX = target[0] - dx * EDGE_GAP;
         double tipY = target[1] - dy * EDGE_GAP;
 
-        if (!allowed)
-        {
-            int bar = (int) Math.round(size * 0.45);
-
-            int x = (int) Math.round(tipX - dx * size * 0.5);
-            int y = (int) Math.round(tipY - dy * size * 0.5);
-
-            g.setColor(CLOSED);
-            g.setStroke(new BasicStroke(CHEVRON_WIDTH + 0.6f, BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND));
-            g.drawLine(x - bar, y - bar, x + bar, y + bar);
-            g.drawLine(x - bar, y + bar, x + bar, y - bar);
-
-            return;
-        }
-
+        // A blocked direction is the SAME arrow in red, not a cross.  A cross says "something is wrong
+        // here" and leaves the reader to work out which way; an arrow says which way, and the colour
+        // says it is shut - so the allowed and the blocked directions are read the same way round.
         double angle = Math.atan2(dy, dx);
 
         int[] xs = new int[3];
@@ -492,7 +507,7 @@ public class TileAnnotation
             ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
-        g.setColor(colour);
+        g.setColor(allowed ? colour : CLOSED);
         g.fillPolygon(xs, ys, 3);
     }
 
@@ -526,8 +541,18 @@ public class TileAnnotation
         int size = Math.max(badge.isStation() ? 11 : 8,
             Math.min(width, height) / (badge.isStation() ? 2 : 3));
 
-        int x = (width - size) / 2;
-        int y = (height - size) / 2;
+        // Centred on the TRACK, not on the tile.  On a curve the art hugs the corner between the two
+        // sides it joins, so a badge in the middle of the square sits off the rails - which is what
+        // made sensors on curves look misplaced.  The midpoint of the route's own two sides lands on
+        // the track for a curve and is the tile centre for anything straight.
+        int[] on = trackCentre(width, height);
+
+        int x = on[0] - size / 2;
+        int y = on[1] - size / 2;
+
+        // never let it hang outside the square
+        x = Math.max(1, Math.min(width - size - 1, x));
+        y = Math.max(1, Math.min(height - size - 1, y));
 
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
@@ -557,6 +582,31 @@ public class TileAnnotation
         {
             diamond(g, x, y, size, fill, line);
         }
+    }
+
+    /**
+     * Where the track runs through this tile, as far as the marks can tell.
+     *
+     * The midpoint of the first route's two sides: the middle of the square for anything straight or
+     * crossing, and the corner the rails actually bend around for a curve.
+     */
+    private int[] trackCentre(int width, int height)
+    {
+        // the badge's own route where it has one, otherwise the first route drawn, otherwise centre
+        Side sideA = badge != null && badge.getA() != null ? badge.getA()
+            : marks.isEmpty() ? null : marks.get(0).getA();
+
+        Side sideB = badge != null && badge.getB() != null ? badge.getB()
+            : marks.isEmpty() ? null : marks.get(0).getB();
+
+        if (sideA == null || sideB == null) return new int[] {width / 2, height / 2};
+
+        int[] a = midpoint(sideA, width, height);
+        int[] b = midpoint(sideB, width, height);
+
+        if (a == null || b == null) return new int[] {width / 2, height / 2};
+
+        return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
     }
 
     private void cross(Graphics2D g, int x, int y, int size, Color fill, Color line)

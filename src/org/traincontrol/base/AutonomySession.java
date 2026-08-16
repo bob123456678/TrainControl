@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.traincontrol.base.TileGraph.Direction;
+import org.traincontrol.base.TileGraph.Landing;
 import org.traincontrol.base.TileGraph.RouteId;
 import org.traincontrol.base.TileGraph.TileKey;
 import org.traincontrol.base.TilePorts.Route;
@@ -632,6 +633,135 @@ public class AutonomySession
     }
 
     /**
+     * Which square speaks for each run of plain track between two points.
+     *
+     * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
+     * worse, a run that disagrees with itself is a silent trap - the arrows look set and no train can
+     * pass.  So one tile in each run is the one to set, and the rest follow it.
+     *
+     * The first tile of the run is the speaker, as the author asked.  Tiles that carry a choice - any
+     * tile with more than one route, so every switch and crossing - are never followers: their
+     * branches are decisions in their own right.
+     *
+     * @return every tile of every run, mapped to the tile that speaks for it
+     */
+    public Map<TileKey, TileKey> runLeaders()
+    {
+        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+
+        if (reducer == null || graph == null) return out;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            List<GraphReducer.TileStep> path = edge.getPath();
+
+            TileKey leader = null;
+
+            for (GraphReducer.TileStep step : path)
+            {
+                TileKey tile = step.getTile();
+
+                // a tile where a train could go more than one way is nobody's follower
+                if (graph.getRoutes(tile).size() > 1) continue;
+
+                if (leader == null) leader = tile;
+
+                // The reverse edge walks the same tiles the other way round, so whichever edge is seen
+                // first fixes the leader; putIfAbsent keeps the two from disagreeing.
+                if (!out.containsKey(tile)) out.put(tile, leader);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Sets a direction on every tile of the run a leader speaks for, in the sense the leader means.
+     *
+     * @param leader the tile the user set
+     * @param routeId which of its routes
+     * @param direction what they chose
+     */
+    public void setRunDirection(TileKey leader, RouteId routeId, Direction direction)
+    {
+        Route route = graph.getRoutes(leader).get(routeId);
+
+        if (route == null) return;
+
+        // BOTH and NONE mean the same everywhere; a one-way choice has to be carried along the run in
+        // terms of each tile's own sides, which is what setOneWayRun already knows how to do.
+        if (direction == Direction.BOTH || direction == Direction.NONE)
+        {
+            Set<TileKey> run = new LinkedHashSet<>();
+
+            for (Map.Entry<TileKey, TileKey> entry : runLeaders().entrySet())
+            {
+                if (leader.equals(entry.getValue())) run.add(entry.getKey());
+            }
+
+            if (run.isEmpty()) run.add(leader);
+
+            setDirection(run, direction);
+
+            return;
+        }
+
+        // one way: from the far end of the run toward the side the user picked
+        Side toward = direction == Direction.TOWARD_A ? route.getA() : route.getB();
+
+        Landing landing = graph.landing(leader, toward);
+
+        if (landing == null)
+        {
+            setDirection(leader, routeId, direction);
+            return;
+        }
+
+        setOneWayRun(farEnd(leader, toward), landing.getTile());
+    }
+
+    /**
+     * Walks backwards along a run from a tile, away from the side given, to the last tile still in it.
+     */
+    private TileKey farEnd(TileKey from, Side toward)
+    {
+        Map<TileKey, TileKey> leaders = runLeaders();
+
+        TileKey run = leaders.get(from);
+        TileKey here = from;
+
+        Side back = opposite(toward);
+
+        for (int guard = 0; guard < 500 && back != null; guard++)
+        {
+            Landing landing = graph.landing(here, back);
+
+            if (landing == null || !run.equals(leaders.get(landing.getTile()))) return here;
+
+            Route route = firstRoute(landing.getTile());
+
+            if (route == null) return here;
+
+            here = landing.getTile();
+            back = route.other(landing.getEntrySide());
+        }
+
+        return here;
+    }
+
+    private static Side opposite(Side side)
+    {
+        switch (side)
+        {
+            case N: return Side.S;
+            case S: return Side.N;
+            case E: return Side.W;
+            case W: return Side.E;
+            default: return null;
+        }
+    }
+
+    /**
      * What the setup says about one square, for drawing on the ordinary track diagram.
      *
      * Points only - no direction arrows at all.  The diagram tab is where trains are WATCHED, and the
@@ -656,8 +786,20 @@ public class AutonomySession
                 Boolean.TRUE.equals(getPointProperty(tile, "terminus")),
                 Boolean.TRUE.equals(getPointProperty(tile, "reversing")),
                 Boolean.FALSE.equals(getPointProperty(tile, "active")),
-                name != null && !name.trim().isEmpty()),
+                name != null && !name.trim().isEmpty(),
+                firstRoute(tile) == null ? null : firstRoute(tile).getA(),
+                firstRoute(tile) == null ? null : firstRoute(tile).getB()),
             false, false);
+    }
+
+    /**
+     * The tile's first route, which is where its badge is drawn.
+     */
+    private Route firstRoute(TileKey tile)
+    {
+        Map<RouteId, Route> routes = graph == null ? null : graph.getRoutes(tile);
+
+        return routes == null || routes.isEmpty() ? null : routes.values().iterator().next();
     }
 
     /**

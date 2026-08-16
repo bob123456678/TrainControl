@@ -147,6 +147,10 @@ public class AutonomyEditorPanel extends JPanel
     private Map<TileKey, org.traincontrol.base.TileAnnotation.Mark> flowMarks =
         new java.util.LinkedHashMap<>();
 
+    // Which tile speaks for each run of plain track.  A run has one direction, so only its first tile
+    // is set; the rest follow and are drawn greyed so nobody tries to set them separately.
+    private Map<TileKey, TileKey> runLeaders = new java.util.LinkedHashMap<>();
+
     /**
      * @param session the setup being edited
      * @param page the diagram page this editor window is showing
@@ -191,37 +195,62 @@ public class AutonomyEditorPanel extends JPanel
         label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>" + html + "</body></html>");
     }
 
+    /**
+     * The tools column.
+     *
+     * A vertical BoxLayout rather than a GridLayout, because GridLayout gives EVERY row the height of
+     * the tallest one - so the moment the hint wrapped to three lines, every checkbox and button grew
+     * to three lines too and the column came apart.  Here each row takes the height it needs.
+     */
     private JPanel buildTools()
     {
-        JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
+        JPanel panel = new JPanel();
         panel.setOpaque(false);
+        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
 
         // No heading of its own: the editor already prints one above this column, and setAutonomyMode
         // retitles it, so a second said the same thing twice.
+        //
         // One tool.  Connections, points, links and lengths were all buttons that only changed what a
         // click MEANT, and every one of them acted on a single named tile - which is what a right-click
         // menu is for.  They are all on the tile's own menu now, where the thing being configured is
         // the thing under the pointer.
-        panel.add(toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest")));
+        panel.add(row(toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"))));
 
         // the toggles change what is drawn, not what is decided, so all they do is redraw
         showDirections.addActionListener(e -> refresh());
         showAllDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
-        panel.add(control(showDirections));
-        panel.add(control(showAllDirections));
-        panel.add(control(showLengths));
+        panel.add(row(control(showDirections)));
+        panel.add(row(control(showAllDirections)));
+        panel.add(row(control(showLengths)));
 
         hint.setFont(FONT_HINT);
+        hint.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(hint);
 
         banner.setOpaque(true);
         banner.setFont(FONT_HEADING);
+        banner.setAlignmentX(LEFT_ALIGNMENT);
         banner.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
         panel.add(banner);
 
         return panel;
+    }
+
+    /**
+     * One control on its own line, flush left and no taller than it needs to be.
+     */
+    private JPanel row(java.awt.Component component)
+    {
+        JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1));
+        holder.setOpaque(false);
+        holder.setAlignmentX(LEFT_ALIGNMENT);
+        holder.setMaximumSize(new Dimension(WIDTH, 30));
+        holder.add(component);
+
+        return holder;
     }
 
     /**
@@ -349,6 +378,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Right-clicking anywhere in a run opens the run's own menu, so the greyed tiles are not dead
+        // - they simply hand the question to the tile that answers it.
+        tile = leaderOf(tile);
+
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         boolean isPoint = session.getReducer() != null
@@ -422,6 +455,7 @@ public class AutonomyEditorPanel extends JPanel
                 // straight on the menu rather than burying them one level down.
                 if (many)
                 {
+                    // no font set: submenus inherit the look and feel's, as the editor's own do
                     javax.swing.JMenu branch = new javax.swing.JMenu(
                         I18n.f("autosetup.ui.menuBranch",
                             String.valueOf(route.getA()), String.valueOf(route.getB())));
@@ -680,11 +714,13 @@ public class AutonomyEditorPanel extends JPanel
 
         item.addActionListener(e ->
         {
-            session.setDirection(tile, routeId, direction);
+            // Set on the run, not the tile: a run of plain track has one direction, and setting it a
+            // tile at a time is both busywork and a way to end up with a run that contradicts itself.
+            session.setRunDirection(tile, routeId, direction);
             refresh();
         });
 
-        return button(item);
+        return item;
     }
 
     public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
@@ -1020,7 +1056,11 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
-        if (showDirections.isSelected() && session.getGraph() != null && !ignored)
+        // A tile that merely follows its run draws nothing of its own and is washed out, so the run
+        // reads as one decision made at one end rather than eleven waiting to be made.
+        boolean follower = isFollower(tile);
+
+        if (showDirections.isSelected() && session.getGraph() != null && !ignored && !follower)
         {
             Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -1084,7 +1124,7 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), ignored, isMuted(tile));
+            badgeFor(tile), ignored, isMuted(tile) || follower);
     }
 
     /**
@@ -1108,12 +1148,46 @@ public class AutonomyEditorPanel extends JPanel
 
         String name = session.getStore().getPointName(tile);
 
+        org.traincontrol.base.TilePorts.Route route = firstRoute(tile);
+
         return new org.traincontrol.base.TileAnnotation.Badge(
             session.getStore().isStation(tile),
             flag(tile, "terminus"),
             flag(tile, "reversing"),
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
-            name != null && !name.trim().isEmpty());
+            name != null && !name.trim().isEmpty(),
+            route == null ? null : route.getA(),
+            route == null ? null : route.getB());
+    }
+
+    /**
+     * The tile's first route, which is where its badge is drawn.
+     */
+    private org.traincontrol.base.TilePorts.Route firstRoute(TileKey tile)
+    {
+        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+
+        return routes.isEmpty() ? null : routes.values().iterator().next();
+    }
+
+    /**
+     * Whether this tile takes its direction from another one, rather than carrying its own.
+     */
+    private boolean isFollower(TileKey tile)
+    {
+        TileKey leader = runLeaders.get(tile);
+
+        return leader != null && !leader.equals(tile);
+    }
+
+    /**
+     * The tile that actually gets set when the user acts on this one.
+     */
+    private TileKey leaderOf(TileKey tile)
+    {
+        TileKey leader = runLeaders.get(tile);
+
+        return leader == null ? tile : leader;
     }
 
     private boolean isMuted(TileKey tile)
@@ -1157,6 +1231,7 @@ public class AutonomyEditorPanel extends JPanel
     public final void refresh()
     {
         flowMarks = session.flowMarks();
+        runLeaders = session.runLeaders();
 
         findingsModel.clear();
         findingTiles.clear();
