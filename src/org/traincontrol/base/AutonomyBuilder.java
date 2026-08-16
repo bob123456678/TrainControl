@@ -59,10 +59,31 @@ public class AutonomyBuilder
     private final GraphReducer reducer;
     private final Globals globals;
 
+    private List<String> coordinatePages = null;
+
     public AutonomyBuilder(GraphReducer reducer, Globals globals)
     {
         this.reducer = reducer;
         this.globals = globals == null ? new Globals() : globals;
+    }
+
+    /**
+     * Emits graph coordinates for each Point, taken from where its tile sits on the diagram.
+     *
+     * Off by default: the diagram is the layout now, so nothing needs a second set of positions, and a
+     * stale one would only drift.  It is worth having for **inspection** - a graph laid out like the track
+     * it came from can be read at a glance and checked against the diagram beside it, where the same graph
+     * sprayed at random cannot be checked against anything.
+     *
+     * Pages are stacked vertically in the order given, so two pages do not land on top of each other.
+     *
+     * @param pagesInOrder the participating page names, or null to stop emitting coordinates
+     * @return this
+     */
+    public AutonomyBuilder withCoordinatesFromTiles(List<String> pagesInOrder)
+    {
+        this.coordinatePages = pagesInOrder;
+        return this;
     }
 
     /**
@@ -102,6 +123,16 @@ public class AutonomyBuilder
             json.put("name", names.get(point.getTile()));
             json.put("station", point.isStation());
             json.put("s88", point.getS88());
+
+            if (coordinatePages != null)
+            {
+                // Roughly one tile per 60 units, which is the spacing the hand-written files use, with
+                // each page stacked below the last so they do not overlap
+                int page = Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
+
+                json.put("x", point.getTile().getX() * 60);
+                json.put("y", point.getTile().getY() * 60 + page * 1800);
+            }
 
             pointList.put(json);
         }

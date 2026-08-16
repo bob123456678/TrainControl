@@ -761,6 +761,48 @@ public class testAutonomyFromDiagram
     }
 
     /**
+     * Writes the derived graph out as an ordinary autonomy file, so it can be loaded and looked at.
+     *
+     * Nothing new is needed to do this - the builder already emits exactly the format a hand-written file
+     * uses, because that is the whole point of the compile step.  What the export adds is graph
+     * coordinates taken from the tiles, so the rendered graph is laid out like the track it came from and
+     * can be checked against the diagram beside it.
+     *
+     * Two files, because they answer different questions:
+     *   -derived        what the diagram gives with switches at their default, base to forks.  This is
+     *                   what a user would get on day one, and it is deliberately sparse.
+     *   -derived-open   the same with every branch opened, which is what the layout can express once the
+     *                   trailing moves are enabled.  This is the one to compare against the hand-built
+     *                   file.
+     */
+    @Test
+    public void testTheDerivedGraphCanBeExportedForInspection() throws Exception
+    {
+        List<String> pageOrder = new ArrayList<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (!excludedPages.contains(page.getName())) pageOrder.add(page.getName());
+        }
+
+        write("autonomy-derived.json",
+            new AutonomyBuilder(reducer, null).withCoordinatesFromTiles(pageOrder).build());
+
+        write("autonomy-derived-open.json",
+            new AutonomyBuilder(reduceWithEveryBranchOpen(), null)
+                .withCoordinatesFromTiles(pageOrder).build());
+    }
+
+    private void write(String name, String contents) throws Exception
+    {
+        File out = new File(name);
+
+        Files.write(out.toPath(), contents.getBytes(StandardCharsets.UTF_8));
+
+        System.out.println("wrote " + out.getAbsolutePath() + "  (" + contents.length() + " bytes)");
+    }
+
+    /**
      * Two builds of the same diagram must be identical, or the diff against the hand-built file is
      * comparing noise.
      */
