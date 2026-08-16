@@ -390,6 +390,259 @@ public class testAutonomyFromDiagram
     }
 
     /**
+     * Can two trains collide?
+     *
+     * Comparing lock counts tells us nothing - the two graphs cut the railway in different places, so 118
+     * hand-written references and 96 derived ones are not comparable quantities.  What IS comparable is
+     * the track: two routes can collide if and only if they occupy the same tile, and that truth belongs
+     * to neither graph, so it can referee both.
+     *
+     * Each hand-built edge is given a physical extent by walking the derived tile graph between its two
+     * sensors.  Then, for every pair of hand-built edges that turn out to share tiles, the hand-built
+     * configuration is asked whether it knew: does it lock them against each other, or are they the same
+     * edge?  Anything it missed is a pair of routes it would run at once over shared track.
+     *
+     * The derived side is checked the other way round - by construction it locks every shared tile, so
+     * this asserts that construction actually holds, since a lock derivation that quietly dropped pairs
+     * would be the most dangerous defect in the project.
+     */
+    @Test
+    public void testNoTwoRoutesCanOccupyTheSameTrackUnlocked()
+    {
+        GraphReducer wideOpen = reduceWithEveryBranchOpen();
+
+        // --- the derived graph: every pair of edges sharing a tile must be locked -----------------
+        List<String> derivedGaps = new ArrayList<>();
+
+        List<ReducedEdge> edges = new ArrayList<>(wideOpen.getEdges());
+
+        for (int i = 0; i < edges.size(); i++)
+        {
+            for (int j = i + 1; j < edges.size(); j++)
+            {
+                ReducedEdge a = edges.get(i);
+                ReducedEdge b = edges.get(j);
+
+                // an edge and its reverse are one piece of track, not two claims on it
+                if (a.getStart().equals(b.getEnd()) && a.getEnd().equals(b.getStart())) continue;
+
+                if (!sharesATile(a, b)) continue;
+
+                Set<ReducedEdge> locked = wideOpen.getLocks().get(a);
+
+                if (locked == null || !locked.contains(b))
+                {
+                    if (derivedGaps.size() < 10) derivedGaps.add(a + "  ||  " + b);
+                }
+            }
+        }
+
+        // --- the hand-built graph, judged by the same tiles ---------------------------------------
+        Map<String, Set<TileKey>> legacyExtent = new LinkedHashMap<>();
+        Map<String, JSONObject> legacyEdges = new LinkedHashMap<>();
+
+        for (Object o : legacy.getJSONArray("edges"))
+        {
+            JSONObject edge = (JSONObject) o;
+
+            Integer from = sensorOf(edge.getString("start"));
+            Integer to = sensorOf(edge.getString("end"));
+
+            if (from == null || to == null) continue;
+
+            Set<TileKey> tiles = tilesAlong(wideOpen, from, to);
+
+            if (tiles.isEmpty()) continue;
+
+            String id = edge.getString("start") + " -> " + edge.getString("end");
+            legacyExtent.put(id, tiles);
+            legacyEdges.put(id, edge);
+        }
+
+        List<String> legacyGaps = new ArrayList<>();
+        int legacyCovered = 0;
+
+        List<String> ids = new ArrayList<>(legacyExtent.keySet());
+
+        for (int i = 0; i < ids.size(); i++)
+        {
+            for (int j = i + 1; j < ids.size(); j++)
+            {
+                String one = ids.get(i);
+                String two = ids.get(j);
+
+                Set<TileKey> shared = new LinkedHashSet<>(legacyExtent.get(one));
+                shared.retainAll(legacyExtent.get(two));
+
+                if (shared.isEmpty()) continue;
+
+                if (legacyLocksTogether(legacyEdges.get(one), legacyEdges.get(two)))
+                {
+                    legacyCovered++;
+                }
+                else if (legacyGaps.size() < 15)
+                {
+                    legacyGaps.add(one + "  ||  " + two + "   sharing " + shared.size() + " tile(s)");
+                }
+                else
+                {
+                    legacyGaps.add("");
+                }
+            }
+        }
+
+        int legacyGapCount = 0;
+
+        for (String g : legacyGaps)
+        {
+            if (!g.isEmpty()) legacyGapCount++;
+        }
+
+        System.out.println("\n--- mutual exclusion, judged by shared track ---");
+        System.out.println("derived: pairs sharing a tile but NOT locked:  " + derivedGaps.size()
+            + "   <- must be zero");
+
+        for (String g : derivedGaps)
+        {
+            System.out.println("   " + g);
+        }
+
+        System.out.println("hand-built: overlapping pairs it does lock:    " + legacyCovered);
+        System.out.println("hand-built: overlapping pairs it does NOT:     " + legacyGaps.size()
+            + "   <- routes it would run at once over shared track");
+
+        for (String g : legacyGaps)
+        {
+            if (!g.isEmpty()) System.out.println("   " + g);
+        }
+
+        System.out.println();
+
+        assertTrue(derivedGaps.isEmpty(),
+            "the derived graph would let these run at once over shared track: " + derivedGaps);
+    }
+
+    /**
+     * Whether two derived edges occupy any tile in common.
+     *
+     * An overpass is the exception the whole design turns on: its two routes are at different heights, so
+     * sharing that tile by different routes is not sharing track.
+     */
+    private boolean sharesATile(ReducedEdge a, ReducedEdge b)
+    {
+        for (GraphReducer.TileStep stepA : a.getPath())
+        {
+            for (GraphReducer.TileStep stepB : b.getPath())
+            {
+                if (!stepA.getTile().equals(stepB.getTile())) continue;
+
+                org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(stepA.getTile());
+
+                boolean overpass = c != null
+                    && c.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS;
+
+                if (overpass && !stepA.getRouteId().equals(stepB.getRouteId())) continue;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The tiles a hand-built edge physically occupies, found by walking the derived graph between its two
+     * sensors.
+     *
+     * The hand-built file has no notion of tiles, so this is the only way to give its edges an extent.
+     * Where several routes join the same pair it takes the shortest, which is an approximation - a
+     * hand-built edge meant to describe a longer way round would be judged on the wrong track.
+     */
+    private Set<TileKey> tilesAlong(GraphReducer from, int startS88, int endS88)
+    {
+        Map<Integer, ReducedEdge> arrivedBy = new LinkedHashMap<>();
+        Map<Integer, Integer> cameFrom = new LinkedHashMap<>();
+        Set<Integer> seen = new HashSet<>();
+        LinkedList<Integer> queue = new LinkedList<>();
+
+        queue.add(startS88);
+        seen.add(startS88);
+
+        while (!queue.isEmpty())
+        {
+            Integer current = queue.removeFirst();
+
+            if (current == endS88) break;
+
+            for (ReducedEdge edge : from.getEdges())
+            {
+                ReducedPoint start = from.getPoints().get(edge.getStart());
+                ReducedPoint end = from.getPoints().get(edge.getEnd());
+
+                if (start == null || end == null || start.getS88() != current) continue;
+
+                if (seen.add(end.getS88()))
+                {
+                    arrivedBy.put(end.getS88(), edge);
+                    cameFrom.put(end.getS88(), current);
+                    queue.add(end.getS88());
+                }
+            }
+        }
+
+        Set<TileKey> tiles = new LinkedHashSet<>();
+
+        Integer at = endS88;
+
+        while (arrivedBy.containsKey(at))
+        {
+            for (GraphReducer.TileStep step : arrivedBy.get(at).getPath())
+            {
+                tiles.add(step.getTile());
+            }
+
+            at = cameFrom.get(at);
+
+            if (at == null || at == startS88) break;
+        }
+
+        return tiles;
+    }
+
+    /**
+     * Whether the hand-built configuration treats these two edges as mutually exclusive - either by
+     * naming one in the other's lock list, or by their being the same edge.
+     */
+    private boolean legacyLocksTogether(JSONObject one, JSONObject two)
+    {
+        return legacyNames(one, two) || legacyNames(two, one);
+    }
+
+    private boolean legacyNames(JSONObject holder, JSONObject target)
+    {
+        if (holder.getString("start").equals(target.getString("start"))
+            && holder.getString("end").equals(target.getString("end")))
+        {
+            return true;
+        }
+
+        if (!holder.has("lockedges")) return false;
+
+        for (Object o : holder.getJSONArray("lockedges"))
+        {
+            JSONObject lock = (JSONObject) o;
+
+            if (lock.getString("start").equals(target.getString("start"))
+                && lock.getString("end").equals(target.getString("end")))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The generated file must be something parseAuto accepts - otherwise the compile step has produced
      * something only this test can read.
      */
