@@ -461,6 +461,7 @@ public class testAutonomyFromDiagram
 
         List<String> legacyGaps = new ArrayList<>();
         int legacyCovered = 0;
+        int sharedPoint = 0;
 
         List<String> ids = new ArrayList<>(legacyExtent.keySet());
 
@@ -476,26 +477,23 @@ public class testAutonomyFromDiagram
 
                 if (shared.isEmpty()) continue;
 
+                // Sharing a point already keeps these apart - one train per point, and a path to an
+                // occupied destination is refused - so no lock reference is needed or expected
+                if (sharesAnEndpoint(legacyEdges.get(one), legacyEdges.get(two)))
+                {
+                    sharedPoint++;
+                    continue;
+                }
+
                 if (legacyLocksTogether(legacyEdges.get(one), legacyEdges.get(two)))
                 {
                     legacyCovered++;
                 }
-                else if (legacyGaps.size() < 15)
+                else
                 {
                     legacyGaps.add(one + "  ||  " + two + "   sharing " + shared.size() + " tile(s)");
                 }
-                else
-                {
-                    legacyGaps.add("");
-                }
             }
-        }
-
-        int legacyGapCount = 0;
-
-        for (String g : legacyGaps)
-        {
-            if (!g.isEmpty()) legacyGapCount++;
         }
 
         System.out.println("\n--- mutual exclusion, judged by shared track ---");
@@ -507,13 +505,23 @@ public class testAutonomyFromDiagram
             System.out.println("   " + g);
         }
 
+        System.out.println("hand-built: overlapping pairs sharing a point: " + sharedPoint
+            + "   (kept apart by occupancy, no lock needed)");
         System.out.println("hand-built: overlapping pairs it does lock:    " + legacyCovered);
         System.out.println("hand-built: overlapping pairs it does NOT:     " + legacyGaps.size()
-            + "   <- routes it would run at once over shared track");
+            + "   <- shared track, no shared point, no lock");
+
+        int shown = 0;
 
         for (String g : legacyGaps)
         {
-            if (!g.isEmpty()) System.out.println("   " + g);
+            if (shown++ >= 15)
+            {
+                System.out.println("   ... and " + (legacyGaps.size() - 15) + " more");
+                break;
+            }
+
+            System.out.println("   " + g);
         }
 
         System.out.println();
@@ -616,6 +624,30 @@ public class testAutonomyFromDiagram
     private boolean legacyLocksTogether(JSONObject one, JSONObject two)
     {
         return legacyNames(one, two) || legacyNames(two, one);
+    }
+
+    /**
+     * Whether two hand-built edges are kept apart by something other than a lock reference.
+     *
+     * A lock list is not the only thing that stops two trains meeting.  Sharing a point does it too, and
+     * without anybody writing it down:
+     *
+     *   - two edges ending at the same point can never both run, because a point holds one train and a
+     *     path to an occupied destination is refused;
+     *   - two edges leaving the same point can never both run either, since only one train is standing
+     *     there;
+     *   - an edge and its own reverse are one piece of track rather than two claims on it.
+     *
+     * Only a pair that shares track WITHOUT sharing a point needs a lock reference, and that is the pair
+     * worth reporting.
+     */
+    private boolean sharesAnEndpoint(JSONObject one, JSONObject two)
+    {
+        Set<String> ends = new LinkedHashSet<>();
+        ends.add(one.getString("start"));
+        ends.add(one.getString("end"));
+
+        return ends.contains(two.getString("start")) || ends.contains(two.getString("end"));
     }
 
     private boolean legacyNames(JSONObject holder, JSONObject target)
