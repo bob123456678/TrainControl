@@ -83,6 +83,31 @@ Run in NetBeans: `testLocomotive`, `testInvalidInput`, `testLayoutRenameKeys`, `
 
 ---
 
+# DELIVERY: two phases, add-then-remove (author, 2026-08-01)
+
+**Phase 1 — implement the new, disable the old.** Everything new is built and becomes the working
+path; the graph window, the autonomy JSON form and import, and the legacy editing surfaces are
+**disabled** (hidden/greyed, code left in place) rather than deleted.
+
+**Phase 2 — remove the old.** Once Phase 1 has run against the real layout, delete the disabled
+code: `GraphViewer`, `GraphEdgeEdit`, `GraphRightClick*`, `GraphLocAssign`, `GraphLocExclude`,
+`graph.css`, `autonomyJSON` and its import path, the `GRAPH_*` preferences, and the two
+GraphStream jars from `nbproject/project.properties`.
+
+**Why this order:** a dependency that was only reachable through the old UI shows up as a *disabled
+feature that turns out to be load-bearing*, not as a compile error or a silent data-loss bug. The
+`autonomyJSON` save path is the known example — it is a persistence mechanism wearing a text
+area's clothing — and the point of Phase 1 is to find the ones nobody has spotted yet.
+
+Rules for Phase 1:
+- Disabled code is **not** left half-wired: the old paths must be genuinely unreachable from the
+  UI, so any remaining caller is a real dependency rather than a stale menu item.
+- Nothing is deleted in Phase 1, including jars and preferences, so a problem is one toggle away
+  from being reversible.
+- Phase 2 starts only after the ground-truth diff and a period of real use on the author's layout.
+- Each removal in Phase 2 is verified by compiling and running, not by grep alone — the
+  `autonomyJSON` case shows that a field's *name* does not reveal what it does.
+
 # REVISED ARCHITECTURE (author, 2026-08-01): tile graph + reduction
 
 **This section supersedes conflicting details below.** The design below it remains valid for the
@@ -382,11 +407,21 @@ information, so the GraphStream window is not kept as a legacy editor or as a re
   `resources/gs-core-2.0.jar` and `resources/gs-ui-swing-2.0.jar`
   (`nbproject/project.properties:36-37, 47-48`). Smaller distribution, one less library to keep
   current.
-- **Legacy configurations are deprecated, not stranded.** A hand-written `autonomy.json` still
-  loads and still runs. What it loses is *graphical* editing — and the safety net is the feature
-  that already exists: the autonomy tab's **JSON text editor**, which is how such a file was
-  authored in the first place. So the legacy path is exactly what it always was minus a view,
-  while the diagram path is the supported way forward.
+- **The JSON form and import go too** (author, 2026-08-01). The autonomy tab becomes **control and
+  settings only**: `autonomyJSON` (the `JTextArea` at `:3643`/`:5729`) and its scroll pane are
+  removed along with the load/import path, leaving `autoLocPanel` (locomotive control) and
+  `autoSettingsPanel`. There is no user-facing autonomy JSON anywhere — consistent with the
+  original directive that the configuration *is* the track diagram.
+- **Persistence must move first.** `autonomyJSON` is not just a view: `saveState` populates it from
+  `getAutoLayout().toJSON()` (`:1161`) and writes that text to `autonomy.json` (`:1177-1197`), with
+  `:1784` reading it back. Deleting the text area without first rerouting save/load through
+  `AutonomyCompanionStore` silently breaks saving. This is the clearest instance of the hazard the
+  two-phase plan below exists to catch.
+- **Legacy configurations are deprecated.** An existing `autonomy.json` continues to **auto-load
+  and run** so nobody's layout stops working on upgrade, but it can no longer be viewed, edited or
+  imported through the UI; migration is to set the layout up on the diagram.
+  *Confirm*: is continued auto-loading wanted, or should legacy files be read once into a
+  companion configuration and then ignored? The plan assumes the former.
 - Retire `GRAPH_*` preferences and the always-on-top coordination between the graph window and the
   main window as part of the same removal.
 
@@ -627,15 +662,30 @@ are hand-written with none — including `LayoutGrid` (437), `LayoutLabel` (555)
 `GraphRightClickPointMenu` (1249), `HomeLocomotiveMenu` (416). This work follows the same split,
 with the dividing line set by the author (2026-08-01):
 
-**The main UI must stay editable in the NetBeans designer. Trivial popups need not be.**
+**SUPERSEDED 2026-08-01 — everything is confined to JPanels, hand-written, no designer.** The
+author's ruling: *"confine everything to the track diagram and editor JPanels — that way I don't
+need to step in and mess with the frames, and there won't be a NetBeans UI editor dependency."*
 
 | Piece | Form? | Who builds it |
 |---|---|---|
-| `AutonomySetupPanel` (the autonomy mode's main panel) | **yes** — `.form` + `.java` | **author scaffolds in the designer**, logic written into the non-guarded parts |
-| `LayoutEditor` additions (mode toggle + host container) | **yes** — existing `LayoutEditor.form` | **author adds the widgets in the designer**, behavior written into the handler bodies |
-| `LockEdgeReviewUI` (R2) | **yes** — `.form` + `.java` | author scaffolds when R2 starts |
-| Right-click menu items, tile-length prompt, small confirmations | no | hand-written, `LayoutRightclickAutonomyMenu` / `JOptionPane` style |
-| All engine classes (`TilePorts`, `DiagramTopology`, `AutonomyCompanionStore`, `AutonomyBuilder`, `DiagramMonitor`, `DiagramTileRegistry`, `TileOverlay`, `SegmentFloodFill`) | n/a — headless, no Swing | written outright |
+| Every new autonomy UI — the editor's autonomy panel, the viewer's autonomy panel, tool strips, tables, dialogs | **no `.form`** | written outright as hand-written `JPanel` subclasses, in the `LayoutGrid` / `GraphRightClickPointMenu` style |
+| Right-click menu items, prompts, small confirmations | no | hand-written, `JOptionPane` style |
+| All engine classes (`TilePorts`, `TileGraph`, `GraphReducer`, `AutonomyCompanionStore`, `AutonomyBuilder`, `DiagramMonitor`, `DiagramTileRegistry`, `TileOverlay`) | n/a — headless, no Swing | written outright |
+
+Consequences that make this work:
+- **No new `JFrame`.** New UI mounts into containers that already exist — the editor window and
+  the main window's diagram tab — so no frame has to be reshaped in the designer and the author is
+  never a blocker on UI work.
+- **No `.form` is created or edited, and no generated block is touched.** Where a panel must be
+  attached to a Matisse-built class (`LayoutEditor`, `TrainControlUI`), the attachment happens in
+  hand-written code outside `//GEN-BEGIN:initComponents` and `//GEN-BEGIN:variables`, adding into
+  an existing container. Both `.form` files stay byte-identical and their Design views keep
+  working.
+- Layout inside the new panels uses ordinary hand-written managers (`BorderLayout`, `GridBagLayout`,
+  `BoxLayout`), never generated `GroupLayout`.
+- The author remains available to help with frame-level work *if it proves unavoidable* — but
+  needing it is a signal the design has drifted out of the panel, and should be raised rather than
+  worked around.
 
 **Working rule, either way:** never hand-author or hand-edit `.form` XML, and never edit a
 regenerated block. In a Matisse class the regenerated regions are `//GEN-BEGIN:initComponents` …
@@ -648,11 +698,9 @@ Consequence for review: a diff that edits `.form` XML directly, or edits a line 
 `GEN-BEGIN:initComponents`/`GEN-BEGIN:variables`, is a defect. Widgets appearing there must have
 arrived through the designer.
 
-**Scaffolding handoff.** Because the author builds the scaffolding first, the widget inventory
-below is a contract: field names are what the logic binds to. Fields land in the `variables`
-block as `private` (project convention, cf. `GraphEdgeEdit.java:555`). The author may lay them out
-however reads best and may add/rename freely — the logic adapts to the delivered form, the
-inventory just states what must exist.
+**No scaffolding handoff is needed.** The widget inventory that follows is retained as a
+*specification of what the panels must contain*, not as a contract for an author-built form —
+the panels are written directly, so names and layout are an implementation detail.
 
 ---
 
