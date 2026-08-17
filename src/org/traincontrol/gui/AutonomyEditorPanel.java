@@ -485,7 +485,11 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
-        findings.setFont(FONT_HINT);
+
+        // The window's control size, not the hint size.  These are the sentences the reader is here to
+        // read; set smaller than everything around them they looked like a footnote to the diagram
+        // rather than the list of things it is waiting on.
+        findings.setFont(FONT_CONTROL);
 
         // Same colours as the Auto tab's list: red for what must be fixed, amber for what is worth
         // checking, grey for the headings.  The two views describe the same setup.
@@ -506,7 +510,7 @@ public class AutonomyEditorPanel extends JPanel
                 // The section headings take the window's own group-heading style - Segoe UI Semibold
                 // in navy - so "Must be fixed" and "Warnings" read as headings of the same kind as
                 // every other blue label in this application rather than as bold grey list rows.
-                setFont(heading ? AutonomyViewerPanel.FONT_GROUP : FONT_HINT);
+                setFont(heading ? AutonomyViewerPanel.FONT_GROUP : FONT_CONTROL);
 
                 if (!isSelected)
                 {
@@ -537,7 +541,16 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         JScrollPane scroll = new JScrollPane(findings);
-        scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings")));
+
+        // The window's own heading style on the border's title, so it reads as a heading of the same
+        // kind as the ones beside it rather than as a plain caption on a box.
+        javax.swing.border.TitledBorder titled =
+            BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
+
+        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
+        titled.setTitleColor(new java.awt.Color(0, 0, 155));
+
+        scroll.setBorder(titled);
         scroll.setPreferredSize(new Dimension(WIDTH - 20, 160));
 
         return scroll;

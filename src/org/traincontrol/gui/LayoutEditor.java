@@ -621,7 +621,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 stack.add(this.jScrollPane1, BorderLayout.CENTER);
 
                 javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
-                list.setPreferredSize(new java.awt.Dimension(100, 180));
+
+                // Taller than the panel asked for: it is across the window now rather than down the
+                // side, and its rows are the window's own size rather than the smaller hint size.
+                list.setPreferredSize(new java.awt.Dimension(100, 190));
 
                 // The count goes UNDER the list, not above it.  In the sidebar it was a headline over a
                 // column that did not contain the things it counted; here it is a total, which is what
