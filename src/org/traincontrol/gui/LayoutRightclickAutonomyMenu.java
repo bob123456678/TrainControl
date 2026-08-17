@@ -42,8 +42,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui);
 
-                // Get the autonomy point corresponding to this station
-                Point current = ui.getModel().getAutoLayout().getPoint(stationName);
+                // Get the autonomy point corresponding to this station.
+                //
+                // Through the caption, because a square where trains may turn round is emitted as
+                // several Points and none of them is called what the diagram says - so a direct lookup
+                // returns null and the menu silently loses everything below this line.
+                Point current = ui.getAutonomyPointForCaption(stationName);
 
                 if (current != null && current.isDestination())
                 {

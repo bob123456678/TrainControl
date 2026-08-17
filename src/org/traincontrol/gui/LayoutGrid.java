@@ -190,10 +190,16 @@ public class LayoutGrid
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    if (ui.getModel().hasAutoLayout() &&
-                                            ui.getModel().getAutoLayout().getPoint(text.getToolTipText()) != null)
+                                    // Through the caption rather than straight to a Point of that
+                                    // name: a square where trains may turn round is several Points,
+                                    // none of them called what the diagram says, and the lookup would
+                                    // simply return null.
+                                    org.traincontrol.automation.Point standing =
+                                        ui.getAutonomyPointForCaption(text.getToolTipText());
+
+                                    if (standing != null)
                                     {
-                                        Locomotive atStation = ui.getModel().getAutoLayout().getPoint(text.getToolTipText()).getCurrentLocomotive();
+                                        Locomotive atStation = standing.getCurrentLocomotive();
                                         Locomotive active = ui.getActiveLoc();
                                         
                                         if (atStation != null && !atStation.equals(active))

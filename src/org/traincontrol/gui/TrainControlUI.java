@@ -1829,6 +1829,60 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The caption a running Point is written under on the track diagram.
+     *
+     * Identity for everything that has not been split, so a hand-written configuration and a diagram
+     * with no reversing squares both behave exactly as before.
+     *
+     * @param pointName
+     * @return the caption, never null
+     */
+    public String stationCaptionFor(String pointName)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session == null ? pointName : session.baseNameOf(pointName);
+    }
+
+    /**
+     * The running Point a station caption stands for, preferring one with a train on it.
+     *
+     * A caption may name several Points now, and only one of them holds the locomotive.  Clicking the
+     * label asks "what is standing here", so the occupied copy is the answer whenever there is one;
+     * with none, any copy will do, because they are all the same square and carry the same settings.
+     *
+     * @param caption what is written on the diagram
+     * @return the Point, or null if the running layout has never heard of it
+     */
+    public org.traincontrol.automation.Point getAutonomyPointForCaption(String caption)
+    {
+        if (!this.model.hasAutoLayout() || caption == null) return null;
+
+        org.traincontrol.automation.Point direct = this.model.getAutoLayout().getPoint(caption);
+
+        if (direct != null) return direct;
+
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return null;
+
+        org.traincontrol.automation.Point first = null;
+
+        for (String name : session.pointNamesFor(caption))
+        {
+            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(name);
+
+            if (point == null) continue;
+
+            if (point.getCurrentLocomotive() != null) return point;
+
+            if (first == null) first = point;
+        }
+
+        return first;
+    }
+
+    /**
      * Writes the autonomy state of one Point onto the station labels the track diagram carries.
      *
      * Split out of updatePoint so that it can run WITHOUT a graph window.  It used to sit at the end of
@@ -1845,7 +1899,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the labels reappearing - but on the diagram path the window is never created at all, which
         // made this permanently dead: prepareAutonomyReload cleared the labels and nothing ever wrote
         // them again.  The gate is now "is there a setup running", which is the real condition.
-        if (!this.getLayoutStations(p.getName()).isEmpty()
+        // The caption on the diagram, which is not always what the running Point is called: a square
+        // where trains may turn round is emitted as several Points sharing one caption, and looking the
+        // labels up by the Point's own name finds none of them.
+        final String caption = this.stationCaptionFor(p.getName());
+
+        if (!this.getLayoutStations(caption).isEmpty()
                 && (this.activeDiagramConfiguration != null
                     || (this.graphViewer != null && this.graphViewer.isVisible()))
         )
@@ -1858,7 +1917,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             SwingUtilities.invokeLater(() ->
             {
                 // This will exclude locked points
-                for (JLabel j : this.getLayoutStations(p.getName()))
+                for (JLabel j : this.getLayoutStations(caption))
                 {                    
                     j.setOpaque(true);
 

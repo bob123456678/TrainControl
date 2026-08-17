@@ -514,6 +514,31 @@ public class AutonomyBuilder
     }
 
     /**
+     * Every emitted name mapped to the name the SQUARE has.
+     *
+     * The track diagram registers a station label under the caption written on it - the base name - and
+     * the running configuration may know that place as several Points.  Anything holding a running
+     * Point and wanting the label, or holding a label and wanting the Point, has to go through this or
+     * the two simply never meet.
+     *
+     * @return emitted Point name to base name.  An unsplit Point maps to itself.
+     */
+    public Map<String, String> baseNames()
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        {
+            for (Node node : nodesFor(entry.getKey()))
+            {
+                out.put(nodeName(entry.getValue(), node), entry.getValue());
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came
      * from.  Several names can share one reduced edge once a tile is split.
      *

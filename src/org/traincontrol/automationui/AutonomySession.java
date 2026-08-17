@@ -135,6 +135,8 @@ public class AutonomySession
      */
     public final void rebuild()
     {
+        baseNames = null;
+
         graph = new TileGraph(pages, store.getExcludedPages());
 
         store.applyTo(graph);
@@ -274,6 +276,64 @@ public class AutonomySession
      *
      * @return the marked tiles
      */
+    /**
+     * The name the track diagram knows a running Point by.
+     *
+     * A split tile is several Points - "Main 4 (eastbound, reverse)" and the rest - but only ever one
+     * caption on the diagram, written before any of them existed.  Without this the label for a split
+     * station never fills in: it is registered under the base name and the running Point never has it.
+     *
+     * @param pointName a Point of the running configuration
+     * @return the base name, or the name itself when nothing was split
+     */
+    public String baseNameOf(String pointName)
+    {
+        if (pointName == null) return null;
+
+        String base = baseNames().get(pointName);
+
+        return base == null ? pointName : base;
+    }
+
+    // Emitted Point name -> the caption on the diagram.  Cached because updateStationLabels asks on
+    // every feedback event during a run, and working it out walks every point against every edge.
+    // Dropped whenever the graph is rebuilt, which is the only thing that can change it.
+    // volatile: the labels are updated from the feedback thread while a rebuild can drop this from the
+    // event thread, and a stale reference here means a station that stops filling in until the next edit
+    private volatile Map<String, String> baseNames;
+
+    private Map<String, String> baseNames()
+    {
+        if (baseNames == null)
+        {
+            baseNames = reducer == null ? new LinkedHashMap<String, String>()
+                : new AutonomyBuilder(reducer, null)
+                    .withReversibleTiles(reversibleTiles()).baseNames();
+        }
+
+        return baseNames;
+    }
+
+    /**
+     * Every Point of the running configuration that stands for one square of the diagram.
+     *
+     * @param baseName the caption on the diagram
+     * @return the emitted names, in the order they were emitted
+     */
+    public List<String> pointNamesFor(String baseName)
+    {
+        List<String> out = new ArrayList<>();
+
+        if (baseName == null) return out;
+
+        for (Map.Entry<String, String> entry : baseNames().entrySet())
+        {
+            if (entry.getValue().equals(baseName)) out.add(entry.getKey());
+        }
+
+        return out;
+    }
+
     public Set<TileKey> reversibleTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();
