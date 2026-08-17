@@ -384,8 +384,6 @@ public class AutonomyViewerPanel extends JPanel
         menu.addSeparator();
         menu.add(item(I18n.t("autosetup.ui.btnExcludePage"), new Runnable()
             { public void run() { choosePages(); } }));
-        menu.add(item(I18n.t("autosetup.ui.btnCheckConfiguration"), new Runnable()
-            { public void run() { recheck(); } }));
 
         // Debug builds only, and last on the menu.  What it writes is the DERIVED graph in the old
         // JSON form - a diagnostic for reading when something derives wrongly, not a file anybody
@@ -523,24 +521,6 @@ public class AutonomyViewerPanel extends JPanel
 
             return this;
         }
-    }
-
-    /**
-     * Re-runs the checks and says so.
-     *
-     * Says so even when nothing changed: pressing a button that silently does the same thing again
-     * reads as a button that does not work.
-     */
-    private void recheck()
-    {
-        refresh();
-
-        // into the hint above the list, not the status line: that one says which configuration is
-        // running, and a check result overwriting it would lose the more important fact
-        hint.setVisible(true);
-        hint.setText(findingsModel.isEmpty()
-            ? I18n.t("autosetup.ui.labelCheckedClean")
-            : I18n.f("autosetup.ui.labelCheckedNow", countFindings()));
     }
 
     /**
@@ -1196,18 +1176,4 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    /**
-     * How many rows are actual findings rather than headings.
-     */
-    private int countFindings()
-    {
-        int count = 0;
-
-        for (AutonomyChecks.Severity severity : findingSeverity)
-        {
-            if (severity != null) count++;
-        }
-
-        return count;
-    }
 }

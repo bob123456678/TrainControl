@@ -13210,14 +13210,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
-        // One button, two editors: the track itself, or the autonomy drawn over it.  Only asked when an
-        // autonomy setup exists, so a user who has never touched autonomy never sees the question.
+        // One button, two editors: the track itself, or the autonomy drawn over it.
+        //
+        // Only asked when a configuration is actually LOADED, not merely when one exists on disk.
+        // Offering to edit a setup that is not running means editing something the diagram beside it
+        // is not showing: the overlay is blank, the monitor is watching nothing, and Apply writes to a
+        // configuration the user may not even realise is selected.  Enable it first, and the question
+        // becomes about the thing on screen.
         final org.traincontrol.automationui.AutonomySession autonomyToEdit;
 
         org.traincontrol.automationui.AutonomySession candidateSession = getAutonomySession();
 
-        if (candidateSession != null && (candidateSession.exists()
-            || !candidateSession.getStore().getConfigurationNames().isEmpty()))
+        if (candidateSession != null && this.activeDiagramConfiguration != null)
         {
             Object[] editChoices = {
                 I18n.t("autosetup.ui.editChoiceDiagram"),
