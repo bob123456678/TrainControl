@@ -345,13 +345,6 @@ public class AutonomyViewerPanel extends JPanel
         startHere.addActionListener(e -> ui.showAutonomyRunTab());
         run.add(styled(startHere, true));
 
-        if (ui.getModel() != null && ui.getModel().isDebug())
-        {
-            JButton inspect = new JButton(I18n.t("autosetup.ui.btnInspectGraph"));
-            inspect.addActionListener(e -> inspect());
-            run.add(styled(inspect, true));
-        }
-
         add(panel, gbc, run, 0);
 
         outer.add(panel);
@@ -393,6 +386,16 @@ public class AutonomyViewerPanel extends JPanel
             { public void run() { choosePages(); } }));
         menu.add(item(I18n.t("autosetup.ui.btnCheckConfiguration"), new Runnable()
             { public void run() { recheck(); } }));
+
+        // Debug builds only, and last on the menu.  What it writes is the DERIVED graph in the old
+        // JSON form - a diagnostic for reading when something derives wrongly, not a file anybody
+        // operates the railway from.  The menu is rebuilt on every press, so the flag is read fresh.
+        if (ui.getModel() != null && ui.getModel().isDebug())
+        {
+            menu.addSeparator();
+            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
+                { public void run() { inspect(); } }));
+        }
 
         return menu;
     }
