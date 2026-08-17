@@ -298,6 +298,13 @@ public class TileAnnotation
     {
         private final Side from;
         private final Side to;
+        /**
+         * Which of the two tested directions this segment belongs to.
+         *
+         * No longer changes how it is DRAWN - both directions share one line, and the chevrons say
+         * which ways it runs - but it still decides how many chevrons a square gets, because a route
+         * that works both ways contributes a segment from each direction.
+         */
         private final boolean forward;
 
         public Trace(Side from, Side to, boolean forward)
@@ -497,9 +504,11 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            paintArrows(g, width, height);
-
+            // Under the arrows: it is a broad line, and drawn over them it would cover the very
+            // directions the reader is testing against.
             paintTraces(g, width, height);
+
+            paintArrows(g, width, height);
 
             if (badge != null) paintBadge(g, width, height);
 
@@ -621,37 +630,80 @@ public class TileAnnotation
         if (traces.isEmpty()) return;
 
         int span = Math.min(width, height);
+        int[] centre = new int[] {width / 2, height / 2};
 
-        g.setStroke(new BasicStroke(Math.max(2f, span / 12f),
+        // The route ONCE, however many directions it carries.  Drawn as one line per direction it was
+        // two lines down the same piece of track wherever a route worked both ways, which is the
+        // commonest case - so the picture was mostly duplicates, and the duplicate said nothing the
+        // single line did not.
+        g.setColor(TRACE);
+        g.setStroke(new BasicStroke(Math.max(3f, span / 7f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
 
         for (Trace trace : traces)
         {
-            int[] centre = new int[] {width / 2, height / 2};
-
             int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
             int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
 
             if (a == null || b == null) continue;
 
-            // Perpendicular to the run, so the two directions sit either side of the rails rather than
-            // on top of each other - one line under another is one line.
-            double dx = b[0] - a[0];
-            double dy = b[1] - a[1];
-            double length = Math.sqrt(dx * dx + dy * dy);
+            if (!drawn.add(trace.from + ":" + trace.to)) continue;
 
-            double offset = trace.forward ? span / 9.0 : -span / 9.0;
+            g.drawLine(a[0], a[1], centre[0], centre[1]);
+            g.drawLine(centre[0], centre[1], b[0], b[1]);
+        }
 
-            double px = length < 1 ? 0 : -dy / length * offset;
-            double py = length < 1 ? 0 : dx / length * offset;
+        // Which way, as chevrons on the line.  Two of them, pointing opposite ways, is a route that
+        // works both ways; one is a route that works one way; and the direction is read off the shape
+        // rather than off a colour nobody can be expected to have learnt.
+        g.setStroke(new BasicStroke(Math.max(2f, span / 14f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-            g.setColor(trace.forward ? TRACE_THERE : TRACE_BACK);
+        g.setColor(TRACE_CHEVRON);
 
-            g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
-                (int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py));
+        for (Trace trace : traces)
+        {
+            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
+            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
 
-            g.drawLine((int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py),
-                (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
+            if (a == null || b == null) continue;
+
+            // On the half the train is heading INTO, so a chevron sits on open track rather than in
+            // the middle where the two halves meet and two of them would overlap.
+            chevron(g, centre, b, span);
+        }
+    }
+
+    /**
+     * A single arrowhead on the line, pointing from one point towards another.
+     */
+    private void chevron(Graphics2D g, int[] from, int[] to, int span)
+    {
+        double dx = to[0] - from[0];
+        double dy = to[1] - from[1];
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length < 2) return;
+
+        dx /= length;
+        dy /= length;
+
+        // Two thirds of the way along, which keeps it clear of both the tile edge and the centre
+        double atX = from[0] + dx * length * 0.66;
+        double atY = from[1] + dy * length * 0.66;
+
+        double size = Math.max(3.0, span / 6.0);
+        double angle = Math.atan2(dy, dx);
+
+        for (int i = 0; i < 2; i++)
+        {
+            double barb = i == 0 ? 2.5 : -2.5;
+
+            g.drawLine((int) Math.round(atX), (int) Math.round(atY),
+                (int) Math.round(atX + Math.cos(angle + barb) * size),
+                (int) Math.round(atY + Math.sin(angle + barb) * size));
         }
     }
 
@@ -773,10 +825,14 @@ public class TileAnnotation
      */
     private static final int EDGE_GAP = 1;
 
-    /** The way there, and the way back, in two colours nothing else on this diagram uses. */
-    private static final Color TRACE_THERE = new Color(0, 120, 215);
+    /**
+     * The tested route: a broad yellow line, the colour this application already uses to say "look
+     * here" on the running diagram, and one nothing else in this editor uses.
+     */
+    private static final Color TRACE = new Color(255, 214, 0);
 
-    private static final Color TRACE_BACK = new Color(150, 60, 180);
+    /** The chevrons on it, dark enough to read against the yellow they sit on. */
+    private static final Color TRACE_CHEVRON = new Color(120, 80, 0);
 
     /**
      * Whether a reversing point is drawn as a cross rather than as a small square.
