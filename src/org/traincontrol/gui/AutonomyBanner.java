@@ -92,7 +92,18 @@ public class AutonomyBanner extends JPanel
 
     private void hold(String text, boolean warning)
     {
-        message.setText(text == null || text.trim().isEmpty() ? " " : text);
+        // One line, always.  A JLabel given HTML wraps to the width it is offered, and this strip is
+        // one line tall - so a long message pushed the bar open and shoved the diagram down, or was
+        // clipped mid-sentence.  nowrap keeps it on one line and lets the end run off, which is the
+        // better failure: the front of a sentence is the part that carries it.
+        String shown = text == null || text.trim().isEmpty() ? " " : text;
+
+        if (shown.startsWith("<html>"))
+        {
+            shown = "<html><nobr>" + shown.substring("<html>".length());
+        }
+
+        message.setText(shown);
         message.setForeground(warning ? WARNING_TEXT : INFO_TEXT);
 
         setBackground(warning ? WARNING_BACKGROUND : INFO_BACKGROUND);
