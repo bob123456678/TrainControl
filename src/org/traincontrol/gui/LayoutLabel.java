@@ -181,6 +181,11 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {  
+                               // A sensor is what a station IS, so this is the branch that matters
+                               // most for the autonomy menu - and it was the one branch that did not
+                               // check for it.  Every station on the diagram right-clicked to nothing.
+                               if (openStationMenu(e)) return;
+
                                component.execSwitching();
 
                                // So that possible routes get dynamically updated
@@ -213,30 +218,7 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {  
-                                // A station's own menu, from the track rather than from its caption.
-                                //
-                                // The caption is a small piece of text that may be on the square below,
-                                // or missing altogether; the sensor is the thing the user is looking at
-                                // and pointing to.  Same menu either way, so there is one place that
-                                // knows what a station offers.
-                                if (e.getButton() == MouseEvent.BUTTON3)
-                                {
-                                    final String station =
-                                        tcUI.autonomyStationAt(component.getX(), component.getY());
-
-                                    if (station != null)
-                                    {
-                                        final java.awt.Component at = e.getComponent();
-                                        final int atX = e.getX();
-                                        final int atY = e.getY();
-
-                                        javax.swing.SwingUtilities.invokeLater(() ->
-                                            new LayoutRightclickAutonomyMenu(tcUI, station)
-                                                .show(at, atX, atY));
-
-                                        return;
-                                    }
-                                }
+                                if (openStationMenu(e)) return;
 
                                 // Edit route on right-click
                                 if (e.getButton() == MouseEvent.BUTTON3 && component.isRoute() && (!tcUI.getModel().getPowerState() || !tcUI.getModel().getNetworkCommState())) 
@@ -387,6 +369,34 @@ public final class LayoutLabel extends JLabel
         return this.parent.isVisible();
     }
     
+    /**
+     * A station's own menu, from the track rather than from its caption.
+     *
+     * The caption is a small piece of text that may be on the square below the platform, or missing
+     * altogether; the sensor is the thing the user is looking at and pointing to.  Same menu either
+     * way, so there is one place that knows what a station offers.
+     *
+     * @param e the click
+     * @return true when the menu was opened, and the caller should do nothing else with the click
+     */
+    private boolean openStationMenu(MouseEvent e)
+    {
+        if (e.getButton() != MouseEvent.BUTTON3 || component == null) return false;
+
+        final String station = tcUI.autonomyStationAt(component.getX(), component.getY());
+
+        if (station == null) return false;
+
+        final java.awt.Component at = e.getComponent();
+        final int atX = e.getX();
+        final int atY = e.getY();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            new LayoutRightclickAutonomyMenu(tcUI, station).show(at, atX, atY));
+
+        return true;
+    }
+
     /**
      * Sets the image based on the component's state.  On a cache miss the decode/scale runs off the EDT
      * (so it never blocks Swing) and the cached result is then applied on the EDT; a cache hit goes

@@ -13459,7 +13459,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Every LayoutDiagram object has just been replaced, so a session still holding the old ones
         // derives from geometry that no longer exists - and would write tile keys from it.
+        //
+        // Remembered across the reset, and put back afterwards.  Editing the track diagram is not a
+        // request to switch autonomy off, but that is what this did: the setup went away, the Auto tab
+        // greyed, and the user had to go and load the same configuration again to get back to where
+        // they were.  Re-derived from the diagram they have just changed, which is the point.
+        String wasRunning = this.activeDiagramConfiguration;
+
         this.resetAutonomySession();
+
+        this.mountAutonomyControls();
+
+        if (wasRunning != null && getAutonomyViewerPanel() != null)
+        {
+            // Quietly.  If the edit has broken the setup, the findings say so on the diagram; a modal
+            // here would be about a configuration the user never asked to reload.
+            getAutonomyViewerPanel().load(wasRunning, false);
+        }
 
         this.repaintLayout();
 

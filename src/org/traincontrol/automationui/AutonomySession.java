@@ -239,46 +239,83 @@ public class AutonomySession
 
         LayoutDiagram page = pageOf(tile);
 
-        if (page == null) return false;
+        if (page == null || graph == null) return false;
 
         LayoutDiagramComponent here = page.getComponent(tile.getX(), tile.getY());
 
         if (here == null) return false;
 
-        if (runsEastWest(here))
+        // Beside the platform, never on it.  A caption written on the sensor itself sits across the
+        // rails; on the plain track next to it, it sits alongside them, which is where a station name
+        // is written on a real diagram.
+        //
+        // Below for a station lying north-south, left for one lying east-west, then the other three as
+        // fallbacks - a preference rather than a rule, because the preferred square is often occupied.
+        for (Side side : labelSides(here))
         {
-            // On the square itself: the rails run along the writing, not across it
-            if (here.hasLabel()) return false;
+            TileKey at = neighbour(tile, side);
 
-            setStationLabel(tile, name);
+            LayoutDiagramComponent next = page.getComponent(at.getX(), at.getY());
+
+            // Plain straight track only.  Anything else - a switch, another sensor, a curve - is a
+            // square that says something of its own, and a caption on it would be read as being about
+            // that rather than about the platform.
+            if (next == null
+                || next.getType() != LayoutDiagramComponent.componentType.STRAIGHT) continue;
+
+            // Not over somebody's own writing
+            if (next.hasLabel()) continue;
+
+            // Connected, not merely adjacent: track that happens to pass by the end of a platform is
+            // not the platform road, and a name on it would point at the wrong line.
+            TileGraph.Landing landing = graph.landing(tile, side);
+
+            if (landing == null || !landing.getTile().equals(at)) continue;
+
+            setStationLabel(at, name);
+
             return true;
         }
 
-        TileKey below = new TileKey(tile.getPage(), tile.getX(), tile.getY() + 1);
-
-        LayoutDiagramComponent under = page.getComponent(below.getX(), below.getY());
-
-        // Only onto empty space.  Track below would lose its own square to a caption, and a text
-        // square below is somebody's own writing.
-        if (under != null) return false;
-
-        setStationLabel(below, name);
-        return true;
+        return false;
     }
 
     /**
-     * Whether this square's rails run east to west, so a name written on it lies along the track
-     * rather than across it.
+     * The sides to try, best first: below for a station lying north-south, left for one lying
+     * east-west.
      */
-    private boolean runsEastWest(LayoutDiagramComponent component)
+    private List<Side> labelSides(LayoutDiagramComponent component)
+    {
+        boolean vertical = touches(component, Side.N) && touches(component, Side.S);
+
+        return vertical
+            ? java.util.Arrays.asList(Side.S, Side.N, Side.W, Side.E)
+            : java.util.Arrays.asList(Side.W, Side.E, Side.S, Side.N);
+    }
+
+    private boolean touches(LayoutDiagramComponent component, Side side)
     {
         for (Route route : TilePorts.ports(component.getType(),
             component.getOrientation(), component.getState()))
         {
-            if (route.touches(TilePorts.Side.E) && route.touches(TilePorts.Side.W)) return true;
+            if (route.touches(side)) return true;
         }
 
         return false;
+    }
+
+    /**
+     * The square on the given side of this one.  North is up, so it is the smaller y.
+     */
+    private TileKey neighbour(TileKey tile, Side side)
+    {
+        switch (side)
+        {
+            case N: return new TileKey(tile.getPage(), tile.getX(), tile.getY() - 1);
+            case S: return new TileKey(tile.getPage(), tile.getX(), tile.getY() + 1);
+            case E: return new TileKey(tile.getPage(), tile.getX() + 1, tile.getY());
+            default: return new TileKey(tile.getPage(), tile.getX() - 1, tile.getY());
+        }
     }
 
     /**
