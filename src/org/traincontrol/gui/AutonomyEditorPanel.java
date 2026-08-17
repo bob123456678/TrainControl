@@ -419,6 +419,9 @@ public class AutonomyEditorPanel extends JPanel
         // reassigning the parameter, which the lambdas below capture and so must stay effectively final.
         final TileKey target = leaderOf(tile);
 
+        // Remembered so every item on this menu can flash what it changed without being told twice.
+        menuTarget = target;
+
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         boolean isPoint = session.getReducer() != null
@@ -535,15 +538,15 @@ public class AutonomyEditorPanel extends JPanel
             waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
         }));
 
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
+        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target));
 
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
         {
             menu.addSeparator();
 
-            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
-            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
+            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target));
+            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
@@ -554,6 +557,17 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.show(invoker, x, y);
     }
+
+    /**
+     * Flashes the square the open menu belongs to, so a menu edit is as visible as a click.
+     */
+    private void flashMenuTarget()
+    {
+        if (menuTarget != null && onReveal != null) onReveal.accept(menuTarget);
+    }
+
+    // Which square the open right-click menu is acting on
+    private TileKey menuTarget;
 
     /**
      * What the menu calls this point: its name where it has one, and what it is where it does not.
@@ -582,6 +596,13 @@ public class AutonomyEditorPanel extends JPanel
      * A menu item that runs something and then redraws.  No font is set: the editor's own menus use the
      * look and feel's, and one that did not would be the only odd menu in the window.
      */
+    /**
+     * A menu item that runs something, redraws, and flashes the square it changed.
+     *
+     * The flash matters more here than on a click: the menu covers the tile while it is open, and on a
+     * run the square that changes is the head of the run rather than the one right-clicked - so
+     * without it the one square that moved was the one the user could not see.
+     */
     private javax.swing.JMenuItem item(String text, final Runnable action)
     {
         javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
@@ -598,6 +619,8 @@ public class AutonomyEditorPanel extends JPanel
             }
 
             refresh();
+
+            flashMenuTarget();
         });
 
         return menuItem;
@@ -624,6 +647,8 @@ public class AutonomyEditorPanel extends JPanel
         {
             action.accept(menuItem.isSelected());
             refresh();
+
+            flashMenuTarget();
         });
 
         return menuItem;
@@ -977,29 +1002,21 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.size() > 1)
         {
-            // A switch or a double curve cycles all four states, applied to every branch at once:
-            // both ways -> one way -> the other way -> closed.
+            // Open or shut, and nothing in between.
             //
-            // "One way" on a multi-route tile means each branch travelled toward its own first side,
-            // which is not one direction on the tile so much as a consistent choice per branch - the
-            // arrows show what it came out as, and a further click moves on.  Setting a single branch
-            // deliberately is still the menu's job, which is what the message says.
-            //
-            // The state to move on FROM is the one every branch agrees on; where they disagree - which
-            // is what setting a branch individually produces - the cycle restarts at both ways rather
-            // than picking one branch's answer and ignoring the others.
-            Direction shared = null;
-            boolean uniform = true;
+            // A click cannot name a branch, so anything it sets it must set on all of them - and a
+            // "one way" applied to every branch of a switch means each toward its own first side,
+            // which is a different direction on each and reads as nonsense on the tile.  The two
+            // states that mean the same thing on every branch are the only two offered here: all shut,
+            // then all open.  A single branch, including one-way, is set from the menu.
+            boolean allShut = true;
 
             for (RouteId routeId : routes.keySet())
             {
-                Direction each = session.getGraph().getDirection(target, routeId);
-
-                if (shared == null) shared = each;
-                else if (shared != each) uniform = false;
+                if (session.getGraph().getDirection(target, routeId) != Direction.NONE) allShut = false;
             }
 
-            Direction next = uniform ? after(shared) : Direction.BOTH;
+            Direction next = allShut ? Direction.BOTH : Direction.NONE;
 
             session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(target)), next);
 
@@ -1359,6 +1376,10 @@ public class AutonomyEditorPanel extends JPanel
             session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
 
         if (component == null) return false;
+
+        // A lamp carries no track at all - it is decoration on the diagram - so it is greyed with the
+        // route buttons and turntables rather than left looking like something to configure.
+        if (component.getType() == LayoutDiagramComponent.componentType.LAMP) return true;
 
         return org.traincontrol.base.TilePorts.isDisqualified(component.getType())
             || org.traincontrol.base.TilePorts.isTransparent(component.getType());

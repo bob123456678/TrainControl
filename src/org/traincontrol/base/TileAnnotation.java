@@ -103,7 +103,6 @@ public class TileAnnotation
 
     private static final Color LENGTH = new Color(90, 60, 140);
 
-    private static final float CHEVRON_WIDTH = 1.8f;
 
     /**
      * Selected for a bulk edit.  Drawn as a border rather than a fill so the track underneath stays
@@ -383,17 +382,7 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            // On a tile with one route the arrow sits in the middle.  On a tile with several - a
-            // switch, a crossing, a double curve - each arrow moves out toward the side its own route
-            // leads to, so the branches separate by going where they actually go.
-            //
-            // They used to be nudged PERPENDICULAR to each route instead, which is right for two
-            // parallel paths and wrong for a switch: its branches are alternatives sharing a toe, so a
-            // sideways offset put each arrow somewhere that corresponded to nothing on the tile.
-            for (Mark mark : marks)
-            {
-                paintMark(g, width, height, mark, marks.size() > 1);
-            }
+            paintArrows(g, width, height);
 
             if (badge != null) paintBadge(g, width, height);
 
@@ -423,33 +412,47 @@ public class TileAnnotation
      * between the two sides of a curve tile would cut the corner and sit off the track it describes.
      */
     /**
-     * Draws one route as a pair of arrows, one per direction of travel, out at the ends of the route.
+     * Draws one arrow per SIDE of the tile, rather than two per route.
      *
-     * Two arrows rather than one, because a route has two directions and they are set independently:
-     * with a single mark in the middle there was nowhere to say WHICH way is shut, and a red cross laid
-     * over a blue arrow said both things at once in the same place.
+     * A route drew an arrow at each of its own two ends, which is right until two routes share an end.
+     * A switch's branches all meet at its toe, so the toe collected one arrow per branch, stacked in
+     * the same place - and where one branch was open and another shut, a green arrow sat on top of a
+     * red one and the tile said both things at once.
      *
-     * Each arrow sits just inside the edge its direction leads to, so a run of one-way track reads as a
-     * line of arrows all pointing the same way, and a switch's branches separate by going where they
-     * actually go rather than by being nudged sideways.
+     * A side is the right unit anyway, because it is the question a train asks: may I leave this way?
+     * The answer is yes if ANY route through the tile permits it, so the arrows are combined rather
+     * than drawn over each other.
      */
-    private void paintMark(Graphics2D g, int width, int height, Mark mark, boolean fanOut)
+    private void paintArrows(Graphics2D g, int width, int height)
     {
-        int[] from = midpoint(mark.getA(), width, height);
-        int[] to = midpoint(mark.getB(), width, height);
+        // side -> may a train travel out through it
+        java.util.Map<Side, Boolean> out = new java.util.LinkedHashMap<>();
 
-        if (from == null || to == null) return;
+        for (Mark mark : marks)
+        {
+            Direction direction = mark.getDirection();
 
-        Direction direction = mark.getDirection();
+            allow(out, mark.getA(), direction == Direction.BOTH || direction == Direction.TOWARD_A);
+            allow(out, mark.getB(), direction == Direction.BOTH || direction == Direction.TOWARD_B);
+        }
 
-        // Stated as what IS allowed rather than as what is not.  Written the other way round - "not
-        // toward B" - it read as true for a CLOSED route as well, so a shut branch drew two green
-        // arrows and looked wide open.
-        arrow(g, width, height, from,
-            direction == Direction.BOTH || direction == Direction.TOWARD_A);
+        for (java.util.Map.Entry<Side, Boolean> entry : out.entrySet())
+        {
+            int[] target = midpoint(entry.getKey(), width, height);
 
-        arrow(g, width, height, to,
-            direction == Direction.BOTH || direction == Direction.TOWARD_B);
+            if (target != null) arrow(g, width, height, target, entry.getValue());
+        }
+    }
+
+    /**
+     * Records what a route says about one side, without letting a "no" overrule a "yes" from another
+     * route through the same side.
+     */
+    private static void allow(java.util.Map<Side, Boolean> out, Side side, boolean allowed)
+    {
+        if (side == null) return;
+
+        out.put(side, allowed || Boolean.TRUE.equals(out.get(side)));
     }
 
     /**
