@@ -448,9 +448,14 @@ public class TileAnnotation
 
         Direction direction = mark.getDirection();
 
-        // toward A is allowed unless the route runs the other way only, and vice versa
-        arrow(g, width, height, from, direction != Direction.TOWARD_B);
-        arrow(g, width, height, to, direction != Direction.TOWARD_A);
+        // Stated as what IS allowed rather than as what is not.  Written the other way round - "not
+        // toward B" - it read as true for a CLOSED route as well, so a shut branch drew two green
+        // arrows and looked wide open.
+        arrow(g, width, height, from,
+            direction == Direction.BOTH || direction == Direction.TOWARD_A);
+
+        arrow(g, width, height, to,
+            direction == Direction.BOTH || direction == Direction.TOWARD_B);
     }
 
     /**

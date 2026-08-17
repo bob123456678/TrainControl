@@ -496,6 +496,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
             autonomyPanel.setBanner(autonomyBanner);
 
+            // Lengths and addresses are mutually exclusive: both print a number on the tile, and two
+            // numbers on one square is unreadable.  Wired here because the Addresses box belongs to
+            // this window, not to the panel.
+            autonomyPanel.getShowLengths().addActionListener(e ->
+            {
+                if (autonomyPanel.getShowLengths().isSelected()
+                    && this.showAddressCheckbox.isSelected())
+                {
+                    this.showAddressCheckbox.setSelected(false);
+                    toggleAddresses();
+                }
+            });
+
             // The column heading belongs to the window, not to the palette that used to fill it - in
             // autonomy mode "New Components" describes something that is no longer there.
             this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
@@ -2004,6 +2017,16 @@ public class LayoutEditor extends PositionAwareJFrame
     }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
     private void showAddressCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAddressCheckboxActionPerformed
+
+        // The other half of the exclusion: turning addresses on turns lengths off, since both write a
+        // number on the tile and two numbers on one square cannot be read.
+        if (this.showAddressCheckbox.isSelected() && autonomyPanel != null
+            && autonomyPanel.getShowLengths().isSelected())
+        {
+            autonomyPanel.getShowLengths().setSelected(false);
+            autonomyPanel.refresh();
+        }
+
         toggleAddresses();
     }//GEN-LAST:event_showAddressCheckboxActionPerformed
 

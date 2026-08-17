@@ -679,11 +679,17 @@ public class AutonomySession
      * Every run of plain track, keyed by the tile that speaks for it.
      *
      * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
-     * worse, a run that disagrees with itself is a silent trap - the arrows look set and no train can
-     * pass.  So one tile in each run is the one to set, and the rest follow it.
+     * a run that disagrees with itself is a silent trap - the arrows look set and no train can pass.
+     * So one tile in each run is the one to set, and the rest follow it.
      *
-     * Tiles that carry a choice - anything with more than one route, so every switch and crossing -
-     * are never part of a run: their branches are decisions in their own right.
+     * Computed from the DIAGRAM ALONE - tile types and which sides face which - and never from the
+     * reduction.  That is the whole point: edges come and go as directions are set, so a run derived
+     * from them would regroup itself every time somebody closed a route, and the greying would move
+     * around under the user.  What is grey is a property of the track, not of the settings on it.
+     *
+     * A run tile is a piece of plain track: exactly one route through it, not a sensor, and not
+     * something autonomy ignores.  Anything else - a switch, a crossing, a sensor - ends the run,
+     * because each of those is a decision in its own right.
      *
      * @return leader tile to the run it leads
      */
@@ -691,55 +697,89 @@ public class AutonomySession
     {
         Map<TileKey, Run> out = new LinkedHashMap<>();
 
-        if (reducer == null || graph == null) return out;
+        if (graph == null) return out;
 
-        Set<TileKey> claimed = new LinkedHashSet<>();
+        Set<TileKey> seen = new LinkedHashSet<>();
 
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        for (TileKey tile : graph.getTiles().keySet())
         {
-            List<TileKey> tiles = new ArrayList<>();
+            if (seen.contains(tile) || !isRunTile(tile)) continue;
 
-            // Where the current stretch began: the Point the edge starts from, or the last branch
-            // tile passed.  A run is a stretch of PLAIN track, so anything with a choice in it ends
-            // the stretch and starts a new one - without this, the tiles on both sides of a switch
-            // were collected into one run and greying spilled past the switch onto unrelated track.
-            TileKey from = edge.getStart();
+            Route route = firstRoute(tile);
 
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                TileKey tile = step.getTile();
+            if (route == null) continue;
 
-                if (graph.getRoutes(tile).size() > 1)
-                {
-                    add(out, claimed, from, tile, tiles);
+            java.util.LinkedList<TileKey> chain = new java.util.LinkedList<>();
+            chain.add(tile);
+            seen.add(tile);
 
-                    from = tile;
-                    tiles = new ArrayList<>();
+            // walk out of both ends until the plain track stops
+            TileKey endA = walk(chain, tile, route.getA(), seen, false);
+            TileKey endB = walk(chain, tile, route.getB(), seen, true);
 
-                    continue;
-                }
-
-                tiles.add(tile);
-            }
-
-            add(out, claimed, from, edge.getEnd(), tiles);
+            out.put(chain.getFirst(), new Run(endA, endB, new ArrayList<>(chain)));
         }
 
         return out;
     }
 
     /**
-     * Records one stretch of plain track, if it is not already part of a run found from another edge.
+     * Whether a square is a piece of plain track that can belong to a run.
      */
-    private void add(Map<TileKey, Run> out, Set<TileKey> claimed, TileKey from, TileKey to,
-        List<TileKey> tiles)
+    private boolean isRunTile(TileKey tile)
     {
-        // The reverse edge walks the same tiles the other way, so whichever is seen first keeps them.
-        if (tiles.isEmpty() || claimed.contains(tiles.get(0))) return;
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-        claimed.addAll(tiles);
+        if (component == null || component.isFeedback()) return false;
 
-        out.put(tiles.get(0), new Run(from, to, tiles));
+        if (TilePorts.isDisqualified(component.getType())
+            || TilePorts.isTransparent(component.getType())) return false;
+
+        return graph.getRoutes(tile).size() == 1;
+    }
+
+    /**
+     * Extends a chain out of one side of a tile for as long as the track stays plain.
+     *
+     * @param chain collected so far
+     * @param from where to start
+     * @param side which way to go
+     * @param seen tiles already claimed by a run
+     * @param append true to add to the end of the chain, false to add to the front
+     * @return the square the run stops at - a switch, a sensor, or null at the end of the track
+     */
+    private TileKey walk(java.util.LinkedList<TileKey> chain, TileKey from, Side side,
+        Set<TileKey> seen, boolean append)
+    {
+        TileKey here = from;
+        Side out = side;
+
+        // bounded because a loop of plain track has no end to reach
+        for (int guard = 0; guard < 1000; guard++)
+        {
+            Landing landing = graph.landing(here, out);
+
+            if (landing == null) return null;
+
+            TileKey next = landing.getTile();
+
+            if (!isRunTile(next) || seen.contains(next)) return next;
+
+            Route route = firstRoute(next);
+
+            if (route == null) return next;
+
+            if (append) chain.addLast(next); else chain.addFirst(next);
+
+            seen.add(next);
+
+            here = next;
+            out = route.other(landing.getEntrySide());
+
+            if (out == null) return null;
+        }
+
+        return null;
     }
 
     /**
