@@ -555,11 +555,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 visibility.add(autonomyPanel.getShowLengths());
 
                 // A label, because unlike its neighbours this one is a choice rather than a switch and
-                // "All directions" alone does not say what it is about.
+                // "All" alone does not say what it is about.
+                //
+                // In the window's own heading style, copied off jLabel1 rather than restated, so it
+                // reads as a heading of the same kind as every other one here - and so it follows if
+                // that style is ever changed in the form.
                 javax.swing.JLabel directionsLabel =
                     new javax.swing.JLabel(I18n.t("autosetup.ui.labelDirections"));
-                directionsLabel.setFont(autonomyPanel.getShowLengths().getFont());
+                directionsLabel.setFont(this.jLabel1.getFont());
+                directionsLabel.setForeground(this.jLabel1.getForeground());
                 directionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                directionsLabel.setBorder(
+                    javax.swing.BorderFactory.createEmptyBorder(6, 0, 2, 0));
 
                 visibility.add(directionsLabel);
 
