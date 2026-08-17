@@ -1647,6 +1647,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (configTab >= 0) locCommandPanels.remove(configTab);
 
+        // Pending deletion with the rest of the graph window.  Nothing routes through it any more -
+        // the diagram IS the graph - and a button that reopens a second, stale view of the same
+        // railway is an invitation to edit the wrong one.
+        this.reopenGraphButton.setVisible(false);
+
         // the JSON-era controls; everything they did has a home on the panel now
         this.validateButton.setVisible(false);
         this.loadDefaultBlankGraph.setVisible(false);

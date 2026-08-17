@@ -222,9 +222,17 @@ public class LayoutGrid
                     // Regular labels
                     else if (!layout.getEditHideText())
                     {
-                        // A station caption on an ignored page reads as the name it is, without the
+                        // A station caption on an IGNORED page reads as the name it is, without the
                         // marker that would otherwise show up as literal "Point:" text on the diagram.
-                        text.setText(c.getLabel().startsWith(LAYOUT_STATION_PREFIX)
+                        //
+                        // Not while editing, though.  This branch is also where an editor lands, and
+                        // there the marker is the only thing distinguishing a station's caption from
+                        // ordinary text - stripping it made a label the user had just placed look like
+                        // it had not been placed at all.
+                        boolean strip = !layout.getEdit()
+                            && c.getLabel().startsWith(LAYOUT_STATION_PREFIX);
+
+                        text.setText(strip
                             ? c.getLabel().substring(LAYOUT_STATION_PREFIX.length())
                             : c.getLabel());
                     }

@@ -228,6 +228,9 @@ public class AutonomySession
      */
     public boolean placeStationLabel(TileKey tile) throws Exception
     {
+        // The authored name, not the generated one.  A square marked as a station a moment ago has
+        // only the coordinate the reducer invented for it, and "1 - Main 12,7" written across a track
+        // plan is worse than no caption at all - the label goes on when the station is NAMED.
         String name = store.getPointName(tile);
 
         if (name == null || name.trim().isEmpty()) return false;

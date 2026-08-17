@@ -833,7 +833,7 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException ex)
             {
-                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()));
+                JOptionPane.showMessageDialog(owner(), String.valueOf(ex.getMessage()));
             }
 
             refresh();
@@ -905,6 +905,20 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
     {
+        // A station labelling ITSELF has nothing to ask about.  Offering a list of every station on
+        // the layout, with this one's own name buried in it, is a question whose answer is already
+        // known - and getting it wrong would put another platform's name on this platform.
+        if (session.getStore().isStation(tile))
+        {
+            String own = session.pointNameForTile(tile);
+
+            if (own != null)
+            {
+                applyStationLabel(tile, own);
+                return;
+            }
+        }
+
         java.util.List<String> names = new java.util.ArrayList<>();
 
         if (session.getReducer() != null)
@@ -947,7 +961,7 @@ public class AutonomyEditorPanel extends JPanel
                 java.awt.BorderLayout.SOUTH);
         }
 
-        if (JOptionPane.showConfirmDialog(this, panel, I18n.t("autosetup.ui.titleStationLabel"),
+        if (JOptionPane.showConfirmDialog(owner(), panel, I18n.t("autosetup.ui.titleStationLabel"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
             return;
@@ -984,7 +998,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, I18n.f("error.generic", String.valueOf(e.getMessage())));
+            JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", String.valueOf(e.getMessage())));
         }
     }
 
@@ -1027,8 +1041,22 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(this, I18n.f("error.generic", String.valueOf(e.getMessage())));
+            JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", String.valueOf(e.getMessage())));
         }
+    }
+
+    /**
+     * The window this panel lives in, for parenting dialogs.
+     *
+     * Not the panel itself.  JOptionPane centres over the COMPONENT it is given, and this one is a
+     * narrow strip down the side of the editor - so every prompt appeared over that strip, hard against
+     * one edge of the window rather than in the middle of it.
+     */
+    private java.awt.Component owner()
+    {
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+        return window == null ? this : window;
     }
 
     /**
@@ -1106,7 +1134,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // I18n.f, not t: two of these prompts name the point they are about, and I18n.t does no
         // substitution at all - so the user was asked to "Enter the priority for {0}".
-        String entered = JOptionPane.showInputDialog(this,
+        String entered = JOptionPane.showInputDialog(owner(),
             I18n.f(promptKey, describeTile(tile)),
             current instanceof Number ? String.valueOf(current) : String.valueOf(unset));
 
@@ -1120,7 +1148,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNegativeLength"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
         }
     }
 
@@ -1168,7 +1196,7 @@ public class AutonomyEditorPanel extends JPanel
 
     private void promptPercent(TileKey tile)
     {
-        String entered = JOptionPane.showInputDialog(this,
+        String entered = JOptionPane.showInputDialog(owner(),
             I18n.f("autolayout.ui.promptEnterSpeedMultiplier", describeTile(tile)),
             String.valueOf(percent(tile)));
 
@@ -1180,7 +1208,7 @@ public class AutonomyEditorPanel extends JPanel
 
             if (value <= 0 || value > 200)
             {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(owner(),
                     I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
                 return;
             }
@@ -1191,7 +1219,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
         }
     }
 
@@ -1219,13 +1247,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (names.size() == 1)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("error.noLocs"));
             return;
         }
 
         String current = homeOf(tile);
 
-        Object chosen = JOptionPane.showInputDialog(this,
+        Object chosen = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptHomeFor"), I18n.t("autosetup.ui.menuHomeNone"),
             JOptionPane.PLAIN_MESSAGE, null, names.toArray(),
             current == null ? names.get(0) : current);
@@ -1312,12 +1340,12 @@ public class AutonomyEditorPanel extends JPanel
 
         if (names.isEmpty())
         {
-            JOptionPane.showMessageDialog(this, I18n.t(fromRoster
+            JOptionPane.showMessageDialog(owner(), I18n.t(fromRoster
                 ? "autosetup.ui.infoAllLocomotivesInAutonomy" : "error.noLocs"));
             return;
         }
 
-        Object chosen = JOptionPane.showInputDialog(this,
+        Object chosen = JOptionPane.showInputDialog(owner(),
             I18n.t(fromRoster ? "autosetup.ui.promptAddToAutonomy"
                               : "autosetup.ui.promptAddToStation"),
             I18n.t(fromRoster ? "autosetup.ui.menuAddToAutonomy"
@@ -1349,7 +1377,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (names.isEmpty())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("error.noLocs"));
             return;
         }
 
@@ -1378,7 +1406,7 @@ public class AutonomyEditorPanel extends JPanel
 
         list.setSelectedIndices(selection);
 
-        if (JOptionPane.showConfirmDialog(this, new JScrollPane(list), I18n.t(key.equals("home")
+        if (JOptionPane.showConfirmDialog(owner(), new JScrollPane(list), I18n.t(key.equals("home")
                 ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelExcludedLocs"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
@@ -1395,25 +1423,30 @@ public class AutonomyEditorPanel extends JPanel
     {
         String current = session.getStore().getPointName(tile);
 
-        String name = JOptionPane.showInputDialog(this,
+        String name = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptPointName"), current == null ? "" : current);
 
         if (name == null) return;
 
         if (name.contains("\""))
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.warnQuotesStrippedFromName"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.warnQuotesStrippedFromName"));
             name = name.replace("\"", "");
         }
 
         session.setPointName(tile, name.trim());
+
+        // The moment a station gets a name is the moment it has one worth writing on the diagram.
+        // Marking a square as a station cannot do it on its own: a new one has no name yet, only the
+        // coordinate the reducer invented, and nobody wants that on their track plan.
+        if (session.getStore().isStation(tile)) placeLabelFor(tile);
     }
 
     private void promptLinkName(TileKey tile)
     {
         String current = session.getStore().getLinkName(tile);
 
-        String name = JOptionPane.showInputDialog(this,
+        String name = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptLinkName"), current == null ? "" : current);
 
         if (name != null) session.setLinkName(tile, name);
@@ -1451,11 +1484,11 @@ public class AutonomyEditorPanel extends JPanel
 
         if (candidates.isEmpty())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoOtherLinks"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNoOtherLinks"));
             return;
         }
 
-        Object chosen = JOptionPane.showInputDialog(this,
+        Object chosen = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptPickPartner"), I18n.t("autosetup.ui.toolPortals"),
             JOptionPane.PLAIN_MESSAGE, null, labels.toArray(), labels.get(0));
 
@@ -1473,7 +1506,7 @@ public class AutonomyEditorPanel extends JPanel
         // necessarily among them, and prefilling from it would show a number the dialog will not touch
         TileKey sample = targets.iterator().next();
 
-        String entered = JOptionPane.showInputDialog(this,
+        String entered = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptTileLength"),
             String.valueOf(session.getStore().getTileLength(sample)));
 
@@ -1487,13 +1520,13 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNegativeLength"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
             return;
         }
 
         if (length < 0)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNegativeLength"));
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
             return;
         }
 
@@ -1559,7 +1592,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (RuntimeException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
         }
 
         refresh();
@@ -2366,7 +2399,7 @@ public class AutonomyEditorPanel extends JPanel
             // shown before asking, so the question is about a square the user can see
             if (onReveal != null) onReveal.accept(tile);
 
-            String name = JOptionPane.showInputDialog(this,
+            String name = JOptionPane.showInputDialog(owner(),
                 I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size()), "");
 
             // cancel stops the walk rather than skipping one, because a walk of forty needs a way out
@@ -2452,7 +2485,7 @@ public class AutonomyEditorPanel extends JPanel
 
                 if (text.length() > 0)
                 {
-                    JOptionPane.showMessageDialog(this, text.toString());
+                    JOptionPane.showMessageDialog(owner(), text.toString());
                 }
             }
 
@@ -2460,7 +2493,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
         }
     }
 }
