@@ -1688,7 +1688,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             autonomyOverlayToggle = new AutonomyOverlayToggle(this);
             this.LayoutArea.setColumnHeaderView(autonomyOverlayToggle);
             this.LayoutArea.revalidate();
+
+            autonomyOverlayToggle.bindRunButtons(this.startAutonomy, this.gracefulStop);
+
+            // Listened for rather than called at each site.  Fourteen places in this class switch these
+            // two buttons on and off - power, placement, a locomotive still rolling, a refused load,
+            // the tabs being pulled - and a copy that had to be told separately at every one of them
+            // would be wrong the first time somebody added a fifteenth.  The property Swing already
+            // fires means the copy cannot fall out of step, including for code not written yet.
+            java.beans.PropertyChangeListener sync = evt ->
+            {
+                if (autonomyOverlayToggle != null) autonomyOverlayToggle.syncRun();
+            };
+
+            this.startAutonomy.addPropertyChangeListener("enabled", sync);
+            this.startAutonomy.addPropertyChangeListener("text", sync);
+            this.gracefulStop.addPropertyChangeListener("enabled", sync);
+            this.gracefulStop.addPropertyChangeListener("text", sync);
         }
+
+        autonomyOverlayToggle.syncRun();
 
         autonomyOverlayToggle.setSelected(true);
 

@@ -33,11 +33,31 @@ public class AutonomyOverlayToggle extends JPanel
     private final javax.swing.JLabel findings = new javax.swing.JLabel();
 
     /**
+     * Starting and stopping autonomy, where the trains are rather than on a tab.
+     *
+     * A copy in the strictest sense: it carries no opinion about when autonomy may run.  That question
+     * has a dozen answers scattered through the main window - power off, nothing placed, a locomotive
+     * still moving, a configuration not loaded, the tabs pulled - and a second implementation of it
+     * would be wrong the first time any of them changed.  Instead this shows exactly what the real
+     * button currently is: its words, its colour, and whether it is available at all.
+     */
+    private final javax.swing.JButton run = new javax.swing.JButton();
+
+    /**
+     * Whichever real button this is currently standing in for, or null when neither is available - in
+     * which case nothing is drawn.
+     */
+    private javax.swing.AbstractButton source;
+
+    private javax.swing.AbstractButton start;
+    private javax.swing.AbstractButton stop;
+
+    /**
      * @param ui the main window, whose monitor driver the checkbox switches
      */
     public AutonomyOverlayToggle(TrainControlUI ui)
     {
-        super(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        super(new java.awt.BorderLayout());
 
         this.ui = ui;
 
@@ -53,7 +73,10 @@ public class AutonomyOverlayToggle extends JPanel
         show.setOpaque(false);
         show.addActionListener(e -> apply());
 
-        add(show);
+        // Checkbox and count to the left, the run button hard right, as the window's own toolbars do
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        left.setOpaque(false);
+        left.add(show);
 
         findings.setFont(show.getFont());
         findings.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -69,7 +92,22 @@ public class AutonomyOverlayToggle extends JPanel
             }
         });
 
-        add(findings);
+        left.add(findings);
+
+        add(left, java.awt.BorderLayout.WEST);
+
+        // A copy of the main window's own Start button, not a second implementation of it.  Pressing
+        // this presses that one, so everything it does - the checks, the power, the log line, the
+        // state the rest of the window then shows - happens exactly once and in one place.
+        run.setFocusable(false);
+        run.setVisible(false);
+        run.setMargin(new java.awt.Insets(0, 8, 0, 8));
+        run.addActionListener(e ->
+        {
+            if (source != null) source.doClick();
+        });
+
+        add(run, java.awt.BorderLayout.EAST);
 
         // Belt and braces over show.setFocusable(false) above: this strip sits inside the main window,
         // where bare key presses drive locomotives, so nothing in it may hold the keyboard.
@@ -86,6 +124,62 @@ public class AutonomyOverlayToggle extends JPanel
     {
         show.setSelected(selected);
         apply();
+    }
+
+    /**
+     * Tells the strip which buttons it is standing in for.
+     *
+     * @param start the main window's Start Autonomous Operation
+     * @param stop its Graceful Stop
+     */
+    public void bindRunButtons(javax.swing.AbstractButton start, javax.swing.AbstractButton stop)
+    {
+        this.start = start;
+        this.stop = stop;
+
+        syncRun();
+    }
+
+    /**
+     * Matches the copy to whichever real button is available.
+     *
+     * Stop wins when both are: once autonomy is running, stopping it is the only thing left to offer,
+     * and that is the moment the button has to change under the user's hand rather than the moment a
+     * second button appears beside it.
+     */
+    public final void syncRun()
+    {
+        // Posted to the event thread when it is not already there.  Several of the places that switch
+        // these buttons run inside autonomy's own threads - the return-home staging, the run loop - so
+        // the property change that brings us here arrives on whichever thread made it, and touching
+        // Swing from one of those is the kind of fault that shows up once a fortnight as a repaint
+        // that did not happen.
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(() -> syncRun());
+            return;
+        }
+
+        source = stop != null && stop.isEnabled() ? stop
+            : start != null && start.isEnabled() ? start : null;
+
+        if (source == null)
+        {
+            run.setVisible(false);
+            revalidate();
+            repaint();
+
+            return;
+        }
+
+        run.setText(source.getText());
+        run.setToolTipText(source.getToolTipText());
+        run.setFont(source.getFont());
+        run.setBackground(source.getBackground());
+        run.setVisible(true);
+
+        revalidate();
+        repaint();
     }
 
     /**
