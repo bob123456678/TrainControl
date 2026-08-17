@@ -575,6 +575,15 @@ public class LayoutEditor extends PositionAwareJFrame
             // Lengths and addresses are mutually exclusive: both print a number on the tile, and two
             // numbers on one square is unreadable.  Wired here because the Addresses box belongs to
             // this window, not to the panel.
+            //
+            // Applied once on opening too, because Lengths is remembered between visits now - so it
+            // can arrive already on, with Addresses also on and two numbers on every square.
+            if (autonomyPanel.getShowLengths().isSelected() && this.showAddressCheckbox.isSelected())
+            {
+                this.showAddressCheckbox.setSelected(false);
+                toggleAddresses();
+            }
+
             autonomyPanel.getShowLengths().addActionListener(e ->
             {
                 if (autonomyPanel.getShowLengths().isSelected()

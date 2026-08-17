@@ -143,6 +143,31 @@ public class AutonomyEditorPanel extends JPanel
         I18n.t("autosetup.ui.directionsRestrictions"),
         I18n.t("autosetup.ui.directionsNone")
     });
+
+    /**
+     * What the visibility controls were last set to, remembered across openings of this window.
+     *
+     * The window is built fresh every time, so without this every visit started from the defaults and
+     * anybody who works with one setting had to set it again on each visit.
+     *
+     * In Preferences rather than in the setup: which arrows somebody likes to look at is a fact about
+     * them, not about the railway, and it should not travel to another machine with an exported
+     * configuration.
+     */
+    private static final java.util.prefs.Preferences VIEW_PREFS =
+        java.util.prefs.Preferences.userNodeForPackage(AutonomyEditorPanel.class);
+
+    private static final String PREF_DIRECTIONS = "autonomyEditorDirections";
+    private static final String PREF_LENGTHS = "autonomyEditorLengths";
+
+    /**
+     * Restrictions only, by default.
+     *
+     * Open track is most of a layout and its arrows say what the reader can already assume, so a
+     * setup opened for the first time shows the decisions somebody has made rather than a field of
+     * arrows they have to read past to find them.
+     */
+    private static final int DIRECTIONS_DEFAULT = 1;
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
 
@@ -329,8 +354,25 @@ public class AutonomyEditorPanel extends JPanel
         // "Also show track that runs both ways" is hidden pending a decision on what replaces it: it
         // answers which arrows are hidden, when the question nobody can answer from this diagram is
         // where the track actually breaks.  See the plan.
-        directions.addActionListener(e -> refresh());
-        showLengths.addActionListener(e -> refresh());
+        // Restored FIRST, before anything is listening.  Setting a combo box fires its listeners, and
+        // the one below redraws the whole panel - which during construction means redrawing a panel
+        // that is still being built.
+        directions.setSelectedIndex(
+            Math.max(0, Math.min(2, VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT))));
+
+        showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
+
+        directions.addActionListener(e ->
+        {
+            VIEW_PREFS.putInt(PREF_DIRECTIONS, directions.getSelectedIndex());
+            refresh();
+        });
+
+        showLengths.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
+            refresh();
+        });
 
         hint.setFont(FONT_HINT);
         hint.setAlignmentX(LEFT_ALIGNMENT);
