@@ -561,17 +561,34 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.addSeparator();
 
-            // Three switches, and only three: is this a station, may trains turn round here, and - if
-            // it is a station - is it a berth trains are only ever sent to on purpose.  Terminus and
-            // reversing are gone from the UI entirely; they are what these get COMPILED to, and having
-            // both vocabularies on one menu let a square be told two contradictory things.
+            // What trains may do at this square, as one three-way choice rather than two checkboxes
+            // that overlap.  Stop, pass through, or neither - mutually exclusive by construction, so
+            // there is no combination to get wrong and nothing to grey out.
+            //
+            // It replaces "mark as a station" and "active" together, because between them those said
+            // the same three things in four states, one of which - not a station, and inactive - meant
+            // exactly what another already did.
             final boolean isStation = session.getStore().isStation(target);
+            final boolean isOpen = !Boolean.FALSE.equals(session.getPointProperty(target, "active"));
 
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(
                 I18n.f("autosetup.ui.menuStationGroup", stationSummary(target, isStation)));
 
-            stationMenu.add(toggle(I18n.t("autosetup.ui.menuStation"),
-                "autolayout.ui.tooltip.Station", isStation, on -> setStation(target, on)));
+            javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+            stationMenu.add(radio(group, I18n.t("autosetup.ui.menuCanStop"),
+                "autolayout.ui.tooltip.Station", isOpen && isStation,
+                () -> setUsage(target, true, true)));
+
+            stationMenu.add(radio(group, I18n.t("autosetup.ui.menuCanTraverse"),
+                "autosetup.ui.hintCanTraverse", isOpen && !isStation,
+                () -> setUsage(target, false, true)));
+
+            // Out of service.  What the square IS - station or not - is left alone, so switching back
+            // returns it to what it was rather than to a default nobody chose.
+            stationMenu.add(radio(group, I18n.t("autosetup.ui.menuNeither"),
+                "autolayout.ui.tooltip.Active", !isOpen,
+                () -> setUsage(target, isStation, false)));
 
             stationMenu.addSeparator();
 
@@ -584,32 +601,20 @@ public class AutonomyEditorPanel extends JPanel
                 on -> session.setAutoDestination(target, on));
 
             // Greyed rather than hidden, so the shape of the choice stays visible: somebody looking for
-            // it finds it, sees it is unavailable, and can tell why from the item above.
-            auto.setEnabled(isStation);
+            // it finds it, sees it is unavailable, and can tell why from the items above.
+            auto.setEnabled(isOpen && isStation);
 
             stationMenu.add(auto);
 
             menu.add(stationMenu);
 
-            // Turning round, on any square, and no longer entangled with the switch above.  A berth is
+            // Switching direction, on any square, and not entangled with anything above.  A berth is
             // usually both - autonomy leaves it alone AND trains reverse in it - and that combination
             // used to be unauthorable, because it meant a terminus and a reversing flag on one Point,
             // which the model refuses in either order.
             menu.add(toggle(I18n.t("autosetup.ui.menuCanReverse"),
                 "autosetup.ui.hintCanReverse", session.isTurnAround(target),
                 on -> session.setPointFlag(target, AutonomyBuilder.CAN_REVERSE, on)));
-
-            // Active, on stations only.  On anything else it said exactly one thing - no path may pass
-            // through here - and shutting every arm of the square says the same thing through the
-            // derivation, which is where the diagram is meant to be the source of truth.  Offering both
-            // spellings of one idea is what this menu has just finished getting rid of.
-            if (isStation)
-            {
-                menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
-                    "autolayout.ui.tooltip.Active",
-                    !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
-                    on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
-            }
 
             menu.addSeparator();
 
@@ -990,6 +995,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String stationSummary(TileKey tile, boolean isStation)
     {
+        if (Boolean.FALSE.equals(session.getPointProperty(tile, "active")))
+        {
+            return I18n.t("autosetup.ui.stationNeither");
+        }
+
         if (!isStation) return I18n.t("autosetup.ui.stationNo");
 
         java.util.List<String> parts = new java.util.ArrayList<>();
@@ -1001,6 +1011,48 @@ public class AutonomyEditorPanel extends JPanel
         return parts.isEmpty() ? I18n.t("autosetup.ui.stationYes") : String.join(", ", parts);
     }
 
+    /**
+     * One of the three mutually exclusive answers to "what may a train do here", as a radio item.
+     *
+     * Radio rather than a checkbox because the three cannot overlap: a square cannot be somewhere
+     * trains stop AND somewhere they may not go.  Expressed as checkboxes that was a combination the
+     * user could author and nothing could honour.
+     */
+    private javax.swing.JMenuItem radio(javax.swing.ButtonGroup group, String text, String tooltipKey,
+        boolean on, final Runnable action)
+    {
+        javax.swing.JRadioButtonMenuItem menuItem = new javax.swing.JRadioButtonMenuItem(text, on);
+
+        if (tooltipKey != null) menuItem.setToolTipText(I18n.t(tooltipKey));
+
+        group.add(menuItem);
+
+        menuItem.addActionListener(e ->
+        {
+            action.run();
+            refresh();
+
+            flashMenuTarget();
+        });
+
+        return menuItem;
+    }
+
+    /**
+     * Applies one of the three answers.
+     *
+     * @param station whether trains may stop here
+     * @param open whether they may come here at all
+     */
+    private void setUsage(TileKey tile, boolean station, boolean open)
+    {
+        setStation(tile, station);
+
+        // Stored only when it is off, like every other default, so a square nobody has closed carries
+        // nothing at all
+        session.setPointProperty(tile, "active", open ? null : Boolean.FALSE);
+    }
+
     private void setStation(TileKey tile, boolean on)
     {
         session.setStation(tile, on);
@@ -1010,15 +1062,9 @@ public class AutonomyEditorPanel extends JPanel
         // Active is NOT cleared with it.  It applies to any point, station or not - the graph menu
         // offered it on all of them - so clearing it here would silently re-enable a point somebody had
         // switched off, on a gesture that says nothing about that.
-        if (!on)
-        {
-            session.setPointProperty(tile, "terminus", null);
-
-            // Active is a station's switch, so a demoted square is switched back on as it goes.  Left
-            // alone it would carry a setting the menu no longer shows and nobody could reach - still
-            // closing the square to every path, with nothing on screen saying why.
-            session.setPointProperty(tile, "active", null);
-        }
+        // Active is not cleared here any more: what a square is and whether it is open are the same
+        // three-way choice now, and setUsage sets both together.
+        if (!on) session.setPointProperty(tile, "terminus", null);
     }
 
     private void setAllBranches(TileKey tile, Direction direction)
