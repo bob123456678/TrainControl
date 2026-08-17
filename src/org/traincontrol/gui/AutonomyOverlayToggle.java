@@ -54,6 +54,14 @@ public class AutonomyOverlayToggle extends JPanel
         apply();
     }
 
+    /**
+     * @return whether the overlay is switched on
+     */
+    public boolean isShowing()
+    {
+        return show.isSelected();
+    }
+
     private void apply()
     {
         ui.getDiagramMonitorDriver().setEnabled(show.isSelected());

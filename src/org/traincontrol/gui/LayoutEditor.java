@@ -469,6 +469,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 public void run()
                 {
                     refreshAutonomyAnnotations();
+
+                    // The main window draws the same setup on its own diagram, and it has no way to
+                    // know an edit happened in here - so it is told, after every one.
+                    parent.refreshStaticAutonomyLayer();
                 }
             });
 

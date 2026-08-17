@@ -1771,6 +1771,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Redraws the setup on the track diagram if it is currently being shown.
+     *
+     * Called after every autonomy edit.  Without it the diagram kept whatever was published when the
+     * checkbox was last ticked, so a terminus designated in the editor either did not appear or, worse,
+     * a badge stayed behind after the point it described had been changed.
+     */
+    public void refreshStaticAutonomyLayer()
+    {
+        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isShowing()) return;
+
+        showStaticAutonomyLayer(true);
+    }
+
+    /**
+     * Shows the tab where locomotives are placed and autonomy is started.    /**
      * Shows the tab where locomotives are placed and autonomy is started.
      *
      * Offered only once a configuration has loaded, because that tab does not exist before then - which

@@ -436,18 +436,31 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.addSeparator();
 
-            // The four designations, in the graph window's own order and words.
+            // The designations, in the graph window's order and words.
             menu.add(toggle(I18n.t("autolayout.ui.markAsStation"),
                 "autolayout.ui.tooltip.Station",
                 session.getStore().isStation(target), on -> setStation(target, on)));
 
+            // Terminus and reversing are mutually exclusive - Point itself refuses to hold both, in
+            // either order - so setting one clears the other rather than letting the user build a
+            // combination that would be rejected the moment it was loaded.
             menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkTerminusStation"),
                 "autolayout.ui.tooltip.TerminusStation", flag(target, "terminus"),
-                on -> session.setPointProperty(target, "terminus", on ? Boolean.TRUE : null)));
+                on ->
+                {
+                    session.setPointProperty(target, "terminus", on ? Boolean.TRUE : null);
+
+                    if (on) session.setPointProperty(target, "reversing", null);
+                }));
 
             menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkReversingPoint"),
                 "autolayout.ui.tooltip.ReversingPoint", flag(target, "reversing"),
-                on -> session.setPointProperty(target, "reversing", on ? Boolean.TRUE : null)));
+                on ->
+                {
+                    session.setPointProperty(target, "reversing", on ? Boolean.TRUE : null);
+
+                    if (on) session.setPointProperty(target, "terminus", null);
+                }));
 
             // "Active" in the model is what the user calls parking: autonomy will not choose it and
             // will not start a train standing there, while a route picked by hand still may.
@@ -458,25 +471,53 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.addSeparator();
 
-            menu.add(item(I18n.t("autolayout.ui.menuSpeedMultiplier"),
+            // Every label carries its current value, as the graph window's did - a menu that says
+            // "Speed multiplier" and nothing else makes the user open it to find out what it is.
+            menu.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", number(target, "speedMultiplier", 100)),
                 () -> promptNumber(target, "speedMultiplier",
                     "autolayout.ui.promptEnterSpeedMultiplier", 100)));
 
-            menu.add(item(I18n.t("autolayout.ui.menuEditAdvancedParameters"),
+            javax.swing.JMenu advanced = new javax.swing.JMenu(
+                I18n.t("autolayout.ui.menuEditAdvancedParameters"));
+
+            int length = number(target, "maxTrainLength", 0);
+
+            advanced.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
+                length == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(length)),
                 () -> promptNumber(target, "maxTrainLength",
                     "autolayout.ui.promptEnterMaxTrainLength", 0)));
 
-            menu.add(item(I18n.t("autosetup.ui.labelPriority"),
+            int priority = number(target, "priority", 0);
+
+            advanced.add(item(I18n.f("autolayout.ui.menuStationPriority",
+                priority == 0 ? I18n.t("autolayout.ui.default") : String.valueOf(priority)),
                 () -> promptNumber(target, "priority",
                     "autolayout.ui.promptEnterStationPriority", 0)));
 
-            javax.swing.JMenuItem excluded = item(I18n.t("autolayout.ui.menuExcludedLocomotives"),
-                () -> promptLocomotives(target, "excludedLocs"));
-            excluded.setToolTipText(I18n.t("autolayout.ui.tooltip.ExcludedLocomotives"));
-            menu.add(excluded);
+            menu.add(advanced);
 
-            menu.add(item(I18n.t("autosetup.ui.labelHomeFor"),
-                () -> promptLocomotives(target, "home")));
+            menu.add(item(I18n.f("autolayout.ui.menuExcludedLocomotives",
+                strings(target, "excludedLocs").size()),
+                () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
+
+            menu.add(item(I18n.f("autosetup.ui.menuHomeFor", strings(target, "home").size()),
+                () -> promptLocomotives(target, "home", placedLocomotives())));
+
+            menu.addSeparator();
+
+            // Placing a locomotive, which had no home at all after the graph window went.
+            String standing = locomotiveAt(target);
+
+            if (standing == null)
+            {
+                menu.add(item(I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
+                    () -> placeLocomotive(target)));
+            }
+            else
+            {
+                menu.add(item(I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", standing),
+                    () -> session.setPointProperty(target, "loc", null)));
+            }
 
             menu.addSeparator();
         }
@@ -696,14 +737,94 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Every locomotive the control station knows about.
+     */
+    private List<String> allLocomotives()
+    {
+        return locomotiveNames == null
+            ? java.util.Collections.<String>emptyList() : locomotiveNames.get();
+    }
+
+    /**
+     * Only the locomotives placed somewhere on this layout.
+     *
+     * A home is where a particular engine belongs, so offering the whole roster invites choosing one
+     * that autonomy has never heard of - the setting would be stored and quietly do nothing.
+     */
+    private List<String> placedLocomotives()
+    {
+        List<String> out = new java.util.ArrayList<>();
+
+        if (session.getReducer() == null) return out;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            String at = locomotiveAt(tile);
+
+            if (at != null && !out.contains(at)) out.add(at);
+        }
+
+        return out;
+    }
+
+    /**
+     * Which locomotive is standing on a point, or null.
+     */
+    private String locomotiveAt(TileKey tile)
+    {
+        Object placed = session.getPointProperty(tile, "loc");
+
+        if (!(placed instanceof org.json.JSONObject)) return null;
+
+        org.json.JSONObject loc = (org.json.JSONObject) placed;
+
+        return loc.has("name") ? loc.getString("name") : null;
+    }
+
+    /**
+     * Puts a locomotive on a point.
+     *
+     * One at a time, and only where it is not already: a locomotive standing in two places at once is
+     * a state the running layout cannot represent, so it is removed from wherever it was first.
+     */
+    private void placeLocomotive(TileKey tile)
+    {
+        List<String> names = allLocomotives();
+
+        if (names.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
+            return;
+        }
+
+        Object chosen = JOptionPane.showInputDialog(this,
+            I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
+            I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
+            JOptionPane.PLAIN_MESSAGE, null, names.toArray(), names.get(0));
+
+        if (chosen == null) return;
+
+        String name = String.valueOf(chosen);
+
+        // lift it off wherever it was standing before
+        for (TileKey other : session.getReducer().getPoints().keySet())
+        {
+            if (name.equals(locomotiveAt(other))) session.setPointProperty(other, "loc", null);
+        }
+
+        session.setPointProperty(tile, "loc", new org.json.JSONObject().put("name", name));
+    }
+
+    /**
      * Asks which locomotives, as a multi-select list rather than typed names - a name that does not
      * match the roster exactly would silently do nothing.
+     *
+     * @param tile
+     * @param key the point property to store the choice under
+     * @param names the locomotives worth offering, which is not always the whole roster
      */
-    private void promptLocomotives(TileKey tile, String key)
+    private void promptLocomotives(TileKey tile, String key, List<String> names)
     {
-        List<String> names = locomotiveNames == null
-            ? java.util.Collections.<String>emptyList() : locomotiveNames.get();
-
         if (names.isEmpty())
         {
             JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
@@ -715,7 +836,10 @@ public class AutonomyEditorPanel extends JPanel
         for (String name : names) model.addElement(name);
 
         javax.swing.JList<String> list = new javax.swing.JList<>(model);
-        list.setVisibleRowCount(Math.min(10, names.size()));
+
+        // Tall enough to choose from without scrolling on an ordinary roster; the old dialog showed
+        // four rows and made picking three engines out of twenty a scrolling exercise.
+        list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
         control(list);
 
         Set<String> chosen = strings(tile, key);
@@ -745,125 +869,6 @@ public class AutonomyEditorPanel extends JPanel
             picked.isEmpty() ? null : new org.json.JSONArray(picked));
     }
 
-    /**
-     * The three answers for one route, with the two one-way options named by where they lead rather
-     * than by an A and a B nobody can see.
-     */
-    private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
-        org.traincontrol.base.TilePorts.Route route)
-    {
-        List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
-
-        Direction current = session.getGraph().getDirection(tile, routeId);
-
-        items.add(directionItem(tile, routeId, Direction.BOTH,
-            I18n.t("autosetup.ui.menuRouteBoth"), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
-        items.add(directionItem(tile, routeId, Direction.NONE,
-            I18n.t("autosetup.ui.menuRouteNone"), current));
-
-        return items;
-    }
-
-    private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
-        final Direction direction, String text, Direction current)
-    {
-        javax.swing.JRadioButtonMenuItem item =
-            new javax.swing.JRadioButtonMenuItem(text, direction == current);
-
-        item.addActionListener(e ->
-        {
-            // Set on the run, not the tile: a run of plain track has one direction, and setting it a
-            // tile at a time is both busywork and a way to end up with a run that contradicts itself.
-            session.setRunDirection(tile, routeId, direction);
-            refresh();
-        });
-
-        return item;
-    }
-
-    public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
-    {
-        if (tile == null || session.getGraph() == null) return;
-
-        // A one-way run was started from a right-click menu and is waiting for its far end.
-        if (oneWayFrom != null)
-        {
-            TileKey from = oneWayFrom;
-            oneWayFrom = null;
-
-            int changed = session.setOneWayRun(from, tile);
-
-            say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
-                : I18n.f("autosetup.ui.oneWayDone", changed));
-
-            refresh();
-            return;
-        }
-
-        // Autonomy takes no notice of this square, so a click here changes nothing.  Route buttons are
-        // the case that matters: their connections are INFERRED from the track around them, so letting
-        // them be set by hand would offer a decision the next rebuild would silently discard.
-        if (isIgnored(tile))
-        {
-            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
-            return;
-        }
-
-        if (addToSelection)
-        {
-            if (!selection.remove(tile)) selection.add(tile);
-
-            refresh();
-            return;
-        }
-
-        try
-        {
-            switch (tool)
-            {
-                case TEST: applyTest(tile, component); break;
-                default: cycle(tile); break;
-            }
-        }
-        catch (RuntimeException e)
-        {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
-        }
-
-        refresh();
-    }
-
-    private boolean flag(TileKey tile, String key)
-    {
-        return Boolean.TRUE.equals(session.getPointProperty(tile, key));
-    }
-
-    private Set<String> strings(TileKey tile, String key)
-    {
-        Set<String> out = new LinkedHashSet<>();
-
-        Object value = session.getPointProperty(tile, key);
-
-        if (value instanceof org.json.JSONArray)
-        {
-            for (Object o : (org.json.JSONArray) value) out.add(String.valueOf(o));
-        }
-        else if (value != null)
-        {
-            out.add(String.valueOf(value));
-        }
-
-        return out;
-    }
-
-    /**
-     * Asks what to call a sensor.  Quotes are stripped, because Point strips them itself and a name
-     * carrying one would silently change under the user.
-     */
     private void promptName(TileKey tile)
     {
         String current = session.getStore().getPointName(tile);
@@ -976,6 +981,66 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         selection.clear();
+    }
+
+    /**
+     * A tile on the diagram was clicked while autonomy mode is on.
+     *
+     * @param tile which square
+     * @param component what is drawn there
+     * @param addToSelection whether the click was a shift-click, which adds to a bulk selection instead
+     *        of acting immediately
+     */
+    public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
+    {
+        if (tile == null || session.getGraph() == null) return;
+
+        // A one-way run was started from a right-click menu and is waiting for its far end.
+        if (oneWayFrom != null)
+        {
+            TileKey from = oneWayFrom;
+            oneWayFrom = null;
+
+            int changed = session.setOneWayRun(from, tile);
+
+            say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
+                : I18n.f("autosetup.ui.oneWayDone", changed));
+
+            refresh();
+            return;
+        }
+
+        // Autonomy takes no notice of this square, so a click here changes nothing.  Route buttons are
+        // the case that matters: their connections are INFERRED from the track around them, so letting
+        // them be set by hand would offer a decision the next rebuild would silently discard.
+        if (isIgnored(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+            return;
+        }
+
+        if (addToSelection)
+        {
+            if (!selection.remove(tile)) selection.add(tile);
+
+            refresh();
+            return;
+        }
+
+        try
+        {
+            switch (tool)
+            {
+                case TEST: applyTest(tile, component); break;
+                default: cycle(tile); break;
+            }
+        }
+        catch (RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+        }
+
+        refresh();
     }
 
     /**
