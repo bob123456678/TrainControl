@@ -315,6 +315,61 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * Two ways round between the same pair of sensors must not become two edges.
+     *
+     * An edge's identity in the autonomy model is its pair of Point NAMES, so a passing loop used to
+     * emit two edges called the same thing; createEdge throws on the second and parseAuto invalidates
+     * the WHOLE configuration.  A user with a passing loop could not load autonomy at all, and the
+     * message named only JSON - nothing pointed back at the diagram.
+     */
+    @Test
+    public void testTwoRoutesBetweenTheSameSensorsBecomeOneEdge() throws IOException
+    {
+        // A - switch - {upper, lower} - switch - B, i.e. an ordinary passing loop.
+        //
+        //        (2,0)-(3,0)-(4,0)          upper
+        //       /                         //  A(0,1)-(1,1)         (5,1)-B(6,1)
+        //       \                 /
+        //        (2,2)-(3,2)-(4,2)          lower
+        LayoutDiagram page = page("main", 10, 5);
+
+        feedback(page, 0, 1, 11);
+        straight(page, 1, 1);
+
+        add(page, componentType.SWITCH_LEFT, 2, 1, 1, 40);
+        wire(page, 2, 1, 40, Accessory.accessoryType.SWITCH);
+
+        add(page, componentType.CURVE, 2, 0, 0);
+        straight(page, 3, 0);
+        add(page, componentType.CURVE, 4, 0, 1);
+
+        add(page, componentType.CURVE, 2, 2, 3);
+        straight(page, 3, 2);
+        add(page, componentType.CURVE, 4, 2, 2);
+
+        add(page, componentType.SWITCH_RIGHT, 5, 1, 3, 41);
+        wire(page, 5, 1, 41, Accessory.accessoryType.SWITCH);
+
+        feedback(page, 6, 1, 12);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        // whatever the geometry turns out to be, the invariant is the same: at most one edge per
+        // ordered pair, because that is all the model can hold
+        Set<String> pairs = new HashSet<>();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            String pair = edge.getStart() + " -> " + edge.getEnd();
+
+            assertTrue(pairs.add(pair), "two edges emitted for " + pair);
+
+            assertNotEquals(edge.getStart(), edge.getEnd(),
+                "an edge from a Point to itself is a shape the model has no room for");
+        }
+    }
+
+    /**
      * A sensor with nothing next to it is counted and left out.  Emitting it would only produce an
      * unreachable node that fails validation later, with nothing to say about why.
      */

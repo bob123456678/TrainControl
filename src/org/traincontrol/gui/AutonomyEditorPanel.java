@@ -812,7 +812,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             // Set on the run, not the tile: a run of plain track has one direction, and setting it a
             // tile at a time is both busywork and a way to end up with a run that contradicts itself.
-            session.setRunDirection(tile, routeId, direction);
+            if (session.setRunDirection(tile, routeId, direction) == 0)
+            {
+                say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
+            }
+
             refresh();
         });
 
@@ -1240,13 +1244,16 @@ public class AutonomyEditorPanel extends JPanel
 
         Direction next = after(session.getGraph().getDirection(target, only.getKey()));
 
-        session.setRunDirection(target, only.getKey(), next);
+        int changed = session.setRunDirection(target, only.getKey(), next);
 
         // The tile that changed can be some way from the one clicked, at the head of a long run, so it
         // is flashed as well as named - a message about a square nobody can find is half an answer.
         if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
 
-        say(hint, I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
+        // Say what actually happened.  This used to announce a direction unconditionally, so a run that
+        // could not be set - a dead end, in the days when that was possible - reported success.
+        say(hint, changed == 0 ? I18n.t("autosetup.ui.oneWayNoPath")
+            : I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
     }
 
     /**

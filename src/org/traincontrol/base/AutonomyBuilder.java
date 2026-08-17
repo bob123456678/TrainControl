@@ -292,12 +292,26 @@ public class AutonomyBuilder
             {
                 seen.put(base, 1);
                 out.put(point.getTile(), base);
+
+                continue;
             }
-            else
+
+            // Keep suffixing until the result is genuinely unused, and record what was emitted.  The
+            // disambiguated name used to be written out without ever being added to seen, so three
+            // points named X, X and "X (2)" produced "X (2)" twice - which parseAuto rejects outright,
+            // and which silently merges two tiles' placements when capture inverts this map.
+            int suffix = count + 1;
+            String candidate = base + " (" + suffix + ")";
+
+            while (seen.containsKey(candidate))
             {
-                seen.put(base, count + 1);
-                out.put(point.getTile(), base + " (" + (count + 1) + ")");
+                candidate = base + " (" + (++suffix) + ")";
             }
+
+            seen.put(base, suffix);
+            seen.put(candidate, 1);
+
+            out.put(point.getTile(), candidate);
         }
 
         return out;

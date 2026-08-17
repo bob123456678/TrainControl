@@ -975,6 +975,13 @@ public class TileGraph
             if (landing != null && tiles.containsKey(landing.getTile())) out.add(landing.getTile());
         }
 
+        // A portal's partner is a neighbour reached through no side at all, so the loop above cannot
+        // find it - which made every path search stop dead at a tunnel or link, even though the reducer
+        // walks straight through one and derives edges over it.
+        TileKey partner = portals.get(tile);
+
+        if (partner != null && tiles.containsKey(partner)) out.add(partner);
+
         return out;
     }
 

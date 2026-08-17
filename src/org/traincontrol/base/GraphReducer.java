@@ -255,6 +255,19 @@ public class GraphReducer
     private final List<TileGraph.Problem> problems = new ArrayList<>();
     private int isolatedFeedbackTiles = 0;
 
+    // One edge per ordered pair of Points, because that is the model's own notion of edge identity.
+    private final Map<String, ReducedEdge> edgeByPair = new LinkedHashMap<>();
+
+    /**
+     * Two physical routes join the same pair of sensors; only the shorter is used.
+     */
+    public static final String WARN_PARALLEL_ROUTE = "autosetup.ui.warnParallelRoute";
+
+    /**
+     * A run of track leaves a sensor and returns to it without passing another - a balloon loop.
+     */
+    public static final String WARN_SELF_LOOP = "autosetup.ui.warnSelfLoop";
+
     public GraphReducer(TileGraph graph, Authored authored)
     {
         this.graph = graph;
@@ -269,6 +282,7 @@ public class GraphReducer
     {
         points.clear();
         edges.clear();
+        edgeByPair.clear();
         locks.clear();
         problems.clear();
         isolatedFeedbackTiles = 0;
@@ -489,8 +503,45 @@ public class GraphReducer
         // Reached the next Point: the edge is everything between the two
         if (points.containsKey(tile))
         {
-            edges.add(new ReducedEdge(start, tile, new ArrayList<>(path),
-                new LinkedHashMap<>(commands), sumLength(path)));
+            // An edge's identity in the autonomy model is its pair of Point NAMES, so two physical
+            // routes between the same two sensors - a passing loop, a double-track section - cannot
+            // both be emitted: createEdge throws on the second and parseAuto invalidates the entire
+            // configuration, reporting only edge JSON with nothing pointing back at the diagram.
+            //
+            // A self-loop is the same problem in one tile: a balloon loop returns to its own sensor and
+            // the model has no edge from a Point to itself.
+            if (tile.equals(start))
+            {
+                problems.add(new TileGraph.Problem(start, WARN_SELF_LOOP, false));
+                return;
+            }
+
+            String pair = start.toString() + " -> " + tile.toString();
+
+            ReducedEdge existing = edgeByPair.get(pair);
+
+            if (existing != null)
+            {
+                // Keep the shorter route, which is the one a train would be given anyway, and say that
+                // the other exists - silently dropping half a layout's track would be worse than the
+                // duplicate was.
+                if (path.size() >= existing.getPath().size())
+                {
+                    problems.add(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+                    return;
+                }
+
+                edges.remove(existing);
+
+                problems.add(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+            }
+
+            ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),
+                new LinkedHashMap<>(commands), sumLength(path));
+
+            edges.add(edge);
+            edgeByPair.put(pair, edge);
+
             return;
         }
 

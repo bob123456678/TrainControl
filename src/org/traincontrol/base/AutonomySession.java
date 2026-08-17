@@ -566,6 +566,23 @@ public class AutonomySession
 
         if (path == null) return -1;
 
+        return applyOneWay(path);
+    }
+
+    /**
+     * Sets one direction along a path that is already known, tile by tile.
+     *
+     * Separate from the two-argument form because a RUN knows its own tiles, and re-deriving them from
+     * its two ends with a shortest-path search is wrong wherever two chains join the same pair: on a
+     * passing loop or a double-track section, both runs have the same ends, so the search returned the
+     * other chain and one-wayed track the user had not touched - while the run they clicked kept its
+     * old direction and its cycle stuck.
+     *
+     * @param path the squares in order, boundaries included
+     * @return how many tiles were changed
+     */
+    private int applyOneWay(List<TileKey> path)
+    {
         int changed = 0;
 
         // Only the track BETWEEN the two ends is restricted.  The ends themselves are the squares the
@@ -786,7 +803,15 @@ public class AutonomySession
         if (TilePorts.isDisqualified(component.getType())
             || TilePorts.isTransparent(component.getType())) return false;
 
-        return graph.getRoutes(tile).size() == 1;
+        if (graph.getRoutes(tile).size() != 1) return false;
+
+        // A stub - an END, a tunnel mouth, a link - has one route whose two sides are the same, so
+        // walking "through" it comes straight back out the way it went in.  That made the walk report a
+        // tile INSIDE the run as its boundary, leaving the tail of the run unset while the rest went
+        // one-way: a run silently disagreeing with itself, which is the trap runs exist to prevent.
+        Route route = firstRoute(tile);
+
+        return route != null && route.getA() != route.getB();
     }
 
     /**
@@ -857,8 +882,9 @@ public class AutonomySession
      * @param leader the tile the user set
      * @param routeId which of its routes
      * @param direction what they chose
+     * @return how many tiles were changed, so a caller does not announce a change that did not happen
      */
-    public void setRunDirection(TileKey leader, RouteId routeId, Direction direction)
+    public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
         Run run = runs().get(leader);
 
@@ -866,36 +892,46 @@ public class AutonomySession
         if (run == null)
         {
             setDirection(leader, routeId, direction);
-            return;
+            return 1;
         }
 
         // Both ways and closed mean the same on every tile, so they go on directly.
         if (direction == Direction.BOTH || direction == Direction.NONE)
         {
             setDirection(new LinkedHashSet<>(run.getTiles()), direction);
-            return;
+            return run.getTiles().size();
         }
 
         Route route = graph.getRoutes(leader).get(routeId);
 
-        if (route == null) return;
+        if (route == null) return 0;
 
         Side toward = direction == Direction.TOWARD_A ? route.getA() : route.getB();
 
         Landing landing = graph.landing(leader, toward);
 
-        // Which way along the run the user pointed: toward the far point, or back toward the near one.
-        // setOneWayRun then translates that into each tile's own sides, which is the part nobody should
-        // have to do by hand.
+        // Which way along the run the user pointed.  The run's OWN tiles are walked, not a path
+        // re-derived from its two ends - see applyOneWay.  The boundaries are included so the first and
+        // last tiles of the run get a direction like the rest; a null boundary (track that simply stops)
+        // is left out rather than making the whole thing impossible.
+        List<TileKey> path = new ArrayList<>();
+
+        if (run.getStart() != null) path.add(run.getStart());
+
+        path.addAll(run.getTiles());
+
+        if (run.getEnd() != null) path.add(run.getEnd());
+
         boolean towardEnd = landing == null
             || !run.getTiles().isEmpty() && landing.getTile().equals(nextAfter(run, leader));
 
-        setOneWayRun(towardEnd ? run.getStart() : run.getEnd(),
-            towardEnd ? run.getEnd() : run.getStart());
+        if (!towardEnd) Collections.reverse(path);
+
+        return applyOneWay(path);
     }
 
     /**
-     * The tile after this one along a run, or the run's far point when it is the last.
+     * The tile after this one along a run, or the run's far boundary when it is the last.
      */
     private TileKey nextAfter(Run run, TileKey tile)
     {
