@@ -1849,13 +1849,10 @@ public class AutonomyEditorPanel extends JPanel
 
         if (sides.isEmpty()) return;
 
-        // Four answers, not sixteen.  Stepping a binary counter over every arm did make every
-        // combination reachable, and made the two anybody actually wants - everything open, everything
-        // shut - fifteen clicks apart on a four-armed crossing.  A click is for the common answer; the
-        // right-click menu still sets any single branch, which is where an uncommon one belongs.
-        //
-        // Everything, then each ROUTE on its own, then nothing.  On a crossing that reads as
-        // north-south only and east-west only, which is what a crossing is usually being asked.
+        // Every combination, in order of how often it is wanted: everything, then each ROUTE on its
+        // own, then nothing, then all the rest.  On a crossing the first four read as all ways,
+        // north-south only, east-west only, nothing - which is what a crossing is usually being asked -
+        // and a fifth click carries on into the combinations that are only occasionally wanted.
         java.util.List<Integer> states = cycleStates(routes, sides);
 
         int current = armMask(target, routes, sides);
@@ -1952,6 +1949,19 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         states.add(0);
+
+        // Then everything else.  The four above are the answers somebody wants most of the time, so
+        // they come first and are reached in at most four clicks; the rest follow, so clicking does
+        // eventually reach every combination rather than declaring some of them unavailable.
+        //
+        // This is what both earlier attempts were missing.  A four-state cycle could not express
+        // "north and west open, east shut"; a sixteen-state counter could, and put all-open fifteen
+        // clicks from all-shut.  Ordering the same sixteen answers by how often they are wanted costs
+        // nothing and gives both.
+        for (int mask = 1; mask < all; mask++)
+        {
+            if (!states.contains(mask)) states.add(mask);
+        }
 
         return states;
     }
