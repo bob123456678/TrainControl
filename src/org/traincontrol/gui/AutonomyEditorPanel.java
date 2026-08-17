@@ -429,10 +429,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
-        JButton check = new JButton(I18n.t("autosetup.ui.btnCheckConfiguration"));
-        check.addActionListener(e -> recheck());
-        panel.add(button(check));
-
+        // No "check this setup" button.  The checks are re-run after every edit, so it never had
+        // anything of its own to do - and its message counted the list's ROWS, which include the
+        // Errors and Warnings headings, so it reported one or two more than the list showed.
         JButton nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         panel.add(button(nameAll));
@@ -442,19 +441,6 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(button(save));
 
         return panel;
-    }
-
-    /**
-     * Re-runs the checks and says so, so that pressing it twice does not look like a button that does
-     * nothing the second time.
-     */
-    private void recheck()
-    {
-        refresh();
-
-        say(hint, findingsModel.isEmpty()
-            ? I18n.t("autosetup.ui.labelCheckedClean")
-            : I18n.f("autosetup.ui.labelCheckedNow", findingsModel.size()));
     }
 
     // --- what a click does ------------------------------------------------------------------------
@@ -574,6 +560,8 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(
                 I18n.f("autosetup.ui.menuStationGroup", stationSummary(target, isStation)));
 
+            stationMenu.setToolTipText(I18n.t("autosetup.ui.tooltipStationGroup"));
+
             javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
 
             stationMenu.add(radio(group, I18n.t("autosetup.ui.menuCanStop"),
@@ -655,6 +643,12 @@ public class AutonomyEditorPanel extends JPanel
             menu.addSeparator();
         }
 
+        // Everything about where trains may run, under one heading.  These were loose items at the
+        // bottom of the menu - a branch submenu each, then All branches, then One-way run, then a
+        // link's pairing - and each is a different sentence about the same subject.  Read as a list
+        // they looked like unrelated leftovers after the point settings.
+        javax.swing.JMenu connections = new javax.swing.JMenu(I18n.t("autosetup.ui.menuConnections"));
+
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         if (!routes.isEmpty())
@@ -679,13 +673,13 @@ public class AutonomyEditorPanel extends JPanel
                         branch.add(option);
                     }
 
-                    menu.add(branch);
+                    connections.add(branch);
                 }
                 else
                 {
                     for (javax.swing.JMenuItem option : directionItems(target, entry.getKey(), route))
                     {
-                        menu.add(option);
+                        connections.add(option);
                     }
                 }
             }
@@ -700,34 +694,38 @@ public class AutonomyEditorPanel extends JPanel
                 all.add(item(I18n.t("autosetup.ui.menuRouteNone"),
                     () -> setAllBranches(target, Direction.NONE)));
 
-                menu.add(all);
+                connections.add(all);
             }
 
-            menu.addSeparator();
+            connections.addSeparator();
         }
 
-        menu.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
+        connections.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
         {
             oneWayFrom = target;
             waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
         }));
 
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
-
+        // A link's pairing is the longest-range connection on the diagram - it joins two pages - so it
+        // belongs here rather than on its own at the end.
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
         {
-            menu.addSeparator();
+            connections.addSeparator();
 
-            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
-            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
+            connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+            connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
-                menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
+                connections.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () -> session.unpairPortal(target)));
             }
         }
+
+        menu.add(connections);
+
+        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
         // A station name can go on any square whose track runs straight through, not only on a text
         // square: a straight, a sensor, a signal, an uncoupler.  The label is drawn beside the tile
@@ -995,20 +993,21 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String stationSummary(TileKey tile, boolean isStation)
     {
-        if (Boolean.FALSE.equals(session.getPointProperty(tile, "active")))
-        {
-            return I18n.t("autosetup.ui.stationNeither");
-        }
+        // Yes or no, and nothing else.  The heading answers one question - may a train stop here -
+        // and the radio inside answers the rest; spelling every designation out again made a line
+        // long enough that the answer was the hardest part of it to find.
+        //
+        // A square that is out of service reads "no", because no train can stop on one.  Why is a
+        // click away and does not belong in a heading.
+        boolean stops = isStation
+            && !Boolean.FALSE.equals(session.getPointProperty(tile, "active"));
 
-        if (!isStation) return I18n.t("autosetup.ui.stationNo");
+        // The one exception, because it changes what the square is FOR rather than merely describing
+        // it: a station autonomy will not choose is a berth, and that is worth a mark you can see
+        // without opening anything.
+        String star = stops && !session.isAutoDestination(tile) ? " *" : "";
 
-        java.util.List<String> parts = new java.util.ArrayList<>();
-
-        if (!session.isAutoDestination(tile)) parts.add(I18n.t("autosetup.ui.stationParking"));
-
-        if (session.isTurnAround(tile)) parts.add(I18n.t("autosetup.ui.stationTerminus"));
-
-        return parts.isEmpty() ? I18n.t("autosetup.ui.stationYes") : String.join(", ", parts);
+        return I18n.t(stops ? "autosetup.ui.stationYes" : "autosetup.ui.stationNo") + star;
     }
 
     /**
