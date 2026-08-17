@@ -107,6 +107,17 @@ public class LayoutDiagramComponent
         this(original.type, original.x, original.y, original.orientation, original.state, original.address, original.rawAddress, original.protocol);
         
         this.label = original.label;
+
+        // What the file said and this class cannot express.  Without these a copy is a component with
+        // its verbatim record removed, and the editor copies constantly - deepCopyLayout builds every
+        // undo state through this constructor, so a single undo replaced the whole page with stripped
+        // components and the next Save deleted from the file everything they had been carrying.  From
+        // a gesture nobody would think of as destructive, on a page that need never have touched
+        // autonomy.
+        this.originalTyp = original.originalTyp;
+
+        this.unmodelledKeys = original.unmodelledKeys == null
+            ? null : new TreeMap<>(original.unmodelledKeys);
     }
     
     /**
@@ -740,20 +751,11 @@ public class LayoutDiagramComponent
     private String originalTyp;
 
     /**
-     * The rotation exactly as the file gave it, before any correction this program applies on the way
-     * in.  Written back unchanged while the orientation has not been edited, so a correction cannot be
-     * applied twice - once when read and once more when read again after a save.
-     */
-    private Integer originalDrehung;
-
-    /**
      * @param typ the file's own type word
-     * @param drehung the file's own rotation, or null if it gave none
      */
-    public void setOriginalFileForm(String typ, Integer drehung)
+    public void setOriginalTyp(String typ)
     {
         this.originalTyp = typ;
-        this.originalDrehung = drehung;
     }
 
     /**
@@ -841,25 +843,35 @@ public class LayoutDiagramComponent
         //
         // Only while the type is unchanged.  Once the user redraws the square in the diagram editor it
         // is a different component and the canonical name is the honest one.
+        // Decided before the rotation is written, because a rotation number only means anything
+        // relative to the word standing beside it.
+        String writtenTyp = originalTyp != null && getComponentTypeOf(originalTyp) == this.type
+            ? originalTyp : getTypeString(this.type);
+
         if (this.type != componentType.TEXT)
         {
-            builder.append(" .typ=")
-                .append(originalTyp != null && getComponentTypeOf(originalTyp) == this.type
-                    ? originalTyp : getTypeString(this.type))
-                .append("\n");
+            builder.append(" .typ=").append(writtenTyp).append("\n");
         }
         
-        // Add .drehung only if orientation is not 0 - or write back exactly what was read, where the
-        // orientation has not been touched.  See the note on typ above: the parser corrects the
-        // rotation of some signal types on the way in, and writing the corrected value back under a
-        // name that no longer triggers the correction turns the signal a step on every round trip.
-        if (originalDrehung != null && orientationMatchesFile())
+        // Back into the file's own space.  The parser turns any type whose word contains "_f_" back
+        // by a quarter on the way in, to correct artwork the CS2 draws rotated - so writing the
+        // corrected orientation out under such a word applies that correction a second time on the
+        // next load, and the signal creeps a step with every save.  Inverting it here, against the
+        // word actually being written rather than the one that was read, reproduces the file's own
+        // number exactly in every case - including "no .drehung at all", which is how a file spells
+        // rotation 0.
+        //
+        // This replaced a pair of branches: write back what was read when the orientation looked
+        // untouched, otherwise write the current one.  Two rules that had to agree and did not.  A
+        // semaphore the file gave no rotation, and any semaphore the user turned, both fell to the
+        // second branch and drifted a quarter - which was the very defect the first branch was added
+        // to prevent.
+        int fileRotation = writtenTyp.contains("_f_")
+            ? Math.floorMod(this.orientation + 1, 4) : this.orientation;
+
+        if (fileRotation != 0)
         {
-            builder.append(" .drehung=").append(originalDrehung.intValue()).append("\n");
-        }
-        else if (this.orientation != 0)
-        {
-            builder.append(" .drehung=").append(this.orientation).append("\n");
+            builder.append(" .drehung=").append(fileRotation).append("\n");
         }
         
         // Custom state
@@ -1114,24 +1126,6 @@ public class LayoutDiagramComponent
      * Odd addresses are controlled by the green button - used for uncouplers
      * @return 
      */
-    /**
-     * Whether this component's orientation is still the one the file's rotation produced.
-     *
-     * The parser turns some signal types by a step on the way in, so the stored orientation and the
-     * file's number legitimately differ; what matters is whether the user has changed it since.
-     */
-    private boolean orientationMatchesFile()
-    {
-        if (originalDrehung == null) return false;
-
-        if (originalTyp != null && originalTyp.contains("_f_"))
-        {
-            return this.orientation == Math.floorMod(originalDrehung - 1, 4);
-        }
-
-        return this.orientation == originalDrehung.intValue();
-    }
-
     public boolean isLogicalGreen()
     {
         return rawAddress % 2 != 0;

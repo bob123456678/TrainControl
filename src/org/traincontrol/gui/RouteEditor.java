@@ -240,6 +240,62 @@ public class RouteEditor extends PositionAwareJFrame
      * @param text
      * @return 
      */
+    /**
+     * The part of a line that says WHAT it sets, as opposed to what it sets it to.
+     *
+     * Always an exact prefix of the line, so that the rebuild below can put the line back together as
+     * key + "," + value.
+     *
+     * An accessory line is "name,setting", so its first field identifies it.  A locomotive line is
+     * "prefix,name,value" - and keying on the first field alone made every locomotive in the route
+     * share the key "locspeed", so filtering kept the last one and silently dropped the rest from the
+     * middle of the text area.  A function line identifies a function as well: a route may set several
+     * on the same locomotive and each is its own setting.
+     *
+     * Deliberately not "everything but the last field": every locomotive line can carry an optional
+     * trailing delay, so the last field is not reliably the value.
+     *
+     * @param line
+     * @return
+     */
+    private static String dedupKeyOf(String line)
+    {
+        int fields = identifyingFieldsOf(line);
+
+        int cut = -1;
+
+        for (int i = 0; i < fields; i++)
+        {
+            cut = line.indexOf(',', cut + 1);
+
+            if (cut < 0) return line;
+        }
+
+        return line.substring(0, cut);
+    }
+
+    /**
+     * How many leading comma-separated fields identify what the given line sets.
+     * @param line
+     * @return
+     */
+    private static int identifyingFieldsOf(String line)
+    {
+        int comma = line.indexOf(',');
+
+        if (comma < 0) return 1;
+
+        String prefix = line.substring(0, comma).trim().toLowerCase();
+
+        if (RouteCommand.LOC_FUNC_PREFIX.equals(prefix)) return 3;
+
+        if (RouteCommand.LOC_SPEED_PREFIX.equals(prefix)
+            || RouteCommand.LOC_DIRECTION_PREFIX.equals(prefix)
+            || RouteCommand.LOC_AUTO_PREFIX.equals(prefix)) return 2;
+
+        return 1;
+    }
+
     public static String filterConfigCommands(String text)
     {
         String[] lines = text.split("\n");
@@ -247,10 +303,9 @@ public class RouteEditor extends PositionAwareJFrame
 
         for (String line : lines)
         {
-            String[] keyValue = line.split(",", 2); // Split on the first comma
+            String key = dedupKeyOf(line);
 
-            String key = keyValue.length == 2 ? keyValue[0] : line;
-            String value = keyValue.length == 2 ? keyValue[1] : "";
+            String value = line.length() > key.length() ? line.substring(key.length() + 1) : "";
 
             // Rewriting an accessory moves it to the end, so the lines that survive are in the
             // order they were last written.  Keeping the latest value at the earliest position

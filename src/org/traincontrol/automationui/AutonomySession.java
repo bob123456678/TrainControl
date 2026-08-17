@@ -480,6 +480,8 @@ public class AutonomySession
     {
         Map<LayoutDiagram, List<LayoutDiagramComponent>> found = new LinkedHashMap<>();
 
+        boolean migrated = false;
+
         for (LayoutDiagram page : pages)
         {
             for (LayoutDiagramComponent component : page.getAll())
@@ -507,11 +509,23 @@ public class AutonomySession
 
                 TileKey station = tileNamed(name);
 
-                if (station != null) store.setCaption(where, station);
+                if (station != null)
+                {
+                    store.setCaption(where, station);
+
+                    migrated = true;
+                }
             }
         }
 
         List<String> failures = new ArrayList<>();
+
+        // Nothing named a station this setup knows, so there is nothing to migrate and nothing to
+        // write.  Saving regardless created a setup file for a layout with no autonomy at all, and
+        // rewrote every page that merely CONTAINED a label - and because an unrecognised label is
+        // deliberately left where it is, the same pages were found and rewritten again at every
+        // launch from then on.  The sample layout's orphan labels made that the shipped default.
+        if (!migrated) return failures;
 
         try
         {
@@ -527,6 +541,8 @@ public class AutonomySession
 
         for (Map.Entry<LayoutDiagram, List<LayoutDiagramComponent>> entry : found.entrySet())
         {
+            boolean changed = false;
+
             for (LayoutDiagramComponent component : entry.getValue())
             {
                 // Only the ones that became a caption.  A label naming a station this setup has never
@@ -544,7 +560,14 @@ public class AutonomySession
                 // element with no text.  Anything the file said about that square which this program
                 // cannot model is still written, so emptying it is not the same as deleting the line.
                 component.setLabel("");
+
+                changed = true;
             }
+
+            // Only pages this actually changed.  A page holding nothing but unrecognised labels is
+            // looked at and left alone; writing it would rewrite a file for no reason, and the labels
+            // that caused the visit are still there to cause the next one.
+            if (!changed) continue;
 
             try
             {

@@ -2227,6 +2227,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The same question the Edit button answers, asked by anything that must not act while one is open.
      * @return
      */
+    /**
+     * Refuses an autonomy action while an editor holds the diagram, and says why.
+     *
+     * The Autonomy menu gates itself by disabling its items; the banner cannot, because it is a single
+     * button drawn before the state it guards against is entered.  Both of its actions are unsafe for
+     * the same reason the menu's are - loading saves the setup against a diagram somebody is still
+     * editing, discarding the names and captions of tiles they meant to Cancel, and both rebuild the
+     * main window underneath the open editor.
+     *
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhileEditorOpen()
+    {
+        if (!isLayoutEditorOpen()) return false;
+
+        JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
+
+        return true;
+    }
+
     public boolean isLayoutEditorOpen()
     {
         return editLayoutButton != null && !editLayoutButton.isEnabled();
@@ -2576,7 +2596,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupCannotRun"),
                 I18n.t("autosetup.ui.btnFixSetup"),
-                () -> openAutonomyEditor(null));
+                () ->
+                {
+                    if (refuseWhileEditorOpen()) return;
+
+                    openAutonomyEditor(null);
+                });
         }
         else
         {
@@ -2587,6 +2612,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.t("autosetup.ui.btnLoadConfiguration"),
                 () ->
                 {
+                    if (refuseWhileEditorOpen()) return;
+
                     AutonomyViewerPanel actions = getAutonomyViewerPanel();
 
                     if (actions == null) return;

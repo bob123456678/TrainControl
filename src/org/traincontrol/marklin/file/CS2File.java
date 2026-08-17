@@ -2367,19 +2367,11 @@ public final class CS2File
                             // writing the canonical word back collapses every variant the file
                             // distinguished, and the rotation of a semaphore signal is corrected on the
                             // way in by a rule keyed on the word that has just been thrown away.
-                            Integer drehung = null;
-
-                            try
-                            {
-                                if (m.get("drehung") != null) drehung = Integer.valueOf(m.get("drehung"));
-                            }
-                            catch (NumberFormatException e)
-                            {
-                                // not a number, so there is nothing to preserve - the export writes the
-                                // model's own orientation, which is what it did before this
-                            }
-
-                            added.setOriginalFileForm(m.get("typ"), drehung);
+                            // Only the word.  The rotation used to be kept too, so that an
+                            // untouched component could be written back verbatim, but the export now
+                            // derives the file's number from the word it is writing - which is exact,
+                            // and cannot disagree with a second rule.
+                            added.setOriginalTyp(m.get("typ"));
                         }
                     }
                     else

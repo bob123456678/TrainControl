@@ -363,6 +363,15 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.0 [Beta]
+    - Autonomy
+        - Deprecated the autonomy graph.  All automation is now handled in the track diagram and handled automatically.
+    - Route Bug Fixes
+        - Fixed bug where renaming a locomotive stopped every route whose condition named that locomotive from firing again.  The route stayed switched on and looked normal in the list, but its condition could no longer be met, so it quietly never ran
+        - Fixed bug where capturing commands into a route that drives more than one locomotive kept only the last one.  Capturing a turnout would make an earlier locomotive’s speed, direction, or function disappear from the middle of the command list, and saving kept the shortened route
+    - Track Diagram Bug Fixes
+        - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
+
 * v2.8.0 [8/2/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
     - Locomotive Control Page
