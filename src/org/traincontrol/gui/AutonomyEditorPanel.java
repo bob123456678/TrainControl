@@ -134,6 +134,15 @@ public class AutonomyEditorPanel extends JPanel
     private final JCheckBox showDirections = new JCheckBox(I18n.t("autosetup.ui.btnShowDirections"), true);
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
+    /**
+     * Whether the directions that are OPEN are drawn as well as the ones that are shut.
+     *
+     * Open track is most of a layout, so its arrows are most of the ink and they say what the reader
+     * can already assume.  Off, what is left is exactly the restrictions - which is what somebody
+     * checking a setup over is looking for.
+     */
+    private final JCheckBox showOpen = new JCheckBox(I18n.t("autosetup.ui.btnShowOpen"), true);
+
     // Built in the constructor, mounted by the window across the bottom of the diagram
     private JScrollPane findingsPanel;
 
@@ -318,6 +327,7 @@ public class AutonomyEditorPanel extends JPanel
         // answers which arrows are hidden, when the question nobody can answer from this diagram is
         // where the track actually breaks.  See the plan.
         showDirections.addActionListener(e -> refresh());
+        showOpen.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
         hint.setFont(FONT_HINT);
@@ -2135,6 +2145,18 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
+        // A link autonomy has been told to ignore carries no trains, so it carries no arrows either.
+        // Its route is still a stub the port map knows about, and drawn from that it kept an arrow
+        // saying traffic could leave through it - which is exactly what switching it off denied.
+        LayoutDiagramComponent atTile =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (atTile != null && org.traincontrol.automationui.TilePorts.hasPortal(atTile.getType())
+            && session.getStore().isPortalDisabled(tile))
+        {
+            ignored = true;
+        }
+
         // A tile that merely follows its run draws no arrows of its own, so the run reads as one
         // decision made at one end rather than eleven waiting to be made.  It is NOT shaded: grey on
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
@@ -2204,7 +2226,7 @@ public class AutonomyEditorPanel extends JPanel
 
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
-            traces.get(tile));
+            traces.get(tile), !showOpen.isSelected());
     }
 
     /**
@@ -2215,6 +2237,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean isPairedPortal(TileKey tile)
     {
+        if (session.getStore().isPortalDisabled(tile)) return false;
+
         LayoutDiagramComponent component =
             session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
 
@@ -2673,6 +2697,14 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowDirections()
     {
         return control(showDirections);
+    }
+
+    /**
+     * @return the open-arrows toggle, for the window's Toggle visibility box
+     */
+    public JCheckBox getShowOpen()
+    {
+        return control(showOpen);
     }
 
     /**

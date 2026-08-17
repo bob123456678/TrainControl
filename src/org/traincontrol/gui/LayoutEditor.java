@@ -554,6 +554,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 visibility.add(this.showAddressCheckbox);
                 visibility.add(autonomyPanel.getShowLengths());
                 visibility.add(autonomyPanel.getShowDirections());
+                visibility.add(autonomyPanel.getShowOpen());
 
                 autonomyVisibility = visibility;
             }

@@ -289,6 +289,15 @@ public class TileAnnotation
     private final List<Trace> traces;
 
     /**
+     * Whether only the directions that are SHUT are drawn.
+     *
+     * Open track is most of a layout, so its arrows are most of the ink, and they say the thing the
+     * reader can already assume.  Turned off, what is left is exactly the restrictions - which is the
+     * whole of what somebody checking a setup is looking for.
+     */
+    private final boolean blockedOnly;
+
+    /**
      * One square's worth of a tested path: in by one side, out by another.
      *
      * A null side is an end of the run - the sensor the test started or finished at - so the line stops
@@ -386,8 +395,18 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored, boolean curved, boolean portal, List<Trace> traces)
     {
+        this(marks, length, selected, badge, ignored, curved, portal, traces, false);
+    }
+
+    /**
+     * @param blockedOnly whether to draw only the directions that are shut
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces, boolean blockedOnly)
+    {
         this.curved = curved;
         this.portal = portal;
+        this.blockedOnly = blockedOnly;
         this.traces = traces == null ? Collections.<Trace>emptyList() : new ArrayList<>(traces);
 
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
@@ -492,7 +511,10 @@ public class TileAnnotation
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
             // contrast problem as writing on a photograph; this is the caption box behind the writing.
-            if (!marks.isEmpty())
+            // No wash when only the shut directions are drawn.  It exists to lift thin arrows off busy
+            // tile art, and with the open ones gone there is little left to lift - so all it did was
+            // grey most of the layout to make a handful of red arrows very slightly crisper.
+            if (!marks.isEmpty() && !blockedOnly)
             {
                 java.awt.Composite before = g.getComposite();
 
@@ -576,6 +598,8 @@ public class TileAnnotation
             int[] target = midpoint(entry.getKey(), width, height);
 
             if (target == null) continue;
+
+            if (blockedOnly && Boolean.TRUE.equals(entry.getValue())) continue;
 
             double[] outward = heading(entry.getKey(), width, height);
             int span = Math.min(width, height);
@@ -1044,7 +1068,8 @@ public class TileAnnotation
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
-            && traces.equals(other.traces) && marks.equals(other.marks);
+            && traces.equals(other.traces) && blockedOnly == other.blockedOnly
+            && marks.equals(other.marks);
     }
 
     @Override
@@ -1052,7 +1077,7 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3;
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3 + (blockedOnly ? 512 : 0);
     }
 
     @Override
