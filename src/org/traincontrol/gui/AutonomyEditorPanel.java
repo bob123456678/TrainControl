@@ -941,7 +941,18 @@ public class AutonomyEditorPanel extends JPanel
 
         // Offered on a blank square too, not only on one that already carries text: writing a station
         // name on a blank square is how a diagram with no text squares at all gets its first one.
-        menu.add(item(I18n.t("autosetup.ui.menuShowStationHere"), () -> promptStationLabel(tile, component)));
+        // Not over somebody's own caption.  A square carrying text that is not a station label is part
+        // of the user's drawing - a yard name, a note - and this editor writes autonomy, not diagrams.
+        // Offered and refused rather than hidden, so it is clear the square was considered.
+        boolean mine = label.trim().isEmpty() || carries;
+
+        javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
+            () -> promptStationLabel(tile, component));
+
+        name.setEnabled(mine);
+        name.setToolTipText(mine ? null : I18n.t("autosetup.ui.tooltipTextInTheWay"));
+
+        menu.add(name);
 
         if (carries)
         {
@@ -1002,15 +1013,6 @@ public class AutonomyEditorPanel extends JPanel
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
         panel.add(new JLabel(I18n.t("autosetup.ui.promptStationLabel")), java.awt.BorderLayout.NORTH);
         panel.add(choice, java.awt.BorderLayout.CENTER);
-
-        // Naming what is about to be lost.  A text square can be carrying an ordinary caption - a yard
-        // name, a note - and replacing it silently with a station label destroys something the user
-        // wrote, on a diagram this editor otherwise never touches.
-        if (!label.trim().isEmpty() && !label.startsWith(AutonomySession.STATION_LABEL_PREFIX))
-        {
-            panel.add(new JLabel(I18n.f("autosetup.ui.warnReplacingText", label)),
-                java.awt.BorderLayout.SOUTH);
-        }
 
         if (JOptionPane.showConfirmDialog(owner(), panel, I18n.t("autosetup.ui.titleStationLabel"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)

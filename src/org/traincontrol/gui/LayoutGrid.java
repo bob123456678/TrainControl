@@ -162,6 +162,9 @@ public class LayoutGrid
                 if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
                 {
                     JLabel text = new JLabel();
+
+                    // Black unless something below has a reason to say otherwise
+                    Color labelColour = Color.BLACK;
                     
                     // Autonomy Station label
                     //
@@ -222,22 +225,31 @@ public class LayoutGrid
                     // Regular labels
                     else if (!layout.getEditHideText())
                     {
-                        // A station caption on an IGNORED page reads as the name it is, without the
-                        // marker that would otherwise show up as literal "Point:" text on the diagram.
-                        //
-                        // Not while editing, though.  This branch is also where an editor lands, and
-                        // there the marker is the only thing distinguishing a station's caption from
-                        // ordinary text - stripping it made a label the user had just placed look like
-                        // it had not been placed at all.
-                        boolean strip = !layout.getEdit()
-                            && c.getLabel().startsWith(LAYOUT_STATION_PREFIX);
+                        if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX))
+                        {
+                            // A station caption, in an editor or on a page autonomy ignores.  Never
+                            // the raw "Point:Platform 3": that is storage, and reading storage off a
+                            // track plan is the sort of thing that makes a tool look unfinished.
+                            //
+                            // In an editor it shows the placeholder the running diagram shows when
+                            // nothing is standing there, so the square looks like what it will look
+                            // like.  Elsewhere - an ignored page - it is just the name, because there
+                            // is no autonomy behind it to fill a placeholder in.
+                            text.setText(layout.getEdit() ? LAYOUT_STATION_EMPTY
+                                : c.getLabel().substring(LAYOUT_STATION_PREFIX.length()));
+                        }
+                        else
+                        {
+                            text.setText(c.getLabel());
 
-                        text.setText(strip
-                            ? c.getLabel().substring(LAYOUT_STATION_PREFIX.length())
-                            : c.getLabel());
+                            // Somebody else's writing, greyed while autonomy is being edited: it is
+                            // still worth seeing - it says what part of the railway this is - and it
+                            // is not what the editor is for.
+                            if (layout.getEdit()) labelColour = new Color(150, 150, 150);
+                        }
                     }
                     
-                    text.setForeground(Color.BLACK);
+                    text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
                     
