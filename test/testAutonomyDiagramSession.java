@@ -743,4 +743,38 @@ public class testAutonomyDiagramSession
             AutonomySession.STATION_LABEL_PREFIX + "GhostSiding",
             "but it is still the user\u2019s text, and this program does not get to delete it");
     }
+
+    /**
+     * A page whose labels all name stations this setup never heard of is not written at all.
+     *
+     * The migration leaves an unrecognised "Point:" label exactly where it is - deleting it would
+     * destroy the only record that it existed.  But it saved every page it had LOOKED at, including
+     * those, and because the labels stay they are found again on the next open.  So a user who has
+     * never used autonomy, and whose diagram carries labels from the hand-written configuration this
+     * feature replaced, had a setup file created and their layout files rewritten on every single
+     * launch.  Under a sync lock that is an error dialog at every start that nothing in the UI can
+     * clear, and the sample layout's four orphan labels make it the shipped default.
+     *
+     * Reading the bytes is the point: "did this rewrite the file" is the actual question, and a test
+     * that asked whether the labels survived would have passed throughout.
+     */
+    @Test
+    public void testAPageThatCannotBeMigratedIsNeverWritten() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        page.addComponent(componentType.TEXT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "GhostSiding");
+
+        byte[] before = Files.readAllBytes(pageFile.toPath());
+
+        AutonomySession opened = new AutonomySession(layout);
+        opened.open(Arrays.asList(page));
+
+        assertEquals(Files.readAllBytes(pageFile.toPath()), before,
+            "the page was rewritten even though nothing on it could become a caption");
+
+        assertFalse(new File(layout, "config/autonomy/setup.json").exists(),
+            "a setup file was created for a layout that has no autonomy and gained no captions");
+    }
 }

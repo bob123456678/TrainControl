@@ -504,6 +504,17 @@ public class testParseCS2Layout
      */
     private String roundTrip(String contents) throws Exception
     {
+        return parsePage(contents).exportToCS2TextFormat();
+    }
+
+    /**
+     * Parses one fixture page exactly as the program parses a real layout.
+     *
+     * Separate from roundTrip because a save that corrupts what it wrote is only visible on the way
+     * back IN: the exported text can look perfectly reasonable and still mean something else.
+     */
+    private LayoutDiagram parsePage(String contents) throws Exception
+    {
         File folder = Files.createTempDirectory("tc-layout").toFile();
 
         File config = new File(folder, "config");
@@ -531,7 +542,24 @@ public class testParseCS2Layout
 
         assertFalse(parsed.isEmpty(), "the fixture page did not parse");
 
-        return parsed.get(0).exportToCS2TextFormat();
+        return parsed.get(0);
+    }
+
+    /**
+     * The one component of a single-element fixture, found without assuming how an id maps to a square.
+     */
+    private LayoutDiagramComponent onlyComponent(LayoutDiagram page)
+    {
+        List<LayoutDiagramComponent> all = new ArrayList<>();
+
+        for (LayoutDiagramComponent component : page.getAll())
+        {
+            if (component != null) all.add(component);
+        }
+
+        assertEquals(all.size(), 1, "the fixture should hold exactly one element");
+
+        return all.get(0);
     }
 
     /**
@@ -600,5 +628,163 @@ public class testParseCS2Layout
 
         assertFalse(written.contains("{gleis"),
             "and not as the brace form the parser folds them into:\n" + written);
+    }
+
+    /**
+     * A semaphore the file gave no rotation at all still means the same thing after a save.
+     *
+     * The parser turns any type whose word contains "_f_" back by a quarter, to correct artwork the CS2
+     * draws rotated.  A file with no ".drehung" means rotation 0, so such a signal parses to
+     * orientation 3 - and the export wrote that 3 back out, under the very word that triggers the
+     * correction, so the next load read it as 2.  A quarter turn lost to pressing Save, on the diagram
+     * and on the Central Station both.
+     *
+     * Asserting on the re-parsed orientation rather than on the text is deliberate: the number in the
+     * file is only correct relative to the word beside it, and a test that reads one without the other
+     * cannot tell a right answer from a wrong one.
+     */
+    @Test
+    public void testASemaphoreWithNoRotationDoesNotDriftOnSave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .artikel=12\n";
+
+        int meant = onlyComponent(parsePage(original)).getOrientation();
+
+        String written = parsePage(original).exportToCS2TextFormat();
+
+        assertEquals(onlyComponent(parsePage(written)).getOrientation(), meant,
+            "saving turned the signal a quarter:\n" + written);
+    }
+
+    /**
+     * A semaphore the user turns in the editor comes back turned the way they left it.
+     *
+     * Same asymmetry as the test above, reached from the other side.  Once the orientation no longer
+     * matches the file's number the export falls back to writing the CORRECTED orientation - still
+     * under the preserved "_f_" word - so the correction is applied a second time on the next load.
+     *
+     * Before the type word was preserved this case worked, at the price of collapsing the word to a
+     * canonical "signal": the canonical word contains no "_f_", so nothing corrected it on the way
+     * back.  Preserving the word without accounting for the correction traded a known loss for a
+     * quieter one.
+     */
+    @Test
+    public void testATurnedSemaphoreComesBackTurnedTheSameWay() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n";
+
+        LayoutDiagram page = parsePage(original);
+
+        onlyComponent(page).setOrientation(2);
+
+        String written = page.exportToCS2TextFormat();
+
+        assertEquals(onlyComponent(parsePage(written)).getOrientation(), 2,
+            "the signal was left at 2 and did not come back at 2:\n" + written);
+    }
+
+    /**
+     * A copied component writes the same file text as the one it was copied from.
+     *
+     * The copy constructor took the modelled fields and the label, which is everything the editor
+     * needs to DRAW a tile and not everything the file needs to survive one.  It carried over neither
+     * the original type word, nor the original rotation, nor the keys this program cannot model - so
+     * every copy was a component with the verbatim record stripped out.
+     *
+     * That matters because the editor snapshots through this constructor: deepCopyLayout builds undo
+     * states with it, and undo then replaces every component on the page with a stripped copy.  Place
+     * a tile, press undo, press Save, and every unmodelled key on a page that has never touched
+     * autonomy is gone - from a gesture nobody would think of as destructive.
+     */
+    @Test
+    public void testACopiedComponentStillKnowsWhatTheFileSaid() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n"
+            + " .weltraumbahnhof=42\n";
+
+        LayoutDiagramComponent parsed = onlyComponent(parsePage(original));
+
+        LayoutDiagramComponent copy = new LayoutDiagramComponent(parsed);
+
+        assertEquals(copy.exportToCS2TextFormat(), parsed.exportToCS2TextFormat(),
+            "a copy of a component does not write what the original wrote, so copying it loses "
+                + "whatever the file said that this program cannot model");
+    }
+
+    /**
+     * Renaming a page to the same letters in different case keeps the page.
+     *
+     * saveChanges writes the new filename and then deletes the old one, which is correct only while
+     * they are two files.  On Windows and macOS "Main" and "MAIN" are one file: the writer reopened
+     * and rewrote the original, and the delete then removed the only copy.  The UI does not catch it
+     * either - its duplicate check is a case-sensitive list lookup, so "MAIN" does not collide with
+     * "Main" and the rename proceeds.  Renaming is offered only for local layouts, so nothing on the
+     * Central Station could put the page back.
+     *
+     * Counting the files rather than asking for one by name is what makes this meaningful on both
+     * kinds of filesystem: where the two names are distinct the old file must be gone, and where they
+     * are the same file it must still be there.  Either way exactly one page survives, with content.
+     */
+    @Test
+    public void testACaseOnlyRenameDoesNotDeleteThePage() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-rename").toFile();
+
+        File config = new File(folder, "config");
+        File pages = new File(config, "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not create " + pages);
+
+        Files.write(new File(pages, "Main.cs2").toPath(),
+            ("[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=weiche\n .artikel=8\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=Main\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        CS2File parser = new CS2File(url, null);
+        parser.setLayoutDataLoc(url);
+
+        List<LayoutDiagram> parsed = parser.parseLayout(new LinkedList<MarklinAccessory>());
+
+        assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        parsed.get(0).saveChanges("MAIN", false);
+
+        File[] left = pages.listFiles();
+
+        assertEquals(left.length, 1,
+            "a case-only rename should leave exactly one page: " + java.util.Arrays.toString(left));
+
+        String kept = new String(Files.readAllBytes(left[0].toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(kept.contains("weiche"),
+            "the surviving file is not the page that was renamed:\n" + kept);
     }
 }
