@@ -75,6 +75,9 @@ public class AutonomyEditorPanel extends JPanel
     // Which tile each findings row is about; null for a heading or a finding with no tile
     private final List<TileKey> findingTiles = new java.util.ArrayList<>();
 
+    // What each row is, so it can be coloured the same way the Auto tab colours its own list
+    private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
+
     private Tool tool = Tool.NONE;
 
     /**
@@ -321,6 +324,38 @@ public class AutonomyEditorPanel extends JPanel
         findings.setVisibleRowCount(8);
         findings.setFont(FONT_HINT);
 
+        // Same colours as the Auto tab's list: red for what must be fixed, amber for what is worth
+        // checking, grey for the headings.  The two views describe the same setup.
+        findings.setCellRenderer(new javax.swing.DefaultListCellRenderer()
+        {
+            @Override
+            public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+                int index, boolean isSelected, boolean cellHasFocus)
+            {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+                AutonomyChecks.Severity severity =
+                    index < findingSeverity.size() ? findingSeverity.get(index) : null;
+
+                boolean heading = index < findingTiles.size()
+                    && findingTiles.get(index) == null && severity == null;
+
+                setFont(heading ? AutonomyViewerPanel.FONT_BOLD : FONT_HINT);
+
+                if (!isSelected)
+                {
+                    setForeground(heading ? AutonomyViewerPanel.SUBHEADING_COLOUR
+                        : severity == AutonomyChecks.Severity.ERROR
+                            ? AutonomyViewerPanel.ERROR_COLOUR
+                        : severity == AutonomyChecks.Severity.WARNING
+                            ? AutonomyViewerPanel.WARNING_COLOUR
+                        : java.awt.Color.DARK_GRAY);
+                }
+
+                return this;
+            }
+        });
+
         // Clicking a finding goes to the tile it is about.  Reading "no train can leave Platform 3" is
         // only half an answer; the other half is which square that is, on a page of two hundred.
         findings.addListSelectionListener(e ->
@@ -432,19 +467,43 @@ public class AutonomyEditorPanel extends JPanel
 
         if (isPoint)
         {
-            menu.add(item(I18n.t("autolayout.ui.menuRenamePoint"), () -> promptName(target)));
+            // Locomotives first, because placing one is the commonest reason to open this menu once a
+            // layout is set up - the designations below it are settled early and rarely touched again.
+            //
+            // Only at a station: a locomotive can only be SENT to a station, so standing one anywhere
+            // else records a position autonomy could never route away from.
+            if (session.getStore().isStation(target))
+            {
+                String standing = locomotiveAt(target);
+
+                if (standing != null)
+                {
+                    menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
+                        () -> session.setPointProperty(target, "loc", null)));
+                }
+
+                menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
+                    () -> placeLocomotive(target, true)));
+
+                menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
+                    () -> placeLocomotive(target, false)));
+
+                menu.addSeparator();
+            }
+
+            menu.add(item(I18n.t("autosetup.ui.menuRename"), () -> promptName(target)));
 
             menu.addSeparator();
 
             // The designations, in the graph window's order and words.
-            menu.add(toggle(I18n.t("autolayout.ui.markAsStation"),
+            menu.add(toggle(I18n.t("autosetup.ui.menuStation"),
                 "autolayout.ui.tooltip.Station",
                 session.getStore().isStation(target), on -> setStation(target, on)));
 
             // Terminus and reversing are mutually exclusive - Point itself refuses to hold both, in
             // either order - so setting one clears the other rather than letting the user build a
             // combination that would be rejected the moment it was loaded.
-            menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkTerminusStation"),
+            menu.add(toggle(I18n.t("autosetup.ui.menuTerminus"),
                 "autolayout.ui.tooltip.TerminusStation", flag(target, "terminus"),
                 on ->
                 {
@@ -453,7 +512,7 @@ public class AutonomyEditorPanel extends JPanel
                     if (on) session.setPointProperty(target, "reversing", null);
                 }));
 
-            menu.add(toggle(I18n.t("autolayout.ui.checkboxMarkReversingPoint"),
+            menu.add(toggle(I18n.t("autosetup.ui.menuReversing"),
                 "autolayout.ui.tooltip.ReversingPoint", flag(target, "reversing"),
                 on ->
                 {
@@ -502,22 +561,6 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.add(item(I18n.f("autosetup.ui.menuHomeFor", strings(target, "home").size()),
                 () -> promptLocomotives(target, "home", placedLocomotives())));
-
-            menu.addSeparator();
-
-            // Placing a locomotive, which had no home at all after the graph window went.
-            String standing = locomotiveAt(target);
-
-            if (standing == null)
-            {
-                menu.add(item(I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
-                    () -> placeLocomotive(target)));
-            }
-            else
-            {
-                menu.add(item(I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", standing),
-                    () -> session.setPointProperty(target, "loc", null)));
-            }
 
             menu.addSeparator();
         }
@@ -859,19 +902,39 @@ public class AutonomyEditorPanel extends JPanel
      * One at a time, and only where it is not already: a locomotive standing in two places at once is
      * a state the running layout cannot represent, so it is removed from wherever it was first.
      */
-    private void placeLocomotive(TileKey tile)
+    private void placeLocomotive(TileKey tile, boolean fromRoster)
     {
-        List<String> names = allLocomotives();
+        // Two different questions, which the old menu also kept apart.  Bringing a locomotive INTO
+        // autonomy offers everything the control station knows and it has never run.  Moving one
+        // offers only the locomotives autonomy already runs, so a roster of forty does not have to be
+        // read through to find the four that matter.
+        List<String> names = new java.util.ArrayList<>();
+
+        if (fromRoster)
+        {
+            for (String name : allLocomotives())
+            {
+                if (!placedLocomotives().contains(name)) names.add(name);
+            }
+        }
+        else
+        {
+            names.addAll(placedLocomotives());
+            names.remove(locomotiveAt(tile));
+        }
 
         if (names.isEmpty())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
+            JOptionPane.showMessageDialog(this, I18n.t(fromRoster
+                ? "autosetup.ui.infoAllLocomotivesInAutonomy" : "error.noLocs"));
             return;
         }
 
         Object chosen = JOptionPane.showInputDialog(this,
-            I18n.t("autolayout.ui.dialogPlaceNewLocomotive"),
-            I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
+            I18n.t(fromRoster ? "autosetup.ui.promptAddToAutonomy"
+                              : "autosetup.ui.promptAddToStation"),
+            I18n.t(fromRoster ? "autosetup.ui.menuAddToAutonomy"
+                              : "autosetup.ui.menuAddToStation"),
             JOptionPane.PLAIN_MESSAGE, null, names.toArray(), names.get(0));
 
         if (chosen == null) return;
@@ -1139,21 +1202,28 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.size() > 1)
         {
-            // Open or shut, and nothing in between.
+            // All four states, applied to every branch: both ways, one way, the other way, closed.
             //
-            // A click cannot name a branch, so anything it sets it must set on all of them - and a
-            // "one way" applied to every branch of a switch means each toward its own first side,
-            // which is a different direction on each and reads as nonsense on the tile.  The two
-            // states that mean the same thing on every branch are the only two offered here: all shut,
-            // then all open.  A single branch, including one-way, is set from the menu.
-            boolean allShut = true;
+            // A click cannot name a branch, so whatever it sets it sets on all of them.  One-way in
+            // that form means each branch toward its own first side, which is not one direction across
+            // the tile - but the arrows are drawn per SIDE now and combined, so what comes out is a
+            // readable pattern rather than the mush it would have been before.
+            //
+            // The state to move on from is the one every branch agrees on.  Where they disagree, which
+            // is what setting a single branch from the menu produces, the cycle restarts at both ways
+            // rather than taking one branch's answer to speak for the rest.
+            Direction shared = null;
+            boolean uniform = true;
 
             for (RouteId routeId : routes.keySet())
             {
-                if (session.getGraph().getDirection(target, routeId) != Direction.NONE) allShut = false;
+                Direction each = session.getGraph().getDirection(target, routeId);
+
+                if (shared == null) shared = each;
+                else if (shared != each) uniform = false;
             }
 
-            Direction next = allShut ? Direction.BOTH : Direction.NONE;
+            Direction next = uniform && shared != null ? after(shared) : Direction.BOTH;
 
             session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(target)), next);
 
@@ -1536,34 +1606,48 @@ public class AutonomyEditorPanel extends JPanel
 
         findingsModel.clear();
         findingTiles.clear();
+        findingSeverity.clear();
 
-        int errors = 0;
+        // Split into what must be fixed and what is only worth checking, and headed the same way as
+        // the Auto tab's list.  The two views answer the same question about the same setup, so a
+        // reader who has learned to read one should not have to learn the other.
+        //
+        // Only this page, though: an editor window shows one page, and a finding about another cannot
+        // be acted on here.  The whole-layout view is the one in the Auto tab.
+        List<Object[]> errorRows = new java.util.ArrayList<>();
+        List<Object[]> warningRows = new java.util.ArrayList<>();
 
-        // Only this page.  An editor window shows one page, and a finding about a different one cannot
-        // be acted on here - it would just be a line the reader has to learn to skip.  The whole-layout
-        // view lives in the Auto tab, grouped by page.
         for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph() == null
             ? java.util.Collections.<org.traincontrol.base.TileGraph.Problem>emptyList()
             : session.getGraph().getProblems())
         {
             if (!onThisPage(problem.getTile())) continue;
 
-            if (problem.isBlocking()) errors++;
-
-            findingsModel.addElement(describe(problem.getMessageKey(),
-                problem.getTile() == null ? "" : problem.getTile().toString()));
-            findingTiles.add(problem.getTile());
+            (problem.isBlocking() ? errorRows : warningRows).add(new Object[]
+            {
+                problem.getTile(),
+                describe(problem.getMessageKey(), problem.getTile() == null
+                    ? "" : describeTile(problem.getTile()))
+            });
         }
 
         for (AutonomyChecks.Finding finding : session.check())
         {
             if (!onThisPage(finding.getTile())) continue;
 
-            if (finding.getSeverity() == AutonomyChecks.Severity.ERROR) errors++;
+            String subject = finding.getTile() == null
+                ? finding.getSubject() : describeTile(finding.getTile());
 
-            findingsModel.addElement(describe(finding.getMessageKey(), finding.getSubject()));
-            findingTiles.add(finding.getTile());
+            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errorRows : warningRows)
+                .add(new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
         }
+
+        int errors = errorRows.size();
+
+        section(I18n.f("autosetup.ui.headingErrors", errorRows.size()), errorRows,
+            AutonomyChecks.Severity.ERROR);
+        section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
+            AutonomyChecks.Severity.WARNING);
 
         // Unnamed points are the one thing the checks cannot see: a generated name is a valid name, it
         // is just useless in a timetable.  Counted here so the panel can offer to fix them all at once.
@@ -1595,7 +1679,26 @@ public class AutonomyEditorPanel extends JPanel
         if (onChanged != null) onChanged.run();
     }
 
-    private boolean onThisPage(TileKey tile)
+    /**
+     * Adds one severity section to the list, headed and indented as the Auto tab's is.
+     */
+    private void section(String heading, List<Object[]> rows, AutonomyChecks.Severity severity)
+    {
+        if (rows.isEmpty()) return;
+
+        findingsModel.addElement(heading);
+        findingTiles.add(null);
+        findingSeverity.add(null);
+
+        for (Object[] row : rows)
+        {
+            findingsModel.addElement("   " + row[1]);
+            findingTiles.add((TileKey) row[0]);
+            findingSeverity.add(severity);
+        }
+    }
+
+    private boolean onThisPage(TileKey tile)    private boolean onThisPage(TileKey tile)
     {
         return tile == null || page == null || page.equals(tile.getPage());
     }
