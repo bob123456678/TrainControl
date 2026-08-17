@@ -161,7 +161,10 @@ public class AutonomyEditorPanel extends JPanel
      * left pressed while nothing is waiting for a click is a control lying about what it is doing.
      */
     private JToggleButton testButton;
-    private final Set<TileKey> testPath = new LinkedHashSet<>();
+    // Which squares a tested path runs through, and which way.  Cleared when the tool is switched off
+    // or a new test is started.
+    private final Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
+        traces = new java.util.LinkedHashMap<>();
 
     // A one-way run started from the right-click menu, waiting for its far end
     private TileKey oneWayFrom;
@@ -392,7 +395,7 @@ public class AutonomyEditorPanel extends JPanel
         testFrom = null;
         oneWayFrom = null;
         pendingPortal = null;
-        testPath.clear();
+        traces.clear();
 
         if (testButton != null) testButton.setSelected(false);
 
@@ -417,7 +420,7 @@ public class AutonomyEditorPanel extends JPanel
             pendingPortal = null;
             selection.clear();
             testFrom = null;
-            testPath.clear();
+            traces.clear();
 
             // A one-way run waiting for its far end survived this, so the next click anywhere was
             // swallowed by a gesture the user had already moved on from.
@@ -1874,7 +1877,7 @@ public class AutonomyEditorPanel extends JPanel
         if (testFrom == null)
         {
             testFrom = tile;
-            testPath.clear();
+            traces.clear();
             waitFor(I18n.t("autosetup.ui.promptTestDestination"));
             return;
         }
@@ -1894,11 +1897,13 @@ public class AutonomyEditorPanel extends JPanel
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
             session.getReducer() == null ? null : session.getReducer().findPath(tile, testFrom);
 
-        testPath.clear();
+        traces.clear();
 
-        // The outline shows whichever direction works, so there is something on the track to look at
-        // even when only one way is possible.
-        outline(there != null ? there : back, testFrom, tile);
+        // Both directions, each as its own line.  A direction with no path draws nothing, so the two
+        // questions the test answers - can it get there, can it get back - are read off the track
+        // rather than out of a sentence, and a one-way route is visibly one line.
+        trace(there, testFrom, true);
+        trace(back, tile, false);
 
         sayRich(hint, I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)), leg(there), leg(back)));
@@ -1917,21 +1922,80 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.testLegReachable", run.size());
     }
 
-    private void outline(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
-        TileKey from, TileKey to)
+    private void trace(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
+        TileKey from, boolean forward)
     {
         if (run == null) return;
 
-        testPath.add(from);
-        testPath.add(to);
+        // The squares in order, which the reduction does not hand over as one list: each edge carries
+        // the track BETWEEN its two Points, so the Points themselves have to be put back between them.
+        java.util.List<TileKey> seq = new java.util.ArrayList<>();
+        seq.add(from);
 
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : run)
         {
             for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
             {
-                testPath.add(step.getTile());
+                seq.add(step.getTile());
             }
+
+            seq.add(edge.getEnd());
         }
+
+        for (int i = 0; i < seq.size(); i++)
+        {
+            TileKey at = seq.get(i);
+
+            // Which way the line enters and leaves, worked out from the squares either side of this
+            // one.  Null at the ends of the run, where the line stops in the middle of the square
+            // rather than running off into track nobody asked about.
+            org.traincontrol.automationui.TilePorts.Side in =
+                i == 0 ? null : towards(at, seq.get(i - 1));
+
+            org.traincontrol.automationui.TilePorts.Side out =
+                i == seq.size() - 1 ? null : towards(at, seq.get(i + 1));
+
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here = traces.get(at);
+
+            if (here == null)
+            {
+                here = new java.util.ArrayList<>();
+                traces.put(at, here);
+            }
+
+            here.add(new org.traincontrol.automationui.TileAnnotation.Trace(in, out, forward));
+        }
+    }
+
+    /**
+     * Which side of one square faces another, or null when they are not neighbours - which is what a
+     * jump through a link looks like, and there is no side on the grid to draw it as.
+     */
+    private org.traincontrol.automationui.TilePorts.Side towards(TileKey from, TileKey to)
+    {
+        if (!from.getPage().equals(to.getPage())) return null;
+
+        if (to.getX() == from.getX() + 1 && to.getY() == from.getY())
+        {
+            return org.traincontrol.automationui.TilePorts.Side.E;
+        }
+
+        if (to.getX() == from.getX() - 1 && to.getY() == from.getY())
+        {
+            return org.traincontrol.automationui.TilePorts.Side.W;
+        }
+
+        if (to.getY() == from.getY() + 1 && to.getX() == from.getX())
+        {
+            return org.traincontrol.automationui.TilePorts.Side.S;
+        }
+
+        if (to.getY() == from.getY() - 1 && to.getX() == from.getX())
+        {
+            return org.traincontrol.automationui.TilePorts.Side.N;
+        }
+
+        return null;
     }
 
     /**
@@ -2060,13 +2124,14 @@ public class AutonomyEditorPanel extends JPanel
             if (stored > 0) length = stored;
         }
 
-        // the found route borrows the selection outline: the two are never on screen together, because
-        // switching tools clears both
-        boolean outlined = selection.contains(tile)
-            || testPath.contains(tile) || tile.equals(testFrom);
+        // Only the square a test is waiting on borrows the selection outline now.  The route itself is
+        // drawn as a line through the track, which says which way it goes; an outline around every
+        // square it crossed said only that it went somewhere.
+        boolean outlined = selection.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile));
+            badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
+            traces.get(tile));
     }
 
     /**

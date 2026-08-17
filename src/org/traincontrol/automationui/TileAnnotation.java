@@ -279,6 +279,59 @@ public class TileAnnotation
     private final boolean portal;
 
     /**
+     * Segments of a tested path running through this square, one per direction that works.
+     *
+     * A path used to be shown by outlining every square it crossed, which said WHERE it went and
+     * nothing about which way, or whether the other way was possible at all - two questions the test
+     * exists to answer.  Drawn as a line through each square instead, the route reads as a route, and
+     * a direction that has no path simply has no line: the answer is the gap.
+     */
+    private final List<Trace> traces;
+
+    /**
+     * One square's worth of a tested path: in by one side, out by another.
+     *
+     * A null side is an end of the run - the sensor the test started or finished at - so the line stops
+     * in the middle of that square rather than running off its edge into track nobody asked about.
+     */
+    public static class Trace
+    {
+        private final Side from;
+        private final Side to;
+        private final boolean forward;
+
+        public Trace(Side from, Side to, boolean forward)
+        {
+            this.from = from;
+            this.to = to;
+            this.forward = forward;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Trace)) return false;
+
+            Trace other = (Trace) o;
+
+            return from == other.from && to == other.to && forward == other.forward;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (from == null ? 0 : from.ordinal() * 31)
+                + (to == null ? 0 : to.ordinal() * 7) + (forward ? 1 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            return (forward ? "->" : "<-") + from + ":" + to;
+        }
+    }
+
+    /**
      * @param marks the routes to draw, or empty to draw none
      * @param length the tile's length, or a negative number not to show one
      * @param selected whether this tile is part of a bulk selection
@@ -317,8 +370,18 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored, boolean curved, boolean portal)
     {
+        this(marks, length, selected, badge, ignored, curved, portal, null);
+    }
+
+    /**
+     * @param traces the tested path through this square, one segment per direction that works
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces)
+    {
         this.curved = curved;
         this.portal = portal;
+        this.traces = traces == null ? Collections.<Trace>emptyList() : new ArrayList<>(traces);
 
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
@@ -359,7 +422,13 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored;
+        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
+            && traces.isEmpty();
+    }
+
+    public List<Trace> getTraces()
+    {
+        return Collections.unmodifiableList(traces);
     }
 
     /**
@@ -429,6 +498,8 @@ public class TileAnnotation
             }
 
             paintArrows(g, width, height);
+
+            paintTraces(g, width, height);
 
             if (badge != null) paintBadge(g, width, height);
 
@@ -536,6 +607,52 @@ public class TileAnnotation
 
         arrow(g, leaving, outward, allowed, span);
         arrow(g, arriving, new double[] {-outward[0], -outward[1]}, allowed, span);
+    }
+
+    /**
+     * The tested path, drawn through the square rather than around it.
+     *
+     * The two directions are offset to either side of the rails, so a route that works both ways shows
+     * two lines and one that works one way shows one - which is the whole answer, read off the track
+     * instead of out of a sentence.
+     */
+    private void paintTraces(Graphics2D g, int width, int height)
+    {
+        if (traces.isEmpty()) return;
+
+        int span = Math.min(width, height);
+
+        g.setStroke(new BasicStroke(Math.max(2f, span / 12f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        for (Trace trace : traces)
+        {
+            int[] centre = new int[] {width / 2, height / 2};
+
+            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
+            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+
+            if (a == null || b == null) continue;
+
+            // Perpendicular to the run, so the two directions sit either side of the rails rather than
+            // on top of each other - one line under another is one line.
+            double dx = b[0] - a[0];
+            double dy = b[1] - a[1];
+            double length = Math.sqrt(dx * dx + dy * dy);
+
+            double offset = trace.forward ? span / 9.0 : -span / 9.0;
+
+            double px = length < 1 ? 0 : -dy / length * offset;
+            double py = length < 1 ? 0 : dx / length * offset;
+
+            g.setColor(trace.forward ? TRACE_THERE : TRACE_BACK);
+
+            g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
+                (int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py));
+
+            g.drawLine((int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py),
+                (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
+        }
     }
 
     /**
@@ -655,6 +772,11 @@ public class TileAnnotation
      * neighbouring tiles are visibly separate marks rather than one continuous shape.
      */
     private static final int EDGE_GAP = 1;
+
+    /** The way there, and the way back, in two colours nothing else on this diagram uses. */
+    private static final Color TRACE_THERE = new Color(0, 120, 215);
+
+    private static final Color TRACE_BACK = new Color(150, 60, 180);
 
     /**
      * Whether a reversing point is drawn as a cross rather than as a small square.
@@ -858,7 +980,7 @@ public class TileAnnotation
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
-            && marks.equals(other.marks);
+            && traces.equals(other.traces) && marks.equals(other.marks);
     }
 
     @Override
@@ -866,7 +988,7 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0);
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3;
     }
 
     @Override
