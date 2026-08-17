@@ -2524,7 +2524,8 @@ public class AutonomyEditorPanel extends JPanel
                 || !session.isAutoDestination(tile),
             name != null && !name.trim().isEmpty(),
             route == null ? null : route.getA(),
-            route == null ? null : route.getB());
+            route == null ? null : route.getB(),
+            turns && !session.isMustTurnAround(tile));
     }
 
     /**

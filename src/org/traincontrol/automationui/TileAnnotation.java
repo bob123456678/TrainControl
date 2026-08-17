@@ -143,6 +143,7 @@ public class TileAnnotation
     {
         private final boolean station;
         private final boolean terminus;
+        private final boolean optional;
         private final boolean reversing;
         private final boolean parking;
         private final boolean named;
@@ -165,6 +166,17 @@ public class TileAnnotation
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b)
         {
+            this(station, terminus, reversing, parking, named, a, b, false);
+        }
+
+        /**
+         * @param optional whether turning round here is a choice rather than compulsory - a station
+         *        a train MAY turn at, as against one where every arrival does
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional)
+        {
+            this.optional = optional;
             this.station = station;
             this.terminus = terminus;
             this.reversing = reversing;
@@ -194,6 +206,14 @@ public class TileAnnotation
             return terminus;
         }
 
+        /**
+         * Whether turning round here is a choice rather than compulsory.
+         */
+        public boolean isOptional()
+        {
+            return optional;
+        }
+
         public boolean isReversing()
         {
             return reversing;
@@ -218,6 +238,7 @@ public class TileAnnotation
             Badge other = (Badge) o;
 
             return station == other.station && terminus == other.terminus
+                && optional == other.optional
                 && reversing == other.reversing && parking == other.parking && named == other.named
                 && a == other.a && b == other.b;
         }
@@ -226,14 +247,15 @@ public class TileAnnotation
         public int hashCode()
         {
             return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
-                + (parking ? 8 : 0) + (named ? 16 : 0);
+                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0);
         }
 
         @Override
         public String toString()
         {
             return (station ? (parking ? "parking" : "station") : "point")
-                + (terminus ? " terminus" : "") + (reversing ? " reversing" : "")
+                + (terminus ? (optional ? " may turn" : " terminus") : "")
+                + (reversing ? " reversing" : "")
                 + (named ? "" : " (unnamed)");
         }
     }
@@ -917,7 +939,7 @@ public class TileAnnotation
      *
      *   plain point       small diamond
      *   station           circle
-     *   terminus          square
+     *   terminus          square, or a cross where turning round is optional
      *   reversing         small square
      *   blue              autonomy uses it
      *   orange            autonomy leaves it alone (parking, or switched off)
@@ -972,6 +994,14 @@ public class TileAnnotation
                 g.setColor(line);
                 g.drawRect(x, y, size, size);
             }
+        }
+        else if (badge.isTerminus() && badge.isOptional())
+        {
+            // A cross for a station a train MAY turn at.  It is the one designation that is not a
+            // property of the place but a choice offered at it, and a shape of its own says so - a
+            // square that sometimes means "everything turns here" and sometimes "some things do" is a
+            // square that has to be clicked to be read.
+            cross(g, x, y, size, fill, line);
         }
         else if (badge.isTerminus())
         {

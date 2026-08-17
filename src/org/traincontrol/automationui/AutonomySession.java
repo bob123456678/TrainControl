@@ -1595,7 +1595,8 @@ public class AutonomySession
                 Boolean.FALSE.equals(getPointProperty(tile, "active")) || !isAutoDestination(tile),
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
-                firstRoute(tile) == null ? null : firstRoute(tile).getB()),
+                firstRoute(tile) == null ? null : firstRoute(tile).getB(),
+                isTurnAround(tile) && !isMustTurnAround(tile)),
             false);
     }
 
