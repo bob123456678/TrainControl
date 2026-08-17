@@ -115,6 +115,50 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Initialising twice makes a second configuration rather than quietly doing nothing.
+     *
+     * It used to create one only when the store was empty, which was right while it was the "set
+     * autonomy up for the first time" button and wrong the moment the menu offered "add a
+     * configuration": the second one did nothing at all, and said so nowhere.
+     */
+    @Test
+    public void testInitialisingAgainAddsAnotherConfiguration() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+
+        session.initialize("Morning");
+        session.initialize("Evening");
+
+        assertEquals(session.getStore().getConfigurationNames().size(), 2);
+        assertTrue(session.getStore().getConfigurationNames().contains("Evening"));
+
+        // and the first one is still the one running, because adding is not loading
+        assertEquals(session.getStore().getActiveConfiguration(), "Morning");
+    }
+
+    /**
+     * And a name already taken is refused rather than silently replacing what is there.
+     */
+    @Test
+    public void testInitialisingOntoAnExistingNameIsRefused() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+
+        session.initialize("Morning");
+
+        try
+        {
+            session.initialize("Morning");
+
+            fail("a second configuration called Morning should not be creatable");
+        }
+        catch (IOException expected)
+        {
+            assertEquals(session.getStore().getConfigurationNames().size(), 1);
+        }
+    }
+
+    /**
      * What was decided comes back after a restart, and the graph derived from it matches.
      */
     @Test

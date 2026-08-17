@@ -1718,9 +1718,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // and so the panel knows to offer the step that follows this one
         this.activeDiagramConfiguration = name;
 
-        // Only on a resume.  Somebody who just pressed the button is standing in front of the next
-        // step - placing locomotives - and jumping them away from it hides the thing they need next.
-        if (resumed) jumpToLayoutTab();
+        // Always, now.  This used to be resume-only, because somebody who had just pressed the button
+        // was standing on the configuration panel in front of the step that follows - and jumping them
+        // away would have hidden it.  That panel is a menu now: there is nothing to stand on, the menu
+        // has closed behind them, and the diagram is where the setup they just loaded is drawn.
+        jumpToLayoutTab();
 
         this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
     }

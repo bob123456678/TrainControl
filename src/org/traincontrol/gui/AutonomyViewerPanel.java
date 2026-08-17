@@ -764,10 +764,17 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorNameInUse", name.trim()));
+            return;
         }
 
         refresh();
+
+        // And run it.  Creating a configuration nobody is using leaves the window showing the old one
+        // with nothing to say a new one exists - which reads exactly like the button having done
+        // nothing.  load() is the same guarded path the chooser uses, so trains are stopped and the
+        // user is asked before anything is replaced.
+        load(name.trim(), true);
     }
 
     /**

@@ -114,13 +114,16 @@ public class AutonomySession
      */
     public void initialize(String configurationName) throws IOException
     {
-        if (store.getConfigurationNames().isEmpty())
-        {
-            store.createConfiguration(
-                configurationName == null || configurationName.trim().isEmpty()
-                    ? "Default" : configurationName.trim(),
-                null);
-        }
+        // Always creates one.  This used to do nothing at all unless the store was empty, which was
+        // right while it was the "set autonomy up for the first time" button and wrong the moment it
+        // became "add a configuration": the second one silently did nothing, and the menu came back
+        // unchanged with the old configuration still running.
+        //
+        // A name already in use throws, as it does for a duplicate - the caller says so.
+        store.createConfiguration(
+            configurationName == null || configurationName.trim().isEmpty()
+                ? "Default" : configurationName.trim(),
+            null);
 
         rebuild();
         save();

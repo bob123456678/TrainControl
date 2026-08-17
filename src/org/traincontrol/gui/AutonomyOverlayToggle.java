@@ -70,8 +70,21 @@ public class AutonomyOverlayToggle extends JPanel
         // Toggling only stops the DRAWING.  The driver keeps its wiring so that switching back on shows
         // the current state immediately rather than waiting for the next train to move.
         show.setFocusable(false);
-        show.setOpaque(false);
-        show.addActionListener(e -> apply());
+
+        // Opaque, and painting its own white.  Transparent, it relied on an ancestor repainting the
+        // area beneath it, and that did not happen here - so unticking the box left the old ticked
+        // pixels on screen while the overlay switched off underneath.  Making the STRIP opaque was not
+        // enough; the box has to clear its own square.
+        show.setOpaque(true);
+        show.setBackground(java.awt.Color.WHITE);
+
+        show.addActionListener(e ->
+        {
+            apply();
+
+            // and paint the new state, rather than trusting that something else will
+            show.repaint();
+        });
 
         // Checkbox and count to the left, the run button hard right, as the window's own toolbars do
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
