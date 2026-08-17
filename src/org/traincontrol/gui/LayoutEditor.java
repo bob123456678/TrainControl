@@ -480,6 +480,20 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
+            // Setup mode writes to a page only when a station name is put on a square.  The caption is
+            // part of the tile art, so the grid is rebuilt rather than repainted, and the annotations
+            // are laid back on top of the new one.
+            autonomyPanel.setOnDiagramChanged(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    refreshGrid();
+
+                    javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
+                }
+            });
+
             autonomyPanel.setOnReveal(new java.util.function.Consumer<
                 org.traincontrol.automationui.TileGraph.TileKey>()
             {

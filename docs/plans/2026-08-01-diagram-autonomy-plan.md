@@ -1491,6 +1491,15 @@ performed once, by hand, for a single known layout.
 - Duplicate page names alias keys (parity with `layoutCache`), main-tab label accumulation
   (parity with device sets) — accepted.
 - Creating/editing the *diagram itself* stays in `LayoutEditor`; setup mode never mutates pages.
+  **Amended by the author, 2026-08-16:** one exception - putting a station's NAME on a text square.
+  A station with no label on the track diagram is invisible where the user actually watches trains,
+  and sending them to a different editor to fix what setup mode just warned them about is the round
+  trip this surface exists to remove. Setup mode may therefore write a `Point:` caption onto a text
+  square, and create a text square on a blank one to carry it. Nothing else about a page is touched:
+  a text square carries no track, no address and no state, so it cannot change how trains run. The
+  page is written **immediately**, not at Save - Save in setup mode means the autonomy setup, and a
+  diagram change riding along inside it would be written by a button that says otherwise, and
+  abandoned by a Cancel the user reasonably thought applied only to autonomy.
 
 ### Deferred by the author, 2026-08-16 (testing round 2)
 

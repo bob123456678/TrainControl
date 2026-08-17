@@ -117,6 +117,7 @@ public class AutonomyChecks
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
     public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
+    public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
 
     private AutonomyChecks()
     {
@@ -144,6 +145,17 @@ public class AutonomyChecks
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini)
     {
+        return run(graph, reducer, termini, null);
+    }
+
+    /**
+     * @param labelledStations the station names a text square of the track diagram is showing, or null
+     *        to skip that check.  Passed in rather than read here: the checks know about the setup, and
+     *        which squares of which page carry which caption is the diagram's business.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<String> labelledStations)
+    {
         List<Finding> findings = new ArrayList<>();
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
@@ -162,6 +174,7 @@ public class AutonomyChecks
         }
 
         findings.addAll(checkStations(reducer, termini));
+        findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
 
@@ -184,6 +197,39 @@ public class AutonomyChecks
      * layout exists to answer - and a station that can reach nothing is not a station anybody can use,
      * however well connected its track is.
      */
+    /**
+     * Is every station shown on the track diagram?
+     *
+     * The diagram is where the user watches trains, and a station with no label on it is a place they
+     * cannot see - autonomy will announce arrivals at a platform that is nowhere on screen.  A warning
+     * rather than an error: the railway runs perfectly well without labels, it just cannot be read.
+     *
+     * A station still carrying its generated name is skipped, because it already has a warning of its
+     * own and naming it is the step that has to come first - two rows about one sensor, one of which
+     * cannot be acted on yet, is a list nobody finishes.
+     */
+    private static List<Finding> checkStationLabels(GraphReducer reducer, Set<String> labelled)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (labelled == null) return findings;
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (!point.isStation() || point.getName() == null) continue;
+
+            if (point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
+
+            if (!labelled.contains(point.getName()))
+            {
+                findings.add(new Finding(Severity.WARNING, UNLABELLED_STATION,
+                    point.getName(), point.getTile()));
+            }
+        }
+
+        return findings;
+    }
+
     private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini)
     {
         List<Finding> findings = new ArrayList<>();

@@ -62,6 +62,10 @@ public class AutonomyViewerPanel extends JPanel
     private final JButton placeLocomotives =
         new JButton(I18n.t("autosetup.ui.btnPlaceLocomotives"));
 
+    // Built in buildSteps rather than here, but held as a field so it can be hidden with the rest of
+    // step 3 - it leads to a tab that does not exist until a configuration is running.
+    private JButton startHere;
+
     private final JLabel stepChoose = step(I18n.t("autosetup.ui.stepChoose"));
     private final JLabel stepPages = step(I18n.t("autosetup.ui.stepPages"));
     private final JLabel stepEnable = step(I18n.t("autosetup.ui.stepEnable"));
@@ -96,6 +100,8 @@ public class AutonomyViewerPanel extends JPanel
         // list - the one thing that can overflow - scrolls inside its own box instead.
         setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
 
+        unfocusable(this);
+
         refresh();
     }
 
@@ -123,6 +129,35 @@ public class AutonomyViewerPanel extends JPanel
     static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
     static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
     static final java.awt.Color SUBHEADING_COLOUR = new java.awt.Color(70, 70, 70);
+
+    /**
+     * Takes a whole panel out of the keyboard's reach, and returns it.
+     *
+     * The main window drives locomotives from bare key presses, so a button or a checkbox that can
+     * take focus is a trap: press it once and every subsequent keystroke goes to that control instead
+     * of to the train.  Nothing on either autonomy panel is operated by keyboard - they are read and
+     * clicked - so the whole tree gives focus up.  This matches what the rest of the window already
+     * does control by control; done here as a sweep so a control added later cannot forget.
+     *
+     * Menus are untouched on purpose: a popup takes focus while it is open and gives it back when it
+     * closes, which is how a menu is meant to behave.
+     *
+     * @param component the root to sweep, usually a panel
+     */
+    static <T extends java.awt.Component> T unfocusable(T component)
+    {
+        component.setFocusable(false);
+
+        if (component instanceof java.awt.Container)
+        {
+            for (java.awt.Component child : ((java.awt.Container) component).getComponents())
+            {
+                unfocusable(child);
+            }
+        }
+
+        return component;
+    }
 
     /**
      * Applies the application's control font to a component, and returns it.
@@ -305,7 +340,7 @@ public class AutonomyViewerPanel extends JPanel
         // The step after placing, kept as its own button.  Placing used to lead here directly, and
         // moving it to the editor would otherwise have left the run tab with nothing pointing at it -
         // the same dead end this workflow was built to close.
-        JButton startHere = new JButton(I18n.t("autosetup.ui.btnGoToStart"));
+        startHere = new JButton(I18n.t("autosetup.ui.btnGoToStart"));
         startHere.setToolTipText(I18n.t("autosetup.ui.tooltipGoToStart"));
         startHere.addActionListener(e -> ui.showAutonomyRunTab());
         run.add(styled(startHere, true));
@@ -950,6 +985,8 @@ public class AutonomyViewerPanel extends JPanel
         // which does not exist is what made placing look missing in the first place.
         stepRun.setVisible(running);
         placeLocomotives.setVisible(running);
+
+        if (startHere != null) startHere.setVisible(running);
 
         status.setText(!exists ? I18n.t("autosetup.ui.statusNeverSetUp")
             : running ? I18n.f("autosetup.ui.statusEnabled", ui.getActiveDiagramConfiguration())

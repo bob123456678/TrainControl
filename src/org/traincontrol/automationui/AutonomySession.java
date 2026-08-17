@@ -155,6 +155,87 @@ public class AutonomySession
         return reducer;
     }
 
+    /**
+     * The marker a track diagram text square carries to say it belongs to a station.
+     *
+     * Defined here rather than in the grid that draws it, because the setup layer is what decides
+     * whether a station HAS one - LayoutGrid now takes its constant from this, so the two cannot drift
+     * apart and quietly stop matching.
+     */
+    public static final String STATION_LABEL_PREFIX = "Point:";
+
+    /**
+     * Every station name that some square of some page is showing.
+     *
+     * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
+     * the page has stopped being drawn, and a label there is still on the user's screen.
+     *
+     * @return the names, without the prefix
+     */
+    public Set<String> getLabelledStationNames()
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component == null || component.getLabel() == null) continue;
+
+                if (component.getLabel().startsWith(STATION_LABEL_PREFIX))
+                {
+                    out.add(component.getLabel().substring(STATION_LABEL_PREFIX.length()));
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts a station's name onto a text square of the track diagram, and writes the page out.
+     *
+     * The one place setup mode changes the DIAGRAM rather than the setup beside it, at the author's
+     * instruction (2026-08-16): a station with no label on the diagram is invisible where it matters
+     * most, and sending the user to a different editor to fix what this one just warned them about is
+     * the sort of round trip this whole surface exists to remove.
+     *
+     * Written immediately rather than at Save, because Save in setup mode means the autonomy setup -
+     * a diagram change riding along inside it would be saved by a button that says otherwise.
+     *
+     * @param tile the text square
+     * @param name the station, or null to clear the square
+     * @throws Exception if the page cannot be written
+     */
+    public void setStationLabel(TileKey tile, String name) throws Exception
+    {
+        for (LayoutDiagram page : pages)
+        {
+            if (!page.getName().equals(tile.getPage())) continue;
+
+            LayoutDiagramComponent component = page.getComponent(tile.getX(), tile.getY());
+
+            // An empty square becomes a text square.  Without this the feature only works for somebody
+            // who already drew a text square in the diagram editor - which is the trip to a different
+            // editor this is meant to spare them.  Nothing else about the page is touched: a text
+            // square carries no track, no address and no state, so it cannot change how trains run.
+            if (component == null)
+            {
+                if (name == null) return;
+
+                page.addComponent(LayoutDiagramComponent.componentType.TEXT,
+                    tile.getX(), tile.getY(), 0, 0, 0, 0, null, STATION_LABEL_PREFIX + name);
+            }
+            else
+            {
+                component.setLabel(name == null ? "" : STATION_LABEL_PREFIX + name);
+            }
+
+            page.saveChanges(null, false);
+            return;
+        }
+    }
+
     public List<LayoutDiagram> getPages()
     {
         return Collections.unmodifiableList(pages);
@@ -399,7 +480,7 @@ public class AutonomySession
             if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        return AutonomyChecks.run(graph, reducer, termini);
+        return AutonomyChecks.run(graph, reducer, termini, getLabelledStationNames());
     }
 
     /**

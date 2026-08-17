@@ -37,7 +37,12 @@ public class LayoutGrid
     
     // Prefix that denotes a station label
     // Used to show autonomy locations on the layout
-    public static final String LAYOUT_STATION_PREFIX = "Point:"; // todo use layout.ui.autonomyStationPrefix and use non static import
+    //
+    // Taken from the setup layer rather than declared here, so the side that decides whether a station
+    // HAS a label and the side that draws it cannot drift apart.  Every existing reference to this name
+    // still works; only where the string is defined has moved.
+    public static final String LAYOUT_STATION_PREFIX =
+        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX;
     public static final String LAYOUT_STATION_EMPTY = "[---]";
     public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;

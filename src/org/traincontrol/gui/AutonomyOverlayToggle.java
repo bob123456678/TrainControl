@@ -44,6 +44,10 @@ public class AutonomyOverlayToggle extends JPanel
         show.addActionListener(e -> apply());
 
         add(show);
+
+        // Belt and braces over show.setFocusable(false) above: this strip sits inside the main window,
+        // where bare key presses drive locomotives, so nothing in it may hold the keyboard.
+        AutonomyViewerPanel.unfocusable(this);
     }
 
     /**

@@ -135,6 +135,11 @@ public class AutonomyEditorPanel extends JPanel
     private final Set<TileKey> selection = new LinkedHashSet<>();
 
     // The path test also takes two clicks; the first end and the last found route live here
+    /**
+     * Run after this window has written to a track diagram page, to rebuild the grid it is drawn on.
+     */
+    private Runnable onDiagramChanged;
+
     private TileKey testFrom;
 
     /**
@@ -182,6 +187,11 @@ public class AutonomyEditorPanel extends JPanel
         setPreferredSize(new Dimension(WIDTH, 640));
         setMinimumSize(new Dimension(WIDTH, 240));
         setMaximumSize(new Dimension(WIDTH, Integer.MAX_VALUE));
+
+        // Nothing in this column is worked by keyboard, and a control that takes focus swallows the
+        // key presses the window around it uses.  button() already does this one control at a time;
+        // the sweep covers the lists and anything added later that forgets.
+        AutonomyViewerPanel.unfocusable(this);
 
         refresh();
     }
@@ -482,6 +492,17 @@ public class AutonomyEditorPanel extends JPanel
         // says "not that, this instead", and a half-finished path test that stayed armed underneath it
         // would swallow the next ordinary click on the far side of the menu closing.
         cancelPendingGesture();
+
+        // A text square carries no track, so everything below would be a no-op on it - but it is the
+        // one thing on the diagram a station can be WRITTEN on, and being sent to a different editor to
+        // do that is the round trip this surface exists to remove.
+        LayoutDiagramComponent onPage = componentAt(tile);
+
+        if (onPage == null || onPage.isText())
+        {
+            showTextMenu(tile, onPage, invoker, x, y);
+            return;
+        }
 
         // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu
         // whose every item would be a no-op.
@@ -802,6 +823,122 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         return menuItem;
+    }
+
+    /**
+     * The menu for a text square: which station, if any, it is showing.
+     */
+    private void showTextMenu(final TileKey tile, final LayoutDiagramComponent component,
+        java.awt.Component invoker, int x, int y)
+    {
+        menuTarget = tile;
+
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        String label = component == null || component.getLabel() == null ? "" : component.getLabel();
+        boolean carries = label.startsWith(AutonomySession.STATION_LABEL_PREFIX);
+
+        title(menu, carries ? label.substring(AutonomySession.STATION_LABEL_PREFIX.length())
+            : label.trim().isEmpty() ? I18n.t("autosetup.ui.titleEmptyText") : label);
+
+        // Offered on a blank square too, not only on one that already carries text: writing a station
+        // name on a blank square is how a diagram with no text squares at all gets its first one.
+        menu.add(item(I18n.t("autosetup.ui.menuShowStationHere"), () -> promptStationLabel(tile, component)));
+
+        if (carries)
+        {
+            menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyStationLabel(tile, null)));
+        }
+
+        menu.show(invoker, x, y);
+    }
+
+    /**
+     * Asks which station this square should show.
+     */
+    private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
+    {
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        if (session.getReducer() != null)
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
+                : session.getReducer().getPoints().values())
+            {
+                if (point.isStation() && point.getName() != null) names.add(point.getName());
+            }
+        }
+
+        java.util.Collections.sort(names);
+
+        if (names.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.errorNoStationsToLabel"));
+            return;
+        }
+
+        javax.swing.JComboBox<String> choice =
+            new javax.swing.JComboBox<>(names.toArray(new String[0]));
+
+        String label = component == null || component.getLabel() == null ? "" : component.getLabel();
+
+        if (label.startsWith(AutonomySession.STATION_LABEL_PREFIX))
+        {
+            choice.setSelectedItem(label.substring(AutonomySession.STATION_LABEL_PREFIX.length()));
+        }
+
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+        panel.add(new JLabel(I18n.t("autosetup.ui.promptStationLabel")), java.awt.BorderLayout.NORTH);
+        panel.add(choice, java.awt.BorderLayout.CENTER);
+
+        // Naming what is about to be lost.  A text square can be carrying an ordinary caption - a yard
+        // name, a note - and replacing it silently with a station label destroys something the user
+        // wrote, on a diagram this editor otherwise never touches.
+        if (!label.trim().isEmpty() && !label.startsWith(AutonomySession.STATION_LABEL_PREFIX))
+        {
+            panel.add(new JLabel(I18n.f("autosetup.ui.warnReplacingText", label)),
+                java.awt.BorderLayout.SOUTH);
+        }
+
+        if (JOptionPane.showConfirmDialog(this, panel, I18n.t("autosetup.ui.titleStationLabel"),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
+        {
+            return;
+        }
+
+        applyStationLabel(tile, (String) choice.getSelectedItem());
+    }
+
+    /**
+     * Writes the label and says so.
+     *
+     * The page goes to disk here and now.  Save in this window means the autonomy setup, so a diagram
+     * change carried until then would be written by a button that says it is doing something else -
+     * and abandoned by a Cancel that the user reasonably thought applied only to autonomy.
+     */
+    private void applyStationLabel(TileKey tile, String name)
+    {
+        try
+        {
+            session.setStationLabel(tile, name);
+
+            // The editor's own grid has to be REBUILT, not repainted: the caption is part of the tile
+            // art, and the annotation refresh that follows every other edit does not touch it.  The
+            // main window needs no telling - closing this editor runs an uncached repaint, and it is
+            // the grid build that registers a station label.
+            if (onDiagramChanged != null) onDiagramChanged.run();
+
+            say(hint, name == null ? I18n.t("autosetup.ui.clearedStationLabel")
+                : I18n.f("autosetup.ui.setStationLabel", name));
+
+            refresh();
+
+            flashMenuTarget();
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("error.generic", String.valueOf(e.getMessage())));
+        }
     }
 
     /**
@@ -2068,6 +2205,14 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * @param onReveal called with a tile that should be scrolled to and flashed
      */
+    /**
+     * @param onDiagramChanged run after a track diagram page is written, so the grid can be rebuilt
+     */
+    public void setOnDiagramChanged(Runnable onDiagramChanged)
+    {
+        this.onDiagramChanged = onDiagramChanged;
+    }
+
     public void setOnReveal(java.util.function.Consumer<TileKey> onReveal)
     {
         this.onReveal = onReveal;

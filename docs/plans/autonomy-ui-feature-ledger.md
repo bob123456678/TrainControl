@@ -22,6 +22,8 @@ having no ledger. What follows is what the review verified, not what was intende
 | Rename a point | point right-click → Rename | Right-click → Name, or "Name everything" | DONE |
 | Mark as station | point right-click checkbox | Right-click → Mark as a station | DONE |
 | Terminus station | point right-click checkbox | Right-click -> **Station** submenu; clears reversing, as the model requires | DONE |
+| Warn on stations missing a diagram label | - | Configuration errors and warnings -> "not shown anywhere on the track diagram" | DONE (new) |
+| Put a station name on the diagram | layout editor only (`editTextWithDropdown`) | Setup editor: right-click a text OR blank square -> "Show a station name here"; page written immediately | DONE (new) |
 | Warn on default-named stations | - | Configuration errors and warnings -> "still named after the square it sits on" | DONE (new) |
 | Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
 | Active / inactive | point right-click checkbox | Right-click -> **Station** submenu -> "Use only as a parking berth".  Inverted deliberately: the model's flag is `active`, but the thing a user decides is that a berth is for parking | DONE |
