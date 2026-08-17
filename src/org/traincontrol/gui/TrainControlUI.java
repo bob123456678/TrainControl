@@ -1803,8 +1803,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void refreshAutonomyTabState()
     {
-        setAutoTabEnabled(this.model != null && this.model.hasAutoLayout()
-            && this.model.getAutoLayout().isValid());
+        boolean valid = this.model != null && this.model.hasAutoLayout()
+            && this.model.getAutoLayout().isValid();
+
+        // Valid is not the same as loaded, and that was the bug.  A layout can hold a perfectly valid
+        // auto layout left over from a blank default or from the JSON path, so asking only "is it
+        // valid" left the tab open with no configuration behind it.
+        //
+        // On the diagram path the question is whether a configuration is RUNNING.  Where there is no
+        // diagram session at all - a layout with no local copy - the JSON window is still how autonomy
+        // is set up, and validity is the only answer available.
+        boolean loaded = getAutonomySession() == null || this.activeDiagramConfiguration != null;
+
+        setAutoTabEnabled(valid && loaded);
     }
 
     private void setAutoTabEnabled(boolean enabled)

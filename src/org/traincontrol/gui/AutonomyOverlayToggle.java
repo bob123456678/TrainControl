@@ -101,14 +101,17 @@ public class AutonomyOverlayToggle extends JPanel
         // state the rest of the window then shows - happens exactly once and in one place.
         run.setFocusable(false);
         run.setVisible(false);
-        run.setMargin(new java.awt.Insets(0, 8, 0, 8));
+        run.setMargin(new java.awt.Insets(0, 10, 0, 10));
         run.addActionListener(e ->
         {
             if (source != null) source.doClick();
         });
 
         // The same 4px breathing room the checkbox gets from its own FlowLayout, so the two ends of
-        // the strip are inset alike rather than one hugging the edge.
+        // the strip are inset alike rather than one hugging the edge.  Two pixels above and below on
+        // the strip itself, which is what stops the button touching the track drawn under it.
+        setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 2, 2, 2));
+
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         right.setOpaque(false);
         right.add(run);
@@ -182,6 +185,19 @@ public class AutonomyOverlayToggle extends JPanel
         run.setToolTipText(source.getToolTipText());
         run.setFont(source.getFont());
         run.setBackground(source.getBackground());
+
+        // Held to the checkbox's height.  This strip is the scroll pane's column header, so its height
+        // is whatever its tallest child asks for - and a button at its natural size is taller than a
+        // checkbox, which pushed the whole strip down and left the checkbox floating in the middle of
+        // it.  Cleared first, because asking a component its preferred size after setting one just
+        // reads back what was set.
+        run.setPreferredSize(null);
+
+        java.awt.Dimension wanted = run.getPreferredSize();
+
+        run.setPreferredSize(new java.awt.Dimension(wanted.width,
+            Math.max(show.getPreferredSize().height, 16)));
+
         run.setVisible(true);
 
         revalidate();

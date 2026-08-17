@@ -41,6 +41,15 @@ import org.traincontrol.util.I18n;
 public class AutonomyViewerPanel extends JPanel
 {
     private final AutonomySession session;
+
+    /**
+     * The main window - and the parent of every dialog this class raises.
+     *
+     * It has to be, because this panel is no longer displayed: its controls moved to the Autonomy
+     * menu and the object stayed behind as the place the actions live.  A dialog parented to a
+     * component that is not on screen has nothing to centre on, so every one of them opened in the
+     * middle of the DISPLAY instead of over the window that asked.
+     */
     private final TrainControlUI ui;
 
     private final JComboBox<String> configurations = new JComboBox<>();
@@ -560,7 +569,7 @@ public class AutonomyViewerPanel extends JPanel
             panel.add(box);
         }
 
-        if (JOptionPane.showConfirmDialog(this, panel,
+        if (JOptionPane.showConfirmDialog(ui, panel,
             I18n.t("autosetup.ui.btnExcludePage"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
@@ -679,7 +688,7 @@ public class AutonomyViewerPanel extends JPanel
 
             if (interactive)
             {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(ui,
                     I18n.f("autosetup.ui.errorCannotBuildDetail", countBlocking()));
             }
             else if (ui.getModel() != null)
@@ -711,7 +720,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (RuntimeException e)
         {
-            if (interactive) JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            if (interactive) JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
             else if (ui.getModel() != null) ui.getModel().log(String.valueOf(e.getMessage()));
 
             revert(previous);
@@ -744,7 +753,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void initialize()
     {
-        String name = JOptionPane.showInputDialog(this,
+        String name = JOptionPane.showInputDialog(ui,
             I18n.t("autosetup.ui.promptConfigurationName"));
 
         if (name == null || name.trim().isEmpty()) return;
@@ -755,7 +764,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
         }
 
         refresh();
@@ -771,9 +780,9 @@ public class AutonomyViewerPanel extends JPanel
     {
         javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
 
-        if (chooser.showOpenDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
 
-        String name = JOptionPane.showInputDialog(this, I18n.t("autosetup.ui.promptImportName"),
+        String name = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptImportName"),
             chooser.getSelectedFile().getName().replaceAll("\\.json$", ""));
 
         if (name == null || name.trim().isEmpty()) return;
@@ -781,7 +790,7 @@ public class AutonomyViewerPanel extends JPanel
         // importing over an existing name replaces it, which is sometimes wanted and never silent
         if (session.getStore().getConfigurationNames().contains(name.trim()))
         {
-            int replace = JOptionPane.showConfirmDialog(this,
+            int replace = JOptionPane.showConfirmDialog(ui,
                 I18n.f("autosetup.ui.confirmImportOverwrites", name.trim()),
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION);
 
@@ -799,7 +808,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException | RuntimeException e)
         {
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
         }
 
@@ -822,7 +831,7 @@ public class AutonomyViewerPanel extends JPanel
         javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
         chooser.setSelectedFile(new java.io.File(name + ".json"));
 
-        if (chooser.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showSaveDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
 
         try
         {
@@ -831,7 +840,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
         }
     }
 
@@ -839,7 +848,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         String from = selected();
 
-        String name = JOptionPane.showInputDialog(this,
+        String name = JOptionPane.showInputDialog(ui,
             I18n.t("autosetup.ui.promptConfigurationName"));
 
         if (name == null || name.trim().isEmpty()) return;
@@ -852,7 +861,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorNameInUse", name.trim()));
             return;
         }
@@ -869,7 +878,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (from == null) return;
 
-        String name = JOptionPane.showInputDialog(this,
+        String name = JOptionPane.showInputDialog(ui,
             I18n.t("autosetup.ui.promptConfigurationName"), from);
 
         if (name == null || name.trim().isEmpty()) return;
@@ -883,7 +892,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             // The store reports its refusals as message KEYS, so they are translated here rather than
             // shown raw - a user should not be told "autosetup.ui.errorNameInUse".
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(ui,
                 AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
                     ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
                     : String.valueOf(e.getMessage()));
@@ -900,7 +909,7 @@ public class AutonomyViewerPanel extends JPanel
 
         // Named in the question, because the list and the running configuration can differ and deleting
         // is not undoable.
-        if (JOptionPane.showConfirmDialog(this,
+        if (JOptionPane.showConfirmDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
             I18n.t("autosetup.ui.menuDeleteConfiguration"),
             JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
@@ -915,7 +924,7 @@ public class AutonomyViewerPanel extends JPanel
             // The last configuration cannot go: a setup with none is a state nothing here could act on.
             // Any OTHER failure - a permission problem, a full disk - is reported as itself rather than
             // blamed on that rule.
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(ui,
                 AutonomyCompanionStore.ERROR_LAST_CONFIGURATION.equals(e.getMessage())
                     ? I18n.t("autosetup.ui.errorLastConfiguration")
                     : String.valueOf(e.getMessage()));
@@ -932,7 +941,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
         }
     }
 
@@ -960,7 +969,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
         }
     }
 
