@@ -76,9 +76,15 @@ public class DiagramMonitorDriver
         }
 
         // The same names the builder wrote into the generated file - recomputed rather than remembered,
-        // because uniqueNames() depends only on the reduction, so a fresh builder cannot disagree with
-        // the one that produced the configuration.
-        Map<TileKey, String> names = new AutonomyBuilder(reducer, null).uniqueNames();
+        // because the naming depends only on the reduction and the split, so a fresh builder given both
+        // cannot disagree with the one that produced the configuration.
+        //
+        // The split has to be passed: without it every extra Point a split tile produced is a name the
+        // monitor has never heard of, and the overlay stops drawing at exactly the squares that matter.
+        AutonomyBuilder builder = new AutonomyBuilder(reducer, null)
+            .withReversibleTiles(session.reversibleTiles());
+
+        Map<String, TileKey> names = builder.tilesByName();
 
         if (monitor == null)
         {
@@ -91,8 +97,8 @@ public class DiagramMonitorDriver
                         return currentLayout();
                     }
                 },
-                DiagramMonitor.indexEdges(reducer, names),
-                DiagramMonitor.indexPoints(names),
+                builder.edgesByName(),
+                names,
                 new DiagramMonitor.Publisher()
                 {
                     @Override
@@ -104,8 +110,7 @@ public class DiagramMonitorDriver
         }
         else
         {
-            monitor.setEdges(DiagramMonitor.indexEdges(reducer, names),
-                DiagramMonitor.indexPoints(names));
+            monitor.setEdges(builder.edgesByName(), names);
         }
 
         attach();

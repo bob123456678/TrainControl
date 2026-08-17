@@ -1501,6 +1501,42 @@ performed once, by hand, for a single known layout.
   diagram change riding along inside it would be written by a button that says otherwise, and
   abandoned by a Cancel the user reasonably thought applied only to autonomy.
 
+### Turning round: several Points per sensor (author ruling, 2026-08-16)
+
+The reduction gives one Point per sensor. That is a truthful model of the track and a lossy model of
+what a train may do there: arriving from the west and going on east is the same edge set as arriving
+from the west and backing out west again. So a siding that trails off behind a sensor is either
+unreachable, or reachable only by making every passing train reverse.
+
+Hand-written configurations solved this with several Points on one s88, and the committed sample
+layout does exactly that - `BottomMainC` and `BottomMainCTerm`, both stations, both s88 4, both
+entered from `BottomMainCPre`, one leaving to `BottomMainPost` and the other to `TunnelReversePre`.
+The user's own 91-point file is full of the same idiom (`St03pre`/`St03rev`, `Indk0102`/`Rev21`).
+
+Two model rules make this necessary rather than merely convenient:
+- `Layout.isPathClear` refuses any path with a **terminus in the middle** (`Layout.java:1356`), so a
+  through platform some trains terminate at cannot be expressed as one Point at all.
+- only reversible locomotives may end at a terminus (`:1448`), so the same sensor has to be able to
+  present itself as an ordinary station to everything else.
+
+**Rejected: twin Points carrying identical edge sets.** `Layout.getNeighbors()` ends in
+`Collections.shuffle`, so identical twins are a coin flip on every journey through the tile and a
+train would reverse pointlessly about half the time.
+
+**Built: split by arrival side.** A marked tile is emitted as one plain and one turning Point per
+arrival side. The plain copy leaves by any side but the one it arrived at; the turning copy leaves by
+that side and nothing else. Marked means a station set as TERMINUS, or anything else set as CAN
+REVERSE (`AutonomyBuilder.CAN_REVERSE`, stored beside the point data and never emitted). A tile with
+fewer than two arrival sides is left whole - splitting a dead-end platform would produce a plain copy
+with nowhere to go.
+
+Safe because occupancy is tested against the physical feedback, not the Point:
+`isPathClear` reads `control.getFeedbackState(e.getEnd().getS88())`, so every copy of a sensor is
+refused while a train stands on it.
+
+Known limitation: all copies of a tile carry the same operational extras. The hand-written file gave
+`BottomMainCTerm` a `priority` its plain twin did not have; that cannot currently be expressed.
+
 ### Deferred by the author, 2026-08-16 (testing round 2)
 
 - **Show simplified segments instead of "also show track that runs both ways".** The toggle as built

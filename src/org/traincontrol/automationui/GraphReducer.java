@@ -140,14 +140,44 @@ public class GraphReducer
         private final Map<String, accessorySetting> commands;
         private final int length;
 
+        /**
+         * Which side of the start tile this edge leaves by, and which side of the end tile it arrives
+         * at.  Null for a move through a portal, which has no side on the grid.
+         *
+         * The reduction is otherwise Point-to-Point and forgets this, which is exactly what makes a
+         * reversal inexpressible: leaving by the side you came in on and carrying straight on look the
+         * same once both are "an edge from T".  Anything that has to tell those apart - see
+         * AutonomyBuilder's split - needs the sides, so they are kept.
+         */
+        private final Side exitSide;
+        private final Side entrySide;
+
         ReducedEdge(TileKey start, TileKey end, List<TileStep> path,
-            Map<String, accessorySetting> commands, int length)
+            Map<String, accessorySetting> commands, int length, Side exitSide, Side entrySide)
         {
             this.start = start;
             this.end = end;
             this.path = Collections.unmodifiableList(path);
             this.commands = Collections.unmodifiableMap(commands);
             this.length = length;
+            this.exitSide = exitSide;
+            this.entrySide = entrySide;
+        }
+
+        /**
+         * @return the side of the start tile the train leaves by, or null through a portal
+         */
+        public Side getExitSide()
+        {
+            return exitSide;
+        }
+
+        /**
+         * @return the side of the end tile the train arrives at, or null through a portal
+         */
+        public Side getEntrySide()
+        {
+            return entrySide;
         }
 
         public TileKey getStart()
@@ -517,6 +547,7 @@ public class GraphReducer
                     if (!collectCommands(start, exit.getState(), commands)) continue;
 
                     walk(start, exit, path, commands);
+
                 }
             }
         }
@@ -535,10 +566,14 @@ public class GraphReducer
         Set<String> visited = new HashSet<>();
         visited.add(start.toString());
 
-        continueWalk(start, landing, path, commands, visited);
+        continueWalk(start, firstExit.getSide(), landing, path, commands, visited);
     }
 
-    private void continueWalk(TileKey start, Landing landing, List<TileStep> path,
+    /**
+     * @param exitSide which side of the START tile this walk left by, carried the whole way so the edge
+     *        that eventually lands can record where it began
+     */
+    private void continueWalk(TileKey start, Side exitSide, Landing landing, List<TileStep> path,
         Map<String, accessorySetting> commands, Set<String> visited)
     {
         if (path.size() > MAX_PATH_TILES) return;
@@ -582,7 +617,7 @@ public class GraphReducer
             }
 
             ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),
-                new LinkedHashMap<>(commands), sumLength(path));
+                new LinkedHashMap<>(commands), sumLength(path), exitSide, landing.getEntrySide());
 
             edges.add(edge);
             edgeByPair.put(pair, edge);
@@ -609,7 +644,7 @@ public class GraphReducer
             branchPath.add(new TileStep(tile, exit.getRouteId(), exit.getState()));
 
             // each branch gets its own visited set, so one fork cannot block another
-            continueWalk(start, next, branchPath, branchCommands, new HashSet<>(visited));
+            continueWalk(start, exitSide, next, branchPath, branchCommands, new HashSet<>(visited));
         }
     }
 

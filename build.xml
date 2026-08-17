@@ -153,6 +153,7 @@
         <test-one-class class="testAutonomyDiagramStore"/>
         <test-one-class class="testAutonomyDiagramSession"/>
         <test-one-class class="testAutonomyDiagramMonitor"/>
+        <test-one-class class="testAutonomyDiagramReversal"/>
         <test-one-class class="testAutonomyDiagramSampleLayout"/>
     </target>
     <target name="package-for-store" depends="jar">

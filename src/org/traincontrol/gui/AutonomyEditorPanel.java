@@ -606,8 +606,27 @@ public class AutonomyEditorPanel extends JPanel
                 !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
                 on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
 
+            // "Can turn round here" - the same act a terminus performs, on a square that is not a
+            // station.  It is emitted as two Points sharing the s88, one going on and one coming back,
+            // so a siding that trails off behind this square becomes reachable without every passing
+            // train reversing.  A station says the same thing by being marked a terminus, so this is
+            // offered only where that one is not.
+            if (!isStation)
+            {
+                menu.add(toggle(I18n.t("autosetup.ui.menuCanReverse"),
+                    "autosetup.ui.hintCanReverse",
+                    flag(target, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE),
+                    on -> session.setPointProperty(target,
+                        org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE,
+                        on ? Boolean.TRUE : null)));
+            }
+
             // A reversing sensor is not a station - it is a place a train turns round and carries on -
             // so it stays out here rather than under Station, where it would read as a kind of one.
+            //
+            // Kept alongside "can turn round here", which it is NOT the same as: this one makes every
+            // train that passes reverse and takes the square out of autonomy's list of destinations
+            // for good.  That is still the right answer for a headshunt nothing should ever stop at.
             menu.add(toggle(I18n.t("autosetup.ui.menuReversing"),
                 "autolayout.ui.tooltip.ReversingPoint", flag(target, "reversing"),
                 on ->

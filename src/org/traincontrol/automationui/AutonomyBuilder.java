@@ -56,10 +56,76 @@ public class AutonomyBuilder
         }
     }
 
+    /**
+     * One emitted Point: a tile, and - where the tile is split - which arrival side it stands for and
+     * whether it is the copy that reverses.
+     *
+     * The reduction gives one Point per sensor, which is a truthful model of the track and a lossy
+     * model of what a train may do there.  Arriving from the west and carrying on east is a different
+     * move from arriving from the west and backing out west again, and as one Point they are the same
+     * edge set - so either the reversal is unreachable or every passing train performs one.
+     *
+     * A hand-written configuration solved this by putting several Points on one s88.  The sample
+     * layout does exactly that: BottomMainC and BottomMainCTerm are both station, both s88 4, both
+     * entered from BottomMainCPre - one leaves to BottomMainPost going on, the other to
+     * TunnelReversePre having turned round.  This class reconstructs that shape from the diagram.
+     */
+    private static class Node
+    {
+        private final TileKey tile;
+
+        /** which side a train arrived by, or null when the tile is not split */
+        private final TilePorts.Side arrival;
+
+        /** whether this is the copy a train turns round at */
+        private final boolean reverse;
+
+        Node(TileKey tile, TilePorts.Side arrival, boolean reverse)
+        {
+            this.tile = tile;
+            this.arrival = arrival;
+            this.reverse = reverse;
+        }
+
+        /**
+         * Whether a train standing on this copy may leave by the given side.
+         *
+         * The whole point of the split, in two lines: the reversing copy leaves the way it came, and
+         * the plain copy leaves any other way.
+         */
+        boolean leavesBy(TilePorts.Side exitSide)
+        {
+            if (arrival == null) return true;
+
+            return reverse ? arrival == exitSide : arrival != exitSide;
+        }
+
+        /**
+         * Whether a train arriving by the given side lands on this copy.  Both copies of a side are
+         * reachable from the same place - which is what lets the path finder choose between going on
+         * and turning round.
+         */
+        boolean arrivesBy(TilePorts.Side entrySide)
+        {
+            return arrival == null || arrival == entrySide;
+        }
+    }
+
+    /**
+     * The authored key that marks a tile as somewhere a train may turn round.
+     *
+     * Stored beside the operational point data but never emitted: it is an instruction to this class
+     * about how to SHAPE the graph, not something parseAuto has ever heard of.
+     */
+    public static final String CAN_REVERSE = "canReverse";
+
     private final GraphReducer reducer;
     private final Globals globals;
 
     private List<String> coordinatePages = null;
+
+    // Tiles the user marked as somewhere a train may turn round.  See Node.
+    private Set<TileKey> reversible = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
     // rest - keyed by TileKey.toString().  See withPointExtras.
@@ -110,6 +176,97 @@ public class AutonomyBuilder
     }
 
     /**
+     * The tiles where a train may turn round, each of which is emitted as several Points.
+     *
+     * A tile is only actually split when it has more than one arrival side.  A dead-end platform is
+     * marked terminus like any other, but splitting it would produce a plain copy with nowhere to go -
+     * a station a train could reach and never leave.
+     *
+     * @param tiles the marked tiles, or null for none
+     * @return this
+     */
+    public AutonomyBuilder withReversibleTiles(Set<TileKey> tiles)
+    {
+        this.reversible = tiles == null ? Collections.<TileKey>emptySet() : tiles;
+        return this;
+    }
+
+    /**
+     * The sides trains arrive at this tile by, in a fixed order, or empty when it is not split.
+     */
+    private List<TilePorts.Side> splitSides(TileKey tile)
+    {
+        if (!reversible.contains(tile)) return Collections.emptyList();
+
+        Set<TilePorts.Side> sides = new java.util.TreeSet<>();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            // a portal arrival has no side on the grid, so it cannot be told apart from any other and
+            // the tile is left whole
+            if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
+            {
+                sides.add(edge.getEntrySide());
+            }
+        }
+
+        return sides.size() < 2 ? Collections.<TilePorts.Side>emptyList()
+            : new ArrayList<>(sides);
+    }
+
+    /**
+     * Every Point a tile is emitted as: one when it is not split, two per arrival side when it is.
+     */
+    private List<Node> nodesFor(TileKey tile)
+    {
+        List<TilePorts.Side> sides = splitSides(tile);
+
+        List<Node> out = new ArrayList<>();
+
+        if (sides.isEmpty())
+        {
+            out.add(new Node(tile, null, false));
+            return out;
+        }
+
+        for (TilePorts.Side side : sides)
+        {
+            out.add(new Node(tile, side, false));
+            out.add(new Node(tile, side, true));
+        }
+
+        return out;
+    }
+
+    /**
+     * What a split copy is called.
+     *
+     * Named for the direction of travel rather than the side arrived by, because that is what somebody
+     * reading a running log wants: "Main 4 (eastbound, reverse)" says where the train is and what it is
+     * about to do, where "Main 4 (in W, rev)" has to be decoded first.
+     */
+    private static String nodeName(String base, Node node)
+    {
+        if (node.arrival == null) return base;
+
+        return base + " (" + heading(node.arrival) + (node.reverse ? ", reverse)" : ")");
+    }
+
+    /**
+     * Which way a train that arrived by this side is pointing.
+     */
+    private static String heading(TilePorts.Side arrival)
+    {
+        switch (arrival)
+        {
+            case W: return "eastbound";
+            case E: return "westbound";
+            case N: return "southbound";
+            default: return "northbound";
+        }
+    }
+
+    /**
      * Builds the autonomy JSON.
      *
      * @return a string suitable for parseAuto
@@ -141,37 +298,62 @@ public class AutonomyBuilder
 
         for (ReducedPoint point : points)
         {
-            JSONObject json = new JSONObject();
+            List<Node> nodes = nodesFor(point.getTile());
 
-            json.put("name", names.get(point.getTile()));
-            json.put("station", point.isStation());
-            json.put("s88", point.getS88());
-
-            if (coordinatePages != null)
+            for (int copy = 0; copy < nodes.size(); copy++)
             {
-                // Roughly one tile per 60 units, which is the spacing the hand-written files use, with
-                // each page stacked below the last so they do not overlap
-                int page = Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
+                Node node = nodes.get(copy);
 
-                json.put("x", point.getTile().getX() * 60);
-                json.put("y", point.getTile().getY() * 60 + page * 1800);
-            }
+                JSONObject json = new JSONObject();
 
-            JSONObject extras = pointExtras == null
-                ? null : pointExtras.get(point.getTile().toString());
+                json.put("name", nodeName(names.get(point.getTile()), node));
+                json.put("station", point.isStation());
+                json.put("s88", point.getS88());
 
-            if (extras != null)
-            {
-                for (String key : extras.keySet())
+                if (coordinatePages != null)
                 {
-                    // never the structural fields: those are the reduction's to decide
-                    if (json.has(key)) continue;
+                    // Roughly one tile per 60 units, which is the spacing the hand-written files use,
+                    // with each page stacked below the last so they do not overlap.  Split copies are
+                    // fanned out a little, or they would land exactly on top of one another.
+                    int page = Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
 
-                    json.put(key, extras.get(key));
+                    json.put("x", point.getTile().getX() * 60 + copy * 14);
+                    json.put("y", point.getTile().getY() * 60 + page * 1800 + copy * 14);
                 }
-            }
 
-            pointList.put(json);
+                JSONObject extras = pointExtras == null
+                    ? null : pointExtras.get(point.getTile().toString());
+
+                if (extras != null)
+                {
+                    for (String key : extras.keySet())
+                    {
+                        // never the structural fields: those are the reduction's to decide
+                        if (json.has(key)) continue;
+
+                        // On a split tile, turning round is what the COPY means, so the authored flag
+                        // is not carried onto either of them: it would make the plain copy reverse too,
+                        // which is the behaviour the split exists to separate.  CAN_REVERSE never goes
+                        // out at all - it is the instruction to split, not something parseAuto knows.
+                        if (CAN_REVERSE.equals(key)) continue;
+
+                        if (node.arrival != null
+                                && ("terminus".equals(key) || "reversing".equals(key))) continue;
+
+                        json.put(key, extras.get(key));
+                    }
+                }
+
+                // A station turns round at a terminus; anything else turns round at a reversing point.
+                // Same physical act, and the model spells it two ways: a terminus is a destination that
+                // reverses on arrival, a reversing point is one autonomy will never choose to stop at.
+                if (node.reverse)
+                {
+                    json.put(point.isStation() ? "terminus" : "reversing", true);
+                }
+
+                pointList.put(json);
+            }
         }
 
         root.put("points", pointList);
@@ -192,12 +374,42 @@ public class AutonomyBuilder
 
         JSONArray edgeList = new JSONArray();
 
+        // Which emitted name pairs each reduced edge became, so a lock on one edge becomes a lock on
+        // every copy of it.  Over-locking rather than under: a split turns one physical route into
+        // several logical ones, and they are all still the same piece of track.
+        Map<ReducedEdge, List<String[]>> emitted = new LinkedHashMap<>();
+
         for (ReducedEdge edge : edges)
         {
+            List<String[]> pairs = new ArrayList<>();
+
+            for (Node from : nodesFor(edge.getStart()))
+            {
+                if (!from.leavesBy(edge.getExitSide())) continue;
+
+                for (Node to : nodesFor(edge.getEnd()))
+                {
+                    if (!to.arrivesBy(edge.getEntrySide())) continue;
+
+                    pairs.add(new String[]
+                    {
+                        nodeName(names.get(edge.getStart()), from),
+                        nodeName(names.get(edge.getEnd()), to)
+                    });
+                }
+            }
+
+            emitted.put(edge, pairs);
+        }
+
+        for (ReducedEdge edge : edges)
+        {
+          for (String[] pair : emitted.get(edge))
+          {
             JSONObject json = new JSONObject();
 
-            json.put("start", names.get(edge.getStart()));
-            json.put("end", names.get(edge.getEnd()));
+            json.put("start", pair[0]);
+            json.put("end", pair[1]);
             json.put("length", edge.getLength());
 
             JSONArray commands = new JSONArray();
@@ -242,10 +454,17 @@ public class AutonomyBuilder
 
                 for (ReducedEdge other : sorted)
                 {
-                    JSONObject lock = new JSONObject();
-                    lock.put("start", names.get(other.getStart()));
-                    lock.put("end", names.get(other.getEnd()));
-                    lockEdges.put(lock);
+                    List<String[]> otherPairs = emitted.get(other);
+
+                    if (otherPairs == null) continue;
+
+                    for (String[] otherPair : otherPairs)
+                    {
+                        JSONObject lock = new JSONObject();
+                        lock.put("start", otherPair[0]);
+                        lock.put("end", otherPair[1]);
+                        lockEdges.put(lock);
+                    }
                 }
             }
 
@@ -255,6 +474,7 @@ public class AutonomyBuilder
             }
 
             edgeList.put(json);
+          }
         }
 
         root.put("edges", edgeList);
@@ -268,6 +488,65 @@ public class AutonomyBuilder
      * A user who names two Points the same thing is told at authoring time; this is the backstop for
      * generated names, and for the case where a rename has not yet been applied everywhere.
      */
+    /**
+     * Every name this builder would emit, mapped back to the square it belongs to.
+     *
+     * uniqueNames() answers "what is this tile called", which stops being the whole answer once a tile
+     * is emitted as several Points.  Anything working backwards from a running configuration - the
+     * diagram monitor, the capture that saves where the locomotives ended up - needs this instead, or
+     * it silently loses every split copy.
+     *
+     * @return emitted Point name to tile
+     */
+    public Map<String, TileKey> tilesByName()
+    {
+        Map<String, TileKey> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        {
+            for (Node node : nodesFor(entry.getKey()))
+            {
+                out.put(nodeName(entry.getValue(), node), entry.getKey());
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came
+     * from.  Several names can share one reduced edge once a tile is split.
+     *
+     * @return edge name to the route it describes
+     */
+    public Map<String, ReducedEdge> edgesByName()
+    {
+        Map<String, ReducedEdge> out = new LinkedHashMap<>();
+        Map<TileKey, String> names = uniqueNames();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            String start = names.get(edge.getStart());
+            String end = names.get(edge.getEnd());
+
+            if (start == null || end == null) continue;
+
+            for (Node from : nodesFor(edge.getStart()))
+            {
+                if (!from.leavesBy(edge.getExitSide())) continue;
+
+                for (Node to : nodesFor(edge.getEnd()))
+                {
+                    if (!to.arrivesBy(edge.getEntrySide())) continue;
+
+                    out.put(nodeName(start, from) + " -> " + nodeName(end, to), edge);
+                }
+            }
+        }
+
+        return out;
+    }
+
     public Map<TileKey, String> uniqueNames()
     {
         Map<TileKey, String> out = new LinkedHashMap<>();

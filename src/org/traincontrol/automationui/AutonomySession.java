@@ -255,7 +255,41 @@ public class AutonomySession
      */
     public String buildConfiguration()
     {
-        return new AutonomyBuilder(reducer, globals()).withPointExtras(pointExtras()).build();
+        return new AutonomyBuilder(reducer, globals())
+            .withPointExtras(pointExtras())
+            .withReversibleTiles(reversibleTiles())
+            .build();
+    }
+
+    /**
+     * The squares where a train may turn round, which the builder emits as several Points each.
+     *
+     * Two ways to be one, and they are the same physical act seen from either side of the station
+     * question:
+     *   - a station marked TERMINUS, which is where a train ends its run and reverses.  As a single
+     *     Point it is a dead end for routing - isPathClear refuses any path with a terminus in the
+     *     middle - so a through platform that some trains terminate at could not be expressed at all.
+     *   - anything else marked CAN REVERSE, which is a place a train changes direction on its way
+     *     somewhere else: the move that reaches a siding trailing off behind it.
+     *
+     * @return the marked tiles
+     */
+    public Set<TileKey> reversibleTiles()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (reducer == null) return out;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))
+                    || Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE)))
+            {
+                out.add(tile);
+            }
+        }
+
+        return out;
     }
 
     /**
@@ -271,7 +305,10 @@ public class AutonomySession
             if (!store.getExcludedPages().contains(page.getName())) pageOrder.add(page.getName());
         }
 
-        return new AutonomyBuilder(reducer, globals()).withCoordinatesFromTiles(pageOrder).build();
+        return new AutonomyBuilder(reducer, globals())
+            .withPointExtras(pointExtras())
+            .withReversibleTiles(reversibleTiles())
+            .withCoordinatesFromTiles(pageOrder).build();
     }
 
     /**
@@ -340,11 +377,10 @@ public class AutonomySession
         // name -> tile, through the same naming the builder used to generate the file
         Map<String, TileKey> tilesByName = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, String> entry
-            : new AutonomyBuilder(reducer, null).uniqueNames().entrySet())
-        {
-            tilesByName.put(entry.getValue(), entry.getKey());
-        }
+        Set<TileKey> split = reversibleTiles();
+
+        tilesByName.putAll(new AutonomyBuilder(reducer, null)
+            .withReversibleTiles(split).tilesByName());
 
         org.json.JSONObject points = new org.json.JSONObject();
 
@@ -363,6 +399,13 @@ public class AutonomySession
                 for (String key : POINT_OPERATIONAL_KEYS)
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
+
+                    // On a split tile the running graph's terminus and reversing flags are the
+                    // builder's own doing, not the user's.  Reading them back would write "reversing"
+                    // onto the square the user marked "can reverse", and the next build would then
+                    // reverse every train that passed it.
+                    if (split.contains(tile)
+                            && ("terminus".equals(key) || "reversing".equals(key))) continue;
 
                     // A placement records WHICH locomotive stands here and nothing else.  Point.toJSON
                     // also writes its length, reversibility, speed and functions, and parseAuto applies
