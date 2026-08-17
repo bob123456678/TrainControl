@@ -147,11 +147,19 @@ public class AutonomyMenu extends JMenu
             // Choosing which to load is the step before these, and it is the item above.
             boolean loaded = running != null;
 
+            // Fenced off by itself, because it is the only item here that changes the RAILWAY.
+            // Everything above chooses which setup is in force and everything below is housekeeping on
+            // the file that holds it; this one opens the editor and starts naming stations and setting
+            // which way trains may run.
+            addSeparator();
+
             JMenu edit = editMenu(session);
             edit.setEnabled(loaded && edit.getItemCount() > 0);
             edit.setToolTipText(loaded ? I18n.t("autosetup.ui.tooltipEditAutonomy")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(edit);
+
+            addSeparator();
 
             JMenu manage = manageMenu(actions, names);
             manage.setEnabled(loaded);
