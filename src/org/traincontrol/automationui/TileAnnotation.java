@@ -132,8 +132,8 @@ public class TileAnnotation
      * What a sensor has been designated as, drawn as a badge on its tile.
      *
      * Shapes and colours follow the graph window exactly, because that is the vocabulary the user
-     * already reads: a station is a circle, a terminus a square, a reversing point a cross, and a plain
-     * point a small diamond; blue means autonomy uses it, orange means it does not.
+     * already reads: a station is a circle, a terminus a square, a reversing point a smaller
+     * square, and a plain point a small diamond; blue means autonomy uses it, orange means it does not.
      *
      * The five kinds the user thinks in are two questions over a station - must a train leave the way
      * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are
@@ -657,12 +657,21 @@ public class TileAnnotation
     private static final int EDGE_GAP = 1;
 
     /**
+     * Whether a reversing point is drawn as a cross rather than as a small square.
+     *
+     * False, at the author's instruction: the cross read as an error marker rather than as a statement
+     * about direction.  Kept as a switch rather than deleted, because the shape is a judgement about
+     * what a diagram reads like and those get revisited - flip this one word and cross() is back.
+     */
+    private static final boolean REVERSING_AS_CROSS = false;
+
+    /**
      * Draws what a sensor IS, in the graph window's own shapes and colours.
      *
      *   plain point       small diamond
      *   station           circle
      *   terminus          square
-     *   reversing         cross
+     *   reversing         small square
      *   blue              autonomy uses it
      *   orange            autonomy leaves it alone (parking, or switched off)
      *
@@ -701,7 +710,21 @@ public class TileAnnotation
 
         if (badge.isReversing())
         {
-            cross(g, x, y, size, fill, line);
+            // A small square, at the non-station size, so it reads as a lesser relative of the
+            // terminus square rather than as a different kind of thing altogether - which is what it
+            // is: the same act of switching direction, on a square trains do not stop at.  The cross
+            // it used to be said "something is wrong here" more than it said anything about direction.
+            if (REVERSING_AS_CROSS)
+            {
+                cross(g, x, y, size, fill, line);
+            }
+            else
+            {
+                g.setColor(fill);
+                g.fillRect(x, y, size, size);
+                g.setColor(line);
+                g.drawRect(x, y, size, size);
+            }
         }
         else if (badge.isTerminus())
         {
