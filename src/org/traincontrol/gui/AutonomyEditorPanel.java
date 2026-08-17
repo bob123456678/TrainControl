@@ -304,9 +304,8 @@ public class AutonomyEditorPanel extends JPanel
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
-        // One width for both, taken from the wider.  Two buttons of different lengths one above the
-        // other draw a ragged right edge down the only straight line this column has.
-        matchWidths(testButton, nameAll);
+        // Both the width of the column, like the window's own Save and Cancel below them
+        fillWidth(testButton, nameAll);
 
         panel.add(row(testButton));
         panel.add(row(nameAll));
@@ -347,20 +346,17 @@ public class AutonomyEditorPanel extends JPanel
      * One control on its own line, flush left and no taller than it needs to be.
      */
     /**
-     * Gives every button the width of the widest, so a stack of them has one right edge.
+     * Stretches buttons to the width of the column, as the window's own Save and Cancel are.
+     *
+     * Matching them to the WIDEST of themselves left a ragged margin down the right of the column that
+     * belonged to nothing; matching them to the column makes the two of them read as the panel's own
+     * controls rather than as two labels that happen to be the same length.
      */
-    private void matchWidths(javax.swing.AbstractButton... buttons)
+    private void fillWidth(javax.swing.AbstractButton... buttons)
     {
-        int widest = 0;
-
         for (javax.swing.AbstractButton button : buttons)
         {
-            widest = Math.max(widest, button.getPreferredSize().width);
-        }
-
-        for (javax.swing.AbstractButton button : buttons)
-        {
-            button.setPreferredSize(new Dimension(widest, button.getPreferredSize().height));
+            button.setPreferredSize(new Dimension(WIDTH - 8, button.getPreferredSize().height));
         }
     }
 
