@@ -737,6 +737,78 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The three answers for one route, with the two one-way options named by where they lead rather
+     * than by an A and a B nobody can see.
+     */
+    private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
+        org.traincontrol.base.TilePorts.Route route)
+    {
+        List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+        Direction current = session.getGraph().getDirection(tile, routeId);
+
+        items.add(directionItem(tile, routeId, Direction.BOTH,
+            I18n.t("autosetup.ui.menuRouteBoth"), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
+        items.add(directionItem(tile, routeId, Direction.NONE,
+            I18n.t("autosetup.ui.menuRouteNone"), current));
+
+        return items;
+    }
+
+    private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
+        final Direction direction, String text, Direction current)
+    {
+        javax.swing.JRadioButtonMenuItem item =
+            new javax.swing.JRadioButtonMenuItem(text, direction == current);
+
+        item.addActionListener(e ->
+        {
+            // Set on the run, not the tile: a run of plain track has one direction, and setting it a
+            // tile at a time is both busywork and a way to end up with a run that contradicts itself.
+            session.setRunDirection(tile, routeId, direction);
+            refresh();
+        });
+
+        return item;
+    }
+
+    private boolean flag(TileKey tile, String key)
+    {
+        return Boolean.TRUE.equals(session.getPointProperty(tile, key));
+    }
+
+    private Set<String> strings(TileKey tile, String key)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        Object value = session.getPointProperty(tile, key);
+
+        if (value instanceof org.json.JSONArray)
+        {
+            for (Object o : (org.json.JSONArray) value) out.add(String.valueOf(o));
+        }
+        else if (value != null)
+        {
+            out.add(String.valueOf(value));
+        }
+
+        return out;
+    }
+    /**
+     * A stored number for a point, or the value that means "not set".
+     */
+    private int number(TileKey tile, String key, int fallback)
+    {
+        Object value = session.getPointProperty(tile, key);
+
+        return value instanceof Number ? ((Number) value).intValue() : fallback;
+    }
+
+    /**
      * Every locomotive the control station knows about.
      */
     private List<String> allLocomotives()
