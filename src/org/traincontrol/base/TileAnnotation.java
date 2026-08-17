@@ -337,6 +337,11 @@ public class TileAnnotation
         Color oldColor = g.getColor();
         java.awt.Font oldFont = g.getFont();
 
+        // Restored with the rest.  The ignored branch sets a composite and returns, so without this the
+        // only thing keeping a half-transparent brush from leaking out is that the caller happens to
+        // hand over a scratch Graphics it then throws away.
+        java.awt.Composite oldComposite = g.getComposite();
+
         try
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -400,6 +405,7 @@ public class TileAnnotation
             g.setFont(oldFont);
             g.setColor(oldColor);
             g.setStroke(oldStroke);
+            g.setComposite(oldComposite);
 
             if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
         }

@@ -9,25 +9,27 @@ Sources: `GraphRightClickPointMenu`, `GraphRightClickGeneralMenu`, `GraphEdgeEdi
 **Status key** — DONE: reachable in the new UI. PARTIAL: possible but awkward or incomplete.
 TODO: no way to do it yet. N/A: deliberately dropped, with the reason.
 
-Last updated 2026-08-16.
+Last updated 2026-08-16, after a three-way review. Rows marked **(corrected)** were wrong before
+that review: this ledger claimed DONE for things that were broken or absent, which is worse than
+having no ledger. What follows is what the review verified, not what was intended.
 
 ## Points
 
 | Old capability | Where it was | New home | Status |
 |---|---|---|---|
 | Create a point | general right-click → Create point | Automatic: every s88 tile is a point | DONE |
-| Delete a point | point right-click → Delete | Delete the s88 tile in the diagram editor | DONE |
+| Delete a point | point right-click → Delete | - | N/A **(corrected)** - deleting the physical sensor is a different act.  The equivalent is un-station plus parking |
 | Rename a point | point right-click → Rename | Right-click → Name, or "Name everything" | DONE |
-| Mark as station | point right-click checkbox | Right-click → Point properties → station | DONE |
-| Terminus station | point right-click checkbox | Point properties → terminus | DONE |
-| Reversing point | point right-click checkbox | Point properties → reversing | DONE |
-| Active / inactive | point right-click checkbox | Point properties → parking (same flag) | DONE |
-| Max train length | point right-click → advanced | Point properties | DONE |
-| Speed multiplier | point right-click → speed multiplier | Point properties | DONE |
-| Station priority | point right-click → advanced | Point properties | DONE |
-| Excluded locomotives | point right-click → GraphLocExclude | Point properties → excluded list | DONE |
-| Home locomotives | point right-click | Point properties → home list | DONE |
-| Test connection from a point | point right-click → test connection | Test tool, reports both directions | DONE |
+| Mark as station | point right-click checkbox | Right-click → Mark as a station | DONE |
+| Terminus station | point right-click checkbox | Right-click; clears reversing, as the model requires | DONE |
+| Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
+| Active / inactive | point right-click checkbox | Right-click → Active (what the user calls parking) | DONE |
+| Max train length | point right-click → advanced | Right-click → Advanced Parameters | DONE |
+| Speed multiplier | point right-click → speed multiplier | Right-click, in percent | DONE **(corrected)** - had been storing a raw percentage where the model wants a factor, so any real value made the configuration refuse to load |
+| Station priority | point right-click → advanced | Right-click → Advanced Parameters | DONE |
+| Excluded locomotives | point right-click → GraphLocExclude | Right-click → excluded list | PARTIAL **(corrected)** - the list works; GraphLocExclude also explained station-vs-non-station semantics and warned when an exclusion would strand that point's home locomotive |
+| Home locomotives | point right-click | Right-click → Home for | DONE **(corrected)** - had been a multi-select writing a JSON array where the model reads one string, so a home became the literal text ["BR 111"] |
+| Test connection from a point | point right-click → test connection | Test tool, reports both directions | PARTIAL **(corrected)** - the old test took a LOCOMOTIVE and listed each rejected path with its reason.  The new one is pure topology and cannot answer "can THIS train get there" |
 | See invalid paths and the reason | point right-click → test connection | **Only reachable/not reachable is reported** | PARTIAL |
 
 ## Edges
@@ -52,9 +54,9 @@ should be reported as such rather than patched by hand here.
 
 | Old capability | Where it was | New home | Status |
 |---|---|---|---|
-| Place a locomotive | point right-click → Add/assign | Auto tab → Place locomotives (existing tab) | DONE |
-| Remove from a point | point right-click | Same tab | DONE |
-| Clear all locomotives | general right-click | Same tab | DONE |
+| Place a locomotive | point right-click → Add/assign | Editor right-click, at stations only | DONE **(corrected)** - the Auto tab button only NAVIGATES to the run tab, which has no placement control |
+| Remove from a point | point right-click | Editor right-click | DONE |
+| Clear all locomotives | general right-click | - | **TODO (corrected)** - claimed DONE; nothing anywhere does this |
 | See where locomotives are | on the graph | Roster list, and the diagram overlay | DONE |
 | Show home locomotives | display option | **Layer exists in spec, not drawn yet** | TODO |
 
@@ -84,13 +86,31 @@ should be reported as such rather than patched by hand here.
 |---|---|---|---|
 | Load a configuration | Validate and open graph UI | Auto tab → Check and enable | DONE |
 | Edit the JSON by hand | text area | - | N/A - author ruling: the diagram is the source |
-| Import a configuration | Load JSON from file | Manage → Import | DONE |
-| Export a configuration | Export current graph | Manage → Export | DONE |
+| Import a configuration | Load JSON from file | Manage → Import | PARTIAL **(corrected)** - imports the STORE format, not a legacy autonomy.json.  The 2026-08-16 ruling kept legacy import/export for code-first users; not implemented |
+| Export a configuration | Export current graph | Manage → Export | PARTIAL **(corrected)** - same: store format, not autonomy.json |
 | Several named configurations | - | New in the diagram UI | DONE |
-| Autosave on exit | checkbox | Always on, hidden | DONE |
+| Autosave on exit | checkbox | Always on, hidden | DONE - and it no longer writes the derived graph over the legacy autonomy.json, which it did on every exit |
 | Global settings (pace, speeds) | Autonomy Settings tab | Unchanged | DONE |
 | Timetables | Timetable tab | Unchanged | DONE |
 | Read the graph as a graph | the window itself | Debug-only export to file | PARTIAL |
+
+## Capabilities this ledger previously omitted
+
+Found by review; none has a new home and none has a ruling.
+
+| Old capability | Where it was | Status |
+|---|---|---|
+| Clear all home locomotives | general right-click -> HomeLocomotiveMenu | TODO |
+| Seven keyboard shortcuts: Ctrl+V place, Del remove, Ctrl+X cut, Ctrl+E/U exclude, Ctrl+H home, Ctrl+S s88 | GraphViewer | TODO - the whole cut/paste move-a-locomotive idiom is gone |
+| Double-click a node to edit its locomotive | GraphViewer | TODO |
+| Hover a point to log its excluded locomotives | GraphViewer | TODO - exclusions are also not drawn on the diagram |
+| Edge editor's "Test" - actually fires the accessories | GraphEdgeEdit | TODO - on a derived-commands design this is the one check that catches a port-map error before a train does |
+| Edge editor's "Highlight" - light the accessories a path commands | GraphEdgeEdit | TODO |
+| Refusing a duplicate point name | point right-click -> Rename | TODO - names are silently disambiguated instead |
+| Tooltips on exclusions and speed multiplier | point right-click | TODO - the other four carried over |
+| Display filters: hide inactive, hide reversing stations, hide reversing edges | general right-click | TODO |
+| Busy gate on point properties while autonomy runs | GraphViewer / point menu | DONE - added after review |
+| Edit s88 address | GraphViewer Ctrl+S | N/A - the tile IS the sensor |
 
 ## Open gaps, in priority order
 

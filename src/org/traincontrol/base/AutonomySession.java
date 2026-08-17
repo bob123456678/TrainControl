@@ -384,8 +384,18 @@ public class AutonomySession
         // Guarded because a panel builds its list in its constructor, and nothing yet forces open() to
         // have been called first - so an unopened session would throw out of a constructor, which is a
         // much harder failure to read than an empty list.
-        return graph == null || reducer == null
-            ? new ArrayList<AutonomyChecks.Finding>() : AutonomyChecks.run(graph, reducer);
+        if (graph == null || reducer == null) return new ArrayList<AutonomyChecks.Finding>();
+
+        // The terminus flag lives in the configuration, so the checks are told rather than left to
+        // infer it from the shape of the graph.
+        Set<TileKey> termini = new LinkedHashSet<>();
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
+        }
+
+        return AutonomyChecks.run(graph, reducer, termini);
     }
 
     /**
@@ -398,34 +408,6 @@ public class AutonomySession
     }
 
     // --- editing ----------------------------------------------------------------------------------
-
-    /**
-     * Cycles what a tile allows, which is the whole of the connection tool.
-     *
-     * both -> one way -> the other way -> none -> both.  The user never has to hold a convention in
-     * their head because the arrow drawn on the tile says which way "one way" currently means; if it
-     * points the wrong way they click again.
-     *
-     * @param tile
-     * @param routeId which of the tile's routes, for a switch branch or a double curve
-     * @return the direction now in force
-     */
-    public Direction cycleDirection(TileKey tile, RouteId routeId)
-    {
-        Direction next;
-
-        switch (graph.getDirection(tile, routeId))
-        {
-            case BOTH: next = Direction.TOWARD_A; break;
-            case TOWARD_A: next = Direction.TOWARD_B; break;
-            case TOWARD_B: next = Direction.NONE; break;
-            default: next = Direction.BOTH; break;
-        }
-
-        setDirection(tile, routeId, next);
-
-        return next;
-    }
 
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
     {

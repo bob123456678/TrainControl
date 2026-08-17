@@ -128,6 +128,19 @@ public class AutonomyChecks
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer)
     {
+        return run(graph, reducer, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param termini the Points the user marked as termini
+     *
+     * A terminus used to be inferred here as "has no outgoing edge", which is a different thing from
+     * what the user marked - so a marked terminus that reaches no station got the generic message, and
+     * an ordinary dead end got the terminus one.  The flag lives in the configuration, so it is passed
+     * in rather than guessed at.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini)
+    {
         List<Finding> findings = new ArrayList<>();
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
@@ -222,7 +235,8 @@ public class AutonomyChecks
                 // A terminus that cannot be left is the specific case worth naming: a train sent there
                 // is stuck, and the layout will look like it simply stopped using that station.
                 findings.add(new Finding(Severity.WARNING,
-                    isTerminus(reducer, station) ? TERMINUS_STRANDED : STATION_REACHES_NOTHING,
+                    isTerminus(reducer, station, termini)
+                        ? TERMINUS_STRANDED : STATION_REACHES_NOTHING,
                     station.getName(), station.getTile()));
             }
         }
@@ -321,10 +335,11 @@ public class AutonomyChecks
         return findings;
     }
 
-    private static boolean isTerminus(GraphReducer reducer, ReducedPoint station)
+    private static boolean isTerminus(GraphReducer reducer, ReducedPoint station, Set<TileKey> termini)
     {
-        // A terminus is a station trains can only leave the way they came, which shows up here as having
-        // no outgoing edge at all once directions are applied
+        // What the user marked comes first; a dead end is the fallback for a Point nobody marked.
+        if (termini.contains(station.getTile())) return true;
+
         for (ReducedEdge edge : reducer.getEdges())
         {
             if (edge.getStart().equals(station.getTile())) return false;

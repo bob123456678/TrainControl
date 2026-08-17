@@ -16,6 +16,7 @@ import org.traincontrol.base.TileGraph.Landing;
 import org.traincontrol.base.TileGraph.RouteId;
 import org.traincontrol.base.TileGraph.TileKey;
 import org.traincontrol.base.TilePorts.AccessorySlot;
+import org.traincontrol.base.TilePorts.Route;
 import org.traincontrol.base.TilePorts.Side;
 
 /**
@@ -268,6 +269,11 @@ public class GraphReducer
      */
     public static final String WARN_SELF_LOOP = "autosetup.ui.warnSelfLoop";
 
+    /**
+     * A double-curve sensor with track on both of its curves - one s88 over two separate tracks.
+     */
+    public static final String ERROR_DOUBLE_CURVE_SENSOR = "autosetup.ui.errorDoubleCurveSensor";
+
     public GraphReducer(TileGraph graph, Authored authored)
     {
         this.graph = graph;
@@ -409,6 +415,17 @@ public class GraphReducer
                 continue;
             }
 
+            // A double-curve sensor carries TWO independent curves on one tile with one s88.  As a
+            // single Point it joins them: a train could enter on one curve and leave on the other,
+            // crossing between tracks that never meet - and lock derivation cannot catch it, because a
+            // Point is never part of any edge's path.  Reported rather than emitted wrong.
+            if (component.getType() == componentType.FEEDBACK_DOUBLE_CURVE
+                && bothCurvesConnected(tile))
+            {
+                problems.add(new TileGraph.Problem(tile, ERROR_DOUBLE_CURVE_SENSOR, true));
+                continue;
+            }
+
             String name = authored.getPointName(tile);
 
             if (name == null || name.trim().isEmpty())
@@ -443,6 +460,28 @@ public class GraphReducer
      * is not.  landing() already refuses a neighbour with no facing port, so this is exactly "is there
      * track on the other side".
      */
+    /**
+     * Whether both curves of a double-curve tile actually have track on them.
+     *
+     * One of them alone is harmless - the tile is then just a curved sensor.
+     */
+    private boolean bothCurvesConnected(TileKey tile)
+    {
+        Map<RouteId, Route> routes = graph.getRoutes(tile);
+
+        if (routes.size() < 2) return false;
+
+        int connected = 0;
+
+        for (Route route : routes.values())
+        {
+            if (graph.landing(tile, route.getA()) != null
+                || graph.landing(tile, route.getB()) != null) connected++;
+        }
+
+        return connected > 1;
+    }
+
     private boolean hasAnyConnection(TileKey tile)
     {
         for (Side side : Side.values())
