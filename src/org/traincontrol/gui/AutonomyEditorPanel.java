@@ -1011,6 +1011,27 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Writes a station's name onto the diagram, and rebuilds the grid if it went anywhere.
+     *
+     * Quiet when there is nowhere to put it: the square is boxed in, or somebody's own caption is
+     * already there.  The check that says a station is not shown anywhere still reports it, which is a
+     * better place for the news than a dialog interrupting the click that created the station.
+     */
+    private void placeLabelFor(TileKey tile)
+    {
+        try
+        {
+            if (!session.placeStationLabel(tile)) return;
+
+            if (onDiagramChanged != null) onDiagramChanged.run();
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("error.generic", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /**
      * One of the three mutually exclusive answers to "what may a train do here", as a radio item.
      *
      * Radio rather than a checkbox because the three cannot overlap: a square cannot be somewhere
@@ -1055,6 +1076,11 @@ public class AutonomyEditorPanel extends JPanel
     private void setStation(TileKey tile, boolean on)
     {
         session.setStation(tile, on);
+
+        // A new station gets its name on the diagram straight away.  A station nobody can see is the
+        // commonest thing wrong with a finished setup - it has a warning of its own - and the moment
+        // somebody says "this is a station" is the moment they know where its name should go.
+        if (on) placeLabelFor(tile);
 
         // A sensor demoted back to a plain point keeps no designation nobody can see any more.
         //
@@ -2346,7 +2372,13 @@ public class AutonomyEditorPanel extends JPanel
             // cancel stops the walk rather than skipping one, because a walk of forty needs a way out
             if (name == null) break;
 
-            if (!name.trim().isEmpty()) session.setPointName(tile, name.trim());
+            if (name.trim().isEmpty()) continue;
+
+            session.setPointName(tile, name.trim());
+
+            // A station that has just been given a name has somewhere obvious for it to go, and this
+            // is the one moment the user is thinking about that station in particular.
+            if (session.getStore().isStation(tile)) placeLabelFor(tile);
         }
 
         refresh();

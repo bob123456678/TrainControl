@@ -195,6 +195,87 @@ public class AutonomySession
     }
 
     /**
+     * The page a key names, or null if this session has never heard of it.
+     */
+    private LayoutDiagram pageOf(TileKey tile)
+    {
+        for (LayoutDiagram page : pages)
+        {
+            if (page.getName().equals(tile.getPage())) return page;
+        }
+
+        return null;
+    }
+
+    /**
+     * Puts a station's name on the diagram where it will be readable, if it has no label yet.
+     *
+     * Where depends on how the track lies.  A square whose rails run east-west has room for the name
+     * beside them, so the label goes ON it.  A square whose rails run north-south, or round a corner,
+     * has the name sitting across the track instead - so it goes on the square BELOW, which is where a
+     * platform name is written on a real diagram.
+     *
+     * Placed only when the square below is free, and never over somebody's own caption: a diagram is
+     * the user's drawing before it is autonomy's data.  Where there is nowhere to put it, nothing
+     * happens and the "not shown anywhere" warning still says so.
+     *
+     * @param tile the station
+     * @return true if a label was written
+     * @throws Exception if the page cannot be written
+     */
+    public boolean placeStationLabel(TileKey tile) throws Exception
+    {
+        String name = store.getPointName(tile);
+
+        if (name == null || name.trim().isEmpty()) return false;
+
+        if (getLabelledStationNames().contains(name)) return false;
+
+        LayoutDiagram page = pageOf(tile);
+
+        if (page == null) return false;
+
+        LayoutDiagramComponent here = page.getComponent(tile.getX(), tile.getY());
+
+        if (here == null) return false;
+
+        if (runsEastWest(here))
+        {
+            // On the square itself: the rails run along the writing, not across it
+            if (here.hasLabel()) return false;
+
+            setStationLabel(tile, name);
+            return true;
+        }
+
+        TileKey below = new TileKey(tile.getPage(), tile.getX(), tile.getY() + 1);
+
+        LayoutDiagramComponent under = page.getComponent(below.getX(), below.getY());
+
+        // Only onto empty space.  Track below would lose its own square to a caption, and a text
+        // square below is somebody's own writing.
+        if (under != null) return false;
+
+        setStationLabel(below, name);
+        return true;
+    }
+
+    /**
+     * Whether this square's rails run east to west, so a name written on it lies along the track
+     * rather than across it.
+     */
+    private boolean runsEastWest(LayoutDiagramComponent component)
+    {
+        for (Route route : TilePorts.ports(component.getType(),
+            component.getOrientation(), component.getState()))
+        {
+            if (route.touches(TilePorts.Side.E) && route.touches(TilePorts.Side.W)) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Puts a station's name onto a text square of the track diagram, and writes the page out.
      *
      * The one place setup mode changes the DIAGRAM rather than the setup beside it, at the author's
@@ -211,10 +292,10 @@ public class AutonomySession
      */
     public void setStationLabel(TileKey tile, String name) throws Exception
     {
-        for (LayoutDiagram page : pages)
-        {
-            if (!page.getName().equals(tile.getPage())) continue;
+        LayoutDiagram page = pageOf(tile);
 
+        if (page != null)
+        {
             LayoutDiagramComponent component = page.getComponent(tile.getX(), tile.getY());
 
             // An empty square becomes a text square.  Without this the feature only works for somebody
@@ -769,8 +850,54 @@ public class AutonomySession
 
     public void setPointName(TileKey tile, String name)
     {
+        String before = store.getPointName(tile);
+
         store.setPointName(tile, name);
         touched();
+
+        // A label carries the NAME, so renaming a station strands every caption showing the old one:
+        // the label is registered under a name no Point has, and simply stops filling in.  Nothing
+        // says why, because as far as the diagram is concerned it is still a perfectly good label.
+        if (before != null && !before.equals(name)) renameStationLabels(before, name);
+    }
+
+    /**
+     * Rewrites every diagram caption showing one station name to show another.
+     *
+     * Silent about failure on purpose: this rides along with a rename, and a page that cannot be
+     * written should not turn renaming a point into an error dialog.  The caption that did not follow
+     * is then a station with no label, which the checks already report in its own words.
+     */
+    private void renameStationLabels(String before, String after)
+    {
+        for (LayoutDiagram page : pages)
+        {
+            boolean changed = false;
+
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component == null || component.getLabel() == null) continue;
+
+                if (component.getLabel().equals(STATION_LABEL_PREFIX + before))
+                {
+                    component.setLabel(after == null || after.trim().isEmpty()
+                        ? "" : STATION_LABEL_PREFIX + after);
+
+                    changed = true;
+                }
+            }
+
+            if (!changed) continue;
+
+            try
+            {
+                page.saveChanges(null, false);
+            }
+            catch (Exception e)
+            {
+                // left to the "not shown anywhere on the track diagram" check to report
+            }
+        }
     }
 
     public void setStation(TileKey tile, boolean station)
