@@ -944,13 +944,19 @@ public class AutonomyViewerPanel extends JPanel
     {
         try
         {
-            java.io.File out = new java.io.File("autonomy-derived.json");
+            java.io.File out = new java.io.File("autonomy-derived.json").getAbsoluteFile();
 
             java.nio.file.Files.write(out.toPath(),
                 session.buildConfigurationForInspection().getBytes(
                     java.nio.charset.StandardCharsets.UTF_8));
 
-            JOptionPane.showMessageDialog(this, out.getAbsolutePath());
+            // Say what happened, then show where.  A dialog containing nothing but a path leaves the
+            // reader to work out whether it was written, found, or about to be overwritten - and then
+            // to go and find the folder themselves.  Same two steps the update download takes.
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.infoGraphExported", out.getName(), out.getParent()));
+
+            ui.showFileExplorer(out.getParentFile());
         }
         catch (IOException e)
         {

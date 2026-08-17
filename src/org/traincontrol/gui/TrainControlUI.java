@@ -1567,6 +1567,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (autonomyMenu != null) autonomyMenu.refreshEnabled();
 
+        refreshAutonomyTabState();
         refreshAutonomyFindings();
         repaintLayout();
     }
@@ -1793,6 +1794,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Index 2, as showAutonomyRunTab uses.  Guarded on the count because this runs during startup, when
      * the pane may not have been filled in yet.
      */
+    /**
+     * Settles the Auto tab against what autonomy is actually doing.
+     *
+     * One place that decides, called from everywhere that can change the answer - the two ends of
+     * setAutonomyDependentTabs, every menu action, and startup.  Deciding it at each of those
+     * separately is how it came to be right on three paths and wrong on the fourth.
+     */
+    public void refreshAutonomyTabState()
+    {
+        setAutoTabEnabled(this.model != null && this.model.hasAutoLayout()
+            && this.model.getAutoLayout().isValid());
+    }
+
     private void setAutoTabEnabled(boolean enabled)
     {
         if (KeyboardTab.getTabCount() <= 2) return;
@@ -2822,6 +2836,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // setup; where it cannot (no local copy), the JSON window stays and nothing below changes.
         this.mountAutonomyControls();
 
+        // Settled unconditionally, before anything is loaded.  This used to be decided only inside
+        // the auto-load branch below, which is the one case that does NOT need it: with auto-load off,
+        // or with nothing to resume, the window opened on an Auto tab that was enabled and empty.
+        refreshAutonomyTabState();
+
         // Load autonomy if requested
         if (this.AutoLoadAutonomyMenuItem.isSelected())
         {
@@ -2841,13 +2860,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
                 }
 
-                // Whichever way that went, the Auto tab now reflects it.  Startup was the one path
-                // that reached neither branch of setAutonomyDependentTabs, so a window opened with
-                // nothing to resume kept an Auto tab that was enabled and had nothing behind it.
-                if (!this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
-                {
-                    setAutoTabEnabled(false);
-                }
+                refreshAutonomyTabState();
             });
         }
                 
@@ -17187,7 +17200,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
     }
     
-    private void showFileExplorer(File path)
+    public void showFileExplorer(File path)
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {

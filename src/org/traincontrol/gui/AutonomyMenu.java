@@ -110,16 +110,7 @@ public class AutonomyMenu extends JMenu
         // Nothing set up yet: one thing to do, and no submenus of things that would all be empty.
         if (names.isEmpty())
         {
-            add(item(I18n.t("autosetup.ui.menuInitialize"), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    actions.initialize();
-
-                    ui.autonomyMenuActed();
-                }
-            }));
+            add(addConfigurationItem(actions));
         }
         else
         {
@@ -151,25 +142,24 @@ public class AutonomyMenu extends JMenu
             }
 
             add(choose);
-            add(manageMenu(actions, names));
-            add(pagesMenu(session));
+
+            // Both act on the configuration that is RUNNING, so neither means anything until one is.
+            // Choosing which to load is the step before these, and it is the item above.
+            boolean loaded = running != null;
+
+            JMenu manage = manageMenu(actions, names);
+            manage.setEnabled(loaded);
+            manage.setToolTipText(loaded ? null : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            add(manage);
+
+            JMenu pages = pagesMenu(session);
+            pages.setEnabled(loaded);
+            pages.setToolTipText(loaded ? I18n.t("autosetup.ui.promptExcludePage")
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            add(pages);
 
             addSeparator();
-
-            // Below the separator and named for what it makes.  "Set up autonomy from this layout"
-            // said nothing once a setup existed - the reader has already done that - and the thing it
-            // actually offers is another configuration built fresh from the diagram, which is a
-            // different act from duplicating the one in front of them.
-            add(item(I18n.t("autosetup.ui.menuNewFromLayout"), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    actions.initialize();
-
-                    ui.autonomyMenuActed();
-                }
-            }));
+            add(addConfigurationItem(actions));
         }
 
         if (ui.getModel() != null && ui.getModel().isDebug())
@@ -185,6 +175,32 @@ public class AutonomyMenu extends JMenu
                 }
             }));
         }
+    }
+
+    /**
+     * Adding a configuration - the same offer whether or not any exist yet.
+     *
+     * Worded the same in both cases on purpose.  It said "set autonomy up for this layout" when there
+     * was nothing, and "new configuration from this layout" when there was, which read as two different
+     * features; every configuration is built from this layout, so that phrase distinguished nothing.
+     * What it actually differs from is Duplicate, and the tooltip is where that belongs.
+     */
+    private JMenuItem addConfigurationItem(final AutonomyViewerPanel actions)
+    {
+        JMenuItem add = item(I18n.t("autosetup.ui.menuInitialize"), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                actions.initialize();
+
+                ui.autonomyMenuActed();
+            }
+        });
+
+        add.setToolTipText(I18n.t("autosetup.ui.tooltipAddConfiguration"));
+
+        return add;
     }
 
     /**
@@ -252,8 +268,6 @@ public class AutonomyMenu extends JMenu
             }
         }));
 
-        manage.setEnabled(!names.isEmpty());
-
         return manage;
     }
 
@@ -269,8 +283,6 @@ public class AutonomyMenu extends JMenu
     private JMenu pagesMenu(final AutonomySession session)
     {
         JMenu pages = new JMenu(I18n.t("autosetup.ui.btnExcludePage"));
-
-        pages.setToolTipText(I18n.t("autosetup.ui.promptExcludePage"));
 
         for (LayoutDiagram page : session.getPages())
         {
