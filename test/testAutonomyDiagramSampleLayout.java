@@ -258,6 +258,81 @@ public class testAutonomyDiagramSampleLayout
     /**
      * The reduction must produce a graph at all.  If this fails, nothing below it is worth reading.
      */
+    /**
+     * Prints the reduction, so a route somebody disputes can be checked against what was derived.
+     *
+     * Not an assertion - it asserts only that something was derived at all.  Its job is to put the
+     * edges in front of a person: which Points exist, what joins them, and which squares each join
+     * runs over.  A drawn line can be followed wrongly by eye; this cannot be argued with.
+     *
+     * Ordered by name so two runs can be diffed against each other, and so a particular sensor can be
+     * found by searching the output rather than by reading all of it.
+     */
+    @Test
+    public void printTheDerivedEdgesForInspection() throws Exception
+    {
+        assertFalse(reducer.getPoints().isEmpty(), "nothing was derived");
+
+        Map<TileKey, String> names = new AutonomyBuilder(reducer, null).uniqueNames();
+
+        System.out.println();
+        System.out.println("=== POINTS (" + reducer.getPoints().size() + ") ===");
+
+        List<String> lines = new ArrayList<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            lines.add(String.format("  %-28s s88 %-6s %s%s",
+                names.get(point.getTile()), point.getS88(), point.getTile(),
+                point.isStation() ? "  [station]" : ""));
+        }
+
+        Collections.sort(lines);
+
+        for (String line : lines) System.out.println(line);
+
+        System.out.println();
+        System.out.println("=== EDGES (" + reducer.getEdges().size() + ") ===");
+
+        lines.clear();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            StringBuilder over = new StringBuilder();
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (over.length() > 0) over.append(' ');
+
+                over.append(step.getTile().getX()).append(',').append(step.getTile().getY());
+            }
+
+            lines.add(String.format("  %-26s -> %-26s  leaves %s, arrives %s, over [%s]",
+                names.get(edge.getStart()), names.get(edge.getEnd()),
+                edge.getExitSide(), edge.getEntrySide(),
+                over.length() == 0 ? "adjacent" : over.toString()));
+        }
+
+        Collections.sort(lines);
+
+        for (String line : lines) System.out.println(line);
+
+        System.out.println();
+        System.out.println("=== PROBLEMS ===");
+
+        for (Problem problem : graph.getProblems())
+        {
+            System.out.println("  " + (problem.isBlocking() ? "ERROR   " : "warning ")
+                + problem.getTile() + "  " + problem.getMessageKey());
+        }
+
+        for (Problem problem : reducer.getProblems())
+        {
+            System.out.println("  " + (problem.isBlocking() ? "ERROR   " : "warning ")
+                + problem.getTile() + "  " + problem.getMessageKey());
+        }
+    }
+
     @Test
     public void testTheDiagramReducesToSomething()
     {

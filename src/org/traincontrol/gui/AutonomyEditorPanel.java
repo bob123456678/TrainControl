@@ -2278,7 +2278,9 @@ public class AutonomyEditorPanel extends JPanel
             names.add(describeTile(run.get(i).getEnd()));
         }
 
-        return I18n.f("autosetup.ui.testVia", String.join(", ", names));
+        // The space belongs HERE, not on the front of the message.  Properties strips leading
+        // whitespace from a value, so " via {0}" loaded as "via {0}" and ran into the word before it.
+        return " " + I18n.f("autosetup.ui.testVia", String.join(", ", names));
     }
 
     /**
