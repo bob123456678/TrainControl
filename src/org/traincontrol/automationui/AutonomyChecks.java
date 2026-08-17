@@ -117,6 +117,7 @@ public class AutonomyChecks
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
     public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
+    public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
     public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
 
     private AutonomyChecks()
@@ -201,11 +202,16 @@ public class AutonomyChecks
     /**
      * Has everything been given a name?
      *
-     * An ERROR, and every Point rather than only the stations.  A point still carrying the name the
-     * reducer invented - its page and its coordinate - has a name that works and means nothing: every
-     * message autonomy prints names its points, and "1 - Main 12,7" in a running log tells the reader
-     * nothing about where their train is.  Blocking because a setup is not finished until the places
-     * in it have names, and a warning is too easy to run past forty times.
+     * A name still carrying what the reducer invented - the page and the coordinate - works and means
+     * nothing: autonomy names the place in every message it prints, and "1 - Main 12,7" in a running
+     * log tells the reader nothing about where their train is.
+     *
+     * How much that matters depends on what the place IS.  A station is somewhere a train is SENT, and
+     * its name is what the user picks it by and what the arrival is announced as, so an unnamed one is
+     * blocking.  A plain point is somewhere a train passes; its name appears in a path and nowhere a
+     * user has to choose from, so that is worth saying and not worth refusing over - a layout has far
+     * more of them, and stopping a setup running until every last one is named would mean naming forty
+     * squares nobody will ever read.
      */
     private static List<Finding> checkNames(GraphReducer reducer)
     {
@@ -213,12 +219,13 @@ public class AutonomyChecks
 
         for (ReducedPoint point : reducer.getPoints().values())
         {
-            if (point.getName() == null
-                    || point.getName().equals(GraphReducer.generatedName(point.getTile())))
-            {
-                findings.add(new Finding(Severity.ERROR, UNNAMED_POINT,
-                    String.valueOf(point.getTile()), point.getTile()));
-            }
+            if (point.getName() != null
+                    && !point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
+
+            findings.add(new Finding(
+                point.isStation() ? Severity.ERROR : Severity.WARNING,
+                point.isStation() ? UNNAMED_STATION : UNNAMED_POINT,
+                String.valueOf(point.getTile()), point.getTile()));
         }
 
         return findings;
