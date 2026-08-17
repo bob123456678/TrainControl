@@ -281,31 +281,21 @@ public class AutonomyEditorPanel extends JPanel
         // click MEANT, and every one of them acted on a single named tile - which is what a right-click
         // menu is for.  They are all on the tile's own menu now, where the thing being configured is
         // the thing under the pointer.
-        // What to do, said once, directly under the window's heading.  Everything in this editor
-        // happens on the diagram - there is no palette and no list of properties - and a column of
-        // buttons beside it implies the opposite.
-        JLabel how = new JLabel(I18n.t("autosetup.ui.hintClickTheDiagram"));
-        how.setFont(FONT_HINT);
-        how.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(how);
-
-        panel.add(javax.swing.Box.createVerticalStrut(4));
-
         // The two actions together, because they are the two things here that are NOT done by clicking
-        // the diagram.  Split apart - one at the top, one at the bottom - they read as unrelated.
+        // the diagram.  Stacked rather than side by side: this column is narrow, and two buttons in a
+        // row set its width from their combined length rather than from anything that has to fit.
+        //
+        // No sentence above them explaining that the work happens on the diagram, either.  It was true
+        // and it was three lines wide, which made the column wider than everything else in it needed.
+        // The hint line below already speaks, and it speaks about whatever was last clicked.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        actions.setOpaque(false);
-        actions.setAlignmentX(LEFT_ALIGNMENT);
-        actions.add(testButton);
-        actions.add(nameAll);
-
-        panel.add(actions);
+        panel.add(row(testButton));
+        panel.add(row(nameAll));
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
         // in the window's own Toggle visibility box now, beside Addresses, which is where somebody
