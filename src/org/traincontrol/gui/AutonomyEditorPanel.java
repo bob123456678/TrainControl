@@ -720,6 +720,31 @@ public class AutonomyEditorPanel extends JPanel
         {
             boolean many = routes.size() > 1;
 
+            // Every arm, tickable, all visible together.  A click steps through four common answers,
+            // which is right for the common case and cannot reach the rest; the per-branch submenus
+            // below can reach the rest but only by working out which branch owns which arm.  These are
+            // the arrows themselves, one box each, so any combination is one look and one tick.
+            if (many)
+            {
+                final java.util.List<org.traincontrol.automationui.TilePorts.Side> arms =
+                    armsOf(routes);
+
+                int mask = armMask(target, routes, arms);
+
+                title(connections, I18n.t("autosetup.ui.menuArmsHeading"));
+
+                for (int i = 0; i < arms.size(); i++)
+                {
+                    final org.traincontrol.automationui.TilePorts.Side arm = arms.get(i);
+
+                    connections.add(toggle(I18n.f("autosetup.ui.menuArm", String.valueOf(arm)),
+                        "autosetup.ui.hintArms", (mask & (1 << i)) != 0,
+                        on -> setArm(target, arm, on)));
+                }
+
+                connections.addSeparator();
+            }
+
             for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry : routes.entrySet())
             {
                 org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
@@ -788,14 +813,21 @@ public class AutonomyEditorPanel extends JPanel
 
             connections.addSeparator();
 
-            connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
-            connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
+            // A link's own settings, one level down.  Loose in Connections they sat beside "make a
+            // one-way run from here", which is about track and means nothing on a link - two unrelated
+            // subjects at the same level, one of which does not apply.
+            javax.swing.JMenu link = new javax.swing.JMenu(I18n.t("autosetup.ui.menuLinkGroup"));
+
+            link.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+            link.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
-                connections.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
+                link.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () -> session.unpairPortal(target)));
             }
+
+            connections.add(link);
         }
 
         menu.add(connections);
@@ -875,6 +907,11 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A bold, disabled heading at the top of a menu - the editor's own idiom.
      */
+    private void title(javax.swing.JMenu menu, String text)
+    {
+        title(menu.getPopupMenu(), text);
+    }
+
     private void title(javax.swing.JPopupMenu menu, String text)
     {
         javax.swing.JMenuItem titleItem = new javax.swing.JMenuItem(text);
@@ -1792,6 +1829,24 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
+        applyArmMask(target, routes, sides, next);
+
+        say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
+
+        refresh();
+    }
+
+    /**
+     * Turns a set of open arms into a direction for each route, and applies them together.
+     *
+     * The arms are what the drawing shows and what the user is choosing between; the per-route
+     * directions are what the model stores.  One translation, used by the click and by the checkboxes,
+     * so the two cannot come to different conclusions about the same square.
+     */
+    private void applyArmMask(TileKey target,
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
+    {
         Map<RouteId, Direction> wanted = new java.util.LinkedHashMap<>();
 
         for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
@@ -1799,8 +1854,8 @@ public class AutonomyEditorPanel extends JPanel
         {
             org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
 
-            boolean openA = (next & (1 << sides.indexOf(route.getA()))) != 0;
-            boolean openB = (next & (1 << sides.indexOf(route.getB()))) != 0;
+            boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
+            boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
 
             wanted.put(entry.getKey(), openA && openB ? Direction.BOTH
                 : openA ? Direction.TOWARD_A
@@ -1809,10 +1864,24 @@ public class AutonomyEditorPanel extends JPanel
 
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
+    }
 
-        say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
+    /**
+     * Opens or shuts one arm of a square, leaving the others as they are.
+     */
+    private void setArm(TileKey target, org.traincontrol.automationui.TilePorts.Side arm, boolean open)
+    {
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
-        refresh();
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = armsOf(routes);
+
+        int at = sides.indexOf(arm);
+
+        if (at < 0) return;
+
+        int mask = armMask(target, routes, sides);
+
+        applyArmMask(target, routes, sides, open ? mask | (1 << at) : mask & ~(1 << at));
     }
 
     /**
