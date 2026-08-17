@@ -13,6 +13,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
@@ -202,13 +204,17 @@ public class testAutonomyDiagramReversal
         // the test would then pass for the wrong reason.
         add(page, componentType.END, 6, 2, 1);
 
+        JSONObject extras = extras();
+        extras.put(key("main", 5, 2).toString(), new JSONObject().put("terminus", true));
+
         JSONObject built = build(page, stations(key("main", 5, 2)),
-            marked(key("main", 5, 2)), extras());
+            marked(key("main", 5, 2)), extras);
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
         assertEquals(copies.size(), 1, "one arrival side means there is nothing to split");
-        assertTrue(copies.get(0).optBoolean("terminus"), "and it is still a terminus");
+        assertTrue(copies.get(0).optBoolean("terminus"),
+            "and the flag the user set survives, because nothing took it over");
     }
 
     /**
@@ -371,6 +377,19 @@ public class testAutonomyDiagramReversal
     {
         TileGraph graph = new TileGraph(
             new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
+
+        // Switches default to base-to-forks - out of the toe only - which is a sensible starting point
+        // on a real layout and an unrelated variable here.  Left alone, the junction below admits
+        // trains from the east and nowhere else, so the sensor has ONE arrival side and never splits:
+        // the test would then be measuring the default rather than the reversal.  Everything is opened
+        // both ways so that what is asserted is the split and nothing else.
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, Direction.BOTH);
+            }
+        }
 
         GraphReducer reducer = new GraphReducer(graph, new GraphReducer.Authored()
         {
