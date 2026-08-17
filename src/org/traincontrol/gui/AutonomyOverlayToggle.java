@@ -264,29 +264,19 @@ public class AutonomyOverlayToggle extends JPanel
             return;
         }
 
-        // Coloured for what is on THIS page: a clean page should not be shouting in red about
-        // somewhere else.
-        findings.setForeground(pageErrors > 0 ? new java.awt.Color(170, 0, 0)
-            : pageWarnings > 0 ? new java.awt.Color(150, 95, 0)
-            : new java.awt.Color(110, 110, 110));
+        // Red whenever there is an error ANYWHERE, not only on this page.  One error stops the whole
+        // setup from running, so it is worth the colour wherever the reader happens to be looking -
+        // this is the one thing on the strip that is not a statement about the page in front of them.
+        findings.setForeground(totalErrors > 0
+            ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
 
-        // "3/25 warnings on this page" - the share and the whole in one reading, rather than a
-        // sentence naming both.  Errors get the same shape and only appear when there are any.
-        StringBuilder text = new StringBuilder();
-
-        if (totalErrors > 0)
-        {
-            text.append(I18n.f("autosetup.ui.labelFindingsErrors", pageErrors, totalErrors));
-        }
-
-        if (totalWarnings > 0)
-        {
-            if (text.length() > 0) text.append(", ");
-
-            text.append(I18n.f("autosetup.ui.labelFindingsWarnings", pageWarnings, totalWarnings));
-        }
-
-        findings.setText(I18n.f("autosetup.ui.labelFindingsOnThisPage", text.toString()));
+        // One number, not two.  Split into errors and warnings it was four figures in a strip an inch
+        // tall, and the split says nothing a reader can act on differently - both mean "open the
+        // editor and look".  The WORDS still say which kinds are in there, because "warnings" and
+        // "errors and warnings" mean rather different things about whether the setup will run.
+        findings.setText(I18n.f(totalErrors > 0
+                ? "autosetup.ui.labelFindingsCountErrors" : "autosetup.ui.labelFindingsCount",
+            pageErrors + pageWarnings, totalErrors + totalWarnings));
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
     }
