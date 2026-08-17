@@ -65,6 +65,13 @@ public class LayoutGrid
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {          
+        // Which editor this is.  layout.getEdit() is true in BOTH - the autonomy editor borrows the
+        // diagram editor's edit flag for its mutual exclusion - so keying label rendering on it changed
+        // the track diagram editor as well, where the raw "Point:" text is exactly what the user needs
+        // to see and edit.
+        boolean autonomyEditor = master instanceof LayoutEditor
+            && ((LayoutEditor) master).isAutonomyMode();
+
         // Calculate boundaries
         int offsetX = layout.getMinx();
         int offsetY = layout.getMiny();
@@ -225,27 +232,29 @@ public class LayoutGrid
                     // Regular labels
                     else if (!layout.getEditHideText())
                     {
-                        if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX))
+                        if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit())
                         {
-                            // A station caption, in an editor or on a page autonomy ignores.  Never
-                            // the raw "Point:Platform 3": that is storage, and reading storage off a
-                            // track plan is the sort of thing that makes a tool look unfinished.
-                            //
-                            // In an editor it shows the placeholder the running diagram shows when
-                            // nothing is standing there, so the square looks like what it will look
-                            // like.  Elsewhere - an ignored page - it is just the name, because there
-                            // is no autonomy behind it to fill a placeholder in.
-                            text.setText(layout.getEdit() ? LAYOUT_STATION_EMPTY
-                                : c.getLabel().substring(LAYOUT_STATION_PREFIX.length()));
+                            // A station caption on a page autonomy ignores: just the name, without a
+                            // marker that would otherwise show up as literal "Point:" on the diagram.
+                            text.setText(c.getLabel().substring(LAYOUT_STATION_PREFIX.length()));
+                        }
+                        else if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && autonomyEditor)
+                        {
+                            // In the AUTONOMY editor, the placeholder the running diagram shows when
+                            // nothing is standing there - so the square looks like what it will look
+                            // like, and "Point:" stops being something to mentally strip.
+                            text.setText(LAYOUT_STATION_EMPTY);
                         }
                         else
                         {
+                            // Everything else, including a station caption in the TRACK DIAGRAM
+                            // editor, where the raw text is what the user is there to read and change.
                             text.setText(c.getLabel());
 
                             // Somebody else's writing, greyed while autonomy is being edited: it is
                             // still worth seeing - it says what part of the railway this is - and it
                             // is not what the editor is for.
-                            if (layout.getEdit()) labelColour = new Color(150, 150, 150);
+                            if (autonomyEditor) labelColour = new Color(150, 150, 150);
                         }
                     }
                     

@@ -618,6 +618,17 @@ public class LayoutEditor extends PositionAwareJFrame
             // moment later by the one it was meant to replace.
             javax.swing.SwingUtilities.invokeLater(() ->
                 setTitle(I18n.f("autosetup.ui.windowTitle", this.layout.getName())));
+
+            // Drawn again, because the first draw happened before this window knew what it was.
+            // render() builds the grid and setAutonomyMode runs after it, so the labels were rendered
+            // as the track diagram editor's - raw "Point:" text - and would have stayed that way until
+            // something else happened to rebuild them.
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                refreshGrid();
+
+                javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
+            });
         }
 
         this.newComponents.revalidate();
