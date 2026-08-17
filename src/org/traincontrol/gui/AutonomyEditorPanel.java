@@ -93,7 +93,7 @@ public class AutonomyEditorPanel extends JPanel
      * foot of the window, the direction toggles moved into the window's own visibility box, and the
      * standing instruction that was three lines wide has gone.  What is left is two buttons and a hint.
      */
-    private static final int WIDTH = 200;
+    private static final int WIDTH = 170;
 
     // The EDITOR window's own conventions, which are not quite the main window's: its headings are
     // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", jLabel2 "Toggle Visibility") and its
@@ -2429,10 +2429,32 @@ public class AutonomyEditorPanel extends JPanel
         }
         else
         {
-            banner.setText(I18n.f("autosetup.ui.labelGraphSize",
-                session.getReducer().getPoints().size(),
-                session.getReducer().getEdges().size()));
-            banner.setBackground(new java.awt.Color(214, 245, 214));
+            // Points and connections were a measurement of the GRAPH, and nobody sets a railway up in
+            // order to have a number of connections.  What the user wants to know is whether it works,
+            // and how many places autonomy will actually send a train - the second number being every
+            // station, including the berths and the ones switched off, so the difference between the
+            // two says how much of the layout is being held back.
+            int stations = 0;
+            int choosable = 0;
+
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
+                : session.getReducer().getPoints().values())
+            {
+                if (!point.isStation()) continue;
+
+                stations++;
+
+                if (session.isAutoDestination(point.getTile())
+                    && !Boolean.FALSE.equals(
+                        session.getPointProperty(point.getTile(), "active"))) choosable++;
+            }
+
+            banner.setText(I18n.f(warningRows.size() > 0
+                    ? "autosetup.ui.labelValidWithWarnings" : "autosetup.ui.labelValid",
+                choosable, stations));
+
+            banner.setBackground(warningRows.size() > 0
+                ? new java.awt.Color(255, 240, 200) : new java.awt.Color(214, 245, 214));
         }
 
         if (!selection.isEmpty())
