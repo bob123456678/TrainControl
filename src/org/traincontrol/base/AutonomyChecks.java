@@ -158,7 +158,7 @@ public class AutonomyChecks
                 problem.getMessageKey(), String.valueOf(problem.getTile()), problem.getTile()));
         }
 
-        findings.addAll(checkStations(reducer));
+        findings.addAll(checkStations(reducer, termini));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
 
@@ -181,7 +181,7 @@ public class AutonomyChecks
      * layout exists to answer - and a station that can reach nothing is not a station anybody can use,
      * however well connected its track is.
      */
-    private static List<Finding> checkStations(GraphReducer reducer)
+    private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini)
     {
         List<Finding> findings = new ArrayList<>();
 
