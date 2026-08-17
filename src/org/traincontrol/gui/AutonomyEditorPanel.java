@@ -1698,7 +1698,7 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    private boolean onThisPage(TileKey tile)    private boolean onThisPage(TileKey tile)
+    private boolean onThisPage(TileKey tile)
     {
         return tile == null || page == null || page.equals(tile.getPage());
     }
