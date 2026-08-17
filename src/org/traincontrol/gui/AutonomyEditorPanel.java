@@ -479,7 +479,7 @@ public class AutonomyEditorPanel extends JPanel
                 if (standing != null)
                 {
                     menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
-                        () -> session.setPointProperty(target, "loc", null)));
+                        () -> session.placeLocomotive(target, null)));
                 }
 
                 menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
@@ -532,9 +532,8 @@ public class AutonomyEditorPanel extends JPanel
 
             // Every label carries its current value, as the graph window's did - a menu that says
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.
-            menu.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", number(target, "speedMultiplier", 100)),
-                () -> promptNumber(target, "speedMultiplier",
-                    "autolayout.ui.promptEnterSpeedMultiplier", 100)));
+            menu.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", percent(target)),
+                () -> promptPercent(target)));
 
             javax.swing.JMenu advanced = new javax.swing.JMenu(
                 I18n.t("autolayout.ui.menuEditAdvancedParameters"));
@@ -559,8 +558,11 @@ public class AutonomyEditorPanel extends JPanel
                 strings(target, "excludedLocs").size()),
                 () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
 
-            menu.add(item(I18n.f("autosetup.ui.menuHomeFor", strings(target, "home").size()),
-                () -> promptLocomotives(target, "home", placedLocomotives())));
+            String home = homeOf(target);
+
+            menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
+                                       : I18n.f("autosetup.ui.menuHomeFor", home),
+                () -> promptHome(target)));
 
             menu.addSeparator();
         }
@@ -762,7 +764,10 @@ public class AutonomyEditorPanel extends JPanel
     {
         Object current = session.getPointProperty(tile, key);
 
-        String entered = JOptionPane.showInputDialog(this, I18n.t(promptKey),
+        // I18n.f, not t: two of these prompts name the point they are about, and I18n.t does no
+        // substitution at all - so the user was asked to "Enter the priority for {0}".
+        String entered = JOptionPane.showInputDialog(this,
+            I18n.f(promptKey, describeTile(tile)),
             current instanceof Number ? String.valueOf(current) : String.valueOf(unset));
 
         if (entered == null) return;
@@ -856,6 +861,92 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The speed multiplier as a PERCENTAGE, which is what the user works in.
+     *
+     * The model stores a factor and refuses anything outside (0, 2] - so writing the percentage
+     * straight through made any real value, 80 or 120, invalidate the whole configuration on load.
+     */
+    private int percent(TileKey tile)
+    {
+        Object stored = session.getPointProperty(tile, "speedMultiplier");
+
+        return stored instanceof Number
+            ? (int) Math.round(((Number) stored).doubleValue() * 100) : 100;
+    }
+
+    private void promptPercent(TileKey tile)
+    {
+        String entered = JOptionPane.showInputDialog(this,
+            I18n.f("autolayout.ui.promptEnterSpeedMultiplier", describeTile(tile)),
+            String.valueOf(percent(tile)));
+
+        if (entered == null) return;
+
+        try
+        {
+            int value = Integer.parseInt(entered.trim());
+
+            if (value <= 0 || value > 200)
+            {
+                JOptionPane.showMessageDialog(this,
+                    I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
+                return;
+            }
+
+            // 100% is the default and is stored as nothing, so a file records decisions only
+            session.setPointProperty(tile, "speedMultiplier",
+                value == 100 ? null : value / 100.0);
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
+        }
+    }
+
+    /**
+     * Which locomotive calls this point home, or null.
+     *
+     * ONE locomotive: Point.homeLoc is a single String, and the model allows a locomotive only one
+     * home.  A multi-select wrote a JSON array here, which parseAuto read with optString and turned
+     * into the literal text ["BR 111"] - matching no locomotive, and then captured back in that form
+     * so the damage outlived the code that caused it.
+     */
+    private String homeOf(TileKey tile)
+    {
+        Object stored = session.getPointProperty(tile, "home");
+
+        return stored instanceof String && !((String) stored).trim().isEmpty()
+            ? (String) stored : null;
+    }
+
+    private void promptHome(TileKey tile)
+    {
+        List<String> names = new java.util.ArrayList<>();
+        names.add(I18n.t("autosetup.ui.labelNone"));
+        names.addAll(placedLocomotives());
+
+        if (names.size() == 1)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("error.noLocs"));
+            return;
+        }
+
+        String current = homeOf(tile);
+
+        Object chosen = JOptionPane.showInputDialog(this,
+            I18n.t("autosetup.ui.promptHomeFor"), I18n.t("autosetup.ui.menuHomeNone"),
+            JOptionPane.PLAIN_MESSAGE, null, names.toArray(),
+            current == null ? names.get(0) : current);
+
+        if (chosen == null) return;
+
+        session.setPointProperty(tile, "home",
+            names.get(0).equals(chosen) ? null : String.valueOf(chosen));
+    }
+
+    /**
+     * Every locomotive the control station knows about.
+     */    /**
      * Every locomotive the control station knows about.
      */
     private List<String> allLocomotives()
@@ -948,10 +1039,10 @@ public class AutonomyEditorPanel extends JPanel
         // lift it off wherever it was standing before
         for (TileKey other : session.getReducer().getPoints().keySet())
         {
-            if (name.equals(locomotiveAt(other))) session.setPointProperty(other, "loc", null);
+            if (name.equals(locomotiveAt(other))) session.placeLocomotive(other, null);
         }
 
-        session.setPointProperty(tile, "loc", new org.json.JSONObject().put("name", name));
+        session.placeLocomotive(tile, name);
     }
 
     /**

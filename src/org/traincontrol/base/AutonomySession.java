@@ -485,6 +485,35 @@ public class AutonomySession
     }
 
     /**
+     * Puts a locomotive on a point without disturbing anything else known about it.
+     *
+     * parseAuto RESETS whatever a placement omits - train length to zero, reversible to false, the
+     * arrival and departure functions to none - so writing a bare {"name": X} over an existing
+     * placement silently dropped all of them.  Anything already recorded is carried across.
+     *
+     * @param tile
+     * @param name the locomotive, or null to clear the placement
+     */
+    public void placeLocomotive(TileKey tile, String name)
+    {
+        if (name == null)
+        {
+            setPointProperty(tile, "loc", null);
+            return;
+        }
+
+        Object existing = getPointProperty(tile, "loc");
+
+        org.json.JSONObject loc = existing instanceof org.json.JSONObject
+            ? new org.json.JSONObject(existing.toString()) : new org.json.JSONObject();
+
+        loc.put("name", name);
+
+        setPointProperty(tile, "loc", loc);
+    }
+
+    /**
+     * One of a Point's operational properties, in the active configuration.    /**
      * One of a Point's operational properties, in the active configuration.
      *
      * Kept per configuration rather than beside the track, because these are what a configuration IS:
