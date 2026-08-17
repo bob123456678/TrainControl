@@ -192,9 +192,9 @@ public class AutonomyEditorPanel extends JPanel
         this.onChanged = onChanged;
 
         setLayout(new BorderLayout(4, 4));
-        // No left inset: the window's own heading sits outside this panel and starts at its left
-        // edge, so six pixels here put everything in the column out of step with the label above it.
-        setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 6));
+        // No inset either side: the window's own heading and its Save and Cancel buttons sit outside
+        // this panel and run edge to edge, so any padding here puts the column out of step with both.
+        setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 
         add(buildTools(), BorderLayout.NORTH);
 
@@ -356,7 +356,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         for (javax.swing.AbstractButton button : buttons)
         {
-            button.setPreferredSize(new Dimension(WIDTH - 8, button.getPreferredSize().height));
+            button.setPreferredSize(new Dimension(WIDTH, button.getPreferredSize().height));
         }
     }
 

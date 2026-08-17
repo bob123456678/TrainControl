@@ -504,15 +504,19 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            // Under the arrows: it is a broad line, and drawn over them it would cover the very
-            // directions the reader is testing against.
-            paintTraces(g, width, height);
-
             paintArrows(g, width, height);
 
             if (badge != null) paintBadge(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
+
+            // Last, and so on top of everything: the arrows, the badge, the length, the outline.
+            //
+            // It was drawn underneath, so a broad line would not cover the directions being tested
+            // against - but a tested path is a transient answer to a question just asked, and while it
+            // is up it is the thing being looked at.  Anything it covers is still there a moment later
+            // when the next click clears it.
+            paintTraces(g, width, height);
 
             if (selected)
             {
