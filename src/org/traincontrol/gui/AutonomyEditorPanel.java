@@ -129,6 +129,12 @@ public class AutonomyEditorPanel extends JPanel
         new JCheckBox(I18n.t("autosetup.ui.btnShowAllDirections"), false);
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
+    // Built in the constructor, mounted by the window across the bottom of the diagram
+    private JScrollPane findingsPanel;
+
+    // Offered only while something is still unnamed, which is the only time it does anything
+    private JButton nameAll;
+
     // Portal pairing takes two clicks, and the first is remembered here
     private TileKey pendingPortal;
 
@@ -181,8 +187,12 @@ public class AutonomyEditorPanel extends JPanel
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
         add(buildTools(), BorderLayout.NORTH);
-        add(buildFindings(), BorderLayout.CENTER);
         add(buildActions(), BorderLayout.SOUTH);
+
+        // The findings are built here but mounted by the WINDOW, across the bottom and the full width.
+        // In this column they were a narrow box with sentences wrapped to four words a line, beside a
+        // diagram they are describing - and the diagram is where the reader has to look to act on them.
+        findingsPanel = buildFindings();
 
         // Pinned, so a long sentence in the hint or a finding cannot widen the column it lives in.
         setPreferredSize(new Dimension(WIDTH, 640));
@@ -275,13 +285,16 @@ public class AutonomyEditorPanel extends JPanel
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
         panel.add(row(testButton));
 
-        // the toggles change what is drawn, not what is decided, so all they do is redraw
+        // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
+        // in the window's own Toggle visibility box now, beside Addresses, which is where somebody
+        // looking for "stop showing me that" already goes.
+        //
+        // "Also show track that runs both ways" is hidden pending a decision on what replaces it: it
+        // answers which arrows are hidden, when the question nobody can answer from this diagram is
+        // where the track actually breaks.  See the plan.
         showDirections.addActionListener(e -> refresh());
         showAllDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
-
-        panel.add(row(control(showDirections)));
-        panel.add(row(control(showAllDirections)));
 
         hint.setFont(FONT_HINT);
         hint.setAlignmentX(LEFT_ALIGNMENT);
@@ -432,13 +445,13 @@ public class AutonomyEditorPanel extends JPanel
         // No "check this setup" button.  The checks are re-run after every edit, so it never had
         // anything of its own to do - and its message counted the list's ROWS, which include the
         // Errors and Warnings headings, so it reported one or two more than the list showed.
-        JButton nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
+        nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         panel.add(button(nameAll));
 
-        JButton save = new JButton(I18n.t("autosetup.ui.btnApply"));
-        save.addActionListener(e -> save());
-        panel.add(button(save));
+        // No Save here.  The window's own Save Changes already writes the setup - see
+        // saveButtonActionPerformed, which calls save() and closes - and two buttons that both save,
+        // one of which also closes, is a choice nobody should have to think about.
 
         return panel;
     }
@@ -2300,19 +2313,17 @@ public class AutonomyEditorPanel extends JPanel
         section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
             AutonomyChecks.Severity.WARNING);
 
-        // Unnamed points are the one thing the checks cannot see: a generated name is a valid name, it
-        // is just useless in a timetable.  Counted here so the panel can offer to fix them all at once.
+        // Unnamed points are checks now, and errors, so they are already in the list below with a
+        // square to jump to each.  Saying it again up here was the same news twice, in a colour that
+        // made it look like a third thing.
         int unnamed = unnamedPoints().size();
+
+        if (nameAll != null) nameAll.setVisible(unnamed > 0);
 
         if (errors > 0)
         {
             banner.setText(I18n.f("autosetup.ui.labelBlockingCount", errors));
             banner.setBackground(new java.awt.Color(255, 210, 210));
-        }
-        else if (unnamed > 0)
-        {
-            banner.setText(I18n.f("autosetup.ui.labelUnnamedCount", unnamed));
-            banner.setBackground(new java.awt.Color(255, 240, 200));
         }
         else
         {
@@ -2448,6 +2459,22 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowLengths()
     {
         return control(showLengths);
+    }
+
+    /**
+     * @return the arrows toggle, for the window's Toggle visibility box
+     */
+    public JCheckBox getShowDirections()
+    {
+        return control(showDirections);
+    }
+
+    /**
+     * @return the findings list, for the window to put across the bottom
+     */
+    public JScrollPane getFindingsPanel()
+    {
+        return findingsPanel;
     }
 
     /**

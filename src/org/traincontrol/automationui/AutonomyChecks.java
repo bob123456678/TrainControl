@@ -116,7 +116,7 @@ public class AutonomyChecks
     public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
-    public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
+    public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
     public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
 
     private AutonomyChecks()
@@ -173,6 +173,7 @@ public class AutonomyChecks
                 problem.getMessageKey(), String.valueOf(problem.getTile()), problem.getTile()));
         }
 
+        findings.addAll(checkNames(reducer));
         findings.addAll(checkStations(reducer, termini));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
@@ -197,6 +198,32 @@ public class AutonomyChecks
      * layout exists to answer - and a station that can reach nothing is not a station anybody can use,
      * however well connected its track is.
      */
+    /**
+     * Has everything been given a name?
+     *
+     * An ERROR, and every Point rather than only the stations.  A point still carrying the name the
+     * reducer invented - its page and its coordinate - has a name that works and means nothing: every
+     * message autonomy prints names its points, and "1 - Main 12,7" in a running log tells the reader
+     * nothing about where their train is.  Blocking because a setup is not finished until the places
+     * in it have names, and a warning is too easy to run past forty times.
+     */
+    private static List<Finding> checkNames(GraphReducer reducer)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (point.getName() == null
+                    || point.getName().equals(GraphReducer.generatedName(point.getTile())))
+            {
+                findings.add(new Finding(Severity.ERROR, UNNAMED_POINT,
+                    String.valueOf(point.getTile()), point.getTile()));
+            }
+        }
+
+        return findings;
+    }
+
     /**
      * Is every station shown on the track diagram?
      *
@@ -262,17 +289,6 @@ public class AutonomyChecks
         for (ReducedPoint station : stations)
         {
             stationTiles.add(station.getTile());
-
-            // A station still carrying the name the reducer invented for it - its page and coordinate -
-            // is one nobody has got round to.  Not an error: it works, it routes, trains stop at it.
-            // But every message autonomy prints names its stations, and "1 - Main 12,7" in a running
-            // log tells the reader nothing about which platform their train is standing at.
-            if (station.getName() != null
-                    && station.getName().equals(GraphReducer.generatedName(station.getTile())))
-            {
-                findings.add(new Finding(Severity.WARNING, UNNAMED_STATION,
-                    station.getName(), station.getTile()));
-            }
         }
 
         for (ReducedPoint station : stations)

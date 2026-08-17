@@ -427,6 +427,10 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private AutonomyEditorPanel autonomyPanel;
 
+    // The panel that holds the diagram with the findings list beneath it, once autonomy mode has
+    // fitted one.  Kept so a second call does not stack a second copy.
+    private javax.swing.JPanel autonomyFindings;
+
     private AutonomyBanner autonomyBanner;
 
     // The column that holds Addresses and the lengths toggle while autonomy mode is on
@@ -549,6 +553,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(this.showAddressCheckbox);
                 visibility.add(autonomyPanel.getShowLengths());
+                visibility.add(autonomyPanel.getShowDirections());
 
                 autonomyVisibility = visibility;
             }
@@ -565,6 +570,33 @@ public class LayoutEditor extends PositionAwareJFrame
                     toggleAddresses();
                 }
             });
+
+            // The findings go across the bottom, under the diagram and the full width of it.
+            //
+            // GroupLayout.replace on the scroll pane that holds the grid, which is the same way the
+            // visibility box is fitted: the content pane is generated, so nothing here edits it -
+            // the grid's slot is taken by a panel holding the grid AND the list beneath it.
+            //
+            // Full width because these are sentences.  Down the side they wrapped to four words a line
+            // beside the very diagram they describe, which is where the reader has to look to act on
+            // them.
+            if (autonomyFindings == null && autonomyPanel.getFindingsPanel() != null)
+            {
+                javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
+                stack.setOpaque(false);
+
+                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                    .replace(this.jScrollPane1, stack);
+
+                stack.add(this.jScrollPane1, BorderLayout.CENTER);
+
+                javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
+                list.setPreferredSize(new java.awt.Dimension(100, 120));
+
+                stack.add(list, BorderLayout.SOUTH);
+
+                autonomyFindings = stack;
+            }
 
             // The column heading belongs to the window, not to the palette that used to fill it - in
             // autonomy mode "New Components" describes something that is no longer there.
