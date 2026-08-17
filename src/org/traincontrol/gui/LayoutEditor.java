@@ -234,7 +234,11 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param label 
      */
     public void receiveKeyEvent(KeyEvent e, LayoutLabel label)
-    {        
+    {
+        // The last mutating entry point without this guard.  It has no callers today, but a key
+        // listener wired to it later would paste tiles in autonomy mode without anyone noticing.
+        if (isAutonomyMode()) return;
+        
         if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_V)
         {
             if (this.hasToolFlag())

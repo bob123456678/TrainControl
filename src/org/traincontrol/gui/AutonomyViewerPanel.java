@@ -400,6 +400,12 @@ public class AutonomyViewerPanel extends JPanel
 
                 if (row < 0 || row >= findingRows.size()) return;
 
+                // locationToIndex returns the CLOSEST row, not -1, for a click below the last one - so
+                // clicking the empty space under the list opened the last finding's tile.
+                java.awt.Rectangle bounds = findings.getCellBounds(row, row);
+
+                if (bounds == null || !bounds.contains(e.getPoint())) return;
+
                 org.traincontrol.base.TileGraph.TileKey tile = findingRows.get(row);
 
                 if (tile != null) ui.openAutonomyEditor(tile);

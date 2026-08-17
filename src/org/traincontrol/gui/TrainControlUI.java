@@ -1479,11 +1479,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void resetAutonomySession()
     {
+        // Save what this session knows BEFORE forgetting it.  Nulling activeDiagramConfiguration first
+        // meant the exit-path capture - which is gated on it - skipped everything, so re-downloading
+        // the diagram silently threw away every placement, home and setting made since the last save.
+        if (autonomySession != null && activeDiagramConfiguration != null
+            && this.model != null && this.model.hasAutoLayout()
+            && this.model.getAutoLayout().isValid()
+            && !this.model.getAutoLayout().isRunning())
+        {
+            try
+            {
+                autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),
+                    activeDiagramConfiguration);
+                autonomySession.save();
+            }
+            catch (Exception e)
+            {
+                this.model.log(e);
+            }
+        }
+
         autonomySession = null;
 
         // The driver holds indexes derived from the old session, so leaving it running would light tiles
         // up from a graph that no longer describes the diagram on screen.
         if (diagramMonitorDriver != null) diagramMonitorDriver.stop();
+
+        // The registry keeps what each square was last told to show, keyed by page and coordinate.  A
+        // replaced diagram reuses those keys for different track, and register() replays them onto the
+        // new labels - painting badges and arrows from the old layout over the new one.
+        if (diagramTileRegistry != null) diagramTileRegistry.reset();
+
+        // The tabs describe a layout that no longer has a session behind it.
+        setAutonomyDependentTabs(false);
 
         // The panel holds the old session too, so it is rebuilt rather than reused; and the running
         // layout no longer corresponds to any configuration of the new session, so nothing should be
@@ -1529,7 +1557,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.base.AutonomySession session = getAutonomySession();
 
-        if (session == null) return;
+        if (session == null)
+        {
+            // No local copy, so no setup is possible - put the JSON window back rather than leaving an
+            // orphaned panel bound to a session whose pages are gone.  Phase 1 promises the old path
+            // still works here; it did not, after any switch away from a local layout.
+            this.jScrollPane2.setViewportView(this.autonomyJSON);
+
+            this.validateButton.setVisible(true);
+            this.loadDefaultBlankGraph.setVisible(true);
+            this.loadJSONButton.setVisible(true);
+            this.exportJSON.setVisible(true);
+            this.jsonDocumentationButton.setVisible(true);
+            this.jLabel6.setVisible(true);
+
+            return;
+        }
 
         if (autonomyViewerPanel == null)
         {
@@ -1726,6 +1769,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final org.traincontrol.base.AutonomySession session = getAutonomySession();
 
         if (session == null) return;
+
+        if (this.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            return;
+        }
 
         // the editor edits one page, so the page has to be selected before it is opened
         if (tile != null) this.LayoutList.setSelectedItem(tile.getPage());
@@ -13069,6 +13118,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.LayoutList.setSelectedIndex(oldIndex);
         }
 
+        // Every LayoutDiagram object has just been replaced, so a session still holding the old ones
+        // derives from geometry that no longer exists - and would write tile keys from it.
+        this.resetAutonomySession();
+
         this.repaintLayout();
 
         this.updatePopups(true);
@@ -13126,6 +13179,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             );
 
             if (editChoice == JOptionPane.CLOSED_OPTION) return;
+
+            // Autonomy edits were not blocked while trains ran, only the diagram ones - and Save then
+            // refused with errorCannotEditWhileRunning, trapping the work.  Refused up front instead.
+            if (editChoice == 1 && this.isAutonomyBusy())
+            {
+                JOptionPane.showMessageDialog(this,
+                    I18n.t("autolayout.errorCannotEditWhileRunning"));
+                return;
+            }
 
             autonomyToEdit = editChoice == 1 ? candidateSession : null;
         }

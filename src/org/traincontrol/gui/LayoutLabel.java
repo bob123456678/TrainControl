@@ -540,7 +540,10 @@ public final class LayoutLabel extends JLabel
      */
     public void flashHighlight()
     {
-        if (this.getIcon() == null) return;
+        // An empty square carries an EmptyIcon, which is not null and not an ImageIcon - so the cast
+        // below threw where the null check passed, and it escaped mid-action because the menu's flash
+        // sits outside its own try/catch.
+        if (!(this.getIcon() instanceof ImageIcon)) return;
 
         // The plain icon is captured ONCE and kept until the flash ends.  Capturing it on every call
         // meant a second flash arriving before the first had finished recorded the already-highlighted

@@ -310,6 +310,10 @@ public class AutonomyEditorPanel extends JPanel
             testFrom = null;
             testPath.clear();
 
+            // A one-way run waiting for its far end survived this, so the next click anywhere was
+            // swallowed by a gesture the user had already moved on from.
+            oneWayFrom = null;
+
             say(hint, tool == Tool.TEST
                 ? I18n.t("autosetup.ui.promptTestStart") : I18n.t("autosetup.ui.hintClickToCycle"));
 
@@ -1680,7 +1684,9 @@ public class AutonomyEditorPanel extends JPanel
         org.traincontrol.base.LayoutDiagramComponent component =
             session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
 
-        if (component == null) return false;
+        // A blank square is not track, so there is nothing to set on it.  Treating it as configurable
+        // opened a menu offering a one-way run and a length on empty space.
+        if (component == null) return true;
 
         // A lamp carries no track at all - it is decoration on the diagram - so it is greyed with the
         // route buttons and turntables rather than left looking like something to configure.
