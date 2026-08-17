@@ -277,14 +277,65 @@ public class AutonomySession
 
                 for (String key : POINT_OPERATIONAL_KEYS)
                 {
-                    if (point.has(key) && !point.isNull(key)) extras.put(key, point.get(key));
+                    if (!point.has(key) || point.isNull(key)) continue;
+
+                    // A placement records WHICH locomotive stands here and nothing else.  Point.toJSON
+                    // also writes its length, reversibility, speed and functions, and parseAuto applies
+                    // those back onto the Locomotive - so capturing them made loading a configuration
+                    // silently revert changes made in the locomotive UI since.  Those live in LocDB.
+                    if ("loc".equals(key) && point.get(key) instanceof org.json.JSONObject)
+                    {
+                        org.json.JSONObject loc = point.getJSONObject(key);
+
+                        if (!loc.has("name")) continue;
+
+                        extras.put(key, new org.json.JSONObject().put("name", loc.getString("name")));
+
+                        continue;
+                    }
+
+                    extras.put(key, point.get(key));
                 }
 
                 if (extras.length() > 0) points.put(tile.toString(), extras);
             }
         }
 
-        configuration.put("points", points);
+        // Merged per point, not substituted wholesale.  The running Layout was built BEFORE any edits
+        // made in the editor since, so replacing the whole object discarded them - set a terminus,
+        // press Apply, exit, and it was gone.  What the running layout knows about is overwritten;
+        // everything else is left alone.
+        org.json.JSONObject existing = configuration.has("points")
+            ? configuration.getJSONObject("points") : new org.json.JSONObject();
+
+        for (String id : points.keySet())
+        {
+            org.json.JSONObject captured = points.getJSONObject(id);
+            org.json.JSONObject before = existing.has(id)
+                ? existing.getJSONObject(id) : new org.json.JSONObject();
+
+            // Keys the layout can speak for are replaced - including being REMOVED when the layout no
+            // longer carries them, which is how a property returned to its default is cleared.
+            for (String key : POINT_OPERATIONAL_KEYS)
+            {
+                if (captured.has(key)) before.put(key, captured.get(key));
+                else before.remove(key);
+            }
+
+            existing.put(id, before);
+        }
+
+        // A point the running layout no longer has - its track was deleted - keeps nothing.
+        List<String> gone = new ArrayList<>();
+
+        for (String id : existing.keySet())
+        {
+            if (!points.has(id)) gone.add(id);
+        }
+
+        for (String id : gone) existing.remove(id);
+
+        configuration.put("points", existing);
 
         // and the top of the file: pace, speeds, and the rest of the settings panel
         org.json.JSONObject globals = new org.json.JSONObject();
@@ -923,7 +974,22 @@ public class AutonomySession
      */
     public AutonomyCompanionStore.Reconciliation save() throws IOException
     {
-        Set<TileKey> existing = new LinkedHashSet<>(graph.getTiles().keySet());
+        // Every tile of EVERY page, including the excluded ones.  The graph omits excluded pages by
+        // construction, so reconciling against it made every setting on such a page look like it
+        // belonged to a deleted tile - and saving then destroyed the lot, permanently, with
+        // re-including the page giving nothing back.  Excluding a page must be reversible.
+        Set<TileKey> existing = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component != null)
+                {
+                    existing.add(new TileKey(page.getName(), component.getX(), component.getY()));
+                }
+            }
+        }
 
         AutonomyCompanionStore.Reconciliation report = store.reconcile(existing);
 

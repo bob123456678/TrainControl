@@ -19,6 +19,7 @@ import javax.swing.JScrollPane;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.AutonomyChecks;
+import org.traincontrol.base.AutonomyCompanionStore;
 import org.traincontrol.base.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
@@ -540,6 +541,20 @@ public class AutonomyViewerPanel extends JPanel
      * applies to structural changes.
      */
     /**
+     * Which configuration the Manage actions operate on: the one showing in the dropdown.
+     *
+     * NOT the active one.  Every Manage action used to read getActiveConfiguration(), so choosing "Yard"
+     * in the list and pressing Delete deleted whatever was running - unrecoverable, from an ordinary
+     * gesture.  The dropdown is what the user is pointing at.
+     */
+    private String selected()
+    {
+        Object chosen = configurations.getSelectedItem();
+
+        return chosen == null ? session.getStore().getActiveConfiguration() : String.valueOf(chosen);
+    }
+
+    /**
      * Loads the active configuration - the startup resume, which is the same as the user choosing what
      * they chose last time.
      */
@@ -732,7 +747,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     private void exportConfiguration()
     {
-        String name = session.getStore().getActiveConfiguration();
+        String name = selected();
 
         if (name == null) return;
 
@@ -758,16 +773,26 @@ public class AutonomyViewerPanel extends JPanel
 
     private void duplicate()
     {
-        String from = session.getStore().getActiveConfiguration();
+        String from = selected();
 
         String name = JOptionPane.showInputDialog(this,
             I18n.t("autosetup.ui.promptConfigurationName"));
 
         if (name == null || name.trim().isEmpty()) return;
 
-        // as a copy, so a variant that differs only in where the locomotives start does not mean
-        // re-entering every decision that has nothing to do with that
-        session.getStore().createConfiguration(name.trim(), from);
+        try
+        {
+            // as a copy, so a variant that differs only in where the locomotives start does not mean
+            // re-entering every decision that has nothing to do with that
+            session.getStore().createConfiguration(name.trim(), from);
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("autosetup.ui.errorNameInUse", name.trim()));
+            return;
+        }
+
         session.getStore().setActiveConfiguration(name.trim());
 
         save();
@@ -776,7 +801,7 @@ public class AutonomyViewerPanel extends JPanel
 
     private void rename()
     {
-        String from = session.getStore().getActiveConfiguration();
+        String from = selected();
 
         if (from == null) return;
 
@@ -792,7 +817,12 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+            // The store reports its refusals as message KEYS, so they are translated here rather than
+            // shown raw - a user should not be told "autosetup.ui.errorNameInUse".
+            JOptionPane.showMessageDialog(this,
+                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
+                    : String.valueOf(e.getMessage()));
         }
 
         refresh();
@@ -800,9 +830,16 @@ public class AutonomyViewerPanel extends JPanel
 
     private void delete()
     {
-        String name = session.getStore().getActiveConfiguration();
+        String name = selected();
 
         if (name == null) return;
+
+        // Named in the question, because the list and the running configuration can differ and deleting
+        // is not undoable.
+        if (JOptionPane.showConfirmDialog(this,
+            I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
+            I18n.t("autosetup.ui.menuDeleteConfiguration"),
+            JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
 
         try
         {
@@ -811,8 +848,13 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            // the last configuration cannot go: a setup with none is a state nothing here could act on
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorLastConfiguration"));
+            // The last configuration cannot go: a setup with none is a state nothing here could act on.
+            // Any OTHER failure - a permission problem, a full disk - is reported as itself rather than
+            // blamed on that rule.
+            JOptionPane.showMessageDialog(this,
+                AutonomyCompanionStore.ERROR_LAST_CONFIGURATION.equals(e.getMessage())
+                    ? I18n.t("autosetup.ui.errorLastConfiguration")
+                    : String.valueOf(e.getMessage()));
         }
 
         refresh();

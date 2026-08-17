@@ -54,6 +54,7 @@ public class AutonomyCompanionStore
     public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
     public static final String ERROR_LAST_CONFIGURATION = "autosetup.ui.errorLastConfiguration";
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
+    public static final String ERROR_NAME_IN_USE = "autosetup.ui.errorNameInUse";
 
     private static final String FOLDER = "config/autonomy";
     private static final String SETUP_FILE = "setup.json";
@@ -526,8 +527,11 @@ public class AutonomyCompanionStore
      * @param name
      * @param copyFrom the configuration to copy, or null for an empty one
      */
-    public void createConfiguration(String name, String copyFrom)
+    public void createConfiguration(String name, String copyFrom) throws IOException
     {
+        // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
+        if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
+
         JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
 
         JSONObject created = source == null
@@ -565,6 +569,13 @@ public class AutonomyCompanionStore
 
     public void renameConfiguration(String from, String to) throws IOException
     {
+        // Refused rather than allowed to overwrite: renaming A to an existing B used to replace B and
+        // then delete B's file, destroying a configuration the user never named in the gesture.
+        if (!from.equals(to) && configurations.containsKey(to))
+        {
+            throw new IOException(ERROR_NAME_IN_USE);
+        }
+
         JSONObject configuration = configurations.remove(from);
 
         if (configuration == null) return;
@@ -635,8 +646,25 @@ public class AutonomyCompanionStore
 
         if (excludedPages.remove(from)) excludedPages.add(to);
 
-        // configurations reference points by name rather than by tile, so they are untouched by a page
-        // rename - but any that grows a tile key later must be rewritten here too
+        // Configurations DO key by tile - setPointProperty and captureFromLayout both write
+        // "page:x,y" - so they are rewritten here too.  The note that used to stand in this place said
+        // they were untouched and warned that anything growing a tile key must be handled; it grew one,
+        // and without this a rename silently dropped every placement, home, terminus and length in
+        // every configuration while the shared file survived, making the loss look arbitrary.
+        for (JSONObject configuration : configurations.values())
+        {
+            if (!configuration.has("points")) continue;
+
+            JSONObject points = configuration.getJSONObject("points");
+            JSONObject renamedPoints = new JSONObject();
+
+            for (String key : points.keySet())
+            {
+                renamedPoints.put(rekeyOne(key, from, to), points.get(key));
+            }
+
+            configuration.put("points", renamedPoints);
+        }
     }
 
     /**

@@ -1177,7 +1177,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        if (this.autosave.isSelected() && this.model.hasAutoLayout()
+        // NEVER when the running layout came from the diagram.  autonomy.json is the LEGACY
+        // configuration - hand-authored, and still the fallback this application auto-loads - while
+        // getAutoLayout() is now whatever the diagram derived.  Writing one into the other replaced a
+        // user's named points with generated coordinates on every clean exit, silently, and took the
+        // ground-truth baseline with it.  The companion store is the source of truth in that case and
+        // autonomy.json must be left exactly as it is.
+        if (this.activeDiagramConfiguration == null
+                && this.autosave.isSelected() && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -1207,7 +1214,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
         
-        if (!this.autonomyJSON.getText().trim().equals(""))
+        // Same reason: with a diagram configuration loaded, whatever is in the text area is either
+        // stale or derived, and either way it is not what belongs in autonomy.json.
+        if (this.activeDiagramConfiguration == null && !this.autonomyJSON.getText().trim().equals(""))
         {
             // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
             String autonomyPath = backup
