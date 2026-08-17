@@ -2168,34 +2168,59 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
+        Object showing = this.LayoutList.getSelectedItem();
+        String page = showing == null ? null : showing.toString();
+
+        autonomyOverlayToggle.setPageExcluded(page != null && isPageExcludedFromAutonomy(page));
+
         if (session == null || session.getReducer() == null)
         {
-            autonomyOverlayToggle.setFindings(0, 0, null);
+            autonomyOverlayToggle.setFindings(0, 0, 0, 0, null);
             return;
         }
 
         int errors = 0;
         int warnings = 0;
+        int pageErrors = 0;
+        int pageWarnings = 0;
 
         org.traincontrol.automationui.TileGraph.TileKey first = null;
+        org.traincontrol.automationui.TileGraph.TileKey firstHere = null;
 
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
-            if (finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR)
+            boolean isError = finding.getSeverity()
+                == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR;
+
+            // Counted twice on purpose: what is wrong on the page in front of the user, and what is
+            // wrong anywhere.  One number for both meant a page with nothing wrong on it still showed
+            // a count, and every attempt to find the problem landed somewhere else.
+            boolean onThisPage = finding.getTile() != null && page != null
+                && page.equals(finding.getTile().getPage());
+
+            if (isError)
             {
                 errors++;
+
+                if (onThisPage) pageErrors++;
             }
             else
             {
                 warnings++;
+
+                if (onThisPage) pageWarnings++;
             }
 
             // The findings arrive most serious first, so the first one with a square to go to is the
             // one worth landing on.
             if (first == null && finding.getTile() != null) first = finding.getTile();
+
+            if (firstHere == null && onThisPage) firstHere = finding.getTile();
         }
 
-        autonomyOverlayToggle.setFindings(errors, warnings, first);
+        // Somewhere on this page when there is something here, and the worst one anywhere otherwise
+        autonomyOverlayToggle.setFindings(pageErrors, pageWarnings, errors, warnings,
+            firstHere != null ? firstHere : first);
     }
 
     /**
@@ -17451,6 +17476,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     
                     // Update auto layout station labels on the track diagram
                     this.updateVisiblePoints();
+
+                    // The strip above the diagram is about the page being SHOWN - which page is left
+                    // out of autonomy, and what the checks have to say about this one - so switching
+                    // pages changes both.  Cheap next to the grid rebuild that just happened.
+                    refreshAutonomyFindings();
                 }
             });
         });

@@ -32,6 +32,10 @@ public class AutonomyOverlayToggle extends JPanel
      */
     private final javax.swing.JLabel findings = new javax.swing.JLabel();
 
+    // Shown in the checkbox's place on a page autonomy has been told to ignore
+    private final javax.swing.JLabel left_out =
+        new javax.swing.JLabel(I18n.t("autosetup.ui.labelPageLeftOut"));
+
     /**
      * Starting and stopping autonomy, where the trains are rather than on a tab.
      *
@@ -90,6 +94,11 @@ public class AutonomyOverlayToggle extends JPanel
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         left.setOpaque(false);
         left.add(show);
+
+        left_out.setFont(show.getFont());
+        left_out.setForeground(new java.awt.Color(110, 110, 110));
+        left_out.setVisible(false);
+        left.add(left_out);
 
         findings.setFont(show.getFont());
         findings.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -236,28 +245,61 @@ public class AutonomyOverlayToggle extends JPanel
      * @param warnings how many are worth looking at
      * @param first the square to open when the count is clicked, or null for none
      */
-    public void setFindings(int errors, int warnings,
+    public void setFindings(int pageErrors, int pageWarnings, int totalErrors, int totalWarnings,
         org.traincontrol.automationui.TileGraph.TileKey first)
     {
         firstFinding = first;
 
-        if (errors + warnings == 0)
+        if (totalErrors + totalWarnings == 0)
         {
             findings.setVisible(false);
             return;
         }
 
-        // Errors first and in their own colour, because one of them means the setup will not run at
-        // all, while a page of warnings still will.
-        findings.setForeground(errors > 0
-            ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
+        boolean here = pageErrors + pageWarnings > 0;
 
-        findings.setText(errors > 0
-            ? I18n.f("autosetup.ui.labelFindingsErrors", errors, warnings)
-            : I18n.f("autosetup.ui.labelFindingsWarnings", warnings));
+        // Errors first and in their own colour, because one of them means the setup will not run at
+        // all, while a page of warnings still will.  Coloured for what is on THIS page: a page with
+        // nothing wrong on it should not be shouting in red about somewhere else.
+        findings.setForeground(!here ? new java.awt.Color(110, 110, 110)
+            : pageErrors > 0 ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
+
+        findings.setText(here
+            ? I18n.f("autosetup.ui.labelFindingsHere",
+                describe(pageErrors, pageWarnings), describe(totalErrors, totalWarnings))
+            : I18n.f("autosetup.ui.labelFindingsElsewhere",
+                describe(totalErrors, totalWarnings)));
 
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
+    }
+
+    /**
+     * "2 errors, 5 warnings", or just the half that is not zero.
+     */
+    private String describe(int errors, int warnings)
+    {
+        if (errors == 0) return I18n.f("autosetup.ui.labelFindingsWarnings", warnings);
+
+        if (warnings == 0) return I18n.f("autosetup.ui.labelFindingsOnlyErrors", errors);
+
+        return I18n.f("autosetup.ui.labelFindingsErrors", errors, warnings);
+    }
+
+    /**
+     * Says the page is left out of autonomy, in place of the controls that would act on it.
+     *
+     * The checkbox goes rather than being greyed: there is nothing on this page for it to show or
+     * hide, and an unticked box invites the reader to tick it and wonder why nothing happened.  What
+     * replaces it says the one thing worth knowing.  The run button stays - starting autonomy is not a
+     * statement about the page being looked at.
+     *
+     * @param excluded
+     */
+    public void setPageExcluded(boolean excluded)
+    {
+        show.setVisible(!excluded);
+        left_out.setVisible(excluded);
     }
 
     /**
