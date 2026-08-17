@@ -1954,6 +1954,50 @@ public class AutonomyEditorPanel extends JPanel
      * a signal can be restricted like any other tile, and a restriction on one still draws.
      */
     /**
+     * The three answers for one route, with the two one-way options named by where they lead rather
+     * than by an A and a B nobody can see.
+     */
+    private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
+        org.traincontrol.automationui.TilePorts.Route route)
+    {
+        List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+        Direction current = session.getGraph().getDirection(tile, routeId);
+
+        items.add(directionItem(tile, routeId, Direction.BOTH,
+            I18n.t("autosetup.ui.menuRouteBoth"), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
+        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
+        items.add(directionItem(tile, routeId, Direction.NONE,
+            I18n.t("autosetup.ui.menuRouteNone"), current));
+
+        return items;
+    }
+
+    private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
+        final Direction direction, String text, Direction current)
+    {
+        javax.swing.JRadioButtonMenuItem item =
+            new javax.swing.JRadioButtonMenuItem(text, direction == current);
+
+        item.addActionListener(e ->
+        {
+            // Set on the run, not the tile: a run of plain track has one direction, and setting it a
+            // tile at a time is both busywork and a way to end up with a run that contradicts itself.
+            if (session.setRunDirection(tile, routeId, direction) == 0)
+            {
+                say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
+            }
+
+            refresh();
+        });
+
+        return item;
+    }
+
+    /**
      * What this sensor has been designated as, or null when it is not a station.
      */
     private org.traincontrol.automationui.TileAnnotation.Badge badgeFor(TileKey tile)
