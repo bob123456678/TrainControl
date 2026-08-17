@@ -23,7 +23,7 @@ having no ledger. What follows is what the review verified, not what was intende
 | Mark as station | point right-click checkbox | Right-click → Mark as a station | DONE |
 | Terminus station | point right-click checkbox | Right-click -> **Station** submenu; clears reversing, as the model requires | DONE |
 | Warn on stations missing a diagram label | - | Configuration errors and warnings -> "not shown anywhere on the track diagram" | DONE (new) |
-| Put a station name on the diagram | layout editor only (`editTextWithDropdown`) | Setup editor: right-click a text OR blank square -> "Show a station name here"; page written immediately | DONE (new) |
+| Put a station name on the diagram | layout editor only (`editTextWithDropdown`), text squares only | Setup editor: right-click a text square, a blank square, or any square whose track runs straight through (straight, sensor, signal, uncoupler) -> "Show a station name here"; page written immediately | DONE (new) |
 | Warn on default-named stations | - | Configuration errors and warnings -> "still named after the square it sits on" | DONE (new) |
 | Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
 | Active / inactive | point right-click checkbox | Right-click -> Active, on every point.  Briefly folded into the Station submenu as "parking"; reverted 2026-08-16 - that made it unreachable on a non-station and hard to find on a station.  Parking is what an inactive station IS, not a separate setting | DONE |

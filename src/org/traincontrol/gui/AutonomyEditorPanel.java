@@ -730,7 +730,53 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
+        // A station name can go on any square whose track runs straight through, not only on a text
+        // square: a straight, a sensor, a signal, an uncoupler.  The label is drawn beside the tile
+        // wherever it sits, so there is no reason to make the user find a text square first - and on a
+        // platform the sensible place for the name is the platform road itself.
+        //
+        // The CLICKED square, not the run leader the rest of this menu acts on: a name belongs where
+        // it was put, and moving it to the head of the run would drop it somewhere else entirely.
+        if (isStraightThrough(tile))
+        {
+            menu.addSeparator();
+
+            final LayoutDiagramComponent here = componentAt(tile);
+
+            menu.add(item(I18n.t("autosetup.ui.menuShowStationHere"),
+                () -> promptStationLabel(tile, here)));
+
+            if (here != null && here.getLabel() != null
+                    && here.getLabel().startsWith(AutonomySession.STATION_LABEL_PREFIX))
+            {
+                menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"),
+                    () -> applyStationLabel(tile, null)));
+            }
+        }
+
         menu.show(invoker, x, y);
+    }
+
+    /**
+     * Whether the track on this square runs straight through it.
+     *
+     * One route, joining two OPPOSITE sides.  That is exactly the set the author named - straights,
+     * straight sensors, signals, uncouplers - without listing types that would have to be kept in step
+     * with the port map every time one was added.  Curves, switches, crossings and dead ends all fail
+     * it, and none of them has room beside the track for a name anyway.
+     */
+    private boolean isStraightThrough(TileKey tile)
+    {
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
+
+        if (routes.size() != 1) return false;
+
+        org.traincontrol.automationui.TilePorts.Route route = routes.values().iterator().next();
+
+        if (route.getA() == null || route.getB() == null || route.getA() == route.getB()) return false;
+
+        // N,E,S,W in order, so opposite sides are two apart either way round
+        return Math.abs(route.getA().ordinal() - route.getB().ordinal()) == 2;
     }
 
     /**
@@ -1913,7 +1959,28 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), isDimmed(tile));
+            badgeFor(tile), isDimmed(tile), isCurved(tile));
+    }
+
+    /**
+     * Whether this square's track is drawn as a chord cutting a corner.
+     *
+     * Curves and double curves only, by TYPE rather than by geometry: a switch's diagonal arm is a
+     * chord too, and the author asked for the tilt on curves alone.
+     */
+    private boolean isCurved(TileKey tile)
+    {
+        LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (component == null) return false;
+
+        LayoutDiagramComponent.componentType type = component.getType();
+
+        return type == LayoutDiagramComponent.componentType.CURVE
+            || type == LayoutDiagramComponent.componentType.FEEDBACK_CURVE
+            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || type == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
     }
 
     /**

@@ -260,6 +260,16 @@ public class TileAnnotation
     private final boolean ignored;
 
     /**
+     * Whether this square's track is drawn as a corner-cutting chord rather than square across the
+     * tile - a curve or a double curve, and nothing else.
+     *
+     * A switch has chords too, and taking its arrow angles from them was a step too far: the author
+     * asked for the tilt on curves only, and a switch reads better with its arrows square to the
+     * edges, which is also how its trunk enters.
+     */
+    private final boolean curved;
+
+    /**
      * @param marks the routes to draw, or empty to draw none
      * @param length the tile's length, or a negative number not to show one
      * @param selected whether this tile is part of a bulk selection
@@ -279,6 +289,18 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored)
     {
+        this(marks, length, selected, badge, ignored, false);
+    }
+
+    /**
+     * @param curved whether the track here is drawn as a chord across a corner, so the arrows follow
+     *        it rather than the edge they leave through
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved)
+    {
+        this.curved = curved;
+
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
@@ -462,9 +484,10 @@ public class TileAnnotation
      * runs up and to the right at forty-five degrees, and an arrow drawn due east sits across it
      * instead of along it.  Taking the heading from the chord puts every arrow on its own rail.
      *
-     * A side two branches share - a switch's toe - is the exception, and takes the plain outward
-     * direction: the chords through it disagree by forty-five degrees, and there is only one arrow
-     * there to draw.  That is right anyway, because the trunk of a switch enters square to the edge.
+     * Curves only.  A switch is built from chords too, but its arrows read better square to the edges
+     * - which is how its trunk enters anyway - and tilting them was a step the author did not ask for.
+     * A shared side would be ambiguous regardless: two chords through one edge disagree by forty-five
+     * degrees, and there is only one arrow there to draw.
      */
     private double[] heading(Side side, int width, int height)
     {
@@ -480,7 +503,7 @@ public class TileAnnotation
             }
         }
 
-        int[] from = through == 1 && other != null && other != side
+        int[] from = curved && through == 1 && other != null && other != side
             ? midpoint(other, width, height) : new int[] {width / 2, height / 2};
 
         int[] to = midpoint(side, width, height);
@@ -749,7 +772,7 @@ public class TileAnnotation
 
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
-            && ignored == other.ignored && marks.equals(other.marks);
+            && ignored == other.ignored && curved == other.curved && marks.equals(other.marks);
     }
 
     @Override
@@ -757,7 +780,7 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0);
+            + (ignored ? 16 : 0) + (curved ? 64 : 0);
     }
 
     @Override

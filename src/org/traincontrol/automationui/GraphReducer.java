@@ -273,9 +273,10 @@ public class GraphReducer
     public static final String WARN_SELF_LOOP = "autosetup.ui.warnSelfLoop";
 
     /**
-     * A double-curve sensor with track on both of its curves - one s88 over two separate tracks.
+     * A double-curve sensor with track on both of its curves.  The s88 is on ONE of them; the other is
+     * a second track that happens to cross the same square.
      */
-    public static final String ERROR_DOUBLE_CURVE_SENSOR = "autosetup.ui.errorDoubleCurveSensor";
+    public static final String WARN_DOUBLE_CURVE_SENSOR = "autosetup.ui.warnDoubleCurveSensor";
 
     public GraphReducer(TileGraph graph, Authored authored)
     {
@@ -418,15 +419,17 @@ public class GraphReducer
                 continue;
             }
 
-            // A double-curve sensor carries TWO independent curves on one tile with one s88.  As a
-            // single Point it joins them: a train could enter on one curve and leave on the other,
-            // crossing between tracks that never meet - and lock derivation cannot catch it, because a
-            // Point is never part of any edge's path.  Reported rather than emitted wrong.
+            // A double-curve sensor draws two curves on one square, and the s88 is on ONE of them -
+            // the other is simply a second track crossing the same tile (author, 2026-08-16).  This
+            // was blocking, and refused to make the tile a Point at all, on the reading that one
+            // sensor covered both tracks.  It does not, so the sensor is real and the Point is
+            // emitted; what remains is that nothing here records WHICH curve carries it, so a train
+            // on the other one is expected to trigger a sensor it never reaches.  That is worth
+            // saying and is not worth refusing.
             if (component.getType() == componentType.FEEDBACK_DOUBLE_CURVE
                 && bothCurvesConnected(tile))
             {
-                problems.add(new TileGraph.Problem(tile, ERROR_DOUBLE_CURVE_SENSOR, true));
-                continue;
+                problems.add(new TileGraph.Problem(tile, WARN_DOUBLE_CURVE_SENSOR, false));
             }
 
             String name = authored.getPointName(tile);
