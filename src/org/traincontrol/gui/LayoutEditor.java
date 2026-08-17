@@ -425,6 +425,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     private AutonomyBanner autonomyBanner;
 
+    // The column that holds Addresses and the lengths toggle while autonomy mode is on
+    private javax.swing.JPanel autonomyVisibility;
+
     /**
      * Turns autonomy setup on or off.
      *
@@ -447,6 +450,15 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.jScrollPane1.setColumnHeaderView(null);
                 autonomyBanner = null;
+            }
+
+            // put the Addresses box back where the form had it
+            if (autonomyVisibility != null)
+            {
+                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                    .replace(autonomyVisibility, this.showAddressCheckbox);
+
+                autonomyVisibility = null;
             }
         }
         else if (autonomyPanel == null)
@@ -495,6 +507,29 @@ public class LayoutEditor extends PositionAwareJFrame
             this.jScrollPane1.setColumnHeaderView(autonomyBanner);
 
             autonomyPanel.setBanner(autonomyBanner);
+
+            // Put the lengths toggle directly under Addresses, inside the window's own Toggle
+            // Visibility group.  GroupLayout cannot have a component added to it after the fact, but it
+            // can REPLACE one - so the Addresses box is swapped for a small column holding both, which
+            // lands the new toggle exactly where it belongs without touching the generated form.
+            if (getContentPane().getLayout() instanceof javax.swing.GroupLayout)
+            {
+                javax.swing.JPanel visibility = new javax.swing.JPanel();
+                visibility.setLayout(new javax.swing.BoxLayout(visibility,
+                    javax.swing.BoxLayout.Y_AXIS));
+                visibility.setOpaque(false);
+
+                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                    .replace(this.showAddressCheckbox, visibility);
+
+                this.showAddressCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                autonomyPanel.getShowLengths().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+                visibility.add(this.showAddressCheckbox);
+                visibility.add(autonomyPanel.getShowLengths());
+
+                autonomyVisibility = visibility;
+            }
 
             // Lengths and addresses are mutually exclusive: both print a number on the tile, and two
             // numbers on one square is unreadable.  Wired here because the Addresses box belongs to

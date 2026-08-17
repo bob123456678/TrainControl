@@ -346,11 +346,6 @@ public class AutonomyEditorPanel extends JPanel
     {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
-        // Track lengths is a visibility toggle rather than a tool - it changes what is DRAWN, not what
-        // is set - so it sits at the foot of the column, next to the window's own Toggle Visibility
-        // group.  It cannot go inside that group without editing the generated form.
-        panel.add(control(showLengths));
-
         JButton check = new JButton(I18n.t("autosetup.ui.btnCheckConfiguration"));
         check.addActionListener(e -> recheck());
         panel.add(button(check));
@@ -1509,7 +1504,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     public JCheckBox getShowLengths()
     {
-        return showLengths;
+        return control(showLengths);
     }
 
     /**
