@@ -256,34 +256,39 @@ public class AutonomyOverlayToggle extends JPanel
             return;
         }
 
-        boolean here = pageErrors + pageWarnings > 0;
+        // Nothing on a page autonomy takes no notice of.  The number would be about a setup this page
+        // is not part of, next to a strip that has just said so.
+        if (excluded)
+        {
+            findings.setVisible(false);
+            return;
+        }
 
-        // Errors first and in their own colour, because one of them means the setup will not run at
-        // all, while a page of warnings still will.  Coloured for what is on THIS page: a page with
-        // nothing wrong on it should not be shouting in red about somewhere else.
-        findings.setForeground(!here ? new java.awt.Color(110, 110, 110)
-            : pageErrors > 0 ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
+        // Coloured for what is on THIS page: a clean page should not be shouting in red about
+        // somewhere else.
+        findings.setForeground(pageErrors > 0 ? new java.awt.Color(170, 0, 0)
+            : pageWarnings > 0 ? new java.awt.Color(150, 95, 0)
+            : new java.awt.Color(110, 110, 110));
 
-        findings.setText(here
-            ? I18n.f("autosetup.ui.labelFindingsHere",
-                describe(pageErrors, pageWarnings), describe(totalErrors, totalWarnings))
-            : I18n.f("autosetup.ui.labelFindingsElsewhere",
-                describe(totalErrors, totalWarnings)));
+        // "3/25 warnings on this page" - the share and the whole in one reading, rather than a
+        // sentence naming both.  Errors get the same shape and only appear when there are any.
+        StringBuilder text = new StringBuilder();
 
+        if (totalErrors > 0)
+        {
+            text.append(I18n.f("autosetup.ui.labelFindingsErrors", pageErrors, totalErrors));
+        }
+
+        if (totalWarnings > 0)
+        {
+            if (text.length() > 0) text.append(", ");
+
+            text.append(I18n.f("autosetup.ui.labelFindingsWarnings", pageWarnings, totalWarnings));
+        }
+
+        findings.setText(I18n.f("autosetup.ui.labelFindingsOnThisPage", text.toString()));
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
-    }
-
-    /**
-     * "2 errors, 5 warnings", or just the half that is not zero.
-     */
-    private String describe(int errors, int warnings)
-    {
-        if (errors == 0) return I18n.f("autosetup.ui.labelFindingsWarnings", warnings);
-
-        if (warnings == 0) return I18n.f("autosetup.ui.labelFindingsOnlyErrors", errors);
-
-        return I18n.f("autosetup.ui.labelFindingsErrors", errors, warnings);
     }
 
     /**
@@ -298,9 +303,16 @@ public class AutonomyOverlayToggle extends JPanel
      */
     public void setPageExcluded(boolean excluded)
     {
+        this.excluded = excluded;
+
         show.setVisible(!excluded);
         left_out.setVisible(excluded);
+
+        if (excluded) findings.setVisible(false);
     }
+
+    // whether the page being shown is one autonomy has been told to ignore
+    private boolean excluded;
 
     /**
      * @return whether the overlay is switched on

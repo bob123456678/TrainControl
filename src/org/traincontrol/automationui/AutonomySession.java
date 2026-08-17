@@ -426,6 +426,23 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * What the generated configuration calls the Point on a square.
+     *
+     * The BASE name - the one a diagram caption carries and the one anything looking a Point up by
+     * caption will find.  Not the authored name, which can be blank or a duplicate; uniqueNames is
+     * what settles both.
+     *
+     * @param tile
+     * @return the name, or null when the square is not a Point
+     */
+    public String pointNameForTile(TileKey tile)
+    {
+        if (reducer == null) return null;
+
+        return new AutonomyBuilder(reducer, null).uniqueNames().get(tile);
+    }
+
     public Set<TileKey> reversibleTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();

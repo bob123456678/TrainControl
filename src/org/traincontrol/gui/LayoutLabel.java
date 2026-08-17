@@ -213,6 +213,31 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {  
+                                // A station's own menu, from the track rather than from its caption.
+                                //
+                                // The caption is a small piece of text that may be on the square below,
+                                // or missing altogether; the sensor is the thing the user is looking at
+                                // and pointing to.  Same menu either way, so there is one place that
+                                // knows what a station offers.
+                                if (e.getButton() == MouseEvent.BUTTON3)
+                                {
+                                    final String station =
+                                        tcUI.autonomyStationAt(component.getX(), component.getY());
+
+                                    if (station != null)
+                                    {
+                                        final java.awt.Component at = e.getComponent();
+                                        final int atX = e.getX();
+                                        final int atY = e.getY();
+
+                                        javax.swing.SwingUtilities.invokeLater(() ->
+                                            new LayoutRightclickAutonomyMenu(tcUI, station)
+                                                .show(at, atX, atY));
+
+                                        return;
+                                    }
+                                }
+
                                 // Edit route on right-click
                                 if (e.getButton() == MouseEvent.BUTTON3 && component.isRoute() && (!tcUI.getModel().getPowerState() || !tcUI.getModel().getNetworkCommState())) 
                                 {

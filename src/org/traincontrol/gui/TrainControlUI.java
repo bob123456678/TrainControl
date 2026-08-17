@@ -2139,6 +2139,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The station on a square of the page currently being shown, for a right-click on the track itself.
+     *
+     * Only while the overlay is on, because that checkbox is what says the user is looking at autonomy
+     * rather than at track - and only for a square that is actually a station, since the menu it opens
+     * is about where a train may be sent.
+     *
+     * @param x the square's column
+     * @param y its row
+     * @return the station's name, or null when there is nothing there to act on
+     */
+    public String autonomyStationAt(int x, int y)
+    {
+        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isShowing()) return null;
+
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || activeDiagramConfiguration == null) return null;
+
+        Object showing = this.LayoutList.getSelectedItem();
+
+        if (showing == null) return null;
+
+        String page = showing.toString();
+
+        if (isPageExcludedFromAutonomy(page)) return null;
+
+        org.traincontrol.automationui.TileGraph.TileKey tile =
+            new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
+
+        if (!session.getStore().isStation(tile)) return null;
+
+        return session.pointNameForTile(tile);
+    }
+
+    /**
      * Whether autonomy has been told to ignore a page.
      *
      * Asked by the grid, so that a page autonomy takes no notice of does not carry controls that act
