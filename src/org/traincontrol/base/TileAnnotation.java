@@ -254,18 +254,11 @@ public class TileAnnotation
      */
     private static final Color HATCH = new Color(150, 150, 150);
 
-    /**
-     * Pushed back but still the user's to set - signals, which sit on almost every run and whose art
-     * is the heaviest on the diagram, so at full strength they read as the most important thing on it.
-     */
-    private static final float MUTED_ALPHA = 0.45f;
-
     private final List<Mark> marks;
     private final int length;
     private final boolean selected;
     private final Badge badge;
     private final boolean ignored;
-    private final boolean muted;
 
     /**
      * @param marks the routes to draw, or empty to draw none
@@ -274,7 +267,7 @@ public class TileAnnotation
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected)
     {
-        this(marks, length, selected, null, false, false);
+        this(marks, length, selected, null, false);
     }
 
     /**
@@ -283,17 +276,15 @@ public class TileAnnotation
      * @param selected whether this tile is part of a bulk selection
      * @param badge what this sensor is, or null when the square is not a point at all
      * @param ignored whether autonomy takes no notice of this square at all
-     * @param muted whether to push the tile art back without saying it cannot be configured
      */
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
-        boolean ignored, boolean muted)
+        boolean ignored)
     {
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
         this.selected = selected;
         this.badge = badge;
         this.ignored = ignored;
-        this.muted = muted;
     }
 
     public boolean isIgnored()
@@ -301,10 +292,6 @@ public class TileAnnotation
         return ignored;
     }
 
-    public boolean isMuted()
-    {
-        return muted;
-    }
 
     public Badge getBadge()
     {
@@ -332,7 +319,7 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !muted;
+        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored;
     }
 
     /**
@@ -357,16 +344,11 @@ public class TileAnnotation
 
             // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
             // Nothing here is the user's to decide, so anything drawn would invite a click.
-            // Two different silences, which used to look identical and mean opposite things.
-            //
-            //   IGNORED   autonomy cannot use this square at all - a route button, a turntable, an
-            //             excluded page.  Washed out AND hatched: the hatching is what says "not
-            //             available", the way it does on any disabled control, and it survives being
-            //             read in greyscale.
-            //
-            //   FOLLOWER  ordinary track that takes its direction from the head of its run.  Washed
-            //             only, no hatching, because nothing is wrong with it - it is simply quiet,
-            //             and clicking it still works.
+            // Grey means one thing on this diagram: autonomy cannot use this square.  It used to mean
+            // that AND "this track follows another tile", which are unrelated, so a reader could not
+            // tell "you cannot set this" from "this is already set, over there".  Track that follows
+            // its run is now drawn plainly and simply carries no arrows of its own; the flash on the
+            // tile that changed is what points at where the answer lives.
             if (ignored)
             {
                 g.setComposite(java.awt.AlphaComposite.getInstance(
@@ -385,20 +367,6 @@ public class TileAnnotation
                 }
 
                 return;
-            }
-
-            // A follower: pushed back, still drawn on, still clickable.
-            if (muted)
-            {
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, MUTED_ALPHA));
-                g.setColor(Color.WHITE);
-                g.fillRect(0, 0, width, height);
-
-                // back to fully opaque for whatever is drawn next; the finally block restores the
-                // caller's own composite when this method returns
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, 1f));
             }
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
@@ -735,7 +703,7 @@ public class TileAnnotation
 
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
-            && ignored == other.ignored && muted == other.muted && marks.equals(other.marks);
+            && ignored == other.ignored && marks.equals(other.marks);
     }
 
     @Override
@@ -743,7 +711,7 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (muted ? 32 : 0);
+            + (ignored ? 16 : 0);
     }
 
     @Override

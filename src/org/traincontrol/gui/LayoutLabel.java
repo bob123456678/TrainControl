@@ -518,6 +518,30 @@ public final class LayoutLabel extends JLabel
      * @param highlight
      */
     /**
+     * Flashes this tile the same yellow the diagram uses when a route or the Central Station changes
+     * something.
+     *
+     * The same overlay and the same duration as that highlight, deliberately: it is the gesture a user
+     * of this application already reads as "look here", and inventing a second one - a border, say -
+     * both means something new to learn and disturbs the tile's own border, which in the editor is the
+     * grid line.
+     */
+    public void flashHighlight()
+    {
+        if (this.getIcon() == null) return;
+
+        final javax.swing.Icon restoreTo = this.getIcon();
+
+        this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) restoreTo));
+
+        javax.swing.Timer restore = new javax.swing.Timer(HIGHLIGHT_DURATION,
+            (event) -> this.setIcon(restoreTo));
+
+        restore.setRepeats(false);
+        restore.start();
+    }
+
+    /**
      * Sets what autonomy is showing on this square, repainting if it changed.
      *
      * Repaints here rather than through updateImage, which returns early unless the icon name changed -

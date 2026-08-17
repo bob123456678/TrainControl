@@ -883,7 +883,7 @@ public class AutonomySession
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB()),
-            false, false);
+            false);
     }
 
     /**

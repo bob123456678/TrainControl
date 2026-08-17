@@ -1186,8 +1186,9 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
-        // A tile that merely follows its run draws nothing of its own and is washed out, so the run
-        // reads as one decision made at one end rather than eleven waiting to be made.
+        // A tile that merely follows its run draws no arrows of its own, so the run reads as one
+        // decision made at one end rather than eleven waiting to be made.  It is NOT shaded: grey on
+        // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
         if (showDirections.isSelected() && session.getGraph() != null && !ignored && !follower)
@@ -1254,7 +1255,7 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), ignored, follower);
+            badgeFor(tile), ignored);
     }
 
     /**
