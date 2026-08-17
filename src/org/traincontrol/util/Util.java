@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
 import org.traincontrol.marklin.file.CS2File;
@@ -110,15 +111,51 @@ public class Util
 
         File target = new File(getBackupPath(intoName));
 
-        copyInto(source, target, failed);
+        copyInto(source, target, failed, new java.util.HashSet<String>(), 0);
 
         return failed;
     }
 
-    private static void copyInto(File source, File target, List<String> failed)
+    /**
+     * The deepest a backup will go.
+     *
+     * A guard against a directory tree that is not a tree.  The visited set below catches a junction
+     * that points at one of its own ancestors, which is the ordinary case; this catches the ones it
+     * cannot - a pair of junctions pointing at each other through paths that never repeat, and simply
+     * absurd nesting.  Recursion here runs on the backup thread, and a StackOverflowError there would
+     * take the whole backup down mid-copy.
+     */
+    private static final int MAX_BACKUP_DEPTH = 64;
+
+    private static void copyInto(File source, File target, List<String> failed,
+        Set<String> visited, int depth)
     {
         if (source.isDirectory())
         {
+            if (depth > MAX_BACKUP_DEPTH)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            // Followed once.  isDirectory follows junctions and symbolic links, so one pointing back up
+            // its own tree is an infinite walk that ends in a path too long to create - a spray of
+            // failures naming directories the user never made - or, with long paths enabled, in a stack
+            // overflow.  The real path is what tells two names for one directory apart.
+            String real;
+
+            try
+            {
+                real = source.getCanonicalPath();
+            }
+            catch (IOException e)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            if (!visited.add(real)) return;
+
             if (!target.isDirectory() && !target.mkdirs())
             {
                 failed.add(target.getPath());
@@ -135,7 +172,7 @@ public class Util
 
             for (File child : children)
             {
-                copyInto(child, new File(target, child.getName()), failed);
+                copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
             }
 
             return;
@@ -148,7 +185,10 @@ public class Util
         }
         catch (IOException e)
         {
-            failed.add(source.getName());
+            // The path, not just the name.  Two files called the same thing in different folders are
+            // one line each and indistinguishable, which is no use to somebody trying to find out what
+            // did not get backed up.
+            failed.add(source.getPath());
         }
     }
 

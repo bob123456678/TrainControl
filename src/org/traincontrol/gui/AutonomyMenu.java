@@ -137,6 +137,26 @@ public class AutonomyMenu extends JMenu
     {
         removeAll();
 
+        // Dropped, not kept.  It is only reassigned on the branch that builds the submenu, so after a
+        // rebuild that takes another branch it pointed at a JMenu no longer in this popup - and
+        // showPages then asked Swing to open a detached component.
+        lastPagesMenu = null;
+
+        // Nothing here while an editor has the diagram.
+        //
+        // Every item saves the setup or rebuilds the main window, and an open editor makes both unsafe:
+        // saving commits the edits that editor has not saved - so its Cancel then has nothing to take
+        // back - and the rebuild redraws the main diagram with the editor's edit flag still set on the
+        // shared page, after which every tile there tries to talk to a window that is not its parent.
+        if (ui.isLayoutEditorOpen())
+        {
+            JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+            busy.setEnabled(false);
+            add(busy);
+
+            return;
+        }
+
         final AutonomyViewerPanel actions = actions();
         AutonomySession session = ui.getAutonomySession();
 

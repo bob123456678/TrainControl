@@ -1970,7 +1970,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 editor.render();
                 editor.setAutonomyMode(session);
 
-                if (tile != null) editor.reveal(tile);
+                // Posted, twice over.  render() and setAutonomyMode both only QUEUE the work that
+                // builds the grid, so calling reveal here ran while the grid was still null and it
+                // returned without doing anything - every jump-to-a-finding landed on the right page
+                // and then left the user to find the square themselves, which is the whole thing the
+                // feature exists to avoid.
+                if (tile != null)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                        javax.swing.SwingUtilities.invokeLater(() -> editor.reveal(tile)));
+                }
             }
             catch (Exception e)
             {
@@ -2212,6 +2221,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Puts the window back the way a diagram edit leaves it, for the autonomy editor - which skips
      * layoutEditingComplete entirely and so never reached the restore that lives at its end.
      */
+    /**
+     * Whether a layout or autonomy editor currently has the diagram.
+     *
+     * The same question the Edit button answers, asked by anything that must not act while one is open.
+     * @return
+     */
+    public boolean isLayoutEditorOpen()
+    {
+        return editLayoutButton != null && !editLayoutButton.isEnabled();
+    }
+
     public void autonomyEditorClosed()
     {
         // reapplies the stored preference, which is what the diagram path does here too
@@ -2220,6 +2240,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editLayoutButton.setEnabled(true);
 
         repaintLayout();
+
+        // What the diagram SAYS, not only what it draws.  The banner is decided in one place and that
+        // place was never called from an editor closing - so somebody who opened the editor from "Fix
+        // it", fixed the last blocking problem and pressed Save came back to a banner still telling them
+        // the setup cannot run, with the count hidden underneath it.  Their fix appeared not to have
+        // taken.
+        refreshAutonomyPrompt();
     }
 
     /**
@@ -13131,10 +13158,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         new Thread(() ->
         {
-            this.backupDataMenuItem.setEnabled(false);
-            this.saveState(true);
-            this.model.saveState(true);
-
             // The track diagram and the autonomy setup beside it.
             //
             // Neither used to be backed up, which was defensible while the diagram lived on the Central
@@ -13144,15 +13167,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // only copy of them anywhere.
             List<String> unsaved = new java.util.ArrayList<>();
 
-            String localLayout = getLocalLayoutPath();
+            this.backupDataMenuItem.setEnabled(false);
 
-            if (localLayout != null && !localLayout.isEmpty())
+            // Given back whatever happens.  It is switched off so a second backup cannot start while
+            // one is running, and everything between here and the end of the try can throw - a full
+            // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
+            // back up again is to restart the application, and the user is not told why.
+            try
             {
-                unsaved.addAll(Util.backupFolder(new File(localLayout, "config"),
-                    prefixForBackup() + "layout"));
-            }
+                this.saveState(true);
+                this.model.saveState(true);
 
-            this.backupDataMenuItem.setEnabled(true);
+                String localLayout = getLocalLayoutPath();
+
+                if (localLayout != null && !localLayout.isEmpty())
+                {
+                    unsaved.addAll(Util.backupFolder(new File(localLayout, "config"),
+                        prefixForBackup() + "layout"));
+                }
+            }
+            catch (RuntimeException | StackOverflowError e)
+            {
+                unsaved.add(String.valueOf(e));
+
+                if (this.model != null && this.model.isDebug()) this.model.log(String.valueOf(e));
+            }
+            finally
+            {
+                this.backupDataMenuItem.setEnabled(true);
+            }
 
             // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
             // back to the working directory when the folder cannot be created, and naming the folder

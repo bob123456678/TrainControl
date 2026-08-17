@@ -2135,6 +2135,23 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
+        // How a file word maps to a type, handed to the component class so that its export can tell
+        // "still what was read" from "redrawn by the user" without owning a second copy of this table.
+        // The address is irrelevant to the question being asked - whether the word still means this type
+        // - and the two switch entries that depend on it agree for everything except a permanent
+        // crossing, which is a different type either way.
+        LayoutDiagramComponent.setFileWordMapping(word ->
+        {
+            try
+            {
+                return getComponentType(word, 1);
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        });
+
         List<Map<String, String>> index = this.parseLayoutIndex();
 
         List<String> names = new ArrayList<>();
@@ -2341,7 +2358,29 @@ public final class CS2File
                         // deleted from the user's diagram.
                         LayoutDiagramComponent added = layout.getComponent(x, y);
 
-                        if (added != null) added.setUnmodelledKeys(m);
+                        if (added != null)
+                        {
+                            added.setUnmodelledKeys(m);
+
+                            // And the file's own word for the type, plus its rotation exactly as given.
+                            // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
+                            // writing the canonical word back collapses every variant the file
+                            // distinguished, and the rotation of a semaphore signal is corrected on the
+                            // way in by a rule keyed on the word that has just been thrown away.
+                            Integer drehung = null;
+
+                            try
+                            {
+                                if (m.get("drehung") != null) drehung = Integer.valueOf(m.get("drehung"));
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                // not a number, so there is nothing to preserve - the export writes the
+                                // model's own orientation, which is what it did before this
+                            }
+
+                            added.setOriginalFileForm(m.get("typ"), drehung);
+                        }
                     }
                     else
                     {

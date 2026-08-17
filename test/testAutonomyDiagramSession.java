@@ -488,23 +488,36 @@ public class testAutonomyDiagramSession
     {
         LayoutDiagram page = pageOnDisk();
 
-        session.open(Arrays.asList(page));
-
         TileKey station = new TileKey("main", 1, 1);
         TileKey caption = new TileKey("main", 1, 2);
 
+        // Named first, so the migration below has something to attach the old label to
+        session.open(Arrays.asList(page));
         session.getStore().setStation(station, true);
         session.setPointName(station, "Bahnhof");
-        session.setCaption(caption, station);
+        session.save();
+
+        // A caption of the old kind, written into the diagram.  It is here so that the snapshot taken
+        // below is of a file this code demonstrably WRITES - the migration rewrites the page to strip
+        // the label - rather than of one nothing ever touches, where "unchanged" would be true whatever
+        // the rename did.
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertEquals(reopened.getCaptionTarget(caption), station,
+            "the fixture did not migrate, so the rest of this test means nothing");
 
         byte[] before = Files.readAllBytes(pageFile.toPath());
 
-        session.setPointName(station, "Hauptbahnhof");
+        reopened.setPointName(station, "Hauptbahnhof");
 
         assertEquals(Files.readAllBytes(pageFile.toPath()), before,
             "renaming a station rewrote the track diagram, which is the thing this design removes");
 
-        assertEquals(session.getCaptionTarget(caption), station,
+        assertEquals(reopened.getCaptionTarget(caption), station,
             "and the caption still points at the same station, without having been told its new name");
     }
 
@@ -629,5 +642,105 @@ public class testAutonomyDiagramSession
         page.setPageId("1");
 
         return page;
+    }
+
+    /**
+     * A caption on a blank square is still there after a save.
+     *
+     * placeCaption prefers blank space beside a platform - it is the most readable place there is - and
+     * the migration captions a square whose text it then empties, which removes that square from the
+     * layout file altogether.  Reconciling on "does this square hold a component" therefore deleted, on
+     * the very next save, both the captions the user had just placed and every caption the migration had
+     * just created.  A caption is about a station; the square it is drawn on need hold nothing.
+     */
+    @Test
+    public void testACaptionOnABlankSquareSurvivesASave() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        // 1,2 is blank: pageOnDisk draws track along row 1 only
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        session.save();
+
+        assertEquals(session.getCaptionTarget(caption), station,
+            "saving deleted a caption because its square carries no track");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertEquals(reopened.getCaptionTarget(caption), station, "and it is gone from disk too");
+    }
+
+    /**
+     * A caption is never filed outside the part of the page the diagram draws.
+     *
+     * getComponent answers null both for a blank square and for one off the edge, and the search for
+     * somewhere to put a caption read null as "free" - so a station against an edge had its caption
+     * filed one square outside the drawn area.  It showed in the editor, which pads its grid, and never
+     * on the running diagram; and the "this station is not shown anywhere" warning went quiet, because
+     * a caption did exist.
+     */
+    @Test
+    public void testACaptionIsNeverPlacedOutsideTheDrawnArea() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        // A station hard against the top-left of the drawn area, with its only neighbour to the east
+        page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+        page.checkBounds();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 0, 0);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Kopfbahnhof");
+
+        session.placeCaption(station);
+
+        for (TileKey where : session.getCaptions().keySet())
+        {
+            assertTrue(where.getX() >= page.getMinx() && where.getX() <= page.getMaxx()
+                    && where.getY() >= page.getMiny() && where.getY() <= page.getMaxy(),
+                "a caption at " + where + " is outside the area the diagram draws, so nothing shows it");
+        }
+    }
+
+    /**
+     * A label naming a station this setup has never heard of is left exactly where it is.
+     *
+     * Orphans are not drawn - that was the instruction - but not drawing one and deleting it from
+     * somebody\u2019s diagram are different acts.  The migration used to strip every "Point:" label it
+     * found, including the ones it could not match, so a label naming a station on a page left out of
+     * autonomy was destroyed on the strength of this program not currently looking at that page.
+     */
+    @Test
+    public void testAnUnrecognisedLabelIsLeftOnTheDiagram() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        page.addComponent(componentType.TEXT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "GhostSiding");
+
+        AutonomySession opened = new AutonomySession(layout);
+        opened.open(Arrays.asList(page));
+
+        assertNull(opened.getCaptionTarget(new TileKey("main", 3, 2)),
+            "a label naming nothing is not drawn as a caption");
+
+        assertEquals(page.getComponent(3, 2).getLabel(),
+            AutonomySession.STATION_LABEL_PREFIX + "GhostSiding",
+            "but it is still the user\u2019s text, and this program does not get to delete it");
     }
 }

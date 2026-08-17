@@ -732,6 +732,53 @@ public class LayoutDiagramComponent
     private Map<String, String> unmodelledKeys = null;
 
     /**
+     * The word the file used for this component, or null for one this program created.
+     *
+     * Kept for the same reason unmodelledKeys are: saving regenerates the page, and what the model
+     * cannot express it must not silently replace.  See exportToCS2TextFormat.
+     */
+    private String originalTyp;
+
+    /**
+     * The rotation exactly as the file gave it, before any correction this program applies on the way
+     * in.  Written back unchanged while the orientation has not been edited, so a correction cannot be
+     * applied twice - once when read and once more when read again after a save.
+     */
+    private Integer originalDrehung;
+
+    /**
+     * @param typ the file's own type word
+     * @param drehung the file's own rotation, or null if it gave none
+     */
+    public void setOriginalFileForm(String typ, Integer drehung)
+    {
+        this.originalTyp = typ;
+        this.originalDrehung = drehung;
+    }
+
+    /**
+     * Whether the given file word still maps to this component's type.  Set by the parser via
+     * setOriginalFileForm; null when nothing was read, in which case the canonical word is used.
+     */
+    private componentType getComponentTypeOf(String typ)
+    {
+        return typeOfFileWord == null ? null : typeOfFileWord.apply(typ);
+    }
+
+    /**
+     * How to turn a file word back into a type - supplied by the parser, which owns that mapping.
+     */
+    private static java.util.function.Function<String, componentType> typeOfFileWord;
+
+    /**
+     * @param mapping the parser's own typ-to-type function, so this class need not duplicate it
+     */
+    public static void setFileWordMapping(java.util.function.Function<String, componentType> mapping)
+    {
+        typeOfFileWord = mapping;
+    }
+
+    /**
      * @param keys the file's keys for this element, from which the ones this class models are dropped
      */
     public void setUnmodelledKeys(Map<String, String> keys)
@@ -783,14 +830,34 @@ public class LayoutDiagramComponent
             builder.append(" .id=0x").append(String.format("%x", this.x + (this.y << 8))).append("\n");
         }
         
-        // Add .typ
+        // Add .typ - the file's own word for it wherever this component still IS what was read.
+        //
+        // getComponentType is many-to-one and getTypeString is one word per type, so writing the
+        // canonical name back collapsed every variant the file distinguished: fifteen signal types
+        // became "signal", the four coloured lamps and the level crossing became "lampe", a CS3 double
+        // slip half became an ordinary switch.  Worse for signals, the parser subtracts one from the
+        // rotation of any type whose name contains "_f_" to correct the artwork - and the canonical
+        // name does not, so the correction was baked in and the signal came back turned a step.
+        //
+        // Only while the type is unchanged.  Once the user redraws the square in the diagram editor it
+        // is a different component and the canonical name is the honest one.
         if (this.type != componentType.TEXT)
         {
-            builder.append(" .typ=").append(getTypeString(this.type)).append("\n");
+            builder.append(" .typ=")
+                .append(originalTyp != null && getComponentTypeOf(originalTyp) == this.type
+                    ? originalTyp : getTypeString(this.type))
+                .append("\n");
         }
         
-        // Add .drehung only if orientation is not 0
-        if (this.orientation != 0)
+        // Add .drehung only if orientation is not 0 - or write back exactly what was read, where the
+        // orientation has not been touched.  See the note on typ above: the parser corrects the
+        // rotation of some signal types on the way in, and writing the corrected value back under a
+        // name that no longer triggers the correction turns the signal a step on every round trip.
+        if (originalDrehung != null && orientationMatchesFile())
+        {
+            builder.append(" .drehung=").append(originalDrehung.intValue()).append("\n");
+        }
+        else if (this.orientation != 0)
         {
             builder.append(" .drehung=").append(this.orientation).append("\n");
         }
@@ -828,14 +895,66 @@ public class LayoutDiagramComponent
         {
             for (Map.Entry<String, String> extra : this.unmodelledKeys.entrySet())
             {
-                builder.append(" .").append(extra.getKey()).append('=')
-                    .append(extra.getValue()).append("\n");
+                appendPreservedKey(builder, extra.getKey(), extra.getValue());
             }
         }
 
         return builder.toString().trim();
     }
     
+
+    /**
+     * Writes one key of an unmodelled element or block back in the syntax it was read in.
+     *
+     * The parser folds a CS2 array - a key line followed by " ..sub=value" lines - into ONE map entry
+     * holding "{a=b,c=d}|{e=f}".  Writing that back as a single " .key=..." line preserves the text and
+     * loses the syntax: the Central Station, and any parser including this one, would read it as a
+     * scalar whose value happens to contain braces.  Since the whole point of keeping unmodelled
+     * content is that a later firmware's file survives a round trip, the one shape most likely to BE a
+     * later firmware's is the one that must not be mangled.
+     *
+     * Unfolded back into the same shape it came from.  The parser used a HashMap for the entries, so
+     * their order within a group is already lost - what is restored is the structure, not the ordering.
+     *
+     * @param builder where the lines go
+     * @param key the key name, without its leading dot
+     * @param value the value as the parser left it
+     */
+    static void appendPreservedKey(StringBuilder builder, String key, String value)
+    {
+        int brace = value == null ? -1 : value.indexOf('{');
+
+        if (brace < 0 || !value.endsWith("}"))
+        {
+            builder.append(" .").append(key).append('=').append(value).append("\n");
+            return;
+        }
+
+        // Whatever preceded the first group was the key's own scalar value
+        String scalar = value.substring(0, brace);
+
+        builder.append(" .").append(key);
+
+        if (!scalar.isEmpty()) builder.append('=').append(scalar);
+
+        builder.append("\n");
+
+        for (String group : value.substring(brace).split("\\|"))
+        {
+            String inner = group.trim();
+
+            if (inner.startsWith("{")) inner = inner.substring(1);
+            if (inner.endsWith("}")) inner = inner.substring(0, inner.length() - 1);
+
+            if (inner.isEmpty()) continue;
+
+            for (String entry : inner.split(","))
+            {
+                if (!entry.isEmpty()) builder.append(" ..").append(entry).append("\n");
+            }
+        }
+    }
+
     /**
      * Converts the internal type to the Marklin format
      * @param type
@@ -995,6 +1114,24 @@ public class LayoutDiagramComponent
      * Odd addresses are controlled by the green button - used for uncouplers
      * @return 
      */
+    /**
+     * Whether this component's orientation is still the one the file's rotation produced.
+     *
+     * The parser turns some signal types by a step on the way in, so the stored orientation and the
+     * file's number legitimately differ; what matters is whether the user has changed it since.
+     */
+    private boolean orientationMatchesFile()
+    {
+        if (originalDrehung == null) return false;
+
+        if (originalTyp != null && originalTyp.contains("_f_"))
+        {
+            return this.orientation == Math.floorMod(originalDrehung - 1, 4);
+        }
+
+        return this.orientation == originalDrehung.intValue();
+    }
+
     public boolean isLogicalGreen()
     {
         return rawAddress % 2 != 0;

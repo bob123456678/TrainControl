@@ -290,8 +290,8 @@ public class LayoutDiagram
                 {
                     if ("_type".equals(entry.getKey())) continue;
 
-                    builder.append(" .").append(entry.getKey()).append('=')
-                        .append(entry.getValue()).append("\n");
+                    LayoutDiagramComponent.appendPreservedKey(builder, entry.getKey(),
+                        entry.getValue());
                 }
             }
         }
@@ -322,8 +322,7 @@ public class LayoutDiagram
 
             for (Map.Entry<String, String> entry : element.entrySet())
             {
-                builder.append(" .").append(entry.getKey()).append('=')
-                    .append(entry.getValue()).append("\n");
+                LayoutDiagramComponent.appendPreservedKey(builder, entry.getKey(), entry.getValue());
             }
         }
 

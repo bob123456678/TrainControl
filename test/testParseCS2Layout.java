@@ -533,4 +533,72 @@ public class testParseCS2Layout
 
         return parsed.get(0).exportToCS2TextFormat();
     }
+
+    /**
+     * A signal keeps the exact type and rotation the file gave it.
+     *
+     * The type mapping is many-to-one - fifteen signal words all become SIGNAL - while the export wrote
+     * one canonical word back, so every variant the file distinguished collapsed the first time a page
+     * was saved.  Worse for a semaphore: the parser turns any type whose word contains "_f_" by a
+     * quarter to correct the artwork, and "signal" does not contain it, so the correction was baked into
+     * the file and the signal came back turned a step further on every save.
+     *
+     * Autonomy saved pages unasked during its migration, so this was not a theoretical round trip.
+     */
+    @Test
+    public void testASignalKeepsItsExactTypeAndRotation() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("signal_f_hp01"),
+            "the file said which kind of signal, and only the file knows:\n" + written);
+
+        assertTrue(written.contains(".drehung=1"),
+            "the rotation must come back as it went in, or it creeps a quarter every save:\n" + written);
+    }
+
+    /**
+     * An element carrying a CS2 array comes back as an array, not as one line with braces in it.
+     *
+     * The parser folds a key and its " ..sub=value" lines into a single map entry holding
+     * "{a=b}|{c=d}".  Writing that back as one " .key=..." line keeps the text and loses the shape - a
+     * parser would read it as a scalar that happens to contain braces.  The whole reason unmodelled
+     * content is kept is that a later firmware\u2019s file should survive a round trip, and this is the
+     * shape most likely to BE a later firmware\u2019s.
+     */
+    @Test
+    public void testAnArrayInAnUnmodelledElementKeepsItsShape() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x202\n"
+            + " .typ=weltraumbahnhof\n"
+            + " .artikel=7\n"
+            + " .plan\n"
+            + " ..gleis=3\n"
+            + " ..bahnsteig=b\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains(" ..gleis=3"),
+            "an array entry has to come back as an array entry:\n" + written);
+
+        assertTrue(written.contains(" ..bahnsteig=b"), "both of them:\n" + written);
+
+        assertFalse(written.contains("{gleis"),
+            "and not as the brace form the parser folds them into:\n" + written);
+    }
 }

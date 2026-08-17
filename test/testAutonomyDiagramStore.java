@@ -169,25 +169,20 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * The last configuration cannot be deleted: a setup with no configuration is a state nothing in the
-     * UI could act on.
+     * Deleting the configuration that is running leaves another one running.
+     *
+     * This used to also assert that the LAST one could not be deleted, which is no longer true: refusing
+     * it made setting autonomy up a one-way door, so a layout somebody had experimented on kept a
+     * configuration for ever.  What survives is the half that still holds - the store must never be
+     * left pointing at something it has just deleted.  The empty case is testTheLastConfigurationMayBeDeleted.
      */
     @Test
-    public void testTheLastConfigurationCannotBeDeleted() throws IOException
+    public void testDeletingTheRunningConfigurationLeavesAnotherRunning() throws IOException
     {
         store.createConfiguration("Only", null);
-
-        try
-        {
-            store.deleteConfiguration("Only");
-            fail("deleting the last configuration should be refused");
-        }
-        catch (IOException expected)
-        {
-            assertTrue(expected.getMessage().contains("autosetup"));
-        }
-
         store.createConfiguration("Second", "Only");
+
+        store.setActiveConfiguration("Only");
         store.deleteConfiguration("Only");
 
         assertEquals(store.getConfigurationNames().size(), 1);
@@ -591,6 +586,38 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A caption made after a LOAD survives the next save.
+     *
+     * The round trip that matters, and the one the save-then-load test above cannot reach: a store that
+     * has read a file keeps every field it does not recognise, and writes them back last so an older
+     * TrainControl cannot delete a newer one\u2019s work.  Leave "captions" off the list of fields this
+     * version knows about and that mechanism eats it - the stale copy read at load is written over the
+     * caption made since.  Every real session is load, edit, save; only a brand new setup is not.
+     */
+    @Test
+    public void testACaptionMadeAfterALoadSurvivesTheNextSave() throws IOException
+    {
+        TileKey caption = new TileKey("main", 4, 5);
+        TileKey station = new TileKey("main", 4, 4);
+
+        // a setup that already exists, so the next store has something to read
+        store.setPointName(station, "Bahnhof");
+        store.save();
+
+        AutonomyCompanionStore second = new AutonomyCompanionStore(layout);
+        second.load();
+
+        second.setCaption(caption, station);
+        second.save();
+
+        AutonomyCompanionStore third = new AutonomyCompanionStore(layout);
+        third.load();
+
+        assertEquals(third.getCaptionTarget(caption), station,
+            "a caption made after a load must still be on disk after the save that followed it");
+    }
+
+    /**
      * One square holds one caption, and one station may be captioned in several places.
      *
      * The second half is deliberate rather than tolerated: a long platform is legitimately labelled at
@@ -630,6 +657,10 @@ public class testAutonomyDiagramStore
         TileKey station = new TileKey("main", 4, 4);
 
         store.setCaption(caption, station);
+
+        // Asserted before reconciling, so that the two assertNulls below cannot pass by the caption
+        // never having existed - which is how a test of an absence quietly stops testing anything.
+        assertEquals(store.getCaptionTarget(caption), station, "the fixture did not set the caption");
 
         // the sensor is deleted from the diagram, its caption square is not
         store.reconcile(new LinkedHashSet<>(java.util.Arrays.asList(caption)));

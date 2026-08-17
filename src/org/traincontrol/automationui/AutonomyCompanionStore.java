@@ -381,6 +381,20 @@ public class AutonomyCompanionStore
         return pointNames.get(tile.toString());
     }
 
+    /**
+     * Every square somebody has named, by its key.
+     *
+     * Needed by anything that has to find a station by NAME across the whole layout rather than across
+     * the reduction - the reduction omits excluded pages, so asking it makes a station on one of those
+     * look as though it does not exist.
+     *
+     * @return an unmodifiable view
+     */
+    public Map<String, String> getPointNames()
+    {
+        return Collections.unmodifiableMap(pointNames);
+    }
+
     public void setPointName(TileKey tile, String name)
     {
         if (name == null || name.trim().isEmpty())
@@ -669,11 +683,23 @@ public class AutonomyCompanionStore
      */
     public void deleteConfiguration(String name) throws IOException
     {
-        if (configurations.remove(name) == null) return;
+        if (!configurations.containsKey(name)) return;
 
+        // The FILE decides, because the file is what comes back.
+        //
+        // load() rebuilds the list by scanning the folder rather than from setup.json, so a file that
+        // could not be deleted - held open by a sync client, which this project lives under - returned
+        // next session as though nothing had happened, and would even reappear inside a setup created
+        // later.  Refusing here keeps what is in memory and what is on disk saying the same thing, and
+        // tells the user which is which.
         File file = configurationFile(name);
 
-        if (file.isFile()) file.delete();
+        if (file.isFile() && !file.delete())
+        {
+            throw new IOException(file.getName());
+        }
+
+        configurations.remove(name);
 
         if (name.equals(activeConfiguration))
         {
@@ -1021,9 +1047,21 @@ public class AutonomyCompanionStore
 
     // --- internals --------------------------------------------------------------------------------
 
+    /**
+     * Every shared field this version writes.
+     *
+     * A field NOT listed here is treated as something a newer TrainControl wrote, kept aside on load and
+     * written back on save so an older version does not delete it.  That makes an omission from this
+     * list quietly destructive rather than merely untidy: the stale copy is written after the real one,
+     * so every edit to that field since the load is reverted the moment anything saves.
+     *
+     * "captions" was missing, and it cost exactly that - the migration recorded the captions, saved,
+     * had them overwritten with the empty copy read a moment earlier, and then stripped the labels they
+     * had been migrated from.  Anything added to save() has to be added here in the same breath.
+     */
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "portals", "linkNames", "excludedPages", "disabledLinks", "pages"));
+        "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
 
     private void clear()
     {
@@ -1296,13 +1334,38 @@ public class AutonomyCompanionStore
      * @param existing every square the diagram still has
      * @return the caption squares that were dropped
      */
+    /**
+     * A caption goes when the STATION it is about is gone, and not before.
+     *
+     * The square the text sits on is deliberately not required to hold anything.  A caption is drawn by
+     * autonomy on whatever square it names - placeCaption prefers blank space beside a platform, which
+     * is the most readable place of all - and the migration puts one on a square whose text label it
+     * then empties, which makes that square vanish from the layout file entirely.  Requiring the caption
+     * square to host a component therefore deleted, on the very next save, both the captions the user
+     * had just placed and every caption the migration had just created.
+     *
+     * The page still has to exist: a caption on a page somebody deleted is about a diagram that is gone.
+     */
     private List<String> reconcileCaptions(Set<String> existing)
     {
+        Set<String> pagesLeft = new LinkedHashSet<>();
+
+        for (String key : existing)
+        {
+            TileKey tile = parseTileKey(key);
+
+            if (tile != null) pagesLeft.add(tile.getPage());
+        }
+
         List<String> dropped = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : new LinkedHashMap<>(captions).entrySet())
         {
-            if (existing.contains(entry.getKey()) && existing.contains(entry.getValue())) continue;
+            TileKey where = parseTileKey(entry.getKey());
+
+            boolean pageLeft = where != null && pagesLeft.contains(where.getPage());
+
+            if (pageLeft && existing.contains(entry.getValue())) continue;
 
             captions.remove(entry.getKey());
             dropped.add(entry.getKey());

@@ -357,6 +357,15 @@ public class AutonomySession
         {
             TileKey at = neighbour(tile, side);
 
+            // Inside the part of the page the running diagram DRAWS, which is the box around its
+            // components rather than the whole grid.  getComponent cannot tell us: it answers null both
+            // for a blank square and for one off the edge, and this loop reads null as "free".  So a
+            // station against an edge had its caption filed one square outside the drawn area - shown
+            // in the editor, which pads the grid, and never shown on the diagram, while the "not shown
+            // anywhere" warning went quiet because a caption did exist.
+            if (at.getX() < page.getMinx() || at.getY() < page.getMiny()) continue;
+            if (at.getX() > page.getMaxx() || at.getY() > page.getMaxy()) continue;
+
             if (page.getComponent(at.getX(), at.getY()) != null) continue;
 
             if (store.getCaptionTarget(at) != null) continue;
@@ -520,6 +529,17 @@ public class AutonomySession
         {
             for (LayoutDiagramComponent component : entry.getValue())
             {
+                // Only the ones that became a caption.  A label naming a station this setup has never
+                // heard of is left exactly where it is: stripping it would delete the only record that
+                // it ever existed, on the strength of this program not recognising a name - and the
+                // author's instruction to drop orphans was about not DRAWING them, not about editing
+                // somebody's diagram to remove them.
+                String was = component.getLabel();
+
+                if (was == null || !was.startsWith(STATION_LABEL_PREFIX)) continue;
+
+                if (tileNamed(was.substring(STATION_LABEL_PREFIX.length())) == null) continue;
+
                 // Emptied, which is how a text square stops existing: the exporter does not write a TEXT
                 // element with no text.  Anything the file said about that square which this program
                 // cannot model is still written, so emptying it is not the same as deleting the line.
@@ -544,11 +564,22 @@ public class AutonomySession
      */
     private TileKey tileNamed(String name)
     {
-        if (name == null || reducer == null) return null;
+        if (name == null) return null;
 
-        for (TileKey tile : reducer.getPoints().keySet())
+        // Every named square, not only the ones the reduction has Points for.
+        //
+        // The reduction is built without the excluded pages, so a label naming a station on one of them
+        // matched nothing - and the migration then stripped the label anyway, which is the loss twice
+        // over: the caption was never recorded and the label it came from is gone.  Excluding a page has
+        // to be reversible, and this is the one place that quietly was not.
+        for (Map.Entry<String, String> entry : store.getPointNames().entrySet())
         {
-            if (name.equals(store.getPointName(tile))) return tile;
+            if (name.equals(entry.getValue()))
+            {
+                TileKey tile = AutonomyCompanionStore.parseTileKey(entry.getKey());
+
+                if (tile != null) return tile;
+            }
         }
 
         return null;
@@ -1191,7 +1222,23 @@ public class AutonomySession
 
             for (Side arrival : arrivals)
             {
-                Set<Side> onwards = new LinkedHashSet<>(departures);
+                // The track the train is standing on, not every side the square has.
+                //
+                // The builder asks this question through the arriving ROUTE, and hands the answer here
+                // when it decides to emit a Point with no way out - so asking it a different way meant
+                // the one case the builder explicitly delegates could go unreported: a double curve
+                // whose one track dead-ends while the other carries traffic looked fine, because the
+                // other curve's departures counted as somewhere to go.
+                Set<Side> onwards = new LinkedHashSet<>();
+
+                for (TileGraph.Exit exit : graph.exits(tile, arrival))
+                {
+                    if (exit.getSide() != null && departures.contains(exit.getSide()))
+                    {
+                        onwards.add(exit.getSide());
+                    }
+                }
+
                 onwards.remove(arrival);
 
                 if (onwards.isEmpty()) trapped.add(tile);
