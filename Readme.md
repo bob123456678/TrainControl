@@ -371,6 +371,7 @@ Tab icons provided by Freepik.
         - Fixed bug where capturing commands into a route that drives more than one locomotive kept only the last one.  Capturing a turnout would make an earlier locomotive’s speed, direction, or function disappear from the middle of the command list, and saving kept the shortened route
     - Track Diagram Bug Fixes
         - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
+        - Fixed bug where two track diagram pages sharing the same name were treated as one, so only one of them appeared in the page list and was kept when the layout was downloaded from the Central Station
 
 * v2.8.0 [8/2/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
