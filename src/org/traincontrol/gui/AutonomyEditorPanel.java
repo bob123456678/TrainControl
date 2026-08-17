@@ -714,9 +714,30 @@ public class AutonomyEditorPanel extends JPanel
             // usually both - autonomy leaves it alone AND trains reverse in it - and that combination
             // used to be unauthorable, because it meant a terminus and a reversing flag on one Point,
             // which the model refuses in either order.
-            menu.add(toggle(I18n.t("autosetup.ui.menuCanReverse"),
-                "autosetup.ui.hintCanReverse", session.isTurnAround(target),
-                on -> session.setPointFlag(target, AutonomyBuilder.CAN_REVERSE, on)));
+            // Three answers, because "may" and "must" are different railways.  May leaves the plain
+            // copies, so a train can pass straight through and the path finder chooses; must leaves
+            // only the turning ones, so every arrival turns.  On a dead end they are the same thing.
+            javax.swing.JMenu turning = new javax.swing.JMenu(
+                I18n.t("autosetup.ui.menuTurningGroup"));
+
+            javax.swing.ButtonGroup turns = new javax.swing.ButtonGroup();
+
+            boolean must = session.isMustTurnAround(target);
+            boolean may = session.isTurnAround(target) && !must;
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
+                "autosetup.ui.hintTurnNever", !may && !must,
+                () -> setTurning(target, false, false)));
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMay"),
+                "autosetup.ui.hintCanReverse", may,
+                () -> setTurning(target, true, false)));
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMust"),
+                "autosetup.ui.hintTurnMust", must,
+                () -> setTurning(target, true, true)));
+
+            menu.add(turning);
 
             menu.addSeparator();
 
@@ -1262,6 +1283,19 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         return menuItem;
+    }
+
+    /**
+     * Applies the turning answer, keeping the two stored flags in step.
+     *
+     * Both are cleared and only what is meant is written, rather than leaving "may" set underneath
+     * "must" - two flags describing one choice will disagree the first time only one of them is
+     * updated, and then the square says two things.
+     */
+    private void setTurning(TileKey tile, boolean may, boolean must)
+    {
+        session.setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, may && !must);
+        session.setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, must ? Boolean.TRUE : null);
     }
 
     /**

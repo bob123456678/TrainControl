@@ -126,6 +126,16 @@ public class AutonomyBuilder
      * Emitted as `reversing`, which is the model's word for a station autonomy will never choose and
      * cannot route a train through.  Also never emitted under its own name.
      */
+    /**
+     * The authored key that marks a square where a train has NO choice but to turn round.
+     *
+     * The difference from CAN_REVERSE is whether the plain copies are emitted at all.  "May" leaves
+     * them, so a train can pass straight through and the path finder picks; "must" leaves only the
+     * turning ones, so every arrival turns.  On a dead end the two are the same thing, because the
+     * plain copy would have nowhere to go.
+     */
+    public static final String MUST_REVERSE = "mustReverse";
+
     public static final String AUTO_DESTINATION = "autoDestination";
 
     /**
@@ -155,6 +165,9 @@ public class AutonomyBuilder
     // are otherwise ordinary: a route the user picks reaches them, Return Home fills them, and trains
     // may run through them if the track allows.  Nothing about them stops a split.
     private Set<TileKey> manualOnly = Collections.emptySet();
+
+    // Squares where turning round is not optional: only the turning copies are emitted.
+    private Set<TileKey> mandatory = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
     // rest - keyed by TileKey.toString().  See withPointExtras.
@@ -226,6 +239,18 @@ public class AutonomyBuilder
      * @param tiles the marked tiles, or null for none
      * @return this
      */
+    /**
+     * The squares where every arriving train must turn round.
+     *
+     * @param tiles the marked tiles, or null for none
+     * @return this
+     */
+    public AutonomyBuilder withMandatoryTurns(Set<TileKey> tiles)
+    {
+        this.mandatory = tiles == null ? Collections.<TileKey>emptySet() : tiles;
+        return this;
+    }
+
     public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
     {
         this.manualOnly = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -270,9 +295,15 @@ public class AutonomyBuilder
             return out;
         }
 
+        boolean must = mandatory.contains(tile);
+
         for (TilePorts.Side side : sides)
         {
-            out.add(new Node(tile, side, false));
+            // The plain copy is what lets a train pass straight through.  Where turning is compulsory
+            // it is simply not emitted, so there is nothing for the path finder to choose instead -
+            // which is the whole difference between "may turn round here" and "must".
+            if (!must) out.add(new Node(tile, side, false));
+
             out.add(new Node(tile, side, true));
         }
 

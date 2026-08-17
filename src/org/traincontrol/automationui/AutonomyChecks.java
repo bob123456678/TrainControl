@@ -127,6 +127,7 @@ public class AutonomyChecks
     public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
     public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
     public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
+    public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
 
     private AutonomyChecks()
     {
@@ -165,6 +166,16 @@ public class AutonomyChecks
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
         Set<String> labelledStations)
     {
+        return run(graph, reducer, termini, labelledStations, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param mayTurnOnDeadEnd squares set to "trains MAY change direction here" that have only one way
+     *        in, where the choice cannot mean anything
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<String> labelledStations, Set<TileKey> mayTurnOnDeadEnd)
+    {
         List<Finding> findings = new ArrayList<>();
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
@@ -183,6 +194,7 @@ public class AutonomyChecks
         }
 
         findings.addAll(checkNames(reducer));
+        findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
         findings.addAll(checkStations(reducer, termini));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
@@ -239,6 +251,29 @@ public class AutonomyChecks
                 point.isStation() ? Severity.WARNING : Severity.NOTICE,
                 point.isStation() ? UNNAMED_STATION : UNNAMED_POINT,
                 String.valueOf(point.getTile()), point.getTile()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * "May change direction" where there is nowhere else to go.
+     *
+     * A square with one way in cannot offer the choice the word "may" describes: there is no straight
+     * on to carry on to, so every train turns whatever the setting says.  Worth saying because the
+     * setting reads as a choice the user has made and is not one - and because if they wanted the
+     * choice, the square is not the one they think it is.
+     */
+    private static List<Finding> checkTurning(GraphReducer reducer, Set<TileKey> mayTurnOnDeadEnd)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : mayTurnOnDeadEnd)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 
         return findings;

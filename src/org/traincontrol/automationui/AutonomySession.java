@@ -438,6 +438,7 @@ public class AutonomySession
         return new AutonomyBuilder(reducer, globals())
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
+            .withMandatoryTurns(mandatoryTurnTiles())
             .withParkingTiles(parkingTiles())
             .build();
     }
@@ -488,6 +489,7 @@ public class AutonomySession
             baseNames = reducer == null ? new LinkedHashMap<String, String>()
                 : new AutonomyBuilder(reducer, null)
                     .withReversibleTiles(reversibleTiles())
+                    .withMandatoryTurns(mandatoryTurnTiles())
                     .withParkingTiles(parkingTiles()).baseNames();
         }
 
@@ -575,8 +577,38 @@ public class AutonomySession
      * @param tile
      * @return
      */
+    /**
+     * Whether every train arriving here must turn round, rather than merely being able to.
+     * @param tile
+     * @return
+     */
+    public boolean isMustTurnAround(TileKey tile)
+    {
+        return Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.MUST_REVERSE));
+    }
+
+    /**
+     * The squares where turning round is compulsory.
+     * @return
+     */
+    public Set<TileKey> mandatoryTurnTiles()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (reducer == null) return out;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (isMustTurnAround(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
     public boolean isTurnAround(TileKey tile)
     {
+        if (isMustTurnAround(tile)) return true;
+
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
 
         // a terminus was always "a station where trains turn round"
@@ -664,6 +696,7 @@ public class AutonomySession
         return new AutonomyBuilder(reducer, globals())
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
+            .withMandatoryTurns(mandatoryTurnTiles())
             .withParkingTiles(parkingTiles())
             .withCoordinatesFromTiles(pageOrder).build();
     }
@@ -737,7 +770,8 @@ public class AutonomySession
         Set<TileKey> split = reversibleTiles();
 
         tilesByName.putAll(new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(split).withParkingTiles(parkingTiles()).tilesByName());
+            .withReversibleTiles(split).withMandatoryTurns(mandatoryTurnTiles())
+            .withParkingTiles(parkingTiles()).tilesByName());
 
         org.json.JSONObject points = new org.json.JSONObject();
 
@@ -875,7 +909,28 @@ public class AutonomySession
             if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        return AutonomyChecks.run(graph, reducer, termini, getLabelledStationNames());
+        // "May turn round here" on a square with one way in cannot mean what it says: there is no
+        // straight on to carry on to, so every train turns whatever the setting.
+        Set<TileKey> pointless = new LinkedHashSet<>();
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (!isTurnAround(tile) || isMustTurnAround(tile)) continue;
+
+            Set<Side> arrivals = new LinkedHashSet<>();
+
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
+                {
+                    arrivals.add(edge.getEntrySide());
+                }
+            }
+
+            if (arrivals.size() < 2) pointless.add(tile);
+        }
+
+        return AutonomyChecks.run(graph, reducer, termini, getLabelledStationNames(), pointless);
     }
 
     /**

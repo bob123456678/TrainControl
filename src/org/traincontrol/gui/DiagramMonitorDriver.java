@@ -83,6 +83,7 @@ public class DiagramMonitorDriver
         // monitor has never heard of, and the overlay stops drawing at exactly the squares that matter.
         AutonomyBuilder builder = new AutonomyBuilder(reducer, null)
             .withReversibleTiles(session.reversibleTiles())
+            .withMandatoryTurns(session.mandatoryTurnTiles())
             .withParkingTiles(session.parkingTiles());
 
         Map<String, TileKey> names = builder.tilesByName();
