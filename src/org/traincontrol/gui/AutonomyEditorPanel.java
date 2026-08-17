@@ -19,6 +19,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
+import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
@@ -560,12 +561,12 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.addSeparator();
 
-            // Station, and underneath it the two questions that only mean anything once a sensor is
-            // one.  A terminus is a KIND of station and a parking berth is a station autonomy will not
-            // pick for itself; offering all three as peers invited combinations - terminus but not a
-            // station - that describe nothing on a railway.  The heading carries the answer so it can
-            // be read without opening.
+            // Three switches, and only three: is this a station, may trains turn round here, and - if
+            // it is a station - is it a berth trains are only ever sent to on purpose.  Terminus and
+            // reversing are gone from the UI entirely; they are what these get COMPILED to, and having
+            // both vocabularies on one menu let a square be told two contradictory things.
             final boolean isStation = session.getStore().isStation(target);
+            final boolean isParking = session.isParking(target);
 
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(
                 I18n.f("autosetup.ui.menuStationGroup", stationSummary(target, isStation)));
@@ -575,66 +576,41 @@ public class AutonomyEditorPanel extends JPanel
 
             stationMenu.addSeparator();
 
-            // Terminus and reversing are mutually exclusive - Point itself refuses to hold both, in
-            // either order - so setting one clears the other rather than letting the user build a
-            // combination that would be rejected the moment it was loaded.
-            javax.swing.JCheckBoxMenuItem terminus = toggle(I18n.t("autosetup.ui.menuTerminus"),
-                "autolayout.ui.tooltip.TerminusStation", flag(target, "terminus"),
-                on ->
-                {
-                    session.setPointProperty(target, "terminus", on ? Boolean.TRUE : null);
-
-                    if (on) session.setPointProperty(target, "reversing", null);
-                });
+            // Parking compiles to a reversing station: autonomy never chooses one and cannot route a
+            // train through it, but a route picked by hand still reaches it, and so does Return Home.
+            javax.swing.JCheckBoxMenuItem parking = toggle(I18n.t("autosetup.ui.menuParking"),
+                "autosetup.ui.hintParking", isParking,
+                on -> session.setPointFlag(target, AutonomyBuilder.PARKING, on));
 
             // Greyed rather than hidden, so the shape of the choice stays visible: somebody looking for
-            // "terminus" finds it, sees it is unavailable, and can tell why from the item above it.
-            terminus.setEnabled(isStation);
+            // it finds it, sees it is unavailable, and can tell why from the item above.
+            parking.setEnabled(isStation);
 
-            stationMenu.add(terminus);
+            stationMenu.add(parking);
 
             menu.add(stationMenu);
 
-            // Active is back out here as its own item, and always available.  Folding it into the
-            // Station submenu as "use only as a parking berth" made disabling an ordinary station
-            // impossible to find and impossible to reach on a point that is not a station at all - the
-            // graph menu had it on every point, and this is the same setting under the same name.
-            // Parking is what an INACTIVE station is called; the tooltip says so, and the Station
-            // heading still reports it, but the switch itself stays where it has always been.
+            // Turning round, on any square.  Disabled while parking is on because a berth turns its
+            // trains round by definition - and because asking for both would emit a terminus AND a
+            // reversing flag on one Point, which the model refuses in either order, failing the whole
+            // configuration rather than this one square.
+            javax.swing.JCheckBoxMenuItem turnAround = toggle(
+                I18n.t("autosetup.ui.menuCanReverse"),
+                isParking ? "autosetup.ui.hintParkingTurnsRound" : "autosetup.ui.hintCanReverse",
+                isParking || session.isTurnAround(target),
+                on -> session.setPointFlag(target, AutonomyBuilder.CAN_REVERSE, on));
+
+            turnAround.setEnabled(!isParking);
+
+            menu.add(turnAround);
+
+            // Active is its own switch on every point, as the graph menu had it.  It is the only way to
+            // say "not this session" without also changing what a train does on arrival - which is what
+            // parking would do instead, and they are not the same statement.
             menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
-                "autosetup.ui.hintParking",
+                "autolayout.ui.tooltip.Active",
                 !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
                 on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
-
-            // "Can turn round here" - the same act a terminus performs, on a square that is not a
-            // station.  It is emitted as two Points sharing the s88, one going on and one coming back,
-            // so a siding that trails off behind this square becomes reachable without every passing
-            // train reversing.  A station says the same thing by being marked a terminus, so this is
-            // offered only where that one is not.
-            if (!isStation)
-            {
-                menu.add(toggle(I18n.t("autosetup.ui.menuCanReverse"),
-                    "autosetup.ui.hintCanReverse",
-                    flag(target, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE),
-                    on -> session.setPointProperty(target,
-                        org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE,
-                        on ? Boolean.TRUE : null)));
-            }
-
-            // A reversing sensor is not a station - it is a place a train turns round and carries on -
-            // so it stays out here rather than under Station, where it would read as a kind of one.
-            //
-            // Kept alongside "can turn round here", which it is NOT the same as: this one makes every
-            // train that passes reverse and takes the square out of autonomy's list of destinations
-            // for good.  That is still the right answer for a headshunt nothing should ever stop at.
-            menu.add(toggle(I18n.t("autosetup.ui.menuReversing"),
-                "autolayout.ui.tooltip.ReversingPoint", flag(target, "reversing"),
-                on ->
-                {
-                    session.setPointProperty(target, "reversing", on ? Boolean.TRUE : null);
-
-                    if (on) session.setPointProperty(target, "terminus", null);
-                }));
 
             menu.addSeparator();
 
@@ -1017,18 +993,10 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (!isStation) return I18n.t("autosetup.ui.stationNo");
 
-        java.util.List<String> parts = new java.util.ArrayList<>();
+        if (session.isParking(tile)) return I18n.t("autosetup.ui.stationParking");
 
-        if (flag(tile, "terminus")) parts.add(I18n.t("autosetup.ui.stationTerminus"));
-
-        if (Boolean.FALSE.equals(session.getPointProperty(tile, "active")))
-        {
-            parts.add(I18n.t("autosetup.ui.stationParking"));
-        }
-
-        if (parts.isEmpty()) return I18n.t("autosetup.ui.stationYes");
-
-        return String.join(", ", parts);
+        return I18n.t(session.isTurnAround(tile)
+            ? "autosetup.ui.stationTerminus" : "autosetup.ui.stationYes");
     }
 
     private void setStation(TileKey tile, boolean on)
@@ -1078,54 +1046,6 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /**
-     * The three answers for one route, with the two one-way options named by where they lead rather
-     * than by an A and a B nobody can see.
-     */
-    private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
-        org.traincontrol.automationui.TilePorts.Route route)
-    {
-        List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
-
-        Direction current = session.getGraph().getDirection(tile, routeId);
-
-        items.add(directionItem(tile, routeId, Direction.BOTH,
-            I18n.t("autosetup.ui.menuRouteBoth"), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
-        items.add(directionItem(tile, routeId, Direction.NONE,
-            I18n.t("autosetup.ui.menuRouteNone"), current));
-
-        return items;
-    }
-
-    private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
-        final Direction direction, String text, Direction current)
-    {
-        javax.swing.JRadioButtonMenuItem item =
-            new javax.swing.JRadioButtonMenuItem(text, direction == current);
-
-        item.addActionListener(e ->
-        {
-            // Set on the run, not the tile: a run of plain track has one direction, and setting it a
-            // tile at a time is both busywork and a way to end up with a run that contradicts itself.
-            if (session.setRunDirection(tile, routeId, direction) == 0)
-            {
-                say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-            }
-
-            refresh();
-        });
-
-        return item;
-    }
-
-    private boolean flag(TileKey tile, String key)
-    {
-        return Boolean.TRUE.equals(session.getPointProperty(tile, key));
-    }
 
     private Set<String> strings(TileKey tile, String key)
     {
@@ -1978,7 +1898,23 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), isDimmed(tile), isCurved(tile));
+            badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile));
+    }
+
+    /**
+     * Whether this square is a link that has been paired with another.
+     *
+     * Unpaired links are left alone: a two-way door drawn on one that leads nowhere would promise a
+     * route that does not exist, and the missing pairing already has a finding of its own.
+     */
+    private boolean isPairedPortal(TileKey tile)
+    {
+        LayoutDiagramComponent component =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        return component != null
+            && org.traincontrol.automationui.TilePorts.hasPortal(component.getType())
+            && session.getStore().getPortalPartner(tile) != null;
     }
 
     /**
@@ -2025,11 +1961,20 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = firstRoute(tile);
 
+        boolean station = session.getStore().isStation(tile);
+
+        // Read off the three switches, not off the flags they compile to: those are derived at build
+        // time now and are never authored, so reading them would leave every badge blank.  A station
+        // that turns trains round wears the terminus badge and anything else that does wears the
+        // reversing one, which is what each COMPILES to and what the graph window drew.
+        boolean turns = session.isTurnAround(tile);
+
         return new org.traincontrol.automationui.TileAnnotation.Badge(
-            session.getStore().isStation(tile),
-            flag(tile, "terminus"),
-            flag(tile, "reversing"),
-            Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
+            station,
+            station && turns,
+            !station && turns,
+            Boolean.FALSE.equals(session.getPointProperty(tile, "active"))
+                || session.isParking(tile),
             name != null && !name.trim().isEmpty(),
             route == null ? null : route.getA(),
             route == null ? null : route.getB());

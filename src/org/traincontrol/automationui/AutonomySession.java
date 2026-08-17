@@ -247,8 +247,14 @@ public class AutonomySession
      * The per-point keys a configuration owns: everything operational parseAuto accepts on a point.
      * Structural keys (name, station, s88, coordinates) belong to the reduction and are not here.
      */
+    /**
+     * Terminus and reversing are deliberately absent: both are DERIVED from the three switches at build
+     * time, so the running graph carries the builder's answer rather than the user's.  Capturing one
+     * would write "reversing" onto the square somebody marked "trains can turn round here", and the
+     * next build would then reverse every train that passed it.
+     */
     private static final List<String> POINT_OPERATIONAL_KEYS = java.util.Arrays.asList(
-        "loc", "terminus", "reversing", "active", "maxTrainLength", "speedMultiplier",
+        "loc", "active", "maxTrainLength", "speedMultiplier",
         "priority", "home", "excludedLocs");
 
     /**
@@ -260,6 +266,7 @@ public class AutonomySession
         return new AutonomyBuilder(reducer, globals())
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
+            .withParkingTiles(parkingTiles())
             .build();
     }
 
@@ -308,7 +315,8 @@ public class AutonomySession
         {
             baseNames = reducer == null ? new LinkedHashMap<String, String>()
                 : new AutonomyBuilder(reducer, null)
-                    .withReversibleTiles(reversibleTiles()).baseNames();
+                    .withReversibleTiles(reversibleTiles())
+                    .withParkingTiles(parkingTiles()).baseNames();
         }
 
         return baseNames;
@@ -342,14 +350,88 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))
-                    || Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE)))
-            {
-                out.add(tile);
-            }
+            // A parking berth turns trains round by being one; asking for it twice would emit both
+            // flags, which Point refuses to hold together.
+            if (isTurnAround(tile) && !isParking(tile)) out.add(tile);
         }
 
         return out;
+    }
+
+    /**
+     * The stations that are parking berths.
+     * @return
+     */
+    public Set<TileKey> parkingTiles()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (reducer == null) return out;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (isParking(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether trains may turn round on this square.
+     *
+     * Reads the older keys as well as the current one.  A setup authored before the three switches -
+     * station, turn round, parking - said the same things as "terminus" and "reversing", and those are
+     * now DERIVED rather than set: a configuration carrying them would otherwise quietly lose its
+     * termini the first time it was rebuilt.  Nothing is rewritten on disk; the old spelling is simply
+     * still understood, and the first edit to a square writes the new one.
+     *
+     * @param tile
+     * @return
+     */
+    public boolean isTurnAround(TileKey tile)
+    {
+        if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
+
+        // a terminus was always "a station where trains turn round"
+        if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
+
+        // a reversing point that is NOT a station was "somewhere trains turn round on the way past"
+        return Boolean.TRUE.equals(getPointProperty(tile, "reversing")) && !store.isStation(tile);
+    }
+
+    /**
+     * Whether this station is a parking berth - somewhere autonomy never sends a train of its own
+     * accord, and cannot route one through.
+     *
+     * @param tile
+     * @return
+     */
+    public boolean isParking(TileKey tile)
+    {
+        if (!store.isStation(tile)) return false;
+
+        if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.PARKING))) return true;
+
+        // a reversing STATION was always exactly this
+        return Boolean.TRUE.equals(getPointProperty(tile, "reversing"));
+    }
+
+    /**
+     * Sets one of the three switches, clearing the older spellings of the same idea so that a square
+     * cannot end up saying one thing in two vocabularies.
+     *
+     * @param tile
+     * @param key CAN_REVERSE or PARKING
+     * @param on
+     */
+    public void setPointFlag(TileKey tile, String key, boolean on)
+    {
+        setPointProperty(tile, key, on ? Boolean.TRUE : null);
+
+        // Never authored again, whichever way this went: they are derived at build time now, and one
+        // left behind would keep asserting itself after the switch that set it had been turned off.
+        setPointProperty(tile, "terminus", null);
+        setPointProperty(tile, "reversing", null);
     }
 
     /**
@@ -368,6 +450,7 @@ public class AutonomySession
         return new AutonomyBuilder(reducer, globals())
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
+            .withParkingTiles(parkingTiles())
             .withCoordinatesFromTiles(pageOrder).build();
     }
 
@@ -440,7 +523,7 @@ public class AutonomySession
         Set<TileKey> split = reversibleTiles();
 
         tilesByName.putAll(new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(split).tilesByName());
+            .withReversibleTiles(split).withParkingTiles(parkingTiles()).tilesByName());
 
         org.json.JSONObject points = new org.json.JSONObject();
 
@@ -460,12 +543,7 @@ public class AutonomySession
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
 
-                    // On a split tile the running graph's terminus and reversing flags are the
-                    // builder's own doing, not the user's.  Reading them back would write "reversing"
-                    // onto the square the user marked "can reverse", and the next build would then
-                    // reverse every train that passed it.
-                    if (split.contains(tile)
-                            && ("terminus".equals(key) || "reversing".equals(key))) continue;
+
 
                     // A placement records WHICH locomotive stands here and nothing else.  Point.toJSON
                     // also writes its length, reversibility, speed and functions, and parseAuto applies
@@ -1185,9 +1263,9 @@ public class AutonomySession
         return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false,
             new TileAnnotation.Badge(
                 store.isStation(tile),
-                Boolean.TRUE.equals(getPointProperty(tile, "terminus")),
-                Boolean.TRUE.equals(getPointProperty(tile, "reversing")),
-                Boolean.FALSE.equals(getPointProperty(tile, "active")),
+                store.isStation(tile) && isTurnAround(tile),
+                !store.isStation(tile) && isTurnAround(tile),
+                Boolean.FALSE.equals(getPointProperty(tile, "active")) || isParking(tile),
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB()),

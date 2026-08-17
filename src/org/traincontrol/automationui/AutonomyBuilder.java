@@ -1,6 +1,7 @@
 package org.traincontrol.automationui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -119,6 +120,24 @@ public class AutonomyBuilder
      */
     public static final String CAN_REVERSE = "canReverse";
 
+    /**
+     * The authored key that marks a station as a berth trains are only ever sent to on purpose.
+     *
+     * Emitted as `reversing`, which is the model's word for a station autonomy will never choose and
+     * cannot route a train through.  Also never emitted under its own name.
+     */
+    public static final String PARKING = "parking";
+
+    /**
+     * The two flags this class DERIVES, and which therefore never travel in from the authored data.
+     *
+     * They used to be set directly, and a configuration written before this change can still carry
+     * them.  Letting one through now would put a terminus on a plain copy of a split tile, or - worse -
+     * a terminus and a reversing flag on one Point, which Point itself refuses in either order and
+     * which fails the whole configuration rather than that one square.
+     */
+    private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
+
     private final GraphReducer reducer;
     private final Globals globals;
 
@@ -126,6 +145,10 @@ public class AutonomyBuilder
 
     // Tiles the user marked as somewhere a train may turn round.  See Node.
     private Set<TileKey> reversible = Collections.emptySet();
+
+    // Stations that are parking berths: emitted as reversing, and never split - nothing can pass
+    // through a reversing station, so a second copy of one would have no route to carry.
+    private Set<TileKey> parking = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
     // rest - keyed by TileKey.toString().  See withPointExtras.
@@ -192,11 +215,23 @@ public class AutonomyBuilder
     }
 
     /**
+     * The stations that are parking berths.
+     *
+     * @param tiles the marked tiles, or null for none
+     * @return this
+     */
+    public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
+    {
+        this.parking = tiles == null ? Collections.<TileKey>emptySet() : tiles;
+        return this;
+    }
+
+    /**
      * The sides trains arrive at this tile by, in a fixed order, or empty when it is not split.
      */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
-        if (!reversible.contains(tile)) return Collections.emptyList();
+        if (!reversible.contains(tile) || parking.contains(tile)) return Collections.emptyList();
 
         Set<TilePorts.Side> sides = new java.util.TreeSet<>();
 
@@ -335,10 +370,9 @@ public class AutonomyBuilder
                         // is not carried onto either of them: it would make the plain copy reverse too,
                         // which is the behaviour the split exists to separate.  CAN_REVERSE never goes
                         // out at all - it is the instruction to split, not something parseAuto knows.
-                        if (CAN_REVERSE.equals(key)) continue;
+                        if (CAN_REVERSE.equals(key) || PARKING.equals(key)) continue;
 
-                        if (node.arrival != null
-                                && ("terminus".equals(key) || "reversing".equals(key))) continue;
+                        if (DERIVED.contains(key)) continue;
 
                         json.put(key, extras.get(key));
                     }
@@ -350,6 +384,16 @@ public class AutonomyBuilder
                 if (node.reverse)
                 {
                     json.put(point.isStation() ? "terminus" : "reversing", true);
+                }
+
+                // A parking berth turns its trains round on arrival like any terminus does, and the
+                // model already spells that "reversing" - so it needs no turning copy of its own, and
+                // must not be given a terminus as well: Point refuses to hold both, in either order,
+                // and the failure takes the whole configuration with it rather than this one square.
+                if (parking.contains(point.getTile()))
+                {
+                    json.put("reversing", true);
+                    json.remove("terminus");
                 }
 
                 pointList.put(json);

@@ -270,6 +270,15 @@ public class TileAnnotation
     private final boolean curved;
 
     /**
+     * Whether this square is a paired link - a hole in the diagram that comes out on another page.
+     *
+     * It needs saying because a link's only route is a STUB: one side, which is both how a train
+     * leaves the track into the link and how one arrives out of it.  Drawn like any other side that
+     * gets a single arrow, which is why only one of those two moves was ever visible.
+     */
+    private final boolean portal;
+
+    /**
      * @param marks the routes to draw, or empty to draw none
      * @param length the tile's length, or a negative number not to show one
      * @param selected whether this tile is part of a bulk selection
@@ -299,7 +308,17 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored, boolean curved)
     {
+        this(marks, length, selected, badge, ignored, curved, false);
+    }
+
+    /**
+     * @param portal whether this square is a paired link, whose one side carries traffic both ways
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal)
+    {
         this.curved = curved;
+        this.portal = portal;
 
         this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
         this.length = length;
@@ -468,12 +487,55 @@ public class TileAnnotation
         {
             int[] target = midpoint(entry.getKey(), width, height);
 
-            if (target != null)
+            if (target == null) continue;
+
+            double[] outward = heading(entry.getKey(), width, height);
+            int span = Math.min(width, height);
+
+            if (portal)
             {
-                arrow(g, target, heading(entry.getKey(), width, height), entry.getValue(),
-                    Math.min(width, height));
+                portalArrows(g, target, outward, entry.getValue(), span);
+                continue;
             }
+
+            arrow(g, target, outward, entry.getValue(), span);
         }
+    }
+
+    /**
+     * A link's two moves, drawn side by side at its one side.
+     *
+     * Onto the track and into the link happen at the same edge, so as a single arrow one of them is
+     * always invisible - and it was the departure, because an arrow at a side means "a train may leave
+     * the tile this way" and the drawing had nowhere to put the other sense.  Two arrows offset along
+     * the edge, one out and one in, say both without either being guessed at.
+     *
+     * @param target the midpoint of the link's own side
+     * @param outward the direction leading off the tile
+     */
+    private void portalArrows(Graphics2D g, int[] target, double[] outward, boolean allowed, int span)
+    {
+        double length = Math.sqrt(outward[0] * outward[0] + outward[1] * outward[1]);
+
+        if (length < 1) return;
+
+        double dx = outward[0] / length;
+        double dy = outward[1] / length;
+
+        // along the edge, so the two never sit on top of each other
+        double gap = Math.max(3.0, span / 5.0);
+
+        int[] leaving = new int[] {
+            (int) Math.round(target[0] - dy * gap),
+            (int) Math.round(target[1] + dx * gap)};
+
+        // the arrival stops short of the edge and points inward, so the pair reads as a two-way door
+        int[] arriving = new int[] {
+            (int) Math.round(target[0] + dy * gap - dx * span * 0.5),
+            (int) Math.round(target[1] - dx * gap - dy * span * 0.5)};
+
+        arrow(g, leaving, outward, allowed, span);
+        arrow(g, arriving, new double[] {-outward[0], -outward[1]}, allowed, span);
     }
 
     /**
@@ -772,7 +834,8 @@ public class TileAnnotation
 
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
-            && ignored == other.ignored && curved == other.curved && marks.equals(other.marks);
+            && ignored == other.ignored && curved == other.curved && portal == other.portal
+            && marks.equals(other.marks);
     }
 
     @Override
@@ -780,7 +843,7 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (curved ? 64 : 0);
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0);
     }
 
     @Override

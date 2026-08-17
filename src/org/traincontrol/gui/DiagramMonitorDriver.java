@@ -82,7 +82,8 @@ public class DiagramMonitorDriver
         // The split has to be passed: without it every extra Point a split tile produced is a name the
         // monitor has never heard of, and the overlay stops drawing at exactly the squares that matter.
         AutonomyBuilder builder = new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(session.reversibleTiles());
+            .withReversibleTiles(session.reversibleTiles())
+            .withParkingTiles(session.parkingTiles());
 
         Map<String, TileKey> names = builder.tilesByName();
 
