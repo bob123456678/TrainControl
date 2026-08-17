@@ -4,7 +4,7 @@
 
 Reviewed at `bf11048` on branch `autonomy-diagram-r0`, 2026-08-17.
 
-**All three A findings were fixed the same day**, each with a test written and seen to fail first; the
+**All three A findings and all nine B findings were fixed the same day**, each with a test written and seen to fail first; the
 orphaned javadoc noted in `WP-C19` was reattached in passing, as its method was being deleted anyway.
 Everything else below is open. Section status tables carry each finding's disposition.
 
@@ -104,15 +104,15 @@ key rather than adding a second special case beside it.
 
 | | Finding | Status |
 |---|---|---|
-| B1 | Dispatch at speed 0 blocks an automation thread forever, or invalidates the whole layout | Open |
-| B2 | NPE on a null `locIdCache` silently drops every locomotive state update | Open |
-| B3 | A duplicate route in an imported JSON leaks a live, invisible s88 monitor | Open |
-| B4 | The four device databases are bare `HashMap`s crossed by three thread families | Open |
-| B5 | A redundant power-on event discards accumulated running time | Open |
-| B6 | Cancelling the bulk enable/disable dialog throws and skips the refresh | Open |
-| B7 | "Address is free" is answered from the duplicate list, so one existing user reads as free | Open |
-| B8 | Every editor click runs the tool - palette clicks throw, grid clicks forge undo entries | Open |
-| B9 | `RouteEditor` is realised on a raw thread, off the EDT | Open |
+| B1 | Dispatch at speed 0 blocks an automation thread forever, or invalidates the whole layout | **Fixed 2026-08-17** |
+| B2 | NPE on a null `locIdCache` silently drops every locomotive state update | **Fixed 2026-08-17** |
+| B3 | A duplicate route in an imported JSON leaks a live, invisible s88 monitor | **Fixed 2026-08-17** |
+| B4 | The four device databases are bare `HashMap`s crossed by three thread families | **Fixed 2026-08-17** |
+| B5 | A redundant power-on event discards accumulated running time | **Fixed 2026-08-17** |
+| B6 | Cancelling the bulk enable/disable dialog throws and skips the refresh | **Fixed 2026-08-17** |
+| B7 | "Address is free" is answered from the duplicate list, so one existing user reads as free | **Fixed 2026-08-17** |
+| B8 | Every editor click runs the tool - palette clicks throw, grid clicks forge undo entries | **Fixed 2026-08-17** |
+| B9 | `RouteEditor` is realised on a raw thread, off the EDT | **Fixed 2026-08-17** |
 
 ### B1. Dispatch at speed 0
 
