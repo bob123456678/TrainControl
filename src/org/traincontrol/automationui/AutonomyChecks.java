@@ -46,6 +46,14 @@ public class AutonomyChecks
         WARNING,
 
         /**
+         * Tidiness.  Nothing behaves differently; the setup is simply harder to read than it could be.
+         *
+         * Last on purpose - findings are sorted by this ordinal, so a notice never comes above
+         * something that will actually go wrong.
+         */
+        NOTICE,
+
+        /**
          * Worth knowing, not worth fixing.
          */
         INFO
@@ -222,8 +230,13 @@ public class AutonomyChecks
             if (point.getName() != null
                     && !point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
 
+            // A station without a name is a WARNING: it works, and it is the name the user picks a
+            // destination by, so it will be met every time they do.  A plain point without one is a
+            // NOTICE - trains pass it, its name appears in a path and nowhere anybody chooses from,
+            // and a layout has dozens of them.  Listing those beside real problems buried the real
+            // problems.
             findings.add(new Finding(
-                point.isStation() ? Severity.ERROR : Severity.WARNING,
+                point.isStation() ? Severity.WARNING : Severity.NOTICE,
                 point.isStation() ? UNNAMED_STATION : UNNAMED_POINT,
                 String.valueOf(point.getTile()), point.getTile()));
         }

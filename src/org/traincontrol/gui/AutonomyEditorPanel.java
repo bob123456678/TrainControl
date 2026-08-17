@@ -461,11 +461,14 @@ public class AutonomyEditorPanel extends JPanel
                 boolean heading = index < findingTiles.size()
                     && findingTiles.get(index) == null && severity == null;
 
-                setFont(heading ? AutonomyViewerPanel.FONT_BOLD : FONT_HINT);
+                // The section headings take the window's own group-heading style - Segoe UI Semibold
+                // in navy - so "Must be fixed" and "Warnings" read as headings of the same kind as
+                // every other blue label in this application rather than as bold grey list rows.
+                setFont(heading ? AutonomyViewerPanel.FONT_GROUP : FONT_HINT);
 
                 if (!isSelected)
                 {
-                    setForeground(heading ? AutonomyViewerPanel.SUBHEADING_COLOUR
+                    setForeground(heading ? AutonomyViewerPanel.HEADING_COLOUR
                         : severity == AutonomyChecks.Severity.ERROR
                             ? AutonomyViewerPanel.ERROR_COLOUR
                         : severity == AutonomyChecks.Severity.WARNING
@@ -2479,6 +2482,7 @@ public class AutonomyEditorPanel extends JPanel
         // be acted on here.  The whole-layout view is the one in the Auto tab.
         List<Object[]> errorRows = new java.util.ArrayList<>();
         List<Object[]> warningRows = new java.util.ArrayList<>();
+        List<Object[]> noticeRows = new java.util.ArrayList<>();
 
         for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph() == null
             ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
@@ -2501,7 +2505,8 @@ public class AutonomyEditorPanel extends JPanel
             String subject = finding.getTile() == null
                 ? finding.getSubject() : describeTile(finding.getTile());
 
-            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errorRows : warningRows)
+            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errorRows
+                : finding.getSeverity() == AutonomyChecks.Severity.NOTICE ? noticeRows : warningRows)
                 .add(new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
         }
 
@@ -2511,6 +2516,8 @@ public class AutonomyEditorPanel extends JPanel
             AutonomyChecks.Severity.ERROR);
         section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
             AutonomyChecks.Severity.WARNING);
+        section(I18n.f("autosetup.ui.headingNotices", noticeRows.size()), noticeRows,
+            AutonomyChecks.Severity.NOTICE);
 
         // Unnamed points are checks now, and errors, so they are already in the list below with a
         // square to jump to each.  Saying it again up here was the same news twice, in a colour that
