@@ -6,6 +6,18 @@ import java.util.List;
 
 /**
  * A generic collection of items with unique string names
+ *
+ * Every public method is synchronized on the collection, because these hold the four device
+ * databases and three families of thread reach them: the CAN executors (which add a feedback the
+ * first time an unknown s88 fires), the EDT (locomotive delete, rename, address change), and the
+ * background sync threads.  Nothing held a common lock, so a structural change during one of the
+ * list-building reads could lose entries or throw ConcurrentModificationException - and if that
+ * landed inside saveState's walk, the exception escaped the try that guards only the file write and
+ * the database was silently not saved at all.
+ *
+ * Synchronized rather than backed by ConcurrentHashMap on purpose: this class is Serializable and
+ * these two fields are written into LocDB.data, so changing their declared type would fail to
+ * deserialize every database saved by an older build.
  * @author Adam
  * @param <ITEM>
  * @param <IDENTIFIER> 
@@ -38,7 +50,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param name
      * @param id
      */
-    public void add(ITEM device, String name, IDENTIFIER id)
+    synchronized public void add(ITEM device, String name, IDENTIFIER id)
     {
         IDENTIFIER existingId = this.names.get(name);
 
@@ -64,7 +76,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param name
      * @return 
      */
-    public boolean hasName(String name)
+    synchronized public boolean hasName(String name)
     {
         return this.names.containsKey(name);
     }
@@ -74,7 +86,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param id
      * @return 
      */
-    public boolean hasId(IDENTIFIER id)
+    synchronized public boolean hasId(IDENTIFIER id)
     {
         return this.db.containsKey(id);
     }
@@ -84,7 +96,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param name
      * @return 
      */
-    public ITEM getByName(String name)
+    synchronized public ITEM getByName(String name)
     {
         return this.db.get(this.names.get(name));                
     }
@@ -94,7 +106,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param id
      * @return 
      */
-    public ITEM getById(IDENTIFIER id)
+    synchronized public ITEM getById(IDENTIFIER id)
     {
         return this.db.get(id);                
     }
@@ -103,7 +115,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * Returns all existing device ids
      * @return 
      */
-    public List<IDENTIFIER> getItemIds()
+    synchronized public List<IDENTIFIER> getItemIds()
     {
         List<IDENTIFIER> l = new LinkedList<>();
         l.addAll(this.db.keySet());
@@ -115,7 +127,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * Gets all existing device names
      * @return 
      */
-    public List<String> getItemNames()
+    synchronized public List<String> getItemNames()
     {
         List<String> l = new LinkedList<>();
         l.addAll(this.names.keySet());
@@ -127,7 +139,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * Gets all existing devices
      * @return 
      */
-    public List<ITEM> getItems()
+    synchronized public List<ITEM> getItems()
     {
         List<ITEM> l = new LinkedList<>();
         
@@ -144,7 +156,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      * @param name
      * @return 
      */
-    public boolean delete(String name)
+    synchronized public boolean delete(String name)
     {
         if (this.hasName(name))
         {

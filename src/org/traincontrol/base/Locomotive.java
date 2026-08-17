@@ -377,6 +377,8 @@ public abstract class Locomotive
         // its getOrDefault/put read-modify-write is atomic as well.
         synchronized (speedMonitor)
         {
+            boolean wasOn = powerState;
+
             powerState = powerOn;
 
             // Locomotive was runnning - we need to stop the timer
@@ -387,7 +389,14 @@ public abstract class Locomotive
                 // Power on - reset the timer
                 if (powerOn)
                 {
-                    this.lastStartTime = System.currentTimeMillis();
+                    // Only a real transition starts the clock.  The Central Station broadcasts GO to
+                    // every locomotive on every press, whether or not anything changed, so pressing Go
+                    // while a train was already running reset lastStartTime - and since runtime is
+                    // credited only at the next stop, everything since the real start was discarded.
+                    if (!wasOn)
+                    {
+                        this.lastStartTime = System.currentTimeMillis();
+                    }
                 }
                 // Power off - stop the timer and store result
                 else

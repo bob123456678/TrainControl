@@ -78,7 +78,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "2.8.0";
+    public static final String RAW_VERSION = "3.0.0";
         
     //// Settings
     
@@ -1507,6 +1507,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public Map<Integer, Set<Locomotive>> getDuplicateLocAddresses()
     {
+        Map<Integer, Set<Locomotive>> locs = getLocAddresses();
+
+        locs.keySet().removeIf(key -> locs.get(key).size() == 1);
+
+        return locs;
+    }
+
+    /**
+     * Every locomotive address in the database, mapped to the locomotives using it.
+     *
+     * Separate from getDuplicateLocAddresses because the two answer different questions, and the
+     * duplicate list was being used for both: it has every single-user address removed, so "is this
+     * address in use" came back false for an address with exactly one locomotive on it - which is the
+     * only case the question is ever really asked about.
+     *
+     * @return
+     */
+    @Override
+    public Map<Integer, Set<Locomotive>> getLocAddresses()
+    {
         Map<Integer, Set<Locomotive>> locs = new HashMap<>();
                 
         for (MarklinLocomotive l : this.locDB.getItems())
@@ -1526,7 +1546,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             //}
         }
           
-        locs.keySet().removeIf(key -> locs.get(key).size() == 1);
                 
         return locs;
     }
@@ -1568,6 +1587,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
+            // Retire the monitor of the route we are refusing.  MarklinRoute's complete constructor
+            // starts one as soon as the route is enabled and has an s88 - before the object has been
+            // offered to any database - so a hand-edited routes JSON with two entries sharing a name
+            // left the rejected one watching its sensor forever, firing turnouts and speeds for a
+            // route the UI has no handle on and only a restart could stop.
+            r.disable();
+
             this.logf("route.alreadyImportedSkipping", r.getId(), r.getName().trim());
             return false;
         }
@@ -1927,6 +1953,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.locMessageProcessor.submit(() ->
             {
                 Integer id = message.extractUID();
+
+                // Built on demand, exactly as exec() already does.  The cache is only populated by a
+                // SUCCESSFUL sync, while the UDP reader is started regardless - so a Central Station
+                // that answers CAN but not its web server left this null, and the NPE was captured by
+                // this executor's discarded Future and surfaced nowhere.  Every locomotive state
+                // update was dropped in silence, and the UI showed stale speeds until a later sync.
+                if (this.locIdCache == null) rebuildLocIdCache();
 
                 List<String> locs = this.locIdCache.get(id);
 

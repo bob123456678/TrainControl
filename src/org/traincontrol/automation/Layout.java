@@ -3149,6 +3149,22 @@ public class Layout
             return false;
         }
 
+        // A speed of 0 is not a dispatch.  Two semi-autonomous paths pass the locomotive's preferred
+        // speed, which is 0 for one placed on a node without the speed dialog ever being opened - and
+        // the path was then locked, the departure functions fired, setSpeed(0) issued, and the thread
+        // parked forever in waitForOccupiedFeedback on a sensor a stationary train can never reach.
+        // activeLocomotives never emptied, so isRunning() stayed true and autonomy, the simulation
+        // toggle and locomotive editing were all blocked until the graph was reloaded.
+        //
+        // runLocomotive already refused this, by throwing - but its caller turns the throw into "the
+        // configuration is invalid, reload it", so one 0-speed locomotive disabled the whole layout.
+        // Refusing here is both earlier and narrower.
+        if (speed < 1 || speed > 100)
+        {
+            this.control.logf("autolayout.errorInvalidSpeedSpecified");
+            return false;
+        }
+
         if (path.isEmpty())
         {
             this.control.logf("autolayout.errorPathEmpty");
