@@ -530,7 +530,7 @@ public class AutonomyViewerPanel extends JPanel
      * commonest reason to reach for it - a page full of findings that is not part of the railway being
      * automated - is discovered while reading this list.
      */
-    private void choosePages()
+    public void choosePages()
     {
         java.util.List<org.traincontrol.base.LayoutDiagram> pages = session.getPages();
 
@@ -592,7 +592,26 @@ public class AutonomyViewerPanel extends JPanel
      * in the list and pressing Delete deleted whatever was running - unrecoverable, from an ordinary
      * gesture.  The dropdown is what the user is pointing at.
      */
-    private String selected()
+    /**
+     * Points the Manage actions at a configuration, for a caller that has no combo box of its own.
+     *
+     * @param name
+     */
+    public void setSelectedConfiguration(String name)
+    {
+        populating = true;
+
+        try
+        {
+            configurations.setSelectedItem(name);
+        }
+        finally
+        {
+            populating = false;
+        }
+    }
+
+    public String selected()
     {
         Object chosen = configurations.getSelectedItem();
 
@@ -617,7 +636,7 @@ public class AutonomyViewerPanel extends JPanel
      * @param name the configuration to load
      * @param interactive whether the user asked for this, and so should be told when it fails
      */
-    private void load(String name, boolean interactive)
+    public void load(String name, boolean interactive)
     {
         // The same gate the JSON path applies before replacing the layout: confirm, then stop whatever
         // is moving.  Owned by the main window because stopping trains is its business, not a panel's.
@@ -723,7 +742,7 @@ public class AutonomyViewerPanel extends JPanel
      * Sets autonomy up for a layout that has none: one configuration, named by the user, which
      * everything else on this panel then applies to.
      */
-    private void initialize()
+    public void initialize()
     {
         String name = JOptionPane.showInputDialog(this,
             I18n.t("autosetup.ui.promptConfigurationName"));
@@ -748,7 +767,7 @@ public class AutonomyViewerPanel extends JPanel
      * The file is the store's own format, so what one person exports another can import onto the same
      * track - placements and settings travel, the track itself stays derived from each side's diagram.
      */
-    private void importConfiguration()
+    public void importConfiguration()
     {
         javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
 
@@ -790,7 +809,7 @@ public class AutonomyViewerPanel extends JPanel
     /**
      * Writes the active configuration out where the user chooses, for another machine to import.
      */
-    private void exportConfiguration()
+    public void exportConfiguration()
     {
         String name = selected();
 
@@ -816,7 +835,7 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    private void duplicate()
+    public void duplicate()
     {
         String from = selected();
 
@@ -844,7 +863,7 @@ public class AutonomyViewerPanel extends JPanel
         refresh();
     }
 
-    private void rename()
+    public void rename()
     {
         String from = selected();
 
@@ -873,7 +892,7 @@ public class AutonomyViewerPanel extends JPanel
         refresh();
     }
 
-    private void delete()
+    public void delete()
     {
         String name = selected();
 
@@ -921,7 +940,7 @@ public class AutonomyViewerPanel extends JPanel
      * Writes the derived graph out in the ordinary autonomy format, laid out like the track it came
      * from, so it can be read and checked against the diagram beside it.
      */
-    private void inspect()
+    public void inspect()
     {
         try
         {

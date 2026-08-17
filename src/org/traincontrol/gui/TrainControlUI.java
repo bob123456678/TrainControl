@@ -1522,6 +1522,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         mountAutonomyControls();
     }
 
+    /**
+     * The autonomy menu, beside Layouts.
+     *
+     * Added in code rather than in the form: the menu bar is generated, and everything autonomy has
+     * added to this window is hand-written for exactly that reason.
+     */
+    private AutonomyMenu autonomyMenu;
+
+    /**
+     * Puts the autonomy menu in the bar, once, immediately after Layouts.
+     *
+     * Beside it because a setup belongs to a layout and cannot exist without one - the same reason the
+     * menu switches itself off when there is no layout to set up.
+     */
+    public void mountAutonomyMenu()
+    {
+        if (autonomyMenu == null)
+        {
+            autonomyMenu = new AutonomyMenu(this);
+
+            int at = mainMenuBar.getMenuCount();
+
+            for (int i = 0; i < mainMenuBar.getMenuCount(); i++)
+            {
+                if (mainMenuBar.getMenu(i) == layoutMenu)
+                {
+                    at = i + 1;
+                    break;
+                }
+            }
+
+            mainMenuBar.add(autonomyMenu, at);
+            mainMenuBar.revalidate();
+        }
+
+        autonomyMenu.refreshEnabled();
+    }
+
+    /**
+     * Called after any autonomy menu action, so the rest of the window follows what it did.
+     */
+    public void autonomyMenuActed()
+    {
+        if (autonomyMenu != null) autonomyMenu.refreshEnabled();
+
+        refreshAutonomyFindings();
+        repaintLayout();
+    }
+
     private org.traincontrol.automationui.AutonomySession autonomySession;
 
     /**
@@ -1564,6 +1613,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // still works here; it did not, after any switch away from a local layout.
             this.jScrollPane2.setViewportView(this.autonomyJSON);
 
+            // put the tab back if a diagram-derived setup took it away earlier
+            if (locCommandPanels.indexOfComponent(this.autonomyPanel) < 0)
+            {
+                locCommandPanels.addTab(I18n.t("ui.main.autoConfig"), this.autonomyPanel);
+            }
+
             this.validateButton.setVisible(true);
             this.loadDefaultBlankGraph.setVisible(true);
             this.loadJSONButton.setVisible(true);
@@ -1579,20 +1634,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             autonomyViewerPanel = new AutonomyViewerPanel(session, this);
         }
 
-        this.jScrollPane2.setViewportView(autonomyViewerPanel);
+        // Built but not shown.  Everything it does is on the Autonomy menu now; the object stays as the
+        // place those actions live, because they are a few hundred lines of dialogs and file handling
+        // that gain nothing from being copied into a menu class.
+        mountAutonomyMenu();
 
-        // The scroll pane framed a text area; framing a panel of controls just draws a box around
-        // them, and its grey viewport showed through as a second surface behind the white panel.
-        this.jScrollPane2.setBorder(javax.swing.BorderFactory.createEmptyBorder());
-        this.jScrollPane2.getViewport().setBackground(java.awt.Color.WHITE);
+        // And the tab it used to fill goes.  Removed here rather than left out of the form, because
+        // the form is generated - and it comes BACK below when there is no local layout, where the
+        // JSON window it also hosts is still the only way to set autonomy up.
+        int configTab = locCommandPanels.indexOfComponent(this.autonomyPanel);
 
-        // The tab itself never scrolls, in either direction.  With both switched off the viewport
-        // hands the panel exactly the space there is, so the layout has to fit rather than push - and
-        // the one thing that genuinely overflows, the findings list, scrolls inside its own box.
-        this.jScrollPane2.setHorizontalScrollBarPolicy(
-            javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        this.jScrollPane2.setVerticalScrollBarPolicy(
-            javax.swing.JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        if (configTab >= 0) locCommandPanels.remove(configTab);
 
         // the JSON-era controls; everything they did has a home on the panel now
         this.validateButton.setVisible(false);
@@ -1639,6 +1691,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         autonomyOverlayToggle.setSelected(true);
+
+        refreshAutonomyFindings();
 
         // remembered so that exit knows which configuration the running layout's state belongs to,
         // and so the panel knows to offer the step that follows this one
@@ -2010,6 +2064,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Re-runs the checks and shows what they say beside the overlay checkbox.
+     *
+     * Cheap enough to do after every autonomy action: the derivation is already in memory and the
+     * checks walk it once.  The alternative - a count the user has to go and ask for - is a count
+     * nobody asks for, and the whole reason a setup can be finished with a problem still in it.
+     */
+    public void refreshAutonomyFindings()
+    {
+        if (autonomyOverlayToggle == null) return;
+
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || session.getReducer() == null)
+        {
+            autonomyOverlayToggle.setFindings(0, 0, null);
+            return;
+        }
+
+        int errors = 0;
+        int warnings = 0;
+
+        org.traincontrol.automationui.TileGraph.TileKey first = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR)
+            {
+                errors++;
+            }
+            else
+            {
+                warnings++;
+            }
+
+            // The findings arrive most serious first, so the first one with a square to go to is the
+            // one worth landing on.
+            if (first == null && finding.getTile() != null) first = finding.getTile();
+        }
+
+        autonomyOverlayToggle.setFindings(errors, warnings, first);
+    }
+
+    /**
      * Redraws the setup on the track diagram if it is currently being shown.
      *
      * Called after every autonomy edit.  Without it the diagram kept whatever was published when the
@@ -2018,6 +2115,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void refreshStaticAutonomyLayer()
     {
+        // The count is refreshed whether or not the overlay is being drawn: an edit that fixes the
+        // last error should clear it even for somebody who has the overlay switched off.
+        refreshAutonomyFindings();
+
         if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isShowing()) return;
 
         showStaticAutonomyLayer(true);
