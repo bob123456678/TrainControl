@@ -1534,8 +1534,18 @@ Safe because occupancy is tested against the physical feedback, not the Point:
 `isPathClear` reads `control.getFeedbackState(e.getEnd().getS88())`, so every copy of a sensor is
 refused while a train stands on it.
 
-Known limitation: all copies of a tile carry the same operational extras. The hand-written file gave
-`BottomMainCTerm` a `priority` its plain twin did not have; that cannot currently be expressed.
+All copies of a tile carry the same operational extras, so a per-copy `priority` - which the
+hand-written file gave `BottomMainCTerm` and not its plain twin - cannot be expressed. **Author
+ruling, 2026-08-16: leave it.** Which copy a train takes is then decided by `getNeighbors`'
+`Collections.shuffle`, and random is the wanted behaviour: a train arriving at a through platform
+should sometimes stop and turn round and sometimes carry on. The choice is not unconstrained anyway -
+only reversible locomotives may end at a terminus (`Layout.java:1448`), so anything that cannot work
+backwards is filtered onto the plain copy by the model itself, and a train that does turn round is
+not then sent to a parking berth.
+
+This is worth stating plainly because the same `shuffle` is the reason twin Points with identical
+edge sets were rejected. It is a hazard when the two copies mean the same thing and a feature when
+they mean different ones; the arrival-side split is what makes them mean different things.
 
 ### Deferred by the author, 2026-08-16 (testing round 2)
 

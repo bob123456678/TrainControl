@@ -189,15 +189,21 @@ public class testAutonomyDiagramReversal
     @Test
     public void testADeadEndTerminusIsLeftWhole() throws IOException
     {
-        LayoutDiagram page = page("main", 8, 5);
+        LayoutDiagram page = page("main", 10, 5);
 
         feedback(page, 1, 2, 11);
         straight(page, 2, 2);
-        feedback(page, 3, 2, 4);
-        add(page, componentType.END, 4, 2, 3);
+        straight(page, 3, 2);
+        straight(page, 4, 2);
+        feedback(page, 5, 2, 4);
 
-        JSONObject built = build(page, stations(key("main", 3, 2)),
-            marked(key("main", 3, 2)), extras());
+        // END is a stub on its north side at orientation 0, so orientation 1 - three turns clockwise -
+        // puts the stub west, facing the sensor.  Pointing it any other way leaves it unconnected, and
+        // the test would then pass for the wrong reason.
+        add(page, componentType.END, 6, 2, 1);
+
+        JSONObject built = build(page, stations(key("main", 5, 2)),
+            marked(key("main", 5, 2)), extras());
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
@@ -318,11 +324,13 @@ public class testAutonomyDiagramReversal
     /**
      * The running line with a siding trailing off behind the junction sensor.
      *
-     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west; three
-     * quarter turns put the toe EAST, the straight west and the branch south.  So a train running west
-     * out of F4 meets the toe and may diverge into the siding, while a train running east out of F11
-     * meets the same switch trailing and can only carry straight on.  That asymmetry is the whole point:
-     * it is what makes the siding reachable only by turning round at F4.
+     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west.  Ports
+     * rotate by (4 - orientation) quarter turns clockwise - see TilePorts.ports, which follows what
+     * getImage does to the artwork - so orientation 1 is three turns: toe EAST, straight west, branch
+     * south.  A train running west out of F4 therefore meets the toe and may diverge into the siding,
+     * while a train running east out of F11 meets the same switch trailing and can only carry straight
+     * on.  That asymmetry is the whole point: it is what makes the siding reachable only by turning
+     * round at F4.
      */
     private LayoutDiagram junction() throws IOException
     {
@@ -331,7 +339,7 @@ public class testAutonomyDiagramReversal
         feedback(page, 1, 2, 11);
         straight(page, 2, 2);
 
-        add(page, componentType.SWITCH_LEFT, 3, 2, 3, 7);
+        add(page, componentType.SWITCH_LEFT, 3, 2, 1, 7);
         wire(page, 3, 2, 7, Accessory.accessoryType.SWITCH);
 
         straight(page, 4, 2);
