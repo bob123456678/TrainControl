@@ -21,12 +21,12 @@ having no ledger. What follows is what the review verified, not what was intende
 | Delete a point | point right-click → Delete | - | N/A **(corrected)** - deleting the physical sensor is a different act.  The equivalent is un-station plus parking |
 | Rename a point | point right-click → Rename | Right-click → Name, or "Name everything" | DONE |
 | Mark as station | point right-click checkbox | Right-click → Mark as a station | DONE |
-| Terminus station | point right-click checkbox | Right-click -> **Station** submenu; clears reversing, as the model requires | DONE |
+| Terminus station | point right-click checkbox | Retired as a user-facing word.  Station + "Trains can turn round here" COMPILES to terminus (author ruling 2026-08-16) | DONE |
 | Warn on stations missing a diagram label | - | Configuration errors and warnings -> "not shown anywhere on the track diagram" | DONE (new) |
 | Put a station name on the diagram | layout editor only (`editTextWithDropdown`), text squares only | Setup editor: right-click a text square, a blank square, or any square whose track runs straight through (straight, sensor, signal, uncoupler) -> "Show a station name here"; page written immediately | DONE (new) |
 | Warn on default-named stations | - | Configuration errors and warnings -> "still named after the square it sits on" | DONE (new) |
-| Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
-| Active / inactive | point right-click checkbox | Right-click -> Active, on every point.  Briefly folded into the Station submenu as "parking"; reverted 2026-08-16 - that made it unreachable on a non-station and hard to find on a station.  Parking is what an inactive station IS, not a separate setting | DONE |
+| Reversing point | point right-click checkbox | Retired as a user-facing word.  A non-station that turns round compiles to reversing; so does a parking station | DONE |
+| Active / inactive | point right-click checkbox | Right-click -> Active, on every point.  Kept deliberately: the only way to say "not this session" without also changing what a train does on arrival, which is what parking would do instead | DONE |
 | Max train length | point right-click → advanced | Right-click → Advanced Parameters | DONE |
 | Speed multiplier | point right-click → speed multiplier | Right-click, in percent | DONE **(corrected)** - had been storing a raw percentage where the model wants a factor, so any real value made the configuration refuse to load |
 | Station priority | point right-click → advanced | Right-click → Advanced Parameters | DONE |
