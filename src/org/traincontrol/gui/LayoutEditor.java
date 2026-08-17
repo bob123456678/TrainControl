@@ -591,9 +591,17 @@ public class LayoutEditor extends PositionAwareJFrame
                 stack.add(this.jScrollPane1, BorderLayout.CENTER);
 
                 javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
-                list.setPreferredSize(new java.awt.Dimension(100, 120));
+                list.setPreferredSize(new java.awt.Dimension(100, 180));
 
-                stack.add(list, BorderLayout.SOUTH);
+                // The count goes UNDER the list, not above it.  In the sidebar it was a headline over a
+                // column that did not contain the things it counted; here it is a total, which is what
+                // it always was.
+                javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
+                foot.setOpaque(false);
+                foot.add(list, BorderLayout.CENTER);
+                foot.add(autonomyPanel.getBanner(), BorderLayout.SOUTH);
+
+                stack.add(foot, BorderLayout.SOUTH);
 
                 autonomyFindings = stack;
             }
@@ -601,6 +609,15 @@ public class LayoutEditor extends PositionAwareJFrame
             // The column heading belongs to the window, not to the palette that used to fill it - in
             // autonomy mode "New Components" describes something that is no longer there.
             this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
+
+            // The window is not editing the layout in this mode, and saying so in the title bar is the
+            // cheapest way to keep somebody from wondering which of the two editors they opened.
+            //
+            // Posted, not called: render() sets the title from inside its own invokeLater and this
+            // method runs synchronously straight after it, so a direct call would be overwritten a
+            // moment later by the one it was meant to replace.
+            javax.swing.SwingUtilities.invokeLater(() ->
+                setTitle(I18n.f("autosetup.ui.windowTitle", this.layout.getName())));
         }
 
         this.newComponents.revalidate();

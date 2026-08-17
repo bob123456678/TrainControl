@@ -187,7 +187,6 @@ public class AutonomyEditorPanel extends JPanel
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
         add(buildTools(), BorderLayout.NORTH);
-        add(buildActions(), BorderLayout.SOUTH);
 
         // The findings are built here but mounted by the WINDOW, across the bottom and the full width.
         // In this column they were a narrow box with sentences wrapped to four words a line, beside a
@@ -282,8 +281,31 @@ public class AutonomyEditorPanel extends JPanel
         // click MEANT, and every one of them acted on a single named tile - which is what a right-click
         // menu is for.  They are all on the tile's own menu now, where the thing being configured is
         // the thing under the pointer.
+        // What to do, said once, directly under the window's heading.  Everything in this editor
+        // happens on the diagram - there is no palette and no list of properties - and a column of
+        // buttons beside it implies the opposite.
+        JLabel how = new JLabel(I18n.t("autosetup.ui.hintClickTheDiagram"));
+        how.setFont(FONT_HINT);
+        how.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(how);
+
+        panel.add(javax.swing.Box.createVerticalStrut(4));
+
+        // The two actions together, because they are the two things here that are NOT done by clicking
+        // the diagram.  Split apart - one at the top, one at the bottom - they read as unrelated.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
-        panel.add(row(testButton));
+
+        nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
+        nameAll.addActionListener(e -> nameEverything());
+        button(nameAll);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        actions.setOpaque(false);
+        actions.setAlignmentX(LEFT_ALIGNMENT);
+        actions.add(testButton);
+        actions.add(nameAll);
+
+        panel.add(actions);
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
         // in the window's own Toggle visibility box now, beside Addresses, which is where somebody
@@ -300,13 +322,22 @@ public class AutonomyEditorPanel extends JPanel
         hint.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(hint);
 
+        // The count is mounted by the WINDOW, under the findings list.  Up here it was a headline
+        // above a column that did not contain the things it was counting; under the list it is a
+        // total, which is what it always was.
         banner.setOpaque(true);
         banner.setFont(FONT_HEADING);
-        banner.setAlignmentX(LEFT_ALIGNMENT);
-        banner.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
-        panel.add(banner);
+        banner.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
 
         return panel;
+    }
+
+    /**
+     * @return the "so many things to fix" summary, for the window to put under the findings
+     */
+    public JLabel getBanner()
+    {
+        return banner;
     }
 
     /**
@@ -438,23 +469,6 @@ public class AutonomyEditorPanel extends JPanel
         return scroll;
     }
 
-    private JPanel buildActions()
-    {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
-
-        // No "check this setup" button.  The checks are re-run after every edit, so it never had
-        // anything of its own to do - and its message counted the list's ROWS, which include the
-        // Errors and Warnings headings, so it reported one or two more than the list showed.
-        nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
-        nameAll.addActionListener(e -> nameEverything());
-        panel.add(button(nameAll));
-
-        // No Save here.  The window's own Save Changes already writes the setup - see
-        // saveButtonActionPerformed, which calls save() and closes - and two buttons that both save,
-        // one of which also closes, is a choice nobody should have to think about.
-
-        return panel;
-    }
 
     // --- what a click does ------------------------------------------------------------------------
 
