@@ -143,9 +143,15 @@ public class AutonomyMenu extends JMenu
 
             add(choose);
 
-            // Both act on the configuration that is RUNNING, so neither means anything until one is.
-            // Choosing which to load is the step before these, and it is the item above.
+            // Manage acts on the configuration that is RUNNING, so it means nothing until one is.
             boolean loaded = running != null;
+
+            // Editing and page exclusions ask only that a configuration be CHOSEN.  Both are how a
+            // setup that will not load gets FIXED - it refuses on blocking errors, and the editor is
+            // the only place those can be dealt with - so gating them on a running setup locked the
+            // door on the room the user was being sent to: "4 things must be dealt with", and no way
+            // to deal with them.
+            boolean chosen = session.getStore().getActiveConfiguration() != null;
 
             // Fenced off by itself, because it is the only item here that changes the RAILWAY.
             // Everything above chooses which setup is in force and everything below is housekeeping on
@@ -154,8 +160,8 @@ public class AutonomyMenu extends JMenu
             addSeparator();
 
             JMenu edit = editMenu(session);
-            edit.setEnabled(loaded && edit.getItemCount() > 0);
-            edit.setToolTipText(loaded ? I18n.t("autosetup.ui.tooltipEditAutonomy")
+            edit.setEnabled(chosen && edit.getItemCount() > 0);
+            edit.setToolTipText(chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(edit);
 
@@ -167,8 +173,8 @@ public class AutonomyMenu extends JMenu
             add(manage);
 
             JMenu pages = pagesMenu(session);
-            pages.setEnabled(loaded);
-            pages.setToolTipText(loaded ? I18n.t("autosetup.ui.promptExcludePage")
+            pages.setEnabled(chosen);
+            pages.setToolTipText(chosen ? I18n.t("autosetup.ui.promptExcludePage")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(pages);
 

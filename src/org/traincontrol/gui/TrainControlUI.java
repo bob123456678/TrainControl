@@ -13519,7 +13519,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automationui.AutonomySession candidateSession = getAutonomySession();
 
-        if (candidateSession != null && this.activeDiagramConfiguration != null)
+        // A configuration that is CHOSEN, not necessarily one that loaded.  Gating this on a running
+        // setup locked the door on the room the user was being sent to: a setup with blocking errors
+        // refuses to load, and the editor is the only place those errors can be fixed - so "4 things
+        // must be dealt with" came with no way to deal with them.
+        if (candidateSession != null
+            && candidateSession.getStore().getActiveConfiguration() != null)
         {
             Object[] editChoices = {
                 I18n.t("autosetup.ui.editChoiceDiagram"),
