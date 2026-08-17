@@ -715,6 +715,8 @@ public class TileAnnotation
 
         java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
 
+        int index = 0;
+
         for (Trace trace : traces)
         {
             int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
@@ -729,8 +731,27 @@ public class TileAnnotation
             g.setColor(Boolean.TRUE.equals(shared.get(at)) ? TRACE
                 : trace.forward ? TRACE : TRACE_RETURN);
 
-            g.drawLine(a[0], a[1], centre[0], centre[1]);
-            g.drawLine(centre[0], centre[1], b[0], b[1]);
+            // A square crossed more than once - a switch a route passes through on its way out and
+            // again on its way round - carries two segments that share a side.  Drawn both through the
+            // centre they join there and read as one straight run between the two sides that are NOT
+            // connected: at a switch, the two forks join the toe and never each other.  Nudged apart,
+            // they read as what they are, which is two passes.
+            double nudge = drawn.size() == 1 || shared.size() < 2 ? 0 : span / 9.0 * (index - 0.5);
+
+            double dx = b[0] - a[0];
+            double dy = b[1] - a[1];
+            double length = Math.sqrt(dx * dx + dy * dy);
+
+            double px = length < 1 ? 0 : -dy / length * nudge;
+            double py = length < 1 ? 0 : dx / length * nudge;
+
+            g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
+                (int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py));
+
+            g.drawLine((int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py),
+                (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
+
+            index++;
         }
 
         // Which way, as chevrons on the line.  Two of them, pointing opposite ways, is a route that
