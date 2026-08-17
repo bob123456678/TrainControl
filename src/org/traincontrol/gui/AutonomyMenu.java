@@ -105,28 +105,32 @@ public class AutonomyMenu extends JMenu
 
         List<String> names = session.getStore().getConfigurationNames();
 
-        // Setting one up for the first time.  Offered even when configurations exist, because "another
-        // one, built fresh from the diagram" is a different act from duplicating what is there.
-        add(item(I18n.t("autosetup.ui.menuInitialize"), new Runnable()
+        String running = ui.getActiveDiagramConfiguration();
+
+        // Nothing set up yet: one thing to do, and no submenus of things that would all be empty.
+        if (names.isEmpty())
         {
-            @Override
-            public void run()
+            add(item(I18n.t("autosetup.ui.menuInitialize"), new Runnable()
             {
-                actions.initialize();
+                @Override
+                public void run()
+                {
+                    actions.initialize();
 
-                ui.autonomyMenuActed();
-            }
-        }));
-
-        if (!names.isEmpty())
+                    ui.autonomyMenuActed();
+                }
+            }));
+        }
+        else
         {
-            addSeparator();
+            // The configurations get a submenu of their own rather than sitting loose on the menu,
+            // where a name like "Adam 1" reads as an action next to the items around it.  The heading
+            // carries the running one, which is the fact this menu is most often opened to check.
+            JMenu choose = new JMenu(I18n.f("autosetup.ui.menuConfigurations",
+                running == null ? I18n.t("autosetup.ui.menuNoneRunning") : running));
 
-            // Which one runs.  Radio, because exactly one does - and the one that is running is the
-            // fact the user most often opens this menu to check.
+            // Radio, because exactly one runs
             ButtonGroup group = new ButtonGroup();
-
-            String running = ui.getActiveDiagramConfiguration();
 
             for (final String name : names)
             {
@@ -143,12 +147,29 @@ public class AutonomyMenu extends JMenu
                     ui.autonomyMenuActed();
                 });
 
-                add(choice);
+                choose.add(choice);
             }
 
-            addSeparator();
+            add(choose);
             add(manageMenu(actions, names));
             add(pagesMenu(session));
+
+            addSeparator();
+
+            // Below the separator and named for what it makes.  "Set up autonomy from this layout"
+            // said nothing once a setup existed - the reader has already done that - and the thing it
+            // actually offers is another configuration built fresh from the diagram, which is a
+            // different act from duplicating the one in front of them.
+            add(item(I18n.t("autosetup.ui.menuNewFromLayout"), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    actions.initialize();
+
+                    ui.autonomyMenuActed();
+                }
+            }));
         }
 
         if (ui.getModel() != null && ui.getModel().isDebug())

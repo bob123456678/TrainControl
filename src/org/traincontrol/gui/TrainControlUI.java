@@ -1787,6 +1787,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param valid
      */
+    /**
+     * Greys the Auto tab, and steps off it if it is the one showing.
+     *
+     * Index 2, as showAutonomyRunTab uses.  Guarded on the count because this runs during startup, when
+     * the pane may not have been filled in yet.
+     */
+    private void setAutoTabEnabled(boolean enabled)
+    {
+        if (KeyboardTab.getTabCount() <= 2) return;
+
+        KeyboardTab.setEnabledAt(2, enabled);
+
+        // Swing will happily leave a disabled tab selected, showing its contents and refusing clicks
+        if (!enabled && KeyboardTab.getSelectedIndex() == 2) KeyboardTab.setSelectedIndex(0);
+    }
+
     private void setAutonomyDependentTabs(boolean valid)
     {
         if (!valid)
@@ -1795,11 +1811,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             locCommandPanels.remove(this.timetablePanel);
             locCommandPanels.remove(this.autoSettingsPanel);
 
+            // With every inner tab gone the Auto tab is an empty tabbed pane - a blank grey page that
+            // says nothing about why.  Greyed instead, the way the track diagram tab is when there is
+            // no layout: unavailable and visibly so, rather than available and empty.
+            setAutoTabEnabled(false);
+
             this.startAutonomy.setEnabled(false);
             this.returnHomeButton.setEnabled(false);
 
             return;
         }
+
+        setAutoTabEnabled(true);
 
         // remove-then-insert so a second load does not stack duplicates
         locCommandPanels.remove(this.locCommandTab);
@@ -2816,6 +2839,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 else
                 {
                     this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
+                }
+
+                // Whichever way that went, the Auto tab now reflects it.  Startup was the one path
+                // that reached neither branch of setAutonomyDependentTabs, so a window opened with
+                // nothing to resume kept an Auto tab that was enabled and had nothing behind it.
+                if (!this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
+                {
+                    setAutoTabEnabled(false);
                 }
             });
         }

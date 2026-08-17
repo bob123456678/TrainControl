@@ -107,7 +107,13 @@ public class AutonomyOverlayToggle extends JPanel
             if (source != null) source.doClick();
         });
 
-        add(run, java.awt.BorderLayout.EAST);
+        // The same 4px breathing room the checkbox gets from its own FlowLayout, so the two ends of
+        // the strip are inset alike rather than one hugging the edge.
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        right.setOpaque(false);
+        right.add(run);
+
+        add(right, java.awt.BorderLayout.EAST);
 
         // Belt and braces over show.setFocusable(false) above: this strip sits inside the main window,
         // where bare key presses drive locomotives, so nothing in it may hold the keyboard.
