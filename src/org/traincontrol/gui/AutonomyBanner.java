@@ -34,7 +34,28 @@ public class AutonomyBanner extends JPanel
     private static final Color WARNING_BACKGROUND = new Color(255, 244, 214);
     private static final Color WARNING_TEXT = new Color(120, 80, 0);
 
+    /**
+     * What a banner message is set in, shared so that anything sitting beside one can match it rather
+     * than guess at it.
+     */
+    public static final java.awt.Font MESSAGE_FONT =
+        new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13);
+
     private final JLabel message = new JLabel(" ");
+
+    /**
+     * The one thing the message invites the user to do, where there is one.
+     *
+     * On the track diagram the banner is not only used for things that just happened - it also carries
+     * "this layout has a setup nobody has loaded", and a sentence saying so with no way to act on it is
+     * a sentence that has to be read twice and then acted on somewhere else.
+     */
+    private final javax.swing.JButton action = new javax.swing.JButton();
+
+    /**
+     * What the button currently does, so that a second offer replaces the first rather than firing both.
+     */
+    private java.awt.event.ActionListener acting;
 
     private final Timer clear;
 
@@ -44,13 +65,27 @@ public class AutonomyBanner extends JPanel
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         setBackground(INFO_BACKGROUND);
 
-        message.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13));
+        message.setFont(MESSAGE_FONT);
         message.setForeground(INFO_TEXT);
 
         add(message, BorderLayout.CENTER);
 
-        // Fixed height whether or not there is anything to say, so the diagram below never moves.
-        setPreferredSize(new java.awt.Dimension(10, 26));
+        // An offer that goes with the message, for the states where saying what is wrong is only half
+        // the answer.  Hidden unless something has been offered, so an ordinary message is unchanged.
+        action.setFocusable(false);
+        action.setVisible(false);
+        action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+        action.setMargin(new java.awt.Insets(0, 10, 0, 10));
+
+        javax.swing.JPanel right = new javax.swing.JPanel(
+            new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+
+        right.setOpaque(false);
+        right.add(action);
+
+        add(right, BorderLayout.EAST);
+
+        // Height is settled by getPreferredSize below rather than fixed here
 
         clear = new Timer(LINGER_MS, e -> hold(" ", false));
         clear.setRepeats(false);
@@ -89,6 +124,91 @@ public class AutonomyBanner extends JPanel
 
         hold(text, false);
     }
+
+    /**
+     * Says something and offers one thing to do about it, until told otherwise.
+     *
+     * @param text the message
+     * @param buttonText what the button says, or null for no button
+     * @param onPress what pressing it does
+     */
+    public void offer(String text, String buttonText, final Runnable onPress)
+    {
+        clear.stop();
+
+        hold(text, false);
+
+        if (acting != null) action.removeActionListener(acting);
+
+        if (buttonText == null || onPress == null)
+        {
+            acting = null;
+            action.setVisible(false);
+
+            // And the banner itself goes when it has nothing to offer.
+            //
+            // The fixed height above is right where this is the only message channel - inside the editor,
+            // where a strip that appears and disappears would shove the diagram up and down on every
+            // click.  As a header it is wrong: with nothing to say it left an empty band across the top
+            // holding the checkbox down, which is a gap the user cannot act on or get rid of.
+            setVisible(false);
+
+            revalidate();
+            repaint();
+
+            return;
+        }
+
+        acting = e -> onPress.run();
+
+        action.setText(buttonText);
+        action.addActionListener(acting);
+        action.setVisible(true);
+
+        setVisible(true);
+
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * The button this banner offers, for whoever mounts it to size it like its neighbours.
+     * @return
+     */
+    public javax.swing.JButton getActionButton()
+    {
+        return action;
+    }
+
+    /**
+     * Whether this banner is currently saying anything.
+     * @return
+     */
+    public boolean isSaying()
+    {
+        return message.getText() != null && !message.getText().trim().isEmpty();
+    }
+
+    /**
+     * A floor, not a fixed height.
+     *
+     * The floor is what stops the strip changing height as messages come and go, which is the whole
+     * reason the editor can carry one without the diagram below it moving.  Fixing the height outright
+     * was fine while the only thing in here was a line of text, and clipped the bottom off the button
+     * the moment one was added - a button is taller than a label, and the strip has insets of its own.
+     */
+    @Override
+    public java.awt.Dimension getPreferredSize()
+    {
+        java.awt.Dimension natural = super.getPreferredSize();
+
+        return new java.awt.Dimension(10, Math.max(MINIMUM_HEIGHT, natural.height));
+    }
+
+    /**
+     * Tall enough for a line of text with room around it, whether or not there is any.
+     */
+    private static final int MINIMUM_HEIGHT = 26;
 
     private void hold(String text, boolean warning)
     {

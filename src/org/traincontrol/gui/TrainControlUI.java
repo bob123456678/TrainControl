@@ -392,7 +392,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private List<LayoutPopupUI> popups = new ArrayList<>();
     
     // So we can track locomotive (autonomy) locations on track diagrams
-    private final Map<String, Set<JLabel>> layoutStations = new HashMap<>();
+    /**
+     * The diagram labels showing each station, keyed by the station’s SQUARE.
+     *
+     * Not by its name.  A caption used to be a piece of text that had to match a Point’s name, which
+     * broke the moment the station was renamed, and named nothing at all once a station became several
+     * Points with compass bearings in their names.  A square is what a caption points at and what a
+     * Point is derived from, so both ends of this map now agree without anything having to be spelled
+     * the same way twice.
+     */
+    private final Map<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> layoutStations
+        = new HashMap<>();
          
     // Quick search cache
     private String lastSearch = "";
@@ -855,14 +865,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Registers a track diagram label as corresponding to an autonomy station (point)
-     * @param key
-     * @param value 
+     * Registers a track diagram label as showing the station on a square.
+     * @param station the sensor’s square
+     * @param value the label drawing its caption
      */
-    public void addLayoutStation(String key, JLabel value)
+    public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value)
     {
+        if (station == null || value == null) return;
+
         // Use computeIfAbsent to initialize the set if it doesn't exist
-        layoutStations.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        layoutStations.computeIfAbsent(station, k -> new HashSet<>()).add(value);
     }
     
     /**
@@ -888,13 +900,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Get all labels corresponding to a station (point)
-     * @param key
-     * @return 
+     * Every label showing the station on a square.  Several are normal - a long platform is legitimately
+     * captioned at both ends.
+     *
+     * @param station the sensor’s square
+     * @return
      */
-    public Set<JLabel> getLayoutStations(String key)
+    public Set<JLabel> getLayoutStations(org.traincontrol.automationui.TileGraph.TileKey station)
     {
-        return layoutStations.getOrDefault(key, Collections.emptySet());
+        if (station == null) return Collections.emptySet();
+
+        return layoutStations.getOrDefault(station, Collections.emptySet());
     }
     
     /**
@@ -1460,6 +1476,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             session.open(pages);
+
+            // Captions written into the layout file by an earlier version are brought into the setup
+            // when it opens.  A page that could not be rewritten leaves its old labels behind, and the
+            // migration simply runs again next time - but the user is told, because until it succeeds
+            // that page carries text the editor no longer manages.
+            if (!session.getMigrationFailures().isEmpty())
+            {
+                final String pagesLeft = String.join(", ", session.getMigrationFailures());
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("autosetup.ui.errorLabelWriteFailed", pagesLeft)));
+            }
         }
         catch (Exception e)
         {
@@ -1569,6 +1598,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         refreshAutonomyTabState();
         refreshAutonomyFindings();
+        refreshAutonomyPrompt();
         repaintLayout();
     }
 
@@ -1689,12 +1719,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         getDiagramMonitorDriver().bind(session);
         getDiagramMonitorDriver().start();
 
-        if (autonomyOverlayToggle == null)
-        {
-            autonomyOverlayToggle = new AutonomyOverlayToggle(this);
-            this.LayoutArea.setColumnHeaderView(autonomyOverlayToggle);
-            this.LayoutArea.revalidate();
+        boolean firstTime = autonomyOverlayToggle == null;
 
+        ensureDiagramStrip();
+
+        if (firstTime)
+        {
             autonomyOverlayToggle.bindRunButtons(this.startAutonomy, this.gracefulStop);
 
             // Listened for rather than called at each site.  Fourteen places in this class switch these
@@ -1716,6 +1746,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autonomyOverlayToggle.syncRun();
 
         autonomyOverlayToggle.setSelected(true);
+        autonomyOverlayToggle.setLoaded(true);
 
         refreshAutonomyFindings();
 
@@ -1904,6 +1935,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // One editor at a time, over the same button the diagram editor is gated on.
+        //
+        // Two editors share one LayoutDiagram and one edit flag: closing either one sets edit false
+        // under the other, whose tiles then stop routing clicks to it, and re-enables the button so a
+        // third can be opened on top.  Two autonomy editors on one session is the same trap, and was
+        // two clicks of the findings count away.
+        if (!this.editLayoutButton.isEnabled())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorEditorAlreadyOpen"));
+            return;
+        }
+
+        this.editLayoutButton.setEnabled(false);
+
         // the editor edits one page, so the page has to be selected before it is opened
         if (tile != null) this.LayoutList.setSelectedItem(tile.getPage());
 
@@ -1929,6 +1974,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             catch (Exception e)
             {
+                // The button was disabled before the editor was asked for, so a failure here has to give
+                // it back or autonomy setup is unreachable until the application is restarted.
+                this.editLayoutButton.setEnabled(true);
+
                 if (this.model.isDebug()) this.model.log(e);
             }
         });
@@ -1963,38 +2012,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The caption a running Point is written under on the track diagram.
+     * The station whose caption is drawn on a square, if any.
      *
-     * Identity for everything that has not been split, so a hand-written configuration and a diagram
-     * with no reversing squares both behave exactly as before.
+     * Asked of the setup rather than read off the square’s label: a caption is autonomy’s, not
+     * the diagram’s, which is what stops it being a piece of text that has to match a name.
      *
-     * @param pointName
-     * @return the caption, never null
+     * @param where the square the text would sit on
+     * @return the sensor’s square, or null when nothing is captioned there
      */
-    public String stationCaptionFor(String pointName)
+    public org.traincontrol.automationui.TileGraph.TileKey autonomyCaptionAt(
+        org.traincontrol.automationui.TileGraph.TileKey where)
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        return session == null ? pointName : session.baseNameOf(pointName);
+        return session == null ? null : session.getCaptionTarget(where);
     }
 
     /**
-     * The running Point a station caption stands for, preferring one with a train on it.
+     * What to write on a caption when no train is standing there - the station’s own name.
      *
-     * A caption may name several Points now, and only one of them holds the locomotive.  Clicking the
-     * label asks "what is standing here", so the occupied copy is the answer whenever there is one;
-     * with none, any copy will do, because they are all the same square and carry the same settings.
-     *
-     * @param caption what is written on the diagram
-     * @return the Point, or null if the running layout has never heard of it
+     * @param station the sensor’s square
+     * @return the name, or null when the square is not a Point of this setup
      */
-    public org.traincontrol.automation.Point getAutonomyPointForCaption(String caption)
+    public String autonomyStationNameAt(org.traincontrol.automationui.TileGraph.TileKey station)
     {
-        if (!this.model.hasAutoLayout() || caption == null) return null;
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        org.traincontrol.automation.Point direct = this.model.getAutoLayout().getPoint(caption);
+        return session == null ? null : session.pointNameForTile(station);
+    }
 
-        if (direct != null) return direct;
+    /**
+     * The running Point on a square, preferring one with a train on it.
+     *
+     * A square is several Points now, and only one of them holds the locomotive.  Clicking a caption
+     * asks "what is standing here", so the occupied copy is the answer whenever there is one; with
+     * none, any copy will do, because they are all the same square and carry the same settings.
+     *
+     * By square, not by caption text.  Resolving a name against the running graph was the join that
+     * failed in three different ways: a station renamed since the configuration was built, a station
+     * split into copies none of which carry the plain name, and a caption left over from a
+     * configuration that no longer exists.  A square has none of those problems - it is the thing the
+     * caption points at and the thing the Point was derived from.
+     *
+     * @param station the sensor’s square
+     * @return the Point, or null if the running layout has nothing on that square
+     */
+    public org.traincontrol.automation.Point getAutonomyPointForTile(
+        org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        if (!this.model.hasAutoLayout() || station == null) return null;
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
@@ -2002,7 +2068,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automation.Point first = null;
 
-        for (String name : session.pointNamesFor(caption))
+        for (String name : session.pointNamesFor(session.pointNameForTile(station)))
         {
             org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(name);
 
@@ -2025,7 +2091,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param p
      */
-    private void updateStationLabels(Point p)
+    private void updateStationLabels(Point point)
     {
         // Update locomotive autonomy location labels on the main layout.
         //
@@ -2033,12 +2099,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the labels reappearing - but on the diagram path the window is never created at all, which
         // made this permanently dead: prepareAutonomyReload cleared the labels and nothing ever wrote
         // them again.  The gate is now "is there a setup running", which is the real condition.
-        // The caption on the diagram, which is not always what the running Point is called: a square
-        // where trains may turn round is emitted as several Points sharing one caption, and looking the
-        // labels up by the Point's own name finds none of them.
-        final String caption = this.stationCaptionFor(p.getName());
+        // The SQUARE this Point stands on, which is what a caption points at.  Looking labels up by the
+        // Point's own name found none of them the moment a station became several Points - and found
+        // the wrong ones, or none, whenever a station had been renamed.
+        org.traincontrol.automationui.AutonomySession labelSession = getAutonomySession();
 
-        if (!this.getLayoutStations(caption).isEmpty()
+        final org.traincontrol.automationui.TileGraph.TileKey square =
+            labelSession == null ? null : labelSession.tileForPointName(point.getName());
+
+        // Whichever copy of this square is actually holding a train speaks for it.
+        //
+        // A square where trains may turn round is several Points sharing one caption, and this method is
+        // called once per Point - so the copies raced, and the last one written won.  An empty sibling
+        // arriving after the occupied one wrote "[---]" over a platform with a locomotive standing on
+        // it.
+        final Point speaking = this.getAutonomyPointForTile(square);
+
+        final Point p = speaking == null ? point : speaking;
+
+        if (!this.getLayoutStations(square).isEmpty()
                 && (this.activeDiagramConfiguration != null
                     || (this.graphViewer != null && this.graphViewer.isVisible()))
         )
@@ -2051,7 +2130,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             SwingUtilities.invokeLater(() ->
             {
                 // This will exclude locked points
-                for (JLabel j : this.getLayoutStations(caption))
+                for (JLabel j : this.getLayoutStations(square))
                 {                    
                     j.setOpaque(true);
 
@@ -2171,15 +2250,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param y its row
      * @return the station's name, or null when there is nothing there to act on
      */
-    public String autonomyStationAt(int x, int y)
+    public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(int x, int y)
     {
-        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isShowing()) return null;
+        return autonomyStationAt(null, x, y);
+    }
+
+    /**
+     * @param onPage the page the square is actually on.  Passed in rather than read off the main
+     *        window's page list, which names the page THAT window is showing and says nothing about a
+     *        popup - so a right-click in a popup opened the menu of a station on a different page.
+     *        Null falls back to the selected page, for callers that have no square of their own.
+     */
+    public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(
+        String onPage, int x, int y)
+    {
+        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isOverlayShown()) return null;
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         if (session == null || activeDiagramConfiguration == null) return null;
 
-        Object showing = this.LayoutList.getSelectedItem();
+        Object showing = onPage != null ? onPage : this.LayoutList.getSelectedItem();
 
         if (showing == null) return null;
 
@@ -2192,7 +2283,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (!session.getStore().isStation(tile)) return null;
 
-        return session.pointNameForTile(tile);
+        // The SQUARE, not its name.  Everything downstream of this resolves a station by where it is,
+        // which is what a caption points at and what a Point is derived from.
+        return tile;
     }
 
     /**
@@ -2228,9 +2321,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Object showing = this.LayoutList.getSelectedItem();
         String page = showing == null ? null : showing.toString();
 
-        autonomyOverlayToggle.setPageExcluded(page != null && isPageExcludedFromAutonomy(page));
+        boolean excluded = page != null && isPageExcludedFromAutonomy(page);
 
-        if (session == null || session.getReducer() == null)
+        autonomyOverlayToggle.setPageExcluded(excluded);
+
+        // The whole band, not only the half of it holding the controls: a header that is red on the
+        // bottom and white on the top reads as something having gone wrong with the drawing rather than
+        // as a statement about the page.
+        if (autonomyDiagramStrip != null)
+        {
+            autonomyDiagramStrip.setBackground(excluded
+                ? AutonomyOverlayToggle.EXCLUDED_BACKGROUND : java.awt.Color.WHITE);
+
+            autonomyDiagramStrip.repaint();
+        }
+
+        // Nothing to report where there is no setup to report on.
+        //
+        // getAutonomySession() builds a session for any local layout, and a session with no setup still
+        // derives a graph from the track and still has opinions about it - so after deleting a setup
+        // entirely, the strip went on showing a count of unnamed stations belonging to a setup that no
+        // longer existed.  Findings describe a setup; with none, the banner’s offer to make one is
+        // the only thing worth saying.
+        if (session == null || session.getReducer() == null || !session.exists())
         {
             autonomyOverlayToggle.setFindings(0, 0, 0, 0, null);
             return;
@@ -2246,8 +2359,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
-            boolean isError = finding.getSeverity()
-                == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR;
+            org.traincontrol.automationui.AutonomyChecks.Severity severity = finding.getSeverity();
+
+            boolean isError =
+                severity == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR;
+
+            // Notices and information are not warnings, and this label calls itself "errors and
+            // warnings".  Everything that was not an error used to be counted as one, so the number on
+            // the diagram included every unnamed plain sensor - dozens on a real layout - while the
+            // editor listed those under a heading of their own.  The two then disagreed, and the count
+            // was the one nobody could reconcile.
+            if (!isError && severity != org.traincontrol.automationui.AutonomyChecks.Severity.WARNING)
+            {
+                continue;
+            }
 
             // Counted twice on purpose: what is wrong on the page in front of the user, and what is
             // wrong anywhere.  One number for both meant a page with nothing wrong on it still showed
@@ -2293,7 +2418,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // last error should clear it even for somebody who has the overlay switched off.
         refreshAutonomyFindings();
 
-        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isShowing()) return;
+        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isOverlayShown()) return;
 
         showStaticAutonomyLayer(true);
     }
@@ -2320,6 +2445,204 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private AutonomyViewerPanel autonomyViewerPanel;
+
+
+    /**
+     * The strip above the track diagram, made once and kept.
+     *
+     * It carries two things: a banner for what the user needs to know about autonomy on this layout, and
+     * the controls for a setup that is running.  Both live in the scroll pane\u2019s column header, a row
+     * the pane reserves anyway, so no generated layout is touched and the grid keeps the whole viewport.
+     *
+     * Built whether or not anything is loaded, which is the change: it used to appear only once a
+     * configuration had been loaded, so a layout that HAD a setup nobody had loaded said nothing at all -
+     * the one state where the user most needs telling, and the one where nothing told them.
+     */
+    private void ensureDiagramStrip()
+    {
+        if (autonomyOverlayToggle != null) return;
+
+        autonomyOverlayToggle = new AutonomyOverlayToggle(this);
+
+        autonomyDiagramBanner = new AutonomyBanner();
+
+        // Starts out of the way.  A banner keeps a fixed height so that the editor it was written for
+        // never jumps, and here that would be an empty band across the top from the moment the window
+        // opens; it appears when it has something to offer and collapses again afterwards.
+        autonomyDiagramBanner.setVisible(false);
+
+        autonomyDiagramStrip = new javax.swing.JPanel(new java.awt.BorderLayout());
+
+        javax.swing.JPanel strip = autonomyDiagramStrip;
+        strip.setOpaque(true);
+        strip.setBackground(java.awt.Color.WHITE);
+
+        strip.add(autonomyDiagramBanner, java.awt.BorderLayout.NORTH);
+        strip.add(autonomyOverlayToggle, java.awt.BorderLayout.CENTER);
+
+        // Nothing in the main window may hold the keyboard: bare key presses drive locomotives
+        AutonomyViewerPanel.unfocusable(strip);
+
+        this.LayoutArea.setColumnHeaderView(strip);
+        this.LayoutArea.revalidate();
+    }
+
+    /**
+     * Says whether this layout has a setup waiting to be loaded, and offers to load it.
+     *
+     * The state this exists for: a layout somebody set autonomy up on, reopened, with nothing running.
+     * Everything was in place and the only sign of it was a menu the user had to think to open - so the
+     * setup looked lost, and the answer to "where did my stations go" was three clicks away in a place
+     * nobody had reason to look.
+     *
+     * Once a configuration is loaded the banner goes and the strip below carries the Start button, which
+     * is the same offer one step further on.
+     */
+    public void refreshAutonomyPrompt()
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        boolean waiting = session != null && session.exists()
+            && this.activeDiagramConfiguration == null
+            && !session.getStore().getConfigurationNames().isEmpty();
+
+        if (!waiting)
+        {
+            if (autonomyDiagramBanner != null)
+            {
+                autonomyDiagramBanner.offer(null, null, null);
+
+                this.LayoutArea.revalidate();
+                this.LayoutArea.repaint();
+            }
+
+            if (autonomyOverlayToggle != null)
+            {
+                autonomyOverlayToggle.setLoaded(this.activeDiagramConfiguration != null);
+                autonomyOverlayToggle.setBannerShowing(false);
+            }
+
+            return;
+        }
+
+        ensureDiagramStrip();
+
+        autonomyOverlayToggle.setLoaded(false);
+
+        // The banner is about to say this in words, with a button; the count below it would be the same
+        // news a second time
+        autonomyOverlayToggle.setBannerShowing(true);
+
+        // Whichever configuration is chosen, which is the one the menu would run.  With none chosen the
+        // first is offered, because a layout with exactly one is the common case and asking which of one
+        // is a question with no content.
+        final String chosen = session.getStore().getActiveConfiguration() != null
+            ? session.getStore().getActiveConfiguration()
+            : session.getStore().getConfigurationNames().get(0);
+
+        // A setup that cannot be built is not one to offer to load.
+        //
+        // Loading refuses on a blocking problem, so the button would have failed every time it was
+        // pressed - and the message beside it would have gone on inviting the press.  What that state
+        // needs is the way to the problems, which is the editor.
+        if (session.hasBlockingProblems())
+        {
+            autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupCannotRun"),
+                I18n.t("autosetup.ui.btnFixSetup"),
+                () -> openAutonomyEditor(null));
+        }
+        else
+        {
+            // The configuration is deliberately not named.  The banner is one line across the top of the
+            // diagram, most layouts have exactly one setup, and the name is on the button’s own menu
+            // for anybody who has several - so naming it here spent the width that made the line fit.
+            autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupNotLoaded"),
+                I18n.t("autosetup.ui.btnLoadConfiguration"),
+                () ->
+                {
+                    AutonomyViewerPanel actions = getAutonomyViewerPanel();
+
+                    if (actions == null) return;
+
+                    actions.setSelectedConfiguration(chosen);
+                    actions.load(chosen, true);
+
+                    autonomyMenuActed();
+                });
+        }
+
+        // Sized like the Start button that takes its place once the setup is running, so the two are
+        // the same object as far as the eye is concerned rather than two buttons that happen to be in
+        // the same corner.  After the offer, because the width follows the label.
+        autonomyOverlayToggle.styleAsRunButton(autonomyDiagramBanner.getActionButton());
+
+        // The column header changes height when the banner comes and goes, and the scroll pane has to
+        // be told or the diagram keeps the space the old header had
+        this.LayoutArea.revalidate();
+        this.LayoutArea.repaint();
+    }
+
+    /**
+     * Stops using autonomy, without deleting anything.
+     *
+     * The way back out of having loaded a configuration.  Every other path here replaces one graph with
+     * another, so a layout that had been given one could not be returned to having none - the diagram
+     * kept drawing stations and the Auto tab kept offering to run trains, with no way to say "not today"
+     * short of restarting.
+     *
+     * @return whether it happened - a run the user declined to stop leaves everything alone
+     */
+    public boolean unloadAutonomy()
+    {
+        if (this.model == null) return false;
+
+        // Asks first if anything is moving, and stops it
+        if (!prepareAutonomyReload()) return false;
+
+        this.model.clearAutoLayout();
+
+        resetAutonomySession();
+
+        autonomyMenuActed();
+
+        return true;
+    }
+
+    /**
+     * Called when a setup has been deleted out from under the window.
+     */
+    public void autonomySetupDeleted()
+    {
+        if (this.model != null) this.model.clearAutoLayout();
+
+        resetAutonomySession();
+
+        autonomyMenuActed();
+    }
+
+    /**
+     * Opens the Autonomy menu on the list of pages, which is where a page is put back into autonomy.
+     *
+     * Reached from the diagram itself, because that is where the user finds out the page is left out -
+     * and a statement they cannot act on from where they are standing is half an answer.
+     */
+    public void openAutonomyPagesMenu()
+    {
+        if (autonomyMenu == null) return;
+
+        javax.swing.SwingUtilities.invokeLater(() -> autonomyMenu.showPages());
+    }
+
+    /**
+     * What the diagram says about autonomy when there is something to say.  See refreshAutonomyPrompt.
+     */
+    private AutonomyBanner autonomyDiagramBanner;
+
+    /**
+     * The band above the diagram holding the banner and the controls, kept so that its colour can follow
+     * whether autonomy is looking at this page at all.
+     */
+    private javax.swing.JPanel autonomyDiagramStrip;
 
     private AutonomyOverlayToggle autonomyOverlayToggle;
 
@@ -2959,6 +3282,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // or with nothing to resume, the window opened on an Auto tab that was enabled and empty.
         refreshAutonomyTabState();
 
+        // And whether this layout has a setup nobody has loaded, which is the state the diagram itself
+        // has to say something about - it is where the user is looking, and it is where the stations
+        // they are wondering about would be.
+        javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyPrompt());
+
         // Load autonomy if requested
         if (this.AutoLoadAutonomyMenuItem.isSelected())
         {
@@ -2979,6 +3307,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 refreshAutonomyTabState();
+                refreshAutonomyPrompt();
             });
         }
                 
@@ -10832,6 +11161,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_WindowClosed
 
     /**
+     * Brings the track diagram to the front.
+     *
+     * Where somebody who has just set autonomy up wants to be: the diagram is what the setup is FOR, it
+     * carries the strip saying whether anything needs looking at, and it is where the stations they have
+     * just created will appear.  Leaving them on the tab they pressed the button from means the work
+     * they did seems to have happened somewhere they cannot see.
+     */
+    public void showLayoutTab()
+    {
+        if (this.layoutPanel == null) return;
+
+        int index = this.KeyboardTab.indexOfComponent(this.layoutPanel);
+
+        if (index >= 0) this.KeyboardTab.setSelectedIndex(index);
+    }
+
+    /**
      * Shows the tab with the specified icon
      * @param tabIcon 
      */
@@ -12772,12 +13118,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
 
+    /**
+     * The timestamp the other backup files are named with, so a folder copy sits beside them and is
+     * obviously part of the same backup rather than a stray directory.
+     */
+    private String prefixForBackup()
+    {
+        return "backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis())
+            .replace(':', '-').replace(' ', '_');
+    }
+
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         new Thread(() ->
         {
             this.backupDataMenuItem.setEnabled(false);
             this.saveState(true);
             this.model.saveState(true);
+
+            // The track diagram and the autonomy setup beside it.
+            //
+            // Neither used to be backed up, which was defensible while the diagram lived on the Central
+            // Station and autonomy lived in one autonomy.json this method already saved.  It is not
+            // defensible now: for a locally stored layout, config/ holds the pages AND config/autonomy
+            // holds every station name, direction, caption and configuration - and that folder is the
+            // only copy of them anywhere.
+            List<String> unsaved = new java.util.ArrayList<>();
+
+            String localLayout = getLocalLayoutPath();
+
+            if (localLayout != null && !localLayout.isEmpty())
+            {
+                unsaved.addAll(Util.backupFolder(new File(localLayout, "config"),
+                    prefixForBackup() + "layout"));
+            }
+
             this.backupDataMenuItem.setEnabled(true);
 
             // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
@@ -12790,7 +13164,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JOptionPane.showMessageDialog(
                     this,
-                    I18n.f("ui.infoBackupCompleteSavedTo", backupFolder)
+                    unsaved.isEmpty()
+                        ? I18n.f("ui.infoBackupCompleteSavedTo", backupFolder)
+                        : I18n.f("ui.warnBackupIncomplete", backupFolder,
+                            String.join(", ", unsaved))
                 );
 
                 // Advance to last tab (log)
@@ -13497,6 +13874,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param evt 
      */
     private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
+
+        // One editor at a time, checked here rather than only on the button.  A disabled button stops
+        // the CLICK, and this method is also called straight from the "edit current page" menu item -
+        // where a disabled button says nothing at all, and a second editor opened over the first.
+        if (!this.editLayoutButton.isEnabled())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorEditorAlreadyOpen"));
+
+            return;
+        }
         
         if (!this.isLocalLayout())
         {
@@ -13589,9 +13976,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     this.model.log(e);
                 }
+
+                // Only on failure.  Handing the button straight back after the editor opened was what
+                // let a second one be opened on top of it - through the findings count, or "place
+                // locomotives", both of which go through openAutonomyEditor and check only this button.
+                // On success the editor gives it back itself, when it closes.
+                this.editLayoutButton.setEnabled(true);
             }
-            
-            this.editLayoutButton.setEnabled(true);
         });
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 

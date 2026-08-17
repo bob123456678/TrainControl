@@ -1,4 +1,5 @@
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -429,5 +430,107 @@ public class testParseCS2Layout
                 .map(Path::toFile)
                 .forEach(File::delete);
         }
+    }
+
+    /**
+     * A component TrainControl has never heard of survives being saved.
+     *
+     * Saving regenerates the whole page from the model, and an element whose type the parser cannot map
+     * never entered the model - so writing the file deleted it.  That is not a save the user asked for:
+     * naming one station writes its page out, and renaming a point writes out every page showing that
+     * name.  A diagram with one unrecognised element on it lost that element the first time somebody
+     * typed a station name.
+     */
+    @Test
+    public void testAnUnrecognisedElementSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n"
+            + "element\n"
+            + " .id=0x202\n"
+            + " .typ=weltraumbahnhof\n"
+            + " .artikel=7\n"
+            + " .drehung=2\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("weltraumbahnhof"),
+            "an element this program cannot model is still the user's, and must come back:\n" + written);
+
+        assertTrue(written.contains("0x202"), "and at the square it was on:\n" + written);
+        assertTrue(written.contains(".artikel=7"), "with what it said about itself:\n" + written);
+        assertTrue(written.contains(".drehung=2"), "all of it:\n" + written);
+
+        // and the ordinary component is still there too, which is what says the export still works
+        assertTrue(written.contains("gerade"), "the modelled component is still written:\n" + written);
+    }
+
+    /**
+     * A key on a component the model DOES understand, but has no field for, survives too.
+     *
+     * The same loss one level down: the component is kept, and everything the file said about it that
+     * this program has no variable for is dropped on the way out.
+     */
+    @Test
+    public void testAnUnknownKeyOnAKnownComponentSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n"
+            + " .sonderfarbe=blau\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("sonderfarbe"),
+            "a key this program does not read is still a key it may not delete:\n" + written);
+
+        assertTrue(written.contains("blau"), "with its value:\n" + written);
+    }
+
+    /**
+     * Writes a page, parses it the way the application does, exports it again, and hands back what was
+     * written.  Nothing is asserted here - each test says what it expects to survive.
+     */
+    private String roundTrip(String contents) throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-layout").toFile();
+
+        File config = new File(folder, "config");
+        File pages = new File(config, "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not create " + pages);
+
+        Files.write(new File(pages, "Test.cs2").toPath(), contents.getBytes(StandardCharsets.UTF_8));
+
+        // The index lives beside the gleisbilder folder, not inside it - config/gleisbild.cs2 is what
+        // getLayoutMasterURL asks for, and the pages are config/gleisbilder/<name>.cs2.
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=Test\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        org.traincontrol.marklin.file.CS2File parser =
+            new org.traincontrol.marklin.file.CS2File(url, null);
+
+        parser.setLayoutDataLoc(url);
+
+        List<LayoutDiagram> parsed =
+            parser.parseLayout(new java.util.LinkedList<org.traincontrol.marklin.MarklinAccessory>());
+
+        assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        return parsed.get(0).exportToCS2TextFormat();
     }
 }

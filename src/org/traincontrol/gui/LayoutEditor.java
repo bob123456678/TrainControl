@@ -34,7 +34,6 @@ import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
-import static org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_PREFIX;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.util.I18n;
@@ -505,6 +504,32 @@ public class LayoutEditor extends PositionAwareJFrame
                 public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
                 {
                     reveal(tile);
+                }
+            });
+
+            // A finding on another page: close this window and open one showing that page, at that
+            // square.  The editor is built around a single diagram - the field is final and the grid,
+            // the annotations and the page exclusion all follow from it - so swapping pages in place
+            // would mean rebuilding most of the window, and reopening it does the same thing honestly.
+            //
+            // Nothing is lost by closing: every edit made here has already gone into the shared session,
+            // which is why "exit without saving" has to reload the store to undo them.  This path is
+            // deliberately not that one.
+            autonomyPanel.setOnJumpToPage(new java.util.function.Consumer<
+                org.traincontrol.automationui.TileGraph.TileKey>()
+            {
+                @Override
+                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
+                {
+                    layout.setEdit(false);
+
+                    dispose();
+
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        parent.autonomyEditorClosed();
+                        parent.openAutonomyEditor(tile);
+                    });
                 }
             });
 
@@ -1206,85 +1231,20 @@ public class LayoutEditor extends PositionAwareJFrame
     */
     public void editTextWithDropdown(LayoutLabel label)
     {
-        LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
-
-        if (lc != null && this.parent.getModel().hasAutoLayout() && !this.parent.getModel().getAutoLayout().getPoints().isEmpty())
-        {
-            // Retrieve the points, sort them by name, and construct dropdown options
-            Collection<Point> points = this.parent.getModel().getAutoLayout().getPoints();
-            List<String> options = points.stream()
-                    .filter(Point::isDestination)
-                    .map(Point::getName)
-                    .sorted()
-                    .collect(Collectors.toList());
-            
-            if (options.isEmpty())
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("layout.ui.errorNoStationsInGraph")
-                );
-                parent.ensureGraphUIVisible();
-            }
-            else
-            {
-                JPanel panel = new JPanel(new BorderLayout());
-                JLabel stationLabel = new JLabel(
-                    I18n.t("layout.ui.labelAutonomyStationInfo")
-                );
-                JComboBox<String> comboBox = new JComboBox<>(
-                    options.toArray(new String[0])
-                );
-                comboBox.setSelectedItem(
-                    lc.getLabel().replace(LAYOUT_STATION_PREFIX, "")
-                );
-
-                panel.add(stationLabel, BorderLayout.NORTH);
-                panel.add(comboBox, BorderLayout.CENTER);
-
-                int result = JOptionPane.showOptionDialog(
-                    this,
-                    panel,
-                    I18n.t("layout.ui.dialogSelectStation"),
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    TrainControlUI.OK_CANCEL_OPTS,
-                    TrainControlUI.OK_CANCEL_OPTS[0]
-                );
-
-                if (result == JOptionPane.OK_OPTION)
-                {
-                    String selectedOption = (String) comboBox.getSelectedItem();
-
-                    if (selectedOption != null)
-                    {
-                        this.snapshotLayout();
-
-                        lc.setLabel(LAYOUT_STATION_PREFIX + selectedOption);
-
-                        try
-                        {
-                            layout.addComponent(
-                                lc,
-                                grid.getCoordinates(label)[0],
-                                grid.getCoordinates(label)[1]
-                            );
-                            this.resetClipboard();
-                        }
-                        catch (IOException ex)
-                        {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                I18n.t("layout.ui.errorAddStationComponent")
-                            );
-                        }
-
-                        refreshGrid();
-                    }
-                }
-            }
-        }
+        // Station captions are not text on the diagram any more.
+        //
+        // They were, and this dialog is what wrote them: it picked a Point by name and stored
+        // "Point:<name>" into a text square.  That binding broke whenever the station was renamed, named
+        // nothing at all once a station became several Points, and made saving the layout the only way
+        // to record a caption - which is what put autonomy in the business of rewriting layout files.
+        //
+        // A caption now belongs to the autonomy setup and points at the sensor SQUARE, so it is set
+        // where the rest of autonomy is set.  Said plainly rather than removed from the menu, because
+        // somebody who used to do it here needs to be told where it went.
+        JOptionPane.showMessageDialog(
+            this,
+            I18n.t("layout.ui.infoStationLabelsMovedToAutonomy")
+        );
     }
     
      /**
@@ -1859,7 +1819,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 int result = JOptionPane.showOptionDialog(
                     this,
-                    I18n.t("layout.ui.confirmExitWithoutSaving"),
+                    I18n.t("autosetup.ui.confirmExitWithoutSaving"),
                     I18n.t("layout.ui.dialogExitConfirmation"),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.PLAIN_MESSAGE,
@@ -1869,6 +1829,20 @@ public class LayoutEditor extends PositionAwareJFrame
                 );
 
                 if (result != JOptionPane.YES_OPTION) return;
+
+                // And actually throw them away.  Answering yes used to close the window and nothing
+                // else: the edits stayed in the live session, kept being drawn on the diagram, and were
+                // written out by the next save from anywhere - so the question was asked and its answer
+                // ignored.
+                String failed = autonomyPanel.discardEdits();
+
+                if (failed != null)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("autosetup.ui.errorDiscardFailed", failed));
+
+                    return;
+                }
             }
 
             closeAutonomyMode();

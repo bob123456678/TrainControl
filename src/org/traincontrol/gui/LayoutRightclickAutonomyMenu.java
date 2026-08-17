@@ -17,7 +17,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
     public static final int MAX_PATHS = 12;
     
-    public LayoutRightclickAutonomyMenu(TrainControlUI ui, String stationName)
+    /**
+     * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square
+     *        rather than a name: a station is several Points now and none of them is called what the
+     *        caption says, so resolving one by its text found nothing and the menu silently lost every
+     *        item below the lookup.
+     */
+    public LayoutRightclickAutonomyMenu(TrainControlUI ui,
+        org.traincontrol.automationui.TileGraph.TileKey station)
     {        
         JMenuItem menuItem;
         
@@ -42,12 +49,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui);
 
-                // Get the autonomy point corresponding to this station.
-                //
-                // Through the caption, because a square where trains may turn round is emitted as
-                // several Points and none of them is called what the diagram says - so a direct lookup
-                // returns null and the menu silently loses everything below this line.
-                Point current = ui.getAutonomyPointForCaption(stationName);
+                // The Point standing on that square, preferring one with a train on it
+                Point current = ui.getAutonomyPointForTile(station);
 
                 if (current != null && current.isDestination())
                 {
@@ -132,7 +135,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     addSeparator();
 
                     // Station name label
-                    menuItem = new JMenuItem(stationName);
+                    menuItem = new JMenuItem(current.getName());
                     menuItem.setEnabled(false);
                     add(menuItem);
 

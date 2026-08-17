@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -245,7 +246,12 @@ public class testAutonomyDiagramSession
         {
             org.json.JSONObject p = (org.json.JSONObject) o;
 
-            if (p.getInt("s88") == 11) builtPoint = p;
+            if (p.getInt("s88") != 11) continue;
+
+            // The copy carrying the locomotive, where the square became several.  A placement is a
+            // physical object and rides on exactly ONE copy; taking whichever was emitted last found a
+            // copy with every other authored property and no "loc" on it.
+            if (builtPoint == null || p.has("loc")) builtPoint = p;
         }
 
         assertNotNull(builtPoint, "the sensor should still be a Point, keyed by its real s88");
@@ -464,5 +470,164 @@ public class testAutonomyDiagramSession
         }
 
         file.delete();
+    }
+
+    // --- captions ----------------------------------------------------------------------------------
+
+    /**
+     * Renaming a station does not touch the track diagram.
+     *
+     * The whole reason captions moved out of the layout file, stated as a test.  A caption used to be
+     * the text "Point:<name>" written into a text square, so renaming a station meant rewriting every
+     * page showing the old name - which could fail halfway, and which regenerated those pages from a
+     * model that silently dropped anything the parser could not understand.  A caption points at the
+     * station\u2019s SQUARE now, so a rename is a change to the setup and to nothing else.
+     */
+    @Test
+    public void testRenamingAStationTouchesNoPage() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        byte[] before = Files.readAllBytes(pageFile.toPath());
+
+        session.setPointName(station, "Hauptbahnhof");
+
+        assertEquals(Files.readAllBytes(pageFile.toPath()), before,
+            "renaming a station rewrote the track diagram, which is the thing this design removes");
+
+        assertEquals(session.getCaptionTarget(caption), station,
+            "and the caption still points at the same station, without having been told its new name");
+    }
+
+    /**
+     * A caption written into the diagram by an older version is brought across, and an orphan is not.
+     *
+     * "Point:Bahnhof" naming a station this setup knows becomes a caption keyed to that station\u2019s
+     * square.  One naming nothing - left behind by a configuration that no longer exists, which is what
+     * four of the captions on the author\u2019s own layout were - is dropped rather than drawn as a
+     * caption that looks live and does nothing.
+     */
+    @Test
+    public void testALegacyLabelBecomesACaptionAndAnOrphanIsDropped() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        // authored before the migration runs, so the names are there to be matched against
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.save();
+
+        // and now the diagram carries two old-style labels: one live, one naming nothing
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        page.addComponent(componentType.TEXT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "GhostSiding");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertTrue(reopened.getMigrationFailures().isEmpty(),
+            "the pages should have been written: " + reopened.getMigrationFailures());
+
+        assertEquals(reopened.getCaptionTarget(new TileKey("main", 1, 2)), station,
+            "a label naming a station this setup knows becomes that station\u2019s caption");
+
+        assertNull(reopened.getCaptionTarget(new TileKey("main", 3, 2)),
+            "a label naming nothing is dropped rather than carried forward");
+
+        // and the labels themselves are gone, so the migration does not run again on the next open
+        assertEquals(page.getComponent(1, 2).getLabel(), "",
+            "the old label is cleared once its caption exists");
+
+        assertFalse(new String(Files.readAllBytes(pageFile.toPath()), StandardCharsets.UTF_8)
+            .contains(AutonomySession.STATION_LABEL_PREFIX),
+            "and the page written back out no longer carries it");
+    }
+
+    /**
+     * A caption the user\u2019s own writing sits on top of is reported.
+     *
+     * The square belongs to the diagram, so the text is what gets drawn and the caption is what goes
+     * quiet.  Nothing is deleted, and a station that looks captioned and shows nothing is exactly the
+     * puzzle worth a warning.
+     */
+    @Test
+    public void testACaptionCoveredByTextIsReported() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.CAPTION_COVERED),
+            "nothing is on that square yet");
+
+        // the user writes something of their own on the square the caption is drawn on
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
+
+        session.rebuild();
+
+        assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.CAPTION_COVERED),
+            "a caption nobody can see has to say so");
+    }
+
+    private boolean hasFinding(String messageKey)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getMessageKey().equals(messageKey)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * A page whose file really exists, so that "this was not written" is a claim that can be checked.
+     */
+    private File pageFile;
+
+    private LayoutDiagram pageOnDisk() throws IOException
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        pageFile = new File(pages, "main.cs2");
+
+        Files.write(pageFile.toPath(),
+            "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + pageFile.getAbsolutePath().replace('\\', '/');
+
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
     }
 }

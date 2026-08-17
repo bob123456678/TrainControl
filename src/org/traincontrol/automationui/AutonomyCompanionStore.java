@@ -70,6 +70,21 @@ public class AutonomyCompanionStore
     private final Map<String, Integer> tileLengths = new LinkedHashMap<>();
     private final Map<String, String> tileDirections = new LinkedHashMap<>();
     private final Map<String, String> portals = new LinkedHashMap<>();
+
+    /**
+     * Where each station caption is drawn, and which square it is about: caption square -> sensor square.
+     *
+     * Kept here rather than in the diagram, which is what makes a caption a thing rather than a piece of
+     * text that happens to match a name.  As a label reading "Point:Bahnhof" it bound to a Point BY NAME
+     * and therefore broke in every direction: a rename had to rewrite every page showing it, a station
+     * split into several Points was called none of them, and a name that no longer existed left a label
+     * that looked live and did nothing.  Keyed by square, none of that can happen - renaming is free,
+     * because the caption never knew the name in the first place.
+     *
+     * It also means autonomy no longer writes to the layout file at all, which is where the worst defect
+     * in this feature lived: saving regenerated the page and deleted anything the parser could not model.
+     */
+    private final Map<String, String> captions = new LinkedHashMap<>();
     private final Map<String, String> linkNames = new LinkedHashMap<>();
     private final Set<String> excludedPages = new LinkedHashSet<>();
 
@@ -174,12 +189,32 @@ public class AutonomyCompanionStore
      */
     public void load() throws IOException
     {
-        clear();
+        if (!exists())
+        {
+            clear();
+            return;
+        }
 
-        if (!exists()) return;
+        // Read and parse BEFORE anything is thrown away.
+        //
+        // This used to clear first, so a file that could not be read - a sync lock on the folder, a
+        // truncated write, a setup written by a newer TrainControl - left the store empty and the
+        // failure reported as though nothing had happened.  The caller then had a live, blank store:
+        // every station, name and direction gone from the screen, and one press of Save away from being
+        // gone from the disk as well.  A load that fails now leaves the setup exactly as it was.
+        String contents = new String(
+            Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
 
-        JSONObject root = new JSONObject(
-            new String(Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8));
+        JSONObject root;
+
+        try
+        {
+            root = new JSONObject(contents);
+        }
+        catch (org.json.JSONException e)
+        {
+            throw new IOException(String.valueOf(e.getMessage()), e);
+        }
 
         int version = root.optInt("version", VERSION);
 
@@ -188,10 +223,13 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
         }
 
+        clear();
+
         readStringMap(root, "pointNames", pointNames);
         readStringSet(root, "stations", stations);
         readStringMap(root, "tileDirections", tileDirections);
         readStringMap(root, "portals", portals);
+        readStringMap(root, "captions", captions);
         readStringMap(root, "linkNames", linkNames);
         readStringSet(root, "excludedPages", excludedPages);
         readStringSet(root, "disabledLinks", disabledPortals);
@@ -215,6 +253,7 @@ public class AutonomyCompanionStore
         untranslate(tileDirections);
         untranslate(linkNames);
         untranslatePortals();
+        untranslateTileMap(captions);
         untranslateSet(stations);
         untranslateSet(disabledPortals);
 
@@ -314,6 +353,7 @@ public class AutonomyCompanionStore
         root.put("tileLengths", new JSONObject(translateLengths()));
         root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
         root.put("portals", new JSONObject(translatePortals()));
+        root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
         root.put("excludedPages", new JSONArray(excludedPages));
         root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
@@ -629,8 +669,6 @@ public class AutonomyCompanionStore
      */
     public void deleteConfiguration(String name) throws IOException
     {
-        if (configurations.size() <= 1) throw new IOException(ERROR_LAST_CONFIGURATION);
-
         if (configurations.remove(name) == null) return;
 
         File file = configurationFile(name);
@@ -639,7 +677,59 @@ public class AutonomyCompanionStore
 
         if (name.equals(activeConfiguration))
         {
-            activeConfiguration = configurations.keySet().iterator().next();
+            // The last one may go now.  It used to be refused, on the reasoning that a setup with no
+            // configurations is a state nothing could act on - but that made setting autonomy up a
+            // one-way door: a layout somebody had experimented on kept a configuration for ever.  With
+            // none left there is simply nothing active, which is the state every layout starts in and
+            // which the rest of this class has always handled.
+            activeConfiguration = configurations.isEmpty()
+                ? null : configurations.keySet().iterator().next();
+        }
+    }
+
+    /**
+     * Removes the whole setup: every configuration, every decision, and the files holding them.
+     *
+     * Offered because until now there was no way back out of having set autonomy up.  Configurations
+     * could be deleted one at a time and the last one refused, so a layout somebody had experimented on
+     * kept a setup they could not be rid of - and the only alternative was deleting a folder by hand,
+     * which is exactly the sort of advice that ends in the wrong folder being deleted.
+     *
+     * The diagram is not touched.  Captions live here now, so they go with it; the track, the sensors
+     * and everything the Central Station knows about are the layout’s, not autonomy’s, and this
+     * has no business anywhere near them.
+     *
+     * @throws IOException if a file could not be removed, having removed what it could - the state in
+     *         memory is cleared either way, so what remains on disk is not read back
+     */
+    public void deleteEverything() throws IOException
+    {
+        List<String> failed = new ArrayList<>();
+
+        for (String name : new ArrayList<>(configurations.keySet()))
+        {
+            File file = configurationFile(name);
+
+            if (file.isFile() && !file.delete()) failed.add(file.getName());
+        }
+
+        File setup = setupFile();
+
+        if (setup.isFile() && !setup.delete()) failed.add(setup.getName());
+
+        clear();
+
+        // Only if it is now empty.  A folder somebody keeps something else in is not this method’s
+        // to remove, and an empty one left behind costs nothing.
+        File folder = folder();
+
+        String[] left = folder.list();
+
+        if (folder.isDirectory() && left != null && left.length == 0) folder.delete();
+
+        if (!failed.isEmpty())
+        {
+            throw new IOException(String.join(", ", failed));
         }
     }
 
@@ -780,6 +870,10 @@ public class AutonomyCompanionStore
 
         report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
         report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
+
+        // A caption goes when either end of it does - the square it is drawn on, or the sensor it is
+        // about.  Text pointing at track that no longer exists is the orphan this whole change removes.
+        report.droppedTileProperties.addAll(reconcileCaptions(keys));
 
         List<String> goneTiles = new ArrayList<>();
 
@@ -938,6 +1032,7 @@ public class AutonomyCompanionStore
         tileLengths.clear();
         tileDirections.clear();
         portals.clear();
+        captions.clear();
         linkNames.clear();
         excludedPages.clear();
         disabledPortals.clear();
@@ -1030,6 +1125,34 @@ public class AutonomyCompanionStore
         map.putAll(out);
     }
 
+    /**
+     * The same as untranslatePortals, for any map whose keys AND values are both squares.
+     */
+    private void untranslateTileMap(Map<String, String> map)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            out.put(fromStored(entry.getKey()), fromStored(entry.getValue()));
+        }
+
+        map.clear();
+        map.putAll(out);
+    }
+
+    private Map<String, String> translateTileMap(Map<String, String> map)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            out.put(toStored(entry.getKey()), toStored(entry.getValue()));
+        }
+
+        return out;
+    }
+
     private void untranslatePortals()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -1080,6 +1203,114 @@ public class AutonomyCompanionStore
         return out;
     }
 
+    // --- captions ---------------------------------------------------------------------------------
+
+    /**
+     * The square a caption is about.
+     *
+     * @param captionTile the square the text is drawn on
+     * @return the sensor's square, or null when no caption is drawn there
+     */
+    public TileKey getCaptionTarget(TileKey captionTile)
+    {
+        if (captionTile == null) return null;
+
+        return parseTileKey(captions.get(captionTile.toString()));
+    }
+
+    /**
+     * Draws a station's caption on a square.
+     *
+     * One caption per square, by construction: the map is keyed by the square the text sits on, so a
+     * second caption there replaces the first rather than fighting it.  Several squares may name the
+     * same station, which is deliberate - a long platform is legitimately labelled at both ends.
+     *
+     * @param captionTile where the text goes
+     * @param stationTile the sensor it is about, or null to clear
+     */
+    public void setCaption(TileKey captionTile, TileKey stationTile)
+    {
+        if (captionTile == null) return;
+
+        if (stationTile == null)
+        {
+            captions.remove(captionTile.toString());
+            return;
+        }
+
+        captions.put(captionTile.toString(), stationTile.toString());
+    }
+
+    /**
+     * Every square carrying a caption about this sensor.
+     *
+     * @param stationTile
+     * @return the caption squares, possibly none
+     */
+    public Set<TileKey> captionsFor(TileKey stationTile)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (stationTile == null) return out;
+
+        String wanted = stationTile.toString();
+
+        for (Map.Entry<String, String> entry : captions.entrySet())
+        {
+            if (wanted.equals(entry.getValue()))
+            {
+                TileKey where = parseTileKey(entry.getKey());
+
+                if (where != null) out.add(where);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Every caption, as caption square to sensor square.
+     * @return
+     */
+    public Map<TileKey, TileKey> getCaptions()
+    {
+        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : captions.entrySet())
+        {
+            TileKey where = parseTileKey(entry.getKey());
+            TileKey what = parseTileKey(entry.getValue());
+
+            if (where != null && what != null) out.put(where, what);
+        }
+
+        return out;
+    }
+
+    /**
+     * Forgets every caption whose square, or whose sensor's square, is no longer on the diagram.
+     *
+     * Called from reconcile, for the same reason everything else there is: track gets redrawn between
+     * sessions, and a caption about a sensor that has been deleted would be text pointing at nothing.
+     *
+     * @param existing every square the diagram still has
+     * @return the caption squares that were dropped
+     */
+    private List<String> reconcileCaptions(Set<String> existing)
+    {
+        List<String> dropped = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : new LinkedHashMap<>(captions).entrySet())
+        {
+            if (existing.contains(entry.getKey()) && existing.contains(entry.getValue())) continue;
+
+            captions.remove(entry.getKey());
+            dropped.add(entry.getKey());
+        }
+
+        return dropped;
+    }
+
     private Map<String, String> translatePortals()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -1097,7 +1328,10 @@ public class AutonomyCompanionStore
         return tile.toString() + "#" + routeId.getState() + "," + routeId.getIndex();
     }
 
-    private static TileKey parseTileKey(String key)
+    // Package-private rather than private: the session prunes stale point data by tile, and has to be
+    // able to read the page out of a stored key to tell "this square is gone" from "this square is on a
+    // page autonomy was told to ignore".
+    static TileKey parseTileKey(String key)
     {
         if (key == null) return null;
 

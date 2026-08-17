@@ -24,6 +24,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Problem;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -256,9 +257,6 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * The reduction must produce a graph at all.  If this fails, nothing below it is worth reading.
-     */
-    /**
      * Prints the reduction, so a route somebody disputes can be checked against what was derived.
      *
      * Not an assertion - it asserts only that something was derived at all.  Its job is to put the
@@ -333,6 +331,214 @@ public class testAutonomyDiagramSampleLayout
         }
     }
 
+    /**
+     * A train may not leave a Point by the side it arrived at.
+     *
+     * This is the one rule a Point-and-edge graph cannot state.  The reduction is honest about the
+     * TRACK - if two sensors are joined, trains run between them both ways, and both edges are real -
+     * but a journey is not free to use them consecutively: leaving by the side you came in on means
+     * reversing, and a train only reverses where the railway has somewhere for it to do so.  Nothing in
+     * the running model prevents it, because the model has no idea which way the train is pointing; it
+     * knows only which Point it is standing on.
+     *
+     * The hand-built configuration solved this by hand, which is visible in the file: TunnelPre -> Tunnel
+     * exists and Tunnel -> TunnelPre does not, and the way back out of that sensor is a SECOND Point on
+     * the same s88 (TunnelReverse) with its own edges.  One-way edges and doubled Points are not the
+     * author being cautious - they are how the direction a train is facing was written down.
+     *
+     * Checked on the BUILT graph rather than on the reduction, which is where the answer lives.  The
+     * reduction is meant to keep both directions - the track does run both ways - and the builder is
+     * what turns each square into one Point per arrival side, so that leaving by the side you came in at
+     * is not a move any single Point has.  Asserting on the reduction would be asserting that the track
+     * is one-way, which it is not.
+     *
+     * A Point emitted as a terminus or a reversing point is exempt: that IS the copy that turns trains
+     * round, and it exists precisely to have the move everything else is denied.
+     *
+     * Both reductions are built.  As authored, most branches are closed and a reversal has no edge to be
+     * made of, so that reading understates the problem badly; with every branch open is the shape a
+     * finished setup has, and is where the real count lives.
+     */
+    @Test
+    public void testATrainCannotLeaveBySideItArrivedAt()
+    {
+        List<String> turns = new ArrayList<>();
+
+        turns.addAll(turnsOffered(reducer, "as authored"));
+        turns.addAll(turnsOffered(reduceWithEveryBranchOpen(), "with every branch open"));
+
+        assertTrue(turns.isEmpty(), turns.size()
+            + " emitted Points let a train leave by the side it arrived at, which it cannot do without a"
+            + " reversing point:\n" + String.join("\n", turns));
+    }
+
+    /**
+     * The emitted Points of one build that offer a train the way it came, printed and returned.
+     */
+    private List<String> turnsOffered(GraphReducer from, String label)
+    {
+        AutonomyBuilder builder = new AutonomyBuilder(from, null);
+
+        Map<String, ReducedEdge> byName = builder.edgesByName();
+
+        // Emitted Point name -> the sides trains reach it by and leave it by.  Taken from the emitted
+        // EDGE names, since those are what the running model would actually offer.
+        Map<String, Set<Side>> arrivals = new LinkedHashMap<>();
+        Map<String, Set<Side>> departures = new LinkedHashMap<>();
+
+        for (Map.Entry<String, ReducedEdge> entry : byName.entrySet())
+        {
+            String[] ends = entry.getKey().split(" -> ", 2);
+
+            if (ends.length < 2) continue;
+
+            ReducedEdge edge = entry.getValue();
+
+            // A move through a link has no side on the grid, so it cannot be told apart from any other
+            // arrival and is left out rather than guessed at
+            if (edge.getExitSide() != null) named(departures, ends[0]).add(edge.getExitSide());
+            if (edge.getEntrySide() != null) named(arrivals, ends[1]).add(edge.getEntrySide());
+        }
+
+        Set<String> turnsHere = new LinkedHashSet<>();
+
+        for (Object o : new JSONObject(builder.build()).getJSONArray("points"))
+        {
+            JSONObject point = (JSONObject) o;
+
+            if (point.optBoolean("terminus") || point.optBoolean("reversing"))
+            {
+                turnsHere.add(point.getString("name"));
+            }
+        }
+
+        List<String> turns = new ArrayList<>();
+
+        for (String name : arrivals.keySet())
+        {
+            if (turnsHere.contains(name)) continue;
+
+            for (Side side : named(arrivals, name))
+            {
+                if (!named(departures, name).contains(side)) continue;
+
+                turns.add("   [" + label + "] " + name + ": arrives " + side
+                    + ", and may leave " + side + " again");
+            }
+        }
+
+        Collections.sort(turns);
+
+        System.out.println();
+        System.out.println("=== WHERE A TRAIN COULD TURN ROUND, " + label + " ===");
+        System.out.println("emitted Points: " + arrivals.size()
+            + ", of which trains may turn round at " + turnsHere.size());
+        System.out.println("Points offering a turn a train cannot make: " + turns.size());
+
+        for (String line : turns) System.out.println(line);
+
+        return turns;
+    }
+
+    private Set<Side> named(Map<String, Set<Side>> map, String name)
+    {
+        Set<Side> sides = map.get(name);
+
+        if (sides == null)
+        {
+            sides = new LinkedHashSet<>();
+            map.put(name, sides);
+        }
+
+        return sides;
+    }
+
+    /**
+     * The case the author raised: a train that reached BottomMainA from the Tunnel end must not be able
+     * to go straight back to the Tunnel.  It cannot turn round anywhere between the two - the reversing
+     * point is further up the line - so the move is impossible on the railway however the graph reads.
+     *
+     * Named rather than left to the sweep above because it is the case a person can check by eye against
+     * the diagram, and because a sweep that is failing everywhere proves nothing about any one square.
+     *
+     * Checked against the wide-open reduction as well as the authored one.  As authored the branch back
+     * out of BottomMainA is closed by default, so there is no edge for the reversal to be made of and
+     * this passes without having established anything - a green light for the wrong reason is worse than
+     * no test, because it is read as evidence.
+     */
+    @Test
+    public void testATrainReachingBottomMainAFromTheTunnelCannotGoBack()
+    {
+        Integer arrivingAt = sensorOf("BottomMainA");
+        Integer comingFrom = sensorOf("BottomMainAPre");
+
+        assertNotNull(arrivingAt, "BottomMainA is not in the hand-built file any more");
+        assertNotNull(comingFrom, "BottomMainAPre is not in the hand-built file any more");
+
+        List<String> offending = new ArrayList<>();
+
+        offending.addAll(reversalsAt(reducer, "as authored", comingFrom, arrivingAt));
+        offending.addAll(reversalsAt(reduceWithEveryBranchOpen(), "with every branch open",
+            comingFrom, arrivingAt));
+
+        assertTrue(offending.isEmpty(), "a train that reached BottomMainA from the tunnel end can"
+            + " reverse out of it without a reversing point:\n   " + String.join("\n   ", offending));
+    }
+
+    /**
+     * Every way a train that arrived at one sensor from another could immediately go back, judged on the
+     * emitted Points rather than on the squares - which is the whole difference the split makes.  The
+     * train is standing on ONE copy of the square, so only that copy's edges are its choices.
+     */
+    private List<String> reversalsAt(GraphReducer from, String label, Integer comingFrom,
+        Integer arrivingAt)
+    {
+        AutonomyBuilder builder = new AutonomyBuilder(from, null);
+
+        Map<String, TileKey> tiles = builder.tilesByName();
+        Set<String> edgeNames = builder.edgesByName().keySet();
+
+        List<String> offending = new ArrayList<>();
+
+        for (String inbound : edgeNames)
+        {
+            String[] ends = inbound.split(" -> ", 2);
+
+            if (ends.length < 2) continue;
+
+            if (!carries(from, tiles.get(ends[0]), comingFrom)) continue;
+            if (!carries(from, tiles.get(ends[1]), arrivingAt)) continue;
+
+            for (String outbound : edgeNames)
+            {
+                String[] back = outbound.split(" -> ", 2);
+
+                if (back.length < 2 || !back[0].equals(ends[1])) continue;
+
+                if (!carries(from, tiles.get(back[1]), comingFrom)) continue;
+
+                offending.add("[" + label + "] " + inbound + ", then straight back: " + outbound);
+            }
+        }
+
+        return offending;
+    }
+
+    /**
+     * Whether the Point on this tile watches the given sensor.
+     */
+    private boolean carries(GraphReducer from, TileKey tile, Integer s88)
+    {
+        if (tile == null) return false;
+
+        ReducedPoint point = from.getPoints().get(tile);
+
+        return point != null && s88 != null && point.getS88() == s88;
+    }
+
+    /**
+     * The reduction must produce a graph at all.  If this fails, nothing below it is worth reading.
+     */
     @Test
     public void testTheDiagramReducesToSomething()
     {

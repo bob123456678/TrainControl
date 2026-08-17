@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -325,34 +326,64 @@ public class testAutonomyDiagramReducer
     @Test
     public void testTwoRoutesBetweenTheSameSensorsBecomeOneEdge() throws IOException
     {
-        // A - switch - {upper, lower} - switch - B, i.e. an ordinary passing loop.
+        // A - switch - {straight on, over the top} - switch - B, i.e. an ordinary passing loop.
         //
-        //        (2,0)-(3,0)-(4,0)          upper
-        //       /                         //  A(0,1)-(1,1)         (5,1)-B(6,1)
-        //       \                 /
-        //        (2,2)-(3,2)-(4,2)          lower
+        //        (2,0)-(3,0)-(4,0)-(5,0)      the loop, over the top
+        //       /                              //  A(0,1)-(1,1)-SW-(3,1)-(4,1)-SW-B(6,1)
+        //
+        // Every tile is stated by the two sides it has to join.  A CURVE is E-S at orientation 0 and
+        // ports rotate by (4 - orientation) quarter turns clockwise, so 1 is N-E, 2 is N-W, 3 is S-W.
+        // SWITCH_LEFT is straight N-S with its turn S-W at orientation 0, which makes orientation 3
+        // straight E-W with the turn W-N - toe west, so a train from A meets it facing the toe and may
+        // diverge.  SWITCH_RIGHT is the mirror, and orientation 1 puts its toe east.
+        //
+        // This was wrong in three places before, which is what the guard below now catches: the loop
+        // joined up nowhere, no edges came out, and the assertions ran zero times for years.
         LayoutDiagram page = page("main", 10, 5);
 
         feedback(page, 0, 1, 11);
         straight(page, 1, 1);
 
-        add(page, componentType.SWITCH_LEFT, 2, 1, 1, 40);
+        add(page, componentType.SWITCH_LEFT, 2, 1, 3, 40);   // E-W, and W-N into the loop
         wire(page, 2, 1, 40, Accessory.accessoryType.SWITCH);
 
-        add(page, componentType.CURVE, 2, 0, 0);
-        straight(page, 3, 0);
-        add(page, componentType.CURVE, 4, 0, 1);
+        straight(page, 3, 1);
+        straight(page, 4, 1);
 
-        add(page, componentType.CURVE, 2, 2, 3);
-        straight(page, 3, 2);
-        add(page, componentType.CURVE, 4, 2, 2);
-
-        add(page, componentType.SWITCH_RIGHT, 5, 1, 3, 41);
+        add(page, componentType.SWITCH_RIGHT, 5, 1, 1, 41);  // W-E, and E-N out of the loop
         wire(page, 5, 1, 41, Accessory.accessoryType.SWITCH);
 
         feedback(page, 6, 1, 12);
 
-        GraphReducer reducer = reduce(graph(page), null);
+        add(page, componentType.CURVE, 2, 0, 0);   // E and S
+        straight(page, 3, 0);
+        straight(page, 4, 0);
+        add(page, componentType.CURVE, 5, 0, 3);   // S and W
+
+        // Both switches open both ways.  They default to base-to-forks - out of the toe only - and the
+        // toes here face each other, so left alone the far switch refuses every trailing move and the
+        // loop carries nothing.  What is under test is the parallel route, not the default.
+        TileGraph graph = graph(page);
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (TileGraph.RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, TileGraph.Direction.BOTH);
+            }
+        }
+
+        GraphReducer reducer = reduce(graph, null);
+
+        // The fixture has to have built the thing this test is about before any of it means anything.
+        //
+        // "Whatever the geometry turns out to be" is what this used to say, and it was a licence for the
+        // geometry to turn out to be nothing at all: two curves were rotated off the track they were
+        // meant to join, the passing loop joined up nowhere, no edges were emitted, and the loop below
+        // ran zero times.  The test passed for years without once exercising the parallel-route rule it
+        // is named after.
+        assertFalse(reducer.getEdges().isEmpty(),
+            "the passing loop produced no edges at all, so nothing below this line is being tested");
 
         // whatever the geometry turns out to be, the invariant is the same: at most one edge per
         // ordered pair, because that is all the model can hold
@@ -661,5 +692,98 @@ public class testAutonomyDiagramReducer
         }
 
         return out.toString();
+    }
+
+    /**
+     * A run that crosses one square twice, on the square's two separate tracks, is still a run.
+     *
+     * The walk used to mark a square visited by its coordinates alone, so the second crossing looked
+     * exactly like a circle and the walk stopped - the run vanished, and nothing was reported about it,
+     * which is the worst of the three things that could have happened.  A crossing carries two routes
+     * that never meet; passing over one and coming back through the other is ordinary railway.
+     */
+    @Test
+    public void testARunMayCrossTheSameSquareTwice() throws Exception
+    {
+        //        F1 -- x -- x
+        //                   |
+        //   x -- x -- CROSS -- x -- F2         the crossing is entered W-E, then again N-S
+        //             |
+        //             x
+        //
+        // Built as a loop of straight track through one CROSSING tile on both of its routes.
+        // A CURVE is E-S at orientation 0, and ports rotate by (4 - orientation) quarter turns
+        // clockwise - so orientation 1 is N-E, 2 is N-W and 3 is S-W.  Every curve below is stated by
+        // the two sides it has to join, with the orientation that gives them; get one wrong and the
+        // track simply does not meet, and this test would pass or fail for a reason of its own.
+        LayoutDiagram page = page("main", 8, 8);
+
+        feedback(page, 0, 3, 11);
+        straight(page, 1, 3);
+        straight(page, 2, 3);
+
+        // the crossing: N-S and E-W, two routes with no connection between them
+        add(page, componentType.CROSSING, 3, 3, 0);
+
+        straight(page, 4, 3);
+        straight(page, 5, 3);
+
+        // up, over and back down into the crossing's OTHER route
+        curve(page, 6, 3, 2);      // N and W
+        straightNS(page, 6, 2);
+        curve(page, 6, 1, 3);      // S and W
+        straight(page, 5, 1);
+        straight(page, 4, 1);
+        curve(page, 3, 1, 0);      // E and S
+        straightNS(page, 3, 2);
+
+        // and out of the crossing's south side to the far sensor
+        straightNS(page, 3, 4);
+        feedbackNS(page, 3, 5, 12);
+
+        // Switches default to base-to-forks, which is an unrelated variable here - so every route is
+        // opened both ways before the reduction.
+        TileGraph graph = graph(page);
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, Direction.BOTH);
+            }
+        }
+
+        GraphReducer reducer = reduce(graph, null);
+
+        Set<Integer> reached = new LinkedHashSet<>();
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            GraphReducer.ReducedPoint start = reducer.getPoints().get(edge.getStart());
+            GraphReducer.ReducedPoint end = reducer.getPoints().get(edge.getEnd());
+
+            if (start != null && end != null && start.getS88() == 11) reached.add(end.getS88());
+        }
+
+        assertTrue(reached.contains(12),
+            "the run from 11 to 12 uses the crossing twice, which is what a crossing is for - reached "
+            + reached);
+    }
+
+    /**
+     * A curve at the given orientation.  Ports rotate by (4 - orientation) quarter turns clockwise, so
+     * these are stated by orientation and checked against the connections the test then asserts.
+     */
+    private void curve(LayoutDiagram page, int x, int y, int orientation) throws IOException
+    {
+        add(page, componentType.CURVE, x, y, orientation);
+    }
+
+    /**
+     * A straight running north to south.  Orientation 0 is east-west, and one rotation turns it.
+     */
+    private void straightNS(LayoutDiagram page, int x, int y) throws IOException
+    {
+        add(page, componentType.STRAIGHT, x, y, 1);
     }
 }

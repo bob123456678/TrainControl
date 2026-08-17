@@ -2156,7 +2156,11 @@ public final class CS2File
  
             String url = getLayoutURL(name);
             
-            if (control.isDebug())
+            // Null-checked, as every other logging call in this class is - they all go through the
+            // null-safe logMessage and this one did not.  A CS2File built without a control station is
+            // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
+            // hardware and no model behind it.
+            if (control != null && control.isDebug())
             {
                 control.logf(
                     "layout.loadingFromUrl",
@@ -2216,10 +2220,19 @@ public final class CS2File
                         
             for (Map<String, String> m : l)
             {
+                // The blocks above the elements - version, groesse, anything a later firmware adds -
+                // kept so that saving the page does not delete them.  The exporter used to write a
+                // hardcoded version block in their place.
+                if (!"element".equals(m.get("_type")))
+                {
+                    layout.addUnmodelledBlock(m);
+                    continue;
+                }
+
                 if ("element".equals(m.get("_type")))
                 {
                     Integer coord = 0;
-                    
+
                     if (m.get("id") != null)
                     {
                         coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
@@ -2227,7 +2240,7 @@ public final class CS2File
 
                     Integer x = coord % 256;
                     Integer y = (coord >> 8) % 256;
-                    
+
                     Integer orient = 0;
                     Integer state = 0;
                     String type = m.get("typ");
@@ -2314,13 +2327,28 @@ public final class CS2File
                         }
                     }
                     
-                    // This will fail for unknown components.  Catch errors?
-                    if (getComponentType(type, address) != null)
+                    LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
+
+                    if (modelled != null)
                     {
                         layout.addComponent(
-                           getComponentType(type, address),
+                           modelled,
                            x, y, orient, state, address, rawAddress, protocol, m.get("text")
                         );
+
+                        // Anything the file said about this square that the component has no field for.
+                        // Saving regenerates the page from the model, so a key nobody carries is a key
+                        // deleted from the user's diagram.
+                        LayoutDiagramComponent added = layout.getComponent(x, y);
+
+                        if (added != null) added.setUnmodelledKeys(m);
+                    }
+                    else
+                    {
+                        // Not a component this program knows, and therefore not one it may delete.  Kept
+                        // verbatim so that saving the page - which naming a station does, unasked - puts
+                        // it back rather than dropping it.
+                        layout.addUnmodelledElement(m);
                     }
                 }
             }

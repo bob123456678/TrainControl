@@ -128,6 +128,8 @@ public class AutonomyChecks
     public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
     public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
     public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
+    public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
+    public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     private AutonomyChecks()
     {
@@ -159,12 +161,12 @@ public class AutonomyChecks
     }
 
     /**
-     * @param labelledStations the station names a text square of the track diagram is showing, or null
-     *        to skip that check.  Passed in rather than read here: the checks know about the setup, and
-     *        which squares of which page carry which caption is the diagram's business.
+     * @param labelledStations the stations a caption of the track diagram is showing, by their squares,
+     *        or null to skip that check.  Passed in rather than read here: the checks know about the
+     *        setup, and which square carries which caption is the session’s business.
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<String> labelledStations)
+        Set<TileKey> labelledStations)
     {
         return run(graph, reducer, termini, labelledStations, Collections.<TileKey>emptySet());
     }
@@ -174,7 +176,30 @@ public class AutonomyChecks
      *        in, where the choice cannot mean anything
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<String> labelledStations, Set<TileKey> mayTurnOnDeadEnd)
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd)
+    {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd,
+            Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param trapped squares a train can reach from some direction and then not leave, because the only
+     *        way on from there is back the way it came and it has not been told it may turn round
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped)
+    {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            Collections.<TileKey, TileKey>emptyMap());
+    }
+
+    /**
+     * @param coveredCaptions squares where a station’s caption and the user’s own diagram text
+     *        want the same square, as caption square to the station it names
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -195,6 +220,8 @@ public class AutonomyChecks
 
         findings.addAll(checkNames(reducer));
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
+        findings.addAll(checkTrappedArrivals(reducer, trapped));
+        findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
         findings.addAll(checkStations(reducer, termini));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
@@ -280,6 +307,65 @@ public class AutonomyChecks
     }
 
     /**
+     * Squares a train can reach and then not leave.
+     *
+     * A train arriving somewhere is pointing away from where it came from, and it can only carry on
+     * forwards - so a square whose only way on is back the way the train came is the end of that train's
+     * day, unless it has been told trains may turn round there.  This used not to be sayable: with one
+     * Point per sensor the graph could not tell arriving-and-continuing from arriving-and-backing-out,
+     * so the reversal was always available and the trap never appeared.  It appears now because the
+     * graph finally distinguishes them, which makes this a case somebody has to decide rather than a new
+     * fault in the railway.
+     *
+     * Usually the answer is one of two things: the square IS a terminus and wants marking as one, or a
+     * branch off it is shut that should be open.
+     */
+    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Set<TileKey> trapped)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : trapped)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, ARRIVAL_TRAPPED,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A station’s caption and the user’s own writing on the same square.
+     *
+     * The square belongs to the diagram, because the diagram is the user’s drawing before it is
+     * autonomy’s data - so the text is what gets drawn and the caption is what is hidden.  Nothing is
+     * deleted either way: this says which station has gone quiet and where, and the answer is to move
+     * one of the two.
+     *
+     * It became possible to say at all only once a caption stopped BEING text.  While it was a label,
+     * the two could not share a square: writing one over the other simply destroyed it.
+     */
+    private static List<Finding> checkCoveredCaptions(GraphReducer reducer,
+        Map<TileKey, TileKey> covered)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (covered == null) return findings;
+
+        for (Map.Entry<TileKey, TileKey> entry : covered.entrySet())
+        {
+            ReducedPoint station = reducer.getPoints().get(entry.getValue());
+
+            findings.add(new Finding(Severity.WARNING, CAPTION_COVERED,
+                station == null ? String.valueOf(entry.getValue()) : station.getName(),
+                entry.getKey()));
+        }
+
+        return findings;
+    }
+
+    /**
      * Is every station shown on the track diagram?
      *
      * The diagram is where the user watches trains, and a station with no label on it is a place they
@@ -290,7 +376,7 @@ public class AutonomyChecks
      * own and naming it is the step that has to come first - two rows about one sensor, one of which
      * cannot be acted on yet, is a list nobody finishes.
      */
-    private static List<Finding> checkStationLabels(GraphReducer reducer, Set<String> labelled)
+    private static List<Finding> checkStationLabels(GraphReducer reducer, Set<TileKey> labelled)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -302,7 +388,11 @@ public class AutonomyChecks
 
             if (point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
 
-            if (!labelled.contains(point.getName()))
+            // Asked by SQUARE, not by name.  Matching the caption's text against the Point's name was
+            // the same fragile join that let a caption look live while naming a station that had been
+            // renamed - and it reported a perfectly well labelled station as unlabelled the moment its
+            // name changed.
+            if (!labelled.contains(point.getTile()))
             {
                 findings.add(new Finding(Severity.WARNING, UNLABELLED_STATION,
                     point.getName(), point.getTile()));

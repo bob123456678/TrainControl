@@ -656,4 +656,32 @@ public class testAutonomyDiagramTiles
 
         return false;
     }
+
+    /**
+     * A pairing whose far end is no longer a link is reported.
+     *
+     * Pairings are stored by coordinate and replayed without asking what is there now, so redrawing the
+     * far end as plain track left a pairing that is mutual, whose both ends exist, and that every check
+     * was happy with - while the walk jumped into a square with no way out and the cross-page route
+     * simply disappeared.  Of every way a link can be misconfigured, this was the only silent one.
+     */
+    @Test
+    public void testAPairingWhoseFarEndIsNoLongerALinkIsReported() throws Exception
+    {
+        LayoutDiagram page = page("main", 6, 6);
+
+        add(page, componentType.LINK, 1, 1, 0);
+
+        // what used to be the partner, redrawn as ordinary track
+        straight(page, 4, 4);
+
+        TileGraph graph = graph(page);
+
+        graph.pairPortals(key("main", 1, 1), key("main", 4, 4));
+
+        List<Problem> found = graph.validatePortals();
+
+        assertFalse(found.isEmpty(),
+            "a pairing pointing at something that is not a link has to say so");
+    }
 }

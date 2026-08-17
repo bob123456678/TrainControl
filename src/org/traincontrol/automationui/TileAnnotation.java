@@ -101,7 +101,15 @@ public class TileAnnotation
      */
     private static final Color CLOSED = new Color(200, 0, 0);
 
-    private static final Color LENGTH = new Color(90, 60, 140);
+    /**
+     * The same red the diagram writes accessory addresses in.
+     *
+     * It was a muted purple, which is a perfectly good colour and nearly invisible at the size these
+     * are drawn - a two-digit number a quarter of a tile high, over track art, in a colour with no
+     * contrast against either.  Addresses solved the same problem years ago and the answer is already
+     * on the screen; using a second one would only mean the reader learning two.
+     */
+    private static final Color LENGTH = Color.RED;
 
 
     /**
@@ -1109,9 +1117,11 @@ public class TileAnnotation
 
         int textWidth = metrics.stringWidth(text);
 
-        // bottom right, where the tile art is emptiest across the shapes that carry a length
+        // Top right, which is the corner away from the address the diagram writes at the leading edge.
+        // The two are the same colour on purpose, so they must not be able to sit on top of one another
+        // and read as one number.
         int x = width - textWidth - 2;
-        int y = height - 2;
+        int y = metrics.getAscent() + 1;
 
         // read against both light and dark track art
         g.setColor(Color.WHITE);

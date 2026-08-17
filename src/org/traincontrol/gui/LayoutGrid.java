@@ -142,12 +142,29 @@ public class LayoutGrid
                 // End GBC fix
                 
                 LayoutDiagramComponent c = layout.getComponent(x + offsetX, y  + offsetY);
-                                
+
+                // The square this cell is, and the station whose caption belongs on it.
+                //
+                // A caption is no longer text drawn into the diagram - it is part of the autonomy setup,
+                // pointing at the sensor's square - so it is asked for rather than found by reading a
+                // prefix off a label.  It can therefore sit on a square carrying no component at all,
+                // which is why the text below is drawn for a caption as well as for a label.
+                final org.traincontrol.automationui.TileGraph.TileKey square =
+                    new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), x + offsetX, y + offsetY);
+
+                final org.traincontrol.automationui.TileGraph.TileKey captioned =
+                    ui == null ? null : ui.autonomyCaptionAt(square);
+
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 
-                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
+                boolean drawsText = captioned != null
+                    || (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel()
+                        || !ALLOW_TEXT_ANYWHERE && c.isText()));
+
+                if (drawsText)
                 {
                     // Text labels can overflow.  This ensures that they don't widen other cells.
                     gbc.gridwidth = 0;
@@ -166,98 +183,111 @@ public class LayoutGrid
                 container.add(grid[x][y], gbc);  
                 
                 // Render text separately
-                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
+                if (drawsText)
                 {
                     JLabel text = new JLabel();
 
                     // Black unless something below has a reason to say otherwise
                     Color labelColour = Color.BLACK;
                     
-                    // Autonomy Station label
+                    // What the user wrote on this square, which is a different thing from the caption
+                    final String own = c == null || c.getLabel() == null ? "" : c.getLabel();
+
+                    // The station name, for a caption to show when no train is standing on it
+                    final String captionName = captioned == null
+                        ? null : ui.autonomyStationNameAt(captioned);
+
+                    // Autonomy station caption, live.
                     //
                     // Not on a page autonomy has been told to ignore.  There is no Point behind the
                     // caption there - the graph is built without that page entirely - so the label
                     // would sit waiting for a state that never arrives, and clicking it would go
-                    // looking for something that was never built.  The name is still drawn, as
-                    // ordinary text: it is what the user wrote on their diagram, and leaving the
-                    // platform nameless would be a stranger answer than leaving it unwired.
-                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit()
+                    // looking for something that was never built.  The name is still drawn, below, as
+                    // ordinary text: leaving the platform nameless would be a stranger answer than
+                    // leaving it unwired.
+                    if (captioned != null && !layout.getEdit()
                         && !ui.isPageExcludedFromAutonomy(layout.getName()))
                     {
                         // Hide text initially
                         text.setText("");
-                        
+
                         // This callback will populate the label
-                        ui.addLayoutStation(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""), text);
-                        text.setToolTipText(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
-                        
-                        text.addMouseListener(new MouseAdapter()  
-                        {  
+                        ui.addLayoutStation(captioned, text);
+                        text.setToolTipText(captionName);
+
+                        final org.traincontrol.automationui.TileGraph.TileKey station = captioned;
+
+                        text.addMouseListener(new MouseAdapter()
+                        {
                             @Override
-                            public void mouseClicked(MouseEvent e)  
-                            {  
+                            public void mouseClicked(MouseEvent e)
+                            {
                                 if (e.getButton() == MouseEvent.BUTTON3)
-                                {                              
+                                {
                                     javax.swing.SwingUtilities.invokeLater(() ->
                                     {
-                                        LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, text.getToolTipText());
+                                        LayoutRightclickAutonomyMenu menu =
+                                            new LayoutRightclickAutonomyMenu(ui, station);
 
-                                        menu.show(e.getComponent(), e.getX(), e.getY());      
+                                        menu.show(e.getComponent(), e.getX(), e.getY());
                                     });
                                 }
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    // Through the caption rather than straight to a Point of that
-                                    // name: a square where trains may turn round is several Points,
-                                    // none of them called what the diagram says, and the lookup would
-                                    // simply return null.
+                                    // By SQUARE.  A square where trains may turn round is several
+                                    // Points, none of them called what the diagram says, and a lookup
+                                    // by the text of the caption simply returned null.
                                     org.traincontrol.automation.Point standing =
-                                        ui.getAutonomyPointForCaption(text.getToolTipText());
+                                        ui.getAutonomyPointForTile(station);
 
                                     if (standing != null)
                                     {
                                         Locomotive atStation = standing.getCurrentLocomotive();
                                         Locomotive active = ui.getActiveLoc();
-                                        
+
                                         if (atStation != null && !atStation.equals(active))
                                         {
                                             ui.jumpToLocomotive(atStation.getName());
-                                        }                                        
+                                        }
                                     }
                                 }
-                            }  
-                        }); 
+                            }
+                        });
                     }
                     // Regular labels
                     else if (!layout.getEditHideText())
                     {
-                        if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit())
-                        {
-                            // A station caption on a page autonomy ignores: just the name, without a
-                            // marker that would otherwise show up as literal "Point:" on the diagram.
-                            text.setText(c.getLabel().substring(LAYOUT_STATION_PREFIX.length()));
-                        }
-                        else if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && autonomyEditor)
+                        if (captioned != null && autonomyEditor)
                         {
                             // In the AUTONOMY editor, the placeholder the running diagram shows when
                             // nothing is standing there - so the square looks like what it will look
-                            // like, and "Point:" stops being something to mentally strip.
+                            // like.
                             text.setText(LAYOUT_STATION_EMPTY);
+                        }
+                        else if (captioned != null)
+                        {
+                            // A caption the diagram cannot act on: an excluded page, or the TRACK
+                            // DIAGRAM editor, where it is drawn so the square is visibly spoken for
+                            // but is not that editor to change - captions are edited where autonomy
+                            // is edited.
+                            text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
+
+                            if (layout.getEdit()) labelColour = new Color(150, 150, 150);
                         }
                         else
                         {
-                            // Everything else, including a station caption in the TRACK DIAGRAM
-                            // editor, where the raw text is what the user is there to read and change.
-                            text.setText(c.getLabel());
+                            // Everything else: what the user wrote there.
+                            text.setText(own);
 
-                            // Somebody else's writing, greyed while autonomy is being edited: it is
-                            // still worth seeing - it says what part of the railway this is - and it
-                            // is not what the editor is for.
+                            // Writing of their own, greyed while autonomy is being edited: it is still
+                            // worth seeing - it says what part of the railway this is - and it is not
+                            // what the editor is for.
                             if (autonomyEditor) labelColour = new Color(150, 150, 150);
                         }
                     }
-                    
+
+
                     text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
@@ -265,7 +295,7 @@ public class LayoutGrid
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
                     // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
-                    if (!c.isText() && !layout.getEditHideText())
+                    if (c != null && !c.isText() && !layout.getEditHideText())
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
@@ -372,11 +402,19 @@ public class LayoutGrid
                 // Here because this is the only place that knows both the page and the square: a
                 // LayoutLabel is told neither, and LayoutGrid keeps no reference to the LayoutDiagram
                 // after the constructor returns.
-                if (c != null && ui != null && ui.getDiagramTileRegistry() != null)
+                if (c != null && ui != null)
                 {
-                    ui.getDiagramTileRegistry().register(
-                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
-                        grid[x][y]);
+                    // Which page this square is on, told to the label itself.  Its right-click menu used
+                    // to ask the main window which page was showing, which is the wrong page in every
+                    // popup window.
+                    grid[x][y].setAutonomyPage(layout.getName());
+
+                    if (ui.getDiagramTileRegistry() != null)
+                    {
+                        ui.getDiagramTileRegistry().register(
+                            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
+                            grid[x][y]);
+                    }
                 }
 
                 // Set references for each tile accessory

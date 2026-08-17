@@ -5,6 +5,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -80,6 +81,51 @@ public class AutonomyMenu extends JMenu
         setEnabled(hasLayout);
 
         setToolTipText(hasLayout ? null : I18n.t("autosetup.ui.tooltipNoLayout"));
+    }
+
+    /**
+     * The pages submenu as it was last built, so that something else can send the user straight to it.
+     *
+     * The diagram says when the page being looked at is left out of autonomy, and that statement is only
+     * half an answer without a way to change it - the setting lives three levels into a menu somebody
+     * would have to know to open.
+     */
+    private JMenu lastPagesMenu;
+
+    /**
+     * Opens this menu with the pages submenu already showing.
+     *
+     * Driven through the MenuSelectionManager rather than by clicking: a click would toggle the menu
+     * shut again if it happened to be open, and there is no path from a click to a SUBmenu at all.
+     */
+    public void showPages()
+    {
+        if (!(getParent() instanceof javax.swing.JMenuBar)) return;
+
+        final javax.swing.JMenuBar bar = (javax.swing.JMenuBar) getParent();
+
+        // Open this menu first, and only then walk into the submenu.
+        //
+        // Not one setSelectedPath with the whole path in it, which is what this did and why nothing
+        // appeared: selecting the menu fires menuSelected, which rebuilds every item - so the submenu
+        // named in the path was removed from the menu a moment after being pointed at, and the
+        // selection came apart.  Opening in two steps lets the rebuild happen in between, and the
+        // second step then points at the submenu that rebuild actually produced.
+        javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
+            new javax.swing.MenuElement[] { bar, this, getPopupMenu() });
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            // Unavailable - no configuration chosen - so this menu is as far as it can honestly take
+            // them, and its items say why.
+            if (lastPagesMenu == null || !lastPagesMenu.isEnabled()) return;
+
+            javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
+                new javax.swing.MenuElement[]
+                {
+                    bar, this, getPopupMenu(), lastPagesMenu, lastPagesMenu.getPopupMenu()
+                });
+        });
     }
 
     private AutonomyViewerPanel actions()
@@ -167,22 +213,31 @@ public class AutonomyMenu extends JMenu
 
             addSeparator();
 
-            JMenu manage = manageMenu(actions, names);
-            manage.setEnabled(loaded);
-            manage.setToolTipText(loaded ? null : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            JMenu manage = manageMenu(actions, session, loaded);
             add(manage);
 
             JMenu pages = pagesMenu(session);
+            lastPagesMenu = pages;
             pages.setEnabled(chosen);
             pages.setToolTipText(chosen ? I18n.t("autosetup.ui.promptExcludePage")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(pages);
 
-            addSeparator();
-            add(addConfigurationItem(actions));
         }
 
-        if (ui.getModel() != null && ui.getModel().isDebug())
+        // Exporting the derived graph, for a debug session and only when there is a graph to export.
+        //
+        // It used to appear whenever debug was on, including on a layout with no setup at all and on one
+        // whose setup will not build - so the one item here that promises a file offered it in the two
+        // states where pressing it produces either nothing or a graph the user has been told is invalid.
+        // Debug or not, a menu item that cannot do what it says is worse than an absent one.
+        boolean inspectable = ui.getModel() != null && ui.getModel().isDebug()
+            && !session.getStore().getConfigurationNames().isEmpty()
+            && session.getStore().getActiveConfiguration() != null
+            && session.getReducer() != null
+            && !session.hasBlockingProblems();
+
+        if (inspectable)
         {
             addSeparator();
 
@@ -261,9 +316,17 @@ public class AutonomyMenu extends JMenu
      * All of them act on whichever configuration is chosen above, which is why they are one level down:
      * on the top level they read as things that might act on the layout as a whole.
      */
-    private JMenu manageMenu(final AutonomyViewerPanel actions, List<String> names)
+    private JMenu manageMenu(final AutonomyViewerPanel actions, final AutonomySession session,
+        boolean loaded)
     {
         JMenu manage = new JMenu(I18n.t("autosetup.ui.btnManage"));
+
+        // Adding one lives here now rather than loose at the bottom of the menu.  On the top level it
+        // sat beside "which configuration is running", where it read as a third choice of the same kind;
+        // in here it sits beside duplicate, rename and delete, which is what it actually is.
+        manage.add(addConfigurationItem(actions));
+
+        manage.addSeparator();
 
         manage.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
         {
@@ -320,7 +383,91 @@ public class AutonomyMenu extends JMenu
             }
         }));
 
+        // Everything above except adding acts on the configuration that is RUNNING, so it means nothing
+        // until one is.  Greyed one at a time rather than the whole submenu, so that adding - and
+        // deleting the lot, below - stay reachable when nothing is loaded, which is exactly when
+        // somebody wants them.
+        for (int i = 2; i < manage.getItemCount(); i++)
+        {
+            if (manage.getItem(i) == null) continue;
+
+            manage.getItem(i).setEnabled(loaded);
+
+            if (!loaded) manage.getItem(i).setToolTipText(I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+        }
+
+        manage.addSeparator();
+
+        // The way back out of having set autonomy up at all.  Configurations could only be deleted one
+        // at a time and the last one was refused, so a layout somebody had experimented on kept a setup
+        // they could not be rid of without deleting a folder by hand.
+        JMenuItem forget = item(I18n.t("autosetup.ui.menuDeleteSetup"), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                deleteEverything(session);
+            }
+        });
+
+        forget.setToolTipText(I18n.t("autosetup.ui.hintDeleteSetup"));
+
+        manage.add(forget);
+
+        // Stopping without deleting, which is the smaller of the two things somebody wants here and the
+        // one there was no way to do at all: every other path replaces one configuration with another.
+        JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                ui.unloadAutonomy();
+            }
+        });
+
+        unload.setEnabled(loaded);
+        unload.setToolTipText(I18n.t("autosetup.ui.hintUnloadAutonomy"));
+
+        manage.add(unload, manage.getItemCount() - 1);
+
         return manage;
+    }
+
+    /**
+     * Removes the whole setup, having asked twice over: the message names the layout and says what
+     * survives, and the default answer is no.
+     */
+    private void deleteEverything(AutonomySession session)
+    {
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            return;
+        }
+
+        int names = session.getStore().getConfigurationNames().size();
+
+        int answer = JOptionPane.showConfirmDialog(ui,
+            I18n.f("autosetup.ui.confirmDeleteSetup", names),
+            I18n.t("autosetup.ui.menuDeleteSetup"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (answer != JOptionPane.YES_OPTION) return;
+
+        try
+        {
+            session.getStore().deleteEverything();
+
+            session.rebuild();
+        }
+        catch (java.io.IOException e)
+        {
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorDeleteSetupFailed", String.valueOf(e.getMessage())));
+        }
+
+        // Whatever happened, nothing is running against it any more
+        ui.autonomySetupDeleted();
     }
 
     /**

@@ -6,6 +6,10 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.imageio.ImageIO;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.util.I18n;
@@ -718,10 +722,44 @@ public class LayoutDiagramComponent
     } 
     
     /**
+     * Everything the file said about this square that this class has no field for.
+     *
+     * Kept only so that it can be written back.  Saving a layout regenerates the whole file from this
+     * model, so any key the model does not carry was quietly deleted from the user's diagram - and
+     * saving is not always something they asked for: naming a station writes the page out.  What
+     * TrainControl does not understand it is not entitled to throw away.
+     */
+    private Map<String, String> unmodelledKeys = null;
+
+    /**
+     * @param keys the file's keys for this element, from which the ones this class models are dropped
+     */
+    public void setUnmodelledKeys(Map<String, String> keys)
+    {
+        if (keys == null || keys.isEmpty())
+        {
+            this.unmodelledKeys = null;
+            return;
+        }
+
+        Map<String, String> kept = new TreeMap<>(keys);
+
+        for (String known : MODELLED_KEYS) kept.remove(known);
+
+        this.unmodelledKeys = kept.isEmpty() ? null : kept;
+    }
+
+    /**
+     * The keys this class reads out of a CS2 element and can therefore write back on its own.
+     */
+    private static final List<String> MODELLED_KEYS = Arrays.asList(
+        "_type", "id", "typ", "drehung", "prot", "artikel", "zustand", "text");
+
+    /**
      * Exports this component in the CS2 file format
      * Limited to the component types supported in TrainControl
      * @return
-     * @throws Exception 
+     * @throws Exception
      */
     public String exportToCS2TextFormat() throws Exception
     {
@@ -731,7 +769,10 @@ public class LayoutDiagramComponent
         // isEmpty() call - as written before, && bound tighter than ||, so a null label dropped a
         // component of ANY type from the export.  Unreachable today (the field starts as "" and both
         // setLabel callers guard against null), but the guard did not mean what its comment says.
-        if (this.type == componentType.TEXT && (this.label == null || this.label.isEmpty())) return "";
+        // An empty text square is nothing, and is not written - unless the file said something about it
+        // that this class has no field for, in which case dropping it would delete that too.
+        if (this.type == componentType.TEXT && (this.label == null || this.label.isEmpty())
+            && this.unmodelledKeys == null) return "";
         
         // Add "element"
         builder.append("element\n");
@@ -780,6 +821,16 @@ public class LayoutDiagramComponent
         if (this.label != null && !this.label.isEmpty())
         {
             builder.append(" .text=").append(this.label).append("\n");
+        }
+
+        // And back out again, everything the file said that this class has no field for
+        if (this.unmodelledKeys != null)
+        {
+            for (Map.Entry<String, String> extra : this.unmodelledKeys.entrySet())
+            {
+                builder.append(" .").append(extra.getKey()).append('=')
+                    .append(extra.getValue()).append("\n");
+            }
         }
 
         return builder.toString().trim();

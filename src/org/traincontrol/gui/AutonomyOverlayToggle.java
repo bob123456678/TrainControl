@@ -22,6 +22,10 @@ public class AutonomyOverlayToggle extends JPanel
     private final TrainControlUI ui;
     private final JCheckBox show = new JCheckBox(I18n.t("autosetup.ui.chkShowAutonomy"), true);
 
+    // What the strip looks like on a page autonomy has been told to ignore
+    static final java.awt.Color EXCLUDED_BACKGROUND = new java.awt.Color(255, 232, 232);
+    private static final java.awt.Color EXCLUDED_TEXT = new java.awt.Color(170, 0, 0);
+
     /**
      * How many things the checks have to say about the setup, and a way straight to the first of them.
      *
@@ -95,12 +99,34 @@ public class AutonomyOverlayToggle extends JPanel
         left.setOpaque(false);
         left.add(show);
 
-        left_out.setFont(show.getFont());
-        left_out.setForeground(new java.awt.Color(110, 110, 110));
+        // Red, and a way out of it.  A page left out of autonomy is a deliberate setting, but it is
+        // also the reason nothing on this page has stations, arrows or trains - so saying it quietly in
+        // grey read as decoration, and the setting that causes it lives three levels into a menu the
+        // user would have to know to open.  Clicking takes them there.
+        //
+        // The banner's font, like the findings count beside it, and not bold: the colour already says
+        // this matters, and a bold red line shouts where a red line was enough.
+        left_out.setFont(AutonomyBanner.MESSAGE_FONT);
+        left_out.setForeground(EXCLUDED_TEXT);
         left_out.setVisible(false);
+        left_out.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        left_out.setToolTipText(I18n.t("autosetup.ui.tooltipPageLeftOut"));
+
+        left_out.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                ui.openAutonomyPagesMenu();
+            }
+        });
+
         left.add(left_out);
 
-        findings.setFont(show.getFont());
+        // The banner's own font, because the two sit one above the other and say related things - the
+        // banner names the state, the count says how much of it there is.  Two sizes read as two
+        // unrelated notices stacked by accident.
+        findings.setFont(AutonomyBanner.MESSAGE_FONT);
         findings.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         findings.setVisible(false);
         findings.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 10, 0, 0));
@@ -129,16 +155,19 @@ public class AutonomyOverlayToggle extends JPanel
             if (source != null) source.doClick();
         });
 
-        // The same 4px breathing room the checkbox gets from its own FlowLayout, so the two ends of
-        // the strip are inset alike rather than one hugging the edge.  Two pixels above and below on
-        // the strip itself, which is what stops the button touching the track drawn under it.
-        setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        // The banner's own insets, so the two bands read as one thing stacked.
+        //
+        // The banner pads by 4 above and below and 8 at the sides; this strip padded by 2 all round and
+        // then let its FlowLayout add 4 more at the left, so its text began six pixels in against the
+        // banner's eight and sat two pixels higher.  Small numbers, and the two bands are the same
+        // colour block one above the other - a step of two pixels between them is exactly the sort of
+        // thing that reads as "something is broken" without the reader being able to say what.
+        //
+        // Four here plus the FlowLayout's own four makes eight at the leading edge, matching.
+        setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
-        // Two pixels of its own above the button.  The strip's border applies to both ends alike, and
-        // the button needed slightly more room off the top edge than the checkbox does.
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         right.setOpaque(false);
-        right.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 0, 0, 0));
         right.add(run);
 
         add(right, java.awt.BorderLayout.EAST);
@@ -194,7 +223,8 @@ public class AutonomyOverlayToggle extends JPanel
             return;
         }
 
-        source = stop != null && stop.isEnabled() ? stop
+        source = !loaded || excluded ? null
+            : stop != null && stop.isEnabled() ? stop
             : start != null && start.isEnabled() ? start : null;
 
         if (source == null)
@@ -233,6 +263,34 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
+     * Sizes another button exactly as the Start button in this strip is sized.
+     *
+     * So that the Load button in the banner above and the Start button that replaces it are the same
+     * object as far as the eye is concerned: same font, same height, same insets, one directly above the
+     * other.  The height is the checkbox’s less three pixels, which is what stops a button looking
+     * larger than a checkbox of the same height - a button carries a border and a checkbox does not.
+     *
+     * Re-applied whenever the text changes, since the preferred width follows the label.
+     *
+     * @param button
+     */
+    public void styleAsRunButton(javax.swing.AbstractButton button)
+    {
+        if (button == null) return;
+
+        button.setFont(start != null ? start.getFont() : show.getFont());
+        button.setMargin(new java.awt.Insets(0, 10, 0, 10));
+
+        // Cleared first: asking a component its preferred size after setting one reads back what was set
+        button.setPreferredSize(null);
+
+        java.awt.Dimension wanted = button.getPreferredSize();
+
+        button.setPreferredSize(new java.awt.Dimension(wanted.width,
+            Math.max(show.getPreferredSize().height - 3, 14)));
+    }
+
+    /**
      * The square the count leads to: the first thing the checks found, in their own order, which puts
      * errors before warnings.
      */
@@ -250,6 +308,13 @@ public class AutonomyOverlayToggle extends JPanel
     {
         firstFinding = first;
 
+        // Remembered, so that the banner appearing or going can re-decide whether to show this without
+        // the count having to be recomputed and handed over again
+        lastPageErrors = pageErrors;
+        lastPageWarnings = pageWarnings;
+        lastTotalErrors = totalErrors;
+        lastTotalWarnings = totalWarnings;
+
         if (totalErrors + totalWarnings == 0)
         {
             findings.setVisible(false);
@@ -259,6 +324,15 @@ public class AutonomyOverlayToggle extends JPanel
         // Nothing on a page autonomy takes no notice of.  The number would be about a setup this page
         // is not part of, next to a strip that has just said so.
         if (excluded)
+        {
+            findings.setVisible(false);
+            return;
+        }
+
+        // Nor underneath a banner that is already saying the same thing in words.  "This setup cannot
+        // run yet" with "Fix it" beside it, and a count of the same problems directly below, is one
+        // piece of news told twice - and the banner is the half with the button.
+        if (bannerShowing)
         {
             findings.setVisible(false);
             return;
@@ -282,6 +356,43 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
+     * Whether a configuration is actually running.
+     *
+     * The strip exists before one does now, so that the banner above it can say "this layout has a setup
+     * nobody has loaded" - and the controls here are all about a setup that IS loaded.  A checkbox
+     * offering to show an overlay of nothing, and a findings count of nothing, are worse than an empty
+     * strip: they invite a click that does nothing and teach that the controls are unreliable.
+     *
+     * @param loaded
+     */
+    public void setLoaded(boolean loaded)
+    {
+        this.loaded = loaded;
+
+        show.setVisible(loaded && !excluded);
+
+        // Said whether or not anything is loaded.  It used to need a running configuration, so on a
+        // layout with a setup nobody had loaded the strip went red and held nothing - a bare red line
+        // under the banner, which reads as something having gone wrong with the drawing rather than as
+        // a statement about the page.  Stacked under the banner is fine; an empty red band is not.
+        left_out.setVisible(excluded);
+
+        // The findings count deliberately survives.  It is how somebody finds out WHY a setup will not
+        // load - a setup with a blocking problem refuses, so the state "exists but is not running" is
+        // exactly the state its problems most need saying in.  Hiding it there left the user with a
+        // banner offering to load something that would not load and nothing to say what was wrong.
+        run.setVisible(loaded);
+
+        if (loaded) syncRun();
+
+        revalidate();
+        repaint();
+    }
+
+    // whether a configuration is loaded and running
+    private boolean loaded = true;
+
+    /**
      * Says the page is left out of autonomy, in place of the controls that would act on it.
      *
      * The checkbox goes rather than being greyed: there is nothing on this page for it to show or
@@ -295,19 +406,79 @@ public class AutonomyOverlayToggle extends JPanel
     {
         this.excluded = excluded;
 
-        show.setVisible(!excluded);
+        show.setVisible(loaded && !excluded);
+
+        // Said whether or not anything is loaded.  It used to need a running configuration, so on a
+        // layout with a setup nobody had loaded the strip went red and held nothing - a bare red line
+        // under the banner, which reads as something having gone wrong with the drawing rather than as
+        // a statement about the page.  Stacked under the banner is fine; an empty red band is not.
         left_out.setVisible(excluded);
 
         if (excluded) findings.setVisible(false);
+
+        paintState();
+
+        // No Start button on a page autonomy takes no notice of.  Starting is not a statement about the
+        // page being looked at - which is exactly why it was left here before - but offered from a red
+        // strip that has just said this page is left out, it reads as an offer to run THIS page, and the
+        // one thing that will certainly not happen is a train moving on it.
+        syncRun();
+    }
+
+    /**
+     * Colours the strip for the state it is in.
+     */
+    private void paintState()
+    {
+        java.awt.Color background = excluded ? EXCLUDED_BACKGROUND : java.awt.Color.WHITE;
+
+        setBackground(background);
+
+        // The checkbox paints its own square, so it has to be told as well or it keeps the old colour
+        show.setBackground(background);
+
+        repaint();
     }
 
     // whether the page being shown is one autonomy has been told to ignore
     private boolean excluded;
 
+    // whether the banner above this strip is currently saying something
+    private boolean bannerShowing;
+
+    private int lastPageErrors;
+    private int lastPageWarnings;
+    private int lastTotalErrors;
+    private int lastTotalWarnings;
+
     /**
+     * Tells the strip whether the banner above it is saying anything.
+     *
+     * @param showing
+     */
+    public void setBannerShowing(boolean showing)
+    {
+        if (this.bannerShowing == showing) return;
+
+        this.bannerShowing = showing;
+
+        // Re-decided from what was last worked out, so that the count comes back when the banner goes
+        setFindings(lastPageErrors, lastPageWarnings, lastTotalErrors, lastTotalWarnings, firstFinding);
+    }
+
+    /**
+     * Deliberately NOT called isShowing().
+     *
+     * That name belongs to java.awt.Component, and overriding it here answered "is the overlay ticked"
+     * to a question Swing asks for something else entirely: JComponent.paintImmediately begins with
+     * `if (!isShowing()) return`, and every child walks up through its parents' answers.  Untick the box
+     * and this strip stopped repainting altogether - the box kept its ticked pixels, and the copy of the
+     * Start button kept whatever words it last had.  The opacity and explicit repaint() worked around
+     * the symptom for the checkbox and left the rest of the strip frozen.
+     *
      * @return whether the overlay is switched on
      */
-    public boolean isShowing()
+    public boolean isOverlayShown()
     {
         return show.isSelected();
     }

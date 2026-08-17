@@ -382,38 +382,106 @@ public class GraphReducer
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to)
     {
+        return findPath(from, to, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param mayTurn the squares where a train is allowed to change direction, so a run through one of
+     *        them may leave by the side it arrived at.  Everywhere else it may not: a train is pointing
+     *        away from where it came from, and it can only go forwards.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn)
+    {
+        return findPath(from, to, mayTurn, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param mustTurn the squares where changing direction is not optional.  Carrying straight on is not
+     *        a move at one of these - the build emits no straight-through copy - so a run that passed
+     *        through one would be a run no train could make.  Listing a square here overrides mayTurn.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn)
+    {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
 
         if (from.equals(to)) return new ArrayList<ReducedEdge>();
 
-        Map<TileKey, ReducedEdge> arrivedBy = new LinkedHashMap<>();
+        // The search state is a Point AND the side the train reached it by, not the Point alone.  Those
+        // are genuinely different situations - what a train may do next depends on which way it is
+        // pointing - and searching over Points alone produced runs that reversed at squares where no
+        // train can, which is what the test told the user the railway would do.
+        //
+        // The starting Point has no arrival side: the train is already standing there, and the test
+        // question is whether the TRACK allows the journey at all.
+        Map<String, ReducedEdge> arrivedBy = new LinkedHashMap<>();
+        Map<String, String> cameFrom = new LinkedHashMap<>();
+        Map<String, TileKey> tileOf = new LinkedHashMap<>();
+        Map<String, Side> sideOf = new LinkedHashMap<>();
 
-        java.util.ArrayDeque<TileKey> frontier = new java.util.ArrayDeque<>();
-        frontier.add(from);
+        String start = searchKey(from, null);
+
+        arrivedBy.put(start, null);
+        tileOf.put(start, from);
+        sideOf.put(start, null);
+
+        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        frontier.add(start);
 
         while (!frontier.isEmpty())
         {
-            TileKey here = frontier.poll();
+            String here = frontier.poll();
+
+            TileKey at = tileOf.get(here);
+            Side arrived = sideOf.get(here);
 
             for (ReducedEdge edge : edges)
             {
-                if (!edge.getStart().equals(here)) continue;
+                if (!edge.getStart().equals(at)) continue;
 
-                TileKey next = edge.getEnd();
+                if (arrived != null)
+                {
+                    boolean back = edge.getExitSide() == arrived;
 
-                if (next.equals(from) || arrivedBy.containsKey(next)) continue;
+                    // Where turning is compulsory, going back is the ONLY move: the build emits no
+                    // straight-through copy of such a square, so a run that carried on through one is a
+                    // run no train could make.
+                    if (mustTurn.contains(at))
+                    {
+                        if (!back) continue;
+                    }
+                    else if (back)
+                    {
+                        if (!mayTurn.contains(at)) continue;
+                    }
+                    // Carrying on has to be carrying on along the SAME TRACK.  Comparing sides alone was
+                    // not enough at a double-curve sensor, which is two curves crossing in one square
+                    // with no connection between them: a train arriving on one of them was allowed onto
+                    // any edge that did not leave by the side it came in at, including the edges of the
+                    // other curve - a run that jumps tracks in mid-square, which is the same class of
+                    // impossible move the arrival-side search was written to get rid of.
+                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
+                    {
+                        continue;
+                    }
+                }
+
+                String next = searchKey(edge.getEnd(), edge.getEntrySide());
+
+                if (arrivedBy.containsKey(next)) continue;
 
                 arrivedBy.put(next, edge);
+                cameFrom.put(next, here);
+                tileOf.put(next, edge.getEnd());
+                sideOf.put(next, edge.getEntrySide());
 
-                if (next.equals(to))
+                if (edge.getEnd().equals(to))
                 {
                     List<ReducedEdge> path = new ArrayList<>();
 
-                    for (TileKey at = to; !at.equals(from);)
+                    for (String step = next; arrivedBy.get(step) != null; step = cameFrom.get(step))
                     {
-                        ReducedEdge step = arrivedBy.get(at);
-                        path.add(0, step);
-                        at = step.getStart();
+                        path.add(0, arrivedBy.get(step));
                     }
 
                     return path;
@@ -424,6 +492,47 @@ public class GraphReducer
         }
 
         return null;
+    }
+
+    /**
+     * The sides a train that arrived at this square by the given side can carry on out of - the track it
+     * is actually standing on, rather than every side the square happens to have.
+     *
+     * Never includes the arrival side: the tile graph builds its exits from routes, and a route never
+     * leads back out the way it came in.  Turning round is therefore always the separate case.
+     */
+    private Set<Side> onwardSides(TileKey tile, Side arrival)
+    {
+        Set<Side> out = new java.util.LinkedHashSet<>();
+
+        for (TileGraph.Exit exit : graph.exits(tile, arrival))
+        {
+            if (exit.getSide() != null) out.add(exit.getSide());
+        }
+
+        return out;
+    }
+
+    /**
+     * A square together with the side a train reached it by, which is what the path search walks over.
+     */
+    private static String searchKey(TileKey tile, Side arrival)
+    {
+        return tile + "|" + (arrival == null ? "-" : arrival.name());
+    }
+
+    /**
+     * The tile graph this reduction was made from.
+     *
+     * Exposed because the reduction is Point-to-Point and cannot say which of a square's tracks an edge
+     * runs on: two sides of one tile may belong to two routes that never meet.  Anything that has to
+     * tell a through move from a track change - the split, the path test - has to ask the graph.
+     *
+     * @return
+     */
+    public TileGraph getGraph()
+    {
+        return graph;
     }
 
     public List<TileGraph.Problem> getProblems()
@@ -563,8 +672,10 @@ public class GraphReducer
 
         if (landing == null) return;
 
+        // Empty, deliberately.  Seeding it with the start tile did nothing: the start is a Point, so a
+        // walk that came back to it is caught by the self-loop test above the circle test and never
+        // reaches this set.
         Set<String> visited = new HashSet<>();
-        visited.add(start.toString());
 
         continueWalk(start, firstExit.getSide(), landing, path, commands, visited);
     }
@@ -625,8 +736,19 @@ public class GraphReducer
             return;
         }
 
-        // A tile already on this path means the walk is going in circles
-        if (!visited.add(tile.toString())) return;
+        // Going in circles - but judged by the tile AND the side entered by, not the tile alone.
+        //
+        // A square can legitimately be crossed twice by one run, on two different tracks: a crossing or
+        // an overpass carries two routes that never meet, so a line that passes over one and comes back
+        // through the other is ordinary railway, not a loop.  Keyed on the tile alone, the second
+        // arrival looked identical to the first and the walk simply stopped - the run vanished and
+        // nothing was reported, which is the worst of the three possible outcomes.  It also contradicted
+        // locationsOf, which goes out of its way to treat an overpass's two routes as independent for
+        // locking: the model already says the two levels are separate.
+        //
+        // Still terminates: a genuine circle re-enters a tile by the same side it did before, so it is
+        // caught on that pass, and there are only four sides.
+        if (!visited.add(tile.toString() + "|" + landing.getEntrySide())) return;
 
         for (Exit exit : graph.exits(tile, landing.getEntrySide()))
         {

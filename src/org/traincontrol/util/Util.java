@@ -14,6 +14,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
 import org.traincontrol.marklin.file.CS2File;
@@ -82,6 +84,72 @@ public class Util
 
         // Folder unavailable - fall back to the current directory (the original behaviour)
         return fileName;
+    }
+
+    /**
+     * Copies a folder and everything under it into the backup area.
+     *
+     * Added because the backup did not cover the track diagrams or the autonomy setup - it saved the
+     * locomotive database, the window state and autonomy.json, which was the whole story while the
+     * diagram lived on the Central Station and autonomy lived in one file.  It is not the whole story
+     * now: station captions, names, directions and every configuration live in config/autonomy beside
+     * the diagram, and for a locally stored layout that folder is the only copy there is.
+     *
+     * Best effort per file.  A backup that stops at the first unreadable file is a backup of nothing,
+     * and the names of what it could not take are more use than an exception.
+     *
+     * @param source the folder to copy
+     * @param intoName what to call it inside the backup folder
+     * @return the files it could not copy, empty when all was well
+     */
+    public static List<String> backupFolder(File source, String intoName)
+    {
+        List<String> failed = new ArrayList<>();
+
+        if (source == null || !source.isDirectory()) return failed;
+
+        File target = new File(getBackupPath(intoName));
+
+        copyInto(source, target, failed);
+
+        return failed;
+    }
+
+    private static void copyInto(File source, File target, List<String> failed)
+    {
+        if (source.isDirectory())
+        {
+            if (!target.isDirectory() && !target.mkdirs())
+            {
+                failed.add(target.getPath());
+                return;
+            }
+
+            File[] children = source.listFiles();
+
+            if (children == null)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            for (File child : children)
+            {
+                copyInto(child, new File(target, child.getName()), failed);
+            }
+
+            return;
+        }
+
+        try
+        {
+            java.nio.file.Files.copy(source.toPath(), target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException e)
+        {
+            failed.add(source.getName());
+        }
     }
 
     // Timeouts for downloads.  The read timeout applies to each individual read, so a stalled transfer

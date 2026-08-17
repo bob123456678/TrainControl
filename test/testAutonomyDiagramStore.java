@@ -519,4 +519,226 @@ public class testAutonomyDiagramStore
 
         file.delete();
     }
+
+    /**
+     * A setup that cannot be read leaves the one in memory alone.
+     *
+     * load() used to empty the store before opening the file, so a read that failed - a sync lock on the
+     * folder, a half-written file, a setup from a newer TrainControl - left a live, blank store behind
+     * and reported the failure as though nothing had happened.  Everything the user had set up was gone
+     * from the screen, and one press of Save away from being gone from the disk.  It is reachable from
+     * the editor's own "exit without saving", whose dialog promises the opposite.
+     */
+    @Test
+    public void testAFailedLoadKeepsWhatWasAlreadyThere() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-setup").toFile();
+
+        org.traincontrol.automationui.AutonomyCompanionStore store =
+            new org.traincontrol.automationui.AutonomyCompanionStore(folder);
+
+        store.setPointName(new TileKey("main", 2, 2), "Bahnhof");
+        store.save();
+
+        // and now the file goes bad under it, as a sync or a crashed write would leave it
+        File setup = new File(folder, "config/autonomy/setup.json");
+
+        assertTrue(setup.isFile(), "the store did not write " + setup);
+
+        Files.write(setup.toPath(), "{ this is not json".getBytes(StandardCharsets.UTF_8));
+
+        try
+        {
+            store.load();
+
+            fail("a setup file that is not JSON has to be reported, not accepted");
+        }
+        catch (IOException expected)
+        {
+            // which is the point: it throws
+        }
+
+        assertEquals(store.getPointName(new TileKey("main", 2, 2)), "Bahnhof",
+            "a load that failed must leave the setup exactly as it was");
+    }
+
+    // --- captions ----------------------------------------------------------------------------------
+
+    /**
+     * A caption survives being written out and read back.
+     *
+     * It is stored as caption square to sensor square, and both are translated to page ids on the way
+     * out - so this also covers a caption surviving the page being renamed, which is what every other
+     * per-square setting already does and what a caption in the layout file never could.
+     */
+    @Test
+    public void testACaptionSurvivesASaveAndLoad() throws IOException
+    {
+        TileKey caption = new TileKey("main", 4, 5);
+        TileKey station = new TileKey("main", 4, 4);
+
+        store.setCaption(caption, station);
+        store.save();
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+        reopened.load();
+
+        assertEquals(reopened.getCaptionTarget(caption), station,
+            "a caption is part of the setup, so it has to come back with it");
+
+        assertTrue(reopened.captionsFor(station).contains(caption),
+            "and the station can find what is showing its name");
+    }
+
+    /**
+     * One square holds one caption, and one station may be captioned in several places.
+     *
+     * The second half is deliberate rather than tolerated: a long platform is legitimately labelled at
+     * both ends, and the running state is written to every label showing it.
+     */
+    @Test
+    public void testASquareHoldsOneCaptionAndAStationMayHaveSeveral()
+    {
+        TileKey station = new TileKey("main", 4, 4);
+        TileKey other = new TileKey("main", 8, 8);
+
+        TileKey west = new TileKey("main", 3, 5);
+        TileKey east = new TileKey("main", 5, 5);
+
+        store.setCaption(west, station);
+        store.setCaption(east, station);
+
+        assertEquals(store.captionsFor(station).size(), 2, "both ends of the platform name it");
+
+        // and a second caption on one square replaces the first rather than joining it
+        store.setCaption(west, other);
+
+        assertEquals(store.getCaptionTarget(west), other);
+        assertEquals(store.captionsFor(station).size(), 1);
+    }
+
+    /**
+     * A caption goes when either end of it does.
+     *
+     * Its own square, or the sensor it is about - text pointing at track that no longer exists is the
+     * orphan this whole design removes, and reconcile is where the diagram gets to say what is left.
+     */
+    @Test
+    public void testReconcileDropsACaptionWhenEitherEndIsGone()
+    {
+        TileKey caption = new TileKey("main", 4, 5);
+        TileKey station = new TileKey("main", 4, 4);
+
+        store.setCaption(caption, station);
+
+        // the sensor is deleted from the diagram, its caption square is not
+        store.reconcile(new LinkedHashSet<>(java.util.Arrays.asList(caption)));
+
+        assertNull(store.getCaptionTarget(caption),
+            "a caption about track that is gone is a caption about nothing");
+
+        store.setCaption(caption, station);
+
+        // and now the other way round: the sensor stays, the square the text was on is deleted
+        store.reconcile(new LinkedHashSet<>(java.util.Arrays.asList(station)));
+
+        assertNull(store.getCaptionTarget(caption));
+    }
+
+    // --- getting back out ---------------------------------------------------------------------------
+
+    /**
+     * The last configuration may be deleted.
+     *
+     * It used to be refused, on the reasoning that a setup with no configurations is a state nothing
+     * could act on - which made setting autonomy up a one-way door: a layout somebody had experimented
+     * on kept a configuration for ever, and the only way to be rid of it was to delete files by hand.
+     * With none left there is simply nothing active, which is the state every layout starts in.
+     */
+    @Test
+    public void testTheLastConfigurationMayBeDeleted() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        store.save();
+
+        store.deleteConfiguration("Only");
+
+        assertTrue(store.getConfigurationNames().isEmpty(), "the last one should have gone");
+        assertNull(store.getActiveConfiguration(), "and nothing is active any more");
+
+        store.save();
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+        reopened.load();
+
+        assertTrue(reopened.getConfigurationNames().isEmpty(),
+            "and it stays gone, rather than coming back on the next load");
+    }
+
+    /**
+     * Deleting one of several still leaves a sensible active configuration.
+     *
+     * The half of the old behaviour that was right: whichever one was running has gone, so something
+     * else has to be, or the next save has nowhere to put anything.
+     */
+    @Test
+    public void testDeletingTheActiveConfigurationPromotesAnother() throws IOException
+    {
+        store.createConfiguration("Morning", null);
+        store.createConfiguration("Evening", null);
+        store.setActiveConfiguration("Morning");
+
+        store.deleteConfiguration("Morning");
+
+        assertEquals(store.getConfigurationNames().size(), 1);
+        assertEquals(store.getActiveConfiguration(), "Evening",
+            "with one left, that is the one running");
+    }
+
+    /**
+     * Deleting everything removes the files and the decisions, and leaves the diagram alone.
+     *
+     * The way back out of having set autonomy up at all.  What has to go is everything in the setup -
+     * configurations, names, stations, captions, directions - and what has to stay is the track diagram,
+     * which belongs to the layout rather than to autonomy.
+     */
+    @Test
+    public void testDeletingEverythingRemovesTheFilesAndTheDecisions() throws IOException
+    {
+        TileKey station = new TileKey("main", 4, 4);
+
+        store.setPointName(station, "Bahnhof");
+        store.setStation(station, true);
+        store.setCaption(new TileKey("main", 4, 5), station);
+        store.createConfiguration("Morning", null);
+        store.createConfiguration("Evening", null);
+        store.save();
+
+        File setup = new File(layout, "config/autonomy/setup.json");
+
+        assertTrue(setup.isFile(), "the fixture did not write " + setup);
+
+        store.deleteEverything();
+
+        assertFalse(setup.isFile(), "the setup file should be gone");
+        assertTrue(store.getConfigurationNames().isEmpty());
+        assertNull(store.getPointName(station), "and every decision with it");
+        assertFalse(store.isStation(station));
+        assertNull(store.getCaptionTarget(new TileKey("main", 4, 5)));
+
+        // and a store opened on the same layout afterwards finds nothing, rather than a half-deleted
+        // setup that loads
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        assertFalse(reopened.exists(), "there should be no setup left to find");
+
+        reopened.load();
+
+        assertTrue(reopened.getConfigurationNames().isEmpty());
+        assertNull(reopened.getPointName(station));
+
+        // the layout folder itself is untouched: autonomy has no business deleting somebody's diagram
+        assertTrue(layout.isDirectory(), "the layout folder is not autonomy to remove");
+    }
 }

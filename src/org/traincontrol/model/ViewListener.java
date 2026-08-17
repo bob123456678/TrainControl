@@ -79,6 +79,13 @@ public interface ViewListener
     public boolean hasAutoLayout();
 
     /**
+     * Forgets the automation graph, so that nothing is loaded.  Everything else here either replaces one
+     * graph with another or creates one on demand, so without this a layout given a configuration could
+     * never be returned to having none.
+     */
+    public void clearAutoLayout();
+
+    /**
      * Reloads the track diagrams only, without re-importing routes or locomotives
      */
     public void refreshLayouts();

@@ -10,7 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
@@ -265,14 +268,38 @@ public class LayoutDiagram
     {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("[gleisbildseite]\n" +
-            "version\n" +
-            " .major=1\n");
+        builder.append("[gleisbildseite]\n");
+
+        // The blocks above the elements, put back as they were read.
+        //
+        // This used to emit a hardcoded version block, which is the same loss the elements themselves
+        // suffered one level up: a version carrying anything besides .major, or any block a later
+        // Central Station firmware writes into a page, was deleted the first time the page was saved.
+        // The hardcoded header is still the fallback, for a page built in memory rather than read.
+        if (unmodelledBlocks.isEmpty())
+        {
+            builder.append("version\n .major=1\n");
+        }
+        else
+        {
+            for (Map<String, String> block : unmodelledBlocks)
+            {
+                builder.append(block.get("_type")).append("\n");
+
+                for (Map.Entry<String, String> entry : block.entrySet())
+                {
+                    if ("_type".equals(entry.getKey())) continue;
+
+                    builder.append(" .").append(entry.getKey()).append('=')
+                        .append(entry.getValue()).append("\n");
+                }
+            }
+        }
         
         for (int y = 0; y < sy; y++)
         {
             for (int x = 0; x < sx; x++)
-            {            
+            {
                 if (this.getComponent(x, y) != null)
                 {
                     builder.append(this.getComponent(x, y).exportToCS2TextFormat());
@@ -280,8 +307,90 @@ public class LayoutDiagram
                 }
             }
         }
-        
+
+        // The elements this build could make nothing of, put back exactly as they were read.
+        //
+        // Saving regenerates the whole page from this model, and an element whose type TrainControl does
+        // not recognise never entered the model - so writing the file deleted it.  That is done on the
+        // user's behalf, without a save button being pressed: naming one station writes its page out,
+        // and renaming a point writes out every page carrying that caption.  Losing scenery, or a
+        // component a later Central Station firmware added, because this program had not heard of it is
+        // not a trade anybody agreed to.
+        for (Map<String, String> element : unmodelledElements)
+        {
+            builder.append("element\n");
+
+            for (Map.Entry<String, String> entry : element.entrySet())
+            {
+                builder.append(" .").append(entry.getKey()).append('=')
+                    .append(entry.getValue()).append("\n");
+            }
+        }
+
         return builder.toString().trim();
+    }
+
+    /**
+     * Elements read from the file that no component could be made of, kept verbatim so that saving does
+     * not delete them.  See exportToCS2TextFormat.
+     */
+    private final List<Map<String, String>> unmodelledElements = new ArrayList<>();
+
+    /**
+     * The blocks of the file that are not elements - version, groesse, and whatever a later firmware
+     * adds - in the order they were read.  See exportToCS2TextFormat.
+     */
+    private final List<Map<String, String>> unmodelledBlocks = new ArrayList<>();
+
+    /**
+     * Remembers a block that is not an element, so that saving does not delete it.
+     *
+     * @param block the raw keys of one block, including the parser's _type marker naming it
+     */
+    public void addUnmodelledBlock(Map<String, String> block)
+    {
+        if (block == null || block.get("_type") == null) return;
+
+        Map<String, String> kept = new LinkedHashMap<>();
+
+        kept.put("_type", block.get("_type"));
+
+        for (Map.Entry<String, String> entry : new TreeMap<>(block).entrySet())
+        {
+            if (!"_type".equals(entry.getKey())) kept.put(entry.getKey(), entry.getValue());
+        }
+
+        unmodelledBlocks.add(kept);
+    }
+
+    /**
+     * Remembers an element this program could not model, so that it survives a save.
+     *
+     * Ordering of the keys is not preserved - the parser reads them into an unordered map - so they are
+     * written back sorted, with id and typ first as the Central Station writes them.  The CS2 format is
+     * key/value pairs within an element, so what matters is that none of them is lost.
+     *
+     * @param element the raw keys of one element, including the parser's own _type marker
+     */
+    public void addUnmodelledElement(Map<String, String> element)
+    {
+        if (element == null) return;
+
+        Map<String, String> kept = new LinkedHashMap<>();
+
+        // These two first, as the Central Station writes them
+        if (element.containsKey("id")) kept.put("id", element.get("id"));
+        if (element.containsKey("typ")) kept.put("typ", element.get("typ"));
+
+        for (Map.Entry<String, String> entry : new TreeMap<>(element).entrySet())
+        {
+            // the parser's marker for which block this was, not a key of the file
+            if ("_type".equals(entry.getKey())) continue;
+
+            if (!kept.containsKey(entry.getKey())) kept.put(entry.getKey(), entry.getValue());
+        }
+
+        if (!kept.isEmpty()) unmodelledElements.add(kept);
     }
     
     /**

@@ -599,6 +599,28 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Forgets the automation graph entirely, so that nothing is loaded.
+     *
+     * The way back out of having autonomy running.  Everything else here either replaces one graph with
+     * another or refuses - so a layout that had been given a configuration could never be returned to
+     * having none, and the only way to stop autonomy being loaded was to close the application.
+     *
+     * Whatever is moving is stopped first: the graph about to be discarded is what the running threads
+     * are driving from.
+     */
+    @Override
+    public void clearAutoLayout()
+    {
+        if (this.autoLayout != null)
+        {
+            this.autoLayout.invalidate();
+            this.autoLayout.stopLocomotives();
+        }
+
+        this.autoLayout = null;
+    }
+
+    /**
      * Parses JSON corresponding to a layout automation config file
      * Resets any existing automation
      * @param s

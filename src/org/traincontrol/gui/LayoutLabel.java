@@ -368,6 +368,41 @@ public final class LayoutLabel extends JLabel
     {
         return this.parent.isVisible();
     }
+
+    /**
+     * Whether this label belongs to the same window as another.
+     *
+     * Used when a grid is rebuilt, to tell "this label's generation has been replaced" from "this label
+     * belongs to a different window that happens to be showing the same page".  The main window caches
+     * a page's grid and re-attaches it later, so its labels are legitimately detached for a while; a
+     * popup rebuilding that same page must not take them for rubbish.
+     *
+     * @param other
+     * @return
+     */
+    public boolean sharesWindowWith(LayoutLabel other)
+    {
+        return other != null && other.parent == this.parent;
+    }
+
+    /**
+     * Which page of the diagram this square is on.
+     *
+     * A label is otherwise told neither its page nor its coordinates, and asking the main window which
+     * page is showing is the wrong question in a popup: a popup shows a page of its own, so a
+     * right-click in one opened the menu belonging to whatever the MAIN window happened to have
+     * selected - offering a station the user was not pointing at, or, where the main page had no
+     * station at those coordinates, falling through and throwing the sensor instead.
+     */
+    private String autonomyPage;
+
+    /**
+     * @param page the name of the page this label's square belongs to
+     */
+    public void setAutonomyPage(String page)
+    {
+        this.autonomyPage = page;
+    }
     
     /**
      * A station's own menu, from the track rather than from its caption.
@@ -383,7 +418,8 @@ public final class LayoutLabel extends JLabel
     {
         if (e.getButton() != MouseEvent.BUTTON3 || component == null) return false;
 
-        final String station = tcUI.autonomyStationAt(component.getX(), component.getY());
+        final org.traincontrol.automationui.TileGraph.TileKey station =
+            tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
         if (station == null) return false;
 

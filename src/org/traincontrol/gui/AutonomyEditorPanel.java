@@ -73,6 +73,19 @@ public class AutonomyEditorPanel extends JPanel
     // Called to scroll to and flash a tile, when a finding is clicked
     private java.util.function.Consumer<TileKey> onReveal;
 
+    /**
+     * What to do about a finding on a page this window is not showing: open an editor that is.
+     */
+    private java.util.function.Consumer<TileKey> onJumpToPage;
+
+    /**
+     * @param action given the square of a finding on another page
+     */
+    public void setOnJumpToPage(java.util.function.Consumer<TileKey> action)
+    {
+        this.onJumpToPage = action;
+    }
+
     // Which tile each findings row is about; null for a heading or a finding with no tile
     private final List<TileKey> findingTiles = new java.util.ArrayList<>();
 
@@ -176,6 +189,7 @@ public class AutonomyEditorPanel extends JPanel
 
     // Offered only while something is still unnamed, which is the only time it does anything
     private JButton nameAll;
+    private javax.swing.JCheckBox excludePage;
 
     // Portal pairing takes two clicks, and the first is remembered here
     private TileKey pendingPortal;
@@ -341,11 +355,29 @@ public class AutonomyEditorPanel extends JPanel
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
+        // Leaving the page out, from the page itself.
+        //
+        // The setting lives in a submenu of the menu bar, which is the right home for "which pages does
+        // autonomy use" as a whole - and the wrong place to reach for while looking at a page full of
+        // findings about track nobody automates.  This is the moment somebody decides a page is not
+        // autonomy's business, so the decision belongs within reach of it.
+        // A checkbox rather than a button, because it describes a state rather than performing an act.
+        // As a button it excluded the page, saved, and closed the window in one press - three things,
+        // one of them irreversible-looking, with no way to see what the page would be like without
+        // committing to it.  Ticked, the page greys out at once and the change waits for Save like
+        // every other decision in this window.
+        excludePage = new javax.swing.JCheckBox(I18n.t("autosetup.ui.btnExcludeThisPage"));
+        excludePage.setToolTipText(I18n.t("autosetup.ui.hintExcludeThisPage"));
+        excludePage.setFocusable(false);
+        excludePage.setFont(FONT_CONTROL);
+        excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
+
         // Both the width of the column, like the window's own Save and Cancel below them
         fillWidth(testButton, nameAll);
 
         panel.add(row(testButton));
         panel.add(row(nameAll));
+        panel.add(row(excludePage));
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
         // in the window's own Toggle visibility box now, beside Addresses, which is where somebody
@@ -536,7 +568,19 @@ public class AutonomyEditorPanel extends JPanel
 
             if (row >= 0 && row < findingTiles.size() && findingTiles.get(row) != null)
             {
-                if (onReveal != null) onReveal.accept(findingTiles.get(row));
+                TileKey at = findingTiles.get(row);
+
+                // A finding on another page is reached by opening that page, which this window cannot
+                // do in place - it is built around one diagram.  So it hands the square to the main
+                // window, which closes this editor and opens one there.
+                if (!onThisPage(at))
+                {
+                    if (onJumpToPage != null) onJumpToPage.accept(at);
+
+                    return;
+                }
+
+                if (onReveal != null) onReveal.accept(at);
             }
         });
 
@@ -653,6 +697,43 @@ public class AutonomyEditorPanel extends JPanel
 
                 menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
                     () -> placeLocomotive(target, false)));
+
+                // Which way round the train is standing.
+                //
+                // Asked here and nowhere else, because here is the only place it can be answered: the
+                // user is looking at the square, with the track drawn either side of it.  Offered only
+                // where the answer could be more than one thing - a square one line reaches has a facing
+                // too, but not a question - and only while a train is on it, since it is a fact about
+                // the train rather than about the track.
+                //
+                // Nobody has to answer it.  Left alone it takes the first facing, and the moment
+                // autonomy runs, where the train ends up says which way it was pointing and that is
+                // written back.  This is the escape hatch for the first run, and for a train somebody
+                // put on the rails backwards.
+                final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
+                    session.facingChoices(target);
+
+                if (standing != null && facings.size() > 1)
+                {
+                    javax.swing.JMenu facingMenu = new javax.swing.JMenu(
+                        I18n.f("autosetup.ui.menuFacingGroup", standing));
+
+                    facingMenu.setToolTipText(I18n.t("autosetup.ui.hintFacing"));
+
+                    javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
+
+                    org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
+
+                    for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
+                    {
+                        facingMenu.add(radio(facingGroup,
+                            I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
+                            recorded == null ? facing == facings.get(0) : facing == recorded,
+                            () -> session.setFacing(target, facing)));
+                    }
+
+                    menu.add(facingMenu);
+                }
 
                 menu.addSeparator();
             }
@@ -926,11 +1007,10 @@ public class AutonomyEditorPanel extends JPanel
             menu.add(item(I18n.t("autosetup.ui.menuShowStationHere"),
                 () -> promptStationLabel(tile, here)));
 
-            if (here != null && here.getLabel() != null
-                    && here.getLabel().startsWith(AutonomySession.STATION_LABEL_PREFIX))
+            if (session.getCaptionTarget(tile) != null)
             {
                 menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"),
-                    () -> applyStationLabel(tile, null)));
+                    () -> applyCaption(tile, null)));
             }
         }
 
@@ -1071,9 +1151,13 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         String label = component == null || component.getLabel() == null ? "" : component.getLabel();
-        boolean carries = label.startsWith(AutonomySession.STATION_LABEL_PREFIX);
 
-        title(menu, carries ? label.substring(AutonomySession.STATION_LABEL_PREFIX.length())
+        // What the square is showing: a station’s caption, the user’s own text, or nothing.  The
+        // caption is no longer text on the diagram at all - it is an autonomy object drawn here - so it
+        // is asked for rather than read off the label.
+        TileKey captioned = session.getCaptionTarget(tile);
+
+        title(menu, captioned != null ? describeTile(captioned)
             : label.trim().isEmpty() ? I18n.t("autosetup.ui.titleEmptyText") : label);
 
         // Offered on a blank square too, not only on one that already carries text: writing a station
@@ -1081,7 +1165,7 @@ public class AutonomyEditorPanel extends JPanel
         // Not over somebody's own caption.  A square carrying text that is not a station label is part
         // of the user's drawing - a yard name, a note - and this editor writes autonomy, not diagrams.
         // Offered and refused rather than hidden, so it is clear the square was considered.
-        boolean mine = label.trim().isEmpty() || carries;
+        boolean mine = label.trim().isEmpty() || captioned != null;
 
         javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
             () -> promptStationLabel(tile, component));
@@ -1091,9 +1175,9 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(name);
 
-        if (carries)
+        if (captioned != null)
         {
-            menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyStationLabel(tile, null)));
+            menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyCaption(tile, null)));
         }
 
         menu.show(invoker, x, y);
@@ -1109,13 +1193,8 @@ public class AutonomyEditorPanel extends JPanel
         // known - and getting it wrong would put another platform's name on this platform.
         if (session.getStore().isStation(tile))
         {
-            String own = session.pointNameForTile(tile);
-
-            if (own != null)
-            {
-                applyStationLabel(tile, own);
-                return;
-            }
+            applyCaption(tile, tile);
+            return;
         }
 
         java.util.List<String> names = new java.util.ArrayList<>();
@@ -1140,12 +1219,9 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JComboBox<String> choice =
             new javax.swing.JComboBox<>(names.toArray(new String[0]));
 
-        String label = component == null || component.getLabel() == null ? "" : component.getLabel();
+        TileKey showing = session.getCaptionTarget(tile);
 
-        if (label.startsWith(AutonomySession.STATION_LABEL_PREFIX))
-        {
-            choice.setSelectedItem(label.substring(AutonomySession.STATION_LABEL_PREFIX.length()));
-        }
+        if (showing != null) choice.setSelectedItem(session.getStore().getPointName(showing));
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
         panel.add(new JLabel(I18n.t("autosetup.ui.promptStationLabel")), java.awt.BorderLayout.NORTH);
@@ -1157,39 +1233,49 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        applyStationLabel(tile, (String) choice.getSelectedItem());
+        applyCaption(tile, stationTileNamed((String) choice.getSelectedItem()));
     }
 
     /**
-     * Writes the label and says so.
+     * Shows a station’s name on a square, or stops showing it, and says so.
      *
-     * The page goes to disk here and now.  Save in this window means the autonomy setup, so a diagram
-     * change carried until then would be written by a button that says it is doing something else -
-     * and abandoned by a Cancel that the user reasonably thought applied only to autonomy.
+     * Nothing is written to the layout file.  A caption belongs to the autonomy setup now, so it is
+     * saved by the button that says it saves autonomy and discarded by the Cancel that says it discards
+     * it - which is what the old behaviour, writing the page here and now, could not offer either way.
+     *
+     * @param tile the square the text goes on
+     * @param station the sensor it is about, or null to clear the square
      */
-    private void applyStationLabel(TileKey tile, String name)
+    private void applyCaption(TileKey tile, TileKey station)
     {
-        try
+        session.setCaption(tile, station);
+
+        // The editor's own grid has to be REBUILT, not repainted: the caption is part of the tile art,
+        // and the annotation refresh that follows every other edit does not touch it.
+        if (onDiagramChanged != null) onDiagramChanged.run();
+
+        say(hint, station == null ? I18n.t("autosetup.ui.clearedStationLabel")
+            : I18n.f("autosetup.ui.setStationLabel", describeTile(station)));
+
+        refresh();
+
+        flashMenuTarget();
+    }
+
+    /**
+     * The square of the station with this authored name, for turning a chooser’s answer back into
+     * the thing a caption actually points at.
+     */
+    private TileKey stationTileNamed(String name)
+    {
+        if (name == null || session.getReducer() == null) return null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
         {
-            session.setStationLabel(tile, name);
-
-            // The editor's own grid has to be REBUILT, not repainted: the caption is part of the tile
-            // art, and the annotation refresh that follows every other edit does not touch it.  The
-            // main window needs no telling - closing this editor runs an uncached repaint, and it is
-            // the grid build that registers a station label.
-            if (onDiagramChanged != null) onDiagramChanged.run();
-
-            say(hint, name == null ? I18n.t("autosetup.ui.clearedStationLabel")
-                : I18n.f("autosetup.ui.setStationLabel", name));
-
-            refresh();
-
-            flashMenuTarget();
+            if (name.equals(session.getStore().getPointName(tile))) return tile;
         }
-        catch (Exception e)
-        {
-            JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", String.valueOf(e.getMessage())));
-        }
+
+        return null;
     }
 
     /**
@@ -1223,25 +1309,18 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placeLabelFor(TileKey tile)
     {
-        try
-        {
-            String why = session.placeStationLabel(tile);
+        String why = session.placeCaption(tile);
 
-            // Says why nothing happened.  A silent no-op is the worst answer here: the user cannot
-            // tell a refusal from a bug, and neither could I - "no label appears" was reported three
-            // times before this told anybody which of four conditions had turned it down.
-            if (why != null)
-            {
-                say(hint, I18n.f(why, describeTile(tile)));
-                return;
-            }
-
-            if (onDiagramChanged != null) onDiagramChanged.run();
-        }
-        catch (Exception e)
+        // Says why nothing happened.  A silent no-op is the worst answer here: the user cannot tell a
+        // refusal from a bug, and neither could I - "no label appears" was reported three times before
+        // this told anybody which of four conditions had turned it down.
+        if (why != null)
         {
-            JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", String.valueOf(e.getMessage())));
+            say(hint, I18n.f(why, describeTile(tile)));
+            return;
         }
+
+        if (onDiagramChanged != null) onDiagramChanged.run();
     }
 
     /**
@@ -1360,7 +1439,10 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
+            // About numbers, not about lengths.  This prompt is also used for a station's priority,
+            // where negatives are perfectly valid - and the length message told the user their answer
+            // had to be "0 or more", which was wrong advice for the field they were standing in.
+            JOptionPane.showMessageDialog(owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
         }
     }
 
@@ -1646,6 +1728,9 @@ public class AutonomyEditorPanel extends JPanel
             name = name.replace("\"", "");
         }
 
+        // Nothing can fail here any more.  A caption points at the station’s SQUARE, so renaming
+        // one is a change to the setup and to nothing else - it used to rewrite every page showing the
+        // old name, and could half-succeed.
         session.setPointName(tile, name.trim());
 
         // The moment a station gets a name is the moment it has one worth writing on the diagram.
@@ -2148,11 +2233,29 @@ public class AutonomyEditorPanel extends JPanel
         // Both ways, always.  Asking the user to nominate a direction only makes them run the test
         // twice to learn the thing they actually wanted to know - a one-way run looks identical to a
         // broken one until you have tried it from the other end.
+        // The squares trains may turn round at are handed over, because everywhere else the run may not
+        // leave by the side it came in at.  Without that the test drew routes that doubled back on
+        // themselves at ordinary track - the reduction knows the track runs both ways, and knowing that
+        // is not the same as a train being able to use both in one journey.
+        //
+        // MAY, not must.  reversibleTiles() covers both, and a must-turn square is the opposite case:
+        // the build emits no straight-through copy for one, so a train reaching it is turned back and
+        // cannot pass.  Handing those over as well let the test draw a route straight through a square
+        // the running railway turns every train at - which is the test giving a second opinion instead
+        // of reporting what a train would find, the one thing it exists not to do.
+        java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
+
+        java.util.Set<TileKey> mayTurn = new java.util.LinkedHashSet<>(session.reversibleTiles());
+
+        mayTurn.removeAll(mustTurn);
+
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
-            session.getReducer() == null ? null : session.getReducer().findPath(testFrom, tile);
+            session.getReducer() == null ? null
+                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn);
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
-            session.getReducer() == null ? null : session.getReducer().findPath(tile, testFrom);
+            session.getReducer() == null ? null
+                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn);
 
         traces.clear();
 
@@ -2328,6 +2431,25 @@ public class AutonomyEditorPanel extends JPanel
     public boolean isDirty()
     {
         return session.isDirty();
+    }
+
+    /**
+     * Throws away everything done in this editor since the last save.
+     *
+     * @return null when it worked, or the reason it did not
+     */
+    public String discardEdits()
+    {
+        try
+        {
+            session.discardEdits();
+
+            return null;
+        }
+        catch (java.io.IOException e)
+        {
+            return String.valueOf(e.getMessage());
+        }
     }
 
     /**
@@ -2667,48 +2789,78 @@ public class AutonomyEditorPanel extends JPanel
         flowMarks = session.flowMarks();
         runLeaders = session.runLeaders();
 
+        // The box says what the setup says, so that opening the editor on a page already left out shows
+        // it ticked rather than inviting the user to tick it again.
+        boolean ignored = page != null && session.getStore().getExcludedPages().contains(page);
+
+        if (excludePage != null) excludePage.setSelected(ignored);
+
+        // Nothing else in this column can do anything on a page autonomy takes no notice of: there are
+        // no Points to name and no run to test.  Greyed rather than hidden, so the column keeps its
+        // shape and it is clear they come back when the box is unticked.
+        if (testButton != null) testButton.setEnabled(!ignored);
+
         findingsModel.clear();
         findingTiles.clear();
         findingSeverity.clear();
 
-        // Split into what must be fixed and what is only worth checking, and headed the same way as
-        // the Auto tab's list.  The two views answer the same question about the same setup, so a
-        // reader who has learned to read one should not have to learn the other.
+        // Split into what must be fixed and what is only worth checking.
         //
-        // Only this page, though: an editor window shows one page, and a finding about another cannot
-        // be acted on here.  The whole-layout view is the one in the Auto tab.
+        // The WHOLE layout, not only this page.  Restricting it to the page in front of the user made
+        // the list agree with nothing: the count on the diagram counts the layout, a setup refuses to
+        // load because of a problem anywhere, and somebody working through the list had no way of
+        // knowing there was more of it on a page they had not opened.  Rows about elsewhere say where,
+        // and clicking one goes there.
         List<Object[]> errorRows = new java.util.ArrayList<>();
         List<Object[]> warningRows = new java.util.ArrayList<>();
         List<Object[]> noticeRows = new java.util.ArrayList<>();
 
-        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph() == null
-            ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
-            : session.getGraph().getProblems())
-        {
-            if (!onThisPage(problem.getTile())) continue;
+        // The same three, for everywhere that is not the page in front of the reader.  Kept apart
+        // rather than mixed in and labelled: this window can act on one page, so "here" and "not here"
+        // is the first thing a reader needs to know about a row - before how serious it is.
+        List<Object[]> elsewhereErrors = new java.util.ArrayList<>();
+        List<Object[]> elsewhereWarnings = new java.util.ArrayList<>();
+        List<Object[]> elsewhereNotices = new java.util.ArrayList<>();
 
-            (problem.isBlocking() ? errorRows : warningRows).add(new Object[]
-            {
-                problem.getTile(),
-                describe(problem.getMessageKey(), problem.getTile() == null
-                    ? "" : describeTile(problem.getTile()))
-            });
-        }
-
+        // The graph's own problems are NOT gathered separately here.
+        //
+        // AutonomyChecks.run already copies every problem the graph and the reducer raised into its
+        // findings - so listing them again put each scissors crossing, unaddressed switch and unpaired
+        // link into this window twice, once from each source.  A list that says the same thing twice
+        // reads as two faults, and the count beside it then disagrees with the count on the diagram,
+        // which gathers them once.
         for (AutonomyChecks.Finding finding : session.check())
         {
-            if (!onThisPage(finding.getTile())) continue;
-
             String subject = finding.getTile() == null
                 ? finding.getSubject() : describeTile(finding.getTile());
 
-            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errorRows
-                : finding.getSeverity() == AutonomyChecks.Severity.NOTICE ? noticeRows : warningRows)
-                .add(new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
+            String text = describe(finding.getMessageKey(), subject);
+
+            boolean here = onThisPage(finding.getTile());
+
+            // Named where it is somewhere else, since its own section says only that it is not here
+            if (!here)
+            {
+                text = I18n.f("autosetup.ui.findingOnPage", finding.getTile().getPage(), text);
+            }
+
+            AutonomyChecks.Severity severity = finding.getSeverity();
+
+            List<Object[]> into = here
+                ? (severity == AutonomyChecks.Severity.ERROR ? errorRows
+                    : severity == AutonomyChecks.Severity.NOTICE ? noticeRows : warningRows)
+                : (severity == AutonomyChecks.Severity.ERROR ? elsewhereErrors
+                    : severity == AutonomyChecks.Severity.NOTICE ? elsewhereNotices
+                    : elsewhereWarnings);
+
+            into.add(new Object[] {finding.getTile(), text});
         }
 
-        int errors = errorRows.size();
+        int errors = errorRows.size() + elsewhereErrors.size();
 
+        // This page first, in order of how much each matters, then everywhere else under a heading of
+        // its own.  Severity still orders within each half, so an error elsewhere is not buried under a
+        // notice here - it is simply below the things the reader can act on without moving.
         section(I18n.f("autosetup.ui.headingErrors", errorRows.size()), errorRows,
             AutonomyChecks.Severity.ERROR);
         section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
@@ -2716,12 +2868,35 @@ public class AutonomyEditorPanel extends JPanel
         section(I18n.f("autosetup.ui.headingNotices", noticeRows.size()), noticeRows,
             AutonomyChecks.Severity.NOTICE);
 
+        int elsewhere = elsewhereErrors.size() + elsewhereWarnings.size() + elsewhereNotices.size();
+
+        if (elsewhere > 0)
+        {
+            // One heading for the lot, saying how many and that clicking goes there
+            findingsModel.addElement(I18n.f("autosetup.ui.headingElsewhere", elsewhere));
+            findingTiles.add(null);
+            findingSeverity.add(null);
+
+            section(null, elsewhereErrors, AutonomyChecks.Severity.ERROR);
+            section(null, elsewhereWarnings, AutonomyChecks.Severity.WARNING);
+            section(null, elsewhereNotices, AutonomyChecks.Severity.NOTICE);
+        }
+
         // Unnamed points are checks now, and errors, so they are already in the list below with a
         // square to jump to each.  Saying it again up here was the same news twice, in a colour that
         // made it look like a third thing.
         int unnamed = unnamedPoints().size();
 
-        if (nameAll != null) nameAll.setVisible(unnamed > 0);
+        // Greyed, never hidden - the same as Test a path above it.  A button that disappears takes the
+        // column's shape with it and leaves the reader wondering whether they imagined it; one that is
+        // there and unavailable says "nothing to do here yet" without moving anything.
+        if (nameAll != null)
+        {
+            nameAll.setEnabled(unnamed > 0 && !ignored);
+
+            nameAll.setToolTipText(unnamed > 0
+                ? null : I18n.t("autosetup.ui.hintNothingToName"));
+        }
 
         if (errors > 0)
         {
@@ -2769,13 +2944,20 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Adds one severity section to the list, headed and indented as the Auto tab's is.
      */
+    /**
+     * @param heading the section title, or null to add the rows under whatever heading is already above
+     *        them - which is how the three severities of "elsewhere" share one
+     */
     private void section(String heading, List<Object[]> rows, AutonomyChecks.Severity severity)
     {
         if (rows.isEmpty()) return;
 
-        findingsModel.addElement(heading);
-        findingTiles.add(null);
-        findingSeverity.add(null);
+        if (heading != null)
+        {
+            findingsModel.addElement(heading);
+            findingTiles.add(null);
+            findingSeverity.add(null);
+        }
 
         for (Object[] row : rows)
         {
@@ -2827,6 +3009,42 @@ public class AutonomyEditorPanel extends JPanel
      * The alternative is hunting for them: a generated name is a valid name, so nothing refuses to work
      * and nothing points at them - they simply turn up as coordinates in a timetable weeks later.
      */
+    /**
+     * Takes this page out of autonomy, or puts it back.
+     *
+     * Asked about only on the way OUT.  Leaving a page out is the answer that costs something - every
+     * sensor on it stops being part of the railway - and putting one back costs nothing, so a
+     * confirmation there would be a question with one sensible answer.
+     *
+     * Not saved here.  Save in this window means the autonomy setup, and this is part of it: ticking
+     * the box greys the page at once so the effect is visible, and Cancel throws it away with
+     * everything else, which is what makes trying it out safe.
+     */
+    private void setPageExcluded(boolean excluded)
+    {
+        if (page == null) return;
+
+        if (excluded)
+        {
+            int answer = JOptionPane.showConfirmDialog(owner(),
+                I18n.f("autosetup.ui.confirmExcludePage", page),
+                I18n.t("autosetup.ui.btnExcludeThisPage"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+            if (answer != JOptionPane.YES_OPTION)
+            {
+                excludePage.setSelected(false);
+                return;
+            }
+        }
+
+        session.setPageExcluded(page, excluded);
+
+        if (onDiagramChanged != null) onDiagramChanged.run();
+
+        refresh();
+    }
+
     private void nameEverything()
     {
         List<TileKey> unnamed = unnamedPoints();

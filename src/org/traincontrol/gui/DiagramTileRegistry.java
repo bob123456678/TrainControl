@@ -52,6 +52,35 @@ public class DiagramTileRegistry
             if (raced != null) here = raced;
         }
 
+        // Registering a new label for a square is the moment the old ones for it became rubbish, so it
+        // is the moment to drop them.
+        //
+        // The prune in publish cannot do this job on the main window: it asks whether the label's parent
+        // is VISIBLE, and the main window's grid parent is the tab, which is visible for the life of the
+        // application.  Every repaint of the diagram - a size change, an address toggle, closing the
+        // editor - built a fresh page of labels and left the old page here forever, so the registry grew
+        // without bound and every publish walked an ever-longer list of components attached to nothing.
+        //
+        // Judged by isDisplayable rather than by visibility: a label whose grid has been replaced has
+        // been removed from a realised window and has no peer, which is exactly what "nobody can see
+        // this any more" means.  Only the labels already here are judged, never the one arriving - which
+        // may legitimately not be attached yet.
+        //
+        // And only labels of the SAME window.  The main window caches a page's grid and re-attaches it
+        // when the user comes back to that page, so its labels are detached - and perfectly alive -
+        // whenever another page is showing.  Judging them from a popup that happens to be rebuilding the
+        // same page threw them out while they were merely put away, and when the user switched back the
+        // page was attached, visible, and registered nowhere: no train ever lit up on it again.
+        for (Iterator<LayoutLabel> i = here.iterator(); i.hasNext();)
+        {
+            LayoutLabel existing = i.next();
+
+            if (existing != label && existing.sharesWindowWith(label) && !existing.isDisplayable())
+            {
+                i.remove();
+            }
+        }
+
         here.add(label);
 
         // A tile built after the last publish would otherwise show nothing until something next moved,

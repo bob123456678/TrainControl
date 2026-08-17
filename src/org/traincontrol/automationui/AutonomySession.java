@@ -19,6 +19,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import org.traincontrol.util.I18n;
 
 /**
  * One layout's autonomy setup, from the files on disk to the graph a train can run on.
@@ -103,6 +104,50 @@ public class AutonomySession
 
         rebuild();
 
+        // Captions used to live in the layout file.  Anything still written there is brought across now,
+        // once; see migrateStationLabels.  Its failures are kept for the UI to report rather than thrown,
+        // because a page that could not be rewritten is not a reason to refuse to open the setup - the
+        // migration simply runs again next time.
+        migrationFailures = migrateStationLabels();
+
+        dirty = false;
+    }
+
+    /**
+     * The pages the caption migration could not rewrite, for whoever opened the session to report.
+     */
+    private List<String> migrationFailures = new ArrayList<>();
+
+    public List<String> getMigrationFailures()
+    {
+        return Collections.unmodifiableList(migrationFailures);
+    }
+
+    /**
+     * Throws away every edit made since the last save, by reading the setup back off disk.
+     *
+     * Without this, "exit without saving" was a promise nothing kept.  Every edit goes straight into the
+     * live configuration this session hands out - there was no copy to go back to - so the discarded
+     * work was still in memory afterwards, still drawn on the diagram, and written out by the next save
+     * from anywhere at all: ticking a page, loading a configuration, or closing the application.
+     *
+     * Re-reading rather than undoing: what is on disk is by definition the last state the user agreed
+     * to, and rebuilding from it cannot leave a half-reverted graph the way replaying edits backwards
+     * could.  Anything already saved deliberately survives, which is what makes the Save button in the
+     * editor mean something.
+     *
+     * Station captions are the one thing this does NOT take back.  They live on the track diagram, not
+     * in the setup, and are written to the layout file the moment they are set - so the wording of the
+     * question the user is asked has to say so rather than quietly overstate what is being undone.
+     *
+     * @throws IOException if the setup cannot be re-read, in which case nothing is changed
+     */
+    public void discardEdits() throws IOException
+    {
+        store.load();
+
+        rebuild();
+
         dirty = false;
     }
 
@@ -161,40 +206,69 @@ public class AutonomySession
     }
 
     /**
-     * The marker a track diagram text square carries to say it belongs to a station.
-     *
-     * Defined here rather than in the grid that draws it, because the setup layer is what decides
-     * whether a station HAS one - LayoutGrid now takes its constant from this, so the two cannot drift
-     * apart and quietly stop matching.
+     * What a caption looked like when it lived in the layout file, and the only thing that still reads
+     * it: the one-time migration that brings those labels into the setup.  See migrateStationLabels.
      */
     public static final String STATION_LABEL_PREFIX = "Point:";
 
     /**
-     * Every station name that some square of some page is showing.
+     * Every station that some square of some page is showing the name of.
+     *
+     * Squares, not names.  A caption points at the sensor it is about, so asking "is this station
+     * labelled" no longer means matching text against text - which is what made it possible for a
+     * caption to look live while naming a Point that had been renamed out from under it.
      *
      * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
-     * the page has stopped being drawn, and a label there is still on the user's screen.
+     * the page has stopped being drawn, and a caption there is still on the user's screen.
      *
-     * @return the names, without the prefix
+     * @return the sensors that have a caption somewhere
      */
-    public Set<String> getLabelledStationNames()
+    public Set<TileKey> getLabelledStationTiles()
     {
-        Set<String> out = new LinkedHashSet<>();
+        return new LinkedHashSet<>(store.getCaptions().values());
+    }
 
-        for (LayoutDiagram page : pages)
-        {
-            for (LayoutDiagramComponent component : page.getAll())
-            {
-                if (component == null || component.getLabel() == null) continue;
+    /**
+     * The station a caption on this square is about.
+     *
+     * @param captionTile the square the text sits on
+     * @return the sensor's square, or null when nothing is captioned there
+     */
+    public TileKey getCaptionTarget(TileKey captionTile)
+    {
+        return store.getCaptionTarget(captionTile);
+    }
 
-                if (component.getLabel().startsWith(STATION_LABEL_PREFIX))
-                {
-                    out.add(component.getLabel().substring(STATION_LABEL_PREFIX.length()));
-                }
-            }
-        }
+    /**
+     * Every square showing this station's name.
+     *
+     * @param stationTile
+     * @return the caption squares, possibly none
+     */
+    public Set<TileKey> captionsFor(TileKey stationTile)
+    {
+        return store.captionsFor(stationTile);
+    }
 
-        return out;
+    /**
+     * Every caption on the layout, as the square it is drawn on to the sensor it is about.
+     * @return
+     */
+    public Map<TileKey, TileKey> getCaptions()
+    {
+        return store.getCaptions();
+    }
+
+    /**
+     * Shows a station's name on a square, or stops showing it.
+     *
+     * @param captionTile where the text goes
+     * @param stationTile the sensor it is about, or null to clear the square
+     */
+    public void setCaption(TileKey captionTile, TileKey stationTile)
+    {
+        store.setCaption(captionTile, stationTile);
+        touched();
     }
 
     /**
@@ -224,18 +298,17 @@ public class AutonomySession
      *
      * @param tile the station
      * @return what happened, so a caller can say why nothing did
-     * @throws Exception if the page cannot be written
      */
-    public String placeStationLabel(TileKey tile) throws Exception
+    public String placeCaption(TileKey tile)
     {
         // The authored name, not the generated one.  A square marked as a station a moment ago has
         // only the coordinate the reducer invented for it, and "1 - Main 12,7" written across a track
-        // plan is worse than no caption at all - the label goes on when the station is NAMED.
+        // plan is worse than no caption at all - the caption goes on when the station is NAMED.
         String name = store.getPointName(tile);
 
         if (name == null || name.trim().isEmpty()) return "autosetup.ui.labelNotNamedYet";
 
-        if (getLabelledStationNames().contains(name)) return "autosetup.ui.labelAlreadyShown";
+        if (!captionsFor(tile).isEmpty()) return "autosetup.ui.labelAlreadyShown";
 
         LayoutDiagram page = pageOf(tile);
 
@@ -262,27 +335,33 @@ public class AutonomySession
 
             LayoutDiagramComponent next = page.getComponent(at.getX(), at.getY());
 
+            // Nor a square already carrying a caption: one square, one caption
             if (next == null || next.hasLabel() || next.isFeedback()) continue;
+
+            if (store.getCaptionTarget(at) != null) continue;
 
             // Straight THROUGH rather than of type STRAIGHT.  A signal or an uncoupler is a plain
             // piece of running line with a fitting on it, and beside a platform there is often
             // nothing else - insisting on the bare type found no square at all on a real layout.
             if (!runsStraightThrough(next)) continue;
 
-            setStationLabel(at, name);
+            setCaption(at, tile);
 
             return null;
         }
 
-        // Second choice: an empty square next to it, which becomes a text square.  Blank space beside a
-        // platform is the most readable place of all; it is simply rarer than track.
+        // Second choice: an empty square next to it.  Blank space beside a platform is the most readable
+        // place of all; it is simply rarer than track.  Nothing is added to the diagram to hold it - the
+        // caption is autonomy's, and it is drawn on whatever square it names.
         for (Side side : sides)
         {
             TileKey at = neighbour(tile, side);
 
             if (page.getComponent(at.getX(), at.getY()) != null) continue;
 
-            setStationLabel(at, name);
+            if (store.getCaptionTarget(at) != null) continue;
+
+            setCaption(at, tile);
 
             return null;
         }
@@ -291,7 +370,7 @@ public class AutonomySession
         // a station with no name anywhere - which is the thing the checks complain about.
         if (!here.hasLabel())
         {
-            setStationLabel(tile, name);
+            setCaption(tile, tile);
 
             return null;
         }
@@ -367,47 +446,112 @@ public class AutonomySession
     }
 
     /**
-     * Puts a station's name onto a text square of the track diagram, and writes the page out.
+     * Brings captions written into the diagram as "Point:<name>" labels across into the setup, once.
      *
-     * The one place setup mode changes the DIAGRAM rather than the setup beside it, at the author's
-     * instruction (2026-08-16): a station with no label on the diagram is invisible where it matters
-     * most, and sending the user to a different editor to fix what this one just warned them about is
-     * the sort of round trip this whole surface exists to remove.
+     * They used to live in the layout file, bound to a Point by NAME, and every trouble captions had
+     * came from that: a rename had to rewrite every page showing the name, a station split into several
+     * Points was called none of them, and a name that no longer existed left a caption that looked live
+     * and did nothing.  Adam’s sample layout carried four of those last - BottomMainCTerm and the
+     * rest, left behind by the hand-written configuration this feature replaced.
      *
-     * Written immediately rather than at Save, because Save in setup mode means the autonomy setup -
-     * a diagram change riding along inside it would be saved by a button that says otherwise.
+     * A label naming a station this setup knows becomes a caption keyed to that station’s SQUARE.
+     * One naming nothing is dropped, on the author’s instruction: it points at track that does not
+     * exist, and drawing it taught the reader that a caption might mean nothing.
      *
-     * @param tile the text square
-     * @param name the station, or null to clear the square
-     * @throws Exception if the page cannot be written
+     * The setup is written BEFORE the pages are.  If the order were the other way round and a page write
+     * failed, the labels would be gone from the file and the captions absent from the setup - the
+     * captions would simply have been deleted.  This way a failure leaves both, and the migration runs
+     * again next time and reaches the same answer.
+     *
+     * This is the last time autonomy writes to a layout file at all.
+     *
+     * @return the pages that could not be written, empty when all was well
      */
-    public void setStationLabel(TileKey tile, String name) throws Exception
+    private List<String> migrateStationLabels()
     {
-        LayoutDiagram page = pageOf(tile);
+        Map<LayoutDiagram, List<LayoutDiagramComponent>> found = new LinkedHashMap<>();
 
-        if (page != null)
+        for (LayoutDiagram page : pages)
         {
-            LayoutDiagramComponent component = page.getComponent(tile.getX(), tile.getY());
-
-            // An empty square becomes a text square.  Without this the feature only works for somebody
-            // who already drew a text square in the diagram editor - which is the trip to a different
-            // editor this is meant to spare them.  Nothing else about the page is touched: a text
-            // square carries no track, no address and no state, so it cannot change how trains run.
-            if (component == null)
+            for (LayoutDiagramComponent component : page.getAll())
             {
-                if (name == null) return;
+                if (component == null || component.getLabel() == null) continue;
 
-                page.addComponent(LayoutDiagramComponent.componentType.TEXT,
-                    tile.getX(), tile.getY(), 0, 0, 0, 0, null, STATION_LABEL_PREFIX + name);
-            }
-            else
-            {
-                component.setLabel(name == null ? "" : STATION_LABEL_PREFIX + name);
-            }
+                if (!component.getLabel().startsWith(STATION_LABEL_PREFIX)) continue;
 
-            page.saveChanges(null, false);
-            return;
+                if (!found.containsKey(page)) found.put(page, new ArrayList<LayoutDiagramComponent>());
+
+                found.get(page).add(component);
+            }
         }
+
+        if (found.isEmpty()) return new ArrayList<>();
+
+        for (Map.Entry<LayoutDiagram, List<LayoutDiagramComponent>> entry : found.entrySet())
+        {
+            for (LayoutDiagramComponent component : entry.getValue())
+            {
+                String name = component.getLabel().substring(STATION_LABEL_PREFIX.length());
+
+                TileKey where = new TileKey(entry.getKey().getName(),
+                    component.getX(), component.getY());
+
+                TileKey station = tileNamed(name);
+
+                if (station != null) store.setCaption(where, station);
+            }
+        }
+
+        List<String> failures = new ArrayList<>();
+
+        try
+        {
+            store.save();
+        }
+        catch (IOException e)
+        {
+            // The setup could not be written, so the labels stay where they are and this runs again
+            failures.add(String.valueOf(e.getMessage()));
+
+            return failures;
+        }
+
+        for (Map.Entry<LayoutDiagram, List<LayoutDiagramComponent>> entry : found.entrySet())
+        {
+            for (LayoutDiagramComponent component : entry.getValue())
+            {
+                // Emptied, which is how a text square stops existing: the exporter does not write a TEXT
+                // element with no text.  Anything the file said about that square which this program
+                // cannot model is still written, so emptying it is not the same as deleting the line.
+                component.setLabel("");
+            }
+
+            try
+            {
+                entry.getKey().saveChanges(null, false);
+            }
+            catch (Exception e)
+            {
+                failures.add(entry.getKey().getName() + ": " + e.getMessage());
+            }
+        }
+
+        return failures;
+    }
+
+    /**
+     * The square of the station carrying this authored name, or null if no station does.
+     */
+    private TileKey tileNamed(String name)
+    {
+        if (name == null || reducer == null) return null;
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (name.equals(store.getPointName(tile))) return tile;
+        }
+
+        return null;
     }
 
     public List<LayoutDiagram> getPages()
@@ -526,6 +670,26 @@ public class AutonomySession
      * @param tile
      * @return the name, or null when the square is not a Point
      */
+    /**
+     * The square a running Point stands on.
+     *
+     * The inverse of the naming the builder does, including the split copies - "Bahnhof (eastbound)"
+     * and "Bahnhof (westbound)" both answer with the one square they are copies of.  This is what lets
+     * anything holding a Point find the caption showing it, without going through its name.
+     *
+     * @param pointName a Point of the running configuration
+     * @return its square, or null if this setup has never emitted that name
+     */
+    public TileKey tileForPointName(String pointName)
+    {
+        if (pointName == null || reducer == null) return null;
+
+        return new AutonomyBuilder(reducer, null)
+            .withReversibleTiles(reversibleTiles())
+            .withMandatoryTurns(mandatoryTurnTiles())
+            .withParkingTiles(parkingTiles()).tilesByName().get(pointName);
+    }
+
     public String pointNameForTile(TileKey tile)
     {
         if (reducer == null) return null;
@@ -769,9 +933,14 @@ public class AutonomySession
 
         Set<TileKey> split = reversibleTiles();
 
-        tilesByName.putAll(new AutonomyBuilder(reducer, null)
+        AutonomyBuilder naming = new AutonomyBuilder(reducer, null)
             .withReversibleTiles(split).withMandatoryTurns(mandatoryTurnTiles())
-            .withParkingTiles(parkingTiles()).tilesByName());
+            .withParkingTiles(parkingTiles());
+
+        tilesByName.putAll(naming.tilesByName());
+
+        // Which way a train standing on each emitted Point is pointing.  See the facing capture below.
+        Map<String, TilePorts.Side> facings = naming.facingByName();
 
         org.json.JSONObject points = new org.json.JSONObject();
 
@@ -811,7 +980,33 @@ public class AutonomySession
                     extras.put(key, point.get(key));
                 }
 
-                if (extras.length() > 0) points.put(tile.toString(), extras);
+                // Which way the train ended up pointing, learned rather than asked for.  A square is
+                // several Points once it is split, and the one a locomotive is standing on says which
+                // way round it is - so after autonomy has run once, nobody has to answer that question.
+                TilePorts.Side facing = facings.get(point.optString("name"));
+
+                if (facing != null && extras.has("loc"))
+                {
+                    extras.put(AutonomyBuilder.FACING, facing.name());
+                }
+
+                // An empty one is still recorded, and must be.  Skipping it meant a square the running
+                // layout had NOTHING to say about never entered this map, so the merge below never ran
+                // for it and never reached its `else remove` - and a locomotive that had driven away
+                // from a plain sensor stayed placed there in the configuration.  The next build emitted
+                // the same locomotive twice, on the square it left and the square it reached.
+
+                // Merged, not replaced.  A split square is visited once per copy and only ONE of them
+                // carries the locomotive, so putting each copy's extras in turn meant the last copy read
+                // won - and if that was not the copy the train was on, the placement was lost.
+                String id = tile.toString();
+
+                org.json.JSONObject into = points.has(id)
+                    ? points.getJSONObject(id) : new org.json.JSONObject();
+
+                for (String key : extras.keySet()) into.put(key, extras.get(key));
+
+                points.put(id, into);
             }
         }
 
@@ -836,15 +1031,55 @@ public class AutonomySession
                 else before.remove(key);
             }
 
+            // Not one of those keys, because the running layout has no field for it: it is worked out
+            // from WHICH copy of a split square the locomotive was found on.  Only ever written here,
+            // never cleared - a square with no train on it still remembers which way the last one was
+            // pointing, and that is the better guess for the next one.
+            if (captured.has(AutonomyBuilder.FACING))
+            {
+                before.put(AutonomyBuilder.FACING, captured.get(AutonomyBuilder.FACING));
+            }
+
             existing.put(id, before);
         }
 
-        // A point the running layout no longer has - its track was deleted - keeps nothing.
+        // A point whose TRACK is gone keeps nothing.  Judged against the squares that are still Points,
+        // not against the ones this capture had something to say about: a square marked "trains may turn
+        // round here" and nothing else carries no operational data at all, so keying the prune on what
+        // was captured deleted the marking the first time autonomy ran.
+        Set<String> stillPoints = new LinkedHashSet<>();
+
+        for (TileKey tile : tilesByName.values()) stillPoints.add(tile.toString());
+
+        // Which pages this reduction was even allowed to look at.  A page left out of autonomy has no
+        // Points in the reduction, so judging its squares by that reduction condemns every one of them -
+        // and excluding a page has to be reversible, or a page ticked off and back on has silently lost
+        // its placements, its facings and its markings.
+        // Taken from the layout's own pages, not from the pages the reduction happens to have Points on.
+        // A page whose last sensor was deleted has no Points, so inferring the list from the reduction
+        // quietly exempted it forever: its stale placements and markings could never be pruned, and if a
+        // page of that name was ever added back they came back with it - a locomotive recorded as
+        // standing on track it is not on.
+        Set<String> pagesInPlay = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (!store.getExcludedPages().contains(page.getName())) pagesInPlay.add(page.getName());
+        }
+
         List<String> gone = new ArrayList<>();
 
         for (String id : existing.keySet())
         {
-            if (!points.has(id)) gone.add(id);
+            if (stillPoints.contains(id)) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(id);
+
+            // Unparseable, or on a page this setup is not looking at: left alone rather than judged by
+            // a reduction that was never given the chance to see it.
+            if (tile == null || !pagesInPlay.contains(tile.getPage())) continue;
+
+            gone.add(id);
         }
 
         for (String id : gone) existing.remove(id);
@@ -930,7 +1165,63 @@ public class AutonomySession
             if (arrivals.size() < 2) pointless.add(tile);
         }
 
-        return AutonomyChecks.run(graph, reducer, termini, getLabelledStationNames(), pointless);
+        // Squares a train can reach and then not leave: it arrived by one side, the only way on is back
+        // out of that same side, and nobody has said trains may turn round there.
+        Set<TileKey> trapped = new LinkedHashSet<>();
+
+        for (TileKey tile : reducer.getPoints().keySet())
+        {
+            if (isTurnAround(tile)) continue;
+
+            Set<Side> arrivals = new LinkedHashSet<>();
+            Set<Side> departures = new LinkedHashSet<>();
+
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
+                {
+                    arrivals.add(edge.getEntrySide());
+                }
+
+                if (edge.getStart().equals(tile) && edge.getExitSide() != null)
+                {
+                    departures.add(edge.getExitSide());
+                }
+            }
+
+            for (Side arrival : arrivals)
+            {
+                Set<Side> onwards = new LinkedHashSet<>(departures);
+                onwards.remove(arrival);
+
+                if (onwards.isEmpty()) trapped.add(tile);
+            }
+        }
+
+        // Captions the user’s own writing is sitting on top of.
+        //
+        // The square belongs to the diagram - it is their drawing before it is autonomy’s data - so
+        // the text wins the square and the caption is the one that goes quiet.  Worth saying rather than
+        // silently losing: a station that looks captioned and shows nothing is exactly the puzzle this
+        // whole rework exists to stop.
+        Map<TileKey, TileKey> covered = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
+        {
+            LayoutDiagram page = pageOf(caption.getKey());
+
+            if (page == null) continue;
+
+            LayoutDiagramComponent component =
+                page.getComponent(caption.getKey().getX(), caption.getKey().getY());
+
+            if (component == null || component.getLabel() == null) continue;
+
+            if (!component.getLabel().trim().isEmpty()) covered.put(caption.getKey(), caption.getValue());
+        }
+
+        return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
+            trapped, covered);
     }
 
     /**
@@ -1023,56 +1314,18 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * Renames a station.
+     *
+     * Nothing else has to happen.  A caption points at the station’s SQUARE, so it follows a rename
+     * without being touched - which is the whole reason captions moved out of the diagram.  This used to
+     * rewrite every page showing the old name, could fail halfway, and destroyed anything on those pages
+     * that the layout parser could not model.
+     */
     public void setPointName(TileKey tile, String name)
     {
-        String before = store.getPointName(tile);
-
         store.setPointName(tile, name);
         touched();
-
-        // A label carries the NAME, so renaming a station strands every caption showing the old one:
-        // the label is registered under a name no Point has, and simply stops filling in.  Nothing
-        // says why, because as far as the diagram is concerned it is still a perfectly good label.
-        if (before != null && !before.equals(name)) renameStationLabels(before, name);
-    }
-
-    /**
-     * Rewrites every diagram caption showing one station name to show another.
-     *
-     * Silent about failure on purpose: this rides along with a rename, and a page that cannot be
-     * written should not turn renaming a point into an error dialog.  The caption that did not follow
-     * is then a station with no label, which the checks already report in its own words.
-     */
-    private void renameStationLabels(String before, String after)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            boolean changed = false;
-
-            for (LayoutDiagramComponent component : page.getAll())
-            {
-                if (component == null || component.getLabel() == null) continue;
-
-                if (component.getLabel().equals(STATION_LABEL_PREFIX + before))
-                {
-                    component.setLabel(after == null || after.trim().isEmpty()
-                        ? "" : STATION_LABEL_PREFIX + after);
-
-                    changed = true;
-                }
-            }
-
-            if (!changed) continue;
-
-            try
-            {
-                page.saveChanges(null, false);
-            }
-            catch (Exception e)
-            {
-                // left to the "not shown anywhere on the track diagram" check to report
-            }
-        }
     }
 
     public void setStation(TileKey tile, boolean station)
@@ -1110,6 +1363,70 @@ public class AutonomySession
     }
 
     /**
+     * The ways a train standing on this square could be pointing.
+     *
+     * One per side track arrives by, because a train that came in by the west side is pointing east.
+     * Ordered the same way the builder orders its copies, so the first answer here is the one a
+     * placement with no facing recorded actually gets.
+     *
+     * @param tile
+     * @return the possible facings, empty when nothing reaches the square and a single entry - which
+     *         needs no asking about - when only one line does
+     */
+    public List<Side> facingChoices(TileKey tile)
+    {
+        Set<Side> arrivals = new java.util.TreeSet<>();
+
+        if (reducer != null)
+        {
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
+                {
+                    arrivals.add(edge.getEntrySide());
+                }
+            }
+        }
+
+        List<Side> out = new ArrayList<>();
+
+        for (Side arrival : arrivals) out.add(arrival.opposite());
+
+        return out;
+    }
+
+    /**
+     * Which way the locomotive on this square is pointing, as recorded.
+     *
+     * @param tile
+     * @return the side its front faces, or null when nobody has said and nothing has run
+     */
+    public Side getFacing(TileKey tile)
+    {
+        Object value = getPointProperty(tile, AutonomyBuilder.FACING);
+
+        if (value == null) return null;
+
+        for (Side side : Side.values())
+        {
+            if (side.name().equals(value.toString())) return side;
+        }
+
+        return null;
+    }
+
+    /**
+     * Records which way the locomotive on this square is pointing.
+     *
+     * @param tile
+     * @param facing the side its front faces, or null to forget
+     */
+    public void setFacing(TileKey tile, Side facing)
+    {
+        setPointProperty(tile, AutonomyBuilder.FACING, facing == null ? null : facing.name());
+    }
+
+    /**
      * One of a Point's operational properties, in the active configuration.    /**
      * One of a Point's operational properties, in the active configuration.
      *
@@ -1144,6 +1461,13 @@ public class AutonomySession
         else points.getJSONObject(id).put(key, value);
 
         dirty = true;
+
+        // The split names are computed from these properties - which squares turn trains round, and
+        // which are berths - so a cached set of them is out of date the moment one changes.  It was
+        // dropped only on a rebuild, and this method deliberately does not rebuild, so marking a square
+        // while autonomy was running left the labels looking up Point names the running graph had never
+        // heard of, and that station stopped filling in until the next load.
+        baseNames = null;
     }
 
     /**

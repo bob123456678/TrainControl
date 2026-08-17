@@ -688,8 +688,13 @@ public class AutonomyViewerPanel extends JPanel
 
             if (interactive)
             {
-                JOptionPane.showMessageDialog(ui,
-                    I18n.f("autosetup.ui.errorCannotBuildDetail", countBlocking()));
+                // One of these is far and away the commonest case, and "1 things" in the one message
+                // a user meets before their railway will run is not the first impression to make.
+                int blocking = countBlocking();
+
+                JOptionPane.showMessageDialog(ui, blocking == 1
+                    ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                    : I18n.f("autosetup.ui.errorCannotBuildDetail", blocking));
             }
             else if (ui.getModel() != null)
             {
@@ -753,8 +758,10 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void initialize()
     {
-        String name = JOptionPane.showInputDialog(ui,
-            I18n.t("autosetup.ui.promptConfigurationName"));
+        String name = (String) JOptionPane.showInputDialog(ui,
+            I18n.t("autosetup.ui.promptConfigurationName"),
+            I18n.t("autosetup.ui.menuInitialize"),
+            JOptionPane.PLAIN_MESSAGE, null, null, suggestedConfigurationName());
 
         if (name == null || name.trim().isEmpty()) return;
 
@@ -764,7 +771,13 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorNameInUse", name.trim()));
+            // Only a name collision is reported as one.  initialize() also SAVES, so a full disk or a
+            // read-only folder used to be announced as "that name is already in use" - and the user
+            // would try another name, and another, none of which was ever the problem.
+            JOptionPane.showMessageDialog(ui,
+                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
+                    : String.valueOf(e.getMessage()));
             return;
         }
 
@@ -775,6 +788,55 @@ public class AutonomyViewerPanel extends JPanel
         // nothing.  load() is the same guarded path the chooser uses, so trains are stopped and the
         // user is asked before anything is replaced.
         load(name.trim(), true);
+
+        // A refused load must still leave the new configuration CHOSEN.
+        //
+        // load() puts the store back to whatever was active before, so that what resumes next start is
+        // something that actually loaded - right in general, and wrong for the one just created: what
+        // was active before is nothing, so the setup the user has this second made is left unchosen.
+        // The editor is gated on a configuration being chosen, so the errors it exists to fix would lock
+        // the door to the room they are fixed in, and the banner would go on offering to load something
+        // that cannot load.
+        if (ui.getActiveDiagramConfiguration() == null)
+        {
+            session.getStore().setActiveConfiguration(name.trim());
+            session.rebuild();
+
+            refresh();
+        }
+
+        // Then show them the thing they just made autonomy for.
+        //
+        // Whatever happened above - loaded, or refused with a list of what to fix - the answer is on the
+        // track diagram: the stations appear there, and the strip along the top says how many things
+        // need looking at and opens the editor at the first of them.  Staying on this tab leaves the
+        // work they just did apparently invisible.
+        ui.showLayoutTab();
+    }
+
+    /**
+     * A name the user can simply accept.
+     *
+     * Naming a thing is a small decision, and it is the first one this feature asks for - so a blank box
+     * makes somebody invent something before they can find out what the feature does.  "Autonomy 1", or
+     * the next number nobody has used, can be accepted in one keystroke and renamed later from the same
+     * menu.
+     *
+     * The next FREE number, not the count plus one: with "Autonomy 1" and "Autonomy 3" present, the
+     * count would suggest "Autonomy 3" and the dialog would then refuse it as already in use.
+     */
+    private String suggestedConfigurationName()
+    {
+        java.util.List<String> taken = session.getStore().getConfigurationNames();
+
+        for (int next = 1; next < 1000; next++)
+        {
+            String candidate = I18n.f("autosetup.ui.defaultConfigurationName", next);
+
+            if (!taken.contains(candidate)) return candidate;
+        }
+
+        return I18n.f("autosetup.ui.defaultConfigurationName", taken.size() + 1);
     }
 
     /**
@@ -855,8 +917,10 @@ public class AutonomyViewerPanel extends JPanel
     {
         String from = selected();
 
-        String name = JOptionPane.showInputDialog(ui,
-            I18n.t("autosetup.ui.promptConfigurationName"));
+        String name = (String) JOptionPane.showInputDialog(ui,
+            I18n.t("autosetup.ui.promptConfigurationName"),
+            I18n.t("autosetup.ui.menuNewConfiguration"),
+            JOptionPane.PLAIN_MESSAGE, null, null, suggestedConfigurationName());
 
         if (name == null || name.trim().isEmpty()) return;
 
@@ -868,8 +932,11 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
+            // As in initialize: a collision is a collision, and anything else is reported as itself
             JOptionPane.showMessageDialog(ui,
-                I18n.f("autosetup.ui.errorNameInUse", name.trim()));
+                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
+                    : String.valueOf(e.getMessage()));
             return;
         }
 
@@ -921,10 +988,21 @@ public class AutonomyViewerPanel extends JPanel
             I18n.t("autosetup.ui.menuDeleteConfiguration"),
             JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
 
+        boolean wasRunning = name.equals(ui.getActiveDiagramConfiguration());
+
         try
         {
             session.getStore().deleteConfiguration(name);
             save();
+
+            // Deleting the last one is allowed now, and a layout with none left cannot go on running
+            // the graph built from the one just deleted - nothing would be able to save into it, and
+            // the diagram would keep showing stations belonging to a configuration that is gone.
+            if (session.getStore().getConfigurationNames().isEmpty()
+                || (wasRunning && ui.getActiveDiagramConfiguration() != null))
+            {
+                ui.autonomySetupDeleted();
+            }
         }
         catch (IOException e)
         {

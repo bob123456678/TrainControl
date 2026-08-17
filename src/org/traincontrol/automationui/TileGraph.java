@@ -271,7 +271,7 @@ public class TileGraph
     // Message keys, matching the bundles
     public static final String ERROR_SCISSORS = "autosetup.ui.errorScissorsNotSupported";
     public static final String ERROR_PORTAL_UNPAIRED = "autosetup.ui.errorLinkNotMutuallyPaired";
-    public static final String ERROR_PORTAL_NEVER_PAIRED = "autosetup.ui.errorLinkNeverPaired";
+    public static final String WARN_PORTAL_NEVER_PAIRED = "autosetup.ui.warnLinkNeverPaired";
     public static final String WARN_PORTAL_UNREACHABLE = "autosetup.ui.warnLinkNeverPairedUnreachable";
 
     /**
@@ -640,6 +640,18 @@ public class TileGraph
                 continue;
             }
 
+            // Both ends still have to BE links.  A pairing is stored by coordinate and replayed without
+            // asking what is there now, so redrawing the far end as plain track left a pairing that is
+            // mutual, whose both ends exist, and which every check above is happy with - while the walk
+            // jumps into a square that offers no way out and the cross-page route silently disappears.
+            // This was the one portal misconfiguration nothing said anything about.
+            if (!TilePorts.hasPortal(tiles.get(from).getType())
+                || !TilePorts.hasPortal(tiles.get(to).getType()))
+            {
+                found.add(new Problem(from, ERROR_PORTAL_UNPAIRED, true));
+                continue;
+            }
+
             if (!from.equals(portals.get(to)))
             {
                 found.add(new Problem(from, ERROR_PORTAL_UNPAIRED, true));
@@ -658,15 +670,22 @@ public class TileGraph
 
             if (disabledPortals.contains(entry.getKey())) continue;
 
-            // How much it matters depends on whether a train could ever arrive.  A link with track
-            // running into it is a hole trains will fall down, and blocks; a link drawn on its own,
-            // with nothing joined to it, is somebody's unfinished intention and only worth mentioning.
+            // Worth saying, never blocking.  An unpaired link leads nowhere, and exits() already
+            // declines to offer a way through one - so the track running into it simply ends, exactly as
+            // it would at a blank square, and nothing downstream is left broken or half-built.  Blocking
+            // on it meant a diagram imported from a Central Station refused to run autonomy at all until
+            // every page-jump arrow drawn on it had been paired or switched off, including the ones
+            // pointing at pages the user had deliberately left out.
+            //
+            // How much it matters still depends on whether a train could ever arrive.  A link with track
+            // running into it costs the railway that stretch of track; a link drawn on its own, with
+            // nothing joined to it, is somebody's unfinished intention and costs nothing at all.
             Side stub = stubSide(entry.getValue());
 
             boolean reachable = stub != null && landing(entry.getKey(), stub) != null;
 
             found.add(new Problem(entry.getKey(),
-                reachable ? ERROR_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, reachable));
+                reachable ? WARN_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, false));
         }
 
         // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the

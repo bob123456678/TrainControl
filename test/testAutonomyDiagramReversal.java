@@ -47,26 +47,37 @@ import org.traincontrol.marklin.MarklinAccessory;
 public class testAutonomyDiagramReversal
 {
     /**
-     * Nothing marked: one Point at the junction, and nothing anywhere telling a train to turn round.
+     * Nothing marked, and the impossible move is already gone.
      *
-     * This is the defect stated as a test.  The edges F11 -> F4 and F4 -> F18 both exist, so a path to
-     * the siding is offered - but the second leaves by the side the first arrived at, and with one Point
-     * there is no way to say so.  The locomotive would be sent to F18 and simply never get there.
+     * This test used to state the defect: with one Point per sensor, F11 -> F4 and F4 -> F18 both
+     * existed, so a path to the siding was offered even though the second leg leaves by the side the
+     * first arrived at - and a locomotive sent to F18 would simply never get there.  Splitting every
+     * square by arrival side is what makes that sayable, so the marking is not what fixes it and this
+     * now pins the fix rather than the fault.
+     *
+     * Running west, the siding is straight ahead and needs no reversal at all; running east it is
+     * behind the train.  Two copies, and only one of them can reach it.
      */
     @Test
-    public void testWithoutTheMarkOneSensorIsOnePointAndNothingReverses() throws IOException
+    public void testWithoutTheMarkTheReversalIsSimplyNotOffered() throws IOException
     {
         JSONObject built = build(junction(), stations(), Collections.<TileKey>emptySet(), extras());
 
         List<JSONObject> atFour = pointsNamed(built, "Main4");
 
-        assertEquals(atFour.size(), 1, "an unmarked sensor is still exactly one Point");
-        assertFalse(atFour.get(0).optBoolean("terminus"), "and nothing about it reverses");
-        assertFalse(atFour.get(0).optBoolean("reversing"));
+        assertEquals(atFour.size(), 2, "two lines reach it, so it is two Points");
 
-        // the path that needs a reversal is offered all the same, which is the problem
-        assertTrue(hasEdge(built, "Main4", "Siding18"),
-            "the siding is reachable on paper even though no train could actually get there");
+        for (JSONObject copy : atFour)
+        {
+            assertFalse(copy.optBoolean("terminus"), "and nothing about it reverses");
+            assertFalse(copy.optBoolean("reversing"));
+        }
+
+        assertTrue(hasEdge(built, "Main4 (westbound)", "Siding18"),
+            "running west the siding is straight ahead");
+
+        assertFalse(hasEdge(built, "Main4 (eastbound)", "Siding18"),
+            "running east it is behind the train, and nothing here lets it turn round");
     }
 
     /**
@@ -103,8 +114,13 @@ public class testAutonomyDiagramReversal
     @Test
     public void testBothCopiesAreReachableFromTheSameIncomingPoint() throws IOException
     {
+        // West11 is marked as well, and has to be: it is a buffer stop.  Track runs east from it and
+        // nowhere else, so a train there arrived from the east and is pointing west, and until somebody
+        // says trains turn round there it cannot set off towards the junction at all.  That is the
+        // derivation being right about the fixture rather than wrong about the split - what is under
+        // test here is Main4, and West11 only has to be able to reach it.
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
-            marked(key("main", 5, 2)), extras());
+            marked(key("main", 5, 2), key("main", 1, 2)), extras());
 
         assertTrue(hasEdge(built, "West11", "Main4 (eastbound)"),
             "a train from the west can pass through");
@@ -144,8 +160,9 @@ public class testAutonomyDiagramReversal
     @Test
     public void testTheOppositeDirectionMirrorsIt() throws IOException
     {
+        // East12 is a buffer stop too, and marked for the same reason West11 is above
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
-            marked(key("main", 5, 2)), extras());
+            marked(key("main", 5, 2), key("main", 7, 2)), extras());
 
         assertTrue(hasEdge(built, "East12", "Main4 (westbound)"));
         assertTrue(hasEdge(built, "Main4 (westbound)", "Siding18"),
@@ -209,11 +226,14 @@ public class testAutonomyDiagramReversal
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
-        assertEquals(copies.size(), 1, "one arrival side means there is nothing to split");
+        // One, not two.  The plain copy would be a train that arrived and is pointing at the buffers
+        // with no track ahead of it - a station autonomy could pick as a destination and never get the
+        // train out of again - so it is not emitted at all where a turning copy exists to carry the
+        // arrival.  The turning copy is the whole truth about a dead end.
+        assertEquals(copies.size(), 1, "a dead end is the turning copy and nothing else");
 
-        // The square was still MARKED, so the one copy has to carry what the mark means.  Nothing here
-        // is a reverse copy - there was no split to make one - and without this case the platform
-        // emitted no flag at all and its trains would have run into the buffers.
+        // And it has to carry what the mark means, or the platform emits no flag at all and its trains
+        // run into the buffers.
         assertTrue(copies.get(0).optBoolean("terminus"),
             "the only thing a train can do at a dead end is arrive and turn round");
     }
@@ -341,14 +361,19 @@ public class testAutonomyDiagramReversal
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
-        assertEquals(copies.size(), 1, "leaving it alone is not a reason to split it");
+        // Two, because two lines reach this square and each arrival is its own Point - which is true of
+        // every square and has nothing to do with the flag under test.  What matters is that BOTH copies
+        // say the one thing that was asked for and nothing more.
+        assertEquals(copies.size(), 2, "one Point per arrival side, as everywhere else");
 
-        JSONObject only = copies.get(0);
-
-        assertTrue(only.getBoolean("station"), "it is still a station");
-        assertFalse(only.optBoolean("autoDestination", true), "autonomy is told to leave it alone");
-        assertFalse(only.optBoolean("reversing"), "and nothing turns an arriving train round");
-        assertFalse(only.optBoolean("terminus"));
+        for (JSONObject copy : copies)
+        {
+            assertTrue(copy.getBoolean("station"), "it is still a station");
+            assertFalse(copy.optBoolean("autoDestination", true),
+                "autonomy is told to leave it alone");
+            assertFalse(copy.optBoolean("reversing"), "and nothing turns an arriving train round");
+            assertFalse(copy.optBoolean("terminus"));
+        }
     }
 
     /**
@@ -644,5 +669,139 @@ public class testAutonomyDiagramReversal
     private TileKey key(String page, int x, int y)
     {
         return new TileKey(page, x, y);
+    }
+
+    /**
+     * A split copy never takes a name some other square already has.
+     *
+     * The base names are made unique, and the " (eastbound)" suffixes are added afterwards - so a point
+     * named "Main (eastbound)" by hand and a neighbouring "Main" that splits produced two Points with
+     * one name.  Layout refuses that, and refuses the whole configuration with it, reporting a Point
+     * name that appears nowhere on the diagram.
+     */
+    @Test
+    public void testASplitCopyNeverCollidesWithAnAuthoredName() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 4);
+
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        final Map<TileKey, String> authored = new java.util.LinkedHashMap<>();
+
+        // the middle sensor splits, because track reaches it from both sides
+        authored.put(key("main", 3, 1), "Main");
+
+        // and somebody has already used the name its eastbound copy wants
+        authored.put(key("main", 1, 1), "Main (eastbound)");
+        authored.put(key("main", 5, 1), "Far");
+
+        JSONObject built = new JSONObject(new AutonomyBuilder(
+            reduceWithNames(page, authored), null).build());
+
+        Set<String> seen = new LinkedHashSet<>();
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            String name = ((JSONObject) o).getString("name");
+
+            assertTrue(seen.add(name), "two Points came out called \"" + name + "\"");
+        }
+    }
+
+    /**
+     * A locomotive is emitted on the copy that is pointing the way it is pointing.
+     *
+     * The copy was chosen by comparing the recorded facing against each copy's ARRIVAL side, and a
+     * turning copy's facing is its arrival side rather than the opposite of it - so a facing learned
+     * from a train that had just reversed matched no copy, fell through to the first one, and put the
+     * locomotive on the copy pointing the other way.  Its first move was then the backwards edge the
+     * whole split exists to forbid.
+     */
+    @Test
+    public void testAPlacedLocomotiveLandsOnTheCopyItIsFacing() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 4);
+
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        // A train at the middle sensor, facing WEST - so it came from the east, and the copy it
+        // belongs on is the one that leaves westward.
+        JSONObject extras = new JSONObject()
+            .put("loc", new JSONObject().put("name", "BR 218"))
+            .put("facing", "W");
+
+        Map<String, JSONObject> byTile = new java.util.LinkedHashMap<>();
+        byTile.put(key("main", 3, 1).toString(), extras);
+
+        JSONObject built = new JSONObject(new AutonomyBuilder(reduce(page, noTiles()), null)
+            .withPointExtras(byTile)
+            .build());
+
+        List<String> carrying = new ArrayList<>();
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            JSONObject point = (JSONObject) o;
+
+            if (point.has("loc")) carrying.add(point.getString("name"));
+        }
+
+        assertEquals(carrying.size(), 1,
+            "a locomotive is one object and stands on one copy - found " + carrying);
+
+        assertTrue(carrying.get(0).contains("westbound"),
+            "a train facing west belongs on the westbound copy, not " + carrying.get(0));
+    }
+
+    /**
+     * Like reduce above, but with the point names authored by the test rather than by names() - the
+     * split-copy test has to author a colliding name, which the fixed fixture names cannot express.
+     * Every route is opened both ways for the same reason reduce does it.
+     */
+    private GraphReducer reduceWithNames(LayoutDiagram page, final Map<TileKey, String> authored)
+    {
+        TileGraph graph = new TileGraph(
+            new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, Direction.BOTH);
+            }
+        }
+
+        GraphReducer reducer = new GraphReducer(graph, new GraphReducer.Authored()
+        {
+            @Override
+            public String getPointName(TileKey tile)
+            {
+                return authored.get(tile);
+            }
+
+            @Override
+            public boolean isStation(TileKey tile)
+            {
+                return false;
+            }
+
+            @Override
+            public int getTileLength(TileKey tile)
+            {
+                return 0;
+            }
+        });
+
+        reducer.reduce();
+
+        return reducer;
     }
 }
