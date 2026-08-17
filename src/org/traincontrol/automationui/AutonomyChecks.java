@@ -116,6 +116,7 @@ public class AutonomyChecks
     public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
+    public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
 
     private AutonomyChecks()
     {
@@ -215,6 +216,17 @@ public class AutonomyChecks
         for (ReducedPoint station : stations)
         {
             stationTiles.add(station.getTile());
+
+            // A station still carrying the name the reducer invented for it - its page and coordinate -
+            // is one nobody has got round to.  Not an error: it works, it routes, trains stop at it.
+            // But every message autonomy prints names its stations, and "1 - Main 12,7" in a running
+            // log tells the reader nothing about which platform their train is standing at.
+            if (station.getName() != null
+                    && station.getName().equals(GraphReducer.generatedName(station.getTile())))
+            {
+                findings.add(new Finding(Severity.WARNING, UNNAMED_STATION,
+                    station.getName(), station.getTile()));
+            }
         }
 
         for (ReducedPoint station : stations)

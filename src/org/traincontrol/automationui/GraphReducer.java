@@ -450,7 +450,7 @@ public class GraphReducer
      * here - a station and its approach guards legitimately share one sensor, so several Points would
      * collide on the same name.
      */
-    private String generatedName(TileKey tile)
+    public static String generatedName(TileKey tile)
     {
         return tile.getPage() + " " + tile.getX() + "," + tile.getY();
     }

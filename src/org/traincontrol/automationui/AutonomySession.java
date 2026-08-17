@@ -458,6 +458,28 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * Applies a direction to each of one tile's routes separately, re-deriving once.
+     *
+     * The per-branch counterpart to the bulk setter above, and needed for the same reason: the two
+     * states a junction has - trains converging on its single track, and trains leaving it - are
+     * DIFFERENT Direction constants on different branches, because TOWARD_A names a route's own first
+     * side and nothing makes those agree.  Setting them one at a time through the single setter would
+     * rebuild the graph once per branch.
+     *
+     * @param tile
+     * @param directions route to the direction it should take
+     */
+    public void setDirections(TileKey tile, Map<RouteId, Direction> directions)
+    {
+        for (Map.Entry<RouteId, Direction> entry : directions.entrySet())
+        {
+            record(tile, entry.getKey(), entry.getValue());
+        }
+
+        touched();
+    }
+
     public void setPointName(TileKey tile, String name)
     {
         store.setPointName(tile, name);

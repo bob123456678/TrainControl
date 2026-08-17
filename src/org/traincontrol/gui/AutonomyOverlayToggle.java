@@ -31,7 +31,11 @@ public class AutonomyOverlayToggle extends JPanel
 
         this.ui = ui;
 
-        setOpaque(false);
+        // Opaque, and the same white as the diagram beneath it.  A transparent column header has
+        // nothing painting behind it, so unticking the box left the old ticked pixels on screen: the
+        // checkbox appeared stuck on even though the overlay had switched off underneath.
+        setOpaque(true);
+        setBackground(java.awt.Color.WHITE);
 
         // Toggling only stops the DRAWING.  The driver keeps its wiring so that switching back on shows
         // the current state immediately rather than waiting for the next train to move.

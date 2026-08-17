@@ -21,9 +21,10 @@ having no ledger. What follows is what the review verified, not what was intende
 | Delete a point | point right-click → Delete | - | N/A **(corrected)** - deleting the physical sensor is a different act.  The equivalent is un-station plus parking |
 | Rename a point | point right-click → Rename | Right-click → Name, or "Name everything" | DONE |
 | Mark as station | point right-click checkbox | Right-click → Mark as a station | DONE |
-| Terminus station | point right-click checkbox | Right-click; clears reversing, as the model requires | DONE |
+| Terminus station | point right-click checkbox | Right-click -> **Station** submenu; clears reversing, as the model requires | DONE |
+| Warn on default-named stations | - | Configuration errors and warnings -> "still named after the square it sits on" | DONE (new) |
 | Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
-| Active / inactive | point right-click checkbox | Right-click → Active (what the user calls parking) | DONE |
+| Active / inactive | point right-click checkbox | Right-click -> **Station** submenu -> "Use only as a parking berth".  Inverted deliberately: the model's flag is `active`, but the thing a user decides is that a berth is for parking | DONE |
 | Max train length | point right-click → advanced | Right-click → Advanced Parameters | DONE |
 | Speed multiplier | point right-click → speed multiplier | Right-click, in percent | DONE **(corrected)** - had been storing a raw percentage where the model wants a factor, so any real value made the configuration refuse to load |
 | Station priority | point right-click → advanced | Right-click → Advanced Parameters | DONE |

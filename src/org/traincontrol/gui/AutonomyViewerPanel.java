@@ -296,10 +296,19 @@ public class AutonomyViewerPanel extends JPanel
 
         JPanel run = row();
 
-        // Sends the user where placing actually happens.  That tab does not exist until a configuration
-        // has loaded, which is precisely why the feature looked missing.
-        placeLocomotives.addActionListener(e -> ui.showAutonomyRunTab());
+        // Sends the user where placing actually happens: the diagram editor, where a station can be
+        // right-clicked and given a locomotive.  It used to open the run tab, which is where autonomy
+        // is STARTED - a train has to be somewhere before that is any use.
+        placeLocomotives.addActionListener(e -> ui.openAutonomyEditor(null));
         run.add(sized(placeLocomotives));
+
+        // The step after placing, kept as its own button.  Placing used to lead here directly, and
+        // moving it to the editor would otherwise have left the run tab with nothing pointing at it -
+        // the same dead end this workflow was built to close.
+        JButton startHere = new JButton(I18n.t("autosetup.ui.btnGoToStart"));
+        startHere.setToolTipText(I18n.t("autosetup.ui.tooltipGoToStart"));
+        startHere.addActionListener(e -> ui.showAutonomyRunTab());
+        run.add(styled(startHere, true));
 
         if (ui.getModel() != null && ui.getModel().isDebug())
         {
@@ -507,8 +516,18 @@ public class AutonomyViewerPanel extends JPanel
     {
         java.util.List<org.traincontrol.base.LayoutDiagram> pages = session.getPages();
 
-        JPanel panel = new JPanel(new GridLayout(0, 1, 2, 2));
-        panel.add(styled(new JLabel(I18n.t("autosetup.ui.promptExcludePage")), false));
+        // BoxLayout, not GridLayout: a grid gives every row the height of its tallest, so the wrapped
+        // prompt made each page checkbox as tall as three lines of text and the dialog filled the
+        // screen.  The prompt is wrapped to a fixed width for the same reason - as one long line it
+        // set the dialog's width all by itself.
+        JPanel panel = new JPanel();
+        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+
+        JLabel prompt = styled(new JLabel("<html><body style='width:320px'>"
+                + I18n.t("autosetup.ui.promptExcludePage") + "</body></html>"), false);
+        prompt.setAlignmentX(LEFT_ALIGNMENT);
+        prompt.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 6, 0));
+        panel.add(prompt);
 
         java.util.Map<String, javax.swing.JCheckBox> boxes = new java.util.LinkedHashMap<>();
 
@@ -517,11 +536,13 @@ public class AutonomyViewerPanel extends JPanel
             boolean excluded = session.getStore().getExcludedPages().contains(page.getName());
 
             javax.swing.JCheckBox box = new javax.swing.JCheckBox(page.getName(), !excluded);
+            box.setAlignmentX(LEFT_ALIGNMENT);
+            styled(box, false);
             boxes.put(page.getName(), box);
-            panel.add(styled(box, false));
+            panel.add(box);
         }
 
-        if (JOptionPane.showConfirmDialog(this, new JScrollPane(panel),
+        if (JOptionPane.showConfirmDialog(this, panel,
             I18n.t("autosetup.ui.btnExcludePage"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {

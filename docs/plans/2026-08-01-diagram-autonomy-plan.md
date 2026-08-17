@@ -1492,6 +1492,21 @@ performed once, by hand, for a single known layout.
   (parity with device sets) — accepted.
 - Creating/editing the *diagram itself* stays in `LayoutEditor`; setup mode never mutates pages.
 
+### Deferred by the author, 2026-08-16 (testing round 2)
+
+- **Show simplified segments instead of "also show track that runs both ways".** The toggle as built
+  answers a question nobody asked - which arrows are hidden - when the question the diagram cannot
+  currently answer is *where does this track actually break*. What is wanted is the reduction drawn
+  on the diagram: each run as one segment between the sensors that bound it, so a hard break, or two
+  pieces of track that look joined and are not, is visible without testing a path between them. The
+  reduction already exists (`GraphReducer`), so this is a drawing job, not a derivation one. Author
+  ruling: notate now, build later.
+- **Autonomy configuration panel layout.** Fonts still inconsistent with the main window's
+  conventions, and content taller than the tab is clipped rather than laid out - the panel deliberately
+  does not scroll, per the earlier ruling, so anything that does not fit simply disappears off the
+  bottom. Author ruling 2026-08-16: leave it; the whole panel's UX is being revisited as one piece
+  rather than patched a row at a time.
+
 ## i18n keys (all 8 bundles, one commit)
 
 Pruned 2026-08-01: anchor / paint / trace-review / adopt / orphan and all `lockassist.*` keys are

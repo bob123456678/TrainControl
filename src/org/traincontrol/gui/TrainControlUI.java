@@ -1951,7 +1951,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Redraws the setup on the track diagram if it is currently being shown.    /**
      * Redraws the setup on the track diagram if it is currently being shown.
      *
      * Called after every autonomy edit.  Without it the diagram kept whatever was published when the
@@ -1966,7 +1965,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Shows the tab where locomotives are placed and autonomy is started.    /**
      * Shows the tab where locomotives are placed and autonomy is started.
      *
      * Offered only once a configuration has loaded, because that tab does not exist before then - which
