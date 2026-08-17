@@ -1,4 +1,4 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
-import org.traincontrol.base.GraphReducer.ReducedEdge;
-import org.traincontrol.base.GraphReducer.TileStep;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TileOverlay.State;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.GraphReducer.TileStep;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileOverlay.State;
 
 /**
  * Turns what the running layout is doing into what each tile should show.

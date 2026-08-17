@@ -11,12 +11,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.AutonomySession;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
  * The whole chain, from a decision somebody made to the graph a train could run on.
@@ -377,11 +377,11 @@ public class testAutonomyDiagramSession
     {
         int count = 0;
 
-        for (org.traincontrol.base.GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
         {
-            org.traincontrol.base.GraphReducer.ReducedPoint start =
+            org.traincontrol.automationui.GraphReducer.ReducedPoint start =
                 session.getReducer().getPoints().get(edge.getStart());
-            org.traincontrol.base.GraphReducer.ReducedPoint end =
+            org.traincontrol.automationui.GraphReducer.ReducedPoint end =
                 session.getReducer().getPoints().get(edge.getEnd());
 
             if (start != null && end != null && start.getS88() == fromS88 && end.getS88() == toS88)

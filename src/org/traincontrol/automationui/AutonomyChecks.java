@@ -1,4 +1,6 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,9 +11,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.traincontrol.base.GraphReducer.ReducedEdge;
-import org.traincontrol.base.GraphReducer.ReducedPoint;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.GraphReducer.ReducedPoint;
+import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
  * Checks a user can run against a configuration before trusting trains to it.

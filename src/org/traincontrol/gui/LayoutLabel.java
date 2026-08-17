@@ -21,7 +21,7 @@ import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.base.TileOverlay;
+import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -95,7 +95,7 @@ public final class LayoutLabel extends JLabel
 
     // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
     // because they answer different questions and are cleared at different times.
-    private volatile org.traincontrol.base.TileAnnotation autonomyAnnotation;
+    private volatile org.traincontrol.automationui.TileAnnotation autonomyAnnotation;
     
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
@@ -611,9 +611,9 @@ public final class LayoutLabel extends JLabel
      *
      * @param annotation what to show, or null for nothing
      */
-    public void setAutonomyAnnotation(org.traincontrol.base.TileAnnotation annotation)
+    public void setAutonomyAnnotation(org.traincontrol.automationui.TileAnnotation annotation)
     {
-        org.traincontrol.base.TileAnnotation effective =
+        org.traincontrol.automationui.TileAnnotation effective =
             annotation == null || annotation.isBlank() ? null : annotation;
 
         if (effective == null ? autonomyAnnotation == null
@@ -639,7 +639,7 @@ public final class LayoutLabel extends JLabel
         super.paintComponent(g);
 
         TileOverlay overlay = autonomyOverlay;
-        org.traincontrol.base.TileAnnotation annotation = autonomyAnnotation;
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
         if ((overlay == null || overlay.isBlank())
             && (annotation == null || annotation.isBlank())) return;

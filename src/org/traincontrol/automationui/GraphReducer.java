@@ -1,4 +1,7 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,13 +14,13 @@ import java.util.Map;
 import java.util.Set;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TileGraph.Exit;
-import org.traincontrol.base.TileGraph.Landing;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TilePorts.AccessorySlot;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TileGraph.Exit;
+import org.traincontrol.automationui.TileGraph.Landing;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.AccessorySlot;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * Layer 2: contracts the tile graph into the graph the autonomy model actually wants.

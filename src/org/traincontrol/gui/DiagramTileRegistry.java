@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TileOverlay;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileOverlay;
 
 /**
  * Which on-screen tiles stand for which square of which page.
@@ -60,7 +60,7 @@ public class DiagramTileRegistry
 
         if (current != null) label.setAutonomyOverlay(current);
 
-        org.traincontrol.base.TileAnnotation annotation = lastAnnotated.get(key);
+        org.traincontrol.automationui.TileAnnotation annotation = lastAnnotated.get(key);
 
         if (annotation != null && annotation != BLANK && !label.isEditMode())
         {
@@ -122,7 +122,7 @@ public class DiagramTileRegistry
      * @param key
      * @param annotation what to draw, or null for nothing
      */
-    public void annotate(TileKey key, org.traincontrol.base.TileAnnotation annotation)
+    public void annotate(TileKey key, org.traincontrol.automationui.TileAnnotation annotation)
     {
         if (key == null) return;
 
@@ -154,10 +154,10 @@ public class DiagramTileRegistry
     }
 
     // A stand-in for "nothing", because a ConcurrentHashMap cannot hold a null value
-    private static final org.traincontrol.base.TileAnnotation BLANK =
-        new org.traincontrol.base.TileAnnotation(null, -1, false);
+    private static final org.traincontrol.automationui.TileAnnotation BLANK =
+        new org.traincontrol.automationui.TileAnnotation(null, -1, false);
 
-    private final Map<TileKey, org.traincontrol.base.TileAnnotation> lastAnnotated =
+    private final Map<TileKey, org.traincontrol.automationui.TileAnnotation> lastAnnotated =
         new ConcurrentHashMap<>();
 
     /**

@@ -6,10 +6,10 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TilePorts;
-import org.traincontrol.base.TilePorts.AccessorySlot;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TilePorts;
+import org.traincontrol.automationui.TilePorts.AccessorySlot;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * The port map: which sides of each tile type connect, in each switch position, at each orientation.

@@ -1,4 +1,4 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,9 +10,9 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory.accessorySetting;
-import org.traincontrol.base.GraphReducer.ReducedEdge;
-import org.traincontrol.base.GraphReducer.ReducedPoint;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.GraphReducer.ReducedPoint;
+import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
  * The compile step: turns a reduced diagram into the autonomy JSON the existing model already reads.

@@ -440,7 +440,7 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * @param session the setup to edit, or null to go back to editing the diagram
      */
-    public void setAutonomyMode(org.traincontrol.base.AutonomySession session)
+    public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
         if (session == null)
         {
@@ -481,10 +481,10 @@ public class LayoutEditor extends PositionAwareJFrame
             });
 
             autonomyPanel.setOnReveal(new java.util.function.Consumer<
-                org.traincontrol.base.TileGraph.TileKey>()
+                org.traincontrol.automationui.TileGraph.TileKey>()
             {
                 @Override
-                public void accept(org.traincontrol.base.TileGraph.TileKey tile)
+                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
                 {
                     reveal(tile);
                 }
@@ -615,7 +615,7 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * @param tile
      */
-    public void reveal(org.traincontrol.base.TileGraph.TileKey tile)
+    public void reveal(org.traincontrol.automationui.TileGraph.TileKey tile)
     {
         if (grid == null || tile == null || !layout.getName().equals(tile.getPage())) return;
 
@@ -642,7 +642,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 grid.getValueAt(x, y).setAutonomyAnnotation(!active ? null
                     : autonomyPanel.annotationFor(
-                        new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y)));
+                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y)));
             }
         }
     }
@@ -668,8 +668,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (x >= 0 && y >= 0)
             {
-                org.traincontrol.base.TileGraph.TileKey tile =
-                    new org.traincontrol.base.TileGraph.TileKey(layout.getName(), x, y);
+                org.traincontrol.automationui.TileGraph.TileKey tile =
+                    new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
 
                 // Right-click opens the properties menu, the way it does on the graph.  Left-click
                 // applies the selected tool.  Without this branch a right-click ran the tool as well,

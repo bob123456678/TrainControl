@@ -11,15 +11,15 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TileGraph;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.Exit;
-import org.traincontrol.base.TileGraph.Landing;
-import org.traincontrol.base.TileGraph.Problem;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.Exit;
+import org.traincontrol.automationui.TileGraph.Landing;
+import org.traincontrol.automationui.TileGraph.Problem;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * The tile graph: which tiles connect to which, and which way a train may move through them.

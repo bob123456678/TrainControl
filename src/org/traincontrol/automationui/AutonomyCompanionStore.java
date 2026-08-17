@@ -1,4 +1,6 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.LayoutDiagram;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,9 +15,9 @@ import java.util.Map;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.Util;
 

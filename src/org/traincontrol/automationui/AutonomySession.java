@@ -1,4 +1,8 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.base.Locomotive;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,12 +13,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.Landing;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.Landing;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * One layout's autonomy setup, from the files on disk to the graph a train can run on.

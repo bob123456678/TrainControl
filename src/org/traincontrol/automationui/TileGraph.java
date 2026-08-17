@@ -1,4 +1,8 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * Layer 1 of autonomy on the track diagram: every tile is a node, and adjacent tiles whose ports face

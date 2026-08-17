@@ -1,4 +1,4 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -8,8 +8,8 @@ import java.awt.Stroke;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * What a tile has been set to allow, drawn on the tile while autonomy is being set up.

@@ -323,7 +323,7 @@ public class LayoutGrid
                 if (c != null && ui != null && ui.getDiagramTileRegistry() != null)
                 {
                     ui.getDiagramTileRegistry().register(
-                        new org.traincontrol.base.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
+                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
                         grid[x][y]);
                 }
 

@@ -1,4 +1,4 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

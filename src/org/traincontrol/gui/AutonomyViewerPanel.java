@@ -18,9 +18,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
-import org.traincontrol.base.AutonomyChecks;
-import org.traincontrol.base.AutonomyCompanionStore;
-import org.traincontrol.base.AutonomySession;
+import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
@@ -50,7 +50,7 @@ public class AutonomyViewerPanel extends JPanel
 
     // Which tile each row of the findings list refers to; null for a page heading.  Parallel to the
     // model rather than a richer element type, so the list still renders as plain strings.
-    private final List<org.traincontrol.base.TileGraph.TileKey> findingRows =
+    private final List<org.traincontrol.automationui.TileGraph.TileKey> findingRows =
         new java.util.ArrayList<>();
 
     // What each findings row is, so the renderer can colour it and a click can act on it.  Parallel
@@ -406,7 +406,7 @@ public class AutonomyViewerPanel extends JPanel
 
                 if (bounds == null || !bounds.contains(e.getPoint())) return;
 
-                org.traincontrol.base.TileGraph.TileKey tile = findingRows.get(row);
+                org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
 
                 if (tile != null) ui.openAutonomyEditor(tile);
             }
@@ -666,7 +666,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         int blocking = 0;
 
-        for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph().getProblems())
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph().getProblems())
         {
             if (problem.isBlocking()) blocking++;
         }
@@ -1003,8 +1003,8 @@ public class AutonomyViewerPanel extends JPanel
         List<Object[]> warnings = new java.util.ArrayList<>();
 
         // A graph problem is what stops the build, so it is always an error.
-        for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph() == null
-            ? java.util.Collections.<org.traincontrol.base.TileGraph.Problem>emptyList()
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph() == null
+            ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
             : session.getGraph().getProblems())
         {
             (problem.isBlocking() ? errors : warnings).add(new Object[]
@@ -1050,7 +1050,7 @@ public class AutonomyViewerPanel extends JPanel
      * switch with its address, a piece of plain track - is usually enough to recognise the spot without
      * going to it, and is what makes a list of eleven skimmable.
      */
-    private String describeTile(org.traincontrol.base.TileGraph.TileKey tile)
+    private String describeTile(org.traincontrol.automationui.TileGraph.TileKey tile)
     {
         String where = tile.getX() + "," + tile.getY();
 
@@ -1093,8 +1093,8 @@ public class AutonomyViewerPanel extends JPanel
 
         for (Object[] row : rows)
         {
-            org.traincontrol.base.TileGraph.TileKey tile =
-                (org.traincontrol.base.TileGraph.TileKey) row[0];
+            org.traincontrol.automationui.TileGraph.TileKey tile =
+                (org.traincontrol.automationui.TileGraph.TileKey) row[0];
 
             String page = tile == null ? "" : tile.getPage();
 
@@ -1117,7 +1117,7 @@ public class AutonomyViewerPanel extends JPanel
             for (Object[] row : entry.getValue())
             {
                 findingsModel.addElement("     " + row[1]);
-                findingRows.add((org.traincontrol.base.TileGraph.TileKey) row[0]);
+                findingRows.add((org.traincontrol.automationui.TileGraph.TileKey) row[0]);
                 findingSeverity.add(severity);
             }
         }

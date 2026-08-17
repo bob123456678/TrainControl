@@ -1,4 +1,6 @@
-package org.traincontrol.base;
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
 import java.util.Collections;

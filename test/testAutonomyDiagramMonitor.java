@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.base.DiagramMonitor;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TileOverlay;
-import org.traincontrol.base.TileOverlay.State;
+import org.traincontrol.automationui.DiagramMonitor;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.automationui.TileOverlay.State;
 
 /**
  * Turning what the railway is doing into what each tile shows.
@@ -91,7 +91,7 @@ public class testAutonomyDiagramMonitor
                     return null;
                 }
             },
-            new LinkedHashMap<String, org.traincontrol.base.GraphReducer.ReducedEdge>(),
+            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
             new LinkedHashMap<String, TileKey>(),
             new DiagramMonitor.Publisher()
             {
@@ -135,7 +135,7 @@ public class testAutonomyDiagramMonitor
                     return null;
                 }
             },
-            new LinkedHashMap<String, org.traincontrol.base.GraphReducer.ReducedEdge>(),
+            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
             new LinkedHashMap<String, TileKey>(),
             new DiagramMonitor.Publisher()
             {
@@ -170,7 +170,7 @@ public class testAutonomyDiagramMonitor
                     return null;
                 }
             },
-            new LinkedHashMap<String, org.traincontrol.base.GraphReducer.ReducedEdge>(),
+            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
             new LinkedHashMap<String, TileKey>(),
             null);
 

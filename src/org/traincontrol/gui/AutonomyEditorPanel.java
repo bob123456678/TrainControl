@@ -19,13 +19,13 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import org.traincontrol.base.AutonomyChecks;
-import org.traincontrol.base.AutonomyCompanionStore;
-import org.traincontrol.base.AutonomySession;
+import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.util.I18n;
 
 /**
@@ -147,7 +147,7 @@ public class AutonomyEditorPanel extends JPanel
 
     // One arrow per run of track between sensors.  Recomputed on refresh rather than per tile, because
     // it is derived from the whole reduction and the editor asks about every square in turn.
-    private Map<TileKey, org.traincontrol.base.TileAnnotation.Mark> flowMarks =
+    private Map<TileKey, org.traincontrol.automationui.TileAnnotation.Mark> flowMarks =
         new java.util.LinkedHashMap<>();
 
     // Which tile speaks for each run of plain track.  A run has one direction, so only its first tile
@@ -571,15 +571,15 @@ public class AutonomyEditorPanel extends JPanel
             menu.addSeparator();
         }
 
-        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(target);
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         if (!routes.isEmpty())
         {
             boolean many = routes.size() > 1;
 
-            for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry : routes.entrySet())
+            for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry : routes.entrySet())
             {
-                org.traincontrol.base.TilePorts.Route route = entry.getValue();
+                org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
 
                 // A switch's branches each get their own submenu; a plain target puts its four answers
                 // straight on the menu rather than burying them one level down.
@@ -793,7 +793,7 @@ public class AutonomyEditorPanel extends JPanel
      * than by an A and a B nobody can see.
      */
     private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
-        org.traincontrol.base.TilePorts.Route route)
+        org.traincontrol.automationui.TilePorts.Route route)
     {
         List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
 
@@ -1295,7 +1295,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         TileKey target = leaderOf(tile);
 
-        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(target);
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         if (routes.isEmpty()) return;
 
@@ -1332,10 +1332,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> only =
+        Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> only =
             routes.entrySet().iterator().next();
 
-        org.traincontrol.base.TilePorts.Route route = only.getValue();
+        org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
         Direction next = after(session.getGraph().getDirection(target, only.getKey()));
 
@@ -1381,7 +1381,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What a direction means, in words, naming the side rather than an A or a B nobody can see.
      */
-    private String describe(Direction direction, org.traincontrol.base.TilePorts.Route route)
+    private String describe(Direction direction, org.traincontrol.automationui.TilePorts.Route route)
     {
         switch (direction)
         {
@@ -1423,10 +1423,10 @@ public class AutonomyEditorPanel extends JPanel
         // Both ways, always.  Asking the user to nominate a direction only makes them run the test
         // twice to learn the thing they actually wanted to know - a one-way run looks identical to a
         // broken one until you have tried it from the other end.
-        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> there =
+        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null : session.getReducer().findPath(testFrom, tile);
 
-        java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> back =
+        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
             session.getReducer() == null ? null : session.getReducer().findPath(tile, testFrom);
 
         testPath.clear();
@@ -1446,13 +1446,13 @@ public class AutonomyEditorPanel extends JPanel
         return text.replace("&", "&amp;").replace("<", "&lt;");
     }
 
-    private String leg(java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run)
+    private String leg(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run)
     {
         return run == null ? I18n.t("autosetup.ui.testLegBlocked")
             : I18n.f("autosetup.ui.testLegReachable", run.size());
     }
 
-    private void outline(java.util.List<org.traincontrol.base.GraphReducer.ReducedEdge> run,
+    private void outline(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
         TileKey from, TileKey to)
     {
         if (run == null) return;
@@ -1460,9 +1460,9 @@ public class AutonomyEditorPanel extends JPanel
         testPath.add(from);
         testPath.add(to);
 
-        for (org.traincontrol.base.GraphReducer.ReducedEdge edge : run)
+        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : run)
         {
-            for (org.traincontrol.base.GraphReducer.TileStep step : edge.getPath())
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
             {
                 testPath.add(step.getTile());
             }
@@ -1526,9 +1526,9 @@ public class AutonomyEditorPanel extends JPanel
      * @param tile
      * @return the annotation, possibly blank, never null
      */
-    public org.traincontrol.base.TileAnnotation annotationFor(TileKey tile)
+    public org.traincontrol.automationui.TileAnnotation annotationFor(TileKey tile)
     {
-        java.util.List<org.traincontrol.base.TileAnnotation.Mark> marks = new java.util.ArrayList<>();
+        java.util.List<org.traincontrol.automationui.TileAnnotation.Mark> marks = new java.util.ArrayList<>();
 
         boolean ignored = isIgnored(tile);
 
@@ -1539,16 +1539,16 @@ public class AutonomyEditorPanel extends JPanel
 
         if (showDirections.isSelected() && session.getGraph() != null && !ignored && !follower)
         {
-            Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+            Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
             // more than one route means a switch, a crossing or a double curve - somewhere a train has
             // a choice, and somewhere the user needs to see every option rather than only the closed
             boolean branching = routes.size() > 1;
 
-            for (Map.Entry<RouteId, org.traincontrol.base.TilePorts.Route> entry
+            for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
                 : routes.entrySet())
             {
-                org.traincontrol.base.TilePorts.Route route = entry.getValue();
+                org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
 
                 Direction direction = session.getGraph().getDirection(tile, entry.getKey());
 
@@ -1573,7 +1573,7 @@ public class AutonomyEditorPanel extends JPanel
                     continue;
                 }
 
-                marks.add(new org.traincontrol.base.TileAnnotation.Mark(
+                marks.add(new org.traincontrol.automationui.TileAnnotation.Mark(
                     route.getA(), route.getB(), direction));
             }
 
@@ -1600,7 +1600,7 @@ public class AutonomyEditorPanel extends JPanel
         boolean outlined = selection.contains(tile)
             || testPath.contains(tile) || tile.equals(testFrom);
 
-        return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
+        return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), ignored);
     }
 
@@ -1615,7 +1615,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What this sensor has been designated as, or null when it is not a station.
      */
-    private org.traincontrol.base.TileAnnotation.Badge badgeFor(TileKey tile)
+    private org.traincontrol.automationui.TileAnnotation.Badge badgeFor(TileKey tile)
     {
         // Every sensor that made it into the graph gets a badge, not only the stations.  A plain point
         // is a thing the user has decided NOT to make a station, and it should look like a decision
@@ -1625,9 +1625,9 @@ public class AutonomyEditorPanel extends JPanel
 
         String name = session.getStore().getPointName(tile);
 
-        org.traincontrol.base.TilePorts.Route route = firstRoute(tile);
+        org.traincontrol.automationui.TilePorts.Route route = firstRoute(tile);
 
-        return new org.traincontrol.base.TileAnnotation.Badge(
+        return new org.traincontrol.automationui.TileAnnotation.Badge(
             session.getStore().isStation(tile),
             flag(tile, "terminus"),
             flag(tile, "reversing"),
@@ -1640,9 +1640,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The tile's first route, which is where its badge is drawn.
      */
-    private org.traincontrol.base.TilePorts.Route firstRoute(TileKey tile)
+    private org.traincontrol.automationui.TilePorts.Route firstRoute(TileKey tile)
     {
-        Map<RouteId, org.traincontrol.base.TilePorts.Route> routes = session.getRoutes(tile);
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
         return routes.isEmpty() ? null : routes.values().iterator().next();
     }
@@ -1692,8 +1692,8 @@ public class AutonomyEditorPanel extends JPanel
         // route buttons and turntables rather than left looking like something to configure.
         if (component.getType() == LayoutDiagramComponent.componentType.LAMP) return true;
 
-        return org.traincontrol.base.TilePorts.isDisqualified(component.getType())
-            || org.traincontrol.base.TilePorts.isTransparent(component.getType());
+        return org.traincontrol.automationui.TilePorts.isDisqualified(component.getType())
+            || org.traincontrol.automationui.TilePorts.isTransparent(component.getType());
     }
 
     /**
@@ -1721,8 +1721,8 @@ public class AutonomyEditorPanel extends JPanel
         List<Object[]> errorRows = new java.util.ArrayList<>();
         List<Object[]> warningRows = new java.util.ArrayList<>();
 
-        for (org.traincontrol.base.TileGraph.Problem problem : session.getGraph() == null
-            ? java.util.Collections.<org.traincontrol.base.TileGraph.Problem>emptyList()
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph() == null
+            ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
             : session.getGraph().getProblems())
         {
             if (!onThisPage(problem.getTile())) continue;
@@ -1816,7 +1816,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (session.getReducer() == null) return out;
 
-        for (org.traincontrol.base.GraphReducer.ReducedPoint point
+        for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
             : session.getReducer().getPoints().values())
         {
             if (!onThisPage(point.getTile())) continue;

@@ -5,12 +5,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.base.AutonomyBuilder;
-import org.traincontrol.base.AutonomySession;
-import org.traincontrol.base.DiagramMonitor;
-import org.traincontrol.base.GraphReducer;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TileOverlay;
+import org.traincontrol.automationui.AutonomyBuilder;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.DiagramMonitor;
+import org.traincontrol.automationui.GraphReducer;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileOverlay;
 
 /**
  * Keeps the diagram showing what the trains are doing.

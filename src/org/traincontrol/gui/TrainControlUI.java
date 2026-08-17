@@ -1161,7 +1161,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                org.traincontrol.base.AutonomySession session = getAutonomySession();
+                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
                 if (session != null)
                 {
@@ -1437,7 +1437,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @return the session, or null when this layout cannot hold one
      */
-    public org.traincontrol.base.AutonomySession getAutonomySession()
+    public org.traincontrol.automationui.AutonomySession getAutonomySession()
     {
         if (autonomySession != null) return autonomySession;
 
@@ -1445,8 +1445,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (path == null || path.isEmpty()) return null;
 
-        org.traincontrol.base.AutonomySession session =
-            new org.traincontrol.base.AutonomySession(new java.io.File(path));
+        org.traincontrol.automationui.AutonomySession session =
+            new org.traincontrol.automationui.AutonomySession(new java.io.File(path));
 
         if (!session.isUsable()) return null;
 
@@ -1522,7 +1522,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         mountAutonomyControls();
     }
 
-    private org.traincontrol.base.AutonomySession autonomySession;
+    private org.traincontrol.automationui.AutonomySession autonomySession;
 
     /**
      * What keeps the diagram showing where the trains are.
@@ -1555,7 +1555,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void mountAutonomyControls()
     {
-        org.traincontrol.base.AutonomySession session = getAutonomySession();
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         if (session == null)
         {
@@ -1624,7 +1624,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         setAutonomyDependentTabs(true);
 
-        org.traincontrol.base.AutonomySession session = getAutonomySession();
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         // parseAuto replaced the Layout wholesale, so both the indexes and the callback have to follow
         // it - a monitor left pointing at the old one would be watching a railway nobody runs
@@ -1757,7 +1757,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param tile the square to go to, or null just to open the editor on the current page
      */
-    public void openAutonomyEditor(final org.traincontrol.base.TileGraph.TileKey tile)
+    public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
     {
         if (!this.isLocalLayout())
         {
@@ -1766,7 +1766,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        final org.traincontrol.base.AutonomySession session = getAutonomySession();
+        final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         if (session == null) return;
 
@@ -1817,11 +1817,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void showStaticAutonomyLayer(boolean show)
     {
-        org.traincontrol.base.AutonomySession session = getAutonomySession();
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         if (session == null || session.getGraph() == null) return;
 
-        for (org.traincontrol.base.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
+        for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
         {
             getDiagramTileRegistry().annotate(tile,
                 show ? session.staticAnnotationFor(tile) : null);
@@ -2629,7 +2629,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // The active configuration resumes from the diagram when there is one; the JSON path
                 // remains the fallback for layouts that have never been set up the new way.
-                org.traincontrol.base.AutonomySession session = getAutonomySession();
+                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
                 if (session != null && this.getAutonomyViewerPanel() != null
                     && session.getStore().getActiveConfiguration() != null)
@@ -13155,9 +13155,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // One button, two editors: the track itself, or the autonomy drawn over it.  Only asked when an
         // autonomy setup exists, so a user who has never touched autonomy never sees the question.
-        final org.traincontrol.base.AutonomySession autonomyToEdit;
+        final org.traincontrol.automationui.AutonomySession autonomyToEdit;
 
-        org.traincontrol.base.AutonomySession candidateSession = getAutonomySession();
+        org.traincontrol.automationui.AutonomySession candidateSession = getAutonomySession();
 
         if (candidateSession != null && (candidateSession.exists()
             || !candidateSession.getStore().getConfigurationNames().isEmpty()))

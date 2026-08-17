@@ -8,10 +8,10 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.traincontrol.base.AutonomyCompanionStore;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
  * The autonomy setup files: what the diagram cannot say, kept beside the diagram it describes.

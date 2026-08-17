@@ -12,18 +12,18 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.marklin.MarklinAccessory;
-import org.traincontrol.base.GraphReducer;
-import org.traincontrol.base.GraphReducer.ReducedEdge;
-import org.traincontrol.base.GraphReducer.ReducedPoint;
-import org.traincontrol.base.GraphReducer.TileStep;
+import org.traincontrol.automationui.GraphReducer;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.GraphReducer.ReducedPoint;
+import org.traincontrol.automationui.GraphReducer.TileStep;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.base.TileGraph;
-import org.traincontrol.base.TileGraph.Direction;
-import org.traincontrol.base.TileGraph.RouteId;
-import org.traincontrol.base.TileGraph.TileKey;
-import org.traincontrol.base.TilePorts.Route;
-import org.traincontrol.base.TilePorts.Side;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * The contraction from tiles to the autonomy graph: which Points exist, what connects them, and which
