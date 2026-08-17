@@ -498,7 +498,9 @@ public class AutonomyEditorPanel extends JPanel
         // do that is the round trip this surface exists to remove.
         LayoutDiagramComponent onPage = componentAt(tile);
 
-        if (onPage == null || onPage.isText())
+        // The page has to be one the session knows, or "no component here" would mean "I could not
+        // find the page" and every square on it would offer to become a station label.
+        if (pageOf(tile) != null && (onPage == null || onPage.isText()))
         {
             showTextMenu(tile, onPage, invoker, x, y);
             return;
@@ -585,22 +587,24 @@ public class AutonomyEditorPanel extends JPanel
                     if (on) session.setPointProperty(target, "reversing", null);
                 });
 
-            // "Active" in the model is what the user calls parking: autonomy will not choose it and
-            // will not start a train standing there, while a route picked by hand still may.
-            javax.swing.JCheckBoxMenuItem parking = toggle(I18n.t("autosetup.ui.menuParking"),
-                "autosetup.ui.hintParking",
-                Boolean.FALSE.equals(session.getPointProperty(target, "active")),
-                on -> session.setPointProperty(target, "active", on ? Boolean.FALSE : null));
-
             // Greyed rather than hidden, so the shape of the choice stays visible: somebody looking for
             // "terminus" finds it, sees it is unavailable, and can tell why from the item above it.
             terminus.setEnabled(isStation);
-            parking.setEnabled(isStation);
 
             stationMenu.add(terminus);
-            stationMenu.add(parking);
 
             menu.add(stationMenu);
+
+            // Active is back out here as its own item, and always available.  Folding it into the
+            // Station submenu as "use only as a parking berth" made disabling an ordinary station
+            // impossible to find and impossible to reach on a point that is not a station at all - the
+            // graph menu had it on every point, and this is the same setting under the same name.
+            // Parking is what an INACTIVE station is called; the tooltip says so, and the Station
+            // heading still reports it, but the switch itself stays where it has always been.
+            menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
+                "autosetup.ui.hintParking",
+                !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
+                on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
 
             // A reversing sensor is not a station - it is a place a train turns round and carries on -
             // so it stays out here rather than under Station, where it would read as a kind of one.
@@ -967,10 +971,13 @@ public class AutonomyEditorPanel extends JPanel
         session.setStation(tile, on);
 
         // A sensor demoted back to a plain point keeps no designation nobody can see any more.
+        //
+        // Active is NOT cleared with it.  It applies to any point, station or not - the graph menu
+        // offered it on all of them - so clearing it here would silently re-enable a point somebody had
+        // switched off, on a gesture that says nothing about that.
         if (!on)
         {
             session.setPointProperty(tile, "terminus", null);
-            session.setPointProperty(tile, "active", null);
         }
     }
 
@@ -1543,122 +1550,130 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Left-click on a switch, a crossing or a double curve: the four states, in GEOMETRIC terms.
+     * Left-click on a switch, a crossing or a double curve: the next combination of open and shut ARMS.
      *
-     * The distinction matters, and getting it wrong is what made this feel broken.  TOWARD_A and
-     * TOWARD_B are labels on a route's own two sides, and nothing makes those agree between branches:
-     * on a switch with its toe at S the two branches are stored as (N,S) and (S,W), so "TOWARD_A on
-     * every branch" means toward N and toward S - two different directions across one tile, and never
-     * the state anybody wants.  The two states a junction actually has are trains converging on the
-     * single track, and trains leaving it; neither is expressible as one Direction constant.
+     * Not the next of four whole-tile states, which is what this did before and what kept being wrong.
+     * The states a junction has are not four; on a crossing they are sixteen, and the useful ones -
+     * north-south open while east-west is shut - are exactly the ones a whole-tile cycle cannot reach.
+     * Neither can they be enumerated as Direction constants: TOWARD_A names a route's own first side,
+     * and nothing makes those agree between branches, so "TOWARD_A everywhere" on a switch with its toe
+     * at S means toward N and toward S at once.
      *
-     * So the states are computed from the toe outward:
-     *   both ways -> away from the toe -> toward the toe -> closed
+     * So the state cycled is what the drawing already shows: one bit per ARM of the tile, saying
+     * whether a train may leave through it.  Every combination is reachable, and the click is a plain
+     * binary counter over them, which makes the order predictable without anybody having to learn it.
      *
-     * A crossing or a double curve has no toe: its routes are independent tracks that happen to share a
-     * square, so there each route's own first and second side ARE the geometry and the plain A/B pair
-     * is used.  Same four states, same order, and both come out visibly different from each other.
+     * The bits translate back to routes exactly.  A route (A,B) reads its two arms: both open is both
+     * ways, one open is one way toward it, neither is closed.  An arm shared by two branches - a
+     * switch's toe - is one bit, so the two branches cannot end up disagreeing about it, which is the
+     * state that used to draw a green arrow on top of a red one.
      */
     private void cycleBranching(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes)
     {
-        org.traincontrol.automationui.TilePorts.Side toe = toeOf(target);
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = armsOf(routes);
 
-        // Where the branches disagree - which is what setting one branch from the menu produces - no
-        // state matches, and the cycle restarts at both ways rather than letting one branch's answer
-        // speak for the rest.
-        int current = -1;
+        if (sides.isEmpty()) return;
 
-        for (int state = 0; state < 4 && current < 0; state++)
-        {
-            boolean all = true;
-
-            for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
-                : routes.entrySet())
-            {
-                if (session.getGraph().getDirection(target, entry.getKey())
-                        != directionFor(state, entry.getValue(), toe))
-                {
-                    all = false;
-                    break;
-                }
-            }
-
-            if (all) current = state;
-        }
-
-        int next = (current + 1) % 4;
+        int next = (armMask(target, routes, sides) + 1) % (1 << sides.size());
 
         Map<RouteId, Direction> wanted = new java.util.LinkedHashMap<>();
 
         for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
             : routes.entrySet())
         {
-            wanted.put(entry.getKey(), directionFor(next, entry.getValue(), toe));
+            org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
+
+            boolean openA = (next & (1 << sides.indexOf(route.getA()))) != 0;
+            boolean openB = (next & (1 << sides.indexOf(route.getB()))) != 0;
+
+            wanted.put(entry.getKey(), openA && openB ? Direction.BOTH
+                : openA ? Direction.TOWARD_A
+                : openB ? Direction.TOWARD_B : Direction.NONE);
         }
 
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
-        say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), branchState(next, toe)));
+        say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
 
         refresh();
     }
 
     /**
-     * What one route's direction has to be for the tile to be in the given state.
-     *
-     * @param state 0 both ways, 1 away from the toe, 2 toward the toe, 3 closed
-     * @param route the branch
-     * @param toe the tile's single-track side, or null if it has none
+     * The arms of a tile - every side any of its routes touches - in a fixed order so the counter
+     * always steps the same way.
      */
-    private static Direction directionFor(int state,
-        org.traincontrol.automationui.TilePorts.Route route,
-        org.traincontrol.automationui.TilePorts.Side toe)
+    private static java.util.List<org.traincontrol.automationui.TilePorts.Side> armsOf(
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes)
     {
-        if (state == 0) return Direction.BOTH;
-        if (state == 3) return Direction.NONE;
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = new java.util.ArrayList<>();
 
-        boolean away = state == 1;
-
-        // With no toe - or a branch that somehow does not touch it - the route's own sides stand in, so
-        // the tile still has two opposite one-way states rather than collapsing to one.
-        if (toe == null || (route.getA() != toe && route.getB() != toe))
+        for (org.traincontrol.automationui.TilePorts.Side side
+            : org.traincontrol.automationui.TilePorts.Side.values())
         {
-            return away ? Direction.TOWARD_A : Direction.TOWARD_B;
+            for (org.traincontrol.automationui.TilePorts.Route route : routes.values())
+            {
+                if ((route.getA() == side || route.getB() == side) && !sides.contains(side))
+                {
+                    sides.add(side);
+                }
+            }
         }
 
-        boolean toeIsA = route.getA() == toe;
-
-        // away from the toe means pointing at the side that is not the toe
-        return (toeIsA == away) ? Direction.TOWARD_B : Direction.TOWARD_A;
+        return sides;
     }
 
     /**
-     * The four branching states in words, naming the side a junction converges on where there is one.
+     * Which arms are currently open, as a bitmask over armsOf().
+     *
+     * Read the way the arrows are drawn - an arm is open if ANY branch through it lets a train out -
+     * so the number the counter advances from is the state the user can see.
      */
-    private String branchState(int state, org.traincontrol.automationui.TilePorts.Side toe)
+    private int armMask(TileKey target,
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides)
     {
-        if (state == 0) return I18n.t("autosetup.ui.dirBoth");
-        if (state == 3) return I18n.t("autosetup.ui.dirNone");
+        int mask = 0;
 
-        if (toe == null) return I18n.t("autosetup.ui.dirOneWayEach");
+        for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
+            : routes.entrySet())
+        {
+            org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
 
-        return state == 1 ? I18n.f("autosetup.ui.dirAwayFrom", String.valueOf(toe))
-            : I18n.f("autosetup.ui.dirToward", String.valueOf(toe));
+            Direction direction = session.getGraph().getDirection(target, entry.getKey());
+
+            if (direction == Direction.BOTH || direction == Direction.TOWARD_A)
+            {
+                mask |= 1 << sides.indexOf(route.getA());
+            }
+
+            if (direction == Direction.BOTH || direction == Direction.TOWARD_B)
+            {
+                mask |= 1 << sides.indexOf(route.getB());
+            }
+        }
+
+        return mask;
     }
 
     /**
-     * The side a tile's branches converge on, or null for a tile whose tracks never meet.
+     * The open arms in words - "N, W" - or the whole-tile answer when they are all open or all shut.
      */
-    private org.traincontrol.automationui.TilePorts.Side toeOf(TileKey tile)
+    private String armState(int mask, java.util.List<org.traincontrol.automationui.TilePorts.Side> sides)
     {
-        LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+        if (mask == 0) return I18n.t("autosetup.ui.dirNone");
 
-        return component == null ? null
-            : org.traincontrol.automationui.TilePorts.deriveToe(
-                component.getType(), component.getOrientation());
+        if (mask == (1 << sides.size()) - 1) return I18n.t("autosetup.ui.dirBoth");
+
+        java.util.List<String> open = new java.util.ArrayList<>();
+
+        for (int i = 0; i < sides.size(); i++)
+        {
+            if ((mask & (1 << i)) != 0) open.add(String.valueOf(sides.get(i)));
+        }
+
+        return I18n.f("autosetup.ui.dirOpenArms", String.join(", ", open));
     }
 
     /**
@@ -2015,11 +2030,19 @@ public class AutonomyEditorPanel extends JPanel
      */
     private org.traincontrol.base.LayoutDiagramComponent componentAt(TileKey tile)
     {
+        org.traincontrol.base.LayoutDiagram page = pageOf(tile);
+
+        return page == null ? null : page.getComponent(tile.getX(), tile.getY());
+    }
+
+    /**
+     * The page a key names, or null if the session has never heard of it.
+     */
+    private org.traincontrol.base.LayoutDiagram pageOf(TileKey tile)
+    {
         for (org.traincontrol.base.LayoutDiagram diagram : session.getPages())
         {
-            if (!diagram.getName().equals(tile.getPage())) continue;
-
-            return diagram.getComponent(tile.getX(), tile.getY());
+            if (diagram.getName().equals(tile.getPage())) return diagram;
         }
 
         return null;

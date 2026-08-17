@@ -26,7 +26,7 @@ having no ledger. What follows is what the review verified, not what was intende
 | Put a station name on the diagram | layout editor only (`editTextWithDropdown`) | Setup editor: right-click a text OR blank square -> "Show a station name here"; page written immediately | DONE (new) |
 | Warn on default-named stations | - | Configuration errors and warnings -> "still named after the square it sits on" | DONE (new) |
 | Reversing point | point right-click checkbox | Right-click; clears terminus | DONE |
-| Active / inactive | point right-click checkbox | Right-click -> **Station** submenu -> "Use only as a parking berth".  Inverted deliberately: the model's flag is `active`, but the thing a user decides is that a berth is for parking | DONE |
+| Active / inactive | point right-click checkbox | Right-click -> Active, on every point.  Briefly folded into the Station submenu as "parking"; reverted 2026-08-16 - that made it unreachable on a non-station and hard to find on a station.  Parking is what an inactive station IS, not a separate setting | DONE |
 | Max train length | point right-click → advanced | Right-click → Advanced Parameters | DONE |
 | Speed multiplier | point right-click → speed multiplier | Right-click, in percent | DONE **(corrected)** - had been storing a raw percentage where the model wants a factor, so any real value made the configuration refuse to load |
 | Station priority | point right-click → advanced | Right-click → Advanced Parameters | DONE |

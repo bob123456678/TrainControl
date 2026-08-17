@@ -446,8 +446,46 @@ public class TileAnnotation
         {
             int[] target = midpoint(entry.getKey(), width, height);
 
-            if (target != null) arrow(g, width, height, target, entry.getValue());
+            if (target != null)
+            {
+                arrow(g, target, heading(entry.getKey(), width, height), entry.getValue(),
+                    Math.min(width, height));
+            }
         }
+    }
+
+    /**
+     * Which way the track actually runs where it leaves through one side.
+     *
+     * A curve on this diagram is not an arc - it is a straight chord cutting the corner, from the
+     * midpoint of one edge to the midpoint of the next.  So the track at the E side of an E-S curve
+     * runs up and to the right at forty-five degrees, and an arrow drawn due east sits across it
+     * instead of along it.  Taking the heading from the chord puts every arrow on its own rail.
+     *
+     * A side two branches share - a switch's toe - is the exception, and takes the plain outward
+     * direction: the chords through it disagree by forty-five degrees, and there is only one arrow
+     * there to draw.  That is right anyway, because the trunk of a switch enters square to the edge.
+     */
+    private double[] heading(Side side, int width, int height)
+    {
+        Side other = null;
+        int through = 0;
+
+        for (Mark mark : marks)
+        {
+            if (mark.getA() == side || mark.getB() == side)
+            {
+                through++;
+                other = mark.getA() == side ? mark.getB() : mark.getA();
+            }
+        }
+
+        int[] from = through == 1 && other != null && other != side
+            ? midpoint(other, width, height) : new int[] {width / 2, height / 2};
+
+        int[] to = midpoint(side, width, height);
+
+        return new double[] {to[0] - from[0], to[1] - from[1]};
     }
 
     /**
@@ -466,15 +504,14 @@ public class TileAnnotation
      * same place crossed out when trains may not go that way.
      *
      * @param target the midpoint of the side this direction leads to
+     * @param heading which way the track runs there, not necessarily square to the edge - see heading()
      * @param allowed whether trains may travel this way
+     * @param span the smaller of the tile's two dimensions, which sets the arrowhead size
      */
-    private void arrow(Graphics2D g, int width, int height, int[] target, boolean allowed)
+    private void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
-        int cx = width / 2;
-        int cy = height / 2;
-
-        double dx = target[0] - cx;
-        double dy = target[1] - cy;
+        double dx = heading[0];
+        double dy = heading[1];
         double len = Math.sqrt(dx * dx + dy * dy);
 
         if (len < 1) return;
@@ -485,7 +522,7 @@ public class TileAnnotation
         // A blocked arrow is drawn smaller and hollow as well as red, so that the difference survives
         // being printed, being looked at on a poor screen, and being read by somebody who cannot tell
         // red from green.  Colour alone is never the only thing carrying the meaning.
-        double size = Math.max(4.0, Math.min(width, height) / 3.2) * (allowed ? 1.0 : 0.72);
+        double size = Math.max(4.0, span / 3.2) * (allowed ? 1.0 : 0.72);
 
         // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
         // a hairline between them rather than touching and reading as one shape.
