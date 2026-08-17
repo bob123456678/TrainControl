@@ -1011,6 +1011,10 @@ public class AutonomyEditorPanel extends JPanel
 
         session.setRunDirection(target, only.getKey(), next);
 
+        // The tile that changed can be some way from the one clicked, at the head of a long run, so it
+        // is flashed as well as named - a message about a square nobody can find is half an answer.
+        if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
+
         say(hint, I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
     }
 
@@ -1250,7 +1254,7 @@ public class AutonomyEditorPanel extends JPanel
             || testPath.contains(tile) || tile.equals(testFrom);
 
         return new org.traincontrol.base.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), ignored, isMuted(tile) || follower);
+            badgeFor(tile), ignored, follower);
     }
 
     /**
@@ -1314,14 +1318,6 @@ public class AutonomyEditorPanel extends JPanel
         TileKey leader = runLeaders.get(tile);
 
         return leader == null ? tile : leader;
-    }
-
-    private boolean isMuted(TileKey tile)
-    {
-        org.traincontrol.base.LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
-
-        return component != null && component.isSignal();
     }
 
     /**

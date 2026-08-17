@@ -593,6 +593,19 @@ public class LayoutEditor extends PositionAwareJFrame
         label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
 
         highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
+
+        // Cleared on a timer.  The border a highlight leaves is normally swept up by the hover
+        // handler, and hover is switched off in autonomy mode - so without this the flash would be
+        // permanent, and after a few clicks the diagram would be covered in them.
+        final LayoutLabel flashed = label;
+
+        javax.swing.Timer clear = new javax.swing.Timer(1200, e ->
+        {
+            if (flashed.getBorder() != null) flashed.setBorder(null);
+        });
+
+        clear.setRepeats(false);
+        clear.start();
     }
 
     public void refreshAutonomyAnnotations()

@@ -249,6 +249,12 @@ public class TileAnnotation
     private static final float IGNORED_ALPHA = 0.62f;
 
     /**
+     * The hatching drawn over a square autonomy cannot use, so that "unavailable" is a pattern and not
+     * only a shade - the two silences on this diagram have to be told apart at a glance.
+     */
+    private static final Color HATCH = new Color(150, 150, 150);
+
+    /**
      * Pushed back but still the user's to set - signals, which sit on almost every run and whose art
      * is the heaviest on the diagram, so at full strength they read as the most important thing on it.
      */
@@ -351,6 +357,16 @@ public class TileAnnotation
 
             // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
             // Nothing here is the user's to decide, so anything drawn would invite a click.
+            // Two different silences, which used to look identical and mean opposite things.
+            //
+            //   IGNORED   autonomy cannot use this square at all - a route button, a turntable, an
+            //             excluded page.  Washed out AND hatched: the hatching is what says "not
+            //             available", the way it does on any disabled control, and it survives being
+            //             read in greyscale.
+            //
+            //   FOLLOWER  ordinary track that takes its direction from the head of its run.  Washed
+            //             only, no hatching, because nothing is wrong with it - it is simply quiet,
+            //             and clicking it still works.
             if (ignored)
             {
                 g.setComposite(java.awt.AlphaComposite.getInstance(
@@ -358,10 +374,20 @@ public class TileAnnotation
                 g.setColor(IGNORED);
                 g.fillRect(0, 0, width, height);
 
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 0.55f));
+                g.setColor(HATCH);
+                g.setStroke(new BasicStroke(1f));
+
+                for (int at = -height; at < width; at += 5)
+                {
+                    g.drawLine(at, 0, at + height, height);
+                }
+
                 return;
             }
 
-            // Signals and the like: pushed back, but still drawn on and still clickable.
+            // A follower: pushed back, still drawn on, still clickable.
             if (muted)
             {
                 g.setComposite(java.awt.AlphaComposite.getInstance(
