@@ -31,6 +31,23 @@ public class Point
     private Integer priority = 0;
     private Integer uniqueId;
     private boolean active;
+
+    /**
+     * Whether full autonomy may CHOOSE this station as somewhere to send a train.
+     *
+     * Defaults to true, so a configuration written before this existed behaves exactly as it did.
+     *
+     * Separate from active on purpose.  Inactive means the point is out of service - nothing may pass
+     * through it and nothing may be sent to it - whereas this only withholds it from automatic
+     * selection: a route the user picks by hand still reaches it, and so does Return Home, which is
+     * what makes a parking berth a berth rather than a closed siding.
+     *
+     * It also replaces the way that used to be said.  A "reversing station" was the only way to keep
+     * autonomy from choosing a station, and it dragged two unrelated behaviours along with it - the
+     * train reversed on arrival, and no path could be routed through.  Those are now what a terminus
+     * and a shut arm say, each on its own.
+     */
+    private boolean autoDestination = true;
     private Set<Locomotive> excludedLocs;
     private double speedMultiplier = 1.0;
 
@@ -134,6 +151,24 @@ public class Point
         this.active = status;
     }
     
+    /**
+     * Whether full autonomy may choose this station as a destination.
+     * @return
+     */
+    public boolean isAutoDestination()
+    {
+        return autoDestination;
+    }
+
+    /**
+     * @param status false to keep autonomy from choosing this station of its own accord.  Routes the
+     *        user picks, and Return Home, are unaffected.
+     */
+    public void setAutoDestination(boolean status)
+    {
+        this.autoDestination = status;
+    }
+
     /**
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
@@ -516,6 +551,13 @@ public class Point
         if (this.isReversing)
         {
             jsonObj.put("reversing", this.isReversing);
+        }
+
+        // written only when it differs from the default, so a file gains no noise from a setting
+        // nobody has touched
+        if (!this.autoDestination)
+        {
+            jsonObj.put("autoDestination", this.autoDestination);
         }
         
         if (this.priority != 0)

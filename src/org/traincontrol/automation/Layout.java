@@ -2326,7 +2326,8 @@ public class Layout
         {
             Point end = path.get(path.size() - 1).getEnd();
 
-            if (!end.isReversing() && !end.getExcludedLocs().contains(loc)
+            if (!end.isReversing() && end.isAutoDestination()
+                    && !end.getExcludedLocs().contains(loc)
                     && !this.passesThroughReversingStation(path))
             {
                 return true;
@@ -2477,7 +2478,7 @@ public class Layout
                     // session.  Filtering at selection, never refusing at execution, is the same tier
                     // split the excluded-locomotive rule uses.
                     if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive()
-                            && !end.isReversing()
+                            && !end.isReversing() && end.isAutoDestination()
                             && !end.getExcludedLocs().contains(loc))
                     {
                         try 
@@ -4553,6 +4554,21 @@ public class Layout
                     {
                         layout.invalidate(
                             I18n.f("autolayout.errorActiveInvalidValue", point.toString())
+                        );
+                    }
+                }
+
+                if (point.has("autoDestination"))
+                {
+                    if (point.get("autoDestination") instanceof Boolean)
+                    {
+                        layout.getPoint(point.getString("name"))
+                            .setAutoDestination(point.getBoolean("autoDestination"));
+                    }
+                    else
+                    {
+                        layout.invalidate(
+                            I18n.f("autolayout.errorAutoDestinationInvalidValue", point.toString())
                         );
                     }
                 }

@@ -350,9 +350,7 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            // A parking berth turns trains round by being one; asking for it twice would emit both
-            // flags, which Point refuses to hold together.
-            if (isTurnAround(tile) && !isParking(tile)) out.add(tile);
+            if (isTurnAround(tile)) out.add(tile);
         }
 
         return out;
@@ -410,10 +408,37 @@ public class AutonomySession
     {
         if (!store.isStation(tile)) return false;
 
+        // the switch as it is stored now: written only when it is off, like every other default
+        if (Boolean.FALSE.equals(getPointProperty(tile, AutonomyBuilder.AUTO_DESTINATION))) return true;
+
+        // what it was called for the hour this was spelt "parking"
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.PARKING))) return true;
 
-        // a reversing STATION was always exactly this
+        // and before that, a reversing STATION was the only way to say it at all
         return Boolean.TRUE.equals(getPointProperty(tile, "reversing"));
+    }
+
+    /**
+     * Whether full autonomy may choose this station of its own accord.  The switch the user sees.
+     * @param tile
+     * @return
+     */
+    public boolean isAutoDestination(TileKey tile)
+    {
+        return !isParking(tile);
+    }
+
+    /**
+     * Sets whether autonomy may choose this station, clearing the two older spellings of the same idea.
+     *
+     * @param tile
+     * @param on
+     */
+    public void setAutoDestination(TileKey tile, boolean on)
+    {
+        setPointProperty(tile, AutonomyBuilder.AUTO_DESTINATION, on ? null : Boolean.FALSE);
+        setPointProperty(tile, AutonomyBuilder.PARKING, null);
+        setPointProperty(tile, "reversing", null);
     }
 
     /**
@@ -1265,7 +1290,7 @@ public class AutonomySession
                 store.isStation(tile),
                 store.isStation(tile) && isTurnAround(tile),
                 !store.isStation(tile) && isTurnAround(tile),
-                Boolean.FALSE.equals(getPointProperty(tile, "active")) || isParking(tile),
+                Boolean.FALSE.equals(getPointProperty(tile, "active")) || !isAutoDestination(tile),
                 name != null && !name.trim().isEmpty(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB()),

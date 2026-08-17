@@ -126,6 +126,11 @@ public class AutonomyBuilder
      * Emitted as `reversing`, which is the model's word for a station autonomy will never choose and
      * cannot route a train through.  Also never emitted under its own name.
      */
+    public static final String AUTO_DESTINATION = "autoDestination";
+
+    /**
+     * What this used to be called, still read so that a setup authored an hour ago keeps its berths.
+     */
     public static final String PARKING = "parking";
 
     /**
@@ -146,9 +151,10 @@ public class AutonomyBuilder
     // Tiles the user marked as somewhere a train may turn round.  See Node.
     private Set<TileKey> reversible = Collections.emptySet();
 
-    // Stations that are parking berths: emitted as reversing, and never split - nothing can pass
-    // through a reversing station, so a second copy of one would have no route to carry.
-    private Set<TileKey> parking = Collections.emptySet();
+    // Stations autonomy may not choose for itself.  They are emitted with autoDestination false and
+    // are otherwise ordinary: a route the user picks reaches them, Return Home fills them, and trains
+    // may run through them if the track allows.  Nothing about them stops a split.
+    private Set<TileKey> manualOnly = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
     // rest - keyed by TileKey.toString().  See withPointExtras.
@@ -222,7 +228,7 @@ public class AutonomyBuilder
      */
     public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
     {
-        this.parking = tiles == null ? Collections.<TileKey>emptySet() : tiles;
+        this.manualOnly = tiles == null ? Collections.<TileKey>emptySet() : tiles;
         return this;
     }
 
@@ -231,7 +237,7 @@ public class AutonomyBuilder
      */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
-        if (!reversible.contains(tile) || parking.contains(tile)) return Collections.emptyList();
+        if (!reversible.contains(tile)) return Collections.emptyList();
 
         Set<TilePorts.Side> sides = new java.util.TreeSet<>();
 
@@ -370,7 +376,8 @@ public class AutonomyBuilder
                         // is not carried onto either of them: it would make the plain copy reverse too,
                         // which is the behaviour the split exists to separate.  CAN_REVERSE never goes
                         // out at all - it is the instruction to split, not something parseAuto knows.
-                        if (CAN_REVERSE.equals(key) || PARKING.equals(key)) continue;
+                        if (CAN_REVERSE.equals(key) || PARKING.equals(key)
+                                || AUTO_DESTINATION.equals(key)) continue;
 
                         if (DERIVED.contains(key)) continue;
 
@@ -393,14 +400,14 @@ public class AutonomyBuilder
                     json.put(point.isStation() ? "terminus" : "reversing", true);
                 }
 
-                // A parking berth turns its trains round on arrival like any terminus does, and the
-                // model already spells that "reversing" - so it needs no turning copy of its own, and
-                // must not be given a terminus as well: Point refuses to hold both, in either order,
-                // and the failure takes the whole configuration with it rather than this one square.
-                if (parking.contains(point.getTile()))
+                // A berth is an ordinary station that autonomy is told not to choose.  It used to be
+                // emitted as a reversing station, which was the only way to say that and which dragged
+                // two unrelated behaviours along: the train reversed on arrival whether or not anybody
+                // asked, and no path could be routed through.  Those are what a terminus and a shut arm
+                // say now, each on its own, so this says only the thing it means.
+                if (manualOnly.contains(point.getTile()))
                 {
-                    json.put("reversing", true);
-                    json.remove("terminus");
+                    json.put(AUTO_DESTINATION, false);
                 }
 
                 pointList.put(json);

@@ -325,6 +325,78 @@ public class testAutonomyDiagramReversal
         assertEquals(withEmptyMark, withoutFeature);
     }
 
+    /**
+     * A station autonomy may not choose says exactly that, and nothing else.
+     *
+     * The point of the flag.  Before it, the only way to keep autonomy off a station was to make it a
+     * reversing one, which also turned every arriving train round and refused any path through - three
+     * statements welded into one switch, two of which nobody had asked for.
+     */
+    @Test
+    public void testAStationAutonomyMayNotChooseSaysSoAndNothingElse() throws IOException
+    {
+        JSONObject built = build(junction(), stations(key("main", 5, 2)),
+            noTiles(), manualOnly(key("main", 5, 2)), extras());
+
+        List<JSONObject> copies = pointsNamed(built, "Main4");
+
+        assertEquals(copies.size(), 1, "leaving it alone is not a reason to split it");
+
+        JSONObject only = copies.get(0);
+
+        assertTrue(only.getBoolean("station"), "it is still a station");
+        assertFalse(only.optBoolean("autoDestination", true), "autonomy is told to leave it alone");
+        assertFalse(only.optBoolean("reversing"), "and nothing turns an arriving train round");
+        assertFalse(only.optBoolean("terminus"));
+    }
+
+    /**
+     * A berth that turns trains round AND is left alone by autonomy - which is what a berth usually is,
+     * and which could not be authored at all until now.
+     *
+     * As a reversing station plus a terminus it was two flags on one Point, and Point refuses that
+     * combination in either order: the configuration failed wholesale rather than at the square that
+     * caused it.  Said separately, the two do not touch.
+     */
+    @Test
+    public void testABerthCanTurnTrainsRoundAndStillBeLeftAloneByAutonomy() throws IOException
+    {
+        JSONObject built = build(junction(), stations(key("main", 5, 2)),
+            marked(key("main", 5, 2)), manualOnly(key("main", 5, 2)), extras());
+
+        List<JSONObject> copies = pointsNamed(built, "Main4");
+
+        assertEquals(copies.size(), 4, "being left alone says nothing about the geometry, so it splits");
+
+        int termini = 0;
+
+        for (JSONObject copy : copies)
+        {
+            assertFalse(copy.optBoolean("autoDestination", true));
+
+            assertFalse(copy.optBoolean("reversing"),
+                "a terminus and a reversing flag on one Point is exactly what Point refuses");
+
+            if (copy.optBoolean("terminus")) termini++;
+        }
+
+        assertEquals(termini, 2, "one turning copy per arrival side, as for any other split");
+    }
+
+    /**
+     * The default is not written out, so a configuration gains no noise from a switch nobody touched -
+     * and a file from before this existed reads back as it always did.
+     */
+    @Test
+    public void testAnOrdinaryStationSaysNothingAboutAutonomy() throws IOException
+    {
+        JSONObject built = build(junction(), stations(key("main", 5, 2)),
+            noTiles(), noTiles(), extras());
+
+        assertFalse(pointsNamed(built, "Main4").get(0).has("autoDestination"),
+            "the default belongs in the model, not in every point of every file");
+    }
+
     // --- the track ---------------------------------------------------------------------------------
 
     /**
@@ -363,11 +435,18 @@ public class testAutonomyDiagramReversal
     private JSONObject build(LayoutDiagram page, Set<TileKey> stations, Set<TileKey> reversible,
         JSONObject extras)
     {
+        return build(page, stations, reversible, noTiles(), extras);
+    }
+
+    private JSONObject build(LayoutDiagram page, Set<TileKey> stations, Set<TileKey> reversible,
+        Set<TileKey> manualOnly, JSONObject extras)
+    {
         GraphReducer reducer = reduce(page, stations);
 
         String json = new AutonomyBuilder(reducer, null)
             .withPointExtras(map(extras))
             .withReversibleTiles(reversible)
+            .withParkingTiles(manualOnly)
             .build();
 
         return new JSONObject(json);
@@ -455,6 +534,19 @@ public class testAutonomyDiagramReversal
     private Set<TileKey> marked(TileKey... tiles)
     {
         return new LinkedHashSet<>(Arrays.asList(tiles));
+    }
+
+    /**
+     * Stations autonomy may not choose for itself.
+     */
+    private Set<TileKey> manualOnly(TileKey... tiles)
+    {
+        return new LinkedHashSet<>(Arrays.asList(tiles));
+    }
+
+    private Set<TileKey> noTiles()
+    {
+        return Collections.<TileKey>emptySet();
     }
 
     private List<JSONObject> pointsNamed(JSONObject built, String base)

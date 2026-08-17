@@ -1547,6 +1547,29 @@ This is worth stating plainly because the same `shuffle` is the reason twin Poin
 edge sets were rejected. It is a hazard when the two copies mean the same thing and a feature when
 they mean different ones; the arrival-side split is what makes them mean different things.
 
+### `autoDestination`: the one model change this branch makes (author ruling, 2026-08-16)
+
+`isReversing` meant three things at once: autonomy may not choose this station, an arriving train
+turns round, and no path may be routed through. Only the first is what a parking berth needs, and
+there was no way to have it alone — so a berth could not also be a terminus (`Point` refuses both
+flags in either order, failing the whole configuration) and a through platform could not be withheld
+from autonomy without closing it to traffic.
+
+**Added:** `Point.autoDestination`, defaulting **true**, written to JSON only when false. Two clauses
+in `Layout`: the `pickPath` candidate filter, and its mirror in `hasAutonomousDestination` — the
+comment there explains why the mirror is not optional (a parked train otherwise reads as one waiting
+its turn, and every running locomotive yields for a dispatch that never comes). `parseAuto` reads the
+key. Nothing existing changes meaning; a file without the key behaves exactly as before.
+
+What each switch now says, and nothing more:
+- **station** — trains may stop here
+- **turn round here** — compiles to `terminus` on a station, `reversing` on anything else
+- **can be chosen in full autonomy** — compiles to `autoDestination`
+- **active** — out of service; stations only, since on anything else a shut arm says it
+
+Reversing stations are retired as a concept. `isReversing` stays in the model for non-station points,
+which is where it does its actual job.
+
 ### Deferred by the author, 2026-08-16 (testing round 2)
 
 - **Show simplified segments instead of "also show track that runs both ways".** The toggle as built
