@@ -2162,8 +2162,13 @@ public class AutonomyEditorPanel extends JPanel
         trace(there, testFrom, true);
         trace(back, tile, false);
 
+        // Named, not just counted.  "3 runs" says a route exists and nothing about which one, so a
+        // route the user believes impossible cannot be argued with - and the squares it crosses are
+        // spread over a page too big to follow a line across.  The sensors it calls at are the short
+        // way to say where it went.
         sayRich(hint, I18n.f("autosetup.ui.testBothWays",
-            escape(describeTile(testFrom)), escape(describeTile(tile)), leg(there), leg(back)));
+            escape(describeTile(testFrom)), escape(describeTile(tile)),
+            leg(there), escape(via(there)), leg(back)));
 
         testFrom = null;
     }
@@ -2253,6 +2258,27 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return null;
+    }
+
+    /**
+     * The sensors a route calls at, in order, excluding the two ends.
+     *
+     * The reduction knows a path as a list of edges between Points, so this is simply their names -
+     * and it is what makes a disputed route checkable: a line drawn across a page can be followed
+     * wrongly, a list of places it stopped at cannot.
+     */
+    private String via(java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run)
+    {
+        if (run == null || run.size() < 2) return "";
+
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        for (int i = 0; i < run.size() - 1; i++)
+        {
+            names.add(describeTile(run.get(i).getEnd()));
+        }
+
+        return I18n.f("autosetup.ui.testVia", String.join(", ", names));
     }
 
     /**
