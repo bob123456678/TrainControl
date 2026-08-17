@@ -567,6 +567,20 @@ public class TileAnnotation
             allow(out, mark.getB(), direction == Direction.BOTH || direction == Direction.TOWARD_B);
         }
 
+        // A square where nothing is shut is the overwhelming majority of a layout, and drawing it at
+        // full strength put a pair of bold arrows on almost every piece of track - which is what the
+        // arrows used to be HIDDEN for.  Hiding them was worse: the state then looked like a square
+        // nobody had touched, so cycling to it looked like nothing happening.
+        //
+        // Drawn small and pale instead.  Present, so arriving at it is visible; quiet, so the squares
+        // where something IS shut are the ones that catch the eye.
+        boolean quiet = true;
+
+        for (Boolean allowed : out.values())
+        {
+            if (!Boolean.TRUE.equals(allowed)) quiet = false;
+        }
+
         for (java.util.Map.Entry<Side, Boolean> entry : out.entrySet())
         {
             int[] target = midpoint(entry.getKey(), width, height);
@@ -582,7 +596,7 @@ public class TileAnnotation
                 continue;
             }
 
-            arrow(g, target, outward, entry.getValue(), span);
+            arrow(g, target, outward, entry.getValue(), span, quiet);
         }
     }
 
@@ -768,6 +782,16 @@ public class TileAnnotation
      */
     private void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
+        arrow(g, target, heading, allowed, span, false);
+    }
+
+    /**
+     * @param quiet whether nothing on this square is shut, in which case it is drawn small and pale -
+     *        present enough to see, faint enough not to compete with the squares that say something
+     */
+    private void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span,
+        boolean quiet)
+    {
         double dx = heading[0];
         double dy = heading[1];
         double len = Math.sqrt(dx * dx + dy * dy);
@@ -780,7 +804,7 @@ public class TileAnnotation
         // A blocked arrow is drawn smaller and hollow as well as red, so that the difference survives
         // being printed, being looked at on a poor screen, and being read by somebody who cannot tell
         // red from green.  Colour alone is never the only thing carrying the meaning.
-        double size = Math.max(4.0, span / 3.2) * (allowed ? 1.0 : 0.72);
+        double size = Math.max(4.0, span / 3.2) * (allowed ? 1.0 : 0.72) * (quiet ? 0.55 : 1.0);
 
         // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
         // a hairline between them rather than touching and reading as one shape.
@@ -808,7 +832,7 @@ public class TileAnnotation
 
         if (allowed)
         {
-            g.setColor(ONE_WAY);
+            g.setColor(quiet ? OPEN_QUIET : ONE_WAY);
             g.fillPolygon(xs, ys, 3);
         }
         else
@@ -833,6 +857,11 @@ public class TileAnnotation
      * The tested route: a broad yellow line, the colour this application already uses to say "look
      * here" on the running diagram, and one nothing else in this editor uses.
      */
+    /**
+     * Track with nothing shut on it: the same green, well on its way to the white behind it.
+     */
+    private static final Color OPEN_QUIET = new Color(150, 205, 150);
+
     private static final Color TRACE = new Color(255, 214, 0);
 
     /** The chevrons on it, dark enough to read against the yellow they sit on. */
