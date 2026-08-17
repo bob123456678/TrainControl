@@ -62,7 +62,10 @@ public class DiagramTileRegistry
 
         org.traincontrol.base.TileAnnotation annotation = lastAnnotated.get(key);
 
-        if (annotation != null && annotation != BLANK) label.setAutonomyAnnotation(annotation);
+        if (annotation != null && annotation != BLANK && !label.isEditMode())
+        {
+            label.setAutonomyAnnotation(annotation);
+        }
     }
 
     /**
@@ -139,6 +142,12 @@ public class DiagramTileRegistry
                 i.remove();
                 continue;
             }
+
+            // Never over the editor's own tiles.  The editor draws directions, lengths and selection
+            // into this same slot from the panel beside it, and the static layer carries none of those
+            // - so publishing here wiped every arrow in the editor the moment anything was edited,
+            // because an edit is exactly what asks the main diagram to refresh.
+            if (label.isEditMode()) continue;
 
             label.setAutonomyAnnotation(annotation);
         }

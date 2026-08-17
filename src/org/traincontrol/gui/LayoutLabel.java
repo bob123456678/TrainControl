@@ -518,6 +518,18 @@ public final class LayoutLabel extends JLabel
      * @param highlight
      */
     /**
+     * Whether this tile belongs to the diagram EDITOR rather than to an operating view.
+     *
+     * The two draw autonomy from different places - the editor from the panel beside it, the operating
+     * views from the setup on disk - so the one must not publish over the other.
+     * @return
+     */
+    public boolean isEditMode()
+    {
+        return edit;
+    }
+
+    /**
      * Flashes this tile the same yellow the diagram uses when a route or the Central Station changes
      * something.
      *
