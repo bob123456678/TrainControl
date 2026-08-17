@@ -763,6 +763,16 @@ public class AutonomyEditorPanel extends JPanel
         {
             connections.addSeparator();
 
+            // Autonomy can be told to leave a link alone entirely.  A diagram can carry one that
+            // belongs to the drawing rather than to the railway autonomy runs, and refusing to build
+            // until it is paired would be insisting on something the user has decided against.
+            connections.add(toggle(I18n.t("autosetup.ui.menuUseLink"),
+                "autosetup.ui.hintUseLink",
+                !session.getStore().isPortalDisabled(target),
+                on -> session.setPortalDisabled(target, !on)));
+
+            connections.addSeparator();
+
             connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
             connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 

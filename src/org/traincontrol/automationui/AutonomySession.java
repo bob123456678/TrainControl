@@ -956,6 +956,18 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * Tells autonomy to use, or to ignore, a link.
+     *
+     * @param tile the link
+     * @param disabled true to leave it out of the railway entirely
+     */
+    public void setPortalDisabled(TileKey tile, boolean disabled)
+    {
+        store.setPortalDisabled(tile, disabled);
+        touched();
+    }
+
     public void setPointName(TileKey tile, String name)
     {
         String before = store.getPointName(tile);

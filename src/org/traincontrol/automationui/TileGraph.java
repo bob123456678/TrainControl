@@ -272,6 +272,29 @@ public class TileGraph
     public static final String ERROR_SCISSORS = "autosetup.ui.errorScissorsNotSupported";
     public static final String ERROR_PORTAL_UNPAIRED = "autosetup.ui.errorLinkNotMutuallyPaired";
     public static final String ERROR_PORTAL_NEVER_PAIRED = "autosetup.ui.errorLinkNeverPaired";
+    public static final String WARN_PORTAL_UNREACHABLE = "autosetup.ui.warnLinkNeverPairedUnreachable";
+
+    /**
+     * Links the user has told autonomy to leave alone.
+     *
+     * A diagram can carry a link that belongs to the drawing rather than to the railway autonomy runs -
+     * a jump to a page that is only ever driven by hand, say - and refusing to build until it is paired
+     * would be autonomy insisting on something the user has already decided against.
+     */
+    private final Set<TileKey> disabledPortals = new LinkedHashSet<>();
+
+    /**
+     * @param tile a link autonomy should ignore entirely
+     */
+    public void disablePortal(TileKey tile)
+    {
+        if (tile != null) disabledPortals.add(tile);
+    }
+
+    public boolean isPortalDisabled(TileKey tile)
+    {
+        return disabledPortals.contains(tile);
+    }
     public static final String ERROR_PORTAL_EXCLUDED = "autosetup.ui.errorPortalTargetsExcludedPage";
     public static final String WARN_TURNTABLE = "autosetup.ui.warnTurntableNotRoutable";
     public static final String WARN_PERMANENT_TURNOUT = "autosetup.ui.warnPermanentTurnout";
@@ -492,7 +515,7 @@ public class TileGraph
         {
             Side stub = stubSide(component);
 
-            if (stub != null && portals.containsKey(tile))
+            if (stub != null && portals.containsKey(tile) && !disabledPortals.contains(tile))
             {
                 if (entrySide == stub)
                 {
@@ -633,10 +656,34 @@ public class TileGraph
 
             if (portals.containsKey(entry.getKey())) continue;
 
-            found.add(new Problem(entry.getKey(), ERROR_PORTAL_NEVER_PAIRED, true));
+            if (disabledPortals.contains(entry.getKey())) continue;
+
+            // How much it matters depends on whether a train could ever arrive.  A link with track
+            // running into it is a hole trains will fall down, and blocks; a link drawn on its own,
+            // with nothing joined to it, is somebody's unfinished intention and only worth mentioning.
+            Side stub = stubSide(entry.getValue());
+
+            boolean reachable = stub != null && landing(entry.getKey(), stub) != null;
+
+            found.add(new Problem(entry.getKey(),
+                reachable ? ERROR_PORTAL_NEVER_PAIRED : WARN_PORTAL_UNREACHABLE, reachable));
         }
 
-        problems.addAll(found);
+        // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the
+        // same tile and the same message twice is one problem reported twice - which reads as two
+        // things to fix and cannot be, since fixing it makes both disappear.
+        for (Problem problem : found)
+        {
+            boolean already = false;
+
+            for (Problem seen : problems)
+            {
+                if (seen.getTile() != null && seen.getTile().equals(problem.getTile())
+                    && seen.getMessageKey().equals(problem.getMessageKey())) already = true;
+            }
+
+            if (!already) problems.add(problem);
+        }
 
         return found;
     }

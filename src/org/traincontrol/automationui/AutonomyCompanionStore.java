@@ -194,6 +194,7 @@ public class AutonomyCompanionStore
         readStringMap(root, "portals", portals);
         readStringMap(root, "linkNames", linkNames);
         readStringSet(root, "excludedPages", excludedPages);
+        readStringSet(root, "disabledLinks", disabledPortals);
 
         JSONObject lengths = root.optJSONObject("tileLengths");
 
@@ -215,6 +216,7 @@ public class AutonomyCompanionStore
         untranslate(linkNames);
         untranslatePortals();
         untranslateSet(stations);
+        untranslateSet(disabledPortals);
 
         pageIdConflicts.clear();
 
@@ -314,6 +316,7 @@ public class AutonomyCompanionStore
         root.put("portals", new JSONObject(translatePortals()));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
         root.put("excludedPages", new JSONArray(excludedPages));
+        root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
 
         for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
         {
@@ -445,6 +448,32 @@ public class AutonomyCompanionStore
         else
         {
             linkNames.put(tile.toString(), name.trim());
+        }
+    }
+
+    /**
+     * Links autonomy is to ignore, by tile.
+     *
+     * Stored with the track rather than with a configuration: whether a link is part of the railway
+     * autonomy runs is a fact about the diagram, and it would be strange for one configuration to see
+     * a hole in the track that another does not.
+     */
+    private final Set<String> disabledPortals = new LinkedHashSet<>();
+
+    public boolean isPortalDisabled(TileKey tile)
+    {
+        return disabledPortals.contains(tile.toString());
+    }
+
+    public void setPortalDisabled(TileKey tile, boolean disabled)
+    {
+        if (disabled)
+        {
+            disabledPortals.add(tile.toString());
+        }
+        else
+        {
+            disabledPortals.remove(tile.toString());
         }
     }
 
@@ -862,6 +891,13 @@ public class AutonomyCompanionStore
             if (from != null && to != null) graph.pairPortals(from, to);
         }
 
+        for (String id : disabledPortals)
+        {
+            TileKey tile = parseTileKey(id);
+
+            if (tile != null) graph.disablePortal(tile);
+        }
+
         for (Map.Entry<String, String> entry : tileDirections.entrySet())
         {
             int hash = entry.getKey().lastIndexOf('#');
@@ -893,7 +929,7 @@ public class AutonomyCompanionStore
 
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "portals", "linkNames", "excludedPages", "pages"));
+        "portals", "linkNames", "excludedPages", "disabledLinks", "pages"));
 
     private void clear()
     {
@@ -904,6 +940,7 @@ public class AutonomyCompanionStore
         portals.clear();
         linkNames.clear();
         excludedPages.clear();
+        disabledPortals.clear();
         unknownSharedFields.clear();
         pageNamesWhenWritten.clear();
         pageIdConflicts.clear();
