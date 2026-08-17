@@ -668,9 +668,28 @@ public class TileAnnotation
         // two lines down the same piece of track wherever a route worked both ways, which is the
         // commonest case - so the picture was mostly duplicates, and the duplicate said nothing the
         // single line did not.
-        g.setColor(TRACE);
         g.setStroke(new BasicStroke(Math.max(3f, span / 7f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        // Which legs cross this square.  Where a route works both ways over the SAME track the two
+        // legs land on the same segment and it is drawn once; where they go different ways round - a
+        // loop, a passing siding - the squares only one leg uses are drawn in that leg's own shade, so
+        // the picture reads as an out and a back rather than as one circuit nobody asked for.
+        java.util.Map<String, Boolean> shared = new java.util.LinkedHashMap<>();
+
+        for (Trace trace : traces)
+        {
+            String at = trace.from + ":" + trace.to;
+
+            if (shared.containsKey(at))
+            {
+                shared.put(at, Boolean.TRUE);
+            }
+            else
+            {
+                shared.put(at, Boolean.FALSE);
+            }
+        }
 
         java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
 
@@ -681,7 +700,12 @@ public class TileAnnotation
 
             if (a == null || b == null) continue;
 
-            if (!drawn.add(trace.from + ":" + trace.to)) continue;
+            String at = trace.from + ":" + trace.to;
+
+            if (!drawn.add(at)) continue;
+
+            g.setColor(Boolean.TRUE.equals(shared.get(at)) ? TRACE
+                : trace.forward ? TRACE : TRACE_RETURN);
 
             g.drawLine(a[0], a[1], centre[0], centre[1]);
             g.drawLine(centre[0], centre[1], b[0], b[1]);
@@ -866,6 +890,15 @@ public class TileAnnotation
      * here" on the running diagram, and one nothing else in this editor uses.
      */
     private static final Color TRACE = new Color(255, 214, 0);
+
+    /**
+     * The way back, where it does not share track with the way out.
+     *
+     * Both legs in one colour is right while they run over the same rails - two lines down one piece
+     * of track say nothing twice - and wrong the moment they go different ways round, where the single
+     * colour turns an out-and-back into what looks like one circuit.
+     */
+    private static final Color TRACE_RETURN = new Color(255, 150, 40);
 
     /** The chevrons on it, dark enough to read against the yellow they sit on. */
     private static final Color TRACE_CHEVRON = new Color(120, 80, 0);
