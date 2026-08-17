@@ -204,17 +204,18 @@ public class testAutonomyDiagramReversal
         // the test would then pass for the wrong reason.
         add(page, componentType.END, 6, 2, 1);
 
-        JSONObject extras = extras();
-        extras.put(key("main", 5, 2).toString(), new JSONObject().put("terminus", true));
-
         JSONObject built = build(page, stations(key("main", 5, 2)),
-            marked(key("main", 5, 2)), extras);
+            marked(key("main", 5, 2)), extras());
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
         assertEquals(copies.size(), 1, "one arrival side means there is nothing to split");
+
+        // The square was still MARKED, so the one copy has to carry what the mark means.  Nothing here
+        // is a reverse copy - there was no split to make one - and without this case the platform
+        // emitted no flag at all and its trains would have run into the buffers.
         assertTrue(copies.get(0).optBoolean("terminus"),
-            "and the flag the user set survives, because nothing took it over");
+            "the only thing a train can do at a dead end is arrive and turn round");
     }
 
     /**

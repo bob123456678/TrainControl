@@ -395,7 +395,12 @@ public class AutonomyBuilder
                 // A station turns round at a terminus; anything else turns round at a reversing point.
                 // Same physical act, and the model spells it two ways: a terminus is a destination that
                 // reverses on arrival, a reversing point is one autonomy will never choose to stop at.
-                if (node.reverse)
+                //
+                // Either the copy that exists to turn trains round, or - where the square was marked
+                // but has only one way in, so there was nothing to split - the single copy it became.
+                // Without that second case a dead-end platform marked "trains turn round here" emitted
+                // no flag at all and its trains would have run into the buffers.
+                if (node.reverse || (reversible.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
                     json.put(point.isStation() ? "terminus" : "reversing", true);
                 }

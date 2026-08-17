@@ -179,8 +179,13 @@ public class testAutonomyDiagramSession
         org.json.JSONObject config = session.getStore().getConfiguration("Default");
 
         org.json.JSONObject extras = new org.json.JSONObject();
-        extras.put("terminus", true);
+        extras.put("maxTrainLength", 7);
         extras.put("loc", new org.json.JSONObject().put("name", "BR 218"));
+
+        // Derived, not operational: terminus is what the "trains can turn round here" switch compiles
+        // to, so one sitting in a configuration is a leftover and must not reach the generated file.
+        // Carried through, it would put a terminus on the plain copy of a split square as well.
+        extras.put("terminus", true);
 
         // an attempt to override a structural field, which must lose
         extras.put("s88", 999);
@@ -200,7 +205,10 @@ public class testAutonomyDiagramSession
         }
 
         assertNotNull(builtPoint, "the sensor should still be a Point, keyed by its real s88");
-        assertTrue(builtPoint.getBoolean("terminus"), "the configuration's terminus flag should ride in");
+        assertEquals(builtPoint.getInt("maxTrainLength"), 7,
+            "the configuration's operational data should ride in");
+        assertFalse(builtPoint.has("terminus"),
+            "but not a flag the builder decides for itself");
         assertEquals(builtPoint.getJSONObject("loc").getString("name"), "BR 218");
         assertEquals(builtPoint.getInt("s88"), 11, "a configuration cannot override the reduction");
     }
@@ -226,9 +234,10 @@ public class testAutonomyDiagramSession
 
         org.json.JSONObject known = new org.json.JSONObject();
         known.put("name", generatedName);
-        known.put("terminus", true);
+        known.put("maxTrainLength", 7);
         known.put("loc", new org.json.JSONObject().put("name", "BR 218"));
         known.put("station", true); // structural - must not be captured
+        known.put("terminus", true); // derived - must not be captured either
         points.put(known);
 
         org.json.JSONObject vanished = new org.json.JSONObject();
@@ -249,9 +258,14 @@ public class testAutonomyDiagramSession
         org.json.JSONObject extras = captured.getJSONObject(
             new TileKey("main", 1, 1).toString());
 
-        assertTrue(extras.getBoolean("terminus"));
+        assertEquals(extras.getInt("maxTrainLength"), 7);
         assertEquals(extras.getJSONObject("loc").getString("name"), "BR 218");
         assertFalse(extras.has("station"), "structural fields are the reduction's, not captured");
+
+        // Terminus is the builder's answer, not the user's.  Read back it would land on the square
+        // somebody marked "trains can turn round here" and the next build would turn round every train
+        // that passed - the setting asserting itself long after the switch that made it was turned off.
+        assertFalse(extras.has("terminus"), "derived flags are not lifted off the running layout");
 
         // pace settings land in globals, and points/edges do not
         org.json.JSONObject globals = config.getJSONObject("globals");
@@ -268,7 +282,7 @@ public class testAutonomyDiagramSession
 
             if (p.getInt("s88") == 11)
             {
-                assertTrue(p.getBoolean("terminus"));
+                assertEquals(p.getInt("maxTrainLength"), 7);
                 assertEquals(p.getJSONObject("loc").getString("name"), "BR 218");
             }
         }
