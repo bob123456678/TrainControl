@@ -86,7 +86,14 @@ public class AutonomyEditorPanel extends JPanel
      * plain JLabel asks for however wide its text is - which stretched the editor's palette column
      * across the window the first time a long one appeared.
      */
-    private static final int WIDTH = 280;
+    /**
+     * How wide the column is.
+     *
+     * Narrower than it was, because nothing in it needs the room any more: the findings moved to the
+     * foot of the window, the direction toggles moved into the window's own visibility box, and the
+     * standing instruction that was three lines wide has gone.  What is left is two buttons and a hint.
+     */
+    private static final int WIDTH = 200;
 
     // The EDITOR window's own conventions, which are not quite the main window's: its headings are
     // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", jLabel2 "Toggle Visibility") and its
@@ -184,7 +191,9 @@ public class AutonomyEditorPanel extends JPanel
         this.onChanged = onChanged;
 
         setLayout(new BorderLayout(4, 4));
-        setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        // No left inset: the window's own heading sits outside this panel and starts at its left
+        // edge, so six pixels here put everything in the column out of step with the label above it.
+        setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 6));
 
         add(buildTools(), BorderLayout.NORTH);
 
@@ -294,6 +303,10 @@ public class AutonomyEditorPanel extends JPanel
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
 
+        // One width for both, taken from the wider.  Two buttons of different lengths one above the
+        // other draw a ragged right edge down the only straight line this column has.
+        matchWidths(testButton, nameAll);
+
         panel.add(row(testButton));
         panel.add(row(nameAll));
 
@@ -333,6 +346,24 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * One control on its own line, flush left and no taller than it needs to be.
      */
+    /**
+     * Gives every button the width of the widest, so a stack of them has one right edge.
+     */
+    private void matchWidths(javax.swing.AbstractButton... buttons)
+    {
+        int widest = 0;
+
+        for (javax.swing.AbstractButton button : buttons)
+        {
+            widest = Math.max(widest, button.getPreferredSize().width);
+        }
+
+        for (javax.swing.AbstractButton button : buttons)
+        {
+            button.setPreferredSize(new Dimension(widest, button.getPreferredSize().height));
+        }
+    }
+
     private JPanel row(java.awt.Component component)
     {
         JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1));
@@ -2420,7 +2451,16 @@ public class AutonomyEditorPanel extends JPanel
         {
             TileKey tile = unnamed.get(i);
 
-            // shown before asking, so the question is about a square the user can see
+            // Shown before asking, so the question is about a square the user can see.
+            //
+            // Outlined as well as flashed.  The flash fades after a couple of seconds, and naming
+            // forty points is minutes of typing - so by the time somebody had thought of a name, the
+            // square they were naming looked exactly like every other one.  The outline is the
+            // selection mark, which does not fade, and it is cleared when the walk ends.
+            selection.clear();
+            selection.add(tile);
+            refresh();
+
             if (onReveal != null) onReveal.accept(tile);
 
             String name = JOptionPane.showInputDialog(owner(),
@@ -2437,6 +2477,8 @@ public class AutonomyEditorPanel extends JPanel
             // is the one moment the user is thinking about that station in particular.
             if (session.getStore().isStation(tile)) placeLabelFor(tile);
         }
+
+        selection.clear();
 
         refresh();
     }
