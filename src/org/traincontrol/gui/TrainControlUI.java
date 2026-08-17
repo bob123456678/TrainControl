@@ -1942,6 +1942,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null || session.getGraph() == null) return;
 
+        // Cleared first.  This only ever walks tiles that are IN the graph, so a square that has left
+        // it - a page just excluded, track just deleted - was never visited again and kept whatever it
+        // was last told to draw.  Excluding a page you were looking at left its badges on screen,
+        // describing Points that no longer exist.
+        getDiagramTileRegistry().clearAnnotations();
+
         for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
         {
             getDiagramTileRegistry().annotate(tile,
@@ -2128,6 +2134,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editLayoutButton.setEnabled(true);
 
         repaintLayout();
+    }
+
+    /**
+     * Whether autonomy has been told to ignore a page.
+     *
+     * Asked by the grid, so that a page autonomy takes no notice of does not carry controls that act
+     * on it: a station caption there names a Point that was never built, and clicking one would go
+     * looking for it.
+     *
+     * @param page the page name
+     * @return true when the page is left out, false when it is used or when autonomy is not set up
+     */
+    public boolean isPageExcludedFromAutonomy(String page)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session != null && session.getStore().getExcludedPages().contains(page);
     }
 
     /**

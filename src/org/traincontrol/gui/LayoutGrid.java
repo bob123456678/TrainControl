@@ -163,8 +163,16 @@ public class LayoutGrid
                 {
                     JLabel text = new JLabel();
                     
-                    // Autonomy Station label 
-                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit())
+                    // Autonomy Station label
+                    //
+                    // Not on a page autonomy has been told to ignore.  There is no Point behind the
+                    // caption there - the graph is built without that page entirely - so the label
+                    // would sit waiting for a state that never arrives, and clicking it would go
+                    // looking for something that was never built.  The name is still drawn, as
+                    // ordinary text: it is what the user wrote on their diagram, and leaving the
+                    // platform nameless would be a stranger answer than leaving it unwired.
+                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit()
+                        && !ui.isPageExcludedFromAutonomy(layout.getName()))
                     {
                         // Hide text initially
                         text.setText("");
@@ -214,7 +222,11 @@ public class LayoutGrid
                     // Regular labels
                     else if (!layout.getEditHideText())
                     {
-                        text.setText(c.getLabel());
+                        // A station caption on an ignored page reads as the name it is, without the
+                        // marker that would otherwise show up as literal "Point:" text on the diagram.
+                        text.setText(c.getLabel().startsWith(LAYOUT_STATION_PREFIX)
+                            ? c.getLabel().substring(LAYOUT_STATION_PREFIX.length())
+                            : c.getLabel());
                     }
                     
                     text.setForeground(Color.BLACK);

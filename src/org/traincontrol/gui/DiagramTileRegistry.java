@@ -169,6 +169,25 @@ public class DiagramTileRegistry
     }
 
     /**
+     * Blanks every square that is currently showing an annotation, and forgets it.
+     *
+     * Narrower than reset: the label registry and the monitoring state are left alone, because this
+     * runs whenever the static layer is redrawn and tearing those down would lose track of where the
+     * trains are.  What it exists for is the square that has LEFT the setup - a page just excluded,
+     * track just deleted - which the redraw cannot reach, because the redraw walks what is in the
+     * graph and that square no longer is.
+     */
+    public void clearAnnotations()
+    {
+        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet()))
+        {
+            annotate(key, null);
+        }
+
+        lastAnnotated.clear();
+    }
+
+    /**
      * Forgets everything.  Only for a layout being replaced wholesale; ordinary page switching prunes
      * itself.
      */

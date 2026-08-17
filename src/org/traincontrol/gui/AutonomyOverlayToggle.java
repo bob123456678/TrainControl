@@ -112,8 +112,11 @@ public class AutonomyOverlayToggle extends JPanel
         // the strip itself, which is what stops the button touching the track drawn under it.
         setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
+        // Two pixels of its own above the button.  The strip's border applies to both ends alike, and
+        // the button needed slightly more room off the top edge than the checkbox does.
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         right.setOpaque(false);
+        right.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 0, 0, 0));
         right.add(run);
 
         add(right, java.awt.BorderLayout.EAST);
@@ -195,8 +198,11 @@ public class AutonomyOverlayToggle extends JPanel
 
         java.awt.Dimension wanted = run.getPreferredSize();
 
+        // Three pixels under the checkbox's own height.  Matching it exactly still read as a large
+        // button, because a button carries a border and a checkbox does not - so the same number of
+        // pixels looks bigger on one than the other.
         run.setPreferredSize(new java.awt.Dimension(wanted.width,
-            Math.max(show.getPreferredSize().height, 16)));
+            Math.max(show.getPreferredSize().height - 3, 14)));
 
         run.setVisible(true);
 
