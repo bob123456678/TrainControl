@@ -1677,6 +1677,19 @@ public class AutonomyEditorPanel extends JPanel
     {
         TileKey target = leaderOf(tile);
 
+        // A link has no direction of its own - the track either side of it governs - so a click on one
+        // has nothing to change.  Its route is a stub, the same side twice, and cycling that produced
+        // states that meant nothing and drew as nothing.  The menu already declines to offer them; the
+        // click has to decline too, or the two disagree about the same square.
+        LayoutDiagramComponent here =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(target);
+
+        if (here != null && org.traincontrol.automationui.TilePorts.hasPortal(here.getType()))
+        {
+            say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
+            return;
+        }
+
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         if (routes.isEmpty()) return;
@@ -1732,7 +1745,27 @@ public class AutonomyEditorPanel extends JPanel
 
         if (sides.isEmpty()) return;
 
-        int next = (armMask(target, routes, sides) + 1) % (1 << sides.size());
+        // Four answers, not sixteen.  Stepping a binary counter over every arm did make every
+        // combination reachable, and made the two anybody actually wants - everything open, everything
+        // shut - fifteen clicks apart on a four-armed crossing.  A click is for the common answer; the
+        // right-click menu still sets any single branch, which is where an uncommon one belongs.
+        //
+        // Everything, then each ROUTE on its own, then nothing.  On a crossing that reads as
+        // north-south only and east-west only, which is what a crossing is usually being asked.
+        java.util.List<Integer> states = cycleStates(routes, sides);
+
+        int current = armMask(target, routes, sides);
+
+        int next = states.get(0);
+
+        for (int i = 0; i < states.size(); i++)
+        {
+            if (states.get(i) == current)
+            {
+                next = states.get((i + 1) % states.size());
+                break;
+            }
+        }
 
         Map<RouteId, Direction> wanted = new java.util.LinkedHashMap<>();
 
@@ -1755,6 +1788,36 @@ public class AutonomyEditorPanel extends JPanel
         say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
 
         refresh();
+    }
+
+    /**
+     * The masks a click steps through: everything open, each route's own arms, then everything shut.
+     */
+    private java.util.List<Integer> cycleStates(
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides)
+    {
+        java.util.List<Integer> states = new java.util.ArrayList<>();
+
+        int all = (1 << sides.size()) - 1;
+
+        states.add(all);
+
+        // One state per route, with only that route's own arms open.  Skipped where it would repeat
+        // one already listed - a two-route tile whose routes share every arm has nothing in between.
+        for (org.traincontrol.automationui.TilePorts.Route route : routes.values())
+        {
+            int mask = 0;
+
+            if (sides.indexOf(route.getA()) >= 0) mask |= 1 << sides.indexOf(route.getA());
+            if (sides.indexOf(route.getB()) >= 0) mask |= 1 << sides.indexOf(route.getB());
+
+            if (mask != 0 && mask != all && !states.contains(mask)) states.add(mask);
+        }
+
+        states.add(0);
+
+        return states;
     }
 
     /**
