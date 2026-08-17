@@ -1035,7 +1035,16 @@ public class AutonomyEditorPanel extends JPanel
     {
         try
         {
-            if (!session.placeStationLabel(tile)) return;
+            String why = session.placeStationLabel(tile);
+
+            // Says why nothing happened.  A silent no-op is the worst answer here: the user cannot
+            // tell a refusal from a bug, and neither could I - "no label appears" was reported three
+            // times before this told anybody which of four conditions had turned it down.
+            if (why != null)
+            {
+                say(hint, I18n.f(why, describeTile(tile)));
+                return;
+            }
 
             if (onDiagramChanged != null) onDiagramChanged.run();
         }

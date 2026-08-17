@@ -223,85 +223,133 @@ public class AutonomySession
      * happens and the "not shown anywhere" warning still says so.
      *
      * @param tile the station
-     * @return true if a label was written
+     * @return what happened, so a caller can say why nothing did
      * @throws Exception if the page cannot be written
      */
-    public boolean placeStationLabel(TileKey tile) throws Exception
+    public String placeStationLabel(TileKey tile) throws Exception
     {
         // The authored name, not the generated one.  A square marked as a station a moment ago has
         // only the coordinate the reducer invented for it, and "1 - Main 12,7" written across a track
         // plan is worse than no caption at all - the label goes on when the station is NAMED.
         String name = store.getPointName(tile);
 
-        if (name == null || name.trim().isEmpty()) return false;
+        if (name == null || name.trim().isEmpty()) return "autosetup.ui.labelNotNamedYet";
 
-        if (getLabelledStationNames().contains(name)) return false;
+        if (getLabelledStationNames().contains(name)) return "autosetup.ui.labelAlreadyShown";
 
         LayoutDiagram page = pageOf(tile);
 
-        if (page == null || graph == null) return false;
+        if (page == null || graph == null) return "autosetup.ui.labelNoDiagram";
 
         LayoutDiagramComponent here = page.getComponent(tile.getX(), tile.getY());
 
-        if (here == null) return false;
+        if (here == null) return "autosetup.ui.labelNoDiagram";
 
-        // Beside the platform, never on it.  A caption written on the sensor itself sits across the
-        // rails; on the plain track next to it, it sits alongside them, which is where a station name
-        // is written on a real diagram.
+        // Beside the platform where there is room, on it where there is not.  A caption written on the
+        // sensor sits across the rails; on the plain track next to it, it sits alongside them, which is
+        // where a station name goes on a real diagram.
         //
-        // Below for a station lying north-south, left for one lying east-west, then the other three as
-        // fallbacks - a preference rather than a rule, because the preferred square is often occupied.
-        for (Side side : labelSides(here))
+        // Below for a station lying north-south, left for one lying east-west, then the other three -
+        // a preference, not a rule, because the preferred square is usually occupied by something.
+        List<Side> sides = labelSides(tile);
+
+        // First choice: connected plain track running straight through.
+        for (Side side : sides)
         {
             TileKey at = neighbour(tile, side);
 
+            if (!connects(tile, side, at)) continue;
+
             LayoutDiagramComponent next = page.getComponent(at.getX(), at.getY());
 
-            // Plain straight track only.  Anything else - a switch, another sensor, a curve - is a
-            // square that says something of its own, and a caption on it would be read as being about
-            // that rather than about the platform.
-            if (next == null
-                || next.getType() != LayoutDiagramComponent.componentType.STRAIGHT) continue;
+            if (next == null || next.hasLabel() || next.isFeedback()) continue;
 
-            // Not over somebody's own writing
-            if (next.hasLabel()) continue;
-
-            // Connected, not merely adjacent: track that happens to pass by the end of a platform is
-            // not the platform road, and a name on it would point at the wrong line.
-            TileGraph.Landing landing = graph.landing(tile, side);
-
-            if (landing == null || !landing.getTile().equals(at)) continue;
+            // Straight THROUGH rather than of type STRAIGHT.  A signal or an uncoupler is a plain
+            // piece of running line with a fitting on it, and beside a platform there is often
+            // nothing else - insisting on the bare type found no square at all on a real layout.
+            if (!runsStraightThrough(next)) continue;
 
             setStationLabel(at, name);
 
-            return true;
+            return null;
         }
 
-        return false;
+        // Second choice: an empty square next to it, which becomes a text square.  Blank space beside a
+        // platform is the most readable place of all; it is simply rarer than track.
+        for (Side side : sides)
+        {
+            TileKey at = neighbour(tile, side);
+
+            if (page.getComponent(at.getX(), at.getY()) != null) continue;
+
+            setStationLabel(at, name);
+
+            return null;
+        }
+
+        // Last resort: the sensor itself.  Across the rails is not ideal, and it is still better than
+        // a station with no name anywhere - which is the thing the checks complain about.
+        if (!here.hasLabel())
+        {
+            setStationLabel(tile, name);
+
+            return null;
+        }
+
+        return "autosetup.ui.labelNoRoom";
+    }
+
+    /**
+     * Whether leaving this square by that side actually lands on that one.
+     *
+     * Connected, not merely adjacent: track that happens to pass the end of a platform is not the
+     * platform road, and a name on it would point at the wrong line.
+     */
+    private boolean connects(TileKey tile, Side side, TileKey to)
+    {
+        if (graph == null) return false;
+
+        TileGraph.Landing landing = graph.landing(tile, side);
+
+        return landing != null && to.equals(landing.getTile());
+    }
+
+    /**
+     * Whether a square's track runs straight through it - one route, joining two opposite sides.
+     */
+    private boolean runsStraightThrough(LayoutDiagramComponent component)
+    {
+        List<Route> routes = TilePorts.ports(component.getType(),
+            component.getOrientation(), 0);
+
+        if (routes.size() != 1) return false;
+
+        Route route = routes.get(0);
+
+        return route.getA() != null && route.getB() != null
+            && route.getA() == route.getB().opposite();
     }
 
     /**
      * The sides to try, best first: below for a station lying north-south, left for one lying
      * east-west.
      */
-    private List<Side> labelSides(LayoutDiagramComponent component)
+    private List<Side> labelSides(TileKey tile)
     {
-        boolean vertical = touches(component, Side.N) && touches(component, Side.S);
+        boolean vertical = false;
+
+        // Asked of the GRAPH, not of the port map directly.  ports() wants a state index, and a sensor
+        // that happens to be triggered reports state 1 - which is past the end of the one state a
+        // feedback tile has, so the call comes back empty and the square looks like it has no track on
+        // it at all.  The graph has already settled that question.
+        for (Route route : graph.getRoutes(tile).values())
+        {
+            if (route.touches(Side.N) && route.touches(Side.S)) vertical = true;
+        }
 
         return vertical
             ? java.util.Arrays.asList(Side.S, Side.N, Side.W, Side.E)
             : java.util.Arrays.asList(Side.W, Side.E, Side.S, Side.N);
-    }
-
-    private boolean touches(LayoutDiagramComponent component, Side side)
-    {
-        for (Route route : TilePorts.ports(component.getType(),
-            component.getOrientation(), component.getState()))
-        {
-            if (route.touches(side)) return true;
-        }
-
-        return false;
     }
 
     /**
