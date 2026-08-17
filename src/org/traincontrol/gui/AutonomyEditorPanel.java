@@ -132,8 +132,6 @@ public class AutonomyEditorPanel extends JPanel
     private final JList<String> findings = new JList<>(findingsModel);
 
     private final JCheckBox showDirections = new JCheckBox(I18n.t("autosetup.ui.btnShowDirections"), true);
-    private final JCheckBox showAllDirections =
-        new JCheckBox(I18n.t("autosetup.ui.btnShowAllDirections"), false);
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
     // Built in the constructor, mounted by the window across the bottom of the diagram
@@ -321,7 +319,6 @@ public class AutonomyEditorPanel extends JPanel
         // answers which arrows are hidden, when the question nobody can answer from this diagram is
         // where the track actually breaks.  See the plan.
         showDirections.addActionListener(e -> refresh());
-        showAllDirections.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
         hint.setFont(FONT_HINT);
@@ -2092,18 +2089,17 @@ public class AutonomyEditorPanel extends JPanel
                         ? Direction.TOWARD_A : Direction.TOWARD_B;
                 }
 
-                // Only what RESTRICTS a train is drawn on plain track.  Both-ways is the overwhelming
-                // majority of a layout and is also the default, so drawing it put an arrow on every
-                // square and left the real decisions with nothing to stand out against.
+                // Every state is drawn, both-ways included.
                 //
-                // A switch is the exception, and always shows every branch: a switch is WHERE the
-                // decisions are, and a branch drawn only when restricted leaves the user unable to see
-                // that the other branches exist, let alone which of them they have already dealt with.
-                if (direction == Direction.BOTH && !branching && !showAllDirections.isSelected())
-                {
-                    continue;
-                }
-
+                // It used to be hidden on plain track - both ways is the majority of a layout and is
+                // also the default, so drawing it put an arrow on every square - and that was tolerable
+                // only while the checkbox that turned it back on existed.  With the checkbox gone,
+                // "runs both ways" became the one state of four that looked like nothing at all: a
+                // square cycled from one-way, to the other way, to closed, to BLANK, and there was no
+                // way to tell the blank apart from a square nobody had touched.
+                //
+                // A run that is open both ways is a decision like any other, and the run marker below
+                // already keeps a bare layout from being a field of arrows.
                 marks.add(new org.traincontrol.automationui.TileAnnotation.Mark(
                     route.getA(), route.getB(), direction));
             }
