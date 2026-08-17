@@ -131,17 +131,20 @@ public class AutonomyEditorPanel extends JPanel
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
     private final JList<String> findings = new JList<>(findingsModel);
 
-    private final JCheckBox showDirections = new JCheckBox(I18n.t("autosetup.ui.btnShowDirections"), true);
+    /**
+     * How much of the direction information is drawn: all of it, only what is shut, or none.
+     *
+     * One control rather than two checkboxes, because the three answers are exclusive and as two boxes
+     * one of the four combinations - "no directions, but do show the open ones" - meant nothing.
+     */
+    private final javax.swing.JComboBox<String> directions = new javax.swing.JComboBox<>(new String[]
+    {
+        I18n.t("autosetup.ui.directionsAll"),
+        I18n.t("autosetup.ui.directionsRestrictions"),
+        I18n.t("autosetup.ui.directionsNone")
+    });
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
 
-    /**
-     * Whether the directions that are OPEN are drawn as well as the ones that are shut.
-     *
-     * Open track is most of a layout, so its arrows are most of the ink and they say what the reader
-     * can already assume.  Off, what is left is exactly the restrictions - which is what somebody
-     * checking a setup over is looking for.
-     */
-    private final JCheckBox showOpen = new JCheckBox(I18n.t("autosetup.ui.btnShowOpen"), true);
 
     // Built in the constructor, mounted by the window across the bottom of the diagram
     private JScrollPane findingsPanel;
@@ -326,8 +329,7 @@ public class AutonomyEditorPanel extends JPanel
         // "Also show track that runs both ways" is hidden pending a decision on what replaces it: it
         // answers which arrows are hidden, when the question nobody can answer from this diagram is
         // where the track actually breaks.  See the plan.
-        showDirections.addActionListener(e -> refresh());
-        showOpen.addActionListener(e -> refresh());
+        directions.addActionListener(e -> refresh());
         showLengths.addActionListener(e -> refresh());
 
         hint.setFont(FONT_HINT);
@@ -2107,7 +2109,7 @@ public class AutonomyEditorPanel extends JPanel
 
     public boolean isShowingDirections()
     {
-        return showDirections.isSelected();
+        return directions.getSelectedIndex() != 2;
     }
 
     public boolean isShowingLengths()
@@ -2162,7 +2164,7 @@ public class AutonomyEditorPanel extends JPanel
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
-        if (showDirections.isSelected() && session.getGraph() != null && !ignored && !follower)
+        if (directions.getSelectedIndex() != 2 && session.getGraph() != null && !ignored && !follower)
         {
             Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -2226,7 +2228,7 @@ public class AutonomyEditorPanel extends JPanel
 
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
-            traces.get(tile), !showOpen.isSelected());
+            traces.get(tile), directions.getSelectedIndex() == 1);
     }
 
     /**
@@ -2694,17 +2696,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * @return the arrows toggle, for the window's Toggle visibility box
      */
-    public JCheckBox getShowDirections()
+    public javax.swing.JComboBox<String> getShowDirections()
     {
-        return control(showDirections);
-    }
-
-    /**
-     * @return the open-arrows toggle, for the window's Toggle visibility box
-     */
-    public JCheckBox getShowOpen()
-    {
-        return control(showOpen);
+        return control(directions);
     }
 
     /**

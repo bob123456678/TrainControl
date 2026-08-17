@@ -553,8 +553,21 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(this.showAddressCheckbox);
                 visibility.add(autonomyPanel.getShowLengths());
-                visibility.add(autonomyPanel.getShowDirections());
-                visibility.add(autonomyPanel.getShowOpen());
+
+                // A label, because unlike its neighbours this one is a choice rather than a switch and
+                // "All directions" alone does not say what it is about.
+                javax.swing.JLabel directionsLabel =
+                    new javax.swing.JLabel(I18n.t("autosetup.ui.labelDirections"));
+                directionsLabel.setFont(autonomyPanel.getShowLengths().getFont());
+                directionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+                visibility.add(directionsLabel);
+
+                javax.swing.JComboBox<String> choice = autonomyPanel.getShowDirections();
+                choice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                choice.setMaximumSize(new java.awt.Dimension(200, 24));
+
+                visibility.add(choice);
 
                 autonomyVisibility = visibility;
             }

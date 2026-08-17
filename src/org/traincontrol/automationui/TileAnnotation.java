@@ -805,10 +805,14 @@ public class TileAnnotation
         dx /= len;
         dy /= len;
 
-        // A blocked arrow is drawn smaller and hollow as well as red, so that the difference survives
-        // being printed, being looked at on a poor screen, and being read by somebody who cannot tell
-        // red from green.  Colour alone is never the only thing carrying the meaning.
-        double size = Math.max(4.0, span / 3.2) * (allowed ? 1.0 : 0.72);
+        // The SHUT direction is the filled one, and the larger.  It was the other way round, which
+        // gave the most ink on the diagram to the state that says nothing needs attention - and a
+        // reader scanning for what is restricted was scanning for the faint shapes.
+        //
+        // Filled against hollow carries the difference without colour, so it survives being printed,
+        // a poor screen, and a reader who cannot tell red from green.  Colour is never the only thing
+        // saying it.
+        double size = Math.max(4.0, span / 3.2) * (allowed ? 0.82 : 1.0);
 
         // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
         // a hairline between them rather than touching and reading as one shape.
@@ -836,18 +840,18 @@ public class TileAnnotation
 
         if (allowed)
         {
-            g.setColor(ONE_WAY);
-            g.fillPolygon(xs, ys, 3);
-        }
-        else
-        {
             // hollow, so it reads as an outline even where the colour does not come through
             g.setColor(Color.WHITE);
             g.fillPolygon(xs, ys, 3);
 
-            g.setColor(CLOSED);
+            g.setColor(ONE_WAY);
             g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g.drawPolygon(xs, ys, 3);
+        }
+        else
+        {
+            g.setColor(CLOSED);
+            g.fillPolygon(xs, ys, 3);
         }
     }
 
