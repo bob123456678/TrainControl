@@ -604,13 +604,17 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.add(turnAround);
 
-            // Active is its own switch on every point, as the graph menu had it.  It is the only way to
-            // say "not this session" without also changing what a train does on arrival - which is what
-            // parking would do instead, and they are not the same statement.
-            menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
-                "autolayout.ui.tooltip.Active",
-                !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
-                on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
+            // Active, on stations only.  On anything else it said exactly one thing - no path may pass
+            // through here - and shutting every arm of the square says the same thing through the
+            // derivation, which is where the diagram is meant to be the source of truth.  Offering both
+            // spellings of one idea is what this menu has just finished getting rid of.
+            if (isStation)
+            {
+                menu.add(toggle(I18n.t("autolayout.ui.checkboxActive"),
+                    "autolayout.ui.tooltip.Active",
+                    !Boolean.FALSE.equals(session.getPointProperty(target, "active")),
+                    on -> session.setPointProperty(target, "active", on ? null : Boolean.FALSE)));
+            }
 
             menu.addSeparator();
 
@@ -1011,6 +1015,11 @@ public class AutonomyEditorPanel extends JPanel
         if (!on)
         {
             session.setPointProperty(tile, "terminus", null);
+
+            // Active is a station's switch, so a demoted square is switched back on as it goes.  Left
+            // alone it would carry a setting the menu no longer shows and nobody could reach - still
+            // closing the square to every path, with nothing on screen saying why.
+            session.setPointProperty(tile, "active", null);
         }
     }
 

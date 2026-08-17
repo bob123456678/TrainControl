@@ -374,6 +374,13 @@ public class AutonomyBuilder
 
                         if (DERIVED.contains(key)) continue;
 
+                        // Active is a station's switch now.  On anything else it said exactly one
+                        // thing - no path may pass through here - and the arrows say that through the
+                        // derivation, so a value stored on a plain sensor is not carried out.  Nothing
+                        // in the autonomy model changes; it simply stops being emitted where the menu
+                        // no longer offers it.
+                        if ("active".equals(key) && !point.isStation()) continue;
+
                         json.put(key, extras.get(key));
                     }
                 }
