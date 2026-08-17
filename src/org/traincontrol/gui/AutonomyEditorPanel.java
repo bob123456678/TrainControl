@@ -579,15 +579,15 @@ public class AutonomyEditorPanel extends JPanel
             waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
         }));
 
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target));
+        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
         {
             menu.addSeparator();
 
-            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target));
-            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target));
+            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
