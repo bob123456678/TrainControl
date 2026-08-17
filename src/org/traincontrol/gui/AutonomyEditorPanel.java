@@ -695,7 +695,13 @@ public class AutonomyEditorPanel extends JPanel
 
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
-        if (!routes.isEmpty())
+        // A link has no direction of its own, by decision: it just links, and the track either side of
+        // it governs which way trains may run.  Its one route is a stub - the same side twice - so the
+        // four answers below would be offered on a square where none of them means anything.
+        boolean linked = component != null
+            && org.traincontrol.automationui.TilePorts.hasPortal(component.getType());
+
+        if (!routes.isEmpty() && !linked)
         {
             boolean many = routes.size() > 1;
 

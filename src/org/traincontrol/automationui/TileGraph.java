@@ -271,6 +271,7 @@ public class TileGraph
     // Message keys, matching the bundles
     public static final String ERROR_SCISSORS = "autosetup.ui.errorScissorsNotSupported";
     public static final String ERROR_PORTAL_UNPAIRED = "autosetup.ui.errorLinkNotMutuallyPaired";
+    public static final String ERROR_PORTAL_NEVER_PAIRED = "autosetup.ui.errorLinkNeverPaired";
     public static final String ERROR_PORTAL_EXCLUDED = "autosetup.ui.errorPortalTargetsExcludedPage";
     public static final String WARN_TURNTABLE = "autosetup.ui.warnTurntableNotRoutable";
     public static final String WARN_PERMANENT_TURNOUT = "autosetup.ui.warnPermanentTurnout";
@@ -620,6 +621,19 @@ public class TileGraph
             {
                 found.add(new Problem(from, ERROR_PORTAL_UNPAIRED, true));
             }
+        }
+
+        // A link nobody has paired at ALL never reached the loop above, because that walks the
+        // pairings rather than the links - so the one case that needs saying most, a link drawn and
+        // then forgotten, was the one case nothing said anything about.  It is a hole in the track:
+        // trains reach it and stop, and the page it was meant to continue onto is unreachable.
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
+        {
+            if (!TilePorts.hasPortal(entry.getValue().getType())) continue;
+
+            if (portals.containsKey(entry.getKey())) continue;
+
+            found.add(new Problem(entry.getKey(), ERROR_PORTAL_NEVER_PAIRED, true));
         }
 
         problems.addAll(found);
