@@ -208,8 +208,14 @@ public class DiagramMonitor
     /**
      * Recomputes and publishes unconditionally - used when the grid has been rebuilt and the tiles have
      * lost whatever they were showing, which is not something the layout would fire about.
+     *
+     * Synchronized because the compare-against-published is a check then a set, and this is called from
+     * both the driver's timer thread and the event thread.  Two overlapping calls could publish out of
+     * order, leaving the older picture on screen and the newer one recorded - after which the newer one
+     * is suppressed as unchanged and the diagram stays wrong until something else moves.  It is short
+     * and holds no other lock, so it cannot hold up the railway.
      */
-    public void refresh()
+    public synchronized void refresh()
     {
         Map<TileKey, TileOverlay> overlays = compute();
 

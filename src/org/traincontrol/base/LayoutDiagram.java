@@ -407,7 +407,23 @@ public class LayoutDiagram
     
     public void setEdit()
     {
-        this.edit = true;
+        setEdit(true);
+    }
+
+    /**
+     * Turns edit mode on or off.
+     *
+     * There was no way to turn it OFF, because the only thing that ever cleared it was re-parsing the
+     * pages after a diagram edit.  A window that opens the editor and closes without saving - which
+     * autonomy mode always does - therefore left this flag set on the SHARED diagram, and the main
+     * window then rebuilt its grid in edit mode: labels wired to an editor that is not there, station
+     * labels gone, and a ClassCastException on the next click.
+     *
+     * @param edit
+     */
+    public void setEdit(boolean edit)
+    {
+        this.edit = edit;
         this.checkBounds();
     }
     

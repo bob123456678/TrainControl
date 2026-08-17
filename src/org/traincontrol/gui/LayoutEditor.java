@@ -569,6 +569,31 @@ public class LayoutEditor extends PositionAwareJFrame
      * anything drawing over a NON-edit grid would have to add the layout's own offsets.
      */
     /**
+     * Closes an autonomy-mode editor and puts the shared diagram back as it found it.
+     *
+     * render() calls setEdit() on the LayoutDiagram the MAIN WINDOW also paints, and nothing used to
+     * clear it: the flag was only ever reset by re-parsing the pages after a diagram save, which
+     * autonomy mode never does.  So closing this window left the main diagram building its grid in edit
+     * mode - labels wired to an editor that no longer exists, station labels suppressed, and a
+     * ClassCastException on the first click anywhere.
+     *
+     * The window's always-on-top state is restored here too, for the same reason: its usual home is the
+     * diagram-save path, which autonomy mode also skips.
+     */
+    private void closeAutonomyMode()
+    {
+        layout.setEdit(false);
+
+        dispose();
+
+        // The main window shows the same pages, and they have just changed shape.  It also has to put
+        // back what opening this window changed - always-on-top and the disabled Edit button - which
+        // normally happens at the end of layoutEditingComplete, a path autonomy mode never takes.
+        javax.swing.SwingUtilities.invokeLater(() -> parent.autonomyEditorClosed());
+    }
+
+    /**
+     * Whether this editor window is setting autonomy up rather than editing the track.    /**
      * Whether this editor window is setting autonomy up rather than editing the track.
      *
      * The single question every mouse path asks, so that "autonomy mode" cannot mean one thing to
@@ -1735,7 +1760,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (result != JOptionPane.YES_OPTION) return;
             }
 
-            dispose();
+            closeAutonomyMode();
             return;
         }
 
@@ -2030,7 +2055,7 @@ public class LayoutEditor extends PositionAwareJFrame
             if (isAutonomyMode())
             {
                 autonomyPanel.save();
-                dispose();
+                closeAutonomyMode();
                 return;
             }
 

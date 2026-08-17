@@ -1780,6 +1780,129 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Writes the autonomy state of one Point onto the station labels the track diagram carries.
+     *
+     * Split out of updatePoint so that it can run WITHOUT a graph window.  It used to sit at the end of
+     * that method behind a graphViewer gate, which on the diagram path is never satisfied - so the
+     * labels were cleared on every reload and never written again.
+     *
+     * @param p
+     */
+    private void updateStationLabels(Point p)
+    {
+        // Update locomotive autonomy location labels on the main layout.
+        //
+        // No longer gated on the graph window.  It used to be, so that closing that window would stop
+        // the labels reappearing - but on the diagram path the window is never created at all, which
+        // made this permanently dead: prepareAutonomyReload cleared the labels and nothing ever wrote
+        // them again.  The gate is now "is there a setup running", which is the real condition.
+        if (!this.getLayoutStations(p.getName()).isEmpty()
+                && (this.activeDiagramConfiguration != null
+                    || (this.graphViewer != null && this.graphViewer.isVisible()))
+        )
+        {
+            Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
+            Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());
+            Locomotive current = p.getCurrentLocomotive();
+            List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(current);
+            
+            SwingUtilities.invokeLater(() ->
+            {
+                // This will exclude locked points
+                for (JLabel j : this.getLayoutStations(p.getName()))
+                {                    
+                    j.setOpaque(true);
+
+                    if (current != null)
+                    {
+                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim() + "]");
+
+                        if (milestones != null)
+                        {                                 
+                            if (milestones.contains(p))
+                            {
+                                // Completed parts of the route in black
+                                j.setForeground(Color.BLACK);
+                            }
+                            else
+                            {
+                                // Pending in red
+                                j.setForeground(Color.RED);
+                            }    
+
+                            if (p.equals(destination))
+                            {
+                                // Highlight destination
+                                j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                                
+                                // New: Incoming arrow
+                                j.setText(">" + j.getText().substring(1));
+                                j.setText(j.getText().substring(0, j.getText().length() - 1));
+                            }
+                            else
+                            {
+                                // Don't display locomotive name at intermediate stations to avoid confusion
+                                if (!p.equals(start))
+                                {
+                                    j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
+                                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                }
+                                // Originating station highlighted differently
+                                else
+                                {
+                                    // New: White on grey
+                                    j.setBackground(new Color(160,160,160, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                    j.setForeground(new Color(255,255,255));
+                                    
+                                    // New: Outgoing arrow
+                                    j.setText(j.getText().substring(0, j.getText().length() - 1) + ">");
+                                    j.setText(j.getText().substring(1));
+
+                                    // Old green look
+                                    //j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                }  
+                            }
+                        }
+                        else
+                        {
+                            // Stationary locomotive
+                            j.setForeground(Color.BLACK);
+                            j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                        }
+                    }
+                    else
+                    {
+                        // Empty station
+                        j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+
+                        j.setForeground(Color.BLACK);
+                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                    }
+
+                    j.repaint();
+                    j.getParent().revalidate();
+                    j.getParent().repaint();
+                }          
+            });
+        }
+    }
+
+    /**
+     * Puts the window back the way a diagram edit leaves it, for the autonomy editor - which skips
+     * layoutEditingComplete entirely and so never reached the restore that lives at its end.
+     */
+    public void autonomyEditorClosed()
+    {
+        // reapplies the stored preference, which is what the diagram path does here too
+        windowAlwaysOnTopMenuItemActionPerformed(null);
+
+        this.editLayoutButton.setEnabled(true);
+
+        repaintLayout();
+    }
+
+    /**
+     * Redraws the setup on the track diagram if it is currently being shown.    /**
      * Redraws the setup on the track diagram if it is currently being shown.
      *
      * Called after every autonomy edit.  Without it the diagram kept whatever was published when the
@@ -15476,8 +15599,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
-        if (this.graphViewer == null || !this.model.hasAutoLayout()) return;
-        
+        if (!this.model.hasAutoLayout()) return;
+
+        // Without the graph window there is no graph to style, but the station labels on the track
+        // diagram still have to be written - so that half runs on its own rather than the whole method
+        // returning, which is what left the labels blank for the entire diagram path.
+        if (this.graphViewer == null)
+        {
+            for (Point p : this.model.getAutoLayout().getPoints())
+            {
+                this.updateStationLabels(p);
+            }
+
+            return;
+        }
+
         Graph g = this.graphViewer.getMainGraph();
         
         for (Point p : this.model.getAutoLayout().getPoints())
@@ -15662,95 +15798,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle + homeStyle);
         }
         
-        // Update locomotive autonomy location labels on the main layout
-        if (!this.getLayoutStations(p.getName()).isEmpty() 
-                && this.graphViewer != null && this.graphViewer.isVisible() // to prevent them from becoming visible again if the window was closed
-        )
-        {
-            Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
-            Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());
-            Locomotive current = p.getCurrentLocomotive();
-            List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(current);
-            
-            SwingUtilities.invokeLater(() ->
-            {
-                // This will exclude locked points
-                for (JLabel j : this.getLayoutStations(p.getName()))
-                {                    
-                    j.setOpaque(true);
-
-                    if (current != null)
-                    {
-                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim() + "]");
-
-                        if (milestones != null)
-                        {                                 
-                            if (milestones.contains(p))
-                            {
-                                // Completed parts of the route in black
-                                j.setForeground(Color.BLACK);
-                            }
-                            else
-                            {
-                                // Pending in red
-                                j.setForeground(Color.RED);
-                            }    
-
-                            if (p.equals(destination))
-                            {
-                                // Highlight destination
-                                j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
-                                
-                                // New: Incoming arrow
-                                j.setText(">" + j.getText().substring(1));
-                                j.setText(j.getText().substring(0, j.getText().length() - 1));
-                            }
-                            else
-                            {
-                                // Don't display locomotive name at intermediate stations to avoid confusion
-                                if (!p.equals(start))
-                                {
-                                    j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
-                                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
-                                }
-                                // Originating station highlighted differently
-                                else
-                                {
-                                    // New: White on grey
-                                    j.setBackground(new Color(160,160,160, LayoutGrid.LAYOUT_STATION_OPACITY));
-                                    j.setForeground(new Color(255,255,255));
-                                    
-                                    // New: Outgoing arrow
-                                    j.setText(j.getText().substring(0, j.getText().length() - 1) + ">");
-                                    j.setText(j.getText().substring(1));
-
-                                    // Old green look
-                                    //j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
-                                }  
-                            }
-                        }
-                        else
-                        {
-                            // Stationary locomotive
-                            j.setForeground(Color.BLACK);
-                            j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
-                        }
-                    }
-                    else
-                    {
-                        // Empty station
-                        j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
-
-                        j.setForeground(Color.BLACK);
-                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
-                    }
-
-                    j.repaint();
-                    j.getParent().revalidate();
-                    j.getParent().repaint();
-                }          
-            });
-        }
+        updateStationLabels(p);
     }
         
     /**

@@ -183,8 +183,10 @@ public class DiagramMonitorDriver
 
         if (enabled)
         {
-            // catch up with whatever happened while it was off
-            if (monitor != null) monitor.refresh();
+            // Catch up with whatever happened while it was off - but on the TIMER thread.  This used to
+            // call refresh() directly, which walks every edge and point of the live layout, on the event
+            // thread, in flat contradiction of this class's own rule.
+            if (monitor != null) monitor.markDirty();
         }
         else
         {
@@ -240,6 +242,11 @@ public class DiagramMonitorDriver
                 if (timer == null || !enabled) return;
 
                 registry.publish(overlays);
+
+                // The station labels are the other half of showing where a train is - the tile overlay
+                // says which track is claimed, the label says which locomotive and where it is heading.
+                // Nothing else drives them on this path; they used to be written by the graph window.
+                if (ui != null) ui.updateVisiblePoints();
             }
         });
     }
