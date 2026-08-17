@@ -147,6 +147,12 @@ public class AutonomyMenu extends JMenu
             // Choosing which to load is the step before these, and it is the item above.
             boolean loaded = running != null;
 
+            JMenu edit = editMenu(session);
+            edit.setEnabled(loaded && edit.getItemCount() > 0);
+            edit.setToolTipText(loaded ? I18n.t("autosetup.ui.tooltipEditAutonomy")
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            add(edit);
+
             JMenu manage = manageMenu(actions, names);
             manage.setEnabled(loaded);
             manage.setToolTipText(loaded ? null : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
@@ -201,6 +207,38 @@ public class AutonomyMenu extends JMenu
         add.setToolTipText(I18n.t("autosetup.ui.tooltipAddConfiguration"));
 
         return add;
+    }
+
+    /**
+     * Opening the setup editor, one item per page.
+     *
+     * A submenu rather than a dialog asking which page: the question is a list of pages to pick from,
+     * which is what a submenu already is, and it answers in one click instead of three.
+     *
+     * Pages autonomy has been told to ignore are left out.  There is nothing on one to configure -
+     * every square is greyed and refuses - so offering it would open an editor that can do nothing.
+     */
+    private JMenu editMenu(final AutonomySession session)
+    {
+        JMenu edit = new JMenu(I18n.t("autosetup.ui.menuEditAutonomy"));
+
+        for (LayoutDiagram page : session.getPages())
+        {
+            final String name = page.getName();
+
+            if (session.getStore().getExcludedPages().contains(name)) continue;
+
+            edit.add(item(name, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    ui.openAutonomyEditorOnPage(name);
+                }
+            }));
+        }
+
+        return edit;
     }
 
     /**

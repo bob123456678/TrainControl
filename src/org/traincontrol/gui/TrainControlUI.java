@@ -2139,6 +2139,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Opens the setup editor on a named page.
+     *
+     * The editor edits one page, and which one is normally decided by what the user was already
+     * looking at.  Reached from the menu there is no such context, so the page is chosen first and the
+     * diagram is switched to it - opening the editor on some other page than the one just asked for
+     * would be a strange answer to a direct question.
+     *
+     * @param page the page to edit
+     */
+    public void openAutonomyEditorOnPage(String page)
+    {
+        if (page != null) this.LayoutList.setSelectedItem(page);
+
+        openAutonomyEditor(null);
+    }
+
+    /**
      * The station on a square of the page currently being shown, for a right-click on the track itself.
      *
      * Only while the overlay is on, because that checkbox is what says the user is looking at autonomy
