@@ -977,26 +977,33 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.size() > 1)
         {
-            // A switch toggles as a whole between open and shut.
+            // A switch or a double curve cycles all four states, applied to every branch at once:
+            // both ways -> one way -> the other way -> closed.
             //
-            // A toggle rather than a four-state cycle, and expressed as "is anything open?" rather than
-            // as the next state after the first branch: only both-ways and closed mean the same thing
-            // on every branch - a one-way is toward a SIDE, and branches do not share sides - so a
-            // cycle through four states had two of them collapse onto a third and could sit down.
-            boolean anyOpen = false;
+            // "One way" on a multi-route tile means each branch travelled toward its own first side,
+            // which is not one direction on the tile so much as a consistent choice per branch - the
+            // arrows show what it came out as, and a further click moves on.  Setting a single branch
+            // deliberately is still the menu's job, which is what the message says.
+            //
+            // The state to move on FROM is the one every branch agrees on; where they disagree - which
+            // is what setting a branch individually produces - the cycle restarts at both ways rather
+            // than picking one branch's answer and ignoring the others.
+            Direction shared = null;
+            boolean uniform = true;
 
             for (RouteId routeId : routes.keySet())
             {
-                if (session.getGraph().getDirection(target, routeId) != Direction.NONE) anyOpen = true;
+                Direction each = session.getGraph().getDirection(target, routeId);
+
+                if (shared == null) shared = each;
+                else if (shared != each) uniform = false;
             }
 
-            Direction next = anyOpen ? Direction.NONE : Direction.BOTH;
+            Direction next = uniform ? after(shared) : Direction.BOTH;
 
             session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(target)), next);
 
-            say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target),
-                next == Direction.NONE ? I18n.t("autosetup.ui.dirNone")
-                                       : I18n.t("autosetup.ui.dirBoth")));
+            say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), name(next)));
 
             refresh();
             return;
@@ -1029,6 +1036,19 @@ public class AutonomyEditorPanel extends JPanel
             case TOWARD_A: return Direction.TOWARD_B;
             case TOWARD_B: return Direction.NONE;
             default: return Direction.BOTH;
+        }
+    }
+
+    /**
+     * A direction in words, without naming a side - for a tile whose branches do not share one.
+     */
+    private String name(Direction direction)
+    {
+        switch (direction)
+        {
+            case NONE: return I18n.t("autosetup.ui.dirNone");
+            case BOTH: return I18n.t("autosetup.ui.dirBoth");
+            default: return I18n.t("autosetup.ui.dirOneWayEach");
         }
     }
 

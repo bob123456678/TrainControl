@@ -530,16 +530,36 @@ public final class LayoutLabel extends JLabel
     {
         if (this.getIcon() == null) return;
 
-        final javax.swing.Icon restoreTo = this.getIcon();
+        // The plain icon is captured ONCE and kept until the flash ends.  Capturing it on every call
+        // meant a second flash arriving before the first had finished recorded the already-highlighted
+        // icon as the thing to restore - so the tile was put back yellow and stayed that way, which is
+        // exactly what repeated clicking on one run produced.
+        if (flashTimer != null && flashTimer.isRunning())
+        {
+            flashTimer.stop();
+        }
+        else
+        {
+            flashRestore = this.getIcon();
+        }
 
-        this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) restoreTo));
+        this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) flashRestore));
 
-        javax.swing.Timer restore = new javax.swing.Timer(HIGHLIGHT_DURATION,
-            (event) -> this.setIcon(restoreTo));
+        flashTimer = new javax.swing.Timer(HIGHLIGHT_DURATION, (event) ->
+        {
+            this.setIcon(flashRestore);
 
-        restore.setRepeats(false);
-        restore.start();
+            flashRestore = null;
+            flashTimer = null;
+        });
+
+        flashTimer.setRepeats(false);
+        flashTimer.start();
     }
+
+    // The icon to put back when the flash ends, and the timer that will do it
+    private Icon flashRestore;
+    private javax.swing.Timer flashTimer;
 
     /**
      * Sets what autonomy is showing on this square, repainting if it changed.
