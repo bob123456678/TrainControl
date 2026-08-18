@@ -219,6 +219,29 @@ public class AutonomyMenu extends JMenu
             // to deal with them.
             boolean chosen = session.getStore().getActiveConfiguration() != null;
 
+            // The settings for the whole setup - pace, how many trains at once, what a train may do on
+            // arrival.  They live on a tab inside a tab, which is somewhere nobody finds by looking,
+            // and this menu is where every other decision about the setup is made.
+            //
+            // Loaded, not merely chosen: that tab is built when a configuration loads and is not there
+            // before, so offering it earlier would be an item that goes nowhere.
+            JMenuItem settings = item(I18n.t("autosetup.ui.menuGlobalSettings"), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    ui.showAutonomySettingsTab();
+                }
+            });
+
+            settings.setEnabled(loaded);
+
+            settings.setToolTipText(loaded
+                ? I18n.t("autosetup.ui.tooltipGlobalSettings")
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+
+            add(settings);
+
             // Fenced off by itself, because it is the only item here that changes the RAILWAY.
             // Everything above chooses which setup is in force and everything below is housekeeping on
             // the file that holds it; this one opens the editor and starts naming stations and setting

@@ -2542,6 +2542,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /**
+     * Shows the settings that apply to the whole setup, wherever that tab currently sits.
+     *
+     * By COMPONENT rather than by index, like showAutonomyRunTab beside it.  The inner tabs are
+     * removed and reinserted on every load, so an index is only right until the next one - and these
+     * three have already been reordered once.
+     */
+    public void showAutonomySettingsTab()
+    {
+        this.KeyboardTab.setSelectedIndex(2);
+
+        if (locCommandPanels.indexOfComponent(this.autoSettingsPanel) >= 0)
+        {
+            this.locCommandPanels.setSelectedComponent(this.autoSettingsPanel);
+        }
+    }
+
     public AutonomyViewerPanel getAutonomyViewerPanel()
     {
         return autonomyViewerPanel;
