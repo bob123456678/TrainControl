@@ -1177,4 +1177,48 @@ public class testAutonomyDiagramSession
         assertEquals(session.getPointProperty(tile, "priority"), 5,
             "importing overwrote a priority that had already been set");
     }
+
+    /**
+     * The diagram shows the imported names without being reloaded.
+     *
+     * The squares, their names, their station markers and their captions are all drawn from the
+     * REDUCTION, which is derived from a snapshot of the authored data taken when the session opened.
+     * Writing to the store therefore changes nothing anybody can see until that derivation is redone -
+     * so the import wrote every name correctly and the diagram went on showing what it knew before,
+     * which from the outside is indistinguishable from the import having done nothing.
+     *
+     * Asserted against the reduction rather than the store for exactly that reason: the store was
+     * always right.
+     */
+    @Test
+    public void testTheDiagramSeesTheImportWithoutBeingReloaded() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        assertNull(session.getReducer().getPoints().get(tile).getName(),
+            "precondition: this square has no name before the import");
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "Hauptbahnhof");
+        point.put("station", true);
+        point.put("s88", 11);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        session.importLegacy(legacy);
+
+        assertEquals(session.getReducer().getPoints().get(tile).getName(), "Hauptbahnhof",
+            "the derivation the diagram draws from still holds the pre-import name");
+
+        assertTrue(session.getReducer().getPoints().get(tile).isStation(),
+            "the derivation does not show the square as a station yet");
+    }
 }

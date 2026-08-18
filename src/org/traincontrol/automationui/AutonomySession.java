@@ -452,6 +452,18 @@ public class AutonomySession
             result.matched++;
         }
 
+        // Derived again, once, now that the authored data has changed.
+        //
+        // The reduction is what the diagram draws from - the names on the squares, the station
+        // markers, the captions - and it is built from a snapshot of the authored data taken when the
+        // session opened.  Without this the import wrote everything correctly to the store and the
+        // diagram went on showing what it knew before, so the whole thing looked to have done nothing
+        // until the layout was reloaded.
+        //
+        // After the loop rather than inside it: the tile-by-sensor map above comes from the reduction,
+        // so rebuilding mid-loop would pull it out from under the very walk that is using it.
+        rebuild();
+
         return result;
     }
 
