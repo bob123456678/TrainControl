@@ -884,6 +884,33 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
+     * A file chooser opened where the last one was, like every other file chooser in the application.
+     *
+     * These three - import a configuration, export one, read an old autonomy.json - each opened in the
+     * working directory, which on a packaged build is wherever the shortcut points and never where
+     * anybody keeps their files.
+     *
+     * @return the chooser
+     */
+    private javax.swing.JFileChooser chooser()
+    {
+        return new javax.swing.JFileChooser(TrainControlUI.getPrefs()
+            .get(TrainControlUI.LAST_USED_FOLDER, new java.io.File(".").getAbsolutePath()));
+    }
+
+    /**
+     * Remembers the folder a file was chosen in, so the next chooser opens there.
+     *
+     * @param file the file that was chosen
+     */
+    private void rememberFolder(java.io.File file)
+    {
+        if (file == null || file.getParent() == null) return;
+
+        TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, file.getParent());
+    }
+
+    /**
      * Reads an exported configuration file in as a new named configuration.
      *
      * The file carries the configuration AND the track decisions it refers to - station names, which
@@ -897,9 +924,11 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void importConfiguration()
     {
-        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        javax.swing.JFileChooser chooser = chooser();
 
         if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        rememberFolder(chooser.getSelectedFile());
 
         String name = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptImportName"),
             chooser.getSelectedFile().getName().replaceAll("\\.json$", ""));
@@ -953,9 +982,11 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void importLegacy()
     {
-        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        javax.swing.JFileChooser chooser = chooser();
 
         if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        rememberFolder(chooser.getSelectedFile());
 
         // First, because an s88 on two squares is what stops an import deciding anything: those points
         // are refused and listed, and the user is left to work out that a repeated page is the reason.
@@ -1031,10 +1062,12 @@ public class AutonomyViewerPanel extends JPanel
 
         if (configuration == null) return;
 
-        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
-        chooser.setSelectedFile(new java.io.File(name + ".json"));
+        javax.swing.JFileChooser chooser = chooser();
+        chooser.setSelectedFile(new java.io.File(chooser.getCurrentDirectory(), name + ".json"));
 
         if (chooser.showSaveDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        rememberFolder(chooser.getSelectedFile());
 
         try
         {
