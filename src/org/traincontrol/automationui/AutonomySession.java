@@ -167,7 +167,15 @@ public class AutonomySession
         {
             for (Map.Entry<TileKey, TileKey> caption : captions.entrySet())
             {
-                store.setCaption(caption.getKey(), caption.getValue());
+                // Not onto a square that has since stopped being a station.  Undo restores the state
+                // before an editor gesture, but demotion is a SEPARATE action it does not cover - so
+                // restoring a caption for a square demoted in between would put a station's name back on
+                // a plain point, the very thing forgetCaptionsOfNonStations and the demote-clear exist
+                // to prevent.
+                if (caption.getValue() == null || store.isStation(caption.getValue()))
+                {
+                    store.setCaption(caption.getKey(), caption.getValue());
+                }
             }
         }
 
@@ -303,8 +311,14 @@ public class AutonomySession
      */
     public final void rebuild()
     {
-        stationIndex = null;
-
+        // The index is NOT nulled here.  Nulling opened a window - the whole expensive rebuild body
+        // below - in which a feedback-thread reader (updateStationLabels) could see null and derive the
+        // index itself, against the reducer this method is at that moment replacing.  That is the
+        // unsynchronised derivation SA-C1 set out to remove, reopened across the rebuild instead of a
+        // single field write.
+        //
+        // Left alone, a reader mid-rebuild sees the OLD index - immutable, built from the old reducer,
+        // and safe to read - until the new one is published in one assignment at the end.
         graph = new TileGraph(pages, store.getExcludedPages());
 
         store.applyTo(graph);
@@ -1773,6 +1787,22 @@ public class AutonomySession
      * The squares where turning round is compulsory.
      * @return
      */
+    /**
+     * The squares where a run may change direction, as the path search wants them - reversible squares
+     * minus the ones where turning is compulsory.
+     *
+     * One source, so the editor's path test and the reachability check cannot draw different turn sets
+     * and then disagree about which stations connect.  It is the same computation both did inline.
+     *
+     * @return the may-turn set
+     */
+    public Set<TileKey> mayTurnTiles()
+    {
+        Set<TileKey> out = new LinkedHashSet<>(reversibleTiles());
+        out.removeAll(mandatoryTurnTiles());
+        return out;
+    }
+
     public Set<TileKey> mandatoryTurnTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -2246,7 +2276,8 @@ public class AutonomySession
         }
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            trapped, covered, placedLocomotives(), shutStations());
+            trapped, covered, placedLocomotives(), shutStations(),
+            mayTurnTiles(), mandatoryTurnTiles());
     }
 
     /**

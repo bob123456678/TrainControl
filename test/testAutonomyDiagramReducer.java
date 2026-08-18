@@ -785,5 +785,58 @@ public class testAutonomyDiagramReducer
     private void straightNS(LayoutDiagram page, int x, int y) throws IOException
     {
         add(page, componentType.STRAIGHT, x, y, 1);
+    }
+    /**
+     * Reachability does not jump between the two arms of a double curve.
+     *
+     * A FEEDBACK_DOUBLE_CURVE at orientation 0 is two independent curves - N-W and E-S - in one square.
+     * A sensor on its N side and one on its E side are on DIFFERENT arms, so no train can run from one
+     * to the other through the square: arriving from N, the only way on is W.
+     *
+     * The plain tile adjacency the station checks used to walk would say they connect (the square is
+     * one node with edges to both), which is the over-report that let checkStations miss a
+     * STATION_UNREACHABLE the runtime would show.  reachableTiles is the split-aware answer Layout.bfs
+     * actually has, so it must exclude the far sensor.
+     */
+    @Test
+    public void testReachableTilesDoesNotCrossADoubleCurve() throws IOException
+    {
+        //        A (2,1), north of the double curve, on its N arm
+        //        |
+        //   [DBLCURVE (2,2)] -- B (3,2), east of it, on its E arm
+        LayoutDiagram page = page("main", 6, 6);
+
+        feedbackNS(page, 2, 1, 11);                                          // A -> the DC's N side
+        add(page, componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 22);          // the through-point
+        feedback(page, 3, 2, 12);                                            // B -> the DC's E side
+
+        TileGraph graph = graph(page);
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, Direction.BOTH);
+            }
+        }
+
+        GraphReducer reducer = reduce(graph, null);
+
+        TileKey a  = key("main", 2, 1);
+        TileKey dc = key("main", 2, 2);
+        TileKey b  = key("main", 3, 2);
+
+        Set<TileKey> none = Collections.emptySet();
+        Set<TileKey> from = reducer.reachableTiles(a, none, none);
+
+        assertTrue(from.contains(a), "a Point reaches itself");
+        assertTrue(from.contains(dc), "A reaches the double curve on its own arm");
+        assertFalse(from.contains(b),
+            "A must NOT reach B: that jumps from the N-W arm to the E-S arm in mid-square");
+
+        // and the split-aware answer agrees with findPath, which the editor's path test already uses
+        assertNull(reducer.findPath(a, b), "findPath and reachableTiles must agree on the impossible run");
+        assertNotNull(reducer.findPath(a, dc), "and on the possible one");
     }
+
 }

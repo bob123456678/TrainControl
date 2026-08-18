@@ -501,6 +501,92 @@ public class GraphReducer
      * Never includes the arrival side: the tile graph builds its exits from routes, and a route never
      * leads back out the way it came in.  Turning round is therefore always the separate case.
      */
+    /**
+     * Every tile a train standing at {@code from} can reach, honouring the arrival-side split exactly as
+     * findPath does.
+     *
+     * The plain adjacency over getEdges() over-reports this: it lets a run cross between the two
+     * independent curves of a double-curve sensor, because a Point alone does not remember which side a
+     * train came in by.  This is one (tile, arrival-side) BFS - the same frontier discipline findPath
+     * uses - collecting the tiles reached rather than reconstructing one path, so the reachability it
+     * reports is the reachability the emitted split graph and Layout.bfs actually have.
+     *
+     * @param from the square a train is standing on
+     * @param mayTurn squares where a train may turn round (reversal permitted)
+     * @param mustTurn squares where every arriving train must turn round
+     * @return the tiles reachable, including {@code from} itself
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
+    {
+        Set<TileKey> reached = new java.util.LinkedHashSet<>();
+
+        if (from == null || !points.containsKey(from)) return reached;
+
+        // The starting Point has no arrival side - the train is already standing there, and the
+        // question is whether the TRACK allows the journey onward.  Same as findPath's start state.
+        reached.add(from);
+
+        Set<String> visited = new java.util.LinkedHashSet<>();
+        Map<String, TileKey> tileOf = new LinkedHashMap<>();
+        Map<String, Side> sideOf = new LinkedHashMap<>();
+
+        String start = searchKey(from, null);
+        visited.add(start);
+        tileOf.put(start, from);
+        sideOf.put(start, null);
+
+        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        frontier.add(start);
+
+        while (!frontier.isEmpty())
+        {
+            String here = frontier.poll();
+
+            TileKey at = tileOf.get(here);
+            Side arrived = sideOf.get(here);
+
+            for (ReducedEdge edge : edges)
+            {
+                if (!edge.getStart().equals(at)) continue;
+
+                if (arrived != null)
+                {
+                    boolean back = edge.getExitSide() == arrived;
+
+                    // The same three-way rule findPath walks: where turning is compulsory the only move
+                    // is back; where it is optional, going back needs permission; otherwise the move
+                    // has to carry on along the track actually arrived on, not merely leave by some
+                    // other side - which is what confines a double curve to its own arm.
+                    if (mustTurn.contains(at))
+                    {
+                        if (!back) continue;
+                    }
+                    else if (back)
+                    {
+                        if (!mayTurn.contains(at)) continue;
+                    }
+                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
+                    {
+                        continue;
+                    }
+                }
+
+                reached.add(edge.getEnd());
+
+                String next = searchKey(edge.getEnd(), edge.getEntrySide());
+
+                if (visited.add(next))
+                {
+                    tileOf.put(next, edge.getEnd());
+                    sideOf.put(next, edge.getEntrySide());
+                    frontier.add(next);
+                }
+            }
+        }
+
+        return reached;
+    }
+
     private Set<Side> onwardSides(TileKey tile, Side arrival)
     {
         Set<Side> out = new java.util.LinkedHashSet<>();

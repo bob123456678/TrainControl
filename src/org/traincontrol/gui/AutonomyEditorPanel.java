@@ -2354,11 +2354,11 @@ public class AutonomyEditorPanel extends JPanel
         // cannot pass.  Handing those over as well let the test draw a route straight through a square
         // the running railway turns every train at - which is the test giving a second opinion instead
         // of reporting what a train would find, the one thing it exists not to do.
+        // The same turn sets the reachability check uses, from the one place that computes them, so
+        // the path test and the findings panel cannot disagree about which way a train may go.
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
 
-        java.util.Set<TileKey> mayTurn = new java.util.LinkedHashSet<>(session.reversibleTiles());
-
-        mayTurn.removeAll(mustTurn);
+        java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null

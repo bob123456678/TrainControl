@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -237,14 +236,29 @@ public class AutonomyChecks
             coveredCaptions, placedLocomotives, Collections.<TileKey, Boolean>emptyMap());
     }
 
-    /**
-     * @param shutStations which stations have had every arrival side barred.  Worked out by the
-     *        session, which knows both the restrictions and how a square splits; this only reports it.
-     */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations)
+    {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, placedLocomotives, shutStations,
+            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param shutStations which stations have had every arrival side barred.  Worked out by the
+     *        session, which knows both the restrictions and how a square splits; this only reports it.
+     * @param mayTurn / @param mustTurn the turn sets the station reachability walk needs to match the
+     *        runtime.  Only the fullest form threads them through; the shorter overloads pass empty
+     *        sets, which is the same convenience-default pattern the rest of these arguments follow -
+     *        and only the session's own check() uses the fullest form, so the checks a person actually
+     *        sees are the split-aware ones.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -271,7 +285,7 @@ public class AutonomyChecks
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
         findings.addAll(checkTrappedArrivals(reducer, trapped));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
-        findings.addAll(checkStations(reducer, termini));
+        findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
@@ -545,11 +559,10 @@ public class AutonomyChecks
         return findings;
     }
 
-    private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini)
+    private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn)
     {
         List<Finding> findings = new ArrayList<>();
-
-        Map<TileKey, Set<TileKey>> adjacency = adjacency(reducer);
 
         List<ReducedPoint> stations = new ArrayList<>();
 
@@ -582,9 +595,21 @@ public class AutonomyChecks
             stationTiles.add(station.getTile());
         }
 
+        // Reachability the way the RUNTIME has it, honouring the arrival-side split - not the plain
+        // tile adjacency, which lets a run cross between the two arms of a double curve and so reports
+        // a route Layout.bfs never takes.  Worked out once per station and read from below for both
+        // directions; the old code walked the graph again inside the reverse loop.
+        Map<TileKey, Set<TileKey>> reach = new LinkedHashMap<>();
+
         for (ReducedPoint station : stations)
         {
-            Set<TileKey> reachable = reachableFrom(adjacency, station.getTile());
+            reach.put(station.getTile(),
+                reducer.reachableTiles(station.getTile(), mayTurn, mustTurn));
+        }
+
+        for (ReducedPoint station : stations)
+        {
+            Set<TileKey> reachable = reach.get(station.getTile());
 
             boolean reachesAStation = false;
 
@@ -617,7 +642,7 @@ public class AutonomyChecks
             {
                 if (other == station) continue;
 
-                if (reachableFrom(adjacency, other.getTile()).contains(station.getTile()))
+                if (reach.get(other.getTile()).contains(station.getTile()))
                 {
                     reachable = true;
                     break;
@@ -715,46 +740,9 @@ public class AutonomyChecks
         return true;
     }
 
-    private static Map<TileKey, Set<TileKey>> adjacency(GraphReducer reducer)
-    {
-        Map<TileKey, Set<TileKey>> out = new LinkedHashMap<>();
-
-        for (ReducedEdge edge : reducer.getEdges())
-        {
-            Set<TileKey> next = out.get(edge.getStart());
-
-            if (next == null)
-            {
-                next = new LinkedHashSet<>();
-                out.put(edge.getStart(), next);
-            }
-
-            next.add(edge.getEnd());
-        }
-
-        return out;
-    }
-
-    private static Set<TileKey> reachableFrom(Map<TileKey, Set<TileKey>> adjacency, TileKey start)
-    {
-        Set<TileKey> seen = new LinkedHashSet<>();
-        LinkedList<TileKey> queue = new LinkedList<>();
-
-        queue.add(start);
-        seen.add(start);
-
-        while (!queue.isEmpty())
-        {
-            Set<TileKey> next = adjacency.get(queue.removeFirst());
-
-            if (next == null) continue;
-
-            for (TileKey neighbour : next)
-            {
-                if (seen.add(neighbour)) queue.add(neighbour);
-            }
-        }
-
-        return seen;
-    }
+    // The tile-adjacency reachability that used to live here (adjacency + reachableFrom) is gone.  It
+    // walked reducer.getEdges() as a plain Point-to-Point graph, which ignores the arrival-side split
+    // and so let a run cross between the two arms of a double curve - reporting a station pair
+    // reachable that the runtime never routes.  reducer.reachableTiles answers the split-aware
+    // question instead, which is the same one Layout.bfs and the editor's path test ask.
 }
