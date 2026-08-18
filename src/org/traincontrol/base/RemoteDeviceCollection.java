@@ -15,9 +15,16 @@ import java.util.List;
  * landed inside saveState's walk, the exception escaped the try that guards only the file write and
  * the database was silently not saved at all.
  *
- * Synchronized rather than backed by ConcurrentHashMap on purpose: this class is Serializable and
- * these two fields are written into LocDB.data, so changing their declared type would fail to
- * deserialize every database saved by an older build.
+ * Synchronized rather than backed by ConcurrentHashMap because per-map atomicity would not be
+ * enough: add() has to change BOTH maps together, and a reader that saw one updated and not the
+ * other would find a name resolving to an id whose device had already been replaced.  The lock
+ * is a leaf - these methods touch nothing but the two maps, take no other lock and call nothing
+ * out - so it cannot take part in a deadlock ordering.
+ *
+ * (An earlier version of this comment said the fields are written into LocDB.data and that the
+ * declared type therefore could not change.  That is wrong: saveState persists
+ * MarklinSimpleComponent snapshots and nothing serializes this class.  The Serializable
+ * declaration is vestigial.)
  * @author Adam
  * @param <ITEM>
  * @param <IDENTIFIER> 

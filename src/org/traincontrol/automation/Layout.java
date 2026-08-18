@@ -923,6 +923,19 @@ public class Layout
             }
             else
             {
+                // Refused here, not left to runLocomotive's throw.  That throw is caught below and
+                // answered by invalidating the ENTIRE layout and stopping every locomotive, so one
+                // locomotive placed on the graph without a speed ever being chosen turned Start into
+                // "configuration invalid, must reload".  Skipping it - exactly as an inactive
+                // locomotive is skipped above - leaves every other locomotive running.
+                //
+                // The guard in executePathInternal does not help here: Start never reaches it.
+                if (loc.getPreferredSpeed() < 1 || loc.getPreferredSpeed() > 100)
+                {
+                    control.logf("autolayout.errorFailedToRunLocomotive", loc.getName());
+                    return;
+                }
+
                 control.logf("autolayout.infoAutonomousLocomotiveStarted", loc.getName());            
             }
             
