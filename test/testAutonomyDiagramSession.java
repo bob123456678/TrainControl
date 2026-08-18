@@ -1210,8 +1210,11 @@ public class testAutonomyDiagramSession
 
         TileKey tile = new TileKey("main", 1, 1);
 
-        assertNull(session.getReducer().getPoints().get(tile).getName(),
-            "precondition: this square has no name before the import");
+        // Not null: a square nobody has named still gets a name, generated from its page and
+        // coordinates, so that every Point in the built graph has one.  The precondition worth
+        // asserting is therefore that it is not ALREADY called what the import is about to call it.
+        assertNotEquals(session.getReducer().getPoints().get(tile).getName(), "Hauptbahnhof",
+            "precondition: this square is not already named what the import will name it");
 
         org.json.JSONObject point = new org.json.JSONObject();
         point.put("name", "Hauptbahnhof");
