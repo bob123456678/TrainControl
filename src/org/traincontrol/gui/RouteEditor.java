@@ -319,7 +319,7 @@ public class RouteEditor extends PositionAwareJFrame
     {
         if (name == null) return false;
 
-        if (name.contains(",") || name.contains("(") || name.contains(")"))
+        if (!RouteCommand.isNameUsable(name))
         {
             JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorUnusableLocName"));
             return true;

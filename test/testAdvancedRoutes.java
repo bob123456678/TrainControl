@@ -601,4 +601,119 @@ public class testAdvancedRoutes
         assertTrue(filtered.contains("Switch 3,turn"), "the later one should survive:\n" + filtered);
         assertTrue(filtered.contains("Switch 4,turn"), "and the other accessory too:\n" + filtered);
     }
+
+    /**
+     * A name routes can carry survives the text format; one they cannot does not.
+     *
+     * The guard exists because the format cannot express these names, so the test proves that rather
+     * than restating the predicate - a test that only asserted isNameUsable("a,b") is false would pass
+     * against a rule invented for no reason.
+     */
+    @Test
+    public void testANameRoutesCanCarrySurvivesTheTextFormat() throws Exception
+    {
+        assertTrue(RouteCommand.isNameUsable("BR 218"), "precondition: an ordinary name is allowed");
+
+        RouteCommand allowed = RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40);
+
+        assertEquals(RouteCommand.fromLine(allowed.toLine(null).trim(), false).getName(), "BR 218",
+            "an allowed name must survive being written and read back");
+
+        assertFalse(RouteCommand.isNameUsable("BR 103, 001"), "a comma is refused");
+
+        RouteCommand refused = RouteCommand.RouteCommandLocomotiveSpeed("BR 103, 001", 40);
+
+        boolean carried;
+
+        try
+        {
+            carried = "BR 103, 001".equals(
+                RouteCommand.fromLine(refused.toLine(null).trim(), false).getName());
+        }
+        catch (Exception e)
+        {
+            // The other way it fails: the tail does not parse as a number and the whole line is
+            // rejected, which is what blocks the route from being saved at all
+            carried = false;
+        }
+
+        assertFalse(carried,
+            "the format carried a comma after all, which would make the guard unnecessary");
+    }
+
+    /**
+     * A name with a bracket cannot survive the CONDITION parser, which is the other half of the rule.
+     *
+     * preprocessText rewrites every bracket into a line break to find the grouping - the same
+     * unanchored-replacement mistake that was fixed for AND and OR, and not for brackets.  A real
+     * locomotive in the sample file is called "SBB 460 (2)".
+     */
+    @Test
+    public void testANameWithABracketCannotSurviveTheConditionParser() throws Exception
+    {
+        assertFalse(RouteCommand.isNameUsable("SBB 460 (2)"), "a bracket is refused");
+
+        NodeExpression condition =
+            new NodeRouteCommand(RouteCommand.RouteCommandAutoLocomotive("SBB 460 (2)", 50));
+
+        String asText = NodeExpression.toTextRepresentation(condition, null);
+
+        boolean survived;
+
+        try
+        {
+            NodeExpression back = NodeExpression.fromTextRepresentation(asText, null);
+
+            survived = !NodeExpression.toList(back).isEmpty()
+                && "SBB 460 (2)".equals(NodeExpression.toList(back).get(0).getName());
+        }
+        catch (Exception e)
+        {
+            survived = false;
+        }
+
+        assertFalse(survived,
+            "the condition parser carried a bracket after all, which would make the guard "
+                + "unnecessary - and would mean this name could simply be allowed");
+    }
+
+    /**
+     * A route refused for having a duplicate name does not leave its monitor running.
+     *
+     * The complete constructor arms the s88 monitor as soon as the route is enabled and has a sensor -
+     * before the object has been offered to any database - so an import carrying two routes of the
+     * same name left the rejected one watching its sensor forever, firing turnouts for a route the UI
+     * has no handle on and only a restart could stop.
+     */
+    @Test
+    public void testARefusedRouteDoesNotKeepItsMonitorRunning() throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40));
+
+        // A name and ids this database will not already have
+        MarklinRoute first = new MarklinRoute(model, "Duplicate Import Probe", 8801, commands, 61,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            assertTrue(model.newRoute(first), "precondition: the first route is accepted");
+
+            MarklinRoute second = new MarklinRoute(model, "Duplicate Import Probe", 8802, commands, 61,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+            assertTrue(second.isEnabled(), "precondition: the constructor armed the second route");
+
+            assertFalse(model.newRoute(second), "precondition: the duplicate name is refused");
+
+            assertFalse(second.isEnabled(),
+                "the refused route is still armed, so its monitor keeps firing a route nothing can "
+                    + "reach or disable");
+        }
+        finally
+        {
+            model.deleteRoute("Duplicate Import Probe");
+        }
+    }
 }
