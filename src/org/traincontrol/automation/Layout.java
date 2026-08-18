@@ -2543,7 +2543,10 @@ public class Layout
                     // run, which is precisely what is meant to fill these tracks at the end of a
                     // session.  Filtering at selection, never refusing at execution, is the same tier
                     // split the excluded-locomotive rule uses.
-                    if (!end.equals(start) && !end.isOccupied() && end.isDestination() && end.isActive()
+                    // getBlockLocomotive, not isOccupied: a destination whose sibling copy holds a
+                    // train is not free - it is the same piece of track, and sending a second train
+                    // there is a collision.
+                    if (!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination() && end.isActive()
                             && !end.isReversing() && end.isAutoDestination()
                             && !end.getExcludedLocs().contains(loc))
                     {
@@ -2670,7 +2673,8 @@ public class Layout
                 {
                     for (Point end : ends)
                     {
-                        if (!end.equals(start) && !end.isOccupied() && end.isDestination())
+                        // The same block rule as above - a copy of an occupied square is occupied.
+                        if (!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination())
                         {
                             try 
                             {
@@ -3796,6 +3800,35 @@ public class Layout
      * @param l the locomotive being placed
      * @param claiming the Point placing it, which keeps it
      */
+    /**
+     * Whoever is standing on a block, ignoring one Point of it.
+     *
+     * Walked rather than indexed: the points map is small, this is asked while choosing a path rather
+     * than while driving, and an index would be a second structure to keep in step with renames and
+     * rebuilds - which is the class of bug this area keeps producing.
+     *
+     * @param block the shared identity
+     * @param except the Point asking, whose own occupancy the caller has already read
+     * @return the locomotive on another copy of that square, or null
+     */
+    Locomotive locomotiveInBlock(String block, Point except)
+    {
+        if (block == null) return null;
+
+        for (Point other : this.points.values())
+        {
+            if (other == except) continue;
+
+            if (!block.equals(other.getBlock())) continue;
+
+            Locomotive there = other.getCurrentLocomotive();
+
+            if (there != null) return there;
+        }
+
+        return null;
+    }
+
     void clearLocomotiveExcept(Locomotive l, Point claiming)
     {
         if (l == null) return;
@@ -4579,6 +4612,14 @@ public class Layout
                 // of it was an edge complaining that one of its endpoints did not exist, which names
                 // the wrong line entirely in a file the operator edits by hand.
                 layout.createPoint(point.getString("name"), point.optBoolean("station", false), s88);
+
+                // Which piece of track this Point is part of, when the generator said so.  Absent on
+                // everything hand-written, and on anything generated before this: those Points each
+                // stand alone, which is what they have always done.
+                if (point.has("block"))
+                {
+                    layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
+                }
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive
                 // placed at a point this loop has not reached yet, so nothing can be concluded from it

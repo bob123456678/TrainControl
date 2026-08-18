@@ -452,6 +452,63 @@ public class Point
     }
 
     /**
+     * Which physical piece of track this Point is part of, or null when it is one of its own.
+     *
+     * A square of the diagram is emitted as several Points - one per side a train can arrive by - and
+     * they are the SAME piece of track.  Two trains cannot be on it at once: that is a collision, not a
+     * state to model.  But occupancy is recorded per Point, so a sibling copy reads free while a train
+     * stands on its twin, and a second train could be routed onto it.
+     *
+     * Not the s88.  Genuinely different places legitimately share a sensor - a station, its approach
+     * guard and a reversing point are three Points on one feedback in a real layout - so keying on it
+     * would refuse paths that are perfectly safe.  The identity comes from the builder, which is the
+     * only layer that knows two Points came from one tile.
+     *
+     * Null on everything hand-written or generated before this, which is exactly right: those Points
+     * each stand alone, and behave as they always have.
+     */
+    private String block;
+
+    /**
+     * @return the block this Point shares with the other copies of its square, or null
+     */
+    public String getBlock()
+    {
+        return this.block;
+    }
+
+    /**
+     * @param block the shared identity, from the builder
+     * @return this
+     */
+    public Point setBlock(String block)
+    {
+        this.block = block;
+
+        return this;
+    }
+
+    /**
+     * The locomotive standing anywhere on this Point's piece of track.
+     *
+     * Its own if it has one, otherwise whatever is standing on another copy of the same square.  This
+     * is what occupancy has to ask: a train on the eastbound copy of a platform is on the platform, and
+     * the westbound copy is not free just because it is a different object.
+     *
+     * @return the locomotive, or null when the whole block is clear
+     */
+    public Locomotive getBlockLocomotive()
+    {
+        Locomotive mine = this.currentLoc;
+
+        if (mine != null) return mine;
+
+        if (this.block == null || this.layout == null) return null;
+
+        return this.layout.locomotiveInBlock(this.block, this);
+    }
+
+    /**
      * The layout this Point belongs to, so that placing a locomotive can clear it from everywhere else.
      *
      * Set by the layout as it takes the Point, and never by anything else.  Null on a Point that was

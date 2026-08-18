@@ -420,4 +420,86 @@ public class testAutoLayout
             "the destination was not reserved");
     }
 
+    /**
+     * Two trains cannot be routed onto one square, however many Points that square became.
+     *
+     * A square of the diagram is emitted as several Points - one per side a train can arrive by - and
+     * they are the same piece of track.  Occupancy was recorded per Point, so the westbound copy of a
+     * platform read free while a train stood on the eastbound one, and a second train could be given a
+     * path onto it.  There is no version of that which is not a collision.
+     *
+     * The block is what ties the copies together.  Not the s88: genuinely different places share a
+     * sensor on a real layout - a station, its approach guard and a reversing point can be three Points
+     * on one feedback - so the sensor cannot say which Points are one square.
+     */
+    @Test
+    public void testASecondTrainIsNotRoutedOntoAnOccupiedSquare() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        // one square, two arrival-side copies, plus somewhere for each train to start
+        layout.createPoint("BK_WestApproach", false, null);
+        layout.createPoint("BK_EastApproach", false, null);
+
+        Point eastbound = layout.createPoint("BK_Platform (eastbound)", true, "1");
+        Point westbound = layout.createPoint("BK_Platform (westbound)", true, "2");
+
+        // the copies are one piece of track - which only the builder can say, so it is said here
+        eastbound.setBlock("main:5,5");
+        westbound.setBlock("main:5,5");
+
+        Edge toEast = layout.createEdge("BK_WestApproach", "BK_Platform (eastbound)");
+        Edge toWest = layout.createEdge("BK_EastApproach", "BK_Platform (westbound)");
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        // the first train is standing on the platform, on the eastbound copy
+        eastbound.setLocomotive(first);
+
+        assertEquals(westbound.getBlockLocomotive(), first,
+            "the other copy of an occupied platform is not free - it is the same track");
+
+        assertTrue(toWest.isOccupied(second),
+            "a second train was offered the platform its twin is standing on");
+
+        // and the copy the train is actually on is still occupied for anyone else
+        assertTrue(toEast.isOccupied(second));
+
+        // while the train already there is not blocked by itself
+        assertFalse(toEast.isOccupied(first));
+        assertFalse(toWest.isOccupied(first));
+    }
+
+    /**
+     * A Point with no block is unchanged - which is every Point of a hand-written configuration.
+     *
+     * Points that share an s88 without sharing a square are ordinary on a real layout, and they must
+     * not start blocking each other: that would refuse paths that have always been safe.
+     */
+    @Test
+    public void testPointsThatMerelyShareASensorDoNotBlockEachOther() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("BK_Start", false, null);
+
+        // two DIFFERENT places that happen to report on one feedback, as a real layout has
+        Point guard = layout.createPoint("BK_ApproachGuard", true, "1");
+        Point station = layout.createPoint("BK_Station", true, "1");
+
+        Edge toStation = layout.createEdge("BK_Start", "BK_Station");
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        guard.setLocomotive(first);
+
+        assertNull(station.getBlockLocomotive(),
+            "these are different places that share a sensor, not one square");
+
+        assertFalse(toStation.isOccupied(second),
+            "a shared sensor must not block a path the layout has always allowed");
+    }
+
 }

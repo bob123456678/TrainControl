@@ -319,7 +319,12 @@ public class Edge
         // Read once.  Point.isOccupied is synchronized but getCurrentLocomotive is not, so testing the
         // first and dereferencing the second let another thread clear the point in between - which threw
         // a NullPointerException inside isPathClear, on a locomotive thread
-        Locomotive endLocomotive = this.end.getCurrentLocomotive();
+        //
+        // The whole BLOCK, not just this Point: a square emitted as several copies is one piece of
+        // track, and a train on the eastbound copy of a platform is on the platform.  Asking only this
+        // copy let a second train be routed onto its twin, which is a collision.  On a Point with no
+        // block - anything hand-written - this is exactly getCurrentLocomotive.
+        Locomotive endLocomotive = this.end.getBlockLocomotive();
 
         if (endLocomotive != null && !endLocomotive.equals(loc))
         {

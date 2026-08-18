@@ -713,6 +713,18 @@ public class AutonomyBuilder
                 json.put("station", stops);
                 json.put("s88", point.getS88());
 
+                // Which copies are the same piece of track.
+                //
+                // Only where a square is emitted as more than one Point: below that there is nothing to
+                // group, and saying so would put a line in every file to no purpose.  Two trains cannot
+                // stand on one square - that is a collision - but occupancy is recorded per Point, so
+                // without this a sibling copy reads free while a train stands on its twin.
+                //
+                // The TILE, not the s88.  Genuinely different places share a sensor on a real layout -
+                // a station, its approach guard and a reversing point can be three Points on one
+                // feedback - so the sensor cannot say which Points are one square.  The tile can.
+                if (nodes.size() > 1) json.put("block", point.getTile().toString());
+
                 if (coordinatePages != null)
                 {
                     // Roughly one tile per 60 units, which is the spacing the hand-written files use,
