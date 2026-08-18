@@ -1600,27 +1600,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Called after any autonomy menu action, so the rest of the window follows what it did.
      */
+    /**
+     * Everything the diagram shows about autonomy, brought back into agreement with the setup.
+     *
+     * The one place.  What draws autonomy lives in two caches that nothing owned between them:
+     *
+     *   the tile registry   holds the station badges.  Annotations SURVIVE a grid rebuild and are
+     *                       re-applied to each label as it registers, so they are refreshed on their
+     *                       own and only when the setup changes.
+     *   layoutStations      holds the caption labels.  These do NOT survive: a label is registered as
+     *                       the grid is built, and a caption created since the last build has no label
+     *                       to write to until the grid is rebuilt.
+     *
+     * That asymmetry is the whole reason this went wrong repeatedly.  Refreshing the badges left the
+     * names blank; rebuilding the grid left the badges stale; and each was reached from a different
+     * handler, so every fix was correct for the path it was written on and missing from the others.
+     * Opening and closing the track diagram editor was the only sequence that happened to do both.
+     *
+     * Order matters and is the reason this is a method rather than a convention: the annotations are
+     * refreshed FIRST so that the rebuild below hands each new label a badge that already describes
+     * the current setup, and repaintLayout rebuilds the grid and then writes what every caption says.
+     *
+     * Call this after ANY change to the setup - loading, importing, deleting, unloading, excluding a
+     * page, naming a station.  Nothing else in this class should be refreshing these by hand.
+     */
+    public void autonomySetupChanged()
+    {
+        refreshAutonomyTabState();
+
+        // Refreshes the findings itself, which is why there is no separate call to do that
+        refreshStaticAutonomyLayer();
+
+        refreshAutonomyPrompt();
+
+        repaintLayout();
+    }
+
     public void autonomyMenuActed()
     {
         if (autonomyMenu != null) autonomyMenu.refreshEnabled();
 
-        refreshAutonomyTabState();
-
-        // The BADGES, not only the count.
-        //
-        // Every station marker on the diagram comes from annotations held in the tile registry, and
-        // until now the track diagram editor was the only thing in the application that ever refreshed
-        // them.  So any other way of changing the setup - importing one, loading one, naming a station
-        // from the menu - left the registry describing the setup as it was before: no station badges
-        // for stations that had just been created, and every sensor drawn as a plain point.  Opening
-        // and closing the editor "fixed" it because that is the one code path that asked.
-        //
-        // refreshStaticAutonomyLayer refreshes the findings itself, which is why the plain call to
-        // refreshAutonomyFindings is gone rather than kept beside it.
-        refreshStaticAutonomyLayer();
-
-        refreshAutonomyPrompt();
-        repaintLayout();
+        autonomySetupChanged();
     }
 
     private org.traincontrol.automationui.AutonomySession autonomySession;
@@ -1781,15 +1801,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // has closed behind them, and the diagram is where the setup they just loaded is drawn.
         jumpToLayoutTab();
 
-        // Rebuilt, because a caption label is registered as the grid is BUILT and written to by
-        // updateVisiblePoints afterwards.  A configuration that has just introduced stations has no
-        // labels registered for them, so the update had nothing to write to and the names stayed
-        // blank until the next rebuild - which, until now, meant opening and closing an editor.
-        //
-        // repaintLayout does both halves in order inside one event: rebuild the grid, registering a
-        // label per caption, then update what those labels say.  Here rather than in each caller, so
-        // that every way of loading a configuration gets it.
-        javax.swing.SwingUtilities.invokeLater(() -> repaintLayout());
+        // Both caches, in order - see autonomySetupChanged.  Loading is the change that introduces
+        // the most: a configuration that has just brought stations has neither badges describing them
+        // nor caption labels registered for them.
+        javax.swing.SwingUtilities.invokeLater(() -> autonomySetupChanged());
 
         this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
     }
@@ -18059,6 +18074,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Set address label preference
                         this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.getShowLayoutAddresses());
                         
+                        // Forgotten before the grid that held them is replaced.
+                        //
+                        // Every caption label ever built was kept here, because registration only ever
+                        // added: the live update then wrote to a growing pile of labels belonging to
+                        // grids nobody can see, and "which grid did that pass land on" stopped having
+                        // an answer.  Harmless on screen and the reason several of these faults were
+                        // so hard to reason about.
+                        layoutStations.clear();
+
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
                             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 
