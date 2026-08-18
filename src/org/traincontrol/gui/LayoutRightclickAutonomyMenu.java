@@ -67,7 +67,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // The Point standing on that square, preferring one with a train on it
                 Point current = ui.getAutonomyPointForTile(station);
 
-                if (current != null && current.isDestination())
+                // A destination, or anywhere a train is actually standing.
+                //
+                // Gated on being a destination alone, a locomotive on a copy that is not one had no
+                // menu at all - no remove, no paths, nothing - and arrival restrictions made that
+                // reachable: barring a side makes THAT copy a non-destination, and a train can still
+                // be placed on it by hand.  It is the same trap the autonomy editor had, where the
+                // remove item hung off the designation rather than off the locomotive.
+                if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
                 {
                     // Get the locomotive at this station
                     Locomotive locomotive = current.getCurrentLocomotive();
@@ -172,7 +179,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // whichever copy came first, which put the train on a Point whose only moves are
                     // the ones the split exists to forbid.  Autonomy could see the locomotive and
                     // could not route it anywhere.
+                    // Putting one down is still only at a destination, as it was: somewhere trains
+                    // may not stop is not somewhere to start one from.
                     if (ui.getActiveLoc() != null
+                        && current.isDestination()
                         && !ui.isAutonomyBusy()
                         && !ui.getActiveLoc().equals(locomotive))
                     {

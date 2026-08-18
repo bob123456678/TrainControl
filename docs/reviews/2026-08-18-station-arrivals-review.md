@@ -28,7 +28,7 @@ Three commits, and the code around them:
 
 | id | finding | status |
 |---|---|---|
-| A1 | barring an arrival side of a turn-around station invalidates the whole configuration | fixed, `0e5c67a` |
+| A1 | barring an arrival side of a turn-around station invalidates the whole configuration | fixed, `d4cc22a` |
 
 ### A1 - a barred terminus copy is emitted as a terminus that is not a destination
 
@@ -60,7 +60,8 @@ with `station: false`. Seen failing first, on the exact JSON the builder produce
 
 | id | finding | status |
 |---|---|---|
-| B1 | a restriction naming a side the square no longer has locks the menu and cannot be cleared | fixed, `0e5c67a` |
+| B1 | a restriction naming a side the square no longer has locks the menu and cannot be cleared | fixed, `d4cc22a` |
+| B2 | a train on a non-destination copy had no right-click menu at all | fixed, next commit |
 
 ### B1 - stale barred sides were counted, hidden, and unremovable
 
@@ -87,15 +88,32 @@ that has that side again.
 Test: `testARestrictionOnASideTheSquareNoLongerHasIsIgnored` bars the side facing track it then takes
 up, and checks both halves.
 
+### B2 - the diagram menu hung off the designation, not the locomotive
+
+Found while dispositioning D4 rather than by the review pass.
+
+`LayoutRightclickAutonomyMenu` gated its whole autonomy block on `current.isDestination()`.  A
+locomotive standing on a copy that is not a destination therefore had no menu at all - no remove, no
+paths, no name - and this feature makes that reachable: barring a side makes THAT copy a
+non-destination, and a train can still be placed on it by hand or left there by an earlier setup.
+
+It is the same trap the autonomy editor had a day earlier, where the remove item hung off the station
+designation instead of off the locomotive, and it was not caught by the same reasoning being applied
+to the other surface.  The block now opens for a destination OR for any square with a train on it;
+placing a locomotive stays destination-only, which is what it was.
+
+Not covered by a test: the menu is Swing construction with no seam, the same reason the editor's
+equivalent was not.  Both are one right-click to check by hand.
+
 ## C - low
 
 | id | finding | status |
 |---|---|---|
-| C1 | `StationIndex` derived lazily on whichever thread asked first | fixed, `0e5c67a` |
-| C2 | `DiagramMonitorDriver` was a fifth hand-assembled builder | fixed, `0e5c67a` |
-| C3 | `renamePage` orphaned captions and switched-off links | fixed, `0e5c67a` |
-| C4 | arrival restrictions survived station demotion | fixed, `0e5c67a` |
-| C5 | `arrivalSides()` rebuilt a whole builder per call | fixed, `0e5c67a` |
+| C1 | `StationIndex` derived lazily on whichever thread asked first | fixed, `d4cc22a` |
+| C2 | `DiagramMonitorDriver` was a fifth hand-assembled builder | fixed, `d4cc22a` |
+| C3 | `renamePage` orphaned captions and switched-off links | fixed, `d4cc22a` |
+| C4 | arrival restrictions survived station demotion | fixed, `d4cc22a` |
+| C5 | `arrivalSides()` rebuilt a whole builder per call | fixed, `d4cc22a` |
 
 ### C1 - the index was derived by whoever asked first, which is often the feedback thread
 
@@ -140,9 +158,9 @@ into `StationIndex`, where the rest of the derivation lives.
 
 | id | finding | status |
 |---|---|---|
-| D1 | the unreachable-station error named a coordinate, not a station | fixed, `0e5c67a` |
-| D2 | `DiagramMonitor.indexEdges`/`indexPoints` were dead code with a trap in them | deleted, `0e5c67a` |
-| D3 | `speakerAt`'s javadoc became false one commit later | corrected, `0e5c67a` |
+| D1 | the unreachable-station error named a coordinate, not a station | fixed, `d4cc22a` |
+| D2 | `DiagramMonitor.indexEdges`/`indexPoints` were dead code with a trap in them | deleted, `d4cc22a` |
+| D3 | `speakerAt`'s javadoc became false one commit later | corrected, `d4cc22a` |
 | D4 | the right-click menu still answers for one train on a shared square | open - see below |
 
 ### D1
@@ -166,7 +184,8 @@ occupant, but a trap as written.
 ### D4 - open
 
 With two trains on one square the caption now names both; `LayoutRightclickAutonomyMenu` still answers
-for the first. Not a defect in the changed code - it is the pre-existing single-train assumption,
+for the first.  (Its sibling problem - no menu at all on a non-destination copy - turned out to be a
+real defect and is B2.) Not a defect in the changed code - it is the pre-existing single-train assumption,
 newly visible because the caption no longer shares it. Left open deliberately: the menu's actions
 (remove, facing) need a train chosen, and inventing a submenu for a case the user has hit once is
 worth a decision rather than a guess.
