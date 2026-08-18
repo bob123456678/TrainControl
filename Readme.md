@@ -378,7 +378,6 @@ Tab icons provided by Freepik.
         - Cancelling the bulk enable or disable prompt now cancels, instead of doing nothing at all and leaving the route list unrefreshed
     - Track Diagram Bug Fixes
         - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
-        - Fixed bug where two track diagram pages sharing the same name were treated as one, so only one of them appeared in the page list and was kept when the layout was downloaded from the Central Station
         - Clicking a tile in the track diagram editor no longer counts as an edit, so the editor stops asking whether to save changes that were never made
         - Fixed an error when clicking a tile in the editor’s component palette rather than dragging it onto the diagram
     - Central Station Sync Bug Fixes
