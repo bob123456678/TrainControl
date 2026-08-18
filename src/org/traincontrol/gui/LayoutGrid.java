@@ -168,13 +168,38 @@ public class LayoutGrid
                 {
                     org.traincontrol.automationui.AutonomySession diag = ui.getAutonomySession();
 
+                    // The KEYS, in the form the session actually holds them.
+                    //
+                    // Everything else has checked out - the session is there, it has the captions, the
+                    // page is not excluded, and the grid's squares start at 0,0 so they are absolute.
+                    // What is left is whether the two sides spell a square the same way.  The setup is
+                    // stored keyed by page ID ("1:1,10") and translated to page NAME on load, using a
+                    // mapping built from the pages themselves - so a page whose id is not known when
+                    // the session opens leaves its captions keyed by something no lookup will ever
+                    // build.  Printing three keys settles it in one line.
+                    StringBuilder keys = new StringBuilder();
+
+                    if (diag != null)
+                    {
+                        int shown = 0;
+
+                        for (org.traincontrol.automationui.TileGraph.TileKey k
+                            : diag.getCaptions().keySet())
+                        {
+                            if (shown++ >= 3) break;
+
+                            keys.append(" [").append(k).append("]");
+                        }
+                    }
+
                     ui.getModel().log("[grid] page=" + layout.getName()
+                        + " pageId=" + layout.getPageId()
                         + " edit=" + layout.getEdit()
                         + " session=" + (diag == null ? "NULL" : "present")
                         + " captions=" + (diag == null ? -1 : diag.getCaptions().size())
                         + " excluded=" + ui.isPageExcludedFromAutonomy(layout.getName())
                         + " firstSquare=" + square
-                        + " captionedHere=" + captioned);
+                        + " captionKeys=" + keys);
                 }
 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
