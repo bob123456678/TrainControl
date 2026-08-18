@@ -1605,7 +1605,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (autonomyMenu != null) autonomyMenu.refreshEnabled();
 
         refreshAutonomyTabState();
-        refreshAutonomyFindings();
+
+        // The BADGES, not only the count.
+        //
+        // Every station marker on the diagram comes from annotations held in the tile registry, and
+        // until now the track diagram editor was the only thing in the application that ever refreshed
+        // them.  So any other way of changing the setup - importing one, loading one, naming a station
+        // from the menu - left the registry describing the setup as it was before: no station badges
+        // for stations that had just been created, and every sensor drawn as a plain point.  Opening
+        // and closing the editor "fixed" it because that is the one code path that asked.
+        //
+        // refreshStaticAutonomyLayer refreshes the findings itself, which is why the plain call to
+        // refreshAutonomyFindings is gone rather than kept beside it.
+        refreshStaticAutonomyLayer();
+
         refreshAutonomyPrompt();
         repaintLayout();
     }
