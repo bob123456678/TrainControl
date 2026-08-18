@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.automation.Point;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import static org.traincontrol.gui.TrainControlUI.AUTONOMY_BLANK;
@@ -373,6 +374,50 @@ public class testAutoLayout
 
         assertNull(one.getCurrentLocomotive());
         assertEquals(two.getCurrentLocomotive(), b, "a removal swept a platform it had no business at");
+    }
+
+    /**
+     * Locking a path reserves every point along it, not only its destination.
+     *
+     * The reservation is what holds a junction the train has passed against a second train that could
+     * reach it another way - that train reads the point's occupancy and its own path is refused.  When
+     * placing a locomotive was made to sweep it off every other point, locking A->B->C swept each point
+     * as the next was taken, so the train held C alone and B was free for anyone.  Reserving a path and
+     * placing a train are different operations and no longer share an entry point.
+     *
+     * In simulate mode, so no accessory has to confirm and this runs without a screen.
+     */
+    @Test
+    public void testLockingAPathReservesEveryPointOnIt() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RS_A", false, null);
+        layout.createPoint("RS_B", true, "1");
+        layout.createPoint("RS_C", true, "2");
+
+        Edge ab = layout.createEdge("RS_A", "RS_B");
+        Edge bc = layout.createEdge("RS_B", "RS_C");
+
+        layout.setSimulate(true);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // where the train stands before it departs
+        layout.getPoint("RS_A").setLocomotive(loc);
+
+        boolean locked = layout.configureAndLockPath(java.util.Arrays.asList(ab, bc), loc);
+
+        assertTrue(locked, "the clean path should lock in simulation");
+
+        assertEquals(layout.getPoint("RS_A").getCurrentLocomotive(), loc,
+            "the start was swept off its own reservation");
+
+        assertEquals(layout.getPoint("RS_B").getCurrentLocomotive(), loc,
+            "the junction the train must pass was left free for another train");
+
+        assertEquals(layout.getPoint("RS_C").getCurrentLocomotive(), loc,
+            "the destination was not reserved");
     }
 
 }

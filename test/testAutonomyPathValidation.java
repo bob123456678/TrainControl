@@ -103,6 +103,40 @@ public class testAutonomyPathValidation
         return tp;
     }
 
+    /**
+     * A three-point path A -> B -> C, so that reserving it holds more than one point at once.  The
+     * single-edge fixture above cannot show the reservation being torn down, because there is only
+     * ever one point to hold.
+     */
+    private TestPath buildThreePointPath(int addressBase, String suffix) throws Exception
+    {
+        TestPath tp = new TestPath();
+
+        tp.layout = new Layout(model);
+        tp.layout.createPoint("A" + suffix, false, null);
+
+        MarklinFeedback fbB = model.newFeedback(addressBase, null);
+        model.setFeedbackState(fbB.getName(), false);
+        tp.layout.createPoint("B" + suffix, true, fbB.getName());
+
+        MarklinFeedback fbC = model.newFeedback(addressBase + 1, null);
+        model.setFeedbackState(fbC.getName(), false);
+        tp.layout.createPoint("C" + suffix, true, fbC.getName());
+
+        Edge ab = tp.layout.createEdge("A" + suffix, "B" + suffix);
+        Edge bc = tp.layout.createEdge("B" + suffix, "C" + suffix);
+
+        tp.acc1 = model.newSwitch(addressBase + 2, MM2, false);
+        tp.acc2 = model.newSwitch(addressBase + 3, MM2, false);
+
+        ab.addConfigCommand(tp.acc1.getName(), accessorySetting.TURN);
+        bc.addConfigCommand(tp.acc2.getName(), accessorySetting.TURN);
+
+        tp.path = Arrays.asList(ab, bc);
+
+        return tp;
+    }
+
     private MarklinLocomotive dummyLoc()
     {
         return new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "PV Loc " + (++locCounter));
@@ -476,4 +510,46 @@ public class testAutonomyPathValidation
         assertTrue(tp.layout.configureAndLockPath(tp.path, loc),
             "control: with every accessory present the path locks and is ready");
     }
+    /**
+     * A path that fails to configure leaves the train at its start, not on no point at all.
+     *
+     * handleMisconfiguredPath releases the locks and, by its own promise, leaves the train "at its
+     * start point (it never departed)".  The sweep broke that promise: the start had already been swept
+     * off during locking, so releasing the path's end points left the train nowhere - and a train on no
+     * point is invisible to pickPath and drops out of autonomy until a reload.
+     */
+    @Test
+    public void testAFailedConfigurationLeavesTheTrainAtItsStart() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildThreePointPath(60, "_strand");
+
+        MarklinLocomotive loc = dummyLoc();
+
+        tp.layout.getPoint("A_strand").setLocomotive(loc);
+
+        boolean[] corrupting = startCorrupting(tp);
+
+        try
+        {
+            boolean result = tp.layout.configureAndLockPath(tp.path, loc);
+
+            assertFalse(result, "a path whose accessories never confirm must not lock");
+        }
+        finally
+        {
+            corrupting[0] = false;
+        }
+
+        assertEquals(tp.layout.getPoint("A_strand").getCurrentLocomotive(), loc,
+            "the train was stranded on no point and has dropped out of autonomy");
+
+        assertNull(tp.layout.getPoint("B_strand").getCurrentLocomotive(),
+            "a released path must not leave the train reserving track it never reached");
+
+        assertNull(tp.layout.getPoint("C_strand").getCurrentLocomotive());
+    }
+
 }

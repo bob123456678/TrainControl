@@ -412,11 +412,35 @@ public class Point
         // built by hand in a test, and every one built before this - behaves exactly as it did.
         // Swept BEFORE this Point's own monitor is taken, which is why the sweep is not inside the
         // synchronized part.  Holding one Point's lock while taking another's is how two placements on
-        // two threads deadlock each other, and there is nothing here that needs the two to be atomic:
-        // the worst a race can do is leave a locomotive nowhere for an instant, and the next placement
-        // says where it is.
+        // two threads deadlock each other.
+        //
+        // The invariant this rests on is that a locomotive is PLACED by one thread at a time - its own
+        // driver thread, or a UI gesture while autonomy is stopped.  It is not a claim that the sweep
+        // and the assignment are atomic: two threads placing the SAME locomotive could both sweep, find
+        // nothing, and both assign, leaving it in two places.  Nothing does that today, and the fix if
+        // something ever needs to would be a placement lock, not a wider monitor here.
         if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
 
+        return assign(l);
+    }
+
+    /**
+     * Puts a locomotive on this Point without taking it off anywhere else.
+     *
+     * For RESERVING a point, which is a different thing from placing a train there and must not sweep.
+     * A locked path reserves every point along it for one locomotive at once - that is how a junction
+     * two trains could reach is held against the second while the first runs through it - so the sweep
+     * that keeps a PLACED train in one place would tear a running train's own reservation down to its
+     * destination and free every junction behind it.
+     *
+     * Package-private: only the layout locks and unlocks paths, and only it should be able to say a
+     * locomotive is in more than one place at once.
+     *
+     * @param l the locomotive reserving this point
+     * @return this
+     */
+    Point reserve(Locomotive l)
+    {
         return assign(l);
     }
 

@@ -1895,7 +1895,14 @@ public class Layout
             for (Edge e : path)
             {
                 e.setOccupied();
-                e.getEnd().setLocomotive(loc);
+
+                // RESERVED, not placed.  A locked path holds every one of its points for this
+                // locomotive at once, which is the whole mechanism that keeps a junction behind the
+                // train reserved against a second train reaching it another way.  setLocomotive would
+                // sweep the train off the point it was just reserved on the moment the next point is
+                // reserved, collapsing the reservation to the destination and freeing every junction -
+                // and, on a path-integrity failure, stranding the train on no point at all.
+                e.getEnd().reserve(loc);
                 edgesLocked++;
 
                 // isPathClear already previewed the configuration, so this should not fail - but if an
@@ -2077,6 +2084,12 @@ public class Layout
                     e.getEnd().setLocomotive(null);
                 }
             }
+
+            // Provably at its start, whatever the path's shape.  Clearing the ends above leaves the
+            // train on its start point, which it never left - except on a path that loops back through
+            // that point, where the start is also an end and would be cleared.  Re-reserved rather than
+            // placed, so a train that legitimately sat on several points is not swept down to this one.
+            path.get(0).getStart().reserve(loc);
         }
 
         String accList = String.join(", ", misconfigured);
