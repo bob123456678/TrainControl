@@ -28,6 +28,7 @@ Three commits, and the code around them:
 | debug: interactions | Opus | where this week's fixes break each other |
 | debug: execution | Opus | the run loop, path locking, callbacks - the least-reviewed area |
 | debug: CG4 design | Opus | the split-aware reachability fix, for the main loop to implement |
+| verification | Opus | the four unreviewed changes of the last round, hunting for what they broke |
 
 ---
 
@@ -602,6 +603,73 @@ Left alone deliberately: `captureFromLayout` still merges copies on the assumpti
 the locomotive. That assumption is now enforced upstream rather than hoped for, so the silent-drop path
 should be unreachable. Worth a warning there if it ever fires, but adding one now would be guarding
 against a state the model no longer permits.
+
+## Verification of the fixes themselves
+
+The last round's four changes - CG4, the callback guard, the rebuild race, and block occupancy - were
+themselves unreviewed, and three of them touch shared primitives, which is this session's dominant
+failure mode. One pass over just those.
+
+| id | finding | status |
+|---|---|---|
+| V1 | `Point.toJSON` never wrote the new block field - it did not survive a round trip | fixed |
+| V2 | the run loop was still unguarded; fireCallback caught Exception, not Throwable | fixed |
+| V3 | HomeStaging's rationale for per-Point occupancy went stale | comment corrected |
+| V4 | `clearLocomotiveExcept`'s javadoc stranded above the wrong method by my insertion | moved back |
+| V5 | manual placement "bypasses" the block rule | NOT a defect - see below |
+| V6 | `locomotiveInBlock` is O(points) per occupancy read | accepted, measured - see below |
+| V7 | `reachableTiles` is not split-aware at the ORIGIN square | accepted, matches findPath - see below |
+| V8 | commit `ec7973c`'s message describes fixes that are in `db1db78` | recorded here, history left alone |
+
+### V1 - the block was written into the model and never into the file
+
+The worst kind of half-fix: `parseAuto` reads `"block"` and `toJSON` did not write it. Exporting
+a graph and re-importing it returned every square to independent Points, so the collision DX6 fixed was
+silently back - on a file that looks like a faithful copy of the protected graph. One line, beside
+every other optional field that is read back.
+
+### V5 - not a defect, and the tests said so
+
+Manual placement was reported as bypassing the block rule because it does not refuse an occupied
+square. It DISPLACES the occupant, which is deliberate: it is a person telling the model where a train
+actually is, and the previous occupant is by definition no longer there. The sweep in
+`setLocomotive` then clears that train from everywhere else, so the state the block rule exists to
+prevent is never created.
+
+Guarding it broke every displacing placement `testMultiUnit` pins - and it broke them at the second
+attempt too, when the guard was merely moved after the multi-unit sweep. That test is doing exactly
+its job. Recorded because the finding was reasonable from reading the routing rule alone; only the call
+sites and the tests settle it.
+
+### V6 - the cost, measured and accepted
+
+`locomotiveInBlock` walks the points map, so `Edge.isOccupied` went from O(1) to O(points) when the
+end has a block and is empty. The reviewer measured roughly a 90x inflation on the occupancy portion of
+`isPathClear` and order 10^5-10^6 point-visits per `pickPath` - about 6-12ms on a 91-point layout,
+part of it under the Layout monitor.
+
+Accepted rather than indexed. In absolute terms that is milliseconds on an operation that runs a few
+times a second, and the alternative is a second structure that has to stay in step with renames,
+deletions and rebuilds - which is precisely the class of bug this area keeps producing. If it ever
+shows, resolving each Point's siblings once after parse is the contained fix.
+
+### V7 - the origin is direction-free, deliberately
+
+`reachableTiles` seeds the start with a null arrival side, so at a double curve used as the ORIGIN
+station it leaves by both arms. For "can a train standing here reach anywhere", that is arguably the
+right question - the train may be on either arm - and it is exactly what `findPath` does, which
+documents the choice. Changing only one of them would reintroduce the checker/path-test divergence CG4
+existed to remove. Left as is, and recorded so the next reader knows it was a decision.
+
+### V8 - a commit message that describes another commit
+
+`ec7973c` claims three fixes and contains one. The other two - the rebuild race and the caption
+guard - are in `db1db78`, swept in when that commit staged `AutonomySession.java` while those edits
+were still uncommitted in the same file. My staging error.
+
+History is local and unpushed, so it is left alone rather than rewritten. Recorded because a
+`git bisect` on either fix lands on the wrong commit, and reverting `db1db78` to back out CG4 would
+silently reopen the rebuild race and the caption bug.
 
 ## What this pass did not cover
 
