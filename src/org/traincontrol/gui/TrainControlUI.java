@@ -1781,6 +1781,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // has closed behind them, and the diagram is where the setup they just loaded is drawn.
         jumpToLayoutTab();
 
+        // Rebuilt, because a caption label is registered as the grid is BUILT and written to by
+        // updateVisiblePoints afterwards.  A configuration that has just introduced stations has no
+        // labels registered for them, so the update had nothing to write to and the names stayed
+        // blank until the next rebuild - which, until now, meant opening and closing an editor.
+        //
+        // repaintLayout does both halves in order inside one event: rebuild the grid, registering a
+        // label per caption, then update what those labels say.  Here rather than in each caller, so
+        // that every way of loading a configuration gets it.
+        javax.swing.SwingUtilities.invokeLater(() -> repaintLayout());
+
         this.model.log(I18n.f("autosetup.ui.infoLoadedConfiguration", name));
     }
 
@@ -2026,18 +2036,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        if (session == null || session.getGraph() == null) return;
-
-        // Cleared first.  This only ever walks tiles that are IN the graph, so a square that has left
-        // it - a page just excluded, track just deleted - was never visited again and kept whatever it
-        // was last told to draw.  Excluding a page you were looking at left its badges on screen,
-        // describing Points that no longer exist.
+        // Cleared BEFORE anything can return.  This only ever walks tiles that are IN the graph, so a
+        // square that has left it - a page just excluded, track just deleted - was never visited again
+        // and kept whatever it was last told to draw.  And the early return below used to skip the
+        // clearing entirely, so switching autonomy off or deleting the setup left every badge on
+        // screen describing a setup that no longer existed.
         getDiagramTileRegistry().clearAnnotations();
+
+        if (!show || session == null || session.getGraph() == null) return;
+
+        // Nothing to describe until a configuration is LOADED.
+        //
+        // The graph is derived from the diagram, so it exists whenever there is track - which means
+        // that after deleting the setup, or switching autonomy off, this still had a tile for every
+        // sensor and drew a plain point badge on each one.  A diagram with no autonomy on it should
+        // look like a diagram.
+        if (activeDiagramConfiguration == null) return;
 
         for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
         {
-            getDiagramTileRegistry().annotate(tile,
-                show ? session.staticAnnotationFor(tile) : null);
+            getDiagramTileRegistry().annotate(tile, session.staticAnnotationFor(tile));
         }
     }
 
@@ -2486,9 +2504,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // last error should clear it even for somebody who has the overlay switched off.
         refreshAutonomyFindings();
 
-        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isOverlayShown()) return;
-
-        showStaticAutonomyLayer(true);
+        // Passed through rather than returned on, so that turning the overlay off - or having it off
+        // already - still reaches the clearing above.  Returning here left the badges of whatever was
+        // last drawn sitting on the diagram.
+        showStaticAutonomyLayer(
+            autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
     }
 
     /**
