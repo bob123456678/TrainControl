@@ -75,7 +75,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // If we want to view paths, locomotive must not be running
                     if (locomotive != null && !ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive))
                     {
-                        List<List<Edge>> paths = ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true);
+                        List<List<Edge>> paths = withoutGoingNowhere(ui,
+                            ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true));
 
                         paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
 
@@ -198,8 +199,48 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
+                    // Turn the standing train round.
+                    //
+                    // Placing picks a way out at random, and a locomotive put down by hand is
+                    // pointing whichever way the setup last recorded - so there has to be a way to say
+                    // "no, it faces the other way" without taking it off and putting it back.
+                    //
+                    // Only the copies it could actually leave from, for the same reason placing is:
+                    // turning a train to face a wall is not an orientation, it is a train that cannot
+                    // move.
                     if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
                     {
+                        java.util.List<String> ways = placeableCopies();
+
+                        if (ways.size() > 1)
+                        {
+                            javax.swing.JMenu facing = new javax.swing.JMenu(
+                                I18n.t("layout.ui.menuFacing"));
+
+                            java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> all =
+                                session.facingsFor(station);
+
+                            for (String name : ways)
+                            {
+                                final org.traincontrol.automationui.TilePorts.Side side = all.get(name);
+
+                                if (side == null) continue;
+
+                                final String copy = name;
+
+                                javax.swing.JCheckBoxMenuItem which =
+                                    new javax.swing.JCheckBoxMenuItem(
+                                        I18n.f("layout.ui.menuPlaceFacing", side.toString()),
+                                        side == session.getFacing(station));
+
+                                which.addActionListener(event -> placeFacing(copy, side));
+
+                                facing.add(which);
+                            }
+
+                            if (facing.getItemCount() > 0) add(facing);
+                        }
+
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
                         );
@@ -284,6 +325,43 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * @param pointName the copy to place on
      * @param facing which way it is pointing, or null when the square has only one copy
      */
+    /**
+     * Drops the paths that end where the train already is.
+     *
+     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
+     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
+     * That is not a destination, it is the platform under its own wheels, and it appeared in the
+     * list a user picks from.
+     *
+     * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
+     * sensor, and a station and its approach guard share one while being genuinely two places.  What
+     * makes two Points one place is the square they were built from, and only the setup knows that.
+     *
+     * @param ui the window, which owns the setup
+     * @param paths what the layout offered
+     * @return the ones that actually go somewhere
+     */
+    private static List<List<Edge>> withoutGoingNowhere(TrainControlUI ui, List<List<Edge>> paths)
+    {
+        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        if (session == null || paths == null) return paths;
+
+        List<List<Edge>> out = new java.util.ArrayList<>();
+
+        for (List<Edge> path : paths)
+        {
+            if (path == null || path.isEmpty()) continue;
+
+            if (session.sameSquare(path.get(0).getStart().getName(),
+                path.get(path.size() - 1).getEnd().getName())) continue;
+
+            out.add(path);
+        }
+
+        return out;
+    }
+
     /**
      * The copies of this square a train could actually be driven away from.
      *

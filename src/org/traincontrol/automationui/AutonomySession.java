@@ -1364,6 +1364,34 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Whether two Points are the same piece of track.
+     *
+     * A square is several Points now - one per side a train can arrive by - so a train standing at
+     * BottomMainB was being offered a path to BottomMainB, the copy facing the other way being a
+     * different Point.  Going there is not a journey; it is the place it is already standing.
+     *
+     * Asked HERE rather than of the running layout, which cannot answer it.  The obvious key there
+     * is the sensor, and the sensor is wrong: a station and its approach guard legitimately share
+     * one and are genuinely two places.  What makes copies copies is the SQUARE they came from, and
+     * only the setup knows which square a Point was built from.
+     *
+     * @param a a point name from the built graph
+     * @param b another
+     * @return true when both were built from one square
+     */
+    public boolean sameSquare(String a, String b)
+    {
+        if (a == null || b == null) return false;
+
+        if (a.equals(b)) return true;
+
+        TileKey one = tileForPointName(a);
+        TileKey two = tileForPointName(b);
+
+        return one != null && one.equals(two);
+    }
+
     public List<String> pointNamesFor(String baseName)
     {
         List<String> out = new ArrayList<>();

@@ -200,7 +200,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             else
             {                
                 // true -> Only include unique starts/end pairs
-                this.paths = layout.getPossiblePaths(locomotive, true);
+                this.paths = withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
                 
                 if (!this.paths.isEmpty())
                 {
@@ -355,6 +355,44 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 .addGap(6, 6, 6))
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    /**
+     * Drops the paths that end where the train already is.
+     *
+     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
+     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
+     * That is not a destination, it is the platform under its own wheels, and it appeared in the
+     * list a user picks from.
+     *
+     * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
+     * sensor, and a station and its approach guard share one while being genuinely two places.  What
+     * makes two Points one place is the square they were built from, and only the setup knows that.
+     *
+     * @param paths what the layout offered
+     * @return the ones that actually go somewhere
+     */
+    private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
+    {
+        org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
+
+        if (session == null || paths == null) return paths;
+
+        List<List<Edge>> out = new java.util.ArrayList<>();
+
+        for (List<Edge> path : paths)
+        {
+            if (path == null || path.isEmpty()) continue;
+
+            String from = path.get(0).getStart().getName();
+            String to = path.get(path.size() - 1).getEnd().getName();
+
+            if (session.sameSquare(from, to)) continue;
+
+            out.add(path);
+        }
+
+        return out;
+    }
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
         

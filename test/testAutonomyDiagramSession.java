@@ -2035,4 +2035,61 @@ public class testAutonomyDiagramSession
         assertEquals(session.getCaptionTarget(station), station,
             "moving a caption onto its own square deleted it");
     }
+
+    /**
+     * Two copies of one square are the same place; two squares sharing a sensor are not.
+     *
+     * This is the distinction the fix rests on, and getting it the other way round is the mistake that
+     * was nearly shipped.  A train standing at a station was offered a path to that same station -
+     * the copy facing the other way is a different Point - and the obvious fix, comparing sensors, is
+     * WRONG: a station and its approach guard legitimately share one and are genuinely two places, so
+     * that filter would have refused real journeys.
+     *
+     * What makes two Points one place is the square they were built from, which only the setup knows.
+     */
+    @Test
+    public void testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 4, 1);
+
+        session.getStore().setStation(first, true);
+        session.setPointName(first, "BottomMainB");
+
+        session.getStore().setStation(second, true);
+        session.setPointName(second, "BottomMainC");
+
+        session.rebuild();
+
+        java.util.List<String> copies = session.pointNamesFor(session.pointNameForTile(first));
+
+        assertFalse(copies.isEmpty(), "precondition: the station has at least one Point");
+
+        // Every copy of one square is that square
+        for (String one : copies)
+        {
+            for (String other : copies)
+            {
+                assertTrue(session.sameSquare(one, other),
+                    one + " and " + other + " are copies of one square and should count as one place");
+            }
+        }
+
+        // And a different square is not, however its Points are named
+        String elsewhere = session.pointNameForTile(second);
+
+        assertNotNull(elsewhere, "precondition: the second station is a Point");
+
+        for (String one : copies)
+        {
+            assertFalse(session.sameSquare(one, elsewhere),
+                "two different squares were treated as one place, which would refuse real journeys");
+        }
+
+        assertFalse(session.sameSquare(null, copies.get(0)), "nothing is not somewhere");
+    }
 }
