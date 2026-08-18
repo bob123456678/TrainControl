@@ -3229,7 +3229,19 @@ public class Layout
                 {
                     if (callback != null)
                     {
-                        callback.apply(path, loc, true);
+                        // A listener must not be able to strand the run.  This fires after the
+                        // locomotive is in activeLocomotives, on the driving thread, and every
+                        // registered callback repaints something - so an exception out of the UI
+                        // killed the thread with the entry left behind, which is the wedged state that
+                        // only reloading the graph clears.
+                        try
+                        {
+                            callback.apply(path, loc, true);
+                        }
+                        catch (Exception e)
+                        {
+                            this.control.log(e);
+                        }
                     }
                 }
                             

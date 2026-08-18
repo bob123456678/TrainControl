@@ -10259,6 +10259,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
 
+                    // Routes store locomotives by name, in a comma-separated text format whose parser
+                    // also treats brackets as grouping - so renaming into one of those characters
+                    // rewrites every existing command and condition into something that re-parses as a
+                    // different locomotive, or does not parse at all.  The route editor refuses these
+                    // names at both of its own doors; this is the third way in, and the one that turns
+                    // commands that were legal when written into commands that are not.
+                    if (newName.contains(",") || newName.contains("(") || newName.contains(")"))
+                    {
+                        JOptionPane.showMessageDialog(
+                            source,
+                            I18n.t("loc.ui.errorLocomotiveNameUnusable")
+                        );
+                        return;
+                    }
+
                     this.model.renameLoc(l.getName(), newName);
                 }
 
@@ -15650,14 +15665,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
 
-            new Thread(() ->
+            // On the EDT, which this block is already inside.  updateState sets text, swaps list
+            // models, toggles visibility and reassigns each panel's path list, and the raw thread that
+            // used to wrap it did all of that off the EDT - from arrival and departure callbacks fired
+            // by locomotive driving threads, with no synchronization against the EDT or against a
+            // second such thread from the next event.  It also made the dispatch race below possible.
+            for (Object o : this.autoLocPanel.getComponents())
             {
-                for (Object o : this.autoLocPanel.getComponents())
-                {
-                    AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                    status.updateState(null);
-                }
-            }).start();
+                AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
+                status.updateState(null);
+            }
         });
     }
     

@@ -296,6 +296,38 @@ public class RouteEditor extends PositionAwareJFrame
         return 1;
     }
 
+    /**
+     * Refuses a name the route text format cannot carry, and says so.
+     *
+     * Commands and conditions are stored as "prefix,name,value" and re-parsed by splitting on commas,
+     * so a name containing one comes back as a different locomotive at a different speed.  Brackets
+     * are worse in a condition: preprocessText rewrites every bracket into a line break to find the
+     * grouping, so a name carrying one is shredded and the whole expression fails to parse with a
+     * generic message.
+     *
+     * The command door has always refused commas.  This is that same refusal, widened to the
+     * character the condition parser also cannot survive, and applied at both doors.
+     *
+     * A name like "SBB 460 (2)" is real - it is in the sample locomotive file - so this refuses
+     * something a user legitimately has.  It refuses it with a reason, which is the improvement;
+     * carrying such a name properly needs a quoted format, and that is recorded as still open.
+     *
+     * @param name
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseUnusableName(String name)
+    {
+        if (name == null) return false;
+
+        if (name.contains(",") || name.contains("(") || name.contains(")"))
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorUnusableLocName"));
+            return true;
+        }
+
+        return false;
+    }
+
     public static String filterConfigCommands(String text)
     {
         String[] lines = text.split("\n");
@@ -1651,12 +1683,7 @@ public class RouteEditor extends PositionAwareJFrame
         
         if (locNameList.getModel().getSize() > 0)
         {
-            // Sanity check
-            if (((String) locNameList.getSelectedItem()).contains(","))
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorCommaLoc"));
-                return;
-            }
+            if (refuseUnusableName((String) locNameList.getSelectedItem())) return;
             
             RouteCommand rc;
             if (commandTypeList.getSelectedIndex() == 0)
@@ -1863,6 +1890,12 @@ public class RouteEditor extends PositionAwareJFrame
             {
                 int address = Math.abs(Integer.parseInt(this.autoLocS88.getText()));
                                 
+                // The same refusal the command door above has always made.  A condition is stored
+                // in the same text format and re-parsed the same way, so this door could write a line
+                // that comes back as a different locomotive - or, for a bracket, one the expression
+                // parser shreds into four tokens and rejects with a message naming nothing.
+                if (refuseUnusableName(this.locNameListAuto.getSelectedItem().toString())) return;
+
                 newEntry += RouteCommand.RouteCommandAutoLocomotive(this.locNameListAuto.getSelectedItem().toString(), address).toLine(null);
                 
                 this.conditionAccs.setText((this.conditionAccs.getText().trim() + (this.conditionAccs.getText().trim().isEmpty() ? "" : "\nAND ") + newEntry).trim());

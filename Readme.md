@@ -366,6 +366,10 @@ Tab icons provided by Freepik.
 * v2.8.1 [8/17/2026]
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
+        - Double-clicking the empty space below a short list of available paths no longer starts the last path in the list
+        - Fixed bug where a train could be sent down a different path than the one double-clicked, if another locomotive arrived or departed at that moment
+        - An error while redrawing the graph can no longer leave a locomotive stuck part way through a route, needing the graph reloaded
+        - Feedback sensors are no longer ignored for a while after the computer clock is corrected backwards, such as by an automatic time sync
     - Locomotive Bug Fixes
         - Fixed bug where pressing Go on the Central Station while trains were already running discarded their accumulated running time from the statistics.  This also happened when clicking a track diagram accessory, which turns track power on first
         - The duplicate address check no longer reports an address as free when one locomotive is already using it.  Previously only addresses already shared by two or more locomotives counted
@@ -374,6 +378,7 @@ Tab icons provided by Freepik.
         - Fixed bug where capturing commands into a route that drives more than one locomotive kept only the last one.  Capturing a turnout would make an earlier locomotive’s speed, direction, or function disappear from the middle of the command list, and saving kept the shortened route
         - Fixed bug where importing a routes file containing two routes with the same name left the rejected one running invisibly in the background, still triggering from its s88 and still throwing switches, until TrainControl was restarted
         - Cancelling the bulk enable or disable prompt now cancels, instead of doing nothing at all and leaving the route list unrefreshed
+        - A locomotive whose name contains a comma or a bracket can no longer be used in a route condition, and a locomotive can no longer be renamed to such a name.  Routes store locomotives by name in a text format that uses both characters, so such a name silently turned an existing route command into one for a different locomotive, or stopped the route saving at all
     - Track Diagram Bug Fixes
         - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
         - Clicking a tile in the track diagram editor no longer counts as an edit, so the editor stops asking whether to save changes that were never made
