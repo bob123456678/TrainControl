@@ -397,7 +397,13 @@ public class AutonomyViewerPanel extends JPanel
         // Debug builds only, and last on the menu.  What it writes is the DERIVED graph in the old
         // JSON form - a diagnostic for reading when something derives wrongly, not a file anybody
         // operates the railway from.  The menu is rebuilt on every press, so the flag is read fresh.
-        if (ui.getModel() != null && ui.getModel().isDebug())
+        // And only when there is a derived graph to write.  What this exports is the REDUCTION, so
+        // with no setup at all there is nothing to reduce, and with blocking problems the reduction is
+        // the thing under repair - offering it in either state hands somebody a file that describes
+        // nothing, or throws on the way to writing one.  The Autonomy menu has always refused in both
+        // states; this copy of the same action did not.
+        if (ui.getModel() != null && ui.getModel().isDebug()
+            && session.exists() && !session.hasBlockingProblems())
         {
             menu.addSeparator();
             menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
@@ -1101,6 +1107,16 @@ public class AutonomyViewerPanel extends JPanel
         String name = selected();
 
         if (name == null) return;
+
+        // Refused while trains are moving, exactly as deleting the whole setup already is.  Confirming
+        // this mid-run went through to clearAutoLayout and stopped every locomotive - which is a
+        // reasonable thing to ask for and not a reasonable thing to have happen as a side effect of
+        // tidying up a list of configurations.
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            return;
+        }
 
         // Named in the question, because the list and the running configuration can differ and deleting
         // is not undoable.

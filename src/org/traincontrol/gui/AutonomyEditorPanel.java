@@ -2846,12 +2846,19 @@ public class AutonomyEditorPanel extends JPanel
 
             AutonomyChecks.Severity severity = finding.getSeverity();
 
+            // Warnings are what says WARNING, and everything else that is not an error is a notice.
+            //
+            // This used to read "not an error and not a notice, therefore a warning", which quietly
+            // made INFO findings warnings here while the count on the diagram - which adds up errors
+            // and warnings only - ignored them entirely.  So closing a run both ways showed "1
+            // warning" and an amber banner in this window and nothing at all on the strip, and the two
+            // numbers a reader is asked to reconcile disagreed by exactly the INFO findings.
             List<Object[]> into = here
                 ? (severity == AutonomyChecks.Severity.ERROR ? errorRows
-                    : severity == AutonomyChecks.Severity.NOTICE ? noticeRows : warningRows)
+                    : severity == AutonomyChecks.Severity.WARNING ? warningRows : noticeRows)
                 : (severity == AutonomyChecks.Severity.ERROR ? elsewhereErrors
-                    : severity == AutonomyChecks.Severity.NOTICE ? elsewhereNotices
-                    : elsewhereWarnings);
+                    : severity == AutonomyChecks.Severity.WARNING ? elsewhereWarnings
+                    : elsewhereNotices);
 
             into.add(new Object[] {finding.getTile(), text});
         }

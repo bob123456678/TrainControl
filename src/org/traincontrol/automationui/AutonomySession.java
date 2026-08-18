@@ -137,9 +137,11 @@ public class AutonomySession
      * could.  Anything already saved deliberately survives, which is what makes the Save button in the
      * editor mean something.
      *
-     * Station captions are the one thing this does NOT take back.  They live on the track diagram, not
-     * in the setup, and are written to the layout file the moment they are set - so the wording of the
-     * question the user is asked has to say so rather than quietly overstate what is being undone.
+     * Station captions ARE taken back, along with everything else.  They used to live on the track
+     * diagram and be written to the layout file the moment they were set, which made them the one
+     * thing this could not undo; they have been part of the setup since captions stopped being text
+     * labels, so they are re-read with the rest of it and the question asked of the user no longer
+     * has to make an exception of them.
      *
      * @throws IOException if the setup cannot be re-read, in which case nothing is changed
      */
