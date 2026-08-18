@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.util.List;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
