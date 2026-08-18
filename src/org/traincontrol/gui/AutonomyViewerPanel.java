@@ -40,7 +40,34 @@ import org.traincontrol.util.I18n;
  */
 public class AutonomyViewerPanel extends JPanel
 {
-    private final AutonomySession session;
+    /**
+     * Asked for every time rather than held.
+     *
+     * The window drops its session whenever the layout changes underneath it - closing either editor
+     * does exactly that - and builds a new one from disk on the next request.  A panel holding the old
+     * object went on writing to a session nobody else could see: an import, a name, a caption all
+     * landed in it and were saved, while the diagram read the window's new session and showed none of
+     * them.  Closing an editor "fixed" it only because that is what replaced the window's session with
+     * one that had just read the file.
+     *
+     * Falling back to the one this panel was built with, which is never null.  The window can answer
+     * null - it does for a layout that is not stored locally - and these forty-odd call sites were
+     * written against a field that could not be, so preferring the live session must not hand them a
+     * null they never had to consider.
+     *
+     * @return the session the rest of the application is using
+     */
+    private AutonomySession session()
+    {
+        AutonomySession current = ui.getAutonomySession();
+
+        return current != null ? current : initialSession;
+    }
+
+    /**
+     * What this panel was constructed with, kept only as the fallback above.
+     */
+    private final AutonomySession initialSession;
 
     /**
      * The main window - and the parent of every dialog this class raises.
@@ -92,7 +119,10 @@ public class AutonomyViewerPanel extends JPanel
 
     public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
     {
-        this.session = session;
+        // Kept only as the fallback session() describes: every use asks the window for whichever
+        // session is current, because the window replaces its own whenever the layout changes
+        // underneath it and a panel holding the old one writes where nobody is reading.
+        this.initialSession = session;
         this.ui = ui;
 
         // White, and no inset border: this panel stands inside a white container, and a default grey
@@ -403,7 +433,7 @@ public class AutonomyViewerPanel extends JPanel
         // nothing, or throws on the way to writing one.  The Autonomy menu has always refused in both
         // states; this copy of the same action did not.
         if (ui.getModel() != null && ui.getModel().isDebug()
-            && session.exists() && !session.hasBlockingProblems())
+            && session().exists() && !session().hasBlockingProblems())
         {
             menu.addSeparator();
             menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
@@ -547,7 +577,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void choosePages()
     {
-        java.util.List<org.traincontrol.base.LayoutDiagram> pages = session.getPages();
+        java.util.List<org.traincontrol.base.LayoutDiagram> pages = session().getPages();
 
         // BoxLayout, not GridLayout: a grid gives every row the height of its tallest, so the wrapped
         // prompt made each page checkbox as tall as three lines of text and the dialog filled the
@@ -566,7 +596,7 @@ public class AutonomyViewerPanel extends JPanel
 
         for (org.traincontrol.base.LayoutDiagram page : pages)
         {
-            boolean excluded = session.getStore().getExcludedPages().contains(page.getName());
+            boolean excluded = session().getStore().getExcludedPages().contains(page.getName());
 
             javax.swing.JCheckBox box = new javax.swing.JCheckBox(page.getName(), !excluded);
             box.setAlignmentX(LEFT_ALIGNMENT);
@@ -584,7 +614,7 @@ public class AutonomyViewerPanel extends JPanel
 
         for (java.util.Map.Entry<String, javax.swing.JCheckBox> entry : boxes.entrySet())
         {
-            session.setPageExcluded(entry.getKey(), !entry.getValue().isSelected());
+            session().setPageExcluded(entry.getKey(), !entry.getValue().isSelected());
         }
 
         save();
@@ -630,7 +660,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         Object chosen = configurations.getSelectedItem();
 
-        return chosen == null ? session.getStore().getActiveConfiguration() : String.valueOf(chosen);
+        return chosen == null ? session().getStore().getActiveConfiguration() : String.valueOf(chosen);
     }
 
     /**
@@ -653,7 +683,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (ui.getActiveDiagramConfiguration() != null) return;
 
-        session.getStore().setActiveConfiguration(name.trim());
+        session().getStore().setActiveConfiguration(name.trim());
 
         load(name.trim(), true);
     }
@@ -664,7 +694,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void loadActive()
     {
-        String active = session.getStore().getActiveConfiguration();
+        String active = session().getStore().getActiveConfiguration();
 
         // Quietly: a modal on startup, before the window is even up, tells a user who has not asked for
         // anything that something they have never heard of cannot be used.  A failed resume goes to the
@@ -695,7 +725,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             try
             {
-                session.captureFromLayout(ui.getModel().getAutoLayout().toJSON(),
+                session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(),
                     ui.getActiveDiagramConfiguration());
             }
             catch (Exception e)
@@ -707,12 +737,12 @@ public class AutonomyViewerPanel extends JPanel
 
         // remembered so a failed load can put the store back: what loads on the next start must be
         // something that actually loaded, not something that was refused partway
-        String previous = session.getStore().getActiveConfiguration();
+        String previous = session().getStore().getActiveConfiguration();
 
-        session.getStore().setActiveConfiguration(name);
-        session.rebuild();
+        session().getStore().setActiveConfiguration(name);
+        session().rebuild();
 
-        if (session.hasBlockingProblems())
+        if (session().hasBlockingProblems())
         {
             // refreshed FIRST, so the reasons are on screen behind the message that refers to them
             refresh();
@@ -745,7 +775,7 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            ui.getModel().parseAuto(session.buildConfiguration());
+            ui.getModel().parseAuto(session().buildConfiguration());
 
             // remembered for next start, the way loading has always doubled as choosing
             save();
@@ -769,7 +799,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         int blocking = 0;
 
-        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph().getProblems())
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session().getGraph().getProblems())
         {
             if (problem.isBlocking()) blocking++;
         }
@@ -779,8 +809,8 @@ public class AutonomyViewerPanel extends JPanel
 
     private void revert(String previous)
     {
-        session.getStore().setActiveConfiguration(previous);
-        session.rebuild();
+        session().getStore().setActiveConfiguration(previous);
+        session().rebuild();
     }
 
     /**
@@ -798,7 +828,7 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            session.initialize(name.trim());
+            session().initialize(name.trim());
         }
         catch (IOException e)
         {
@@ -815,7 +845,7 @@ public class AutonomyViewerPanel extends JPanel
         // BEFORE anything is derived or loaded, so the pages that cannot be told apart are already out
         // when the first graph is built - rather than the user meeting a screenful of duplicate-sensor
         // errors and being told about the exclusions afterwards.
-        List<String> shut = session.excludeRepeatedSensorPages();
+        List<String> shut = session().excludeRepeatedSensorPages();
 
         if (!shut.isEmpty())
         {
@@ -843,8 +873,8 @@ public class AutonomyViewerPanel extends JPanel
         // that cannot load.
         if (ui.getActiveDiagramConfiguration() == null)
         {
-            session.getStore().setActiveConfiguration(name.trim());
-            session.rebuild();
+            session().getStore().setActiveConfiguration(name.trim());
+            session().rebuild();
 
             refresh();
         }
@@ -871,7 +901,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     private String suggestedConfigurationName()
     {
-        java.util.List<String> taken = session.getStore().getConfigurationNames();
+        java.util.List<String> taken = session().getStore().getConfigurationNames();
 
         for (int next = 1; next < 1000; next++)
         {
@@ -936,7 +966,7 @@ public class AutonomyViewerPanel extends JPanel
         if (name == null || name.trim().isEmpty()) return;
 
         // importing over an existing name replaces it, which is sometimes wanted and never silent
-        if (session.getStore().getConfigurationNames().contains(name.trim()))
+        if (session().getStore().getConfigurationNames().contains(name.trim()))
         {
             int replace = JOptionPane.showConfirmDialog(ui,
                 I18n.f("autosetup.ui.confirmImportOverwrites", name.trim()),
@@ -949,7 +979,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            int filled = session.importBundle(name.trim(),
+            int filled = session().importBundle(name.trim(),
                 new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
 
             save();
@@ -995,7 +1025,7 @@ public class AutonomyViewerPanel extends JPanel
         // Here as well as at setup creation, because a setup made before this existed - or one whose
         // pages have been redrawn since - has never had it applied, and importing is exactly when it
         // matters.
-        List<String> shut = session.excludeRepeatedSensorPages();
+        List<String> shut = session().excludeRepeatedSensorPages();
 
         if (!shut.isEmpty())
         {
@@ -1012,7 +1042,7 @@ public class AutonomyViewerPanel extends JPanel
             java.util.Set<String> known = ui.getModel() == null
                 ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
-            AutonomySession.LegacyImport result = session.importLegacy(
+            AutonomySession.LegacyImport result = session().importLegacy(
                 new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)),
                 known);
 
@@ -1038,7 +1068,7 @@ public class AutonomyViewerPanel extends JPanel
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched);
 
-            loadAfterImport(session.getStore().getActiveConfiguration());
+            loadAfterImport(session().getStore().getActiveConfiguration());
         }
         catch (IOException | RuntimeException e)
         {
@@ -1058,7 +1088,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null) return;
 
-        org.json.JSONObject configuration = session.getStore().exportBundle(name);
+        org.json.JSONObject configuration = session().getStore().exportBundle(name);
 
         if (configuration == null) return;
 
@@ -1095,7 +1125,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             // as a copy, so a variant that differs only in where the locomotives start does not mean
             // re-entering every decision that has nothing to do with that
-            session.getStore().createConfiguration(name.trim(), from);
+            session().getStore().createConfiguration(name.trim(), from);
         }
         catch (IOException e)
         {
@@ -1107,7 +1137,7 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        session.getStore().setActiveConfiguration(name.trim());
+        session().getStore().setActiveConfiguration(name.trim());
 
         save();
         refresh();
@@ -1126,7 +1156,7 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            session.getStore().renameConfiguration(from, name.trim());
+            session().getStore().renameConfiguration(from, name.trim());
             save();
         }
         catch (IOException e)
@@ -1169,13 +1199,13 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            session.getStore().deleteConfiguration(name);
+            session().getStore().deleteConfiguration(name);
             save();
 
             // Deleting the last one is allowed now, and a layout with none left cannot go on running
             // the graph built from the one just deleted - nothing would be able to save into it, and
             // the diagram would keep showing stations belonging to a configuration that is gone.
-            if (session.getStore().getConfigurationNames().isEmpty()
+            if (session().getStore().getConfigurationNames().isEmpty()
                 || (wasRunning && ui.getActiveDiagramConfiguration() != null))
             {
                 ui.autonomySetupDeleted();
@@ -1199,7 +1229,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         try
         {
-            session.save();
+            session().save();
         }
         catch (IOException e)
         {
@@ -1218,7 +1248,7 @@ public class AutonomyViewerPanel extends JPanel
             java.io.File out = new java.io.File("autonomy-derived.json").getAbsoluteFile();
 
             java.nio.file.Files.write(out.toPath(),
-                session.buildConfigurationForInspection().getBytes(
+                session().buildConfigurationForInspection().getBytes(
                     java.nio.charset.StandardCharsets.UTF_8));
 
             // Say what happened, then show where.  A dialog containing nothing but a path leaves the
@@ -1244,7 +1274,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         // Each step shows only when it is reachable.  Before a setup exists there is nothing to choose
         // and nothing to enable; before a configuration is running there is nowhere to place a train.
-        boolean exists = session.exists() || !session.getStore().getConfigurationNames().isEmpty();
+        boolean exists = session().exists() || !session().getStore().getConfigurationNames().isEmpty();
         boolean running = ui.getActiveDiagramConfiguration() != null;
 
         initialize.setVisible(!exists);
@@ -1255,10 +1285,10 @@ public class AutonomyViewerPanel extends JPanel
         stepEnable.setVisible(exists);
         enable.setVisible(exists);
 
-        int total = session.getPages().size();
+        int total = session().getPages().size();
 
         pagesSummary.setText(I18n.f("autosetup.ui.labelPagesSummary",
-            total - session.getStore().getExcludedPages().size(), total));
+            total - session().getStore().getExcludedPages().size(), total));
 
         // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
         // which does not exist is what made placing look missing in the first place.
@@ -1277,12 +1307,12 @@ public class AutonomyViewerPanel extends JPanel
         {
             configurations.removeAllItems();
 
-            for (String name : session.getStore().getConfigurationNames())
+            for (String name : session().getStore().getConfigurationNames())
             {
                 configurations.addItem(name);
             }
 
-            String active = session.getStore().getActiveConfiguration();
+            String active = session().getStore().getActiveConfiguration();
 
             if (active != null) configurations.setSelectedItem(active);
         }
@@ -1340,9 +1370,9 @@ public class AutonomyViewerPanel extends JPanel
         List<Object[]> warnings = new java.util.ArrayList<>();
 
         // A graph problem is what stops the build, so it is always an error.
-        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph() == null
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session().getGraph() == null
             ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
-            : session.getGraph().getProblems())
+            : session().getGraph().getProblems())
         {
             (problem.isBlocking() ? errors : warnings).add(new Object[]
             {
@@ -1352,7 +1382,7 @@ public class AutonomyViewerPanel extends JPanel
             });
         }
 
-        for (AutonomyChecks.Finding finding : session.check())
+        for (AutonomyChecks.Finding finding : session().check())
         {
             // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
             // where there is a tile, say what the tile is instead.
@@ -1365,7 +1395,7 @@ public class AutonomyViewerPanel extends JPanel
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
         // is said out loud rather than left in a getter nobody calls
-        for (Map.Entry<String, String> entry : session.getStore().getPageIdConflicts().entrySet())
+        for (Map.Entry<String, String> entry : session().getStore().getPageIdConflicts().entrySet())
         {
             warnings.add(new Object[] {null,
                 I18n.f("autosetup.ui.warnPageRenumbered", entry.getKey(), entry.getValue())});
@@ -1392,12 +1422,12 @@ public class AutonomyViewerPanel extends JPanel
         String where = tile.getX() + "," + tile.getY();
 
         org.traincontrol.base.LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+            session().getGraph() == null ? null : session().getGraph().getTiles().get(tile);
 
         if (component == null) return where;
 
         // a name the user gave it beats anything derived
-        String named = session.getStore().getPointName(tile);
+        String named = session().getStore().getPointName(tile);
 
         if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
 
