@@ -156,52 +156,6 @@ public class LayoutGrid
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
                     ui == null ? null : ui.autonomyCaptionAt(square);
 
-                // Debug only, and only for the first square of a page, so it costs one line per page.
-                //
-                // Three readings of this path have each explained the symptom and each been wrong, so
-                // it says out loud what it actually had to work with: whether there was a session at
-                // all when the grid was built, how many captions it knew about, and whether this page
-                // is one autonomy has been told to ignore.  Between them those three separate every
-                // remaining explanation for a caption that draws as ordinary text.
-                if (ui != null && ui.getModel() != null && ui.getModel().isDebug()
-                    && x == 0 && y == 0)
-                {
-                    org.traincontrol.automationui.AutonomySession diag = ui.getAutonomySession();
-
-                    // The KEYS, in the form the session actually holds them.
-                    //
-                    // Everything else has checked out - the session is there, it has the captions, the
-                    // page is not excluded, and the grid's squares start at 0,0 so they are absolute.
-                    // What is left is whether the two sides spell a square the same way.  The setup is
-                    // stored keyed by page ID ("1:1,10") and translated to page NAME on load, using a
-                    // mapping built from the pages themselves - so a page whose id is not known when
-                    // the session opens leaves its captions keyed by something no lookup will ever
-                    // build.  Printing three keys settles it in one line.
-                    StringBuilder keys = new StringBuilder();
-
-                    if (diag != null)
-                    {
-                        int shown = 0;
-
-                        for (org.traincontrol.automationui.TileGraph.TileKey k
-                            : diag.getCaptions().keySet())
-                        {
-                            if (shown++ >= 3) break;
-
-                            keys.append(" [").append(k).append("]");
-                        }
-                    }
-
-                    ui.getModel().log("[grid] page=" + layout.getName()
-                        + " pageId=" + layout.getPageId()
-                        + " edit=" + layout.getEdit()
-                        + " session=" + (diag == null ? "NULL" : "present")
-                        + " captions=" + (diag == null ? -1 : diag.getCaptions().size())
-                        + " excluded=" + ui.isPageExcludedFromAutonomy(layout.getName())
-                        + " firstSquare=" + square
-                        + " captionKeys=" + keys);
-                }
-
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;

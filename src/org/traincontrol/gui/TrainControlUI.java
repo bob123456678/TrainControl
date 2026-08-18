@@ -715,7 +715,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.autosave.setVisible(false);
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
-        this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, false));
+        // Defaulted ON.  A layout with a setup on it opened with that setup not loaded: the
+        // diagram drew the station names as plain text, no sensor showed as a Point, and the only
+        // sign anything existed was a banner offering to load it.  Everything worked and nothing
+        // looked like it did.
+        //
+        // Loading is not running - it builds the graph and draws it, and starting trains is still a
+        // separate press - so there is nothing here for the default to put at risk.  A layout with no
+        // setup is unaffected, and anybody who does not want it keeps their unticked box.
+        this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, true));
         this.enhancedPathValidationMenuItemCheckbox.setSelected(prefs.getBoolean(ENHANCED_PATH_VALIDATION, true));
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
