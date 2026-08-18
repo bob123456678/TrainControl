@@ -1579,4 +1579,89 @@ public class testAutonomyDiagramSession
 
         assertTrue(result.unknownLocomotives.isEmpty(), "nothing can be unknown with nothing to check");
     }
+
+    /**
+     * An imported station is labelled on its own square, and so raises no unlabelled-station error.
+     *
+     * Every station has to be shown on the diagram - it is an error not to be - so an import that
+     * named fifty stations and captioned none would have handed back fifty errors to clear by hand,
+     * which is not a migration anybody would finish.
+     *
+     * The station's own square is the one place that is always right: it exists, it is on the page the
+     * reader is looking at, and unlike a search for nearby blank space it cannot land the label on
+     * somebody else's track.
+     */
+    @Test
+    public void testAnImportedStationIsLabelledOnItsOwnSquare() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "Hauptbahnhof");
+        point.put("station", true);
+        point.put("s88", 11);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        session.importLegacy(legacy);
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        assertEquals(session.getCaptionTarget(tile), tile,
+            "the imported station is not labelled on its own square");
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertFalse(org.traincontrol.automationui.AutonomyChecks.UNLABELLED_STATION
+                .equals(finding.getMessageKey()) && tile.equals(finding.getTile()),
+                "the station this import labelled is still reported as not shown on the diagram");
+        }
+    }
+
+    /**
+     * A station nobody has labelled is an error, not a warning.
+     *
+     * The railway runs perfectly well unlabelled, which was the old argument for a warning - true of
+     * the trains and beside the point for the person watching them.  A setup whose stations cannot be
+     * found on the diagram is not one anybody can supervise.
+     */
+    @Test
+    public void testAnUnlabelledStationIsAnError() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(tile, true);
+        session.setPointName(tile, "Hauptbahnhof");
+
+        session.rebuild();
+
+        boolean found = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (!org.traincontrol.automationui.AutonomyChecks.UNLABELLED_STATION
+                .equals(finding.getMessageKey())) continue;
+
+            if (!tile.equals(finding.getTile())) continue;
+
+            found = true;
+
+            assertEquals(finding.getSeverity(),
+                org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
+                "a station that cannot be found on the diagram should block the setup, not merely "
+                    + "sit among the things worth checking");
+        }
+
+        assertTrue(found, "precondition: an unlabelled station is reported at all");
+    }
 }

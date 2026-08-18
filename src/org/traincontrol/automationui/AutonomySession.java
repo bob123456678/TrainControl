@@ -512,6 +512,20 @@ public class AutonomySession
 
             store.setPointName(tile, name);
 
+            // Labelled on the station square itself.
+            //
+            // Every station has to be shown on the diagram - it is an error not to be - and an import
+            // that named fifty of them and captioned none would have handed the user fifty errors to
+            // clear by hand.  The station's own square is the one place that is always right: it
+            // exists, it is on the page the reader is looking at, and it cannot land on somebody
+            // else's track the way searching for nearby blank space can.
+            //
+            // Only where the station has no caption already, like everything else here.
+            if (point.optBoolean("station", false) && captionsFor(tile).isEmpty())
+            {
+                store.setCaption(tile, tile);
+            }
+
             if (point.optBoolean("station", false)) store.setStation(tile, true);
 
             int length = point.optInt("maxTrainLength", 0);

@@ -369,8 +369,12 @@ public class AutonomyChecks
      * Is every station shown on the track diagram?
      *
      * The diagram is where the user watches trains, and a station with no label on it is a place they
-     * cannot see - autonomy will announce arrivals at a platform that is nowhere on screen.  A warning
-     * rather than an error: the railway runs perfectly well without labels, it just cannot be read.
+     * cannot see - autonomy will announce arrivals at a platform that is nowhere on screen.
+     *
+     * An error, on the author's instruction.  This was a warning on the argument that the railway runs
+     * perfectly well unlabelled and merely cannot be read - true of the trains, and beside the point
+     * for the person watching them.  A setup whose stations cannot be found on the diagram is not one
+     * anybody can supervise, and calling that "worth checking" put it below things that matter less.
      *
      * A station still carrying its generated name is skipped, because it already has a warning of its
      * own and naming it is the step that has to come first - two rows about one sensor, one of which
@@ -394,7 +398,7 @@ public class AutonomyChecks
             // name changed.
             if (!labelled.contains(point.getTile()))
             {
-                findings.add(new Finding(Severity.WARNING, UNLABELLED_STATION,
+                findings.add(new Finding(Severity.ERROR, UNLABELLED_STATION,
                     point.getName(), point.getTile()));
             }
         }
