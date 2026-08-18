@@ -154,8 +154,18 @@ public class AutonomyEditorPanel extends JPanel
     {
         I18n.t("autosetup.ui.directionsAll"),
         I18n.t("autosetup.ui.directionsRestrictions"),
-        I18n.t("autosetup.ui.directionsNone")
+        I18n.t("autosetup.ui.directionsNone"),
+        I18n.t("autosetup.ui.directionsArrivals")
     });
+
+    /**
+     * The view that shows nothing but where trains may pull in.
+     *
+     * Its own entry rather than a fourth checkbox, because it answers a different question from the
+     * other three and wants the diagram to itself: the direction arrows are most of the ink on a busy
+     * page, and the arrival marks are small and sit at the tile edges where the arrows already are.
+     */
+    private static final int VIEW_ARRIVALS = 3;
 
     /**
      * What the visibility controls were last set to, remembered across openings of this window.
@@ -390,7 +400,7 @@ public class AutonomyEditorPanel extends JPanel
         // the one below redraws the whole panel - which during construction means redrawing a panel
         // that is still being built.
         directions.setSelectedIndex(
-            Math.max(0, Math.min(2, VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT))));
+            Math.max(0, Math.min(VIEW_ARRIVALS, VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT))));
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
 
@@ -795,6 +805,43 @@ public class AutonomyEditorPanel extends JPanel
             auto.setEnabled(isOpen && isStation);
 
             stationMenu.add(auto);
+
+            // Where trains may pull IN from.
+            //
+            // Under the station group because it is only a question about a station, and only where
+            // there is more than one way in: a square with a single arrival side has no choice to
+            // offer, and barring its only side would leave a station no train could ever be sent to.
+            // Somebody who wants that wants a pass-through, which is the choice directly above.
+            final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
+                session.arrivalSides(target);
+
+            if (isStation && ways.size() > 1)
+            {
+                javax.swing.JMenu arrivals = new javax.swing.JMenu(
+                    I18n.t("autosetup.ui.menuArrivalsGroup"));
+
+                arrivals.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivals")));
+
+                final java.util.Set<org.traincontrol.automationui.TilePorts.Side> barred =
+                    session.getBarredArrivals(target);
+
+                for (final org.traincontrol.automationui.TilePorts.Side side : ways)
+                {
+                    javax.swing.JCheckBoxMenuItem allow = toggle(
+                        I18n.f("autosetup.ui.menuArrivalFrom",
+                            I18n.t("autosetup.ui.side" + side.name())),
+                        "autosetup.ui.hintArrivals", !barred.contains(side),
+                        on -> setArrivalAllowed(target, side, on));
+
+                    // The LAST way in cannot be shut here either.  Unticking them one at a time is
+                    // the same mistake as barring a single-sided station, arrived at more slowly.
+                    allow.setEnabled(barred.contains(side) || barred.size() < ways.size() - 1);
+
+                    arrivals.add(allow);
+                }
+
+                stationMenu.add(arrivals);
+            }
 
             menu.add(stationMenu);
 
@@ -1413,6 +1460,35 @@ public class AutonomyEditorPanel extends JPanel
      * @param station whether trains may stop here
      * @param open whether they may come here at all
      */
+    /**
+     * Opens or shuts one side of a station to arriving trains.
+     *
+     * Stored as the set of BARRED sides, so a station nobody has restricted carries nothing at all -
+     * and a side added to the diagram later arrives open, which is what somebody who never opened this
+     * setting would expect.
+     *
+     * @param tile the station
+     * @param side which way in
+     * @param allowed whether trains may arrive that way
+     */
+    private void setArrivalAllowed(TileKey tile, org.traincontrol.automationui.TilePorts.Side side,
+        boolean allowed)
+    {
+        java.util.Set<org.traincontrol.automationui.TilePorts.Side> barred =
+            new java.util.LinkedHashSet<>(session.getBarredArrivals(tile));
+
+        if (allowed)
+        {
+            barred.remove(side);
+        }
+        else
+        {
+            barred.add(side);
+        }
+
+        session.setBarredArrivals(tile, barred);
+    }
+
     private void setUsage(TileKey tile, boolean station, boolean open)
     {
         setStation(tile, station);
@@ -2422,7 +2498,7 @@ public class AutonomyEditorPanel extends JPanel
 
     public boolean isShowingDirections()
     {
-        return directions.getSelectedIndex() != 2;
+        return directions.getSelectedIndex() < 2;
     }
 
     public boolean isShowingLengths()
@@ -2496,7 +2572,7 @@ public class AutonomyEditorPanel extends JPanel
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
-        if (directions.getSelectedIndex() != 2 && session.getGraph() != null && !ignored && !follower)
+        if (isShowingDirections() && session.getGraph() != null && !ignored && !follower)
         {
             Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -2558,9 +2634,14 @@ public class AutonomyEditorPanel extends JPanel
         // square it crossed said only that it went somewhere.
         boolean outlined = selection.contains(tile) || tile.equals(testFrom);
 
+        // In the arrivals view every station shows every side it has, so the setting can be READ -
+        // an unrestricted station drawing nothing is right on the running diagram and useless in the
+        // one place somebody has come to look at exactly this.
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
-            traces.get(tile), directions.getSelectedIndex() == 1);
+            traces.get(tile), directions.getSelectedIndex() == 1,
+            ignored ? null
+                : session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS));
     }
 
     /**

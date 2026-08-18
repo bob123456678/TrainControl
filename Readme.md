@@ -367,6 +367,10 @@ Tab icons provided by Freepik.
     - Autonomy
         - Deprecated the autonomy graph.  All automation is now handled in the track diagram and handled automatically.
         - A running train now draws its route along the track: red for the track ahead of it, green for the track it has already covered, and black arrows showing which way it is going
+        - Stations can now say which directions trains are allowed to arrive from.  By default they accept trains from any direction; the autonomy editor has a new Arrivals view and a right-click setting, and the track diagram shows a small arrow where a station only takes trains one way
+        - Fixed bug where a platform holding two trains showed only one of them
+        - Fixed bug where a square that stopped being a station kept its name label, which then lit up whenever a train passed over it
+        - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
     - Locomotive Bug Fixes

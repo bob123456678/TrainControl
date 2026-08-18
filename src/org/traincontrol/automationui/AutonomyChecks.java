@@ -132,6 +132,14 @@ public class AutonomyChecks
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     /**
+     * A station no train can arrive at any more.
+     *
+     * Every way in barred, which the editor refuses to do but a diagram edit can arrive at from the
+     * other side: bar one of two ways in, then delete the track that reached the other.
+     */
+    public static final String NO_ARRIVALS_LEFT = "autosetup.ui.checkNoArrivalsLeft";
+
+    /**
      * One locomotive recorded as standing in two places.
      *
      * An ERROR, and the strongest kind: the running model does not skip the second placement, it
@@ -225,9 +233,24 @@ public class AutonomyChecks
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives)
     {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, placedLocomotives, Collections.<TileKey, Boolean>emptyMap());
+    }
+
+    /**
+     * @param shutStations which stations have had every arrival side barred.  Worked out by the
+     *        session, which knows both the restrictions and how a square splits; this only reports it.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations)
+    {
         List<Finding> findings = new ArrayList<>();
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
+
+        findings.addAll(checkArrivalsLeft(labelledStations, shutStations));
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
         for (TileGraph.Problem problem : graph.getProblems())
@@ -443,6 +466,32 @@ public class AutonomyChecks
                 // that wants it rather than for that sentence.
                 findings.add(new Finding(Severity.ERROR, DUPLICATE_LOCOMOTIVE,
                     entry.getKey(), squares.get(extra)));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * Is any station shut to trains from every direction?
+     *
+     * The editor will not let somebody tick the last way in, so this is for the ways round it: a
+     * diagram edited after the restriction was set, a track removed, a setup written by hand.  The
+     * consequence is quiet and total - the station simply never appears as a destination again - so it
+     * is worth saying out loud.
+     */
+    private static List<Finding> checkArrivalsLeft(Set<TileKey> labelled, Map<TileKey, Boolean> shut)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (shut == null) return findings;
+
+        for (Map.Entry<TileKey, Boolean> entry : shut.entrySet())
+        {
+            if (Boolean.TRUE.equals(entry.getValue()))
+            {
+                findings.add(new Finding(Severity.ERROR, NO_ARRIVALS_LEFT,
+                    entry.getKey().toString(), entry.getKey()));
             }
         }
 

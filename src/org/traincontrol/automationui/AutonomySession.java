@@ -2120,7 +2120,7 @@ public class AutonomySession
         }
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            trapped, covered, placedLocomotives());
+            trapped, covered, placedLocomotives(), shutStations());
     }
 
     /**
@@ -2910,7 +2910,77 @@ public class AutonomySession
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile)),
-            false);
+            false, false, false, null, false,
+            // Only where something is actually restricted.  A station that takes trains from anywhere
+            // has nothing to say here, and saying it on every platform of the layout would be the
+            // clutter this mark exists to avoid.
+            arrivalMarks(tile, false));
+    }
+
+    /**
+     * The stations whose every way in has been barred.
+     *
+     * Worked out here because it needs both halves - what is barred, and how many ways in the square
+     * actually has - and the split is this class's business.  A station with no arrival sides at all
+     * is not shut: it is a square that never splits, which the restriction cannot touch.
+     *
+     * @return station square to true, only for the ones that are shut
+     */
+    public Map<TileKey, Boolean> shutStations()
+    {
+        Map<TileKey, Boolean> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, Set<Side>> entry : barredArrivals().entrySet())
+        {
+            if (!store.isStation(entry.getKey())) continue;
+
+            List<Side> ways = arrivalSides(entry.getKey());
+
+            if (ways.isEmpty()) continue;
+
+            boolean open = false;
+
+            for (Side side : ways)
+            {
+                if (!entry.getValue().contains(side)) open = true;
+            }
+
+            if (!open) out.put(entry.getKey(), Boolean.TRUE);
+        }
+
+        return out;
+    }
+
+    /**
+     * The arrival marks for a square, or none where there is nothing to say.
+     *
+     * Only stations have them: arriving somewhere is stopping there, and a square trains merely pass
+     * over is not somewhere anything arrives.
+     *
+     * @param tile
+     * @param always true to mark every arrival side of every station - which is the editor's own view
+     *        of this setting - and false to mark only the stations that actually restrict something,
+     *        which is what the running diagram shows.  Left on everywhere, a two-ended station would
+     *        carry two marks saying "yes, trains may arrive", on every platform of the layout, to say
+     *        nothing at all.
+     * @return the marks, in the order the build emits the copies
+     */
+    public List<TileAnnotation.Arrival> arrivalMarks(TileKey tile, boolean always)
+    {
+        List<TileAnnotation.Arrival> out = new ArrayList<>();
+
+        if (tile == null || !store.isStation(tile)) return out;
+
+        Set<Side> barred = getBarredArrivals(tile);
+
+        if (!always && barred.isEmpty()) return out;
+
+        for (Side side : arrivalSides(tile))
+        {
+            out.add(new TileAnnotation.Arrival(side, !barred.contains(side)));
+        }
+
+        return out;
     }
 
     /**

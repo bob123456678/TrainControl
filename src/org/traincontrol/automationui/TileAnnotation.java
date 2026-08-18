@@ -319,6 +319,66 @@ public class TileAnnotation
     private final List<Trace> traces;
 
     /**
+     * Which sides of a station a train may arrive by, where that has been restricted.
+     *
+     * A different question from the direction arrows, and deliberately drawn differently.  The arrows
+     * say which way traffic may FLOW through a square; this says which way a train may come in and
+     * STOP.  A station can be perfectly reachable from both ends and still be one you only ever want
+     * trains pulling into from the north.
+     *
+     * Empty on almost every square, because the default is that a train may arrive from anywhere - so
+     * the diagram stays quiet and a restriction is a thing you can see.
+     */
+    private final List<Arrival> arrivals;
+
+    /**
+     * One side of a station, and whether trains may arrive by it.
+     */
+    public static class Arrival
+    {
+        private final Side side;
+        private final boolean allowed;
+
+        public Arrival(Side side, boolean allowed)
+        {
+            this.side = side;
+            this.allowed = allowed;
+        }
+
+        public Side getSide()
+        {
+            return side;
+        }
+
+        public boolean isAllowed()
+        {
+            return allowed;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Arrival)) return false;
+
+            Arrival other = (Arrival) o;
+
+            return side == other.side && allowed == other.allowed;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (side == null ? 0 : side.hashCode()) * 31 + (allowed ? 1 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            return (allowed ? "arrive " : "no arrival ") + side;
+        }
+    }
+
+    /**
      * Whether only the directions that are SHUT are drawn.
      *
      * Open track is most of a layout, so its arrows are most of the ink, and they say the thing the
@@ -434,6 +494,20 @@ public class TileAnnotation
     public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
         boolean ignored, boolean curved, boolean portal, List<Trace> traces, boolean blockedOnly)
     {
+        this(marks, length, selected, badge, ignored, curved, portal, traces, blockedOnly, null);
+    }
+
+    /**
+     * @param arrivals which sides of this station trains may arrive by, or null/empty when it takes
+     *        them from anywhere - which is the usual case and draws nothing
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces, boolean blockedOnly,
+        List<Arrival> arrivals)
+    {
+        this.arrivals = arrivals == null
+            ? Collections.<Arrival>emptyList() : new ArrayList<>(arrivals);
+
         this.curved = curved;
         this.portal = portal;
         this.blockedOnly = blockedOnly;
@@ -479,12 +553,17 @@ public class TileAnnotation
     public boolean isBlank()
     {
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
-            && traces.isEmpty();
+            && traces.isEmpty() && arrivals.isEmpty();
     }
 
     public List<Trace> getTraces()
     {
         return Collections.unmodifiableList(traces);
+    }
+
+    public List<Arrival> getArrivals()
+    {
+        return Collections.unmodifiableList(arrivals);
     }
 
     /**
@@ -558,6 +637,8 @@ public class TileAnnotation
 
             paintArrows(g, width, height);
 
+            paintArrivals(g, width, height);
+
             if (badge != null) paintBadge(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
@@ -585,6 +666,90 @@ public class TileAnnotation
             g.setComposite(oldComposite);
 
             if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
+        }
+    }
+
+    /**
+     * Where a train may pull in, and where it may not.
+     *
+     * A chevron at the edge pointing INTO the square, which is the gesture the thing itself makes: a
+     * train coming in from that side.  Deliberately unlike the direction arrows - they sit further in,
+     * point outward, and are red or green - because the two say different things about the same square
+     * and a reader has to be able to tell which they are looking at without being told.
+     *
+     * Small, and at the very edge, so a station with all its sides marked still shows its badge, its
+     * name and whatever is standing on it.  A barred side is the same chevron hollowed out and struck
+     * through: the shape says "arrival", the state says whether it is allowed, so there is one thing to
+     * learn rather than two.
+     */
+    private void paintArrivals(Graphics2D g, int width, int height)
+    {
+        if (arrivals.isEmpty()) return;
+
+        int span = Math.min(width, height);
+
+        // Half the arrowhead's width, and how far in from the edge its point reaches
+        double wing = Math.max(2.5, span / 7.0);
+        double depth = Math.max(3.0, span / 5.0);
+
+        g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        for (Arrival arrival : arrivals)
+        {
+            int[] at = midpoint(arrival.getSide(), width, height);
+
+            if (at == null) continue;
+
+            // Which way is "inward" from this side
+            double dx = width / 2.0 - at[0];
+            double dy = height / 2.0 - at[1];
+            double length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length < 1) continue;
+
+            dx /= length;
+            dy /= length;
+
+            // Across the edge, at right angles to inward
+            double px = -dy;
+            double py = dx;
+
+            // Pulled off the edge itself, which is shared with the neighbouring square
+            double baseX = at[0] + dx * 1.5;
+            double baseY = at[1] + dy * 1.5;
+
+            double tipX = baseX + dx * depth;
+            double tipY = baseY + dy * depth;
+
+            java.awt.geom.Path2D head = new java.awt.geom.Path2D.Double();
+
+            head.moveTo(baseX + px * wing, baseY + py * wing);
+            head.lineTo(tipX, tipY);
+            head.lineTo(baseX - px * wing, baseY - py * wing);
+
+            if (arrival.isAllowed())
+            {
+                head.closePath();
+
+                g.setColor(ARRIVAL);
+                g.fill(head);
+
+                g.setColor(ARRIVAL_EDGE);
+                g.draw(head);
+            }
+            else
+            {
+                g.setColor(ARRIVAL_BARRED);
+                g.draw(head);
+
+                // Struck through, across the mouth of the chevron
+                g.drawLine((int) Math.round(baseX + px * wing), (int) Math.round(baseY + py * wing),
+                    (int) Math.round(tipX - px * wing * 0.2), (int) Math.round(tipY - py * wing * 0.2));
+
+                g.drawLine((int) Math.round(baseX - px * wing), (int) Math.round(baseY - py * wing),
+                    (int) Math.round(tipX + px * wing * 0.2), (int) Math.round(tipY + py * wing * 0.2));
+            }
         }
     }
 
@@ -959,6 +1124,21 @@ public class TileAnnotation
     private static final Color TRACE_CHEVRON = new Color(120, 80, 0);
 
     /**
+     * The arrival marks: indigo, which is on this diagram neither a direction (red and green), nor a
+     * tested path (yellow), nor track autonomy ignores (grey).  A colour of its own for a question of
+     * its own.
+     */
+    private static final Color ARRIVAL = new Color(83, 86, 194);
+
+    private static final Color ARRIVAL_EDGE = new Color(40, 42, 120);
+
+    /**
+     * And a barred one, which is the same mark drawn as an absence: hollow, struck through, and closer
+     * to grey than to indigo, so a shut side recedes and the open ones read as the answer.
+     */
+    private static final Color ARRIVAL_BARRED = new Color(120, 120, 135);
+
+    /**
      * Whether a reversing point is drawn as a cross rather than as a small square.
      *
      * False, at the author's instruction: the cross read as an error marker rather than as a statement
@@ -1171,7 +1351,7 @@ public class TileAnnotation
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
-            && marks.equals(other.marks);
+            && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
     @Override
@@ -1179,7 +1359,8 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3 + (blockedOnly ? 512 : 0);
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3
+            + (blockedOnly ? 512 : 0) + arrivals.hashCode() * 7;
     }
 
     @Override
@@ -1187,6 +1368,7 @@ public class TileAnnotation
     {
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
             + (badge == null ? "" : " " + badge)
+            + (arrivals.isEmpty() ? "" : " " + arrivals)
             + (ignored ? " ignored" : "");
     }
 }

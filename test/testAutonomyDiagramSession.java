@@ -631,6 +631,39 @@ public class testAutonomyDiagramSession
      */
     private File pageFile;
 
+    /**
+     * A page whose middle sensor has track on BOTH sides, so a train can arrive at it either way.
+     *
+     * pageOnDisk puts its two sensors at the ends of a line, where there is only one way in - which is
+     * fine for naming and captions and useless for anything about arrival sides, since a square with
+     * one way in has no choice to restrict.
+     */
+    private LayoutDiagram pageWithATwoEndedStation() throws IOException
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        pageFile = new File(pages, "main.cs2");
+
+        Files.write(pageFile.toPath(),
+            "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + pageFile.getAbsolutePath().replace('\\', '/');
+
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
     private LayoutDiagram pageOnDisk() throws IOException
     {
         File pages = new File(layout, "config/gleisbilder");
@@ -2249,6 +2282,180 @@ public class testAutonomyDiagramSession
             "the next build would put the train straight back");
 
         assertNull(session.getFacing(tile), "the square kept a direction belonging to a train that has gone");
+    }
+
+    /**
+     * A station takes trains from anywhere until somebody says otherwise.
+     *
+     * The default has to be free rather than shut, and it has to cost nothing to store: a setup nobody
+     * has restricted should carry no restriction at all, so that track added to the diagram later
+     * arrives open instead of arriving barred by a setting nobody ever opened.
+     */
+    @Test
+    public void testAStationTakesTrainsFromAnywhereByDefault() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+
+        assertTrue(session.getBarredArrivals(station).isEmpty(),
+            "a station nobody has restricted is carrying a restriction");
+
+        assertTrue(session.arrivalMarks(station, false).isEmpty(),
+            "an unrestricted station draws marks on the running diagram, which is the clutter this "
+            + "setting exists to avoid");
+    }
+
+    /**
+     * Barring a side stops trains stopping there, and nothing else.
+     *
+     * The restriction lands on the copy for that arrival side: it stops being a station, so autonomy
+     * cannot send a train to it.  The copy itself stays, and so does every edge through it, because
+     * running THROUGH a square is a different question - the one the direction arrows answer.
+     */
+    @Test
+    public void testBarringAnArrivalSideOnlyStopsTrainsStoppingThere() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
+            session.arrivalSides(station);
+
+        assertTrue(ways.size() > 1, "precondition: this fixture has a square with two ways in");
+
+        org.traincontrol.automationui.TilePorts.Side shut = ways.get(0);
+
+        session.setBarredArrivals(station,
+            new java.util.LinkedHashSet<>(Arrays.asList(shut)));
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        int stations = 0;
+        int copies = 0;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!point.getString("name").startsWith("Bahnhof")) continue;
+
+            copies++;
+
+            if (point.getBoolean("station")) stations++;
+        }
+
+        assertTrue(copies > 1, "the square has to still be emitted as every copy it was before");
+
+        assertTrue(stations > 0, "barring one way in shut the whole station");
+
+        assertTrue(stations < copies,
+            "the barred side is still a place autonomy can send a train to");
+    }
+
+    /**
+     * Lifting a restriction leaves nothing behind.
+     */
+    @Test
+    public void testLiftingAnArrivalRestrictionStoresNothing() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        org.traincontrol.automationui.TilePorts.Side shut = session.arrivalSides(station).get(0);
+
+        session.setBarredArrivals(station, new java.util.LinkedHashSet<>(Arrays.asList(shut)));
+        session.setBarredArrivals(station,
+            new java.util.LinkedHashSet<org.traincontrol.automationui.TilePorts.Side>());
+
+        assertFalse(session.barredArrivals().containsKey(station),
+            "the square kept an empty restriction, which is a setting that says nothing");
+    }
+
+    /**
+     * The restriction survives being written out and read back.
+     */
+    @Test
+    public void testArrivalRestrictionsSurviveASaveAndLoad() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        org.traincontrol.automationui.TilePorts.Side shut = session.arrivalSides(station).get(0);
+
+        session.setBarredArrivals(station, new java.util.LinkedHashSet<>(Arrays.asList(shut)));
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        assertEquals(reopened.getBarredArrivals(station),
+            new java.util.LinkedHashSet<>(Arrays.asList(shut)),
+            "the restriction did not survive the file");
+    }
+
+    /**
+     * A station shut from every direction is reported.
+     *
+     * The editor will not let anybody tick the last way in, so this is for the ways round it - a
+     * diagram edited after the fact, or a file written by hand.  The consequence is quiet and total:
+     * the station simply stops being a destination, with nothing on screen to say why.
+     */
+    @Test
+    public void testAStationWithEveryWayInBarredIsReported() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        session.setBarredArrivals(station,
+            new java.util.LinkedHashSet<>(session.arrivalSides(station)));
+
+        assertTrue(session.shutStations().containsKey(station),
+            "a station no train can reach is not being noticed");
+
+        boolean reported = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.NO_ARRIVALS_LEFT
+                .equals(finding.getMessageKey()))
+            {
+                reported = true;
+
+                assertEquals(finding.getSeverity(),
+                    org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
+                    "a station autonomy can never use is not a suggestion");
+            }
+        }
+
+        assertTrue(reported, "nothing told the user their station is unreachable");
     }
 
     /**
