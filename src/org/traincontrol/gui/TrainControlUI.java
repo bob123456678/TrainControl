@@ -2251,7 +2251,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         StringBuilder text = new StringBuilder("[");
 
-        int room = Math.max(3, LayoutGrid.LAYOUT_STATION_MAX_LENGTH / crowd.size());
+        // What is left for the NAMES once the furniture is paid for: an arrow after each train, and a
+        // bar between them.  Budgeted from the whole length rather than from the name allowance, which
+        // is what made a pair of trains wider than the single train it replaced.
+        int furniture = 3 * crowd.size();
+
+        int room = Math.max(3,
+            (LayoutGrid.LAYOUT_STATION_MAX_LENGTH - furniture) / Math.max(1, crowd.size()));
 
         for (Point at : crowd)
         {

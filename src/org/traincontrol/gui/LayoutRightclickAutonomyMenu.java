@@ -413,6 +413,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (session == null || !ui.getModel().hasAutoLayout()) return out;
 
+        java.util.List<String> shut = new java.util.ArrayList<>();
+
         for (String name : session.facingsFor(station).keySet())
         {
             Point copy = ui.getModel().getAutoLayout().getPoint(name);
@@ -421,10 +423,29 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             java.util.List<Edge> away = ui.getModel().getAutoLayout().getNeighbors(copy);
 
-            if (away != null && !away.isEmpty()) out.add(name);
+            if (away == null || away.isEmpty()) continue;
+
+            // A copy trains may STOP at, in preference to one they may not.
+            //
+            // Barring an arrival side makes that copy a non-destination, and this list is drawn at
+            // random - so half the time the train was put on the copy the user had just said trains
+            // may not arrive at.  parseAuto then warns about a locomotive on a non-station every
+            // single time the configuration loads, and the gate on this menu item, which the same
+            // change added to keep placement at destinations, was defeated by the item it guarded.
+            if (copy.isDestination())
+            {
+                out.add(name);
+            }
+            else
+            {
+                shut.add(name);
+            }
         }
 
-        return out;
+        // Nothing open is not the same as nowhere to go.  A square whose copies are all shut to
+        // arrivals is still somewhere a train physically stands, and refusing to place one there
+        // would be a different message from the "no way out" one this list exists to produce.
+        return out.isEmpty() ? shut : out;
     }
 
     /**

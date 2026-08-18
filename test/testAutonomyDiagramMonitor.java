@@ -236,6 +236,16 @@ public class testAutonomyDiagramMonitor
             Arrays.asList(State.ACTIVE, State.ACTIVE));
 
         assertFalse(overlays.get(tile(0, 0)).isBlank());
+
+        // And the same square with a line but no STATE, which is where this actually bit.  Asserted on
+        // an ACTIVE overlay alone the check could not fail: a state that is not IDLE is already enough
+        // to paint, with or without segments, so the test agreed with the rule it was not testing.
+        TileOverlay quiet = new TileOverlay(State.IDLE, false,
+            Arrays.asList(new TileOverlay.Segment(Side.W, Side.E, State.IDLE)));
+
+        assertFalse(quiet.isBlank(),
+            "a square carrying a line reported itself blank, so paint() returned before drawing it - "
+            + "while equals() counted the segments and forced the repaint anyway");
     }
 
     private static TileKey tile(int x, int y)

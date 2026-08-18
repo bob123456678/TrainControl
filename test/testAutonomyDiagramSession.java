@@ -2495,6 +2495,67 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Excluding a page does not destroy the arrival restrictions on it.
+     *
+     * The graph leaves excluded pages out by construction, so a square on one has no arrival sides at
+     * all - and a save that pruned restrictions against the live sides read that as "every way in has
+     * gone" and deleted the setting outright.  Re-including the page gave nothing back, and nothing
+     * reported the loss, because it happened before the reconciliation that would have reported it.
+     *
+     * The same rule the whole reconciliation is built around: excluding a page must be reversible.
+     */
+    @Test
+    public void testExcludingAPageKeepsItsArrivalRestrictions() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        java.util.Set<org.traincontrol.automationui.TilePorts.Side> barred =
+            new java.util.LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0)));
+
+        session.setBarredArrivals(station, barred);
+
+        session.getStore().setPageExcluded("main", true);
+        session.rebuild();
+
+        assertTrue(session.arrivalSides(station).isEmpty(),
+            "precondition: an excluded page is not in the graph, so the square has no sides");
+
+        session.save();
+
+        session.getStore().setPageExcluded("main", false);
+        session.rebuild();
+
+        assertEquals(session.getBarredArrivals(station), barred,
+            "the restriction was destroyed by excluding the page, and re-including gave nothing back");
+    }
+
+    /**
+     * A path that ends where it started is not offered, even from a configuration this index predates.
+     *
+     * The dedupe used to short-circuit on the names being equal before ever consulting the index.
+     * Moved into the index it lost that, and the index answers "different place" about two Points it
+     * has never heard of - which is exactly a configuration built before the last diagram edit.  The
+     * train is then offered a journey to the platform it is standing on.
+     */
+    @Test
+    public void testAPathBackToWhereItStartedIsDroppedEvenForUnknownPoints() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        assertNull(index.squareOf("Ghost"),
+            "precondition: a Point from a configuration this index does not describe");
+
+        assertTrue(index.sameSquare("Ghost", "Ghost"),
+            "a Point is in the same place as itself, whether or not this index has heard of it");
+    }
+
+    /**
      * Demoting a station forgets how trains were allowed to arrive at it.
      *
      * Inert while it is not a station, so leaving it costs nothing today - and everything the day
@@ -2663,11 +2724,14 @@ public class testAutonomyDiagramSession
     @Test
     public void testTheIndexRoundTripsSquaresAndPoints() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        // A square that actually SPLITS.  Run on a station at the end of a line - one way in, one
+        // Point - the closing check below reduced to sameSquare(x, x), and the whole test would have
+        // passed against an index that could not split at all.
+        LayoutDiagram page = pageWithATwoEndedStation();
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = new TileKey("main", 3, 1);
 
         session.setStation(station, true);
         session.setPointName(station, "Bahnhof");
@@ -2676,8 +2740,8 @@ public class testAutonomyDiagramSession
 
         assertEquals(index.nameOf(station), "Bahnhof");
 
-        assertFalse(index.pointNamesAt(station).isEmpty(),
-            "a station with no Points cannot be translated to anything");
+        assertTrue(index.pointNamesAt(station).size() > 1,
+            "the point of this class is one square being several Points, so the fixture has to be one");
 
         for (String name : index.pointNamesAt(station))
         {

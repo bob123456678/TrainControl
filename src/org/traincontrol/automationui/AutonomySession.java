@@ -129,6 +129,17 @@ public class AutonomySession
         for (Map.Entry<TileKey, Set<Side>> entry
             : new LinkedHashMap<>(store.getBarredArrivals()).entrySet())
         {
+            // Only squares this setup can still SEE.
+            //
+            // The index is derived from the graph, and the graph leaves out excluded pages - so a
+            // square on an excluded page has no arrival sides at all, and pruning against that would
+            // read as "every side of this station has gone" and delete the restriction outright.
+            // Excluding a page has to be reversible, which is the same rule the reconciliation below
+            // this call exists to keep, and this would have broken it for one field only.
+            //
+            // The same shape catches a station fed through a link, which splits into nothing.
+            if (!getStationIndex().squares().contains(entry.getKey())) continue;
+
             Set<Side> live = new LinkedHashSet<>(entry.getValue());
 
             live.retainAll(arrivalSides(entry.getKey()));

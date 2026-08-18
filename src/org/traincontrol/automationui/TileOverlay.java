@@ -196,7 +196,11 @@ public class TileOverlay
      */
     public boolean isBlank()
     {
-        return state == State.IDLE && !train;
+        // The segments count.  equals() grew them so a changed picture is republished; this did not,
+        // so an overlay carrying a line with no state reported itself blank and painted nothing while
+        // still forcing the repaint.  Nothing emits that pair today - lay() always sets a state - and
+        // the first thing that wants a neutral line would have found it silently invisible.
+        return state == State.IDLE && !train && segments.isEmpty();
     }
 
     /**

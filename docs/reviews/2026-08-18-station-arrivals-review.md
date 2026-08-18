@@ -21,6 +21,8 @@ Three commits, and the code around them:
 | pass | model | method |
 |---|---|---|
 | feature review | Fable | the three commits and the code around them, read against the split-point model |
+| changes pass | Opus | the five commits to 81a51ac, told what the first pass had already found and to look for what it missed |
+| regressions pass | Opus | what worked before this week and does not now, across the shared files the branch touches |
 
 ---
 
@@ -29,6 +31,7 @@ Three commits, and the code around them:
 | id | finding | status |
 |---|---|---|
 | A1 | barring an arrival side of a turn-around station invalidates the whole configuration | fixed, `d4cc22a` |
+| A2 | excluding a page permanently destroyed the arrival restrictions on it | fixed, next commit |
 
 ### A1 - a barred terminus copy is emitted as a terminus that is not a destination
 
@@ -56,12 +59,35 @@ as a plain `reversing` point, which is what it is: somewhere trains turn round a
 Test: `testBarringASideOfATurnAroundStationStillLoads` asserts no emitted point pairs `terminus: true`
 with `station: false`. Seen failing first, on the exact JSON the builder produced.
 
+### A2 - the save-time pruning was measured against the graph, which leaves out excluded pages
+
+Introduced by the B1 fix, and found by the second pass.
+
+`forgetArrivalsThatNoLongerExist` intersected each stored restriction with the square's live arrival
+sides.  Those come from the StationIndex, which is derived from the graph - and the graph leaves out
+excluded pages by construction.  So a square on an excluded page has no arrival sides at all, the
+intersection emptied, and the restriction was deleted outright.  Re-including the page gave nothing
+back, and nothing reported the loss because it happened before the reconciliation that reports things.
+
+Six lines below the call, `save()` carries the comment explaining why nothing may reconcile against
+the graph - written after this exact mistake destroyed every setting on an excluded page once before.
+The new field was the only one not going through `reconcile`, and it walked into it.
+
+The same shape catches a station fed only through a link, which splits into nothing.
+
+Now skipped for any square the index has never heard of, which keeps the stale-side pruning B1 wanted:
+a square that is still in the graph with fewer sides is still pruned.
+
+Test: `testExcludingAPageKeepsItsArrivalRestrictions`.
+
 ## B - medium
 
 | id | finding | status |
 |---|---|---|
 | B1 | a restriction naming a side the square no longer has locks the menu and cannot be cleared | fixed, `d4cc22a` |
-| B2 | a train on a non-destination copy had no right-click menu at all | fixed, next commit |
+| B2 | a train on a non-destination copy had no right-click menu at all | fixed, `81a51ac` |
+| B3 | with no train there, the menu still hung off whichever copy sorted first | fixed, next commit |
+| B4 | a locomotive could be placed at random onto a barred copy | fixed, next commit |
 
 ### B1 - stale barred sides were counted, hidden, and unremovable
 
@@ -105,6 +131,31 @@ placing a locomotive stays destination-only, which is what it was.
 Not covered by a test: the menu is Swing construction with no seam, the same reason the editor's
 equivalent was not.  Both are one right-click to check by hand.
 
+### B3 - the B2 fix covered the train and not the empty platform
+
+`speakerAt` prefers an occupied copy and otherwise returns the first in emission order, which is the
+order the sides happen to sort in.  With one side barred and no train standing there, whether the menu
+spoke for the open copy or the shut one depended on WHICH side had been barred: bar the east of an
+east-west platform and the first copy is the shut one, so the whole autonomy block was skipped and the
+square looked as though it had no autonomy at all.  Bar the west and everything worked.
+
+B2 fixed "a train on a copy that is not a destination"; this is the same fault with no train on it.
+`speakerAt` now prefers a copy trains may stop at before falling back to the first.
+
+### B4 - and placement then ignored the rule the same hunk had just added
+
+`placeableCopies` filtered on having somewhere to go and not on being a destination, while the menu
+item above it had just been gated on `isDestination`.  So the guard was defeated by the action it
+guarded: the copy is picked at RANDOM from that list, so it landed on the barred copy about half the
+time, and parseAuto then warns about a locomotive on a non-station every time the configuration loads.
+
+Now filtered by destination, falling back to the shut copies only when nothing is open - a square where
+trains may not stop is still somewhere a train physically is, and refusing to place one there is a
+different message from the "no way out" one this list exists to produce.
+
+Neither has a test: both are Swing menu construction, the same seam problem as B2.  All three are one
+right-click to check.
+
 ## C - low
 
 | id | finding | status |
@@ -114,6 +165,9 @@ equivalent was not.  Both are one right-click to check by hand.
 | C3 | `renamePage` orphaned captions and switched-off links | fixed, `d4cc22a` |
 | C4 | arrival restrictions survived station demotion | fixed, `d4cc22a` |
 | C5 | `arrivalSides()` rebuilt a whole builder per call | fixed, `d4cc22a` |
+| C6 | the dedupe lost the short-circuit that makes a Point equal to itself | fixed, next commit |
+| C7 | `TileOverlay.isBlank` was not updated for segments while `equals` was | fixed, next commit |
+| C8 | two of the new tests could not fail | fixed, next commit |
 
 ### C1 - the index was derived by whoever asked first, which is often the feedback thread
 
@@ -154,6 +208,32 @@ commit introduced.
 `arrivalSides()` ran a whole builder pass per call, and it is called per station per repaint. Moved
 into `StationIndex`, where the rest of the derivation lives.
 
+### C6 - a Point stopped being in the same place as itself
+
+Both dedupe call sites used `session.sameSquare`, which short-circuits on the names being equal before
+consulting the index.  Moved into `StationIndex.distinctDestinations` they lost it - and the index
+answers "different place" about two Points it has never heard of, which is exactly a configuration built
+before the last diagram edit, or a hand-written one.  A path from P back to P was then offered as a
+destination while the train stood on P.  The short-circuit is back, in the index.
+
+### C7 - blank and equal disagreed
+
+`equals` and `hashCode` grew the segments deliberately, so a train claiming the same square from a
+different side counts as a changed picture.  `isBlank` did not, and `paint` returns early on it - so
+an overlay carrying a line with no state would have forced a repaint and then drawn nothing.  Nothing
+emits that pair today; the first thing to want a neutral line would have found it invisible.
+
+### C8 - two tests that agreed with themselves
+
+`testTheIndexRoundTripsSquaresAndPoints` ran on a station at the end of a line, which emits ONE Point -
+so its closing check reduced to `sameSquare(x, x)`, and the whole test would have passed against an
+index that could not split at all.  It now uses the two-ended fixture and asserts more than one copy as
+a precondition.
+
+`testASquareWithALinePaints` asserted `!isBlank()` on an ACTIVE overlay, which is already non-blank
+with no segments at all - so it agreed with a rule it was not testing.  It now also covers the case C7
+is about, and that half was seen failing before C7 was fixed.
+
 ## D - not defects
 
 | id | finding | status |
@@ -162,6 +242,9 @@ into `StationIndex`, where the rest of the derivation lives.
 | D2 | `DiagramMonitor.indexEdges`/`indexPoints` were dead code with a trap in them | deleted, `d4cc22a` |
 | D3 | `speakerAt`'s javadoc became false one commit later | corrected, `d4cc22a` |
 | D4 | the right-click menu still answers for one train on a shared square | open - see below |
+| D5 | the crowded caption's width budget ignored its own separators | fixed, next commit |
+| D6 | `arrivalSidesOf` bypasses the node cache | accepted, see below |
+| D7 | the short `AutonomyChecks.run` overloads omit the new check | accepted, see below |
 
 ### D1
 
@@ -189,6 +272,26 @@ real defect and is B2.) Not a defect in the changed code - it is the pre-existin
 newly visible because the caption no longer shares it. Left open deliberately: the menu's actions
 (remove, facing) need a train chosen, and inventing a submenu for a case the user has hit once is
 worth a decision rather than a guess.
+
+### D5
+
+`crowdedLabel` divided the ten-character allowance by the number of trains and then added a bar
+between them and a two-character arrow after each - so two trains came to seventeen characters against
+a single train's fourteen, and the javadoc's claim that the pair "still fits where one name used to"
+was not what the arithmetic did.  The furniture is budgeted now.
+
+### D6 - accepted
+
+`arrivalSidesOf` walks the reduced edges rather than reusing `nodesFor`'s cache, so deriving the
+index is O(squares x edges).  C5 moved this off the repaint path, so it now runs once per rebuild; the
+cost is not worth a second cache that could disagree with the first.
+
+### D7 - accepted
+
+The seven short `AutonomyChecks.run` overloads chain down with an empty map, so a caller not using
+the full form would silently miss the new check.  Only one caller exists and it uses the full form, and
+this matches the pre-existing chaining for termini, trapped and the rest.  Recorded because D2 deleted
+two statics on exactly this reasoning; the difference is that those had no correct caller at all.
 
 ### Checked and found correct
 

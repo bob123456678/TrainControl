@@ -262,6 +262,14 @@ public final class StationIndex
      */
     public boolean sameSquare(String a, String b)
     {
+        if (a == null || b == null) return false;
+
+        // Identical names are the same place even when this index has never heard of either.  A
+        // configuration built before the last diagram change still has Points, and they are still
+        // somewhere; without this, a path from P back to P is offered as a journey to where the train
+        // is already standing, which is the thing the caller is trying to drop.
+        if (a.equals(b)) return true;
+
         TileKey first = squareOf(a);
         TileKey second = squareOf(b);
 
@@ -337,6 +345,18 @@ public final class StationIndex
         if (!occupied.isEmpty()) return occupied.get(0);
 
         List<Point> all = pointsAt(layout, square);
+
+        // A copy trains may stop at, in preference to one they may not.
+        //
+        // The copies stopped being interchangeable when arrivals could be barred, and the order they
+        // come in is the order the sides happen to sort in - so with one side barred, whether the
+        // answer was the open copy or the shut one depended on WHICH side had been barred.  Callers
+        // that ask what may be done at a platform got the shut copy half the time, and answered
+        // "nothing" about a station that works perfectly from the other end.
+        for (Point point : all)
+        {
+            if (point.isDestination()) return point;
+        }
 
         return all.isEmpty() ? null : all.get(0);
     }
