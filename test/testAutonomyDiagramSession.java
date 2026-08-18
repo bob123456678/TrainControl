@@ -1853,6 +1853,11 @@ public class testAutonomyDiagramSession
         session.open(Arrays.asList(page));
         session.getStore().createConfiguration("Adam 1", null);
 
+        // Given the globals every real configuration carries.  A configuration created and never
+        // touched holds nothing but its own name, and a file that says only "name" is not something
+        // this should claim to recognise - see the note on detectImportFormat.
+        session.getStore().getConfiguration("Adam 1").put("globals", new org.json.JSONObject());
+
         org.json.JSONObject bundle = session.getStore().exportBundle("Adam 1");
 
         assertEquals(AutonomySession.detectImportFormat(bundle),
@@ -1882,6 +1887,15 @@ public class testAutonomyDiagramSession
 
         assertEquals(AutonomySession.detectImportFormat(new org.json.JSONObject()),
             AutonomySession.ImportFormat.UNKNOWN, "an empty object says nothing about what it is");
+
+        // A configuration that has never been used carries only its name, and a name is not evidence:
+        // half the JSON in the world has one.  Refusing it costs a user nothing - there is nothing in
+        // it to import - and claiming it would mean claiming any file with a name field.
+        org.json.JSONObject nameOnly = new org.json.JSONObject();
+        nameOnly.put("name", "Adam 1");
+
+        assertEquals(AutonomySession.detectImportFormat(nameOnly),
+            AutonomySession.ImportFormat.UNKNOWN, "a name alone is not enough to go on");
 
         assertEquals(AutonomySession.detectImportFormat(null),
             AutonomySession.ImportFormat.UNKNOWN, "and nothing at all is not a setup either");

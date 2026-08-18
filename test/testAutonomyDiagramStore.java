@@ -670,10 +670,26 @@ public class testAutonomyDiagramStore
 
         store.setCaption(caption, station);
 
-        // and now the other way round: the sensor stays, the square the text was on is deleted
+        // And now the other way round - which is DELIBERATELY not symmetric.
+        //
+        // The sensor stays and the square the text sat on is emptied.  The caption stays with it: a
+        // caption is allowed to sit on blank space, and it is the most readable place to put one, so
+        // "no component on that square" cannot mean "no caption".  Judging it that way once deleted,
+        // on the very next save, both the captions a user had just placed and every caption the
+        // migration had just created.
+        //
+        // What it IS about is the station.  A caption whose sensor has gone is text pointing at track
+        // that no longer exists, and that is the case above.
         store.reconcile(new LinkedHashSet<>(java.util.Arrays.asList(station)));
 
-        assertNull(store.getCaptionTarget(caption));
+        assertEquals(store.getCaptionTarget(caption), station,
+            "a caption on a square with nothing on it is where captions are supposed to go");
+
+        // And the page going takes it, because then neither end is anywhere
+        store.reconcile(new LinkedHashSet<String>());
+
+        assertNull(store.getCaptionTarget(caption),
+            "a caption whose page has gone is about nothing at all");
     }
 
     // --- getting back out ---------------------------------------------------------------------------

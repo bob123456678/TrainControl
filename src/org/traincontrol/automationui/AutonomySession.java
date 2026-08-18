@@ -725,8 +725,12 @@ public class AutonomySession
         if (file.optJSONObject("points") != null) return ImportFormat.CONFIGURATION;
 
         // A configuration whose points have all been removed is still a configuration, and its globals
-        // are the only thing left to say so.  Rare, and cheaper to accept than to explain.
+        // are the only thing left to say so.
         if (file.optJSONObject("globals") != null) return ImportFormat.CONFIGURATION;
+
+        // Deliberately NOT recognised: a configuration created and never used, which carries nothing
+        // but its own name.  A name is not evidence - half the JSON in the world has one - and there
+        // would be nothing in such a file to import anyway.
 
         return ImportFormat.UNKNOWN;
     }
