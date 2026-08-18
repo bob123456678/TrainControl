@@ -78,6 +78,15 @@ public class Layout
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
 
+    /**
+     * How long a boxed-in locomotive waits before looking for a path again, when no delay is set.
+     *
+     * pickPath shuffles every point, sorts, and BFSes the whole graph per candidate - so re-running it
+     * as fast as the CPU allows pegs a core for every train that has nowhere to go.  A quarter second
+     * still re-checks for freed track several times over and costs nothing.
+     */
+    private static final long NO_PATH_IDLE_MS = 250;
+
     // Set to false to disable locomotives
     private volatile boolean running = false;
     
@@ -1863,7 +1872,7 @@ public class Layout
         {
             if (callback != null)
             {
-                callback.apply(new LinkedList<>(this.getEdges()), null, false);
+                fireCallback(callback, new LinkedList<>(this.getEdges()), null, false);
             }
         }
     }
@@ -2450,6 +2459,13 @@ public class Layout
                 if (path != null)
                 {
                     this.executePath(path, loc, speed, null);
+                }
+                else if (this.getMinDelay() <= 0)
+                {
+                    // Boxed in, and no delay configured to throttle the retry.  Without this floor the
+                    // loop re-runs pickPath - a shuffle, a sort and a BFS of the whole graph - as fast
+                    // as the CPU allows, pegging a core for every train that has nowhere to go.
+                    loc.delay(NO_PATH_IDLE_MS);
                 }
 
                 loc.delay(this.getMinDelay() * 1000);
@@ -3273,22 +3289,7 @@ public class Layout
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {
-                    if (callback != null)
-                    {
-                        // A listener must not be able to strand the run.  This fires after the
-                        // locomotive is in activeLocomotives, on the driving thread, and every
-                        // registered callback repaints something - so an exception out of the UI
-                        // killed the thread with the entry left behind, which is the wedged state that
-                        // only reloading the graph clears.
-                        try
-                        {
-                            callback.apply(path, loc, true);
-                        }
-                        catch (Exception e)
-                        {
-                            this.control.log(e);
-                        }
-                    }
+                    fireCallback(callback, path, loc, true);
                 }
                             
                 if (ttp != null)
@@ -3532,7 +3533,7 @@ public class Layout
                 {
                     if (callback != null)
                     {
-                        callback.apply(path, loc, true);
+                        fireCallback(callback, path, loc, true);
 
                         // Repaint other routes in non-atomic route mode
                         if (!this.atomicRoutes)
@@ -3542,7 +3543,7 @@ public class Layout
                                 // Our loc is still active, so skip repainting it
                                 if (!otherLoc.equals(loc))
                                 {
-                                    callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                                    fireCallback(callback, this.activeLocomotives.get(otherLoc), otherLoc, true); 
                                 }
                             }
                         }     
@@ -3580,14 +3581,14 @@ public class Layout
             {
                 if (callback != null)
                 {
-                    callback.apply(path, loc, false);
+                    fireCallback(callback, path, loc, false);
 
                     // Repaint other routes in non-atomic route mode
                     if (!this.atomicRoutes)
                     {
                         for (Locomotive otherLoc : this.getActiveLocomotives().keySet())
                         {
-                            callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                            fireCallback(callback, this.activeLocomotives.get(otherLoc), otherLoc, true); 
                         }
                     }                    
                 }
@@ -3728,7 +3729,7 @@ public class Layout
             {
                 if (callback != null)
                 {
-                    callback.apply(new LinkedList<>(this.getEdges()), locomotive == null ? null : this.control.getLocByName(locomotive), false);
+                    fireCallback(callback, new LinkedList<>(this.getEdges()), locomotive == null ? null : this.control.getLocByName(locomotive), false);
                 }
             }
         }
@@ -3752,6 +3753,32 @@ public class Layout
     public Collection<Point> getPoints()
     {
         return this.points.values();
+    }
+
+    /**
+     * Fires one repaint callback, and does not let it strand the railway.
+     *
+     * Every callback runs synchronously on the DRIVING thread and every registered one repaints
+     * something, so an exception out of the UI - a graph view that has drifted from the layout, a null
+     * node - kills that thread.  Killed at a milestone, the train stops mid-block with its track still
+     * locked, and every other train that needs that track is refused for the rest of the session.
+     *
+     * The start-of-path loop already guarded against this; the milestone and completion loops did not,
+     * which is the drift this one door removes - there is nowhere left to fire a callback un-guarded.
+     */
+    private void fireCallback(TriFunction<List<Edge>, Locomotive, Boolean, Void> callback,
+        List<Edge> edges, Locomotive loc, boolean flag)
+    {
+        if (callback == null) return;
+
+        try
+        {
+            callback.apply(edges, loc, flag);
+        }
+        catch (Exception e)
+        {
+            this.control.log(e);
+        }
     }
 
     /**
