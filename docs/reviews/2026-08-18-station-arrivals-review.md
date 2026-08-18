@@ -550,7 +550,7 @@ reviewed, and how to implement CG4.
 | DX3 | boxed-in train busy-loops pickPath with no delay, pegging a core | fixed, `e65bcce` |
 | DX4 | undo could restore a caption onto a demoted (non-station) square | fixed, `ec7973c` |
 | DX5 | the diagram train marker sat on an arbitrary reserved point, not the last reached | fixed, `ec7973c` |
-| DX6 | captureFromLayout cannot persist two trains on one square; disagrees with the display | OPEN - for Adam, see below |
+| DX6 | two trains could be routed onto one square - a collision | fixed, `d538941` |
 | DX7 | undo caption-stack alignment at the history boundary | not a defect - the symmetric trims hold it |
 | DX8 | two-trains-one-junction locking after the reserve fix | verified correct |
 
@@ -574,30 +574,34 @@ A boxed-in train with no configured delay re-ran the full pickPath search as fas
 (floored now); undo could put a station's name back on a demoted square (guarded now); the train marker
 read an arbitrary reserved point rather than the last milestone (fixed).
 
-### DX6 - OPEN, needs Adam's decision: can two trains be at one square?
+### DX6 - Adam settled it: two trains on one square is always a collision
 
-The display code says yes - `occupantsAt` and `crowdedLabel` (SA, built after Adam saw two trains
-at one station) render more than one occupant. `captureFromLayout` says no - it merges every copy of
-a square into one config entry on the stated assumption that only one carries a locomotive, so if two
-copies are occupied at save, the last in emission order wins and the other train is silently dropped
-from the next load.
+The display and the persistence disagreed about whether the state exists. Adam's ruling - "there is no
+possible scenario where this wouldn't involve a collision" - makes the multi-occupant display an ERROR
+indicator and the routing check the real defect.
 
-They disagree about whether the state exists, and I did not resolve it because the answer is a
-railway-semantics decision, not a code choice:
+The defect: occupancy is recorded per Point, and a square is several Points. A train on the eastbound
+copy of a platform left the westbound copy reading free, so `isPathClear` granted a second train a
+path onto it.
 
-- A square is one s88 block; two trains cannot physically share it. If autonomy can nonetheless dispatch
-  a second train onto a second COPY of an occupied square, that is a collision bug in the occupancy
-  check (Edge.isOccupied reads the copy's own currentLoc, which is null even when a sibling copy holds a
-  train sharing the s88) - and the display is showing an error state, not a feature.
-- If the two-occupant state is only ever transient (one train arriving as another departs), the display
-  is right to show it and captureFromLayout is right that it need not persist - but it should not
-  SILENTLY drop; it should decline to capture the departing one, or log.
+The copies now carry a shared block identity emitted by the builder - the only layer that knows two
+Points came from one tile. `Edge.isOccupied` and both destination filters in `pickPath` ask the
+block.
 
-Which of these is true needs someone who knows the layout. Flagged rather than guessed: keying
-placements per copy (a persistence change) or adding an s88-aware occupancy guard (a routing change)
-are opposite fixes, and picking wrong either breaks a real feature or hides a real collision. My best
-guess is the second bullet (transient), which would make DX6 a "don't drop silently" fix - but I would
-not change the occupancy check or the capture format without Adam confirming the intended semantics.
+**Not the s88**, which is the obvious key and is wrong. In Adam's own v2.8.1 configuration sixteen
+sensors are shared by genuinely different Points (`Indk0102`, `Rev21` and `St00Crev` all sit on
+s88 20 - a station, an approach guard and a reversing point). Keying occupancy on the sensor would
+refuse paths that have always been safe; a companion test pins that they still do not block each other.
+This is the same trap recorded and reverted once before in this project.
+
+Backwards compatible: the block is emitted only where a square becomes more than one Point, and a Point
+without one behaves exactly as before - every Point of every hand-written configuration, including the
+file the ground-truth suite pins.
+
+Left alone deliberately: `captureFromLayout` still merges copies on the assumption that one carries
+the locomotive. That assumption is now enforced upstream rather than hoped for, so the silent-drop path
+should be unreachable. Worth a warning there if it ever fires, but adding one now would be guarding
+against a state the model no longer permits.
 
 ## What this pass did not cover
 
