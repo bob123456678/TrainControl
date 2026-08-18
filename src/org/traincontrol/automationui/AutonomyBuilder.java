@@ -482,14 +482,43 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which way a train standing on this copy is pointing: away from the side it came in by, unless it
-     * is the copy that turned round, which is pointing back at it.
+     * Which way a train standing on this copy is pointing.
+     *
+     * The far side of the route it arrived ON, not the opposite of the side it came in by.  Those are
+     * the same thing on straight track and different on everything else: a train entering an N-E curve
+     * by N leaves by E, and saying it faces S describes a train sitting across the rails.
+     *
+     * That error was invisible in the model - the split only cares WHICH copy a train is on, and the
+     * copies are told apart by arrival - and became visible the moment a facing was shown to a user
+     * and used to choose a copy to place on.
+     *
+     * A switch whose arrival side belongs to more than one route is genuinely ambiguous: which way it
+     * faces depends on which branch it is standing on, and the copy does not record that.  The first
+     * matching route is taken, which is right for the common case of one route through a sensor and
+     * no worse than the old answer anywhere else.
      */
-    private static TilePorts.Side facingOf(Node node)
+    private TilePorts.Side facingOf(Node node)
     {
         if (node.arrival == null) return null;
 
-        return node.reverse ? node.arrival : node.arrival.opposite();
+        // Turned round: pointing back at the side it came in by, whatever the track does
+        if (node.reverse) return node.arrival;
+
+        Map<TileGraph.RouteId, TilePorts.Route> routes =
+            reducer.getGraph() == null ? null : reducer.getGraph().getRoutes(node.tile);
+
+        if (routes != null)
+        {
+            for (TilePorts.Route route : routes.values())
+            {
+                if (route.getA() == node.arrival) return route.getB();
+
+                if (route.getB() == node.arrival) return route.getA();
+            }
+        }
+
+        // Nothing said otherwise, so straight through
+        return node.arrival.opposite();
     }
 
     /**

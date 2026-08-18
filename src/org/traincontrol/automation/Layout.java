@@ -3150,7 +3150,17 @@ public class Layout
         // Sanity check
         if (!this.isValid())
         {
+            // With the reason, which is held from whenever the invalidation happened.  Without it this
+            // said only that something was wrong, and the message that explained it had scrolled past
+            // - so the report that reaches anybody is "it says it is invalid", and the answer is a
+            // search through the log for a line nobody knew to keep.
             this.control.logf("autolayout.errorConfigurationInvalidMustReload");
+
+            if (Layout.lastError != null && !Layout.lastError.trim().isEmpty())
+            {
+                this.control.log(Layout.lastError);
+            }
+
             return false;
         }
 
