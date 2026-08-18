@@ -365,31 +365,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
-        if (session == null || paths == null) return paths;
-
-        List<List<Edge>> out = new java.util.ArrayList<>();
-
-        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
-
-        for (List<Edge> path : paths)
-        {
-            if (path == null || path.isEmpty()) continue;
-
-            if (session.sameSquare(path.get(0).getStart().getName(),
-                path.get(path.size() - 1).getEnd().getName())) continue;
-
-            // One entry per STATION, not per copy.  getPossiblePaths is asked for unique
-            // destinations and answers per Point, so a station a train could reach facing either way
-            // appeared twice - and once the copies stopped being named apart, twice identically.
-            String square = String.valueOf(session.tileForPointName(
-                path.get(path.size() - 1).getEnd().getName()));
-
-            if (!seen.add(square)) continue;
-
-            out.add(path);
-        }
-
-        return out;
+        return session == null ? paths : session.getStationIndex().distinctDestinations(paths);
     }
 
     /**
@@ -408,16 +384,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private String stationName(Point point)
     {
-        if (point == null) return "";
-
-        if (session == null) return point.getName();
-
-        org.traincontrol.automationui.TileGraph.TileKey tile =
-            session.tileForPointName(point.getName());
-
-        String name = tile == null ? null : session.pointNameForTile(tile);
-
-        return name == null || name.trim().isEmpty() ? point.getName() : name;
+        return session == null ? (point == null ? "" : point.getName())
+            : session.getStationIndex().describe(point);
     }
 
     /**

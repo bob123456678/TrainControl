@@ -2252,6 +2252,137 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Demoting a station takes its name plaque with it.
+     *
+     * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption
+     * is not inert: it is a registered label that fills in the moment anything stands on the square.  A
+     * reversing point that was once a station therefore announced itself as one the first time a train
+     * touched it, on a square drawn as a plain point.  The diagram contradicted itself and neither half
+     * was wrong on its own.
+     */
+    @Test
+    public void testDemotingAStationTakesItsCaptionWithIt() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.setStation(station, true);
+        session.setCaption(caption, station);
+
+        assertEquals(session.getCaptionTarget(caption), station, "precondition: the plaque is up");
+
+        session.setStation(station, false);
+
+        assertNull(session.getCaptionTarget(caption),
+            "the name plaque outlived the station it names");
+
+        assertTrue(session.captionsFor(station).isEmpty(),
+            "and the station still believes it is captioned somewhere");
+    }
+
+    /**
+     * A setup written before that rule is cleaned up when it is opened.
+     *
+     * The rule stops new ones appearing; it cannot touch the ones already on disk, and the setup that
+     * showed this fault has one.  Nothing here is a user's to fix - the plaque comes back the moment
+     * the square is made a station again - so it is cleared silently.
+     */
+    @Test
+    public void testOpeningForgetsPlaquesForSquaresThatAreNoLongerStations() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.setStation(station, true);
+        session.setCaption(caption, station);
+
+        // behind the session's back, exactly as a setup written by an older build would look
+        session.getStore().setStation(station, false);
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(pageOnDisk()));
+
+        assertNull(reopened.getCaptionTarget(caption),
+            "the stale plaque survived being opened and will light up again");
+    }
+
+    /**
+     * The translation between squares and Points is derived once and agrees with itself.
+     *
+     * It used to be worked out wherever it was needed, by building a fresh AutonomyBuilder - and the
+     * copies were configured differently, so one of them split a square and another did not.  Both
+     * answered confidently and they were not answers to the same question.
+     */
+    @Test
+    public void testTheIndexRoundTripsSquaresAndPoints() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        assertEquals(index.nameOf(station), "Bahnhof");
+
+        assertFalse(index.pointNamesAt(station).isEmpty(),
+            "a station with no Points cannot be translated to anything");
+
+        for (String name : index.pointNamesAt(station))
+        {
+            assertEquals(index.squareOf(name), station,
+                "a copy that does not lead back to its own square is what broke every caption");
+
+            assertEquals(index.baseNameOf(name), "Bahnhof",
+                "every copy of a station is that station when a person reads it");
+        }
+
+        assertTrue(index.sameSquare(index.pointNamesAt(station).get(0),
+            index.pointNamesAt(station).get(index.pointNamesAt(station).size() - 1)),
+            "copies of one platform have to compare as one place");
+    }
+
+    /**
+     * Renaming a square is visible to the index immediately.
+     *
+     * The index is cached, and a cache that outlives the thing it describes is the failure this class
+     * has now had three times: the labels look up names the running graph has never heard of, and that
+     * station quietly stops filling in.
+     */
+    @Test
+    public void testTheIndexIsDroppedWhenTheSetupChanges() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        assertEquals(session.getStationIndex().nameOf(station), "Bahnhof");
+
+        session.setPointName(station, "Hauptbahnhof");
+
+        assertEquals(session.getStationIndex().nameOf(station), "Hauptbahnhof",
+            "the index answered with a name the setup no longer uses");
+    }
+
+    /**
      * A square that stops being a station keeps whatever train was standing on it.
      *
      * The designation and the placement are separate records and demotion only touches the first, so

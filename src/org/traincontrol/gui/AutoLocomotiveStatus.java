@@ -384,51 +384,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private String stationName(org.traincontrol.automation.Point point)
     {
-        if (point == null) return "";
-
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
 
-        if (session == null) return point.getName();
-
-        org.traincontrol.automationui.TileGraph.TileKey tile =
-            session.tileForPointName(point.getName());
-
-        String name = tile == null ? null : session.pointNameForTile(tile);
-
-        return name == null || name.trim().isEmpty() ? point.getName() : name;
+        return session == null ? (point == null ? "" : point.getName())
+            : session.getStationIndex().describe(point);
     }
 
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
 
-        if (session == null || paths == null) return paths;
-
-        List<List<Edge>> out = new java.util.ArrayList<>();
-
-        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
-
-        for (List<Edge> path : paths)
-        {
-            if (path == null || path.isEmpty()) continue;
-
-            String from = path.get(0).getStart().getName();
-            String to = path.get(path.size() - 1).getEnd().getName();
-
-            if (session.sameSquare(from, to)) continue;
-
-            // One entry per STATION, not per copy.  getPossiblePaths is asked for unique
-            // destinations and answers per Point, so a station a train could reach facing either way
-            // appeared twice - and once the copies stopped being named apart, twice identically.
-            String square = String.valueOf(session.tileForPointName(
-                path.get(path.size() - 1).getEnd().getName()));
-
-            if (!seen.add(square)) continue;
-
-            out.add(path);
-        }
-
-        return out;
+        return session == null ? paths : session.getStationIndex().distinctDestinations(paths);
     }
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked

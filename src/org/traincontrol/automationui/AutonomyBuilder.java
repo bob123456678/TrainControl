@@ -91,6 +91,16 @@ public class AutonomyBuilder
             this.reverse = reverse;
         }
 
+        TileKey getTile()
+        {
+            return tile;
+        }
+
+        TilePorts.Side getArrival()
+        {
+            return arrival;
+        }
+
         /**
          * Whether a train standing on this copy may leave by the given side.
          *
@@ -298,6 +308,43 @@ public class AutonomyBuilder
         return this;
     }
 
+    /**
+     * Which sides each station refuses to let trains arrive by.
+     *
+     * A square is already emitted as one Point per arrival side, so a restriction has somewhere exact
+     * to land: the copy for a barred side stops being a station.  Trains still run over it - the track
+     * is unchanged and pass-through is a different question, answered by the direction arrows - they
+     * simply cannot be sent TO it, which is what "you may not arrive from that way" means.
+     *
+     * @param barred square to the sides it bars, or null for no restrictions
+     * @return this
+     */
+    public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
+    {
+        this.barredArrivals = barred == null
+            ? Collections.<TileKey, Set<TilePorts.Side>>emptyMap() : barred;
+
+        return this;
+    }
+
+    private Map<TileKey, Set<TilePorts.Side>> barredArrivals = Collections.emptyMap();
+
+    /**
+     * Whether a train may arrive at this copy of a square and stop there.
+     *
+     * The tile-wide copy - the one a square that never splits is emitted as - is never barred: there
+     * is no arrival side to bar, and refusing it would make the station unreachable rather than
+     * restricted.
+     */
+    private boolean arrivalAllowed(Node node)
+    {
+        if (node.getArrival() == null) return true;
+
+        Set<TilePorts.Side> barred = barredArrivals.get(node.getTile());
+
+        return barred == null || !barred.contains(node.getArrival());
+    }
+
     public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
     {
         this.manualOnly = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -318,6 +365,20 @@ public class AutonomyBuilder
      * and no name changes, but that Point knows which side it was reached by and therefore refuses to
      * leave by it - which is the whole rule, stated for the commonest case.
      */
+    /**
+     * The sides a train can arrive at a square by, for anything offering the user a choice about them.
+     *
+     * The same answer the split itself uses, so the editor cannot offer a restriction on a side the
+     * build has no copy for - which would be a setting that silently did nothing.
+     *
+     * @param tile
+     * @return the arrival sides, empty when the square is not split
+     */
+    public List<TilePorts.Side> arrivalSidesOf(TileKey tile)
+    {
+        return new ArrayList<>(splitSides(tile));
+    }
+
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
         Set<TilePorts.Side> sides = new java.util.TreeSet<>();
@@ -638,7 +699,10 @@ public class AutonomyBuilder
                 JSONObject json = new JSONObject();
 
                 json.put("name", nodeName(names.get(point.getTile()), node));
-                json.put("station", point.isStation());
+
+                // A station, unless a train arriving THIS way is not allowed to stop.  The copy still
+                // exists and still carries traffic; it is simply not somewhere a train can be sent.
+                json.put("station", point.isStation() && arrivalAllowed(node));
                 json.put("s88", point.getS88());
 
                 if (coordinatePages != null)

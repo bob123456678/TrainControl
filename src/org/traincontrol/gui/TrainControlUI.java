@@ -2156,22 +2156,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        if (session == null) return null;
+        return session == null ? null
+            : session.getStationIndex().speakerAt(this.model.getAutoLayout(), station);
+    }
 
-        org.traincontrol.automation.Point first = null;
-
-        for (String name : session.pointNamesFor(session.pointNameForTile(station)))
+    /**
+     * Every locomotive standing on a square, in the order its copies were emitted.
+     *
+     * More than one is not an error state.  Two trains can be sent to one platform from opposite ends
+     * and each arrives on the copy facing its own way - so asking for THE occupant showed whichever
+     * copy happened to be found first, and the other train was simply not on the diagram.
+     *
+     * @param station the sensor's square
+     * @return the occupied Points, empty when nothing is standing there
+     */
+    public java.util.List<org.traincontrol.automation.Point> getAutonomyOccupantsForTile(
+        org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        if (!this.model.hasAutoLayout() || station == null)
         {
-            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(name);
-
-            if (point == null) continue;
-
-            if (point.getCurrentLocomotive() != null) return point;
-
-            if (first == null) first = point;
+            return java.util.Collections.<org.traincontrol.automation.Point>emptyList();
         }
 
-        return first;
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session == null
+            ? java.util.Collections.<org.traincontrol.automation.Point>emptyList()
+            : session.getStationIndex().occupantsAt(this.model.getAutoLayout(), station);
     }
 
     /**
@@ -2209,12 +2220,86 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (facing == null) return "";
 
+        // The space belongs to the arrow, not to the caller.  Every caller appends this straight
+        // onto a name that has just been cut to length, and a name cut mid-word ran into its own arrow.
         switch (facing)
         {
-            case N: return "^";
-            case S: return "v";
-            case E: return ">";
-            case W: return "<";
+            case N: return " ^";
+            case S: return " v";
+            case E: return " >";
+            case W: return " <";
+            default: return "";
+        }
+    }
+
+    /**
+     * The caption for a square with more than one train on it.
+     *
+     * Every name, each cut short enough that the pair still fits where one name used to - a caption is
+     * one line under a tile, and a label wide enough for two full names covers the track either side of
+     * it.  Cut hard rather than dropping a train: which two are here is the whole of what this says.
+     *
+     * The facing is per TRAIN and not per square here, because that is exactly the case that
+     * distinguishes them - two trains on one platform are almost always pointing opposite ways.
+     *
+     * @param crowd the occupied Points, in emission order
+     * @param square their square
+     * @return the caption text
+     */
+    private String crowdedLabel(java.util.List<Point> crowd,
+        org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        StringBuilder text = new StringBuilder("[");
+
+        int room = Math.max(3, LayoutGrid.LAYOUT_STATION_MAX_LENGTH / crowd.size());
+
+        for (Point at : crowd)
+        {
+            Locomotive standing = at.getCurrentLocomotive();
+
+            if (standing == null) continue;
+
+            if (text.length() > 1) text.append("|");
+
+            String name = standing.getName();
+
+            text.append(name.substring(0, Math.min(name.length(), room)).trim());
+
+            text.append(facingArrowOf(at, square));
+        }
+
+        return text.append("]").toString();
+    }
+
+    /**
+     * Which way one particular train is pointing.
+     *
+     * The copy a train is standing on IS its direction - that is what the split is for - so this is
+     * read off the Point rather than off the square, whose single stored facing describes only the
+     * last train to be placed there by hand.
+     *
+     * @param at the copy the train is on
+     * @param square its square, for the fallback
+     * @return an arrow, or "" when nothing is known
+     */
+    private String facingArrowOf(Point at,
+        org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || at == null) return facingArrow(square);
+
+        org.traincontrol.automationui.TilePorts.Side facing =
+            session.getStationIndex().facingsAt(square).get(at.getName());
+
+        if (facing == null) return facingArrow(square);
+
+        switch (facing)
+        {
+            case N: return " ^";
+            case S: return " v";
+            case E: return " >";
+            case W: return " <";
             default: return "";
         }
     }
@@ -2245,6 +2330,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final Point p = speaking == null ? point : speaking;
 
+        // Everything standing on this square, not only the copy that answered first.
+        final java.util.List<Point> crowd = this.getAutonomyOccupantsForTile(square);
+
         if (!this.getLayoutStations(square).isEmpty()
                 && (this.activeDiagramConfiguration != null
                     || (this.graphViewer != null && this.graphViewer.isVisible()))
@@ -2262,7 +2350,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {                    
                     j.setOpaque(true);
 
-                    if (current != null)
+                    // Two trains on one platform is a fact about the SQUARE, and none of the
+                    // colouring below can speak for both of them: they have different destinations,
+                    // different routes, and different amounts of them done.  So the label names them
+                    // both and says nothing it cannot say truthfully about the pair.
+                    if (crowd.size() > 1)
+                    {
+                        j.setText(crowdedLabel(crowd, square));
+
+                        j.setForeground(Color.BLACK);
+                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                    }
+                    else if (current != null)
                     {
                         j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim()
                             + facingArrow(square) + "]");

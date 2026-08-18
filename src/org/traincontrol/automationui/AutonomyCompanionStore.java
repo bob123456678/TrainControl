@@ -69,6 +69,100 @@ public class AutonomyCompanionStore
     private final Set<String> stations = new LinkedHashSet<>();
     private final Map<String, Integer> tileLengths = new LinkedHashMap<>();
     private final Map<String, String> tileDirections = new LinkedHashMap<>();
+
+    /**
+     * Which sides a station refuses to let trains ARRIVE by, keyed by square.
+     *
+     * The BARRED sides rather than the allowed ones, because the default is that a train may arrive
+     * from anywhere - so a station nobody has restricted stores nothing at all, and a side added to the
+     * diagram later is open, which is what somebody who never opened this setting would expect.  Stored
+     * the other way round, every station would need an entry and every new piece of track would arrive
+     * shut.
+     *
+     * A comma-separated list of side names, so it reads plainly in the file and needs no schema of its
+     * own.
+     */
+    private final Map<String, String> barredArrivals = new LinkedHashMap<>();
+
+    /**
+     * Which sides trains may not arrive by.
+     *
+     * @param tile the station's square
+     * @return the barred sides, empty when the station takes trains from anywhere
+     */
+    public Set<TilePorts.Side> getBarredArrivals(TileKey tile)
+    {
+        Set<TilePorts.Side> out = new LinkedHashSet<>();
+
+        String stored = tile == null ? null : barredArrivals.get(tile.toString());
+
+        if (stored == null) return out;
+
+        for (String name : stored.split(","))
+        {
+            if (name.trim().isEmpty()) continue;
+
+            try
+            {
+                out.add(TilePorts.Side.valueOf(name.trim()));
+            }
+            catch (IllegalArgumentException e)
+            {
+                // A side name this build does not have.  Skipped rather than refused: the rest of the
+                // setting is still good, and refusing the file would cost everything else in it over
+                // one word.
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * @param tile the station's square
+     * @param barred the sides trains may not arrive by, empty or null to take them from anywhere
+     */
+    public void setBarredArrivals(TileKey tile, Set<TilePorts.Side> barred)
+    {
+        if (tile == null) return;
+
+        if (barred == null || barred.isEmpty())
+        {
+            // Nothing is stored for the default, so a setup nobody has touched has nothing to
+            // reconcile, and a square whose restriction is lifted stops carrying one rather than
+            // carrying an empty one.
+            barredArrivals.remove(tile.toString());
+
+            return;
+        }
+
+        StringBuilder text = new StringBuilder();
+
+        for (TilePorts.Side side : barred)
+        {
+            if (text.length() > 0) text.append(",");
+
+            text.append(side.name());
+        }
+
+        barredArrivals.put(tile.toString(), text.toString());
+    }
+
+    /**
+     * @return every square carrying an arrival restriction, against the sides it bars
+     */
+    public Map<TileKey, Set<TilePorts.Side>> getBarredArrivals()
+    {
+        Map<TileKey, Set<TilePorts.Side>> out = new LinkedHashMap<>();
+
+        for (String key : barredArrivals.keySet())
+        {
+            TileKey tile = parseTileKey(key);
+
+            if (tile != null) out.put(tile, getBarredArrivals(tile));
+        }
+
+        return out;
+    }
     private final Map<String, String> portals = new LinkedHashMap<>();
 
     /**
@@ -548,6 +642,7 @@ public class AutonomyCompanionStore
         root.put("stations", new JSONArray(translateSet(stations)));
         root.put("tileLengths", new JSONObject(translateLengths()));
         root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
+        root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
@@ -711,6 +806,7 @@ public class AutonomyCompanionStore
         stations.clear();
         tileLengths.clear();
         tileDirections.clear();
+        barredArrivals.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();
@@ -896,6 +992,7 @@ public class AutonomyCompanionStore
         rekey(pointNames, from, to);
         rekey(tileLengths, from, to);
         rekey(tileDirections, from, to);
+        rekey(barredArrivals, from, to);
         rekeyValues(portals, from, to);
         rekey(portals, from, to);
         rekey(linkNames, from, to);
@@ -1015,6 +1112,7 @@ public class AutonomyCompanionStore
 
         report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
         report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
+        report.droppedTileProperties.addAll(dropMissing(barredArrivals, keys, false));
 
         // A caption goes when either end of it does - the square it is drawn on, or the sensor it is
         // about.  Text pointing at track that no longer exists is the orphan this whole change removes.
@@ -1180,6 +1278,7 @@ public class AutonomyCompanionStore
      */
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
+        "barredArrivals",
         "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
 
 
@@ -1201,6 +1300,7 @@ public class AutonomyCompanionStore
         readStringMap(root, "pointNames", pointNames);
         readStringSet(root, "stations", stations);
         readStringMap(root, "tileDirections", tileDirections);
+        readStringMap(root, "barredArrivals", barredArrivals);
         readStringMap(root, "portals", portals);
         readStringMap(root, "captions", captions);
         readStringMap(root, "linkNames", linkNames);
@@ -1222,6 +1322,7 @@ public class AutonomyCompanionStore
         // stored against page ids; brought back to the names the rest of the application uses
         untranslate(pointNames);
         untranslate(tileDirections);
+        untranslate(barredArrivals);
         untranslate(linkNames);
         untranslatePortals();
         untranslateTileMap(captions);
@@ -1264,6 +1365,7 @@ public class AutonomyCompanionStore
         stations.clear();
         tileLengths.clear();
         tileDirections.clear();
+        barredArrivals.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();

@@ -111,7 +111,31 @@ public class AutonomySession
         // migration simply runs again next time.
         migrationFailures = migrateStationLabels();
 
+        forgetCaptionsOfNonStations();
+
         dirty = false;
+    }
+
+    /**
+     * Drops name plaques belonging to squares that are no longer stations.
+     *
+     * The rule is enforced at the setter now, but setups written before it exists carry captions for
+     * squares that were demoted long ago - and one of them is what made a reversing point announce
+     * itself as a station the moment a train touched it.  Cleared at open, once, so nobody has to find
+     * and delete them by hand.
+     *
+     * Silent: there is nothing here a user could act on, and the plaque comes back the moment the
+     * square is made a station again.
+     */
+    private void forgetCaptionsOfNonStations()
+    {
+        for (Map.Entry<TileKey, TileKey> caption
+            : new LinkedHashMap<>(store.getCaptions()).entrySet())
+        {
+            if (caption.getValue() == null) continue;
+
+            if (!store.isStation(caption.getValue())) store.setCaption(caption.getKey(), null);
+        }
     }
 
     /**
@@ -186,7 +210,7 @@ public class AutonomySession
      */
     public final void rebuild()
     {
-        baseNames = null;
+        stationIndex = null;
 
         graph = new TileGraph(pages, store.getExcludedPages());
 
@@ -1345,12 +1369,81 @@ public class AutonomySession
      */
     public String buildConfiguration()
     {
-        return new AutonomyBuilder(reducer, globals())
+        return builder(globals()).build();
+    }
+
+    /**
+     * A builder configured from this setup.
+     *
+     * The configuration used to be assembled by hand at each of four call sites, and they drifted:
+     * one left out the split settings and so named a railway with no copies in it, another left out
+     * the barred arrivals.  Whatever a builder is asked for - the file, the naming, the coordinates -
+     * it must be describing the same railway, so there is one place that says what that railway is.
+     *
+     * @param globals the run-wide settings, or null when only the naming is wanted
+     * @return a fresh builder
+     */
+    public AutonomyBuilder builder(AutonomyBuilder.Globals globals)
+    {
+        return new AutonomyBuilder(reducer, globals)
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
             .withMandatoryTurns(mandatoryTurnTiles())
             .withParkingTiles(parkingTiles())
-            .build();
+            .withBarredArrivals(barredArrivals());
+    }
+
+    /**
+     * Which sides each station refuses to let trains arrive by.
+     *
+     * @return square to barred sides, only for the squares that restrict anything
+     */
+    public Map<TileKey, Set<Side>> barredArrivals()
+    {
+        return store.getBarredArrivals();
+    }
+
+    /**
+     * @param tile a station's square
+     * @return the sides trains may not arrive by, empty when it takes them from anywhere
+     */
+    public Set<Side> getBarredArrivals(TileKey tile)
+    {
+        return store.getBarredArrivals(tile);
+    }
+
+    /**
+     * @param tile a station's square
+     * @param barred the sides trains may not arrive by
+     */
+    public void setBarredArrivals(TileKey tile, Set<Side> barred)
+    {
+        store.setBarredArrivals(tile, barred);
+        touched();
+    }
+
+    /**
+     * The sides a train can actually arrive at a square by.
+     *
+     * Read from the split rather than from the tile's ports: the split is what decides how many copies
+     * a square becomes, and a side no copy exists for is not somewhere a restriction could bite.  So
+     * the editor offers exactly the choices that mean something.
+     *
+     * @param tile
+     * @return the arrival sides, in the order the build emits them
+     */
+    public List<Side> arrivalSides(TileKey tile)
+    {
+        List<Side> out = new ArrayList<>();
+
+        if (reducer == null || tile == null) return out;
+
+        for (Side side : builder(null).arrivalSidesOf(tile))
+        {
+            if (!out.contains(side)) out.add(side);
+        }
+
+        return out;
     }
 
     /**
@@ -1378,11 +1471,7 @@ public class AutonomySession
      */
     public String baseNameOf(String pointName)
     {
-        if (pointName == null) return null;
-
-        String base = baseNames().get(pointName);
-
-        return base == null ? pointName : base;
+        return pointName == null ? null : getStationIndex().baseNameOf(pointName);
     }
 
     // Emitted Point name -> the caption on the diagram.  Cached because updateStationLabels asks on
@@ -1390,20 +1479,30 @@ public class AutonomySession
     // Dropped whenever the graph is rebuilt, which is the only thing that can change it.
     // volatile: the labels are updated from the feedback thread while a rebuild can drop this from the
     // event thread, and a stale reference here means a station that stops filling in until the next edit
-    private volatile Map<String, String> baseNames;
+    private volatile StationIndex stationIndex;
 
-    private Map<String, String> baseNames()
+    /**
+     * The translation between squares and the Points derived from them.
+     *
+     * Derived once and held until the setup changes, because it is asked for constantly - once per
+     * Point on every feedback event, in places - and because deriving it twice is how the answers
+     * started disagreeing.  Everything that used to build its own AutonomyBuilder to answer half of
+     * this question now asks here instead.
+     *
+     * @return the index, never null
+     */
+    public StationIndex getStationIndex()
     {
-        if (baseNames == null)
+        StationIndex current = stationIndex;
+
+        if (current == null)
         {
-            baseNames = reducer == null ? new LinkedHashMap<String, String>()
-                : new AutonomyBuilder(reducer, null)
-                    .withReversibleTiles(reversibleTiles())
-                    .withMandatoryTurns(mandatoryTurnTiles())
-                    .withParkingTiles(parkingTiles()).baseNames();
+            current = reducer == null ? StationIndex.EMPTY : new StationIndex(builder(null));
+
+            stationIndex = current;
         }
 
-        return baseNames;
+        return current;
     }
 
     /**
@@ -1427,29 +1526,7 @@ public class AutonomySession
      */
     public Map<String, Side> facingsFor(TileKey tile)
     {
-        Map<String, Side> out = new LinkedHashMap<>();
-
-        if (reducer == null || tile == null) return out;
-
-        String base = pointNameForTile(tile);
-
-        if (base == null) return out;
-
-        AutonomyBuilder naming = new AutonomyBuilder(reducer, globals())
-            .withPointExtras(pointExtras())
-            .withReversibleTiles(reversibleTiles())
-            .withMandatoryTurns(mandatoryTurnTiles());
-
-        Map<String, Side> facings = naming.facingByName();
-
-        for (String name : pointNamesFor(base))
-        {
-            Side facing = facings.get(name);
-
-            if (facing != null) out.put(name, facing);
-        }
-
-        return out;
+        return getStationIndex().facingsAt(tile);
     }
 
     /**
@@ -1472,26 +1549,14 @@ public class AutonomySession
     {
         if (a == null || b == null) return false;
 
-        if (a.equals(b)) return true;
-
-        TileKey one = tileForPointName(a);
-        TileKey two = tileForPointName(b);
-
-        return one != null && one.equals(two);
+        // Identical names are the same place even when the index has never heard of either - a
+        // configuration built before the last change still has Points, and they are still somewhere.
+        return a.equals(b) || getStationIndex().sameSquare(a, b);
     }
 
     public List<String> pointNamesFor(String baseName)
     {
-        List<String> out = new ArrayList<>();
-
-        if (baseName == null) return out;
-
-        for (Map.Entry<String, String> entry : baseNames().entrySet())
-        {
-            if (entry.getValue().equals(baseName)) out.add(entry.getKey());
-        }
-
-        return out;
+        return getStationIndex().pointNamesFor(baseName);
     }
 
     /**
@@ -1516,19 +1581,12 @@ public class AutonomySession
      */
     public TileKey tileForPointName(String pointName)
     {
-        if (pointName == null || reducer == null) return null;
-
-        return new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(reversibleTiles())
-            .withMandatoryTurns(mandatoryTurnTiles())
-            .withParkingTiles(parkingTiles()).tilesByName().get(pointName);
+        return getStationIndex().squareOf(pointName);
     }
 
     public String pointNameForTile(TileKey tile)
     {
-        if (reducer == null) return null;
-
-        return new AutonomyBuilder(reducer, null).uniqueNames().get(tile);
+        return getStationIndex().nameOf(tile);
     }
 
     public Set<TileKey> reversibleTiles()
@@ -1691,12 +1749,7 @@ public class AutonomySession
             if (!store.getExcludedPages().contains(page.getName())) pageOrder.add(page.getName());
         }
 
-        return new AutonomyBuilder(reducer, globals())
-            .withPointExtras(pointExtras())
-            .withReversibleTiles(reversibleTiles())
-            .withMandatoryTurns(mandatoryTurnTiles())
-            .withParkingTiles(parkingTiles())
-            .withCoordinatesFromTiles(pageOrder).build();
+        return builder(globals()).withCoordinatesFromTiles(pageOrder).build();
     }
 
     /**
@@ -1765,11 +1818,7 @@ public class AutonomySession
         // name -> tile, through the same naming the builder used to generate the file
         Map<String, TileKey> tilesByName = new LinkedHashMap<>();
 
-        Set<TileKey> split = reversibleTiles();
-
-        AutonomyBuilder naming = new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(split).withMandatoryTurns(mandatoryTurnTiles())
-            .withParkingTiles(parkingTiles());
+        AutonomyBuilder naming = builder(null);
 
         tilesByName.putAll(naming.tilesByName());
 
@@ -2181,6 +2230,18 @@ public class AutonomySession
     public void setStation(TileKey tile, boolean station)
     {
         store.setStation(tile, station);
+
+        // A caption names a station, so demoting one takes its name plaque with it.
+        //
+        // Left behind, the plaque outlives the thing it names: the square is drawn as a plain point
+        // and the label under it stays registered, so a train reversing there lights up a station
+        // name for a place that is no longer a station.  Which is exactly what happened, and read as
+        // the diagram contradicting itself.
+        //
+        // Promotion already places a caption, so the pair is symmetrical - and re-promoting gives the
+        // plaque back, on the square the placer picks.
+        if (!station) clearCaptions(tile, null);
+
         touched();
     }
 
@@ -2381,7 +2442,7 @@ public class AutonomySession
         // dropped only on a rebuild, and this method deliberately does not rebuild, so marking a square
         // while autonomy was running left the labels looking up Point names the running graph had never
         // heard of, and that station stopped filling in until the next load.
-        baseNames = null;
+        stationIndex = null;
     }
 
     /**
@@ -2821,6 +2882,20 @@ public class AutonomySession
     {
         if (graph == null || reducer == null) return null;
 
+        // A link switched off is greyed here as well as in the editor.
+        //
+        // It was greyed only while editing, and a link is the one square whose being switched off is
+        // invisible from the track alone: the tile art is the same either way, no arrow is drawn on it
+        // to go missing, and the route it used to offer simply stops existing.  So a reader of the
+        // running diagram had nothing to look at that said why trains never take that door.
+        //
+        // Before the Point test, because a link may or may not carry a sensor and the answer must not
+        // depend on which.
+        if (isDisabledLink(tile))
+        {
+            return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false, null, true);
+        }
+
         if (!reducer.getPoints().containsKey(tile)) return null;
 
         String name = store.getPointName(tile);
@@ -2836,6 +2911,26 @@ public class AutonomySession
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile)),
             false);
+    }
+
+    /**
+     * Whether this square is a link that autonomy has been told to leave alone.
+     *
+     * Both halves have to hold: the store remembers a switched-off link by its square, and a square
+     * that has since stopped being a link - the tile replaced, the page redrawn - is an ordinary piece
+     * of track that would otherwise be greyed out by a setting nobody can see or clear.
+     *
+     * @param tile
+     * @return true when the square is a link and switched off
+     */
+    public boolean isDisabledLink(TileKey tile)
+    {
+        if (graph == null || tile == null) return false;
+
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+        return component != null && TilePorts.hasPortal(component.getType())
+            && store.isPortalDisabled(tile);
     }
 
     /**
