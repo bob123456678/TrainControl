@@ -1106,7 +1106,10 @@ public class AutonomyViewerPanel extends JPanel
 
             loadAfterImport(session().getStore().getActiveConfiguration());
         }
-        catch (IOException | RuntimeException e)
+        // RuntimeException alone: reading the file moved out to the one Import action that decides
+        // what a file IS, so nothing left in here is checked.  A malformed file still lands here, as
+        // a JSONException.
+        catch (RuntimeException e)
         {
             JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
