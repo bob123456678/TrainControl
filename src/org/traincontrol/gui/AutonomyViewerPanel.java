@@ -924,8 +924,8 @@ public class AutonomyViewerPanel extends JPanel
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
 
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
-                result.matched, result.placed, result.reversing, result.skipped,
-                result.unmatched.size()) + unmatched);
+                result.matched, result.placed, result.reversing, result.settings,
+                result.skipped, result.unmatched.size()) + unmatched);
         }
         catch (IOException | RuntimeException e)
         {

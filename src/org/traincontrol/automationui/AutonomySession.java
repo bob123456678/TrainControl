@@ -7,6 +7,7 @@ import org.traincontrol.base.Locomotive;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -226,6 +227,11 @@ public class AutonomySession
         public int reversing = 0;
 
         /**
+         * Priorities, speed multipliers, exclusions and switches carried over.
+         */
+        public int settings = 0;
+
+        /**
          * Names whose sensor is not on this diagram, in the order the file gave them.
          */
         public final List<String> unmatched = new ArrayList<>();
@@ -280,6 +286,24 @@ public class AutonomySession
      * @param legacy the parsed autonomy.json
      * @return what was matched, skipped and not found
      */
+    /**
+     * The per-point settings an old graph holds that the build still reads, unchanged.
+     *
+     * Everything here is copied into the configuration verbatim and emitted verbatim: the builder
+     * passes unknown extras straight through, so these need translating no more than the placement
+     * did.  Listed rather than copied wholesale because the rest of a legacy point - name, station,
+     * s88, terminus, reversing, x, y - is either handled deliberately above or derived now, and
+     * copying those would fight the derivation.
+     *
+     *   priority          how strongly autonomy prefers this destination
+     *   speedMultiplier   the pace trains take through it
+     *   excludedLocs      the locomotives this station will not accept
+     *   active            a station's own switch.  The build ignores it on anything else, which is
+     *                     why it is carried as given rather than filtered here.
+     */
+    private static final List<String> CARRIED_SETTINGS =
+        Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active");
+
     public LegacyImport importLegacy(org.json.JSONObject legacy)
     {
         LegacyImport result = new LegacyImport();
@@ -323,7 +347,14 @@ public class AutonomySession
 
             String home = point.optString("home", "");
 
-            if (standing != null || !home.trim().isEmpty())
+            boolean anySetting = false;
+
+            for (String key : CARRIED_SETTINGS)
+            {
+                if (point.has(key)) anySetting = true;
+            }
+
+            if (standing != null || !home.trim().isEmpty() || anySetting)
             {
                 org.json.JSONObject extras = configurationExtras(tile);
 
@@ -341,6 +372,31 @@ public class AutonomySession
                     }
 
                     if (!home.trim().isEmpty() && !extras.has("home")) extras.put("home", home.trim());
+
+                    for (String key : CARRIED_SETTINGS)
+                    {
+                        // Gap-filled like everything else here, so re-running cannot undo an edit
+                        // somebody made after the first import.
+                        if (!point.has(key) || extras.has(key)) continue;
+
+                        Object value = point.get(key);
+
+                        // Copied rather than shared: a JSONArray handed straight over would be the same
+                        // object the caller's parsed file still holds, and anything that later edited
+                        // the exclusions here would edit their file's copy too.
+                        if (value instanceof org.json.JSONArray)
+                        {
+                            value = new org.json.JSONArray(value.toString());
+                        }
+                        else if (value instanceof org.json.JSONObject)
+                        {
+                            value = new org.json.JSONObject(value.toString());
+                        }
+
+                        extras.put(key, value);
+
+                        result.settings++;
+                    }
                 }
             }
 

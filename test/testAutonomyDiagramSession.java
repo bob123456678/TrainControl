@@ -1074,4 +1074,107 @@ public class testAutonomyDiagramSession
         assertEquals(session.getPointProperty(tile, AutonomyBuilder.CAN_REVERSE), Boolean.TRUE,
             "the may-turn marking somebody made was lost");
     }
+
+    /**
+     * Priorities, speed multipliers, exclusions and a station's switch come across too.
+     *
+     * The builder passes unknown extras straight through to the built graph, so these need no
+     * translation - only carrying.  They are per-point operational settings rather than decisions
+     * about the track, so they go to the configuration, beside the placement.
+     *
+     * The exclusions are asserted by content rather than by identity because they must be a COPY: a
+     * JSONArray handed straight over would still be the one the caller's parsed file holds, and
+     * editing the exclusions here later would reach back into that.
+     */
+    @Test
+    public void testALegacyImportCarriesThePerPointSettings() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONArray excluded = new org.json.JSONArray();
+        excluded.put("ER 2035 DSB");
+        excluded.put("MY 1150 DSB");
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St21");
+        point.put("station", true);
+        point.put("s88", 11);
+        point.put("priority", -3);
+        point.put("speedMultiplier", 0.75);
+        point.put("excludedLocs", excluded);
+        point.put("active", false);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.settings, 4, "all four settings should have been carried");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        assertEquals(session.getPointProperty(tile, "priority"), -3, "the priority did not come across");
+
+        assertEquals(session.getPointProperty(tile, "speedMultiplier"), 0.75,
+            "the speed multiplier did not come across");
+
+        assertEquals(session.getPointProperty(tile, "active"), Boolean.FALSE,
+            "the station's switch did not come across");
+
+        org.json.JSONArray carried = (org.json.JSONArray) session.getPointProperty(tile, "excludedLocs");
+
+        assertNotNull(carried, "the exclusions did not come across");
+
+        assertEquals(carried.length(), 2, "not every excluded locomotive came across");
+
+        assertEquals(carried.getString(0), "ER 2035 DSB", "the exclusions came across wrong");
+
+        assertNotSame(carried, excluded,
+            "the exclusions are the file's own array, so editing them here would edit the file's copy");
+    }
+
+    /**
+     * A setting already present is kept, so a second import cannot undo an edit made after the first.
+     */
+    @Test
+    public void testALegacyImportDoesNotOverrideSettingsAlreadySet() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.setPointProperty(tile, "priority", 5);
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St21");
+        point.put("station", true);
+        point.put("s88", 11);
+        point.put("priority", -3);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.settings, 0, "nothing should have been carried");
+
+        assertEquals(session.getPointProperty(tile, "priority"), 5,
+            "importing overwrote a priority that had already been set");
+    }
 }
