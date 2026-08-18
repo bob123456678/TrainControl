@@ -225,66 +225,9 @@ public class AutonomyCompanionStore
 
         clear();
 
-        readStringMap(root, "pointNames", pointNames);
-        readStringSet(root, "stations", stations);
-        readStringMap(root, "tileDirections", tileDirections);
-        readStringMap(root, "portals", portals);
-        readStringMap(root, "captions", captions);
-        readStringMap(root, "linkNames", linkNames);
-        readStringSet(root, "excludedPages", excludedPages);
-        readStringSet(root, "disabledLinks", disabledPortals);
-
-        JSONObject lengths = root.optJSONObject("tileLengths");
-
-        if (lengths != null)
-        {
-            for (String key : lengths.keySet())
-            {
-                tileLengths.put(fromStored(key), lengths.getInt(key));
-            }
-        }
+        readShared(root);
 
         activeConfiguration = root.optString("activeConfiguration", null);
-
-        readStringMap(root, "pages", pageNamesWhenWritten);
-
-        // stored against page ids; brought back to the names the rest of the application uses
-        untranslate(pointNames);
-        untranslate(tileDirections);
-        untranslate(linkNames);
-        untranslatePortals();
-        untranslateTileMap(captions);
-        untranslateSet(stations);
-        untranslateSet(disabledPortals);
-
-        pageIdConflicts.clear();
-
-        for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
-        {
-            String nowCalled = pageIdToName.get(entry.getKey());
-
-            // Absent is fine - the page may simply not be loaded.
-            if (nowCalled == null || nowCalled.equals(entry.getValue())) continue;
-
-            // The id now carries a different name, and that alone cannot tell the two cases apart:
-            //
-            //   renamed    - the same page, called something else.  The old name is gone from the index,
-            //                and the settings are still that page's.  This is the case ids exist for.
-            //   renumbered - a DIFFERENT page now holds this id.  The old name is still in the index
-            //                under some other id, and adopting these settings would attach a page of
-            //                names and lengths to the wrong track.
-            //
-            // So the deciding question is whether the old name still exists somewhere.
-            if (pageNameToId.containsKey(entry.getValue()))
-            {
-                pageIdConflicts.put(entry.getValue(), nowCalled);
-            }
-        }
-
-        for (String key : root.keySet())
-        {
-            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, root.get(key));
-        }
 
         File[] files = folder().listFiles();
 
@@ -331,37 +274,10 @@ public class AutonomyCompanionStore
 
         folder().mkdirs();
 
-        final JSONObject root = new JSONObject();
-
-        root.put("version", VERSION);
+        final JSONObject root = sharedFields();
 
         // written first so a human opening the file meets the readable part before the coordinate maps
         if (activeConfiguration != null) root.put("activeConfiguration", activeConfiguration);
-
-        // what each id was called when this was written, so a renumber can be told from a rename
-        Map<String, String> pages = new LinkedHashMap<>();
-
-        for (Map.Entry<String, String> entry : pageIdToName.entrySet())
-        {
-            pages.put(entry.getKey(), entry.getValue());
-        }
-
-        root.put("pages", new JSONObject(pages));
-
-        root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
-        root.put("stations", new JSONArray(translateSet(stations)));
-        root.put("tileLengths", new JSONObject(translateLengths()));
-        root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
-        root.put("portals", new JSONObject(translatePortals()));
-        root.put("captions", new JSONObject(translateTileMap(captions)));
-        root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
-        root.put("excludedPages", new JSONArray(excludedPages));
-        root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
-
-        for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
-        {
-            root.put(entry.getKey(), entry.getValue());
-        }
 
         writeJson(setupFile(), root);
 
@@ -600,6 +516,209 @@ public class AutonomyCompanionStore
     public JSONObject getConfiguration(String name)
     {
         return configurations.get(name);
+    }
+
+    /**
+     * Everything this setup holds that is not one configuration: the decisions about the TRACK.
+     *
+     * Station names, which squares are stations, lengths, directions, portals, captions, link names and
+     * the excluded pages.  Named apart from save() because two more callers need exactly this set and
+     * had no way to ask for it - which is how exporting came to carry a configuration and none of the
+     * things that configuration refers to.
+     *
+     * @return
+     */
+    private JSONObject sharedFields()
+    {
+        JSONObject root = new JSONObject();
+
+        root.put("version", VERSION);
+
+        // what each id was called when this was written, so a renumber can be told from a rename
+        Map<String, String> pages = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : pageIdToName.entrySet())
+        {
+            pages.put(entry.getKey(), entry.getValue());
+        }
+
+        root.put("pages", new JSONObject(pages));
+
+        root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
+        root.put("stations", new JSONArray(translateSet(stations)));
+        root.put("tileLengths", new JSONObject(translateLengths()));
+        root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
+        root.put("portals", new JSONObject(translatePortals()));
+        root.put("captions", new JSONObject(translateTileMap(captions)));
+        root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
+        root.put("excludedPages", new JSONArray(excludedPages));
+        root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
+
+        // written back last, so a field this build does not model survives a round trip
+        for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
+        {
+            root.put(entry.getKey(), entry.getValue());
+        }
+
+        return root;
+    }
+
+    /**
+     * The key an exported file carries its configuration under.  Its presence is what tells the two
+     * formats apart.
+     */
+    public static final String EXPORT_CONFIGURATION = "configuration";
+
+    /**
+     * The key an exported file carries the track decisions under.
+     */
+    public static final String EXPORT_SHARED = "shared";
+
+    /**
+     * A configuration together with the track decisions it refers to, ready to be written to a file.
+     *
+     * Exporting used to write the configuration alone.  But a configuration is a set of placements,
+     * homes and exclusions against POINTS, and what makes a square a point, what it is called, how long
+     * it is and which way it runs all live in the shared half - so the file named things the receiving
+     * setup had never heard of.  Importing it into a fresh setup produced a configuration referring
+     * entirely to nothing, and looked exactly like having lost the names.
+     *
+     * @param name
+     * @return null when there is no such configuration
+     */
+    public JSONObject exportBundle(String name)
+    {
+        JSONObject configuration = configurations.get(name);
+
+        if (configuration == null) return null;
+
+        JSONObject bundle = new JSONObject();
+
+        bundle.put("version", VERSION);
+        bundle.put(EXPORT_CONFIGURATION, new JSONObject(configuration.toString()));
+        bundle.put(EXPORT_SHARED, sharedFields());
+
+        return bundle;
+    }
+
+    /**
+     * Brings in an exported file, in either the bundled form or the bare configuration written before.
+     *
+     * The shared half is merged rather than adopted: an entry the local setup already has is kept, and
+     * only the gaps are filled.  That way importing onto a fresh setup restores everything, importing
+     * onto a working one cannot silently rename somebody's stations, and either way the result is the
+     * union - which is what "the same layout, somebody else's configuration" means.
+     *
+     * @param name what to call the configuration here
+     * @param file the parsed export
+     * @return how many shared entries were filled in
+     */
+    public int importBundle(String name, JSONObject file)
+    {
+        JSONObject configuration = file.optJSONObject(EXPORT_CONFIGURATION);
+
+        // The bare form, written before exporting carried the shared half
+        if (configuration == null)
+        {
+            importConfiguration(name, file);
+            return 0;
+        }
+
+        importConfiguration(name, configuration);
+
+        JSONObject incoming = file.optJSONObject(EXPORT_SHARED);
+
+        if (incoming == null) return 0;
+
+        JSONObject merged = sharedFields();
+
+        int filled = 0;
+
+        for (String key : incoming.keySet())
+        {
+            if ("version".equals(key)) continue;
+
+            Object value = incoming.get(key);
+
+            if (value instanceof JSONObject)
+            {
+                JSONObject mine = merged.optJSONObject(key);
+
+                if (mine == null)
+                {
+                    merged.put(key, value);
+                    filled += ((JSONObject) value).length();
+                    continue;
+                }
+
+                for (String inner : ((JSONObject) value).keySet())
+                {
+                    // Kept, not replaced.  See the note above: this is a merge, not an adoption.
+                    if (mine.has(inner)) continue;
+
+                    mine.put(inner, ((JSONObject) value).get(inner));
+                    filled++;
+                }
+            }
+            else if (value instanceof JSONArray)
+            {
+                JSONArray mine = merged.optJSONArray(key);
+
+                if (mine == null)
+                {
+                    merged.put(key, value);
+                    filled += ((JSONArray) value).length();
+                    continue;
+                }
+
+                Set<Object> already = new LinkedHashSet<>();
+
+                for (int i = 0; i < mine.length(); i++) already.add(mine.get(i));
+
+                for (int i = 0; i < ((JSONArray) value).length(); i++)
+                {
+                    Object entry = ((JSONArray) value).get(i);
+
+                    if (already.contains(entry)) continue;
+
+                    mine.put(entry);
+                    filled++;
+                }
+            }
+            else if (!merged.has(key))
+            {
+                merged.put(key, value);
+                filled++;
+            }
+        }
+
+        if (filled > 0)
+        {
+            // Through the same door load() uses, so the page-id translation happens once and here
+            clearShared();
+            readShared(merged);
+        }
+
+        return filled;
+    }
+
+    /**
+     * Empties the shared half, leaving the configurations alone.
+     */
+    private void clearShared()
+    {
+        pointNames.clear();
+        stations.clear();
+        tileLengths.clear();
+        tileDirections.clear();
+        portals.clear();
+        captions.clear();
+        linkNames.clear();
+        excludedPages.clear();
+        disabledPortals.clear();
+        unknownSharedFields.clear();
+        pageNamesWhenWritten.clear();
+        pageIdConflicts.clear();
     }
 
     /**
@@ -1062,6 +1181,82 @@ public class AutonomyCompanionStore
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
         "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
+
+
+    /**
+     * Reads the shared half of a setup object in, over a store already emptied of it.
+     *
+     * Split out of load() so that importing can put a MERGED object through exactly the same
+     * reading - the page-id translation and the renumber detection included.  An importer that
+     * parsed these fields itself would have had to repeat all of that, and would have drifted out
+     * of step with load() the first time either changed.
+     *
+     * The active configuration is deliberately not read here: importing a configuration must not
+     * change which one is running.
+     *
+     * @param root
+     */
+    private void readShared(JSONObject root)
+    {
+        readStringMap(root, "pointNames", pointNames);
+        readStringSet(root, "stations", stations);
+        readStringMap(root, "tileDirections", tileDirections);
+        readStringMap(root, "portals", portals);
+        readStringMap(root, "captions", captions);
+        readStringMap(root, "linkNames", linkNames);
+        readStringSet(root, "excludedPages", excludedPages);
+        readStringSet(root, "disabledLinks", disabledPortals);
+
+        JSONObject lengths = root.optJSONObject("tileLengths");
+
+        if (lengths != null)
+        {
+            for (String key : lengths.keySet())
+            {
+                tileLengths.put(fromStored(key), lengths.getInt(key));
+            }
+        }
+
+        readStringMap(root, "pages", pageNamesWhenWritten);
+
+        // stored against page ids; brought back to the names the rest of the application uses
+        untranslate(pointNames);
+        untranslate(tileDirections);
+        untranslate(linkNames);
+        untranslatePortals();
+        untranslateTileMap(captions);
+        untranslateSet(stations);
+        untranslateSet(disabledPortals);
+
+        pageIdConflicts.clear();
+
+        for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
+        {
+            String nowCalled = pageIdToName.get(entry.getKey());
+
+            // Absent is fine - the page may simply not be loaded.
+            if (nowCalled == null || nowCalled.equals(entry.getValue())) continue;
+
+            // The id now carries a different name, and that alone cannot tell the two cases apart:
+            //
+            //   renamed    - the same page, called something else.  The old name is gone from the index,
+            //                and the settings are still that page's.  This is the case ids exist for.
+            //   renumbered - a DIFFERENT page now holds this id.  The old name is still in the index
+            //                under some other id, and adopting these settings would attach a page of
+            //                names and lengths to the wrong track.
+            //
+            // So the deciding question is whether the old name still exists somewhere.
+            if (pageNameToId.containsKey(entry.getValue()))
+            {
+                pageIdConflicts.put(entry.getValue(), nowCalled);
+            }
+        }
+
+        for (String key : root.keySet())
+        {
+            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, root.get(key));
+        }
+    }
 
     private void clear()
     {

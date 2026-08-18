@@ -417,7 +417,10 @@ public class AutonomyChecks
 
         if (stations.isEmpty())
         {
-            findings.add(new Finding(Severity.WARNING, NO_STATIONS, "", null));
+            // An error, not a warning.  Autonomy moves trains between stations, so a setup with none
+            // cannot run at all - there is nowhere for anything to go.  Reporting it as a warning put
+            // it beside things that merely want attention, and let the setup look startable.
+            findings.add(new Finding(Severity.ERROR, NO_STATIONS, "", null));
             return findings;
         }
 

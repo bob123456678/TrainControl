@@ -842,8 +842,14 @@ public class AutonomyViewerPanel extends JPanel
     /**
      * Reads an exported configuration file in as a new named configuration.
      *
-     * The file is the store's own format, so what one person exports another can import onto the same
-     * track - placements and settings travel, the track itself stays derived from each side's diagram.
+     * The file carries the configuration AND the track decisions it refers to - station names, which
+     * squares are stations, lengths, directions, portals, captions.  It used to carry the configuration
+     * alone, on the assumption that the track is derived from the diagram; the track's SHAPE is, but
+     * what any of it is called and which squares count as stations are decisions somebody made, and
+     * they live only in the setup.  Without them an imported configuration refers to nothing.
+     *
+     * The shared half is merged, never adopted wholesale, so importing cannot rename a station that
+     * already has a name here.
      */
     public void importConfiguration()
     {
@@ -870,10 +876,15 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            session.getStore().importConfiguration(name.trim(),
+            int filled = session.getStore().importBundle(name.trim(),
                 new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
 
             save();
+
+            // Said out loud, because the alternative is somebody wondering whether their station names
+            // came across.  A file written before exporting carried the track decisions fills nothing,
+            // and that is worth knowing too.
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoImported", filled));
         }
         catch (IOException | RuntimeException e)
         {
@@ -893,7 +904,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null) return;
 
-        org.json.JSONObject configuration = session.getStore().getConfiguration(name);
+        org.json.JSONObject configuration = session.getStore().exportBundle(name);
 
         if (configuration == null) return;
 

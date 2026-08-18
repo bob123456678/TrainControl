@@ -772,4 +772,160 @@ public class testAutonomyDiagramStore
         // the layout folder itself is untouched: autonomy has no business deleting somebody's diagram
         assertTrue(layout.isDirectory(), "the layout folder is not autonomy to remove");
     }
+
+    /**
+     * The one page these export tests use, under a fixed id so a second store agrees about it.
+     */
+    private java.util.Map<String, String> onePage()
+    {
+        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
+
+        ids.put("1 - Main", "1");
+
+        return ids;
+    }
+
+    /**
+     * An exported configuration carries the station names and station flags it refers to.
+     *
+     * Exporting used to write the configuration alone.  A configuration is placements and homes against
+     * POINTS, while what makes a square a point, what it is called, how long it is and which way it
+     * runs all live in the shared half - so the file named things the receiving setup had never heard
+     * of.  Imported into a fresh setup it produced a configuration referring entirely to nothing, which
+     * from the outside is indistinguishable from having lost the names.
+     *
+     * Asserted through a real import into an empty store rather than on the keys in the file: a bundle
+     * containing the right fields that the importer then ignored would pass the second and fail the
+     * user.
+     */
+    @Test
+    public void testAnExportCarriesTheNamesTheConfigurationRefersTo() throws Exception
+    {
+        store.setPageIds(onePage());
+
+        TileKey platform = new TileKey("1 - Main", 4, 7);
+
+        store.setStation(platform, true);
+        store.setPointName(platform, "Hauptbahnhof");
+        store.setTileLength(platform, 240);
+
+        store.createConfiguration("Adam 1", null);
+
+        org.json.JSONObject bundle = store.exportBundle("Adam 1");
+
+        assertNotNull(bundle, "there was no such configuration to export");
+
+        File second = Files.createTempDirectory("tc-autonomy-store-2").toFile();
+
+        try
+        {
+            // A different setup entirely: the same track, nothing filled in yet
+            AutonomyCompanionStore fresh = new AutonomyCompanionStore(second);
+            fresh.setPageIds(onePage());
+
+            int filled = fresh.importBundle("Adam 1", new org.json.JSONObject(bundle.toString()));
+
+            assertTrue(filled > 0, "the import filled nothing in, so the file carried nothing to fill");
+
+            assertEquals(fresh.getPointName(platform), "Hauptbahnhof",
+                "the station name did not travel with the configuration that refers to it");
+
+            assertTrue(fresh.isStation(platform),
+                "the square is not a station here, so the configuration refers to a point that is not one");
+
+            assertEquals(fresh.getTileLength(platform), 240, "the length did not travel");
+
+            assertTrue(fresh.getConfigurationNames().contains("Adam 1"),
+                "the configuration itself did not arrive");
+        }
+        finally
+        {
+            delete(second);
+        }
+    }
+
+    /**
+     * Importing fills gaps and never overwrites a name this setup already has.
+     *
+     * The shared half is layout-wide, so adopting somebody else's wholesale would rename stations the
+     * importing user had named themselves - a silent edit to work they never offered up.  Filling gaps
+     * gives the restoring case everything back and the sharing case the union.
+     */
+    @Test
+    public void testImportingFillsGapsAndOverwritesNothing() throws Exception
+    {
+        TileKey shared = new TileKey("1 - Main", 4, 7);
+        TileKey onlyTheirs = new TileKey("1 - Main", 5, 7);
+
+        store.setPageIds(onePage());
+
+        store.setStation(shared, true);
+        store.setPointName(shared, "Their name for it");
+
+        store.setStation(onlyTheirs, true);
+        store.setPointName(onlyTheirs, "Only they have this");
+
+        store.createConfiguration("Adam 1", null);
+
+        org.json.JSONObject bundle = store.exportBundle("Adam 1");
+
+        File second = Files.createTempDirectory("tc-autonomy-store-2").toFile();
+
+        try
+        {
+            AutonomyCompanionStore local = new AutonomyCompanionStore(second);
+            local.setPageIds(onePage());
+
+            local.setStation(shared, true);
+            local.setPointName(shared, "My name for it");
+
+            local.importBundle("Adam 1", new org.json.JSONObject(bundle.toString()));
+
+            assertEquals(local.getPointName(shared), "My name for it",
+                "importing renamed a station this setup had already named");
+
+            assertEquals(local.getPointName(onlyTheirs), "Only they have this",
+                "importing did not fill in the name this setup was missing");
+        }
+        finally
+        {
+            delete(second);
+        }
+    }
+
+    /**
+     * A file written before exporting carried the shared half still imports.
+     *
+     * That is every file anybody has exported until now, and throwing on them would turn a gap into a
+     * regression.
+     */
+    @Test
+    public void testABareConfigurationFileStillImports() throws Exception
+    {
+        store.setPageIds(onePage());
+        store.createConfiguration("Old Export", null);
+
+        // The old format: the configuration object on its own, with no shared half beside it
+        org.json.JSONObject bare =
+            new org.json.JSONObject(store.getConfiguration("Old Export").toString());
+
+        File second = Files.createTempDirectory("tc-autonomy-store-2").toFile();
+
+        try
+        {
+            AutonomyCompanionStore fresh = new AutonomyCompanionStore(second);
+            fresh.setPageIds(onePage());
+
+            int filled = fresh.importBundle("Old Export", bare);
+
+            assertEquals(filled, 0, "a bare configuration has no shared half, so nothing can be filled");
+
+            assertTrue(fresh.getConfigurationNames().contains("Old Export"),
+                "the configuration from an older export did not arrive");
+        }
+        finally
+        {
+            delete(second);
+        }
+    }
 }
