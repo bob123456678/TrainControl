@@ -314,10 +314,25 @@ public class AutonomySession
 
         Map<Integer, TileKey> bySensor = new LinkedHashMap<>();
 
+        // Sensors carried by more than one square, which no amount of reading the file can resolve.
+        //
+        // Two squares on the same s88 is ordinary - a station and its approach guard - and on a layout
+        // whose pages repeat a section it happens across pages too.  The old graph names ONE point per
+        // sensor, so there is no way to tell which square it meant, and putting it on whichever came
+        // last would land somebody's station on the wrong page silently.  Refused and reported instead;
+        // excluding the duplicating pages first is what makes the rest of the import unambiguous.
+        Set<Integer> ambiguous = new LinkedHashSet<>();
+
         for (GraphReducer.ReducedPoint point : reducer.getPoints().values())
         {
-            if (point.getS88() > 0) bySensor.put(point.getS88(), point.getTile());
+            if (point.getS88() <= 0) continue;
+
+            if (bySensor.containsKey(point.getS88())) ambiguous.add(point.getS88());
+
+            bySensor.put(point.getS88(), point.getTile());
         }
+
+        for (Integer sensor : ambiguous) bySensor.remove(sensor);
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -465,6 +480,30 @@ public class AutonomySession
         rebuild();
 
         return result;
+    }
+
+    /**
+     * Brings in an exported file and derives again, so the diagram shows what arrived.
+     *
+     * The store's own importBundle knows nothing about the derivation - it holds authored data and
+     * that is all - so a caller that went straight to it got a correct store and a screen still
+     * showing what it knew before.  A configuration carries the flags that terminus, reversing and a
+     * station's switch are DERIVED from, so those in particular arrived and stayed invisible.
+     *
+     * Here rather than in the caller because it is the same invariant every time: authored data
+     * changed, so the derivation is stale.  The legacy import learned that separately.
+     *
+     * @param name what to call the configuration here
+     * @param file the parsed export
+     * @return how many shared entries were filled in
+     */
+    public int importBundle(String name, org.json.JSONObject file)
+    {
+        int filled = store.importBundle(name, file);
+
+        rebuild();
+
+        return filled;
     }
 
     public GraphReducer getReducer()

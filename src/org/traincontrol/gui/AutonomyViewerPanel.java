@@ -876,7 +876,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            int filled = session.getStore().importBundle(name.trim(),
+            int filled = session.importBundle(name.trim(),
                 new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
 
             save();

@@ -1221,4 +1221,124 @@ public class testAutonomyDiagramSession
         assertTrue(session.getReducer().getPoints().get(tile).isStation(),
             "the derivation does not show the square as a station yet");
     }
+
+    /**
+     * A terminus and a station's switch survive being exported and imported again.
+     *
+     * Both are DERIVED at build time - terminus from mustReverse plus the station flag, active from a
+     * property the build copies through - so neither can be looked for in the store, and neither shows
+     * up until the derivation is redone.  Importing a bundle wrote the configuration holding both and
+     * never re-derived, so they arrived and stayed invisible, which is indistinguishable from their
+     * not having arrived.
+     *
+     * Asserted against the BUILT graph rather than the store or the reduction: the store was always
+     * right, and the reduction does not carry these at all.  What matters is what the running model
+     * would be handed.
+     */
+    @Test
+    public void testATerminusAndAStationSwitchSurviveAnExportAndImport() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.getStore().createConfiguration("Adam 1", null);
+        session.getStore().setActiveConfiguration("Adam 1");
+
+        session.getStore().setStation(tile, true);
+        session.setPointName(tile, "Hauptbahnhof");
+
+        // What a terminus is authored as, and a station's own switch
+        session.setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+        session.setPointProperty(tile, "active", Boolean.FALSE);
+
+        session.rebuild();
+
+        assertTrue(session.buildConfigurationForInspection().contains("\"terminus\""),
+            "precondition: the source setup builds a terminus");
+
+        org.json.JSONObject bundle = session.getStore().exportBundle("Adam 1");
+
+        assertNotNull(bundle, "there was nothing to export");
+
+        // A different setup entirely - the same track, nothing set up on it
+        File second = Files.createTempDirectory("tc-autonomy-roundtrip").toFile();
+
+        try
+        {
+            AutonomySession fresh = new AutonomySession(second);
+            fresh.open(Arrays.asList(page));
+
+            fresh.importBundle("Adam 1", new org.json.JSONObject(bundle.toString()));
+            fresh.getStore().setActiveConfiguration("Adam 1");
+
+            fresh.rebuild();
+
+            String built = fresh.buildConfigurationForInspection();
+
+            assertTrue(built.contains("Hauptbahnhof"), "the name did not survive:\n" + built);
+
+            assertTrue(built.contains("\"terminus\""),
+                "the terminus did not survive the round trip, so every square that turned trains "
+                    + "round came back an ordinary one:\n" + built);
+
+            assertTrue(built.contains("\"active\""),
+                "the station's switch did not survive the round trip:\n" + built);
+        }
+        finally
+        {
+            delete(second);
+        }
+    }
+
+    /**
+     * A sensor carried by more than one square is reported rather than guessed at.
+     *
+     * Two squares on one s88 is ordinary - a station and its approach guard - and on a layout whose
+     * pages repeat a section it happens across pages too.  A legacy file names ONE point per sensor,
+     * so nothing in it says which square was meant, and taking whichever came last would land a
+     * station on the wrong page without a word.  Excluding the duplicating pages first is what makes
+     * the rest of an import unambiguous, and this is what tells somebody they need to.
+     */
+    @Test
+    public void testALegacyImportRefusesASensorOnTwoSquares() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        // The same s88 twice, which is what a duplicated page looks like to the reduction
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+        page.checkBounds();
+
+        session.open(Arrays.asList(page));
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "Ambiguous");
+        point.put("station", true);
+        point.put("s88", 11);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.matched, 0, "a sensor on two squares must not be matched to either");
+
+        assertEquals(result.unmatched, Arrays.asList("Ambiguous"),
+            "the ambiguous point must be reported, so somebody knows to exclude the repeated page");
+
+        assertNull(session.getStore().getPointName(new TileKey("main", 1, 1)),
+            "a name was written to one of the two squares anyway");
+
+        assertNull(session.getStore().getPointName(new TileKey("main", 3, 1)),
+            "a name was written to the other square anyway");
+    }
 }
