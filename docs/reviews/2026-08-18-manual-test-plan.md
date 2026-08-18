@@ -77,6 +77,12 @@ new model and were modelled as reversing stations in the old, so they are not co
     report.
     - Old-only entries (offered before, not now) matter less, but note them: they are lost capability
       rather than an unsafe move.
+18b. **The known-bad journey.** Specifically check whether the new model offers
+    **BottomMainA -> BottomSecondary** directly. Adam: it should NOT - a red signal after the end
+    requires a stop at TopMainR1 or TopMainR2, a constraint that lived in the hand-authored edge
+    config commands and that the derivation cannot currently express.  If it is offered, that is the
+    clearest example of the gap, and worth reporting first.
+
 19. **Run a new-only route in simulation.** Pick one and execute it. Watch the train: does it do
     anything physically impossible? This is the strongest single test in the plan.
 
@@ -115,3 +121,9 @@ hand-authored railway said was impossible.
 That is a stronger oracle than the reachability set currently pinned in
 `test/autonomy_formats/v2_8_1-station-paths.txt`, which compares which pairs connect and is blind to
 whether the path between them is physically runnable.
+
+**How weak that pinned file is, precisely:** on the sample layout every one of the 240 station pairs is
+reachable in the hand-authored graph, so pair reachability cannot distinguish a good model from a
+broken one there at all.  And reachability cannot see a constraint that lives in EDGE CONFIGURATION -
+BottomMainA reaches BottomSecondary in the graph and must not be routed there, because of a signal.
+The pinned file is still worth keeping as a change-detector; it is not a correctness oracle.
