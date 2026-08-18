@@ -673,6 +673,17 @@ public class Point
             jsonObj.put("reversing", this.isReversing);
         }
 
+        // Which piece of track this Point is part of.
+        //
+        // Written because it is READ: parseAuto takes it back, and without this the export path lost
+        // it silently - a graph exported and re-imported came back with every square split into
+        // independent Points again, so two trains could once more be routed onto one platform.  The
+        // operator would have had no way to tell: the file looks like a faithful copy of the graph.
+        if (this.block != null)
+        {
+            jsonObj.put("block", this.block);
+        }
+
         // written only when it differs from the default, so a file gains no noise from a setting
         // nobody has touched
         if (!this.autoDestination)

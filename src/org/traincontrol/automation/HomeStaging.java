@@ -833,9 +833,15 @@ public final class HomeStaging
     {
         if (!p.isActive()) return false;
 
-        // The rule the runtime actually enforces: Edge.isOccupied is true when the point the edge leads
-        // to holds someone else.  Point occupancy, not sensor state - which is why a bypass sharing an
-        // address with a busy platform is still passable.
+        // The rule the runtime enforces: Edge.isOccupied is true when the BLOCK the edge leads into
+        // holds someone else - the point itself, or another copy of the same square, since a square is
+        // emitted as one Point per arrival side and they are one piece of track.
+        //
+        // This planner still models occupancy per Point, and the shared-sensor rule below happens to
+        // catch the same pairs: every copy of a square carries that square's s88.  So the two agree
+        // today, and this planner is if anything stricter than the runtime - it never plans a move the
+        // runtime would refuse.  They agree by coincidence rather than by construction, which is worth
+        // knowing before either rule is changed.
         Locomotive occupant = state.get(p);
 
         if (occupant != null && !occupant.equals(loc)) return false;

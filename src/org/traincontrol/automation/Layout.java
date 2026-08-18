@@ -2458,7 +2458,19 @@ public class Layout
 
                 if (path != null)
                 {
-                    this.executePath(path, loc, speed, null);
+                    // Guarded for the same reason the callbacks are, and it is the same consequence.
+                    // executePath's own handler deliberately does NOT unlock a failed path, so an
+                    // exception escaping here killed this locomotive's thread with its track still
+                    // held - autonomy quietly lost a train and everything that needed that track.
+                    // Logged and carried on instead: the next pass picks a fresh path.
+                    try
+                    {
+                        this.executePath(path, loc, speed, null);
+                    }
+                    catch (Throwable e)
+                    {
+                        this.control.log(e instanceof Exception ? (Exception) e : new Exception(e));
+                    }
                 }
                 else if (this.getMinDelay() <= 0)
                 {
@@ -3702,6 +3714,13 @@ public class Layout
             
             // Ensure no multi-unit conflicts
             this.sanitizeMultiUnits(l);
+
+            // Placing by hand DISPLACES whoever was there, and deliberately so: it is a person telling
+            // the model where a train actually is, and the previous occupant is by definition no longer
+            // there.  setLocomotive's sweep then takes that train off every other square, so this can
+            // never leave two trains on one piece of track - which is the only thing the block rule
+            // has to prevent.  Refusing instead was tried and broke every displacing placement the
+            // multi-unit tests pin.
                         
             // Set new location
             target.setLocomotive(l);
@@ -3779,27 +3798,16 @@ public class Layout
         {
             callback.apply(edges, loc, flag);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
-            this.control.log(e);
+            // Throwable, not Exception.  The usual advice against catching Errors assumes the
+            // alternative is an orderly shutdown; here the alternative is a train stopped mid-block
+            // with its track locked for the rest of the session, and every other train refused that
+            // track.  A NoClassDefFoundError out of a repaint is not a reason to strand a railway.
+            this.control.log(e instanceof Exception ? (Exception) e : new Exception(e));
         }
     }
 
-    /**
-     * Takes a locomotive off every Point except the one that is claiming it.
-     *
-     * The other half of the rule Point.setLocomotive enforces.  Here rather than there because only the
-     * layout knows what the other Points are, and every copy is cleared rather than the first: a square
-     * is several Points now, so a train that was "somewhere else" may have been in several somewhere
-     * elses at once - which is the state this exists to make unrepresentable.
-     *
-     * Not synchronized: setLocomotive holds the Point's own monitor, and taking the layout's here would
-     * order the two locks against every other path that takes them the other way round.  The map it
-     * walks is only structurally changed by graph construction.
-     *
-     * @param l the locomotive being placed
-     * @param claiming the Point placing it, which keeps it
-     */
     /**
      * Whoever is standing on a block, ignoring one Point of it.
      *
@@ -3829,6 +3837,21 @@ public class Layout
         return null;
     }
 
+    /**
+     * Takes a locomotive off every Point except the one that is claiming it.
+     *
+     * The other half of the rule Point.setLocomotive enforces.  Here rather than there because only the
+     * layout knows what the other Points are, and every copy is cleared rather than the first: a square
+     * is several Points now, so a train that was "somewhere else" may have been in several somewhere
+     * elses at once - which is the state this exists to make unrepresentable.
+     *
+     * Not synchronized: setLocomotive holds the Point's own monitor, and taking the layout's here would
+     * order the two locks against every other path that takes them the other way round.  The map it
+     * walks is only structurally changed by graph construction.
+     *
+     * @param l the locomotive being placed
+     * @param claiming the Point placing it, which keeps it
+     */
     void clearLocomotiveExcept(Locomotive l, Point claiming)
     {
         if (l == null) return;
