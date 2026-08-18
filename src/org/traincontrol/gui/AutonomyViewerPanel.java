@@ -687,19 +687,18 @@ public class AutonomyViewerPanel extends JPanel
 
         load(name.trim(), true);
 
-        // And then write what each caption SAYS, once the grid holding them exists.
+        // And then rebuild the diagram, which is what makes the captions live.
         //
-        // A caption is registered as the grid is built and starts life showing the station's name;
-        // what turns it into the live "[---]" or "[SP45-204]" is updateVisiblePoints, walking the
-        // running layout.  Loading queues a repaint, and the repaint builds the grid and updates the
-        // labels it finds - but the labels this import cares about belong to the grid that repaint has
-        // not created yet, so the pass landed on the outgoing ones and the new ones kept their static
-        // names until something else rebuilt.  Opening and closing either editor was that something.
+        // updateVisiblePoints only writes to labels the grid has REGISTERED, so it can do nothing for
+        // a station whose caption did not exist when the grid was last built - which is every station
+        // an import has just created.  Calling it directly therefore fixed nothing, however many event
+        // hops it was given: repaintLayout submits to a background executor which then posts its own
+        // event, so hops queued here can and do run first.
         //
-        // Posted twice for the same reason reveal is: one hop puts this after the repaint is queued,
-        // the second puts it after the repaint itself has run and the labels are registered.
-        javax.swing.SwingUtilities.invokeLater(() ->
-            javax.swing.SwingUtilities.invokeLater(() -> ui.updateVisiblePoints()));
+        // repaintLayout is the one thing that does both, in order and inside a single event: it
+        // rebuilds the grid, registering a label for every caption, and calls updateVisiblePoints at
+        // the end.  Asking for that once is both simpler and correct.
+        javax.swing.SwingUtilities.invokeLater(() -> ui.repaintLayout());
     }
 
     /**
