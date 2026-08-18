@@ -1192,6 +1192,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
 
                 layout.addComponent(null, getX(label), getY(label));
+
+                // What autonomy had written about that square goes with it.  A caption on the square,
+                // and any caption elsewhere naming it: both are about track that no longer exists.
+                // Left behind, the label stayed where it was naming nothing, with no way to remove it
+                // - and putting any tile back on that square made it look like the new tile's label.
+                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), getX(label), getY(label)));
+                }
+
                 this.resetClipboard();
             }
             catch (IOException ex)

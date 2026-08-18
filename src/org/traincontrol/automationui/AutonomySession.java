@@ -842,6 +842,48 @@ public class AutonomySession
     }
 
     /**
+     * Forgets the captions belonging to a square that has just been deleted from the diagram.
+     *
+     * Both directions, because a square can be either end of a caption:
+     *
+     *   the square the text sits ON      its caption goes with it.  A caption may legitimately sit
+     *                                    on blank space, so an EMPTY square keeps its caption - but a
+     *                                    square somebody has just deleted is not blank, it is gone,
+     *                                    and the difference is the instruction they gave.
+     *   the station the text is ABOUT    every caption naming it goes.  Text pointing at track that
+     *                                    no longer exists is the orphan this whole design removed.
+     *
+     * Without this the label outlived the track: it stayed where it was, naming nothing, with no way
+     * to get rid of it - and putting any tile back on that square made it look like the new tile's
+     * label, because a caption is drawn wherever its square is.
+     *
+     * @param tile the square being deleted
+     * @return true when something was forgotten, so the caller can say so
+     */
+    public boolean forgetCaptionsAt(TileKey tile)
+    {
+        if (tile == null) return false;
+
+        boolean any = false;
+
+        if (store.getCaptionTarget(tile) != null)
+        {
+            store.setCaption(tile, null);
+            any = true;
+        }
+
+        for (TileKey where : new LinkedHashSet<>(captionsFor(tile)))
+        {
+            store.setCaption(where, null);
+            any = true;
+        }
+
+        if (any) touched();
+
+        return any;
+    }
+
+    /**
      * Moves a station's caption from one square to another, for the track diagram editor.
      *
      * Dragging a tile carries whatever was written on it.  Without this, rearranging a diagram meant

@@ -2092,4 +2092,87 @@ public class testAutonomyDiagramSession
 
         assertFalse(session.sameSquare(null, copies.get(0)), "nothing is not somewhere");
     }
+
+    /**
+     * Deleting the square a caption sits on takes the caption with it.
+     *
+     * A caption may legitimately sit on blank space - that is the most readable place for one - so an
+     * EMPTY square keeps its caption.  A square somebody has just deleted is a different thing: they
+     * said to remove it, and the label that was on it stayed, naming nothing, with no way to get rid
+     * of it.  Putting any tile back on that square then made the orphan look like the new tile's own
+     * label, because a caption is drawn wherever its square is.
+     */
+    @Test
+    public void testDeletingTheSquareUnderACaptionTakesItAway() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        assertTrue(session.forgetCaptionsAt(caption), "nothing was forgotten");
+
+        assertNull(session.getCaptionTarget(caption), "the caption outlived the square it sat on");
+    }
+
+    /**
+     * And deleting the station takes every caption that names it, wherever they are.
+     *
+     * The other end of the same relationship: text pointing at track that no longer exists is the
+     * orphan this design removed, and it can be sitting anywhere on the page.
+     */
+    @Test
+    public void testDeletingAStationTakesTheCaptionsThatNameIt() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        assertTrue(session.forgetCaptionsAt(station), "nothing was forgotten");
+
+        assertNull(session.getCaptionTarget(caption),
+            "a caption naming a station that has been deleted is a label about nothing");
+
+        assertTrue(session.captionsFor(station).isEmpty(), "the station still claims a caption");
+    }
+
+    /**
+     * A square with nothing written about it is not changed by being deleted.
+     *
+     * Most deleted tiles are plain track.  The editor asks on every delete, so the common answer has
+     * to be cheap and has to be distinguishable from having removed something.
+     */
+    @Test
+    public void testDeletingAnOrdinarySquareForgetsNothing() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey caption = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(caption, station);
+
+        assertFalse(session.forgetCaptionsAt(new TileKey("main", 3, 1)),
+            "a square with nothing written about it reported forgetting something");
+
+        assertEquals(session.getCaptionTarget(caption), station,
+            "deleting an unrelated square disturbed a caption");
+    }
 }
