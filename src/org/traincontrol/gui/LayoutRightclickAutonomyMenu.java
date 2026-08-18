@@ -92,7 +92,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         for (List<Edge> path : paths)
                         {
-                            menuItem = new JMenuItem("-> " + path.get(path.size() - 1).getEnd().getName());
+                            menuItem = new JMenuItem("-> "
+                                + stationName(path.get(path.size() - 1).getEnd()));
                             menuItem.addActionListener(event -> 
                             {
                                 try
@@ -151,7 +152,15 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     addSeparator();
 
                     // Station name label
-                    menuItem = new JMenuItem(current.getName());
+                    // The STATION's name, not the copy's.
+                    //
+                    // A square is several Points and they are named apart - "BottomMainA
+                    // (eastbound)" - so that a running log can say which one a train is on.  That is
+                    // a name for the model's benefit: a user pointing at a platform did not create
+                    // an eastbound one and a westbound one, they created a station, and being shown
+                    // the internals of how it is modelled invites them to wonder which is the real
+                    // one.
+                    menuItem = new JMenuItem(stationName(current));
                     menuItem.setEnabled(false);
                     add(menuItem);
 
@@ -268,7 +277,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             int dialogResult = JOptionPane.showOptionDialog(
                                 ui,
                                 edit,
-                                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", current.getName()),
+                                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive",
+                                    stationName(current)),
                                 JOptionPane.OK_CANCEL_OPTION,
                                 JOptionPane.PLAIN_MESSAGE,
                                 null,
@@ -360,6 +370,34 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
 
         return out;
+    }
+
+    /**
+     * What to call a Point when a person is reading it.
+     *
+     * The built graph names the copies of a square apart - "BottomMainA (eastbound)" - so a running
+     * log can say which one a train is on.  That is a name for the model.  A user pointing at a
+     * platform did not create an eastbound platform and a westbound one; they created a station, and
+     * showing them the internals invites the question of which is the real one.
+     *
+     * Falls back to the Point's own name when the setup cannot be asked, which is better than
+     * showing nothing.
+     *
+     * @param point a Point of the running graph
+     * @return the station name a reader would recognise
+     */
+    private String stationName(Point point)
+    {
+        if (point == null) return "";
+
+        if (session == null) return point.getName();
+
+        org.traincontrol.automationui.TileGraph.TileKey tile =
+            session.tileForPointName(point.getName());
+
+        String name = tile == null ? null : session.pointNameForTile(tile);
+
+        return name == null || name.trim().isEmpty() ? point.getName() : name;
     }
 
     /**
