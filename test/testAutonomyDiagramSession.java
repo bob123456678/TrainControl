@@ -12,6 +12,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
@@ -963,5 +964,114 @@ public class testAutonomyDiagramSession
 
         assertEquals(session.getStore().getPointName(tile), "The name I typed",
             "importing overwrote a name that was already there");
+    }
+
+    /**
+     * A legacy terminus and a legacy reversing point both come back as squares that turn trains round.
+     *
+     * Neither word can be written down any more - the build derives both, and which one it emits
+     * follows from whether the square is a station.  What the old graph was recording in both cases is
+     * that every arriving train reverses, and that is authored as mustReverse, so one flag restores
+     * both readings.
+     *
+     * The station case of "reversing" is the old reversing station, which said two things at once: it
+     * turns trains round AND autonomy never chooses it.  Those are separate ideas now, so it has to
+     * take the parking flag as well - without it, importing would quietly turn a shunting neck into a
+     * destination trains get sent to.
+     */
+    @Test
+    public void testALegacyImportRestoresTerminiAndReversingPoints() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONObject terminus = new org.json.JSONObject();
+        terminus.put("name", "BottomMainCTerm");
+        terminus.put("station", true);
+        terminus.put("terminus", true);
+        terminus.put("s88", 11);
+
+        // The other feedback pageOnDisk draws, raw address 12 at 4,1
+        org.json.JSONObject berth = new org.json.JSONObject();
+        berth.put("name", "ParkingTrack10");
+        berth.put("station", true);
+        berth.put("reversing", true);
+        berth.put("s88", 12);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(terminus);
+        points.put(berth);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.reversing, 2, "both squares should have been marked");
+
+        TileKey terminusTile = new TileKey("main", 1, 1);
+        TileKey berthTile = new TileKey("main", 4, 1);
+
+        assertEquals(session.getPointProperty(terminusTile, AutonomyBuilder.MUST_REVERSE),
+            Boolean.TRUE, "the terminus does not turn trains round");
+
+        assertEquals(session.getPointProperty(berthTile, AutonomyBuilder.MUST_REVERSE),
+            Boolean.TRUE, "the reversing station does not turn trains round");
+
+        assertEquals(session.getPointProperty(berthTile, AutonomyBuilder.PARKING), Boolean.TRUE,
+            "an old reversing STATION is a berth, and without the parking flag autonomy would start "
+                + "choosing it as a destination");
+
+        assertNull(session.getPointProperty(terminusTile, AutonomyBuilder.PARKING),
+            "a terminus is an ordinary destination, and must not have been shut to autonomy");
+    }
+
+    /**
+     * A square that already says something about reversing keeps what it says.
+     *
+     * The same gap-filling rule the names and placements follow, asserted because the marking is set
+     * through two properties at once and a fix that wrote them unconditionally would look correct
+     * against the test above.
+     */
+    @Test
+    public void testALegacyImportDoesNotOverrideReversingAlreadySet() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        // Somebody has already said this square MAY turn trains, which is not the same as must
+        session.setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, true);
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St01rev");
+        point.put("station", true);
+        point.put("terminus", true);
+        point.put("s88", 11);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.reversing, 0, "nothing should have been marked");
+
+        assertNull(session.getPointProperty(tile, AutonomyBuilder.MUST_REVERSE),
+            "importing promoted a may-turn square to must-turn, which is a different instruction");
+
+        assertEquals(session.getPointProperty(tile, AutonomyBuilder.CAN_REVERSE), Boolean.TRUE,
+            "the may-turn marking somebody made was lost");
     }
 }

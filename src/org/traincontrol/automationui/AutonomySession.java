@@ -221,6 +221,11 @@ public class AutonomySession
         public int placed = 0;
 
         /**
+         * Squares marked as turning trains round, from a terminus or a reversing point.
+         */
+        public int reversing = 0;
+
+        /**
          * Names whose sensor is not on this diagram, in the order the file gave them.
          */
         public final List<String> unmatched = new ArrayList<>();
@@ -337,6 +342,39 @@ public class AutonomySession
 
                     if (!home.trim().isEmpty() && !extras.has("home")) extras.put("home", home.trim());
                 }
+            }
+
+            // Terminus and reversing are DERIVED now, so neither can be written down.  What the old
+            // graph was recording, in both cases, is that every train arriving here turns round - and
+            // that is authored as mustReverse.  Which of the two words the build then emits follows
+            // from whether the square is a station, which is imported above, so one flag restores both.
+            //
+            //   terminus            a station that reverses on arrival.  In this file it is only ever
+            //                       set on stations, which is what the model has always meant by it.
+            //   reversing, plain    somewhere trains turn round that is not a destination.
+            //   reversing, station  the old "reversing station", which said two things at once: it
+            //                       reverses, AND autonomy never chooses it.  Those are separate now -
+            //                       a terminus and a berth - so it takes the parking flag as well, or
+            //                       importing would quietly turn somebody's shunting neck into a
+            //                       destination trains get sent to.
+            boolean turnsTrains = point.optBoolean("terminus", false)
+                || point.optBoolean("reversing", false);
+
+            // Left alone if the square already says something about reversing: this fills gaps.
+            boolean alreadyMarked = getPointProperty(tile, AutonomyBuilder.MUST_REVERSE) != null
+                || getPointProperty(tile, AutonomyBuilder.CAN_REVERSE) != null;
+
+            if (turnsTrains && !alreadyMarked)
+            {
+                setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, false);
+                setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+                if (point.optBoolean("reversing", false) && point.optBoolean("station", false))
+                {
+                    setPointFlag(tile, AutonomyBuilder.PARKING, true);
+                }
+
+                result.reversing++;
             }
 
             String existing = store.getPointName(tile);
