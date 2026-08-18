@@ -58,10 +58,25 @@ public class TileOverlay
     private static final Color LOCKED = new Color(238, 238, 238);
 
     /**
-     * How much of the tile the wash covers.  Enough to read at a glance across a whole diagram, not so
-     * much that the track under it stops being legible - the point is to see WHICH track is claimed.
+     * How heavily the outline is drawn.
+     *
+     * An OUTLINE rather than a wash.  The wash covered the tile, and the tile is where the arrows are
+     * - the ones that say which way a train may travel through this square - so the one view that
+     * matters most while trains are moving was the one view that hid them.  Outlining says exactly the
+     * same thing about which track is claimed and leaves everything underneath legible.
+     *
+     * It is also what the editor already does to show a tested path, in orange, so a reader who has
+     * used "test a path" has already learned to read this.
      */
-    private static final float WASH_ALPHA = 0.45f;
+    private static final float OUTLINE_ALPHA = 0.95f;
+
+    /**
+     * And how heavily a tile merely held clear is drawn.
+     *
+     * Locked track is not where a train is going - it is track nobody else may use - so it says
+     * something worth knowing and should not compete with the paths that are actually running.
+     */
+    private static final float LOCKED_ALPHA = 0.4f;
 
     private static final float DOT_ALPHA = 0.9f;
 
@@ -141,24 +156,43 @@ public class TileOverlay
         java.awt.Composite oldComposite = g.getComposite();
         Color oldColor = g.getColor();
 
+        // Restored with the rest.  The outline below sets one, and a caller that hands over a shared
+        // Graphics would otherwise find every later line drawn at this width.
+        java.awt.Stroke oldStroke = g.getStroke();
+
         try
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            Color wash = colourOf(state);
+            Color outline = colourOf(state);
 
-            if (wash != null)
+            if (outline != null)
             {
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, WASH_ALPHA));
-                g.setColor(wash);
-                g.fillRect(0, 0, width, height);
+                boolean locked = state == State.LOCKED;
+
+                g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,
+                    locked ? LOCKED_ALPHA : OUTLINE_ALPHA));
+
+                g.setColor(outline);
+
+                // Thinner for locked track, and drawn INSIDE the tile either way: a line on the very
+                // edge is shared with the neighbouring square, so two tiles in different states would
+                // argue over the same pixels and whichever painted last would win.
+                float weight = locked ? 1.6f : 2.6f;
+
+                g.setStroke(new java.awt.BasicStroke(weight, java.awt.BasicStroke.CAP_BUTT,
+                    java.awt.BasicStroke.JOIN_MITER));
+
+                int inset = Math.round(weight / 2f);
+
+                g.drawRect(inset, inset,
+                    width - 1 - inset * 2, height - 1 - inset * 2);
             }
 
             if (train)
             {
-                // A wash says which track is claimed; it cannot say which part of it holds the train.
-                // The dot is the diagram's equivalent of the graph labelling its node.
+                // An outline says which track is claimed; it cannot say which part of it holds the
+                // train.  The dot is the diagram's equivalent of the graph labelling its node.
                 int diameter = Math.max(6, Math.min(width, height) / 3);
 
                 g.setComposite(java.awt.AlphaComposite.getInstance(
@@ -174,6 +208,7 @@ public class TileOverlay
         {
             g.setColor(oldColor);
             g.setComposite(oldComposite);
+            g.setStroke(oldStroke);
 
             if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
         }

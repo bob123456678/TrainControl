@@ -721,7 +721,9 @@ public final class LayoutLabel extends JLabel
         {
             if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
 
-            // over the wash, so the editing marks stay legible while monitoring is also on
+            // Over the running layer, which is why that one outlines rather than washes: the arrows
+            // saying which way a train may travel through this square are drawn here, and they are
+            // the thing most worth seeing while trains are moving.
             if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
         }
         finally
