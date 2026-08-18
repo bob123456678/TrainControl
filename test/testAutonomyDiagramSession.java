@@ -1664,4 +1664,76 @@ public class testAutonomyDiagramSession
 
         assertTrue(found, "precondition: an unlabelled station is reported at all");
     }
+
+    /**
+     * Asking to show a station's name moves the caption rather than adding a second one.
+     *
+     * This used to refuse when the station was already shown somewhere, which left the user to find
+     * and delete the old caption first - and once importing began captioning every station on its own
+     * square, made the action appear to do nothing at all on a freshly imported setup.
+     *
+     * The count is the assertion: two captions for one station is the thing being prevented, and it is
+     * exactly what a refusal-turned-into-a-placement would produce if the old one were not cleared.
+     */
+    @Test
+    public void testShowingAStationNameMovesItRatherThanAddingASecond() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        // Captioned on its own square, which is where an import leaves it
+        session.getStore().setCaption(station, station);
+
+        assertEquals(session.captionsFor(station).size(), 1, "precondition: shown exactly once");
+
+        String why = session.placeCaption(station);
+
+        assertNull(why, "there was room beside the platform, so placing should have succeeded: " + why);
+
+        assertEquals(session.captionsFor(station).size(), 1,
+            "the station is captioned in two places at once");
+
+        assertFalse(station.equals(session.getCaptions().keySet().iterator().next()),
+            "the caption should have moved off the sensor onto the track beside it");
+    }
+
+    /**
+     * A station with nowhere new to go keeps the caption it has.
+     *
+     * The old caption is cleared only once somewhere new has been found.  Clearing first and then
+     * failing to place would answer "show this name" by removing the name that was there.
+     */
+    @Test
+    public void testAFailedMoveLeavesTheCaptionWhereItWas() throws Exception
+    {
+        // A lone sensor with nothing beside it and text written on it, so every candidate square fails
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2,
+            "written on");
+
+        page.setPageId("1");
+        page.checkBounds();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.getStore().setCaption(station, station);
+
+        String why = session.placeCaption(station);
+
+        assertNotNull(why, "precondition: there is nowhere for this caption to go");
+
+        assertEquals(session.captionsFor(station).size(), 1,
+            "a move that could not find anywhere new deleted the caption that was already there");
+    }
 }

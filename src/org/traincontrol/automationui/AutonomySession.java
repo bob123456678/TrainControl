@@ -748,7 +748,15 @@ public class AutonomySession
 
         if (name == null || name.trim().isEmpty()) return "autosetup.ui.labelNotNamedYet";
 
-        if (!captionsFor(tile).isEmpty()) return "autosetup.ui.labelAlreadyShown";
+        // A station already shown somewhere is MOVED, not refused.
+        //
+        // Asking to show a name is asking for it to be here, and answering "it is already somewhere"
+        // left the user to find and delete the old one first - or, once imports began captioning every
+        // station on its own square, made the action do nothing at all on a freshly imported setup.
+        //
+        // The old ones are cleared further down, once somewhere new has actually been found, so a
+        // station with nowhere to go keeps the caption it had rather than losing it to a move that
+        // then failed.
 
         LayoutDiagram page = pageOf(tile);
 
@@ -785,6 +793,8 @@ public class AutonomySession
             // nothing else - insisting on the bare type found no square at all on a real layout.
             if (!runsStraightThrough(next)) continue;
 
+            clearCaptions(tile);
+
             setCaption(at, tile);
 
             return null;
@@ -810,6 +820,8 @@ public class AutonomySession
 
             if (store.getCaptionTarget(at) != null) continue;
 
+            clearCaptions(tile);
+
             setCaption(at, tile);
 
             return null;
@@ -819,12 +831,30 @@ public class AutonomySession
         // a station with no name anywhere - which is the thing the checks complain about.
         if (!here.hasLabel())
         {
+            clearCaptions(tile);
+
             setCaption(tile, tile);
 
             return null;
         }
 
         return "autosetup.ui.labelNoRoom";
+    }
+
+    /**
+     * Forgets wherever this station was being shown, so that placing it again leaves exactly one.
+     *
+     * Called only once somewhere new has been found: clearing first and then failing to place would
+     * answer "show this name" by removing the name that was there.
+     *
+     * @param station
+     */
+    private void clearCaptions(TileKey station)
+    {
+        for (TileKey where : new LinkedHashSet<>(captionsFor(station)))
+        {
+            store.setCaption(where, null);
+        }
     }
 
     /**

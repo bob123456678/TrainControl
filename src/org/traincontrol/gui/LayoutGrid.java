@@ -208,8 +208,16 @@ public class LayoutGrid
                     if (captioned != null && !layout.getEdit()
                         && !ui.isPageExcludedFromAutonomy(layout.getName()))
                     {
-                        // Hide text initially
-                        text.setText("");
+                        // The station's own name to begin with, not blank.
+                        //
+                        // This used to start empty and wait for the running layout to fill it, which
+                        // is fine while a configuration is loaded and silent when one is not: after
+                        // setting a setup up - or importing one - every caption on the diagram was an
+                        // empty label, while the editor showed the names perfectly well, and only
+                        // loading a configuration made them appear.  The name is what a caption says
+                        // when no train is standing there anyway, so saying it immediately costs
+                        // nothing and the live update overwrites it the moment there is one.
+                        text.setText(captionName == null ? "" : captionName);
 
                         // This callback will populate the label
                         ui.addLayoutStation(captioned, text);
