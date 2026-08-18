@@ -1633,6 +1633,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         refreshAutonomyPrompt();
 
+        // The locomotive panels are built from what is PLACED, so loading a configuration that already
+        // has placements has to rebuild them.  Nothing did: the Auto tab came up empty and stayed
+        // empty until something else happened to refresh it - placing a locomotive by hand, which
+        // then brought up that one and the four that had been there all along.
+        repaintAutoLocList(false);
+
         repaintLayout();
     }
 

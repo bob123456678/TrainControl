@@ -1300,6 +1300,46 @@ public class AutonomySession
      * @param baseName the caption on the diagram
      * @return the emitted names, in the order they were emitted
      */
+    /**
+     * Every copy of a station, and which way a train standing on it would be pointing.
+     *
+     * A square is several Points - one per side a train can arrive by - and they are not
+     * interchangeable: each one can only leave the way its own facing allows.  So "put this locomotive
+     * here" is not a complete instruction, and answering it by taking the first copy puts the train on
+     * a Point whose only moves are the ones the split exists to forbid.  That is a train autonomy can
+     * see and cannot route.
+     *
+     * @param tile the station's square
+     * @return the name of each copy against the side its train would face, in the order the build made
+     *         them, empty when there is no setup or the square is not a Point
+     */
+    public Map<String, Side> facingsFor(TileKey tile)
+    {
+        Map<String, Side> out = new LinkedHashMap<>();
+
+        if (reducer == null || tile == null) return out;
+
+        String base = pointNameForTile(tile);
+
+        if (base == null) return out;
+
+        AutonomyBuilder naming = new AutonomyBuilder(reducer, globals())
+            .withPointExtras(pointExtras())
+            .withReversibleTiles(reversibleTiles())
+            .withMandatoryTurns(mandatoryTurnTiles());
+
+        Map<String, Side> facings = naming.facingByName();
+
+        for (String name : pointNamesFor(base))
+        {
+            Side facing = facings.get(name);
+
+            if (facing != null) out.put(name, facing);
+        }
+
+        return out;
+    }
+
     public List<String> pointNamesFor(String baseName)
     {
         List<String> out = new ArrayList<>();

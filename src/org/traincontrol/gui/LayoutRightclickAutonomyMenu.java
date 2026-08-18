@@ -16,6 +16,17 @@ import org.traincontrol.util.I18n;
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
     public static final int MAX_PATHS = 12;
+
+    /**
+     * Kept so the actions built below can still reach them when they fire, which is long after this
+     * constructor has returned.  Everything else here is local, because everything else is used while
+     * the menu is being assembled.
+     */
+    private final TrainControlUI ui;
+
+    private final org.traincontrol.automationui.TileGraph.TileKey station;
+
+    private final org.traincontrol.automationui.AutonomySession session;
     
     /**
      * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square
@@ -25,7 +36,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     public LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station)
-    {        
+    {
+        this.ui = ui;
+        this.station = station;
+        this.session = ui.getAutonomySession();
+
         JMenuItem menuItem;
         
         if (ui.getModel().hasAutoLayout())
@@ -139,25 +154,60 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     menuItem.setEnabled(false);
                     add(menuItem);
 
-                    // Place a different locomotive at this station
-                    if (ui.getActiveLoc() != null 
-                        && !ui.isAutonomyBusy() 
+                    // Place a different locomotive at this station, FACING a chosen way.
+                    //
+                    // A square is several Points - one per side a train can arrive by - and they are
+                    // not interchangeable: each copy can only leave the way its own facing allows.  So
+                    // "put it here" is not a complete instruction, and this used to answer it with
+                    // whichever copy came first, which put the train on a Point whose only moves are
+                    // the ones the split exists to forbid.  Autonomy could see the locomotive and
+                    // could not route it anywhere.
+                    if (ui.getActiveLoc() != null
+                        && !ui.isAutonomyBusy()
                         && !ui.getActiveLoc().equals(locomotive))
                     {
-                        menuItem = new JMenuItem(
-                            I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
-                        );
-                        menuItem.addActionListener(event ->
-                        {
-                            ui.getModel().getAutoLayout().moveLocomotive(
-                                ui.getActiveLoc().getName(),
-                                current.getName(),
-                                false
-                            );
-                            ui.repaintAutoLocList(false);
-                        });
+                        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings =
+                            session == null ? new java.util.LinkedHashMap<String,
+                                org.traincontrol.automationui.TilePorts.Side>()
+                                : session.facingsFor(station);
 
-                        add(menuItem);
+                        // One copy is one answer, so there is nothing to ask
+                        if (facings.size() <= 1)
+                        {
+                            menuItem = new JMenuItem(
+                                I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
+                            );
+
+                            final String only = facings.isEmpty()
+                                ? current.getName() : facings.keySet().iterator().next();
+
+                            menuItem.addActionListener(event -> placeFacing(only, null));
+
+                            add(menuItem);
+                        }
+                        else
+                        {
+                            JMenu placing = new JMenu(
+                                I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName()));
+
+                            for (java.util.Map.Entry<String,
+                                org.traincontrol.automationui.TilePorts.Side> copy
+                                    : facings.entrySet())
+                            {
+                                final String name = copy.getKey();
+                                final org.traincontrol.automationui.TilePorts.Side facing =
+                                    copy.getValue();
+
+                                JMenuItem where = new JMenuItem(
+                                    I18n.f("layout.ui.menuPlaceFacing", facing.toString()));
+
+                                where.addActionListener(event -> placeFacing(name, facing));
+
+                                placing.add(where);
+                            }
+
+                            add(placing);
+                        }
                     }
 
                     if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
@@ -233,6 +283,41 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 add(menuItem);
             }
         }
+    }
+
+    /**
+     * Puts the active locomotive on one named copy of this square, and remembers which way.
+     *
+     * Both halves matter.  Placing on the right copy is what lets autonomy move it NOW; recording
+     * the facing is what puts it back on the same copy the next time the graph is built, which is
+     * every load.  Without the second, the placement is correct until the next reload and arbitrary
+     * afterwards.
+     *
+     * @param pointName the copy to place on
+     * @param facing which way it is pointing, or null when the square has only one copy
+     */
+    private void placeFacing(String pointName,
+        org.traincontrol.automationui.TilePorts.Side facing)
+    {
+        ui.getModel().getAutoLayout().moveLocomotive(
+            ui.getActiveLoc().getName(), pointName, false);
+
+        if (facing != null && session != null)
+        {
+            session.setFacing(station, facing);
+
+            try
+            {
+                session.save();
+            }
+            catch (java.io.IOException e)
+            {
+                // The placement stands either way; only the memory of it is at risk
+                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+            }
+        }
+
+        ui.repaintAutoLocList(false);
     }
 }
    
