@@ -686,6 +686,20 @@ public class AutonomyViewerPanel extends JPanel
         session().getStore().setActiveConfiguration(name.trim());
 
         load(name.trim(), true);
+
+        // And then write what each caption SAYS, once the grid holding them exists.
+        //
+        // A caption is registered as the grid is built and starts life showing the station's name;
+        // what turns it into the live "[---]" or "[SP45-204]" is updateVisiblePoints, walking the
+        // running layout.  Loading queues a repaint, and the repaint builds the grid and updates the
+        // labels it finds - but the labels this import cares about belong to the grid that repaint has
+        // not created yet, so the pass landed on the outgoing ones and the new ones kept their static
+        // names until something else rebuilt.  Opening and closing either editor was that something.
+        //
+        // Posted twice for the same reason reveal is: one hop puts this after the repaint is queued,
+        // the second puts it after the repaint itself has run and the labels are registered.
+        javax.swing.SwingUtilities.invokeLater(() ->
+            javax.swing.SwingUtilities.invokeLater(() -> ui.updateVisiblePoints()));
     }
 
     /**
