@@ -686,7 +686,7 @@ public class testAutonomyDiagramStore
             "a caption on a square with nothing on it is where captions are supposed to go");
 
         // And the page going takes it, because then neither end is anywhere
-        store.reconcile(new LinkedHashSet<String>());
+        store.reconcile(new LinkedHashSet<TileKey>());
 
         assertNull(store.getCaptionTarget(caption),
             "a caption whose page has gone is about nothing at all");
