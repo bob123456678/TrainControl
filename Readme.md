@@ -366,6 +366,7 @@ Tab icons provided by Freepik.
 * v3.0.0 [Beta]
     - Autonomy
         - Deprecated the autonomy graph.  All automation is now handled in the track diagram and handled automatically.
+        - A running train now draws its route along the track: red for the track ahead of it, green for the track it has already covered, and black arrows showing which way it is going
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
     - Locomotive Bug Fixes

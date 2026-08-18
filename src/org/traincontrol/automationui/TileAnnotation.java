@@ -785,8 +785,12 @@ public class TileAnnotation
 
     /**
      * A single arrowhead on the line, pointing from one point towards another.
+     *
+     * Shared with the running overlay, which draws the path a train is actually on in the same style as
+     * the path the editor tests: same line through the square, same arrowhead on it.  Somebody who has
+     * used "test a path" has already learnt to read the running diagram.
      */
-    private void chevron(Graphics2D g, int[] from, int[] to, int span)
+    static void chevron(Graphics2D g, int[] from, int[] to, int span)
     {
         double dx = to[0] - from[0];
         double dy = to[1] - from[1];
@@ -1141,7 +1145,7 @@ public class TileAnnotation
     /**
      * Where a side meets the edge of the tile.
      */
-    private static int[] midpoint(Side side, int width, int height)
+    static int[] midpoint(Side side, int width, int height)
     {
         if (side == null) return null;
 

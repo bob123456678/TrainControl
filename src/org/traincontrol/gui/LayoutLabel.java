@@ -719,12 +719,16 @@ public final class LayoutLabel extends JLabel
 
         try
         {
-            if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
-
-            // Over the running layer, which is why that one outlines rather than washes: the arrows
-            // saying which way a train may travel through this square are drawn here, and they are
-            // the thing most worth seeing while trains are moving.
+            // The static layer first, and the running one over it.
+            //
+            // It used to be the other way round, when running state was a wash over the whole square
+            // and would have buried the arrows underneath.  It is a LINE along the track now, so it
+            // covers only the rails it claims - and where the two do meet, the path a train is
+            // actually taking is the more urgent of the two: the arrows say what is permitted, which
+            // is worth reading while a layout is being set up rather than while it is running.
             if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
+
+            if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
         }
         finally
         {

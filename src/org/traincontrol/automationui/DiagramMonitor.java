@@ -281,6 +281,14 @@ public class DiagramMonitor
                 }
             }
 
+            // The whole run as one sequence of squares, rather than each edge on its own.
+            //
+            // A line has to know what is on EITHER side of a square to be drawn through it, and an edge
+            // alone does not: the square where two edges meet is the Point between them, and taken one
+            // edge at a time its line would stop dead in the middle of that square and start again.
+            List<TileKey> run = new java.util.ArrayList<>();
+            List<State> states = new java.util.ArrayList<>();
+
             for (Edge edge : path)
             {
                 if (edge == null) continue;
@@ -293,8 +301,25 @@ public class DiagramMonitor
                 // same rule the graph window colours by, so the two views cannot disagree.
                 boolean reached = edge.getEnd() != null && reachedPoints.contains(edge.getEnd().getName());
 
-                paint(overlays, reduced, reached ? State.REACHED : State.ACTIVE, false);
+                State state = reached ? State.REACHED : State.ACTIVE;
+
+                // The Points at the ends are coloured by whether the train has passed THEM, not by the
+                // edge they belong to: the square a train is standing on has been reached even though
+                // the track ahead of it has not.
+                append(run, states, reduced.getStart(),
+                    edge.getStart() != null && reachedPoints.contains(edge.getStart().getName())
+                        ? State.REACHED : State.ACTIVE);
+
+                for (TileStep step : reduced.getPath())
+                {
+                    append(run, states, step.getTile(), state);
+                }
+
+                append(run, states, reduced.getEnd(),
+                    reached ? State.REACHED : State.ACTIVE);
             }
+
+            lay(overlays, run, states);
 
             // and the locomotive itself, at whichever point it has most recently reached
             Point at = layout.getLocomotiveLocation(entry.getKey());
@@ -315,7 +340,21 @@ public class DiagramMonitor
                 {
                     ReducedEdge reduced = edgesByName.get(locked.getName());
 
-                    if (reduced != null) paint(overlays, reduced, State.LOCKED, false);
+                    if (reduced == null) continue;
+
+                    List<TileKey> held = new java.util.ArrayList<>();
+                    List<State> states = new java.util.ArrayList<>();
+
+                    append(held, states, reduced.getStart(), State.LOCKED);
+
+                    for (TileStep step : reduced.getPath())
+                    {
+                        append(held, states, step.getTile(), State.LOCKED);
+                    }
+
+                    append(held, states, reduced.getEnd(), State.LOCKED);
+
+                    lay(overlays, held, states);
                 }
             }
         }
@@ -323,15 +362,54 @@ public class DiagramMonitor
         return overlays;
     }
 
-    private void paint(Map<TileKey, TileOverlay> into, ReducedEdge edge, State state, boolean train)
+    /**
+     * Adds one square to a run, unless it is already the square the run is standing on.
+     *
+     * Consecutive edges share the Point between them, so a run built by concatenating them names that
+     * square twice - and a square listed twice is a line drawn from itself to itself, which is a blob
+     * in the middle of the track.
+     */
+    public static void append(List<TileKey> run, List<State> states, TileKey tile, State state)
     {
-        TileOverlay overlay = new TileOverlay(state, train);
+        if (tile == null) return;
 
-        for (TileStep step : edge.getPath())
+        if (!run.isEmpty() && tile.equals(run.get(run.size() - 1))) return;
+
+        run.add(tile);
+        states.add(state);
+    }
+
+    /**
+     * Turns a run of squares into a line through each of them.
+     *
+     * Which way the line enters and leaves is read off the squares either side, exactly as the editor
+     * reads it for a tested path - the two views draw the same picture of the same question, one before
+     * the train runs and one while it does.
+     *
+     * Null at the ends of the run, where the line stops in the middle of the square rather than running
+     * off into track nobody claimed, and null again either side of a jump between pages: a link has no
+     * side on this grid to be drawn as, and the answer to that is a line that stops.
+     *
+     * Public so the geometry can be tested without a railway.  Everything above it needs a running
+     * Layout with trains on it and cannot be reached from a test at all; this needs a list of squares.
+     */
+    public static void lay(Map<TileKey, TileOverlay> into, List<TileKey> run, List<State> states)
+    {
+        for (int i = 0; i < run.size(); i++)
         {
-            TileOverlay existing = into.get(step.getTile());
+            TileKey at = run.get(i);
 
-            into.put(step.getTile(), existing == null ? overlay : existing.merge(overlay));
+            TileOverlay.Segment segment = new TileOverlay.Segment(
+                i == 0 ? null : TileGraph.sideTowards(at, run.get(i - 1)),
+                i == run.size() - 1 ? null : TileGraph.sideTowards(at, run.get(i + 1)),
+                states.get(i));
+
+            TileOverlay overlay = new TileOverlay(states.get(i), false,
+                java.util.Arrays.asList(segment));
+
+            TileOverlay existing = into.get(at);
+
+            into.put(at, existing == null ? overlay : existing.merge(overlay));
         }
     }
 

@@ -92,6 +92,42 @@ public class TileGraph
     }
 
     /**
+     * Which side of one square faces another, or null when they are not neighbours.
+     *
+     * Null is a real answer and not a failure: a path can step from one page to another through a link,
+     * and that jump has no side on the grid to draw it as.  A line through the square simply stops in
+     * the middle, which is what a train leaving the drawn track actually does.
+     *
+     * Here rather than in either caller because both the tested path in the editor and the running path
+     * on the diagram have to lay a line across the same grid, and two copies of this would be two
+     * chances to disagree about which way is north.
+     *
+     * @param from the square being left
+     * @param to the next square
+     * @return the side of {@code from} that {@code to} lies beyond
+     */
+    public static Side sideTowards(TileKey from, TileKey to)
+    {
+        if (from == null || to == null) return null;
+
+        if (!from.getPage().equals(to.getPage())) return null;
+
+        if (to.getY() == from.getY())
+        {
+            if (to.getX() == from.getX() + 1) return Side.E;
+            if (to.getX() == from.getX() - 1) return Side.W;
+        }
+
+        if (to.getX() == from.getX())
+        {
+            if (to.getY() == from.getY() + 1) return Side.S;
+            if (to.getY() == from.getY() - 1) return Side.N;
+        }
+
+        return null;
+    }
+
+    /**
      * Which way a train may move through one route of one tile.
      *
      * A and B are the route's two sides as TilePorts reports them.  Stored per tile rather than per

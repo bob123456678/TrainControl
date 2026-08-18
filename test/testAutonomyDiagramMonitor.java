@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import org.traincontrol.automationui.DiagramMonitor;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * Turning what the railway is doing into what each tile shows.
@@ -68,6 +70,188 @@ public class testAutonomyDiagramMonitor
         assertTrue(new TileOverlay(State.IDLE, false).isBlank());
         assertFalse(new TileOverlay(State.IDLE, true).isBlank());
         assertFalse(new TileOverlay(State.LOCKED, false).isBlank());
+    }
+
+    /**
+     * A run of squares becomes a line laid along the track, one segment per square.
+     *
+     * Which way it enters and leaves is read off the squares either side, so the middle of a run is a
+     * line right across the square and the two ends stop in the middle of theirs - the train is not
+     * coming from anywhere before the start, and the path does not continue past its destination.
+     */
+    @Test
+    public void testARunBecomesALineThroughEachSquare()
+    {
+        Map<TileKey, TileOverlay> overlays = new LinkedHashMap<>();
+
+        DiagramMonitor.lay(overlays,
+            Arrays.asList(tile(0, 0), tile(1, 0), tile(2, 0)),
+            Arrays.asList(State.REACHED, State.ACTIVE, State.ACTIVE));
+
+        assertEquals(segment(overlays, tile(1, 0)).getFrom(), Side.W,
+            "the middle of a run has to know where the line came from");
+
+        assertEquals(segment(overlays, tile(1, 0)).getTo(), Side.E,
+            "and where it goes, or there is no line and no arrow");
+
+        assertNull(segment(overlays, tile(0, 0)).getFrom(),
+            "a line running off the first square claims track ahead of the train");
+
+        assertEquals(segment(overlays, tile(0, 0)).getTo(), Side.E);
+
+        assertEquals(segment(overlays, tile(2, 0)).getFrom(), Side.W);
+
+        assertNull(segment(overlays, tile(2, 0)).getTo(),
+            "the destination is where the path stops");
+    }
+
+    /**
+     * The colour changes where the train is, not where the edge is.
+     *
+     * Green behind, red ahead: the whole point of drawing the path rather than outlining it is that the
+     * two halves are told apart at a glance.
+     */
+    @Test
+    public void testTheLineIsColouredSquareBySquare()
+    {
+        Map<TileKey, TileOverlay> overlays = new LinkedHashMap<>();
+
+        DiagramMonitor.lay(overlays,
+            Arrays.asList(tile(0, 0), tile(1, 0), tile(2, 0)),
+            Arrays.asList(State.REACHED, State.REACHED, State.ACTIVE));
+
+        assertEquals(segment(overlays, tile(1, 0)).getState(), State.REACHED,
+            "track the train has covered");
+
+        assertEquals(segment(overlays, tile(2, 0)).getState(), State.ACTIVE,
+            "and track it has not - the same line, in two colours");
+    }
+
+    /**
+     * The line follows the track round a corner.
+     *
+     * Read off the neighbours rather than from the tile art, so a curve is entered by one side and left
+     * by the next one round without this having to know what a curve looks like.
+     */
+    @Test
+    public void testTheLineTurnsWithTheTrack()
+    {
+        Map<TileKey, TileOverlay> overlays = new LinkedHashMap<>();
+
+        // west to east, then south
+        DiagramMonitor.lay(overlays,
+            Arrays.asList(tile(0, 0), tile(1, 0), tile(1, 1)),
+            Arrays.asList(State.ACTIVE, State.ACTIVE, State.ACTIVE));
+
+        assertEquals(segment(overlays, tile(1, 0)).getFrom(), Side.W);
+
+        assertEquals(segment(overlays, tile(1, 0)).getTo(), Side.S,
+            "the corner leaves by the side the next square is on, not by the one it came in on");
+    }
+
+    /**
+     * A square the path crosses twice keeps both passes.
+     *
+     * A switch taken on the way out and again on the way round is two lines through one square.  Keeping
+     * only the winning claim would draw a route that stops in the middle of the switch.
+     */
+    @Test
+    public void testASquareCrossedTwiceKeepsBothPasses()
+    {
+        Map<TileKey, TileOverlay> overlays = new LinkedHashMap<>();
+
+        DiagramMonitor.lay(overlays, Arrays.asList(tile(0, 0), tile(1, 0), tile(2, 0)),
+            Arrays.asList(State.REACHED, State.REACHED, State.REACHED));
+
+        // and again, the other way round, over the same switch
+        DiagramMonitor.lay(overlays, Arrays.asList(tile(1, 1), tile(1, 0), tile(0, 0)),
+            Arrays.asList(State.ACTIVE, State.ACTIVE, State.ACTIVE));
+
+        assertEquals(overlays.get(tile(1, 0)).getSegments().size(), 2,
+            "one of the two passes was drawn and the other lost");
+
+        // identical passes are not two passes - two claims over the same track through the same sides
+        DiagramMonitor.lay(overlays, Arrays.asList(tile(0, 0), tile(1, 0), tile(2, 0)),
+            Arrays.asList(State.REACHED, State.REACHED, State.REACHED));
+
+        assertEquals(overlays.get(tile(1, 0)).getSegments().size(), 2,
+            "the same pass drawn twice is one line, not two");
+    }
+
+    /**
+     * Edges meeting at a Point do not name that square twice.
+     *
+     * A run is built by concatenating edges, and consecutive edges share the Point between them.  Listed
+     * twice, that square gets a line drawn from itself to itself - a blob in the middle of the track
+     * where the two edges join.
+     */
+    @Test
+    public void testTheSquareWhereTwoEdgesMeetIsListedOnce()
+    {
+        java.util.List<TileKey> run = new java.util.ArrayList<>();
+        java.util.List<State> states = new java.util.ArrayList<>();
+
+        DiagramMonitor.append(run, states, tile(0, 0), State.ACTIVE);
+        DiagramMonitor.append(run, states, tile(1, 0), State.ACTIVE);
+        DiagramMonitor.append(run, states, tile(1, 0), State.ACTIVE);
+        DiagramMonitor.append(run, states, tile(2, 0), State.ACTIVE);
+
+        assertEquals(run.size(), 3, "the shared Point was counted once per edge that touches it");
+
+        assertEquals(states.size(), run.size(), "a square with no state is a line with no colour");
+    }
+
+    /**
+     * A jump between pages has no side to be drawn as, and says so.
+     *
+     * A link is a hole in one page that comes out on another, so the two squares are not neighbours on
+     * any grid.  The honest answer is a line that stops, which is what the train visibly does.
+     */
+    @Test
+    public void testAJumpBetweenPagesHasNoSide()
+    {
+        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(
+            tile(0, 0), new TileKey("other", 1, 0)),
+            "two pages were treated as one grid");
+
+        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(tile(0, 0), tile(1, 1)),
+            "a diagonal is not a side");
+
+        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(tile(0, 0), tile(0, 0)),
+            "a square is not beside itself");
+    }
+
+    /**
+     * A square carrying a line is not blank, however it was reached.
+     *
+     * isBlank is what stops the common case costing anything, and a claim it does not recognise is a
+     * square that quietly refuses to paint.
+     */
+    @Test
+    public void testASquareWithALinePaints()
+    {
+        Map<TileKey, TileOverlay> overlays = new LinkedHashMap<>();
+
+        DiagramMonitor.lay(overlays, Arrays.asList(tile(0, 0), tile(1, 0)),
+            Arrays.asList(State.ACTIVE, State.ACTIVE));
+
+        assertFalse(overlays.get(tile(0, 0)).isBlank());
+    }
+
+    private static TileKey tile(int x, int y)
+    {
+        return new TileKey("main", x, y);
+    }
+
+    private static TileOverlay.Segment segment(Map<TileKey, TileOverlay> overlays, TileKey tile)
+    {
+        TileOverlay overlay = overlays.get(tile);
+
+        assertNotNull(overlay, "nothing was drawn on " + tile);
+
+        assertEquals(overlay.getSegments().size(), 1, "expected one pass through " + tile);
+
+        return overlay.getSegments().get(0);
     }
 
     /**

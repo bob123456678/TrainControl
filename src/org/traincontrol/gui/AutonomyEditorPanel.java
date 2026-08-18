@@ -2365,32 +2365,13 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Which side of one square faces another, or null when they are not neighbours - which is what a
      * jump through a link looks like, and there is no side on the grid to draw it as.
+     *
+     * The running diagram lays its line across the same grid, so the answer lives with the grid rather
+     * than being worked out again here.
      */
     private org.traincontrol.automationui.TilePorts.Side towards(TileKey from, TileKey to)
     {
-        if (!from.getPage().equals(to.getPage())) return null;
-
-        if (to.getX() == from.getX() + 1 && to.getY() == from.getY())
-        {
-            return org.traincontrol.automationui.TilePorts.Side.E;
-        }
-
-        if (to.getX() == from.getX() - 1 && to.getY() == from.getY())
-        {
-            return org.traincontrol.automationui.TilePorts.Side.W;
-        }
-
-        if (to.getY() == from.getY() + 1 && to.getX() == from.getX())
-        {
-            return org.traincontrol.automationui.TilePorts.Side.S;
-        }
-
-        if (to.getY() == from.getY() - 1 && to.getX() == from.getX())
-        {
-            return org.traincontrol.automationui.TilePorts.Side.N;
-        }
-
-        return null;
+        return org.traincontrol.automationui.TileGraph.sideTowards(from, to);
     }
 
     /**
