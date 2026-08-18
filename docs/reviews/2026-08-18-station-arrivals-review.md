@@ -23,6 +23,8 @@ Three commits, and the code around them:
 | feature review | Fable | the three commits and the code around them, read against the split-point model |
 | changes pass | Opus | the five commits to 81a51ac, told what the first pass had already found and to look for what it missed |
 | regressions pass | Opus | what worked before this week and does not now, across the shared files the branch touches |
+| graph derivation | Opus | TileGraph/GraphReducer/AutonomyBuilder split logic, against the ground-truth oracle |
+| running model | Opus | Layout/Point/Edge, the new exclusivity sweep, path locking, bfs |
 
 ---
 
@@ -429,6 +431,74 @@ Recorded because knowing what was verified is worth as much as knowing what was 
   collapsed under the key `"null"`, so only the first survived.
 
 ---
+
+## Core graph — two passes over the derivation and the running model
+
+The owner suspected bugs still in the core graph and asked for a focused fanout, with the pinned
+v2.8.1 routes (test/autonomy_formats/v2_8_1-station-paths.txt) as an oracle.
+
+| id | finding | status |
+|---|---|---|
+| CG1 | the exclusivity sweep collapsed a locked path's reservation to its destination | fixed, `16852e4` |
+| CG2 | a path-integrity failure stranded the train on no point at all | fixed, `16852e4` |
+| CG3 | setLocomotive's header claimed an atomicity the code does not provide | fixed, `16852e4` |
+| CG4 | the station-reachability CHECKS ignore the split and over-report | CONFIRMED, folded into the shadow-station work |
+| CG5 | splitSides collapses on a null entry side | not a defect - unreachable, see below |
+
+### CG1 - reserving a path is not placing a train, and my sweep could not tell them apart
+
+The one-locomotive-per-place sweep (`a51a6eb`) assumed `setLocomotive` only ever places a train.
+`configureAndLockPath` uses it to reserve every point along a locked path at once - which is how a
+junction the train has passed is held against a second train reaching it another way. So locking
+A->B->C swept the train off each point as the next was reserved, leaving it on C alone and freeing B.
+
+Fixed by splitting the operation: `Point.reserve` assigns without sweeping, `configureAndLockPath`
+reserves with it, and only genuine placement still sweeps. Pinned by
+`testLockingAPathReservesEveryPointOnIt`, seen collapsing to the destination without the fix.
+
+### CG2 - and on failure it stranded the train
+
+Same root. `handleMisconfiguredPath` releases the path's end points and promises to leave the train
+"at its start" - but the start had already been swept during locking, so the train ended on no point,
+invisible to `pickPath` and dropped out of autonomy until a reload. The reserve fix restores the
+start; `handleMisconfiguredPath` also re-reserves it defensively for the loop-back case.
+`testAFailedConfigurationLeavesTheTrainAtItsStart` covers it, next to the path-integrity suite -
+that class builds a UI and only runs with a display, so it runs in Adam's environment, not the headless
+harness.
+
+### CG3
+
+The sweep and the assignment are not atomic; the comment claimed the worst a race could do was leave a
+train nowhere for an instant, when the worst is two places - the very state the change forbids. Nothing
+does that today (one thread places a given locomotive), and the comment now says so instead of claiming
+a property the code does not provide.
+
+### CG4 - the checks disagree with the runtime through a double curve
+
+`AutonomyChecks.checkStations` and the sample-layout reachability helpers build their adjacency from
+tile-to-tile reducer edges, which ignore the arrival-side split. A `FEEDBACK_DOUBLE_CURVE` carries
+two independent curves; the tile adjacency lets a route cross between them, so the check reports a
+station pair reachable that the split-aware runtime `bfs` never routes - and no `STATION_UNREACHABLE`
+warning is raised. The editor's "test a path" is NOT affected: it uses `GraphReducer.findPath`, which
+is split-aware.
+
+CONFIRMED, Rank C - a missing warning in a narrow topology, not a train driven wrong. The correct fix
+mirrors `findPath`'s (tile, arrival-side) BFS in the checker, which is the exact machinery the
+shadow-station validation will either bless or delete. Folded into that task so the checker is not
+rewritten twice.
+
+### CG5 - the split derivation itself: a clean bill
+
+The derivation reviewer could not construct a case where `nodesFor`/`leavesBy`/`arrivesBy`/
+`onwardFrom` emits a wrong one-way edge, drops a legitimate route, produces a name collision, or makes
+a copy that is wrongly trapped or unreachable. Ports, orientation, the (4-orientation) rotation, switch
+state-replacement, portal stubs, double-curve confinement and naming uniqueness were all checked and
+pinned by existing tests. `splitSides`' null-entry-side collapse is unreachable (a portal never
+terminates a walk at a Point), so it is dead-defensive, not a bug.
+
+That clean bill matters for the shadow-station question: the split is doing exactly the work it claims,
+which is why retiring it is a re-architecture to carry heading in the search, not a deletion of dead
+code.
 
 ## What this pass did not cover
 
