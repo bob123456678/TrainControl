@@ -500,6 +500,41 @@ That clean bill matters for the shadow-station question: the split is doing exac
 which is why retiring it is a re-architecture to carry heading in the search, not a deletion of dead
 code.
 
+## Shadow stations: validated, and kept
+
+Adam's hypothesis: now that a station can limit which sides trains ARRIVE by, and a train carries a
+facing, the per-arrival-side split into several Points and doubled edges is unnecessary machinery.
+
+Validated against a real diagram-derived config (the operator's autonomy-derived.json: 71 points, 46
+edges, 30 stations, 13 squares emitted as more than one copy) by collapsing every copy of a square to
+one node, unioning its edges, and comparing.
+
+Two measurements, and they disagree in the way that settles it:
+
+- **Station-to-station reachability is identical.** 15 reachable pairs before, 15 after. Collapsing
+  adds no route between stations. This is why the split LOOKS redundant.
+- **But collapsing enables 6 physically-impossible moves at 5 of the 13 squares** - all of them
+  reversals (arrive from a side, leave back by it), no track-jumps, because this layout has no double
+  curve used as a through-point. A reversal never reaches a NEW station, so reachability cannot see it
+  - but `bfs` takes the shortest path, and a reversal shortcut would command a train to turn round
+  at a square where it cannot.
+
+So the split is load-bearing: it forbids moves a one-node-per-square model would allow, even where those
+moves change no station's reachability. This matches the derivation reviewer's clean bill (CG5) - the
+split is doing exactly the work it claims.
+
+**Conclusion: keep the split.** Retiring it is not a deletion of redundant machinery; it is replacing
+node-expansion with a heading-aware search that re-forbids exactly those reversals - the constraint has
+to live somewhere, and today it lives in the shape of the graph. That re-architecture may still be worth
+doing for its own sake (less in the builder, more in the router), but it is a rewrite of the core path
+search with no proven simplification on the evidence here, and its failure mode is a train told to make
+an impossible move. Not a change to make autonomously at the end of a review.
+
+Note the gap this exposed in the ground-truth oracle: it pins REACHABILITY, which is blind to the
+reversal shortcuts. A future move to collapse the split would pass the oracle while breaking execution.
+If that re-architecture is ever attempted, the oracle should first be extended to pin the actual bfs
+PATHS, not just which pairs are connected.
+
 ## What this pass did not cover
 
 - **No hardware.** Every finding is from reading code and running the headless suite. Semaphore
