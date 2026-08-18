@@ -680,18 +680,26 @@ public class AutonomyEditorPanel extends JPanel
             // Locomotives first, because placing one is the commonest reason to open this menu once a
             // layout is set up - the designations below it are settled early and rarely touched again.
             //
-            // Only at a station: a locomotive can only be SENT to a station, so standing one anywhere
-            // else records a position autonomy could never route away from.
-            if (session.getStore().isStation(target))
+            // PUTTING one down is only at a station: a locomotive can only be SENT to a station, so
+            // standing one anywhere else records a position autonomy could never route away from.
+            //
+            // TAKING one off is not, because the square underneath a train can stop being a station
+            // while the train stays recorded on it - switch it to pass-through, or import a setup that
+            // placed one where this build draws no station.  Gated on the designation, the whole
+            // locomotive group vanished with it and the only way to clear the placement was to make the
+            // square a station again, take the train off, and put the designation back.  So this item
+            // follows the LOCOMOTIVE, as the track diagram's own menu already does.
+            final boolean isStation = session.getStore().isStation(target);
+            final String standing = locomotiveAt(target);
+
+            if (standing != null)
             {
-                String standing = locomotiveAt(target);
+                menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
+                    () -> session.placeLocomotive(target, null)));
+            }
 
-                if (standing != null)
-                {
-                    menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
-                        () -> session.placeLocomotive(target, null)));
-                }
-
+            if (isStation)
+            {
                 menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
                     () -> placeLocomotive(target, true)));
 
@@ -734,9 +742,9 @@ public class AutonomyEditorPanel extends JPanel
 
                     menu.add(facingMenu);
                 }
-
-                menu.addSeparator();
             }
+
+            if (standing != null || isStation) menu.addSeparator();
 
             menu.add(item(I18n.t("autosetup.ui.menuRename"), () -> promptName(target)));
 
@@ -749,7 +757,6 @@ public class AutonomyEditorPanel extends JPanel
             // It replaces "mark as a station" and "active" together, because between them those said
             // the same three things in four states, one of which - not a station, and inactive - meant
             // exactly what another already did.
-            final boolean isStation = session.getStore().isStation(target);
             final boolean isOpen = !Boolean.FALSE.equals(session.getPointProperty(target, "active"));
 
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(

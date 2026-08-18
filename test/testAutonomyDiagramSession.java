@@ -2252,6 +2252,45 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A square that stops being a station keeps whatever train was standing on it.
+     *
+     * The designation and the placement are separate records and demotion only touches the first, so
+     * this state is reachable by an ordinary gesture - switch a station to pass-through - as well as by
+     * importing a setup that placed a train where this build draws no station.  It is why the editor
+     * menu offers "remove" against the LOCOMOTIVE rather than against the designation: gated on being a
+     * station, the only way to take this train off was to make the square a station again first.
+     */
+    @Test
+    public void testDemotingAStationLeavesItsLocomotiveToBeRemoved() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Demoted", null);
+        session.getStore().setActiveConfiguration("Demoted");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.setStation(tile, true);
+        session.placeLocomotive(tile, "SM31-108");
+
+        session.setStation(tile, false);
+
+        assertFalse(session.getStore().isStation(tile), "the square was demoted");
+
+        assertNotNull(session.getPointProperty(tile, AutonomyBuilder.LOCOMOTIVE),
+            "demotion dropped the placement, so there would be nothing left to offer to remove");
+
+        // And taking it off works here exactly as it does at a station - nothing about clearing a
+        // placement ever needed the square to be one.
+        session.placeLocomotive(tile, null);
+
+        assertNull(session.getPointProperty(tile, AutonomyBuilder.LOCOMOTIVE),
+            "a train could be left on a square with no way to take it off");
+    }
+
+    /**
      * A locomotive recorded in two places is reported before anything tries to run.
      *
      * The consequence is out of all proportion to the cause: fromJSON refuses the WHOLE layout for a
