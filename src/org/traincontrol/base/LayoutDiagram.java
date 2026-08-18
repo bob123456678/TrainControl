@@ -308,10 +308,29 @@ public class LayoutDiagram
                 writer.write(data);
             }
 
-            // If filename is not null, delete the original file
+            // If filename is not null, delete the original file - unless it IS the new file.
+            //
+            // On Windows and macOS "Main" and "MAIN" name one file, so the writer above did not create
+            // a second one, it reopened this one and wrote it.  Deleting the "original" then deleted
+            // the only copy of the page, and the index was left naming a file that does not exist.
+            // Renaming is offered only for local layouts, so there is no Central Station copy to fall
+            // back on - the page was simply gone.
             if (filename != null && !duplicate)
             {
-                Files.delete(originalFilePath);
+                if (Files.isSameFile(originalFilePath, newFilePath))
+                {
+                    // The bytes are already right; what is left is the spelling.  Through a temporary
+                    // name because a direct move onto a path the filesystem considers identical is
+                    // rejected rather than treated as a rename.
+                    Path staged = originalFilePath.resolveSibling(filename.trim() + ".cs2.renaming");
+
+                    Files.move(originalFilePath, staged);
+                    Files.move(staged, newFilePath);
+                }
+                else
+                {
+                    Files.delete(originalFilePath);
+                }
             }
         } 
         catch (IOException | URISyntaxException e)

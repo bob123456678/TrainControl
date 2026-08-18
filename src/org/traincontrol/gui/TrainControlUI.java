@@ -11219,14 +11219,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Route currentRoute = this.model.getRoute(routeName);
                     
-                    routeEditor = new RouteEditor(
-                            I18n.f(
-                                "route.ui.dialogEditRouteWithId",
-                                routeName,
-                                currentRoute.getId()
-                            ),
-                            this, routeName, currentRoute.toCSV(), currentRoute.isEnabled(), currentRoute.getS88(), currentRoute.getTriggerType(),
-                        currentRoute.getConditionCSV(), currentRoute.isLocked());
+                    // Realised on the EDT.  Everything above - the model lookups, toCSV - belongs
+                    // off it and stays off it, but constructing, packing and showing a JFrame is not
+                    // thread safe, and the command-capture path then writes this window's document
+                    // from the EDT while it is still being built on another thread.
+                    final String title = I18n.f(
+                        "route.ui.dialogEditRouteWithId",
+                        routeName,
+                        currentRoute.getId()
+                    );
+
+                    final String csv = currentRoute.toCSV();
+                    final String conditions = currentRoute.getConditionCSV();
+                    final boolean isEnabled = currentRoute.isEnabled();
+                    final int s88 = currentRoute.getS88();
+                    final Route.s88Triggers trigger = currentRoute.getTriggerType();
+                    final boolean locked = currentRoute.isLocked();
+
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        routeEditor = new RouteEditor(title, this, routeName, csv, isEnabled, s88,
+                            trigger, conditions, locked);
+                    });
                 }
             }
         }).start();
@@ -11315,7 +11329,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 "*"
             );
             
-            if (!"".equals(searchString))
+            // Cancel returns null, which is not the same as an empty search.  !"".equals(null) is
+            // true, so the loop ran and getName().contains(null) threw - killing the worker thread on
+            // a stack trace nobody sees, and skipping the sync and refresh that follow it.
+            if (searchString != null && !"".equals(searchString))
             {
                 for (String routeName : this.model.getRouteList())
                 {
@@ -12366,17 +12383,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                routeEditor = new RouteEditor(
-                    I18n.t("route.ui.dialogAddNewRoute"),
-                    this,
-                    String.format(proposedName, i),
-                    "",
-                    false,
-                    0,
-                    Route.s88Triggers.CLEAR_THEN_OCCUPIED,
-                    "",
-                    false
-                );
+                // Realised on the EDT - see the note on the edit path.  The name is settled here
+                // because the loop counter above is not effectively final.
+                final String newName = String.format(proposedName, i);
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    routeEditor = new RouteEditor(
+                        I18n.t("route.ui.dialogAddNewRoute"),
+                        this,
+                        newName,
+                        "",
+                        false,
+                        0,
+                        Route.s88Triggers.CLEAR_THEN_OCCUPIED,
+                        "",
+                        false
+                    );
+                });
             }
         }).start();
     }//GEN-LAST:event_AddRouteButtonActionPerformed

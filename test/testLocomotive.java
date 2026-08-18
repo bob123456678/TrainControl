@@ -870,4 +870,92 @@ public class testLocomotive
             model.deleteLoc("UC C12 icon");
         }
     }
+
+    /**
+     * A second power-on while a train is already running does not throw away what it has run.
+     *
+     * Runtime is only credited at the next stop, so the clock is a single start timestamp - and
+     * notifyOfPowerStateChange reset it on every power-on it was told about, transitioning or not.
+     * receiveMessage calls it for EVERY locomotive on EVERY system GO, so pressing Go on the Central
+     * Station while trains were running - or clicking a diagram accessory, which turns power on first
+     * - silently discarded everything since the real start.
+     *
+     * Timed rather than mocked because the credit is computed from the wall clock; the margins are
+     * wide enough that only the defect can fail it.  Before the fix the second GO restarted the clock
+     * and the credit was the last 50ms, not the whole 350.
+     */
+    @Test
+    public void testARedundantPowerOnKeepsTheRunningTime() throws Exception
+    {
+        MarklinLocomotive timed = new MarklinLocomotive(model, 91,
+            MarklinLocomotive.decoderType.MM2, "Runtime Test Loc");
+
+        // A known starting state: nothing running, power off, so the first GO below is a transition
+        timed.setSpeed(0);
+        timed.notifyOfPowerStateChange(false);
+
+        long before = timed.getTotalRuntime();
+
+        timed.setSpeed(50);
+        timed.notifyOfPowerStateChange(true);
+
+        Thread.sleep(300);
+
+        // The Central Station saying GO again, which changes nothing and used to cost everything
+        timed.notifyOfPowerStateChange(true);
+
+        Thread.sleep(50);
+
+        timed.notifyOfPowerStateChange(false);
+
+        long credited = timed.getTotalRuntime() - before;
+
+        assertTrue(credited >= 250,
+            "only " + credited + "ms was credited of about 350 run: the second power-on restarted "
+                + "the clock and threw away everything before it");
+
+        timed.setSpeed(0);
+    }
+
+    /**
+     * An address with exactly one locomotive on it is reported as in use.
+     *
+     * The "check for duplicates" dialog answered this from getDuplicateLocAddresses, which has every
+     * address with a single locomotive REMOVED from it - so it said "address is free" for precisely
+     * the address the user was about to collide with, and stayed silent only for addresses that were
+     * already doubled up.
+     *
+     * The precondition assert is what makes this meaningful: without it the test would pass on a
+     * database where every address happens to be duplicated, having exercised nothing.
+     */
+    @Test
+    public void testAnAddressWithOneLocomotiveIsNotReportedFree() throws Exception
+    {
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Locomotive>> all =
+            model.getLocAddresses();
+
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Locomotive>> duplicates =
+            model.getDuplicateLocAddresses();
+
+        Integer single = null;
+
+        for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Locomotive>> entry
+                : all.entrySet())
+        {
+            if (entry.getValue().size() == 1)
+            {
+                single = entry.getKey();
+                break;
+            }
+        }
+
+        assertNotNull(single,
+            "no address in this database has exactly one locomotive, so this test proves nothing");
+
+        assertFalse(duplicates.containsKey(single),
+            "precondition: an address with one locomotive is not in the duplicate list");
+
+        assertTrue(all.containsKey(single),
+            "address " + single + " has a locomotive on it, and the dialog called it free");
+    }
 }

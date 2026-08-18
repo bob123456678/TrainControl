@@ -363,6 +363,25 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v2.8.1 [8/17/2026]
+    - Autonomy Bug Fixes
+        - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
+    - Locomotive Bug Fixes
+        - Fixed bug where pressing Go on the Central Station while trains were already running discarded their accumulated running time from the statistics.  This also happened when clicking a track diagram accessory, which turns track power on first
+        - The duplicate address check no longer reports an address as free when one locomotive is already using it.  Previously only addresses already shared by two or more locomotives counted
+    - Route Bug Fixes
+        - Fixed bug where renaming a locomotive stopped every route whose condition named that locomotive from firing again.  The route stayed switched on and looked normal in the list, but its condition could no longer be met, so it quietly never ran
+        - Fixed bug where capturing commands into a route that drives more than one locomotive kept only the last one.  Capturing a turnout would make an earlier locomotive’s speed, direction, or function disappear from the middle of the command list, and saving kept the shortened route
+        - Fixed bug where importing a routes file containing two routes with the same name left the rejected one running invisibly in the background, still triggering from its s88 and still throwing switches, until TrainControl was restarted
+        - Cancelling the bulk enable or disable prompt now cancels, instead of doing nothing at all and leaving the route list unrefreshed
+    - Track Diagram Bug Fixes
+        - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
+        - Clicking a tile in the track diagram editor no longer counts as an edit, so the editor stops asking whether to save changes that were never made
+        - Fixed an error when clicking a tile in the editor’s component palette rather than dragging it onto the diagram
+    - Central Station Sync Bug Fixes
+        - Fixed bug where locomotive speeds and functions changed at the Central Station stopped being shown in TrainControl if the initial sync had failed while the Central Station was still reachable over the network
+        - The locomotive database is no longer occasionally left unsaved when a backup or an automatic sync runs at the same moment as an edit
+
 * v2.8.0 [8/2/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
     - Locomotive Control Page

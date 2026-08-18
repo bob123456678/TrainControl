@@ -73,6 +73,12 @@ public interface ViewListener
     public Route getRoute(int id);
     public int getRouteId(String name);
     public Map<Integer, Set<Locomotive>> getDuplicateLocAddresses();
+
+    /**
+     * Every locomotive address in use, mapped to the locomotives using it.
+     * @return
+     */
+    public Map<Integer, Set<Locomotive>> getLocAddresses();
     public void parseAuto(String s);
     public void applyAutonomyRouteActivations();
     public Layout getAutoLayout();

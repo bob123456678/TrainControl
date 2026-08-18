@@ -346,10 +346,18 @@ public class LayoutEditor extends PositionAwareJFrame
         // lastHoveredLabel = label;
     }
     
+    /**
+     * The square a drag started on, so that a click can be told from a drag on release.
+     */
+    private LayoutLabel dragSource = null;
+
     public void beginDrag(MouseEvent e, LayoutLabel label)
     {
         if (label != null && label.getComponent() != null)
         {
+            // Remembered so that a press and release on one square can be told from a drag.
+            this.dragSource = label;
+
             if (getX(label) == -1 && getY(label) == -1)
             {
                 this.initCopy(label, label.getComponent(), false);
@@ -396,8 +404,31 @@ public class LayoutEditor extends PositionAwareJFrame
             dragWindow.dispose();
             dragWindow = null;
             
+            LayoutLabel target = getLastHoveredLabel();
+
+            LayoutLabel source = this.dragSource;
+
+            this.dragSource = null;
+
+            // Nothing under the pointer.  Hovering the palette sets the hovered square to -1,-1, so a
+            // plain click there reached executeTool with no target: execCopy then built a component at
+            // (-1,-1) and addComponent threw IndexOutOfBounds - unchecked, on the EDT, on every single
+            // palette click.  Only IOException is caught around it.  The palette appeared to work
+            // because receiveClickEvent re-arms the tool afterwards, so nothing is left to do here.
+            if (target == null) return;
+
+            // A press and release on the SAME square is a click, not a drag.  Executing there cut the
+            // tile and dropped it straight back, which changes no diagram - but snapshotLayout runs
+            // first, so merely clicking a tile pushed an undo entry, cleared the redo stack, and left
+            // the editor asking whether to save work the user had not done.
+            if (source != null && target == source)
+            {
+                resetClipboard();
+                return;
+            }
+
             // Snap to grid logic
-            executeTool(getLastHoveredLabel(), null);
+            executeTool(target, null);
         }
     }
     

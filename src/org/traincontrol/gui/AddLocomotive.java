@@ -461,7 +461,10 @@ public class AddLocomotive extends javax.swing.JFrame
 
             if (locAddress > 0)
             {
-                if (locs.containsKey(locAddress))
+                // Asked of every address in use, not of the duplicate list.  That list has every
+                // address with a single locomotive removed, so it answered "free" for precisely the
+                // address somebody is about to collide with.
+                if (this.model.getLocAddresses().containsKey(locAddress))
                 {
                     message = I18n.t("loc.errorAddressInUse");
                 }

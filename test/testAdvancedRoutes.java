@@ -518,4 +518,87 @@ public class testAdvancedRoutes
                 + ": the restored tree changed meaning through \"" + text.replace("\n", " ") + "\"");
         }
     }
+
+    /**
+     * Renaming a locomotive repairs the routes whose CONDITION names it, not only their commands.
+     *
+     * Route.locomotiveRenamed sweeps the command list, and renameLoc runs it over every route - its own
+     * comment names routes as one of the two stores that hold locomotives by name and therefore need
+     * repairing.  Conditions are held separately, on MarklinRoute, and nothing swept them.
+     *
+     * The consequence is silent, which is what makes it worth a test: evaluate asks getLocByName for a
+     * name that no longer exists, gets null, and returns false forever.  The monitor thread keeps
+     * running and keeps logging "condition failed", so the route looks alive and never fires again.
+     */
+    @Test
+    public void testARenameReachesConditionsAndNotOnlyCommands() throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40));
+
+        NodeExpression condition =
+            new NodeRouteCommand(RouteCommand.RouteCommandAutoLocomotive("BR 218", 50));
+
+        // Not enabled: the constructor starts a monitor thread for an enabled route with an s88, and
+        // this test is about the rename, not the trigger.
+        MarklinRoute route = new MarklinRoute(null, "Ahead", 1, commands, 50,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, condition);
+
+        route.locomotiveRenamed("BR 218", "BR 218 neu");
+
+        for (RouteCommand rc : NodeExpression.toList(route.getConditions()))
+        {
+            assertEquals(rc.getName(), "BR 218 neu",
+                "the condition still names the old locomotive, so this route can never fire again");
+        }
+
+        for (RouteCommand rc : route.getRoute())
+        {
+            assertEquals(rc.getName(), "BR 218 neu", "the command list was not repaired either");
+        }
+    }
+
+    /**
+     * Capturing a command keeps one entry per locomotive, not one per kind of command.
+     *
+     * The filter keyed on everything before the first comma.  For an accessory line - "name,setting" -
+     * that is the accessory, which is right.  For a locomotive line - "prefix,name,value" - it is just
+     * "locspeed", so every locomotive in the route collapsed onto one key and only the last survived.
+     *
+     * The user sees this as a line vanishing from the middle of the text area while they click a
+     * turnout somewhere else, and saving persists the shortened route.
+     */
+    @Test
+    public void testCapturingKeepsEveryLocomotivesCommands() throws Exception
+    {
+        String filtered = org.traincontrol.gui.RouteEditor.filterConfigCommands(
+            "locspeed,Loc A,50\nlocspeed,Loc B,40\nlocfunc,Loc A,3,1\nlocfunc,Loc A,4,1");
+
+        assertTrue(filtered.contains("locspeed,Loc A,50"), "Loc A's speed was dropped:\n" + filtered);
+        assertTrue(filtered.contains("locspeed,Loc B,40"), "Loc B's speed was dropped:\n" + filtered);
+
+        assertTrue(filtered.contains("locfunc,Loc A,3,1") && filtered.contains("locfunc,Loc A,4,1"),
+            "two functions of one locomotive are two settings, not one:\n" + filtered);
+    }
+
+    /**
+     * The same filter still collapses repeated writes to one accessory, keeping the last.
+     *
+     * The precondition that makes the test above meaningful: a key wide enough to separate locomotives
+     * must not have become so wide that nothing dedupes any more.  Captured three-way pairs depend on
+     * this - rewriting an accessory moves it to the end, and that ordering is load-bearing.
+     */
+    @Test
+    public void testCapturingStillCollapsesRepeatedAccessoryWrites() throws Exception
+    {
+        String filtered = org.traincontrol.gui.RouteEditor.filterConfigCommands(
+            "Switch 3,straight\nSwitch 4,turn\nSwitch 3,turn");
+
+        assertFalse(filtered.contains("Switch 3,straight"),
+            "the earlier setting of Switch 3 should have been replaced:\n" + filtered);
+
+        assertTrue(filtered.contains("Switch 3,turn"), "the later one should survive:\n" + filtered);
+        assertTrue(filtered.contains("Switch 4,turn"), "and the other accessory too:\n" + filtered);
+    }
 }

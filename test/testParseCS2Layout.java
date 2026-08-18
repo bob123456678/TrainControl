@@ -334,4 +334,59 @@ public class testParseCS2Layout
                 .forEach(File::delete);
         }
     }
+
+    /**
+     * Renaming a page to the same letters in different case keeps the page.
+     *
+     * saveChanges writes the new filename and then deletes the old one, which is correct only while
+     * they are two files.  On Windows and macOS "Main" and "MAIN" are one file: the writer reopened
+     * and rewrote the original, and the delete then removed the only copy.  The UI does not catch it
+     * either - its duplicate check is a case-sensitive list lookup, so "MAIN" does not collide with
+     * "Main" and the rename proceeds.  Renaming is offered only for local layouts, so nothing on the
+     * Central Station could put the page back.
+     *
+     * Counting the files rather than asking for one by name is what makes this meaningful on both
+     * kinds of filesystem: where the two names are distinct the old file must be gone, and where they
+     * are the same file it must still be there.  Either way exactly one page survives, with content.
+     */
+    @Test
+    public void testACaseOnlyRenameDoesNotDeleteThePage() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-rename").toFile();
+
+        File config = new File(folder, "config");
+        File pages = new File(config, "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not create " + pages);
+
+        Files.write(new File(pages, "Main.cs2").toPath(),
+            ("[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=weiche\n .artikel=8\n")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=Main\n")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        String url = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        CS2File parser = new CS2File(url, null);
+        parser.setLayoutDataLoc(url);
+
+        List<LayoutDiagram> parsed = parser.parseLayout(new LinkedList<MarklinAccessory>());
+
+        assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        parsed.get(0).saveChanges("MAIN", false);
+
+        File[] left = pages.listFiles();
+
+        assertEquals(left.length, 1,
+            "a case-only rename should leave exactly one page: " + java.util.Arrays.toString(left));
+
+        String kept = new String(Files.readAllBytes(left[0].toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(kept.contains("weiche"),
+            "the surviving file is not the page that was renamed:\n" + kept);
+    }
 }
