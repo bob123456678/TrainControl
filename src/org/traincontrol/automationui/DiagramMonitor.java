@@ -120,45 +120,11 @@ public class DiagramMonitor
         published = Collections.emptyMap();
     }
 
-    /**
-     * Builds the two indexes this needs from a reduction and the names the builder gave its Points.
-     *
-     * @param reducer the reduction the running configuration was built from
-     * @param names tile -> the name that Point carries in the generated file (AutonomyBuilder.uniqueNames)
-     * @return edge name -> reduced edge
-     */
-    public static Map<String, ReducedEdge> indexEdges(GraphReducer reducer, Map<TileKey, String> names)
-    {
-        Map<String, ReducedEdge> out = new LinkedHashMap<>();
-
-        for (ReducedEdge edge : reducer.getEdges())
-        {
-            String start = names.get(edge.getStart());
-            String end = names.get(edge.getEnd());
-
-            if (start == null || end == null) continue;
-
-            out.put(start + " -> " + end, edge);
-        }
-
-        return out;
-    }
-
-    /**
-     * @param names tile -> Point name
-     * @return the reverse: Point name -> tile
-     */
-    public static Map<String, TileKey> indexPoints(Map<TileKey, String> names)
-    {
-        Map<String, TileKey> out = new LinkedHashMap<>();
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
-        {
-            out.put(entry.getValue(), entry.getKey());
-        }
-
-        return out;
-    }
+    // indexEdges and indexPoints stood here: two public helpers that built these maps from
+    // uniqueNames.  Nothing called them - the driver takes both from the builder, which knows about the
+    // split - and they indexed BASE names only, so anything that had started calling them would have
+    // got a monitor that silently missed every split copy.  Deleted rather than fixed: the builder
+    // already answers this correctly and a second answer is what this whole area keeps going wrong on.
 
     /**
      * Registers with a layout.  Additive: other callbacks on the same layout are untouched.

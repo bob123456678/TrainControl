@@ -49,6 +49,7 @@ public final class StationIndex
     private final Map<String, String> baseByPoint;
     private final Map<TileKey, List<String>> pointsBySquare;
     private final Map<String, Side> facingByPoint;
+    private final Map<TileKey, List<Side>> arrivalsBySquare;
 
     /**
      * @param builder a builder configured exactly as the one that generated the running configuration,
@@ -65,6 +66,7 @@ public final class StationIndex
             baseByPoint = Collections.emptyMap();
             pointsBySquare = Collections.emptyMap();
             facingByPoint = Collections.emptyMap();
+            arrivalsBySquare = Collections.emptyMap();
 
             return;
         }
@@ -97,6 +99,41 @@ public final class StationIndex
         }
 
         pointsBySquare = Collections.unmodifiableMap(grouped);
+
+        // The sides a train can arrive at each square by, from the same derivation as everything else.
+        // Worked out per call it was a whole builder pass - the very thing this class exists to stop -
+        // and it is asked once per station per repaint.
+        Map<TileKey, List<Side>> arrivals = new LinkedHashMap<>();
+
+        for (TileKey square : grouped.keySet())
+        {
+            List<Side> sides = new ArrayList<>();
+
+            for (Side side : builder.arrivalSidesOf(square))
+            {
+                if (!sides.contains(side)) sides.add(side);
+            }
+
+            arrivals.put(square, Collections.unmodifiableList(sides));
+        }
+
+        arrivalsBySquare = Collections.unmodifiableMap(arrivals);
+    }
+
+    /**
+     * The sides a train can arrive at a square by.
+     *
+     * The same answer the split itself uses, so nothing can offer a restriction on a side the build has
+     * no copy for - which would be a setting that silently did nothing.
+     *
+     * @param square
+     * @return the arrival sides, empty when the square never splits
+     */
+    public List<Side> arrivalSidesAt(TileKey square)
+    {
+        List<Side> sides = square == null ? null : arrivalsBySquare.get(square);
+
+        return sides == null ? Collections.<Side>emptyList() : sides;
     }
 
     /**
@@ -281,8 +318,13 @@ public final class StationIndex
      * The one Point that speaks for a square when only one answer is wanted.
      *
      * An occupied copy in preference to an empty one, because a question asked of a platform - what is
-     * standing here, where can it go - is nearly always about the train.  With none occupied any copy
-     * will do: they are the same square and carry the same settings.
+     * standing here, where can it go - is nearly always about the train.  With none occupied the first
+     * is used, which is a choice and not an equivalence: the copies differ in whether a train may stop
+     * on them once arrivals are restricted.  For "what is standing here" that does not matter; anything
+     * asking what may be DONE here has to look at the copy it means.
+     *
+     * With more than one train standing on a square this answers for the first of them.  Callers that
+     * can show more than one - the caption does - should ask occupantsAt instead.
      *
      * @param layout
      * @param square

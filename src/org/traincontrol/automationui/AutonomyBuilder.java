@@ -702,7 +702,15 @@ public class AutonomyBuilder
 
                 // A station, unless a train arriving THIS way is not allowed to stop.  The copy still
                 // exists and still carries traffic; it is simply not somewhere a train can be sent.
-                json.put("station", point.isStation() && arrivalAllowed(node));
+                //
+                // Decided ONCE, because two flags are emitted from it.  Read again below off the
+                // square, the turn-round copy of a barred side came out as a terminus that is not a
+                // destination - a pair Point.setTerminus refuses, and parseAuto answers a refusal by
+                // invalidating the whole layout.  Restricting a terminus platform, which is the most
+                // natural use this setting has, made the entire setup unloadable.
+                boolean stops = point.isStation() && arrivalAllowed(node);
+
+                json.put("station", stops);
                 json.put("s88", point.getS88());
 
                 if (coordinatePages != null)
@@ -767,7 +775,11 @@ public class AutonomyBuilder
                 if (node.reverse
                     || (mandatory.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
-                    json.put(point.isStation() ? "terminus" : "reversing", true);
+                    // Against what THIS copy is, not what the square is: a terminus must be a
+                    // destination, and a copy trains may not arrive at is not one.  Emitted as a plain
+                    // reversing point instead, which is what it now is - somewhere trains turn round
+                    // and nobody is sent.
+                    json.put(stops ? "terminus" : "reversing", true);
                 }
 
                 // A berth is an ordinary station that autonomy is told not to choose.  It used to be

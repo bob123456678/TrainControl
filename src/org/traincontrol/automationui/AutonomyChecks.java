@@ -250,7 +250,7 @@ public class AutonomyChecks
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
 
-        findings.addAll(checkArrivalsLeft(labelledStations, shutStations));
+        findings.addAll(checkArrivalsLeft(reducer, shutStations));
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
         for (TileGraph.Problem problem : graph.getProblems())
@@ -480,7 +480,7 @@ public class AutonomyChecks
      * consequence is quiet and total - the station simply never appears as a destination again - so it
      * is worth saying out loud.
      */
-    private static List<Finding> checkArrivalsLeft(Set<TileKey> labelled, Map<TileKey, Boolean> shut)
+    private static List<Finding> checkArrivalsLeft(GraphReducer reducer, Map<TileKey, Boolean> shut)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -488,11 +488,17 @@ public class AutonomyChecks
 
         for (Map.Entry<TileKey, Boolean> entry : shut.entrySet())
         {
-            if (Boolean.TRUE.equals(entry.getValue()))
-            {
-                findings.add(new Finding(Severity.ERROR, NO_ARRIVALS_LEFT,
-                    entry.getKey().toString(), entry.getKey()));
-            }
+            if (!Boolean.TRUE.equals(entry.getValue())) continue;
+
+            // By name, like every other check.  The editor substitutes the square's description for
+            // the subject of a finding that carries a tile, so this is what anything else sees - and
+            // "main:3,1" is not something a user can look for on their own diagram.
+            ReducedPoint point = reducer == null ? null : reducer.getPoints().get(entry.getKey());
+
+            findings.add(new Finding(Severity.ERROR, NO_ARRIVALS_LEFT,
+                point == null || point.getName() == null || point.getName().trim().isEmpty()
+                    ? entry.getKey().toString() : point.getName(),
+                entry.getKey()));
         }
 
         return findings;

@@ -92,10 +92,12 @@ public class DiagramMonitorDriver
         //
         // The split has to be passed: without it every extra Point a split tile produced is a name the
         // monitor has never heard of, and the overlay stops drawing at exactly the squares that matter.
-        AutonomyBuilder builder = new AutonomyBuilder(reducer, null)
-            .withReversibleTiles(session.reversibleTiles())
-            .withMandatoryTurns(session.mandatoryTurnTiles())
-            .withParkingTiles(session.parkingTiles());
+        // Through the session, which is the one place that says how a builder is configured.  This
+        // was a fifth hand-assembled copy, and it was already missing two of the settings - harmless
+        // only because neither affects the naming today.  The next setting that DOES would have made
+        // the overlay quietly stop matching the running Points, which is the failure the comment above
+        // warns about.
+        AutonomyBuilder builder = session.builder(null);
 
         Map<String, TileKey> names = builder.tilesByName();
 

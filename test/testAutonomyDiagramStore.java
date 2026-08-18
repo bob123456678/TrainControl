@@ -12,6 +12,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts;
 
 /**
  * The autonomy setup files: what the diagram cannot say, kept beside the diagram it describes.
@@ -308,6 +309,15 @@ public class testAutonomyDiagramStore
         store.setLinkName(before, "yard link");
         store.pairPortals(before, partner);
         store.setPageExcluded("Old Name", true);
+        store.setBarredArrivals(before,
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(TilePorts.Side.N)));
+        store.setPortalDisabled(before, true);
+
+        // A caption is the awkward one: it is keyed by the square the text sits on and POINTS at the
+        // square of the station, so a rename has to move both halves.
+        TileKey plaque = new TileKey("Old Name", 4, 8);
+
+        store.setCaption(plaque, before);
 
         store.renamePage("Old Name", "New Name");
 
@@ -325,9 +335,23 @@ public class testAutonomyDiagramStore
         assertEquals(store.getPortalPartner(partner), after,
             "the partner records the renamed page too");
 
+        assertEquals(store.getBarredArrivals(after),
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(TilePorts.Side.N)));
+
+        assertTrue(store.isPortalDisabled(after),
+            "a link switched off came back on, silently, and only on the renamed page");
+
+        TileKey renamedPlaque = new TileKey("New Name", 4, 8);
+
+        assertEquals(store.getCaptionTarget(renamedPlaque), after,
+            "the caption has to move AND to point at the station's new key - pointing at the old one "
+            + "is a caption the next save deletes as unreconcilable");
+
         // and nothing is left under the old name
         assertNull(store.getPointName(before));
         assertFalse(store.getExcludedPages().contains("Old Name"));
+        assertNull(store.getCaptionTarget(plaque));
+        assertFalse(store.isPortalDisabled(before));
     }
 
     /**

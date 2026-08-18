@@ -997,6 +997,25 @@ public class AutonomyCompanionStore
         rekey(portals, from, to);
         rekey(linkNames, from, to);
 
+        // Captions are keyed by the square the text sits on AND point at the square of the station -
+        // both are tile keys, so both move.  Rekeying only the keys left every caption on the page
+        // pointing at a station on a page that no longer exists, and the next save deleted them for
+        // good as unreconcilable.
+        rekeyValues(captions, from, to);
+        rekey(captions, from, to);
+
+        // And a link switched off is remembered by its square, so a rename turned every one of them
+        // back on - silently, and only on the renamed page.
+        Set<String> renamedPortals = new LinkedHashSet<>();
+
+        for (String key : disabledPortals)
+        {
+            renamedPortals.add(rekeyOne(key, from, to));
+        }
+
+        disabledPortals.clear();
+        disabledPortals.addAll(renamedPortals);
+
         Set<String> renamedStations = new LinkedHashSet<>();
 
         for (String key : stations)

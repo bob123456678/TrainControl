@@ -2365,6 +2365,54 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Barring a side of a station where trains turn round still loads.
+     *
+     * The two flags are emitted from different places.  "station" is per copy, because that is where an
+     * arrival restriction lands; "terminus" was still read off the SQUARE - so the reverse copy of a
+     * barred side came out as a terminus that is not a destination.
+     *
+     * Point.setTerminus refuses exactly that pair, and parseAuto answers a refusal by invalidating the
+     * WHOLE layout - naming a Point copy nothing on the diagram carries.  So restricting a terminus
+     * platform, which is the most natural use this setting has, would have made the entire setup
+     * unloadable and said nothing a user could act on.
+     */
+    @Test
+    public void testBarringASideOfATurnAroundStationStillLoads() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        // A configuration has to exist for the per-point flags to be stored in
+        session.getStore().createConfiguration("Terminus", null);
+        session.getStore().setActiveConfiguration("Terminus");
+        session.rebuild();
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Kopfbahnhof");
+        session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
+
+        assertTrue(session.isTurnAround(station), "precondition: trains may turn round here");
+
+        session.setBarredArrivals(station, new java.util.LinkedHashSet<>(
+            Arrays.asList(session.arrivalSides(station).get(0))));
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            assertFalse(point.optBoolean("terminus", false) && !point.optBoolean("station", false),
+                "a terminus that is not a destination is refused by Point.setTerminus, which "
+                + "invalidates the whole configuration: " + point);
+        }
+    }
+
+    /**
      * Lifting a restriction leaves nothing behind.
      */
     @Test
@@ -2386,6 +2434,89 @@ public class testAutonomyDiagramSession
 
         assertFalse(session.barredArrivals().containsKey(station),
             "the square kept an empty restriction, which is a setting that says nothing");
+    }
+
+    /**
+     * A restriction naming a side the square no longer has is ignored, and then forgotten.
+     *
+     * The diagram moves under the setup: a tile replaced, an approach re-plumbed, and the square now
+     * arrives from somewhere else.  The stale side is already dead in the build - there is no copy for
+     * it - but it was still COUNTED, and the count is what decides whether the menu will let another
+     * side be shut.  A station could end up with every box ticked, every box disabled, and nothing on
+     * screen to say why.
+     */
+    @Test
+    public void testARestrictionOnASideTheSquareNoLongerHasIsIgnored() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> both =
+            session.arrivalSides(station);
+
+        assertEquals(both.size(), 2, "precondition: two ways in");
+
+        // The side facing the track that is about to be taken up, so the restriction is the one that
+        // goes stale.  Barring the other would leave a live restriction, which is a different test.
+        org.traincontrol.automationui.TilePorts.Side doomed =
+            org.traincontrol.automationui.TileGraph.sideTowards(station, new TileKey("main", 2, 1));
+
+        assertTrue(both.contains(doomed), "precondition: trains arrive from that side today");
+
+        session.setBarredArrivals(station, new java.util.LinkedHashSet<>(Arrays.asList(doomed)));
+
+        session.save();
+
+        // The track on one side is taken up, so the station is now reached from one end only
+        LayoutDiagram shortened = pageWithATwoEndedStation();
+
+        shortened.addComponent(null, 2, 1);
+        shortened.addComponent(null, 1, 1);
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(shortened));
+
+        assertEquals(reopened.arrivalSides(station).size(), 1,
+            "precondition: the square lost a way in");
+
+        assertTrue(reopened.getBarredArrivals(station).isEmpty(),
+            "a side that no longer exists is still being counted against the ways in");
+
+        reopened.save();
+
+        AutonomySession again = new AutonomySession(layout);
+        again.open(Arrays.asList(shortened));
+
+        assertFalse(again.barredArrivals().containsKey(station),
+            "the dead side is still in the file, ready to come back the day the diagram does");
+    }
+
+    /**
+     * Demoting a station forgets how trains were allowed to arrive at it.
+     *
+     * Inert while it is not a station, so leaving it costs nothing today - and everything the day
+     * somebody makes the square a station again and finds it refusing trains for a reason recorded
+     * months earlier.  Symmetrical with the caption rule.
+     */
+    @Test
+    public void testDemotingAStationForgetsItsArrivalRestriction() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setBarredArrivals(station,
+            new java.util.LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
+
+        session.setStation(station, false);
+        session.setStation(station, true);
+
+        assertTrue(session.getBarredArrivals(station).isEmpty(),
+            "a restriction nobody remembers setting came back with the station");
     }
 
     /**

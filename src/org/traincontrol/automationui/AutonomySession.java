@@ -117,6 +117,30 @@ public class AutonomySession
     }
 
     /**
+     * Drops arrival restrictions naming sides the square no longer has.
+     *
+     * getBarredArrivals hides them from every reader, so this is only about the file: left in it, a
+     * dead side comes back the day the diagram is edited back into a shape that has it, as a rule
+     * nobody remembers writing.  Cleaned at save, which is when the diagram and the setup are being
+     * reconciled anyway.
+     */
+    private void forgetArrivalsThatNoLongerExist()
+    {
+        for (Map.Entry<TileKey, Set<Side>> entry
+            : new LinkedHashMap<>(store.getBarredArrivals()).entrySet())
+        {
+            Set<Side> live = new LinkedHashSet<>(entry.getValue());
+
+            live.retainAll(arrivalSides(entry.getKey()));
+
+            if (live.size() != entry.getValue().size())
+            {
+                store.setBarredArrivals(entry.getKey(), live);
+            }
+        }
+    }
+
+    /**
      * Drops name plaques belonging to squares that are no longer stations.
      *
      * The rule is enforced at the setter now, but setups written before it exists carry captions for
@@ -220,6 +244,9 @@ public class AutonomySession
 
         reducer = new GraphReducer(graph, store.asAuthored());
         reducer.reduce();
+
+        // Now, on this thread, rather than on whichever thread happens to ask first
+        deriveStationIndex();
     }
 
     public TileGraph getGraph()
@@ -1409,7 +1436,21 @@ public class AutonomySession
      */
     public Set<Side> getBarredArrivals(TileKey tile)
     {
-        return store.getBarredArrivals(tile);
+        Set<Side> barred = store.getBarredArrivals(tile);
+
+        if (barred.isEmpty()) return barred;
+
+        // Only the sides that still exist.
+        //
+        // A restriction is stored against a side of the square as the diagram was when it was set, and
+        // the diagram moves: a tile replaced or rotated, an approach re-plumbed, and the square now
+        // arrives from somewhere else entirely.  The stale side is dead in the build - there is no copy
+        // for it - but it was still counted, and the count is what decides whether the menu will let
+        // you shut another side.  A station could end up with every box ticked, every box disabled, and
+        // nothing on screen to say why.
+        barred.retainAll(arrivalSides(tile));
+
+        return barred;
     }
 
     /**
@@ -1434,16 +1475,7 @@ public class AutonomySession
      */
     public List<Side> arrivalSides(TileKey tile)
     {
-        List<Side> out = new ArrayList<>();
-
-        if (reducer == null || tile == null) return out;
-
-        for (Side side : builder(null).arrivalSidesOf(tile))
-        {
-            if (!out.contains(side)) out.add(side);
-        }
-
-        return out;
+        return getStationIndex().arrivalSidesAt(tile);
     }
 
     /**
@@ -1495,14 +1527,39 @@ public class AutonomySession
     {
         StationIndex current = stationIndex;
 
+        // Derived here only before the first rebuild, when nothing is running and nobody else can be
+        // asking.  Every other path derives it eagerly - see deriveStationIndex - because the readers
+        // are not on the thread the writers are on.
         if (current == null)
         {
-            current = reducer == null ? StationIndex.EMPTY : new StationIndex(builder(null));
-
-            stationIndex = current;
+            current = deriveStationIndex();
         }
 
         return current;
+    }
+
+    /**
+     * Works the index out now, rather than leaving it for whoever asks first.
+     *
+     * Who asks first is the problem.  The labels are updated once per Point on every feedback event,
+     * from the control station's own thread, while the event thread is free to edit the configuration -
+     * setPointProperty is documented as usable while autonomy runs.  Deriving lazily meant that
+     * feedback thread walking the configuration's JSONObjects, which are backed by plain HashMaps, at
+     * the moment the event thread was writing to them.  A volatile field publishes the REFERENCE
+     * safely; it says nothing about what happens inside the derivation.
+     *
+     * Called from the two places that invalidate it, both on the event thread, so a reader only ever
+     * sees a finished immutable index - which is what this class has claimed all along.
+     *
+     * @return the new index, also stored
+     */
+    private StationIndex deriveStationIndex()
+    {
+        StationIndex derived = reducer == null ? StationIndex.EMPTY : new StationIndex(builder(null));
+
+        stationIndex = derived;
+
+        return derived;
     }
 
     /**
@@ -2242,6 +2299,11 @@ public class AutonomySession
         // plaque back, on the square the placer picks.
         if (!station) clearCaptions(tile, null);
 
+        // And so does any restriction on how trains may arrive at it.  It is inert while the square is
+        // not a station, so leaving it costs nothing today and everything the day somebody makes the
+        // square a station again and finds it refusing trains for a reason recorded months ago.
+        if (!station) store.setBarredArrivals(tile, null);
+
         touched();
     }
 
@@ -2442,7 +2504,7 @@ public class AutonomySession
         // dropped only on a rebuild, and this method deliberately does not rebuild, so marking a square
         // while autonomy was running left the labels looking up Point names the running graph had never
         // heard of, and that station stopped filling in until the next load.
-        stationIndex = null;
+        deriveStationIndex();
     }
 
     /**
@@ -3040,6 +3102,8 @@ public class AutonomySession
      */
     public AutonomyCompanionStore.Reconciliation save() throws IOException
     {
+        forgetArrivalsThatNoLongerExist();
+
         // Every tile of EVERY page, including the excluded ones.  The graph omits excluded pages by
         // construction, so reconciling against it made every setting on such a page look like it
         // belonged to a deleted tile - and saving then destroyed the lot, permanently, with
