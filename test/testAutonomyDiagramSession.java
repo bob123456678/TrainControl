@@ -1793,4 +1793,33 @@ public class testAutonomyDiagramSession
             delete(other);
         }
     }
+
+    /**
+     * An import reloads whatever was already running, rather than leaving it alone.
+     *
+     * This is the rule the screen depended on and no test could see, because it lived as an early
+     * return inside a button.  An import onto an empty setup worked - it was loaded afterwards anyway
+     * - while an import onto a setup with a configuration running returned immediately, and that is
+     * every backup import onto a working railway.  The running layout is derived from the setup, so
+     * leaving it left the diagram describing the setup as it was: a caption for every imported station
+     * with no Point behind it, blank until an editor round trip reloaded.
+     */
+    @Test
+    public void testAnImportReloadsWhateverWasAlreadyRunning() throws Exception
+    {
+        assertEquals(AutonomySession.configurationToLoadAfterImport("Yard", "Adam 1"), "Yard",
+            "a configuration already running must be re-derived, not left describing the old setup");
+
+        assertEquals(AutonomySession.configurationToLoadAfterImport(null, "Adam 1"), "Adam 1",
+            "with nothing running, the imported configuration is the one to bring up");
+
+        assertEquals(AutonomySession.configurationToLoadAfterImport("  ", "Adam 1"), "Adam 1",
+            "a blank name is nothing running");
+
+        assertNull(AutonomySession.configurationToLoadAfterImport(null, null),
+            "nothing running and nothing imported is nothing to do");
+
+        assertEquals(AutonomySession.configurationToLoadAfterImport(null, "  Adam 1  "), "Adam 1",
+            "the imported name is trimmed, since it comes from a text box");
+    }
 }

@@ -640,6 +640,31 @@ public class AutonomySession
         return shut;
     }
 
+    /**
+     * Which configuration should be running once an import has finished.
+     *
+     * Stated here, as a rule rather than as a branch inside a button, because it was wrong in a way no
+     * test could see: the caller returned early when something was already running, so an import onto
+     * a working setup never reloaded - and the running layout went on describing the setup as it was
+     * before, with every caption the import created drawn against a Point that did not exist.
+     *
+     * Whatever is already chosen wins.  Importing a configuration is not a request to switch to it,
+     * and the shared half an import merges - the names, the stations, the lengths - belongs to every
+     * configuration equally, so the one already running needs re-deriving whichever was imported.
+     *
+     * @param running what is loaded now, or null for nothing
+     * @param imported the name the import was given
+     * @return the configuration to load, or null when there is nothing to do
+     */
+    public static String configurationToLoadAfterImport(String running, String imported)
+    {
+        if (running != null && !running.trim().isEmpty()) return running;
+
+        if (imported == null || imported.trim().isEmpty()) return null;
+
+        return imported.trim();
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;
