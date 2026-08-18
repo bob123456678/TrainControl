@@ -567,9 +567,20 @@ public class testAutonomyDiagramSession
         assertEquals(page.getComponent(1, 2).getLabel(), "",
             "the old label is cleared once its caption exists");
 
-        assertFalse(new String(Files.readAllBytes(pageFile.toPath()), StandardCharsets.UTF_8)
-            .contains(AutonomySession.STATION_LABEL_PREFIX),
-            "and the page written back out no longer carries it");
+        String written = new String(Files.readAllBytes(pageFile.toPath()), StandardCharsets.UTF_8);
+
+        assertFalse(written.contains(AutonomySession.STATION_LABEL_PREFIX + "Bahnhof"),
+            "the label that became a caption is still in the file, so the migration will run again");
+
+        // The orphan stays, and this assertion is the point of the pair.  This test once required the
+        // file to carry no "Point:" label at all, which was true while the migration stripped every one
+        // it found - including the ones it could not match.  That was changed deliberately: not DRAWING
+        // an orphan and deleting it from somebody's diagram are different acts, and a label naming a
+        // station on a page this setup has been told to leave alone is not the program's to remove.
+        // The assertion was left behind and contradicted its own sibling,
+        // testAnUnrecognisedLabelIsLeftOnTheDiagram, until one of them was finally run.
+        assertTrue(written.contains(AutonomySession.STATION_LABEL_PREFIX + "GhostSiding"),
+            "the orphan was deleted from the user's diagram rather than merely left undrawn");
     }
 
     /**

@@ -628,6 +628,31 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
+     * Loads what was just imported, when nothing is running yet.
+     *
+     * Importing is the click.  Needing a second one before anything takes effect is the step that gets
+     * left out - and then the import looks to have failed, which is exactly the report that led here.
+     *
+     * Only when nothing is loaded: an import must not quietly swap out a configuration somebody has
+     * running, and the diagram beside it is showing.
+     *
+     * Interactive, unlike the startup resume: the user asked for this a moment ago, so if it will not
+     * build they should be told now rather than left to find the reasons in a list.
+     *
+     * @param name the configuration to bring up, or null to leave things alone
+     */
+    private void loadAfterImport(String name)
+    {
+        if (name == null || name.trim().isEmpty()) return;
+
+        if (ui.getActiveDiagramConfiguration() != null) return;
+
+        session.getStore().setActiveConfiguration(name.trim());
+
+        load(name.trim(), true);
+    }
+
+    /**
      * Loads the active configuration - the startup resume, which is the same as the user choosing what
      * they chose last time.
      */
@@ -885,6 +910,8 @@ public class AutonomyViewerPanel extends JPanel
             // came across.  A file written before exporting carried the track decisions fills nothing,
             // and that is worth knowing too.
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoImported", filled));
+
+            loadAfterImport(name.trim());
         }
         catch (IOException | RuntimeException e)
         {
@@ -926,6 +953,8 @@ public class AutonomyViewerPanel extends JPanel
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched);
+
+            loadAfterImport(session.getStore().getActiveConfiguration());
         }
         catch (IOException | RuntimeException e)
         {
