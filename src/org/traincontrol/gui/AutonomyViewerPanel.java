@@ -681,11 +681,24 @@ public class AutonomyViewerPanel extends JPanel
     {
         if (name == null || name.trim().isEmpty()) return;
 
-        if (ui.getActiveDiagramConfiguration() != null) return;
+        String running = ui.getActiveDiagramConfiguration();
 
-        session().getStore().setActiveConfiguration(name.trim());
+        // Something already running is loaded AGAIN, not left alone.
+        //
+        // The running layout is derived from the setup, and an import has just changed the setup
+        // underneath it - the shared half especially, which an import merges into.  Leaving it meant
+        // the diagram went on describing the setup as it was: the grid registered a caption label for
+        // every station the import created, and updateStationLabels found no Point behind any of them,
+        // so it had nothing to write and the names stayed blank.  An editor round trip fixed it only
+        // because that reloads.
+        //
+        // The one already chosen, not the one just imported: importing a configuration is not a
+        // request to switch to it, and the shared half it brought is shared by all of them anyway.
+        String toLoad = running == null ? name.trim() : running;
 
-        load(name.trim(), true);
+        session().getStore().setActiveConfiguration(toLoad);
+
+        load(toLoad, true);
 
         // And then rebuild the diagram, which is what makes the captions live.
         //

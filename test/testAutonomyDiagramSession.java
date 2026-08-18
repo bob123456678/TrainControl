@@ -1736,4 +1736,61 @@ public class testAutonomyDiagramSession
         assertEquals(session.captionsFor(station).size(), 1,
             "a move that could not find anywhere new deleted the caption that was already there");
     }
+
+    /**
+     * Importing a bundle re-derives, so the stations it brought are Points immediately.
+     *
+     * The diagram draws a caption for every station the setup knows, and then asks the RUNNING
+     * derivation what is standing at each one.  A station that exists in the setup and not in the
+     * derivation therefore gets a label with nothing behind it, and stays blank - which is
+     * indistinguishable, on screen, from the import not having worked.
+     *
+     * The companion to testTheDiagramSeesTheImportWithoutBeingReloaded, which pins the same property
+     * for the legacy path.  Both doors need it and only one had it.
+     */
+    @Test
+    public void testImportingABundleReDerivesImmediately() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        // A setup that already has a configuration, which is the case that was broken: an import onto
+        // an empty setup happened to work because it was loaded afterwards anyway.
+        session.open(Arrays.asList(page));
+        session.getStore().createConfiguration("Existing", null);
+        session.getStore().setActiveConfiguration("Existing");
+        session.rebuild();
+
+        TileKey station = new TileKey("main", 4, 1);
+
+        assertFalse(session.getReducer().getPoints().get(station).isStation(),
+            "precondition: this square is not a station before the import");
+
+        // Built elsewhere, exported, and brought here
+        File other = Files.createTempDirectory("tc-bundle-source").toFile();
+
+        try
+        {
+            AutonomySession source = new AutonomySession(other);
+            source.open(Arrays.asList(page));
+
+            source.getStore().setStation(station, true);
+            source.setPointName(station, "Hauptbahnhof");
+            source.getStore().createConfiguration("Adam 1", null);
+
+            org.json.JSONObject bundle = source.getStore().exportBundle("Adam 1");
+
+            session.importBundle("Adam 1", new org.json.JSONObject(bundle.toString()));
+
+            assertTrue(session.getReducer().getPoints().get(station).isStation(),
+                "the imported station is not a Point in the derivation, so the caption drawn for it "
+                    + "has nothing behind it and stays blank");
+
+            assertEquals(session.getReducer().getPoints().get(station).getName(), "Hauptbahnhof",
+                "the derivation does not carry the imported name");
+        }
+        finally
+        {
+            delete(other);
+        }
+    }
 }
