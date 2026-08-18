@@ -49,6 +49,17 @@ public class DiagramMonitorDriver
     // the layer off does not tear down the wiring that a train arriving would need.
     private volatile boolean enabled = true;
 
+    /**
+     * Which wipe the overlays on screen belong to.
+     *
+     * A tick computes its picture on the timer thread and paints it on the event thread, so a wipe
+     * asked for in between arrives with a picture of the world as it was before it already in flight.
+     * Comparing this on both sides is what lets the wipe win: a picture computed before it is simply
+     * dropped rather than painted over a diagram that was deliberately emptied.
+     */
+    private final java.util.concurrent.atomic.AtomicLong generation =
+        new java.util.concurrent.atomic.AtomicLong();
+
     public DiagramMonitorDriver(TrainControlUI ui, DiagramTileRegistry registry)
     {
         this.ui = ui;
@@ -238,6 +249,9 @@ public class DiagramMonitorDriver
     {
         if (registry == null) return;
 
+        // Read on the thread that computed this picture, so it records the world this picture is of
+        final long computedAt = generation.get();
+
         SwingUtilities.invokeLater(new Runnable()
         {
             @Override
@@ -247,6 +261,12 @@ public class DiagramMonitorDriver
                 // running, so that tick's publish can arrive after stop()'s clear - and painting it
                 // would put stale trains back on a diagram that was just wiped.
                 if (timer == null || !enabled) return;
+
+                // And the same for a wipe that is not a stop.  Without this the two orderings gave two
+                // different wrong answers: the wipe landing first left stale trains painted over an
+                // emptied diagram, and the wipe landing second left the screen blank while the monitor
+                // believed that picture already published - so nothing redrew until a train moved.
+                if (generation.get() != computedAt) return;
 
                 registry.publish(overlays);
 
@@ -262,12 +282,9 @@ public class DiagramMonitorDriver
     {
         if (registry == null) return;
 
-        // The monitor suppresses publishing an unchanged picture, which is right for movement and wrong
-        // for a screen that was just wiped - to it, the same picture is news.  Forgetting what was
-        // published is what makes the next refresh actually arrive.
-        DiagramMonitor current = monitor;
-
-        if (current != null) current.invalidate();
+        // Claimed before anything is queued, so every picture already computed is now out of date and
+        // will be dropped rather than painted after the wipe.
+        generation.incrementAndGet();
 
         SwingUtilities.invokeLater(new Runnable()
         {
@@ -275,6 +292,17 @@ public class DiagramMonitorDriver
             public void run()
             {
                 registry.clearOverlays();
+
+                // AFTER the wipe, and on the thread that does it.
+                //
+                // The monitor suppresses publishing an unchanged picture, which is right for movement
+                // and wrong for a screen that was just emptied - to it, the same picture is news.
+                // Forgetting what was published is what makes the next refresh actually arrive, and
+                // doing it here rather than on the caller's thread is what stops a tick already in
+                // flight from writing its picture into that memory afterwards and going quiet.
+                DiagramMonitor current = monitor;
+
+                if (current != null) current.invalidate();
             }
         });
     }
