@@ -175,7 +175,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 
                 this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)));
                 
-                this.locStation.setText("@" + milestones.get(milestones.size() - 1).getName());
+                this.locStation.setText("@" + stationName(milestones.get(milestones.size() - 1)));
                 
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);
@@ -186,7 +186,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 if (layout.getLocomotiveLocation(locomotive) != null)
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.noActivePath"));
-                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName());
+                    this.locStation.setText("@" + stationName(layout.getLocomotiveLocation(locomotive)));
                 }
                 else
                 {
@@ -205,7 +205,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
-                    this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
+                    this.locStation.setText("@" + stationName(layout.getLocomotiveLocation(locomotive))                     
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
 
@@ -214,7 +214,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
-                    this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
+                    this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
                         + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
                     );
@@ -232,7 +232,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 
                 for (List<Edge> path : this.paths)
                 {
-                    pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
+                    pathList.add(pathList.getSize(), "-> " + stationName(path.get(path.size() - 1).getEnd())
                         + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
                         + notChosenByAutonomy(path.get(path.size() - 1).getEnd(), locomotive)
                     );
@@ -371,6 +371,33 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * @param paths what the layout offered
      * @return the ones that actually go somewhere
      */
+    /**
+     * What to call a Point when a person is reading it.
+     *
+     * The built graph names the copies of a square apart - "Tunnel (northbound)" - so a running log
+     * can say which one a train is on.  That is a name for the model.  Somebody watching their
+     * railway did not create a northbound Tunnel and a southbound one; they created a station, and
+     * being shown the internals invites them to wonder which is the real one.
+     *
+     * @param point a Point of the running graph
+     * @return the station name a reader would recognise
+     */
+    private String stationName(org.traincontrol.automation.Point point)
+    {
+        if (point == null) return "";
+
+        org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
+
+        if (session == null) return point.getName();
+
+        org.traincontrol.automationui.TileGraph.TileKey tile =
+            session.tileForPointName(point.getName());
+
+        String name = tile == null ? null : session.pointNameForTile(tile);
+
+        return name == null || name.trim().isEmpty() ? point.getName() : name;
+    }
+
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();

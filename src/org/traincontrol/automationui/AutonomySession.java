@@ -760,6 +760,51 @@ public class AutonomySession
     }
 
 
+    /**
+     * Which locomotive the active configuration records standing on each square.
+     *
+     * Read from the configuration rather than from the running layout on purpose: the configuration is
+     * what the next build reads, so it is where a second placement can hide.  The running layout has
+     * already refused to hold one twice by the time anybody could ask it.
+     *
+     * @return square to locomotive name, empty when nothing is loaded
+     */
+    private Map<TileKey, String> placedLocomotives()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return out;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject extras = points.optJSONObject(key);
+
+            if (extras == null) continue;
+
+            org.json.JSONObject standing = extras.optJSONObject("loc");
+
+            if (standing == null) continue;
+
+            String name = standing.optString("name", "");
+
+            if (name.trim().isEmpty()) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
+
+            if (tile != null) out.put(tile, name);
+        }
+
+        return out;
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;
@@ -2026,7 +2071,7 @@ public class AutonomySession
         }
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            trapped, covered);
+            trapped, covered, placedLocomotives());
     }
 
     /**

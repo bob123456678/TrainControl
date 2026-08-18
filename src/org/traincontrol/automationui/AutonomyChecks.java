@@ -131,6 +131,17 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
+    /**
+     * One locomotive recorded as standing in two places.
+     *
+     * An ERROR, and the strongest kind: the running model does not skip the second placement, it
+     * refuses the whole configuration - so a setup carrying this builds, loads, and then answers every
+     * path with "configuration is invalid and must be reloaded", naming nothing that would lead anyone
+     * back to the placement.  Reported here so it is visible before that happens, on the square that
+     * can be cleared to fix it.
+     */
+    public static final String DUPLICATE_LOCOMOTIVE = "autosetup.ui.checkDuplicateLocomotive";
+
     private AutonomyChecks()
     {
     }
@@ -201,7 +212,22 @@ public class AutonomyChecks
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
         Map<TileKey, TileKey> coveredCaptions)
     {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, Collections.<TileKey, String>emptyMap());
+    }
+
+    /**
+     * @param placedLocomotives which locomotive the configuration records standing on each square.
+     *        Passed in for the same reason the captions are: this knows about the derived graph, and
+     *        what is standing where belongs to the configuration.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives)
+    {
         List<Finding> findings = new ArrayList<>();
+
+        findings.addAll(checkDuplicateLocomotives(placedLocomotives));
 
         // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
         for (TileGraph.Problem problem : graph.getProblems())
@@ -360,6 +386,60 @@ public class AutonomyChecks
             findings.add(new Finding(Severity.WARNING, CAPTION_COVERED,
                 station == null ? String.valueOf(entry.getValue()) : station.getName(),
                 entry.getKey()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Is any locomotive recorded as standing in two places?
+     *
+     * One locomotive, one place - which the running layout enforces when a train MOVES, because it
+     * leaves where it was.  The configuration is a different store and nothing enforced it there, so a
+     * placement made by hand could sit alongside one an import had already written.
+     *
+     * The consequence is out of all proportion to the cause: fromJSON refuses the whole layout, and
+     * every path afterwards is answered with "configuration is invalid" - which names neither the
+     * locomotive nor the square, and points at nothing the reader did.
+     *
+     * Reported against the SECOND square and any after it, rather than against both.  One of them is
+     * where the train is meant to be and the other is the leftover; the check cannot tell which, but
+     * listing them all as errors would say the setup has two problems when it has one, and clearing
+     * either fixes it.
+     */
+    private static List<Finding> checkDuplicateLocomotives(Map<TileKey, String> placed)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (placed == null) return findings;
+
+        Map<String, List<TileKey>> where = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry : placed.entrySet())
+        {
+            if (entry.getKey() == null || entry.getValue() == null) continue;
+
+            if (entry.getValue().trim().isEmpty()) continue;
+
+            if (!where.containsKey(entry.getValue()))
+            {
+                where.put(entry.getValue(), new ArrayList<TileKey>());
+            }
+
+            where.get(entry.getValue()).add(entry.getKey());
+        }
+
+        for (Map.Entry<String, List<TileKey>> entry : where.entrySet())
+        {
+            List<TileKey> squares = entry.getValue();
+
+            if (squares.size() < 2) continue;
+
+            for (int extra = 1; extra < squares.size(); extra++)
+            {
+                findings.add(new Finding(Severity.ERROR, DUPLICATE_LOCOMOTIVE,
+                    entry.getKey(), squares.get(extra)));
+            }
         }
 
         return findings;

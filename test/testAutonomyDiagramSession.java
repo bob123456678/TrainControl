@@ -2250,4 +2250,119 @@ public class testAutonomyDiagramSession
 
         assertNull(session.getFacing(tile), "the square kept a direction belonging to a train that has gone");
     }
+
+    /**
+     * A locomotive recorded in two places is reported before anything tries to run.
+     *
+     * The consequence is out of all proportion to the cause: fromJSON refuses the WHOLE layout for a
+     * locomotive in two places, and every path afterwards is answered with "configuration is invalid
+     * and must be reloaded" - which names neither the locomotive nor the square, and points at nothing
+     * the reader did.  It happened on a real setup and took an exported graph to find.
+     *
+     * So it is a check, on the square that can be cleared to fix it.  There is no validate command to
+     * run, and this is the list somebody reads before starting.
+     */
+    @Test
+    public void testALocomotiveInTwoPlacesIsReportedAsAnError() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 4, 1);
+
+        session.getStore().setStation(first, true);
+        session.setPointName(first, "BottomMainA");
+
+        session.getStore().setStation(second, true);
+        session.setPointName(second, "BottomMainC");
+
+        // Written straight into the configuration, which is how it happens: one placement from an
+        // import and one made by hand, neither aware of the other
+        session.setPointProperty(first, "loc", new org.json.JSONObject().put("name", "065 001-0 DB"));
+        session.setPointProperty(second, "loc", new org.json.JSONObject().put("name", "065 001-0 DB"));
+
+        session.rebuild();
+
+        boolean reported = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (!org.traincontrol.automationui.AutonomyChecks.DUPLICATE_LOCOMOTIVE
+                .equals(finding.getMessageKey())) continue;
+
+            reported = true;
+
+            assertEquals(finding.getSeverity(),
+                org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
+                "a setup that will refuse every path is not a warning");
+
+            assertEquals(finding.getSubject(), "065 001-0 DB",
+                "the finding has to name the locomotive, since that is what has to be moved");
+        }
+
+        assertTrue(reported, "a locomotive standing in two places was not reported at all");
+    }
+
+    /**
+     * And one locomotive in one place is not reported.
+     *
+     * The precondition that keeps the test above honest: a check that fired on every placement would
+     * satisfy it and make the list useless.
+     */
+    @Test
+    public void testALocomotiveInOnePlaceIsNotReported() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(tile, true);
+        session.setPointName(tile, "BottomMainA");
+        session.placeLocomotive(tile, "065 001-0 DB");
+
+        session.rebuild();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertFalse(org.traincontrol.automationui.AutonomyChecks.DUPLICATE_LOCOMOTIVE
+                .equals(finding.getMessageKey()),
+                "a locomotive standing in one place was reported as being in two");
+        }
+    }
+
+    /**
+     * And placing it somewhere new takes it off where it was, so the check never fires from a move.
+     */
+    @Test
+    public void testMovingALocomotiveDoesNotLeaveItInTwoPlaces() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey was = new TileKey("main", 1, 1);
+        TileKey now = new TileKey("main", 4, 1);
+
+        session.placeLocomotive(was, "065 001-0 DB");
+        session.placeLocomotive(now, "065 001-0 DB");
+
+        assertNull(session.getPointProperty(was, "loc"),
+            "the locomotive is still recorded where it was, which is what invalidates the layout");
+
+        assertNotNull(session.getPointProperty(now, "loc"),
+            "the locomotive is not recorded where it was put");
+    }
 }
