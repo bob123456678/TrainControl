@@ -203,7 +203,7 @@ public class AutonomySession
     /**
      * What came back from a legacy autonomy.json, so the caller can say what happened.
      */
-    public static class LegacyNames
+    public static class LegacyImport
     {
         /**
          * Names written onto a square that had none.
@@ -216,9 +216,43 @@ public class AutonomySession
         public int skipped = 0;
 
         /**
+         * Locomotives put back where the old graph had them.
+         */
+        public int placed = 0;
+
+        /**
          * Names whose sensor is not on this diagram, in the order the file gave them.
          */
         public final List<String> unmatched = new ArrayList<>();
+    }
+
+    /**
+     * The active configuration's own data for one square, created if this is the first thing on it.
+     *
+     * A placement is not a decision about the track - it is where a train happens to be standing - so
+     * it belongs to a configuration and not to the shared half.  Keyed by tile, the way the rest of
+     * the configuration is, so a Point renamed later keeps whatever is standing on it.
+     *
+     * @param tile
+     * @return null when no configuration is loaded to put anything in
+     */
+    private org.json.JSONObject configurationExtras(TileKey tile)
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return null;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null) return null;
+
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        if (!points.has(tile.toString())) points.put(tile.toString(), new org.json.JSONObject());
+
+        return points.getJSONObject(tile.toString());
     }
 
     /**
@@ -241,9 +275,9 @@ public class AutonomySession
      * @param legacy the parsed autonomy.json
      * @return what was matched, skipped and not found
      */
-    public LegacyNames importLegacyNames(org.json.JSONObject legacy)
+    public LegacyImport importLegacy(org.json.JSONObject legacy)
     {
-        LegacyNames result = new LegacyNames();
+        LegacyImport result = new LegacyImport();
 
         org.json.JSONArray points = legacy.optJSONArray("points");
 
@@ -276,6 +310,33 @@ public class AutonomySession
             {
                 result.unmatched.add(name);
                 continue;
+            }
+
+            // Before the name, and regardless of it.  A placement is about the SQUARE, so a square
+            // somebody has already named should still get its locomotive back.
+            org.json.JSONObject standing = point.optJSONObject("loc");
+
+            String home = point.optString("home", "");
+
+            if (standing != null || !home.trim().isEmpty())
+            {
+                org.json.JSONObject extras = configurationExtras(tile);
+
+                if (extras != null)
+                {
+                    if (standing != null && !extras.has(AutonomyBuilder.LOCOMOTIVE))
+                    {
+                        // Copied whole: the old graph recorded the speed, the arrival and departure
+                        // functions and the train length alongside the name, and the builder reads
+                        // exactly this shape back out.
+                        extras.put(AutonomyBuilder.LOCOMOTIVE,
+                            new org.json.JSONObject(standing.toString()));
+
+                        result.placed++;
+                    }
+
+                    if (!home.trim().isEmpty() && !extras.has("home")) extras.put("home", home.trim());
+                }
             }
 
             String existing = store.getPointName(tile);

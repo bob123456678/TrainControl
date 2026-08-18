@@ -400,20 +400,30 @@ public class AutonomyMenu extends JMenu
 
         manage.add(importItem);
 
-        // Also always enabled, and for the same reason: this is how a setup that has nothing in it
-        // gets the names somebody already entered once, in the graph this replaces.
-        JMenuItem legacyItem = item(I18n.t("autosetup.ui.menuImportLegacyNames"), new Runnable()
+        // Debug builds only.  Reading somebody's old graph and writing names and placements from it
+        // is a one-time migration with a judgement call in it - the sensor match is only as good as
+        // the diagram's addresses - so it is offered to people who can check the result, next to the
+        // raw graph export, rather than to everybody on the ordinary menu.
+        //
+        // Always enabled where it does appear, and for the same reason import is: a setup with nothing
+        // in it is exactly when this is wanted.
+        JMenuItem legacyItem = null;
+
+        if (ui.getModel() != null && ui.getModel().isDebug())
         {
-            @Override
-            public void run()
+            legacyItem = item(I18n.t("autosetup.ui.menuImportLegacy"), new Runnable()
             {
-                actions.importLegacyNames();
+                @Override
+                public void run()
+                {
+                    actions.importLegacy();
 
-                ui.autonomyMenuActed();
-            }
-        });
+                    ui.autonomyMenuActed();
+                }
+            });
 
-        manage.add(legacyItem);
+            manage.add(legacyItem);
+        }
 
         manage.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
         {
@@ -430,8 +440,9 @@ public class AutonomyMenu extends JMenu
         // somebody wants them.
         for (int i = 2; i < manage.getItemCount(); i++)
         {
-            if (manage.getItem(i) == null || manage.getItem(i) == importItem
-                || manage.getItem(i) == legacyItem) continue;
+            if (manage.getItem(i) == null || manage.getItem(i) == importItem) continue;
+
+            if (legacyItem != null && manage.getItem(i) == legacyItem) continue;
 
             manage.getItem(i).setEnabled(loaded);
 

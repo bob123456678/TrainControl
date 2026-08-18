@@ -814,7 +814,7 @@ public class testAutonomyDiagramSession
         org.json.JSONObject legacy = new org.json.JSONObject();
         legacy.put("points", points);
 
-        AutonomySession.LegacyNames result = session.importLegacyNames(legacy);
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
 
         TileKey tile = new TileKey("main", 1, 1);
 
@@ -859,11 +859,109 @@ public class testAutonomyDiagramSession
         org.json.JSONObject legacy = new org.json.JSONObject();
         legacy.put("points", points);
 
-        AutonomySession.LegacyNames result = session.importLegacyNames(legacy);
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
 
         assertEquals(session.getStore().getPointName(tile), "The name I typed",
             "importing overwrote a name that was already there");
 
         assertEquals(result.skipped, 1, "the skip should be counted and reported");
+    }
+
+    /**
+     * The locomotive that was standing on a Point is put back on the square carrying its sensor.
+     *
+     * The old graph recorded the locomotive with the speed, arrival and departure functions and train
+     * length it was placed with; the builder reads that same shape back out, so the object is carried
+     * over whole rather than picked apart and rebuilt.
+     *
+     * A placement belongs to a configuration and not to the shared half - it is where a train happens
+     * to be standing, not a decision about the track - so it is written there, keyed by tile.
+     */
+    @Test
+    public void testALegacyImportPutsTheLocomotivesBack() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONObject standing = new org.json.JSONObject();
+        standing.put("name", "Q 343");
+        standing.put("speed", 35);
+        standing.put("arrivalFunc", 15);
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St21");
+        point.put("station", true);
+        point.put("s88", 11);
+        point.put("loc", standing);
+        point.put("home", "Q 343");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.placed, 1, "the locomotive was not placed");
+
+        org.json.JSONObject extras = session.getStore().getConfiguration("Restored")
+            .getJSONObject("points").getJSONObject(new TileKey("main", 1, 1).toString());
+
+        assertEquals(extras.getJSONObject("loc").getString("name"), "Q 343",
+            "the locomotive did not land on the square carrying its sensor");
+
+        assertEquals(extras.getJSONObject("loc").getInt("arrivalFunc"), 15,
+            "the placement was rebuilt rather than carried over, so its settings were lost");
+
+        assertEquals(extras.getString("home"), "Q 343", "the home did not come across");
+    }
+
+    /**
+     * A square somebody has already named still gets its locomotive back.
+     *
+     * The placement is about the SQUARE, so it must not be skipped along with the name - which it was
+     * when both were decided by one branch.
+     */
+    @Test
+    public void testALegacyImportPlacesEvenWhereTheNameIsKept() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.setPointName(tile, "The name I typed");
+
+        org.json.JSONObject standing = new org.json.JSONObject();
+        standing.put("name", "MY 1106");
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St23");
+        point.put("s88", 11);
+        point.put("loc", standing);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        assertEquals(result.skipped, 1, "the name should have been left alone");
+
+        assertEquals(result.placed, 1, "the locomotive was skipped along with the name");
+
+        assertEquals(session.getStore().getPointName(tile), "The name I typed",
+            "importing overwrote a name that was already there");
     }
 }

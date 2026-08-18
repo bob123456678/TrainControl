@@ -896,13 +896,16 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * Reads station names out of a legacy autonomy.json and onto the squares carrying the same sensors.
+     * Reads an old autonomy.json onto the squares carrying the same sensors - names, stations,
+     * lengths, and the locomotives that were standing on them.
      *
-     * The way across for anybody who set their railway up in the graph this replaces: the names and
-     * stations were never derivable from a diagram, so without this they would have to be entered
-     * again, one square at a time.
+     * The way across for anybody who set their railway up in the graph this replaces: none of it is
+     * derivable from a diagram, so without this it would all be entered again, one square at a time.
+     *
+     * Debug builds only - the sensor match is only as good as the diagram's addresses, so this is for
+     * somebody who will check the result rather than a button on everybody's menu.
      */
-    public void importLegacyNames()
+    public void importLegacy()
     {
         javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
 
@@ -912,7 +915,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            AutonomySession.LegacyNames result = session.importLegacyNames(
+            AutonomySession.LegacyImport result = session.importLegacy(
                 new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
 
             save();
@@ -920,8 +923,8 @@ public class AutonomyViewerPanel extends JPanel
             String unmatched = result.unmatched.isEmpty()
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
 
-            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyNamesImported",
-                result.matched, result.skipped, result.unmatched.size()) + unmatched);
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
+                result.matched, result.placed, result.skipped, result.unmatched.size()) + unmatched);
         }
         catch (IOException | RuntimeException e)
         {
