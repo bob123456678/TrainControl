@@ -11647,7 +11647,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // different locomotive, or does not parse at all.  The route editor refuses these
                     // names at both of its own doors; this is the third way in, and the one that turns
                     // commands that were legal when written into commands that are not.
-                    if (newName.contains(",") || newName.contains("(") || newName.contains(")"))
+                    if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
                     {
                         JOptionPane.showMessageDialog(
                             source,

@@ -383,7 +383,11 @@ public class AutonomyMenu extends JMenu
 
         manage.addSeparator();
 
-        manage.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
+        // Held, so the greying below can skip it.  Import does NOT act on the configuration that
+        // is running - it brings one in from a file - so gating it on something being loaded locked
+        // the door in exactly the situation it exists for: a setup that will not load, which is
+        // repaired by importing one that will.  The same argument the comment below makes for adding.
+        JMenuItem importItem = item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
         {
             @Override
             public void run()
@@ -392,7 +396,9 @@ public class AutonomyMenu extends JMenu
 
                 ui.autonomyMenuActed();
             }
-        }));
+        });
+
+        manage.add(importItem);
 
         manage.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
         {
@@ -409,7 +415,7 @@ public class AutonomyMenu extends JMenu
         // somebody wants them.
         for (int i = 2; i < manage.getItemCount(); i++)
         {
-            if (manage.getItem(i) == null) continue;
+            if (manage.getItem(i) == null || manage.getItem(i) == importItem) continue;
 
             manage.getItem(i).setEnabled(loaded);
 

@@ -576,6 +576,30 @@ public class RouteCommand implements java.io.Serializable
      * @param linkedAccessory the accessory object linked to this command's address - so that we can pretty print the accessory type
      * @return 
      */
+    /**
+     * Whether a locomotive name can survive this class's text format.
+     *
+     * A command is written as "prefix,name,value" and read back by splitting on commas, so a name
+     * carrying one comes back as a different locomotive at a different speed.  A condition goes
+     * further: NodeExpression rewrites every bracket into a line break to find its grouping, so a name
+     * carrying one is torn into pieces and the whole expression fails to parse.
+     *
+     * The rule lives here, next to the format that imposes it, because three separate doors have to
+     * agree about it - the route editor's two, and the rename dialog - and when only one of them knew,
+     * the other two let names through that broke routes which had been working.
+     *
+     * A null name is not this method's problem, and is reported usable.
+     *
+     * @param name
+     * @return false when a route could not store this name
+     */
+    public static boolean isNameUsable(String name)
+    {
+        if (name == null) return true;
+
+        return !name.contains(",") && !name.contains("(") && !name.contains(")");
+    }
+
     public String toLine(Accessory linkedAccessory)
     {
         if (this.isFeedback())
