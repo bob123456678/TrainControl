@@ -291,23 +291,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             menuItem.setToolTipText("Control+T");
             add(menuItem);
             
-            if (ui.getModel().hasAutoLayout() && !ui.getModel().getAutoLayout().getPoints().isEmpty())
-            {     
-                menuItem = new JMenuItem(I18n.t("layout.ui.placeAutoStationLabel"));
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        edit.editTextWithDropdown(label);
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
-                    }
-                });
-                menuItem.setToolTipText("Control+S");
-                add(menuItem);
-            }
+            // Station labels are placed in the autonomy editor now, which is where the stations
+            // themselves are decided.  This item wrote a "Point:" text label chosen from the LEGACY
+            // graph's point names - a list that no longer describes the setup - so leaving it here
+            // offered a second, worse way to do a thing the other window does properly.
+            //
+            // The Control+S shortcut it advertised is gone with it: an accelerator for a command that
+            // is no longer on any menu is the half of a removal that gets left behind.
 
             addSeparator();
             

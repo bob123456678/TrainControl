@@ -2856,31 +2856,27 @@ public class AutonomyEditorPanel extends JPanel
             into.add(new Object[] {finding.getTile(), text});
         }
 
-        int errors = errorRows.size() + elsewhereErrors.size();
+        // Severity first, everywhere.  Rows about other pages used to sit under a heading of their
+        // own BELOW all three sections for this page - which put a notice here above an error there.
+        // An error is an error wherever it is: the setup will not load until it is fixed, so a list
+        // that shows things merely worth checking first disagrees with both the count beside it and
+        // the reason the reader opened it.
+        //
+        // Nothing is lost by the merge - a row about another page still says which page, and clicking
+        // it still goes there - and within each section this page still comes first, so the things
+        // that can be acted on without moving are still at the top of their group.
+        errorRows.addAll(elsewhereErrors);
+        warningRows.addAll(elsewhereWarnings);
+        noticeRows.addAll(elsewhereNotices);
 
-        // This page first, in order of how much each matters, then everywhere else under a heading of
-        // its own.  Severity still orders within each half, so an error elsewhere is not buried under a
-        // notice here - it is simply below the things the reader can act on without moving.
+        int errors = errorRows.size();
+
         section(I18n.f("autosetup.ui.headingErrors", errorRows.size()), errorRows,
             AutonomyChecks.Severity.ERROR);
         section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
             AutonomyChecks.Severity.WARNING);
         section(I18n.f("autosetup.ui.headingNotices", noticeRows.size()), noticeRows,
             AutonomyChecks.Severity.NOTICE);
-
-        int elsewhere = elsewhereErrors.size() + elsewhereWarnings.size() + elsewhereNotices.size();
-
-        if (elsewhere > 0)
-        {
-            // One heading for the lot, saying how many and that clicking goes there
-            findingsModel.addElement(I18n.f("autosetup.ui.headingElsewhere", elsewhere));
-            findingTiles.add(null);
-            findingSeverity.add(null);
-
-            section(null, elsewhereErrors, AutonomyChecks.Severity.ERROR);
-            section(null, elsewhereWarnings, AutonomyChecks.Severity.WARNING);
-            section(null, elsewhereNotices, AutonomyChecks.Severity.NOTICE);
-        }
 
         // Unnamed points are checks now, and errors, so they are already in the list below with a
         // square to jump to each.  Saying it again up here was the same news twice, in a colour that

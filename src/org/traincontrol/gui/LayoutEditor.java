@@ -2098,10 +2098,6 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.initCopy(getLastHoveredLabel(), null, true);
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
-            {
-                this.editTextWithDropdown(getLastHoveredLabel());
-            }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
             {
                 this.initCopy(getLastHoveredLabel(), null, false);
