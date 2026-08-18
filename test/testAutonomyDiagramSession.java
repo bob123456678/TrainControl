@@ -2301,8 +2301,14 @@ public class testAutonomyDiagramSession
                 org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
                 "a setup that will refuse every path is not a warning");
 
+            // The subject carries the locomotive even though the editor shows the square instead:
+            // a finding with a tile is described by its tile, which is what gives it somewhere to
+            // jump to.  Anything that wants the name can still have it.
             assertEquals(finding.getSubject(), "065 001-0 DB",
-                "the finding has to name the locomotive, since that is what has to be moved");
+                "the finding no longer carries which locomotive is doubled up");
+
+            assertNotNull(finding.getTile(),
+                "without a square there is nothing for the reader to jump to and clear");
         }
 
         assertTrue(reported, "a locomotive standing in two places was not reported at all");

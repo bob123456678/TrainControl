@@ -437,6 +437,10 @@ public class AutonomyChecks
 
             for (int extra = 1; extra < squares.size(); extra++)
             {
+                // The subject is the locomotive, and the editor shows the SQUARE instead whenever a
+                // finding carries one - which it must here, or there is nothing to jump to.  So the
+                // message is written to read against the square, and the name is carried for anything
+                // that wants it rather than for that sentence.
                 findings.add(new Finding(Severity.ERROR, DUPLICATE_LOCOMOTIVE,
                     entry.getKey(), squares.get(extra)));
             }

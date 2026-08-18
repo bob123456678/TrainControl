@@ -924,6 +924,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Clears out the labels, i.e. after reloading autonomy
      */
+    /**
+     * Drops caption labels that belong to grids nobody can see any more.
+     *
+     * Registration only ever adds, because a label does not know when its grid is replaced.  What it
+     * does know is whether it is still attached to something on screen, which separates a label from a
+     * grid that has gone from one in a popped-out page window that is still open.
+     */
+    private void pruneLayoutStations()
+    {
+        for (java.util.Iterator<Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>>
+            pages = layoutStations.entrySet().iterator(); pages.hasNext();)
+        {
+            Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> entry = pages.next();
+
+            for (java.util.Iterator<JLabel> labels = entry.getValue().iterator(); labels.hasNext();)
+            {
+                if (!labels.next().isDisplayable()) labels.remove();
+            }
+
+            if (entry.getValue().isEmpty()) pages.remove();
+        }
+    }
+
     public void resetLayoutStationLabels()
     {
         if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isRunning())
@@ -18156,14 +18179,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Set address label preference
                         this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.getShowLayoutAddresses());
                         
-                        // Forgotten before the grid that held them is replaced.
+                        // The labels of grids that have gone are dropped before this one is built.
                         //
-                        // Every caption label ever built was kept here, because registration only ever
-                        // added: the live update then wrote to a growing pile of labels belonging to
-                        // grids nobody can see, and "which grid did that pass land on" stopped having
-                        // an answer.  Harmless on screen and the reason several of these faults were
-                        // so hard to reason about.
-                        layoutStations.clear();
+                        // Registration only ever added, so every caption label ever created was kept
+                        // and the live update wrote to a growing pile belonging to grids nobody can
+                        // see.  Clearing the lot was the first answer and was wrong: the popped-out
+                        // page windows register their labels here too, and a repaint of the MAIN
+                        // window then dropped them - so a popup showed its captions once and never
+                        // updated them again.
+                        //
+                        // Displayability is what tells the two apart.  A label from a replaced grid
+                        // has been removed from its container and answers false; a label in a popup
+                        // that is still on screen answers true, whoever repainted.
+                        pruneLayoutStations();
 
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
