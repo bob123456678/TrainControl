@@ -2,8 +2,12 @@
 
 **Prefix for citing this document: `UH`.**
 
-Reviewed at `cc57284` on `autonomy-diagram-r0`, 2026-08-17. Nothing was compiled or run. Every
-finding below is open.
+Reviewed at `cc57284` on `autonomy-diagram-r0`, 2026-08-17. Nothing was compiled or run.
+
+**B1 through B6 and C2 were fixed the same day, on both branches** - `e98fda1` here and `ac66dc7`
+on `master`, where they are folded into the untagged v2.8.1. The fixes were applied to each branch
+from the original text rather than cherry-picked, and every patch matched exactly on both, which is
+its own confirmation that these regions are identical. Everything else below is open.
 
 ## Scope and method
 
@@ -29,15 +33,15 @@ scoped without re-deriving it.
 
 ## B - Medium
 
-| | Finding | Provenance | Applies to |
-|---|---|---|---|
-| B1 | A comma in a locomotive name breaks the route text format; one door guards, two do not | Verified by lead | Released |
-| B2 | A backward clock step silently drops s88 feedback transitions | Verified by lead | Released |
-| B3 | Parentheses in a locomotive name make the condition parser shred it | Verified by lead | Released |
-| B4 | `AutoLocomotiveStatus.updateState` mutates Swing on a raw background thread | Premise verified by lead, body inherited | Released |
-| B5 | Double-click dispatch can execute a different path than the one clicked | Structural core verified by lead | Released |
-| B6 | Double-clicking below a short path list dispatches the last path | Independently confirmed by lead | Released |
-| B7 | `AutoJSONExport` realizes a file chooser on a raw thread beside a second modal dialog | Caller half verified by lead | Released |
+| | Finding | Provenance | Applies to | Status |
+|---|---|---|---|---|
+| B1 | A comma in a locomotive name breaks the route text format; one door guards, two do not | Verified by lead | Released | **Fixed 2026-08-17** |
+| B2 | A backward clock step silently drops s88 feedback transitions | Verified by lead | Released | **Fixed 2026-08-17** |
+| B3 | Parentheses in a locomotive name make the condition parser shred it | Verified by lead | Released | **Fixed 2026-08-17** |
+| B4 | `AutoLocomotiveStatus.updateState` mutates Swing on a raw background thread | Premise verified by lead, body inherited | Released | **Fixed 2026-08-17** |
+| B5 | Double-click dispatch can execute a different path than the one clicked | Structural core verified by lead | Released | **Fixed 2026-08-17** |
+| B6 | Double-clicking below a short path list dispatches the last path | Independently confirmed by lead | Released | **Fixed 2026-08-17** |
+| B7 | `AutoJSONExport` realizes a file chooser on a raw thread beside a second modal dialog | Caller half verified by lead | Released | Open - deferred with its class |
 
 ### B1. A comma in a locomotive name
 
