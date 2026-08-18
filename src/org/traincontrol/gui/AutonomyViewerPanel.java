@@ -997,8 +997,28 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            int filled = session().importBundle(name.trim(),
-                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
+            org.json.JSONObject file =
+                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+
+            // Told apart by shape, not by where it came from or what it is called.  A user has one
+            // Import, and an old autonomy.json is as much a thing to import as a bundle is - being
+            // asked to know which menu item their own file belongs to is a question they should never
+            // have to answer.
+            AutonomySession.ImportFormat format = AutonomySession.detectImportFormat(file);
+
+            if (format == AutonomySession.ImportFormat.UNKNOWN)
+            {
+                JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportUnrecognised"));
+                return;
+            }
+
+            if (format == AutonomySession.ImportFormat.LEGACY_GRAPH)
+            {
+                importLegacyGraph(file);
+                return;
+            }
+
+            int filled = session().importBundle(name.trim(), file);
 
             save();
 
@@ -1028,14 +1048,16 @@ public class AutonomyViewerPanel extends JPanel
      * Debug builds only - the sensor match is only as good as the diagram's addresses, so this is for
      * somebody who will check the result rather than a button on everybody's menu.
      */
-    public void importLegacy()
+    /**
+     * Reads an old autonomy.json onto the squares carrying the same sensors.
+     *
+     * Reached from the one Import action, which works out what the file is - so this takes the parsed
+     * file rather than going and asking for one.
+     *
+     * @param file the parsed autonomy.json
+     */
+    private void importLegacyGraph(org.json.JSONObject file)
     {
-        javax.swing.JFileChooser chooser = chooser();
-
-        if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
-
-        rememberFolder(chooser.getSelectedFile());
-
         // First, because an s88 on two squares is what stops an import deciding anything: those points
         // are refused and listed, and the user is left to work out that a repeated page is the reason.
         // Shutting the repeats before reading the file is what makes the import unambiguous instead.
@@ -1053,16 +1075,12 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
-
             // The names this database actually holds, so a placement naming something else is
             // refused here rather than by the whole layout failing to build later
             java.util.Set<String> known = ui.getModel() == null
                 ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
-            AutonomySession.LegacyImport result = session().importLegacy(
-                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)),
-                known);
+            AutonomySession.LegacyImport result = session().importLegacy(file, known);
 
             save();
 

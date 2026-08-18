@@ -1822,4 +1822,103 @@ public class testAutonomyDiagramSession
         assertEquals(AutonomySession.configurationToLoadAfterImport(null, "  Adam 1  "), "Adam 1",
             "the imported name is trimmed, since it comes from a text box");
     }
+
+    /**
+     * The one Import action tells the shapes apart by reading them, not by their names.
+     *
+     * A user has one Import.  Being asked which menu item their own file belongs to is a question they
+     * should never have to answer, so the file is identified by something only its own shape has.
+     *
+     * The two real files are pinned as fixtures deliberately.  A synthetic sample proves the rule
+     * against itself; these are what the application actually wrote, and they are the reason the
+     * array-versus-object distinction below is safe rather than merely plausible.
+     */
+    @Test
+    public void testEveryImportableShapeIsRecognised() throws Exception
+    {
+        // The old graph, from the author's own layout
+        assertEquals(formatOf("test/autonomy_formats/legacy-graph.json"),
+            AutonomySession.ImportFormat.LEGACY_GRAPH,
+            "a real autonomy.json is not recognised as one");
+
+        // And from the sample layout, which is a different railway written by the same version
+        assertEquals(formatOf("test/autonomy_formats/legacy-graph-sample-layout.json"),
+            AutonomySession.ImportFormat.LEGACY_GRAPH,
+            "a second real autonomy.json is not recognised as one");
+
+        // A bundle, built the way exportBundle builds one rather than copied from a file, so this
+        // cannot drift away from what the exporter actually writes
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+        session.getStore().createConfiguration("Adam 1", null);
+
+        org.json.JSONObject bundle = session.getStore().exportBundle("Adam 1");
+
+        assertEquals(AutonomySession.detectImportFormat(bundle),
+            AutonomySession.ImportFormat.BUNDLE, "a bundle from exportBundle is not recognised");
+
+        // A bare configuration, which is what exporting wrote before bundles existed
+        assertEquals(AutonomySession.detectImportFormat(bundle.getJSONObject("configuration")),
+            AutonomySession.ImportFormat.CONFIGURATION,
+            "a configuration on its own is not recognised");
+    }
+
+    /**
+     * Something that is not an autonomy file at all is refused rather than half-imported.
+     *
+     * A routes file is the realistic mistake - it sits in the same backup folder, under a similar
+     * name - and importing one as a configuration would write a configuration full of nothing and
+     * report success.
+     */
+    @Test
+    public void testAFileThatIsNotAnAutonomySetupIsRefused() throws Exception
+    {
+        org.json.JSONObject routes = new org.json.JSONObject();
+        routes.put("routes", new org.json.JSONArray());
+
+        assertEquals(AutonomySession.detectImportFormat(routes),
+            AutonomySession.ImportFormat.UNKNOWN, "a routes file is not an autonomy setup");
+
+        assertEquals(AutonomySession.detectImportFormat(new org.json.JSONObject()),
+            AutonomySession.ImportFormat.UNKNOWN, "an empty object says nothing about what it is");
+
+        assertEquals(AutonomySession.detectImportFormat(null),
+            AutonomySession.ImportFormat.UNKNOWN, "and nothing at all is not a setup either");
+    }
+
+    /**
+     * The two formats that share the key "points" disagree about its type, which is what keeps them
+     * apart.
+     *
+     * The old graph is a LIST of Points; a configuration is keyed BY SQUARE.  Asserting this directly
+     * says why the detection is safe rather than lucky - a file merely containing the word cannot be
+     * mistaken for either.
+     */
+    @Test
+    public void testTheTwoPointsShapesCannotBeConfused() throws Exception
+    {
+        org.json.JSONObject asList = new org.json.JSONObject();
+        asList.put("points", new org.json.JSONArray());
+
+        org.json.JSONObject asMap = new org.json.JSONObject();
+        asMap.put("points", new org.json.JSONObject());
+
+        assertEquals(AutonomySession.detectImportFormat(asList),
+            AutonomySession.ImportFormat.LEGACY_GRAPH, "a list of points is the old graph");
+
+        assertEquals(AutonomySession.detectImportFormat(asMap),
+            AutonomySession.ImportFormat.CONFIGURATION, "points keyed by square is a configuration");
+    }
+
+    /**
+     * Reads a pinned fixture and says what it is.
+     */
+    private AutonomySession.ImportFormat formatOf(String path) throws Exception
+    {
+        String text = new String(Files.readAllBytes(new File(path).toPath()),
+            StandardCharsets.UTF_8);
+
+        return AutonomySession.detectImportFormat(new org.json.JSONObject(text));
+    }
 }

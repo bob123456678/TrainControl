@@ -665,6 +665,72 @@ public class AutonomySession
         return imported.trim();
     }
 
+    /**
+     * The kinds of file the one Import action accepts.
+     */
+    public static enum ImportFormat
+    {
+        /**
+         * A configuration and the track decisions it refers to, as exportBundle writes them.
+         */
+        BUNDLE,
+
+        /**
+         * A configuration on its own, as exporting wrote it before bundles existed.
+         */
+        CONFIGURATION,
+
+        /**
+         * An autonomy.json from the graph this feature replaces.
+         */
+        LEGACY_GRAPH,
+
+        /**
+         * Something else entirely - a routes file, a locomotive database, a diagram.
+         */
+        UNKNOWN
+    }
+
+    /**
+     * Works out which of them a parsed file is, so the user does not have to say.
+     *
+     * Each shape is identified by something only it has, not by anything as fragile as a filename:
+     *
+     *   BUNDLE          carries "configuration", which is the key exportBundle invented.
+     *   LEGACY_GRAPH    carries "points" as an ARRAY.  The old graph was a list of Points, each with
+     *                   its own name and s88; nothing else here is a list under that name.
+     *   CONFIGURATION   carries "points" as an OBJECT, keyed by square.  That is the shape a
+     *                   configuration has always had, and the only other thing that uses the name.
+     *
+     * The array-versus-object distinction is what makes this safe: the two formats that share a key
+     * disagree about its type, so neither can be mistaken for the other by a file that merely happens
+     * to contain the word.
+     *
+     * @param file the parsed file
+     * @return what it is
+     */
+    public static ImportFormat detectImportFormat(org.json.JSONObject file)
+    {
+        if (file == null) return ImportFormat.UNKNOWN;
+
+        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null)
+        {
+            return ImportFormat.BUNDLE;
+        }
+
+        // A list of Points, which is the old graph and nothing else
+        if (file.optJSONArray("points") != null) return ImportFormat.LEGACY_GRAPH;
+
+        // Keyed by square, which is a configuration
+        if (file.optJSONObject("points") != null) return ImportFormat.CONFIGURATION;
+
+        // A configuration whose points have all been removed is still a configuration, and its globals
+        // are the only thing left to say so.  Rare, and cheaper to accept than to explain.
+        if (file.optJSONObject("globals") != null) return ImportFormat.CONFIGURATION;
+
+        return ImportFormat.UNKNOWN;
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;

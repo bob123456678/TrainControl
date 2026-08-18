@@ -400,31 +400,6 @@ public class AutonomyMenu extends JMenu
 
         manage.add(importItem);
 
-        // Debug builds only.  Reading somebody's old graph and writing names and placements from it
-        // is a one-time migration with a judgement call in it - the sensor match is only as good as
-        // the diagram's addresses - so it is offered to people who can check the result, next to the
-        // raw graph export, rather than to everybody on the ordinary menu.
-        //
-        // Always enabled where it does appear, and for the same reason import is: a setup with nothing
-        // in it is exactly when this is wanted.
-        JMenuItem legacyItem = null;
-
-        if (ui.getModel() != null && ui.getModel().isDebug())
-        {
-            legacyItem = item(I18n.t("autosetup.ui.menuImportLegacy"), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    actions.importLegacy();
-
-                    ui.autonomyMenuActed();
-                }
-            });
-
-            manage.add(legacyItem);
-        }
-
         manage.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
         {
             @Override
@@ -441,8 +416,6 @@ public class AutonomyMenu extends JMenu
         for (int i = 2; i < manage.getItemCount(); i++)
         {
             if (manage.getItem(i) == null || manage.getItem(i) == importItem) continue;
-
-            if (legacyItem != null && manage.getItem(i) == legacyItem) continue;
 
             manage.getItem(i).setEnabled(loaded);
 
