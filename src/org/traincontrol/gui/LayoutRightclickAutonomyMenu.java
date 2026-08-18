@@ -265,7 +265,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             // configuration still records it standing here, and the running layout is
                             // rebuilt from the configuration.  The facing goes with it - it belonged
                             // to that train, not to the square.
-                            if (session != null) session.clearLocomotive(station);
+                            if (session != null) session.placeLocomotive(station, null);
 
                             ui.repaintAutoLocList(false);
 

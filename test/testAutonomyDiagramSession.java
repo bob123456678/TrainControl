@@ -2200,15 +2200,13 @@ public class testAutonomyDiagramSession
         TileKey was = new TileKey("main", 1, 1);
         TileKey now = new TileKey("main", 4, 1);
 
-        assertTrue(session.placeLocomotive(was, "065 001-0 DB"), "the first placement did nothing");
+        session.placeLocomotive(was, "065 001-0 DB");
 
         // Its settings, which have to travel with it
-        session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE);
-
         ((org.json.JSONObject) session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE))
             .put("speed", 42);
 
-        assertTrue(session.placeLocomotive(now, "065 001-0 DB"), "the move did nothing");
+        session.placeLocomotive(now, "065 001-0 DB");
 
         assertNull(session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE),
             "the locomotive is still recorded where it was, so the next build emits it twice and "
@@ -2245,7 +2243,7 @@ public class testAutonomyDiagramSession
         session.placeLocomotive(tile, "SM31-108");
         session.setFacing(tile, org.traincontrol.automationui.TilePorts.Side.E);
 
-        assertTrue(session.clearLocomotive(tile), "there was nothing to forget");
+        session.placeLocomotive(tile, null);
 
         assertNull(session.getPointProperty(tile, AutonomyBuilder.LOCOMOTIVE),
             "the next build would put the train straight back");

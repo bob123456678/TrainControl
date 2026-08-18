@@ -759,118 +759,6 @@ public class AutonomySession
         return ImportFormat.UNKNOWN;
     }
 
-    /**
-     * Records that a locomotive is standing on a square, and that it is standing nowhere else.
-     *
-     * One locomotive, one place.  The running layout enforces that when a train is moved - it leaves
-     * where it was - but the CONFIGURATION was never told, so a locomotive placed by hand on one
-     * square kept its old placement on another.  Nothing looked wrong until the next build, which
-     * emitted the same locomotive at two Points; fromJSON answers that by invalidating the whole
-     * layout, and from then on every path was refused as "configuration is invalid".
-     *
-     * The placement OBJECT is moved rather than rebuilt, so the speed, the arrival and departure
-     * functions and the train length recorded with it travel to the new square.
-     *
-     * @param tile where it is now, or null to record only that it has been taken off
-     * @param locomotive the name, as the locomotive database spells it
-     * @return true when something was changed
-     */
-    public boolean placeLocomotive(TileKey tile, String locomotive)
-    {
-        if (locomotive == null || locomotive.trim().isEmpty()) return false;
-
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return false;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return false;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        boolean changed = false;
-
-        // Whatever was recorded about it wherever it was, so the settings travel with the locomotive
-        org.json.JSONObject carried = null;
-
-        for (String key : new LinkedHashSet<>(points.keySet()))
-        {
-            org.json.JSONObject extras = points.optJSONObject(key);
-
-            if (extras == null) continue;
-
-            org.json.JSONObject standing = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-            if (standing == null) continue;
-
-            if (!locomotive.equals(standing.optString("name", null))) continue;
-
-            if (tile != null && key.equals(tile.toString())) continue;
-
-            if (carried == null) carried = new org.json.JSONObject(standing.toString());
-
-            extras.remove(AutonomyBuilder.LOCOMOTIVE);
-
-            // The facing belonged to the train that was standing there, not to the square
-            extras.remove(AutonomyBuilder.FACING);
-
-            changed = true;
-        }
-
-        if (tile != null)
-        {
-            org.json.JSONObject extras = configurationExtras(tile);
-
-            if (extras != null && !extras.has(AutonomyBuilder.LOCOMOTIVE))
-            {
-                if (carried == null)
-                {
-                    carried = new org.json.JSONObject();
-                    carried.put("name", locomotive);
-                }
-
-                extras.put(AutonomyBuilder.LOCOMOTIVE, carried);
-
-                changed = true;
-            }
-        }
-
-        if (changed) touched();
-
-        return changed;
-    }
-
-    /**
-     * Forgets that anything is standing on a square.
-     *
-     * @param tile
-     * @return true when there was something to forget
-     */
-    public boolean clearLocomotive(TileKey tile)
-    {
-        if (tile == null) return false;
-
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return false;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return false;
-
-        org.json.JSONObject extras =
-            configuration.getJSONObject("points").optJSONObject(tile.toString());
-
-        if (extras == null || !extras.has(AutonomyBuilder.LOCOMOTIVE)) return false;
-
-        extras.remove(AutonomyBuilder.LOCOMOTIVE);
-        extras.remove(AutonomyBuilder.FACING);
-
-        touched();
-
-        return true;
-    }
 
     public GraphReducer getReducer()
     {
@@ -2266,6 +2154,11 @@ public class AutonomySession
         if (name == null)
         {
             setPointProperty(tile, "loc", null);
+
+            // The facing described the train that was standing there, not the square.  Left behind,
+            // the next locomotive placed here inherits the last one's direction without being asked.
+            setPointProperty(tile, AutonomyBuilder.FACING, null);
+
             return;
         }
 
@@ -2276,7 +2169,66 @@ public class AutonomySession
 
         loc.put("name", name);
 
+        // And wherever else it was, it is not there now.
+        //
+        // Moving a train in the running layout takes it off the point it was on; the configuration is
+        // never told, and the configuration is what the next build reads.  So a locomotive placed by
+        // hand kept its old placement as well, the build emitted it at two Points, and fromJSON
+        // answers that by invalidating the WHOLE layout - after which every path is refused as
+        // "configuration is invalid", with nothing pointing back at the placement that caused it.
+        //
+        // Found in a real export: 065 001-0 DB standing at both BottomMainA and BottomMainC.
+        forgetPlacementsElsewhere(tile, name, loc);
+
         setPointProperty(tile, "loc", loc);
+    }
+
+    /**
+     * Takes a locomotive off every square except the one it is being put on.
+     *
+     * Whatever was recorded with it where it is leaving - speed, arrival and departure functions,
+     * train length - is carried into the placement being written.  parseAuto RESETS what a placement
+     * omits, which is the same reason this method preserves an existing placement above, so a move
+     * that dropped them would quietly reset the train to no functions and no length.
+     *
+     * @param keep the square it is moving to
+     * @param name the locomotive
+     * @param into the placement being written, which inherits what was recorded elsewhere
+     */
+    private void forgetPlacementsElsewhere(TileKey keep, String name, org.json.JSONObject into)
+    {
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : new LinkedHashSet<>(points.keySet()))
+        {
+            if (keep != null && key.equals(keep.toString())) continue;
+
+            org.json.JSONObject extras = points.optJSONObject(key);
+
+            if (extras == null) continue;
+
+            org.json.JSONObject standing = extras.optJSONObject("loc");
+
+            if (standing == null || !name.equals(standing.optString("name", null))) continue;
+
+            for (String setting : standing.keySet())
+            {
+                if (!into.has(setting)) into.put(setting, standing.get(setting));
+            }
+
+            extras.remove("loc");
+            extras.remove(AutonomyBuilder.FACING);
+
+            touched();
+        }
     }
 
     /**
