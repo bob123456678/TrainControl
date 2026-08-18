@@ -2160,6 +2160,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param p
      */
+    /**
+     * Which way the train standing on a square is pointing, as one character.
+     *
+     * A square is several Points, one per side a train can arrive by, and they are not
+     * interchangeable - so "there is a locomotive here" leaves out the half of the answer that says
+     * where it can go next.  Anybody looking at a platform wants to know which way the train is
+     * facing before they can guess what it will do.
+     *
+     * Read from the setup rather than worked out from the running graph.  Working it out means
+     * building the naming to ask which copy this Point is, and this runs once per Point on every
+     * feedback event - so the cheap answer that is right at placement and after every capture is the
+     * one to give.
+     *
+     * @param square the sensor
+     * @return an arrow, or "" when nobody has said which way
+     */
+    private String facingArrow(org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || square == null) return "";
+
+        org.traincontrol.automationui.TilePorts.Side facing = session.getFacing(square);
+
+        if (facing == null) return "";
+
+        switch (facing)
+        {
+            case N: return "^";
+            case S: return "v";
+            case E: return ">";
+            case W: return "<";
+            default: return "";
+        }
+    }
+
     private void updateStationLabels(Point point)
     {
         // Update locomotive autonomy location labels on the main layout.
@@ -2205,7 +2241,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (current != null)
                     {
-                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim() + "]");
+                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim()
+                            + facingArrow(square) + "]");
 
                         if (milestones != null)
                         {                                 
