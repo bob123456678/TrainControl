@@ -371,6 +371,8 @@ Tab icons provided by Freepik.
         - Fixed bug where a platform holding two trains showed only one of them
         - Fixed bug where a square that stopped being a station kept its name label, which then lit up whenever a train passed over it
         - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
+        - Fixed bug where switching between track diagram pages left the station labels on the previous page frozen, showing trains at platforms they had already left
+        - Fixed bug where cancelling an edit in the track diagram editor still deleted the autonomy settings of any squares that had been removed during that edit
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
     - Locomotive Bug Fixes

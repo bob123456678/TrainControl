@@ -31,7 +31,11 @@ Three commits, and the code around them:
 | id | finding | status |
 |---|---|---|
 | A1 | barring an arrival side of a turn-around station invalidates the whole configuration | fixed, `d4cc22a` |
-| A2 | excluding a page permanently destroyed the arrival restrictions on it | fixed, next commit |
+| A2 | excluding a page permanently destroyed the arrival restrictions on it | fixed, `a5de425` |
+| A3 | Cancel in the diagram editor destroyed the setup of every square it had touched | fixed, next commit |
+| A4 | station captions do not exist at all without a local layout folder | OPEN - for Adam |
+| A5 | undo does not undo the caption edits the diagram editor performs | OPEN - for Adam |
+| A6 | the caption migration rewrites .cs2 pages in place, with no atomic write | OPEN - for Adam |
 
 ### A1 - a barred terminus copy is emitted as a terminus that is not a destination
 
@@ -80,6 +84,55 @@ a square that is still in the graph with fewer sides is still pruned.
 
 Test: `testExcludingAPageKeepsItsArrivalRestrictions`.
 
+### A3 - Cancel discarded the track and kept the deletions in the setup
+
+The diagram editor works on the live {T}LayoutDiagram{T} objects.  Cancel reverts by re-reading the pages
+from disk into NEW objects - so the session is left holding the edited ones, and
+{T}resetAutonomySession{T} then saves through {T}AutonomySession.save(){T}, which reconciles the setup
+against exactly those mutated pages.
+
+Delete a few sensor squares, change your mind, press Cancel: the track comes back and the names,
+lengths, directions, captions and arrival restrictions of those squares are gone from
+{T}setup.json{T}, permanently, with nothing said.
+
+Fixed by separating the two things {T}save(){T} does.  The paths that save because the diagram is being
+REPLACED - a re-download, an editor closing - now write without reconciling; reconciliation waits for
+the next explicit save, when the pages are current and its report can be shown to somebody.  Nothing is
+lost by waiting: a setup whose diagram genuinely changed is tidied a moment later.
+
+Not covered by a test.  Reproducing it needs the editor's whole open-mutate-cancel lifecycle, which is
+Swing end to end; the fix is one call changing to a narrower one, and the narrower one cannot delete
+anything.
+
+### A4, A5, A6 - open, and for Adam
+
+These are branch-level, not from this cycle's work, and each needs a decision rather than a patch.
+
+**A4 - captions require a local layout folder.**  The live caption branch in {T}LayoutGrid{T} is keyed on
+{T}ui.autonomyCaptionAt(...){T}, which needs an {T}AutonomySession{T}, which returns null outright when
+there is no local layout path.  For a user reading the diagram straight from the Central Station -
+the "switch to CS layout" mode - that means no station captions at all, and the squares fall through
+to drawing the literal text {T}Point:Bahnhof{T}.  Master decided the same thing from the tile's own
+label and needed nothing else.
+
+This is the price of moving captions out of the diagram, and it is a product question: either autonomy
+captions become available without a local folder, or that mode keeps the old {T}Point:{T} rendering as a
+fallback.  Worth settling before release, since it removes an everyday display from a whole class of
+users.
+
+**A5 - undo does not cover the caption edits.**  The editor's undo stack holds
+{T}LayoutDiagramComponent{T}s only.  Deleting a captioned sensor calls {T}forgetCaptionsAt{T} and moving
+one calls {T}moveCaption{T}; neither is snapshotted, so Ctrl+Z brings the tile back without its caption,
+or moves the tile back and leaves the caption at the new square.  Fixing it properly means the undo
+stack carrying setup state as well as diagram state, which is a design decision.
+
+**A6 - the migration rewrites .cs2 pages in place.**  {T}migrateStationLabels{T} strips the old
+{T}Point:{T} labels and calls {T}saveChanges{T}, which truncates and writes without the atomic staging
+{T}Util.writeAtomically{T} gives the locomotive database and the UI state.  A crash mid-write costs a
+page of track diagram.  It is also one-way: once stripped, an older build shows no station labels at
+all.  The fix is small - route it through {T}writeAtomically{T} and take a backup first - but it changes
+what happens to a user's files, which is Adam's call.
+
 ## B - medium
 
 | id | finding | status |
@@ -87,7 +140,9 @@ Test: `testExcludingAPageKeepsItsArrivalRestrictions`.
 | B1 | a restriction naming a side the square no longer has locks the menu and cannot be cleared | fixed, `d4cc22a` |
 | B2 | a train on a non-destination copy had no right-click menu at all | fixed, `81a51ac` |
 | B3 | with no train there, the menu still hung off whichever copy sorted first | fixed, next commit |
-| B4 | a locomotive could be placed at random onto a barred copy | fixed, next commit |
+| B4 | a locomotive could be placed at random onto a barred copy | fixed, `a5de425` |
+| B5 | switching pages killed the live captions of the page left behind | fixed, next commit |
+| B6 | the path search moved from a worker thread onto the EDT | OPEN - for Adam |
 
 ### B1 - stale barred sides were counted, hidden, and unremovable
 
@@ -155,6 +210,37 @@ different message from the "no way out" one this list exists to produce.
 
 Neither has a test: both are Swing menu construction, the same seam problem as B2.  All three are one
 right-click to check.
+
+### B5 - the prune deleted the captions of every cached page
+
+Mine, from the popup fix two commits earlier.  {T}pruneLayoutStations{T} dropped every registered caption
+label that was not displayable, on every repaint.  But the main window CACHES a page's grid and
+re-attaches it when the user comes back, so that page's labels are detached - and perfectly alive -
+the whole time another page is showing.
+
+Visit page A, then B, then C: A's labels are detached when C is built, so they are dropped.  Go back to
+A and its captions are frozen at whatever they last said, showing trains at platforms they left
+minutes ago.
+
+{T}DiagramTileRegistry{T} carries this exact rule, with a comment explaining it, and I did not carry it
+across - the same mistake the July cycle recorded five times, and the reason its SOP says to grep for
+the twins of anything you fix.  Each grid now drops the labels it replaces as it registers their
+successors: per square, so pages cannot touch each other's, and per owning container, so a popped-out
+window showing the same page does not have its live labels dropped by a repaint of the main one.
+
+### B6 - open, and for Adam
+
+{T}repaintAutoLocListLite{T} used to run its {T}updateState{T} loop on a worker thread; it now runs inline
+inside an {T}invokeLater{T}, so on the EDT.  That loop calls {T}getPossiblePaths{T}, which is synchronized
+on the {T}Layout{T} and does an O(points squared) search - once per locomotive panel, on every arrival
+and departure.
+
+Two consequences: the interface stalls for the duration on a large layout, and the EDT can now block on
+the Layout monitor while a driving thread holds it, which is a deadlock surface that did not exist.
+
+The thread removal was right - the old code mutated Swing state off the EDT - but the fix wants the
+search on a worker and only the Swing writes marshalled.  Left open because it is a threading change in
+the running path and deserves to be made deliberately rather than at the end of a long session.
 
 ## C - low
 
@@ -245,6 +331,8 @@ is about, and that half was seen failing before C7 was fixed.
 | D5 | the crowded caption's width budget ignored its own separators | fixed, next commit |
 | D6 | `arrivalSidesOf` bypasses the node cache | accepted, see below |
 | D7 | the short `AutonomyChecks.run` overloads omit the new check | accepted, see below |
+| D8 | "out of service" was reported as wiping captions and restrictions | withdrawn - not a defect |
+| D9 | the autosave preference is ignored | accepted, deliberate - but see below |
 
 ### D1
 
@@ -293,6 +381,26 @@ the full form would silently miss the new check.  Only one caller exists and it 
 this matches the pre-existing chaining for termini, trapped and the rest.  Recorded because D2 deleted
 two statics on exactly this reasoning; the difference is that those had no correct caller at all.
 
+### D8 - withdrawn
+
+The regression pass reported that setting a station to "closed" wipes its caption and arrival
+restrictions.  It does not: that radio calls {T}setUsage(target, isStation, false){T}, passing the
+CURRENT station flag, so it changes only whether the square is open.  Only "can pass through" demotes,
+and that gesture does say the square is no longer a station.
+
+Recorded rather than deleted because the finding was reasonable from reading {T}setUsage{T} alone - the
+call sites are what settle it.
+
+### D9 - accepted, with a caveat for Adam
+
+The Autosave preference is deliberately ignored and its checkbox hidden, with a comment saying so:
+what it saves is the state of the railway, and nobody sets one up in order to discard it.
+
+The regression pass is still right about one consequence.  A legacy user who kept a hand-authored
+{T}autonomy.json{T} and turned autosave off precisely to protect it now has it rewritten with generated
+coordinates on exit.  Not changed here, because reverting a deliberate decision at the end of a review
+is the wrong way round - but worth a look before release.
+
 ### Checked and found correct
 
 Recorded because knowing what was verified is worth as much as knowing what was wrong.
@@ -332,5 +440,11 @@ Recorded because knowing what was verified is worth as much as knowing what was 
   art, is a manual check.
 - **Import of a legacy graph carrying arrival restrictions** was not exercised - the legacy format has
   no such concept, so there is nothing to map, but the assertion is by inspection.
+- **The regression pass did not run anything.** Every claim in it is from reading code and git history;
+  A4, A5, A6 and B6 are open on that basis and want a person at the machine before they are called
+  settled.
+- **Nothing was checked against a Central Station.** The autosave and legacy-autonomy.json paths (D9)
+  matter most to users who have one and no local layout folder, which is precisely the configuration
+  none of these passes could exercise.
 - **Concurrency was reasoned about, not stressed.** C1 was found by reading; no test drives an edit
   and a feedback burst against each other.

@@ -3142,4 +3142,29 @@ public class AutonomySession
 
         return report;
     }
+
+    /**
+     * Writes the setup out WITHOUT reconciling it against the diagram.
+     *
+     * For the paths that save because the diagram is being replaced underneath them, rather than
+     * because a user pressed Save.  Reconciling compares the setup against the pages this session
+     * holds - and on those paths the pages are the ones an editor mutated in place, which the user may
+     * have just discarded with Cancel.  The editor works on the live LayoutDiagram objects and Cancel
+     * reverts by re-reading from disk into NEW ones, so the session is left holding the edited
+     * version: reconciling against it deleted the names, lengths, directions and arrival restrictions
+     * of every square the user had deleted and then thought better of, permanently, with the track
+     * itself coming back.
+     *
+     * Nothing is lost by waiting.  Reconciliation tidies a setup whose diagram has genuinely changed,
+     * and the next explicit save does it with pages that are actually current - which is the moment
+     * its report can be shown to somebody anyway.
+     *
+     * @throws IOException
+     */
+    public void saveWithoutReconciling() throws IOException
+    {
+        store.save();
+
+        dirty = false;
+    }
 }

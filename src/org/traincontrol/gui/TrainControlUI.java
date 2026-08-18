@@ -879,11 +879,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value)
     {
+        addLayoutStation(station, value, null);
+    }
+
+    /**
+     * Registers a track diagram label as showing the station on a square.
+     *
+     * @param station the sensor's square
+     * @param value the label drawing its caption
+     * @param owner the container the label was built into, so that a grid replacing itself can drop
+     *        the labels it is replacing and nothing else
+     */
+    public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value,
+        java.awt.Container owner)
+    {
         if (station == null || value == null) return;
 
-        // Use computeIfAbsent to initialize the set if it doesn't exist
-        layoutStations.computeIfAbsent(station, k -> new HashSet<>()).add(value);
+        Set<JLabel> here = layoutStations.computeIfAbsent(station, k -> new HashSet<>());
+
+        // Registering a label for this square is the moment the old ones for it became rubbish, and
+        // the only moment anything can tell.  This was done wholesale on every repaint instead, which
+        // was wrong twice over: it walked squares nobody was rebuilding, and it judged them only by
+        // whether they were on screen.
+        //
+        // The main window CACHES a page's grid and re-attaches it when the user comes back, so that
+        // page's labels are detached - and perfectly alive - the whole time another page is showing.
+        // Pruning on displayability alone therefore deleted the captions of every page the user had
+        // visited, and they came back frozen at whatever they last said.  DiagramTileRegistry carries
+        // this same rule, and the comment explaining it, for exactly the same reason.
+        //
+        // Per SQUARE, so pages cannot touch each other's labels - their keys differ.  And only labels
+        // of the same OWNER, so a popped-out window showing the same page as the main one does not
+        // have its live labels dropped by a repaint of the other.
+        if (owner != null)
+        {
+            for (java.util.Iterator<JLabel> i = here.iterator(); i.hasNext();)
+            {
+                JLabel existing = i.next();
+
+                if (existing != value && !existing.isDisplayable()
+                    && owner == existing.getClientProperty(LAYOUT_STATION_OWNER))
+                {
+                    i.remove();
+                }
+            }
+
+            value.putClientProperty(LAYOUT_STATION_OWNER, owner);
+        }
+
+        here.add(value);
     }
+
+    /**
+     * Which grid a caption label was built into.  A client property rather than a map, so it cannot
+     * outlive the label it describes.
+     */
+    private static final String LAYOUT_STATION_OWNER = "tcLayoutStationOwner";
     
     /**
      * Gets a caption for the corresponding locomotive mapping tap
@@ -924,29 +975,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Clears out the labels, i.e. after reloading autonomy
      */
-    /**
-     * Drops caption labels that belong to grids nobody can see any more.
-     *
-     * Registration only ever adds, because a label does not know when its grid is replaced.  What it
-     * does know is whether it is still attached to something on screen, which separates a label from a
-     * grid that has gone from one in a popped-out page window that is still open.
-     */
-    private void pruneLayoutStations()
-    {
-        for (java.util.Iterator<Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>>
-            pages = layoutStations.entrySet().iterator(); pages.hasNext();)
-        {
-            Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> entry = pages.next();
-
-            for (java.util.Iterator<JLabel> labels = entry.getValue().iterator(); labels.hasNext();)
-            {
-                if (!labels.next().isDisplayable()) labels.remove();
-            }
-
-            if (entry.getValue().isEmpty()) pages.remove();
-        }
-    }
-
     public void resetLayoutStationLabels()
     {
         if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isRunning())
@@ -1551,7 +1579,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),
                     activeDiagramConfiguration);
-                autonomySession.save();
+
+                // Written, not reconciled.  This runs because the diagram is being REPLACED - a
+                // re-download, or an editor closing - and on the editor path the pages this session
+                // holds are the ones the editor mutated in place.  Cancel reverts by re-reading from
+                // disk into new page objects, so those mutations are exactly what the user just
+                // discarded, and reconciling against them deleted every setting on every square they
+                // had deleted and thought better of.  The next explicit save reconciles against pages
+                // that are current.
+                autonomySession.saveWithoutReconciling();
             }
             catch (Exception e)
             {
@@ -18284,19 +18320,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Set address label preference
                         this.model.getLayout(this.LayoutList.getSelectedItem().toString()).setShowAddress(this.getShowLayoutAddresses());
                         
-                        // The labels of grids that have gone are dropped before this one is built.
-                        //
-                        // Registration only ever added, so every caption label ever created was kept
-                        // and the live update wrote to a growing pile belonging to grids nobody can
-                        // see.  Clearing the lot was the first answer and was wrong: the popped-out
-                        // page windows register their labels here too, and a repaint of the MAIN
-                        // window then dropped them - so a popup showed its captions once and never
-                        // updated them again.
-                        //
-                        // Displayability is what tells the two apart.  A label from a replaced grid
-                        // has been removed from its container and answers false; a label in a popup
-                        // that is still on screen answers true, whoever repainted.
-                        pruneLayoutStations();
+                        // Nothing is pruned here any more.  Dropping labels wholesale on a repaint
+                        // deleted the captions of every CACHED page - their grids are detached while
+                        // another page shows, and detached is not dead.  Each grid now drops the
+                        // labels it replaces as it registers their successors; see addLayoutStation.
 
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 

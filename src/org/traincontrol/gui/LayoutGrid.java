@@ -218,7 +218,7 @@ public class LayoutGrid
                         text.setText("");
 
                         // This callback will populate the label
-                        ui.addLayoutStation(captioned, text);
+                        ui.addLayoutStation(captioned, text, parent);
                         text.setToolTipText(captionName);
 
                         final org.traincontrol.automationui.TileGraph.TileKey station = captioned;
