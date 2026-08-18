@@ -367,6 +367,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // Double-click detected
                 int index = list.locationToIndex(evt.getPoint());
 
+                // locationToIndex answers with the LAST row for a click anywhere past the end of the
+                // list, and this one stretches to fill its viewport - so a near-miss double-click in
+                // the blank space under a short list executed the last path.  No race needed.  The
+                // sibling list in GraphLocExclude has carried this guard, with a comment naming the
+                // trap, since before this class existed.
+                if (index < 0 || !list.getCellBounds(index, index).contains(evt.getPoint())) return;
+
                 if (!layout.isAutoRunning() && !this.paths.isEmpty())
                 {
                     if (!this.control.getPowerState())
@@ -388,11 +395,20 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                         }
                     }*/
 
+                    // Read here, on the EDT, and not again on the thread below.  updateState
+                    // reassigns this list whenever any locomotive arrives or departs - dispatching one
+                    // train recomputes another's paths - so a list that changed between the click and
+                    // the dispatch sent this locomotive to whatever had moved into that index.  The
+                    // movement was valid and locked, which is exactly why nothing reported it.
+                    if (index >= this.paths.size()) return;
+
+                    final List<Edge> chosen = this.paths.get(index);
+
                     new Thread(() ->
                     {
                         parent.ensureGraphUIVisible();
 
-                        boolean success = this.layout.executePath(this.paths.get(index), locomotive, locomotive.getPreferredSpeed(), null);
+                        boolean success = this.layout.executePath(chosen, locomotive, locomotive.getPreferredSpeed(), null);
 
                         if (!success)
                         {

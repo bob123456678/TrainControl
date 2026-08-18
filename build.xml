@@ -119,6 +119,7 @@
         <test-one-class class="testAutonomyPathValidation"/>
         <test-one-class class="testAutonomySimulationSanity"/>
         <test-one-class class="testCS2Message"/>
+        <test-one-class class="testFeedback"/>
         <test-one-class class="testImportRename"/>
         <test-one-class class="testHomeStaging"/>
         <test-one-class class="testReturnHomeOnRealLayout"/>
