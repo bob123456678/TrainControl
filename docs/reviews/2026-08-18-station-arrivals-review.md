@@ -25,6 +25,9 @@ Three commits, and the code around them:
 | regressions pass | Opus | what worked before this week and does not now, across the shared files the branch touches |
 | graph derivation | Opus | TileGraph/GraphReducer/AutonomyBuilder split logic, against the ground-truth oracle |
 | running model | Opus | Layout/Point/Edge, the new exclusivity sweep, path locking, bfs |
+| debug: interactions | Opus | where this week's fixes break each other |
+| debug: execution | Opus | the run loop, path locking, callbacks - the least-reviewed area |
+| debug: CG4 design | Opus | the split-aware reachability fix, for the main loop to implement |
 
 ---
 
@@ -534,6 +537,67 @@ Note the gap this exposed in the ground-truth oracle: it pins REACHABILITY, whic
 reversal shortcuts. A future move to collapse the split would pass the oracle while breaking execution.
 If that re-architecture is ever attempted, the oracle should first be extended to pin the actual bfs
 PATHS, not just which pairs are connected.
+
+## Debugging fanout
+
+Three lenses over a green tree: do the fixes break each other, what lives in the run loop nobody
+reviewed, and how to implement CG4.
+
+| id | finding | status |
+|---|---|---|
+| DX1 | driving-thread callbacks unguarded -> a throw strands a train, locking track forever | fixed, `e65bcce` |
+| DX2 | rebuild() reopened the SA-C1 derivation race across the whole rebuild body | fixed, `ec7973c` |
+| DX3 | boxed-in train busy-loops pickPath with no delay, pegging a core | fixed, `e65bcce` |
+| DX4 | undo could restore a caption onto a demoted (non-station) square | fixed, `ec7973c` |
+| DX5 | the diagram train marker sat on an arbitrary reserved point, not the last reached | fixed, `ec7973c` |
+| DX6 | captureFromLayout cannot persist two trains on one square; disagrees with the display | OPEN - for Adam, see below |
+| DX7 | undo caption-stack alignment at the history boundary | not a defect - the symmetric trims hold it |
+| DX8 | two-trains-one-junction locking after the reserve fix | verified correct |
+
+### DX1 - the callback drift (the serious one)
+
+A callback fires on the driving thread and every registered one repaints; an exception out of the UI
+kills that thread. The start-of-path loop guarded against exactly this - the milestone and completion
+loops did not, the classic one-of-three-identical-loops drift. Killed at a milestone the train halts
+mid-block with its track still locked, and every train that needs that track is refused for the rest of
+the session. All firing now goes through one guarded door.
+
+### DX2 - the race SA-C1 closed, reopened wider
+
+`rebuild()` nulled the index then did the whole graph/reducer rebuild before re-deriving, so a
+feedback-thread reader in the gap derived it itself against the reducer being replaced. It no longer
+nulls; the old immutable index stays readable until the new one is published in one write.
+
+### DX3-DX5
+
+A boxed-in train with no configured delay re-ran the full pickPath search as fast as the CPU allowed
+(floored now); undo could put a station's name back on a demoted square (guarded now); the train marker
+read an arbitrary reserved point rather than the last milestone (fixed).
+
+### DX6 - OPEN, needs Adam's decision: can two trains be at one square?
+
+The display code says yes - `occupantsAt` and `crowdedLabel` (SA, built after Adam saw two trains
+at one station) render more than one occupant. `captureFromLayout` says no - it merges every copy of
+a square into one config entry on the stated assumption that only one carries a locomotive, so if two
+copies are occupied at save, the last in emission order wins and the other train is silently dropped
+from the next load.
+
+They disagree about whether the state exists, and I did not resolve it because the answer is a
+railway-semantics decision, not a code choice:
+
+- A square is one s88 block; two trains cannot physically share it. If autonomy can nonetheless dispatch
+  a second train onto a second COPY of an occupied square, that is a collision bug in the occupancy
+  check (Edge.isOccupied reads the copy's own currentLoc, which is null even when a sibling copy holds a
+  train sharing the s88) - and the display is showing an error state, not a feature.
+- If the two-occupant state is only ever transient (one train arriving as another departs), the display
+  is right to show it and captureFromLayout is right that it need not persist - but it should not
+  SILENTLY drop; it should decline to capture the departing one, or log.
+
+Which of these is true needs someone who knows the layout. Flagged rather than guessed: keying
+placements per copy (a persistence change) or adding an s88-aware occupancy guard (a routing change)
+are opposite fixes, and picking wrong either breaks a real feature or hides a real collision. My best
+guess is the second bullet (transient), which would make DX6 a "don't drop silently" fix - but I would
+not change the occupancy check or the capture format without Adam confirming the intended semantics.
 
 ## What this pass did not cover
 
