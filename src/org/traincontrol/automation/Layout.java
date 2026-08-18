@@ -1099,6 +1099,8 @@ public class Layout
         
         Point p = new Point(name, isDest, feedback);
         
+        p.setLayout(this);
+
         this.points.put(p.getName(), p);
         
         return p;
@@ -3675,15 +3677,10 @@ public class Layout
                 return result;
             }*/
             
-            // Remove from elsewhere
-            for (Point p : this.getPoints())
-            {
-                if (l.equals(p.getCurrentLocomotive()))
-                {
-                    p.setLocomotive(null);
-                    break;
-                }
-            }
+            // Removing from elsewhere is setLocomotive's own job now, and it does not stop at the
+            // first copy.  This loop broke after one - written when a station was one Point, and a
+            // square is several since - so a locomotive recorded on two copies of one platform lost
+            // one of them and kept the other.
             
             // Ensure no multi-unit conflicts
             this.sanitizeMultiUnits(l);
@@ -3742,6 +3739,33 @@ public class Layout
     public Collection<Point> getPoints()
     {
         return this.points.values();
+    }
+
+    /**
+     * Takes a locomotive off every Point except the one that is claiming it.
+     *
+     * The other half of the rule Point.setLocomotive enforces.  Here rather than there because only the
+     * layout knows what the other Points are, and every copy is cleared rather than the first: a square
+     * is several Points now, so a train that was "somewhere else" may have been in several somewhere
+     * elses at once - which is the state this exists to make unrepresentable.
+     *
+     * Not synchronized: setLocomotive holds the Point's own monitor, and taking the layout's here would
+     * order the two locks against every other path that takes them the other way round.  The map it
+     * walks is only structurally changed by graph construction.
+     *
+     * @param l the locomotive being placed
+     * @param claiming the Point placing it, which keeps it
+     */
+    void clearLocomotiveExcept(Locomotive l, Point claiming)
+    {
+        if (l == null) return;
+
+        for (Point other : this.points.values())
+        {
+            if (other == claiming) continue;
+
+            if (l.equals(other.getCurrentLocomotive())) other.setLocomotive(null);
+        }
     }
     
     /**

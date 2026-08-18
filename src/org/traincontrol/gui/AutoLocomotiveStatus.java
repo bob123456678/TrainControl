@@ -101,7 +101,39 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * Refreshes the available routes shown in the UI
      * @param someLoc 
      */
+    /**
+     * The path search, on its own, so it can be done off the event thread.
+     *
+     * getPossiblePaths is synchronized on the Layout and searches it whole, once per locomotive panel,
+     * on every arrival and departure.  Run on the EDT that stalls the interface for as long as it
+     * takes - and worse, it lets the EDT block on the Layout's monitor while a driving thread holds
+     * it, which is a deadlock the application could not have before.
+     *
+     * Safe off the EDT because it touches no Swing state: it asks the layout a question and returns
+     * the answer, and the caller decides what to draw.
+     *
+     * @return the paths worth showing, or null when the layout is busy and the list is not shown
+     */
+    public List<List<Edge>> findPaths()
+    {
+        if (layout == null || locomotive == null) return null;
+
+        if (layout.isAutoRunning() || layout.getLocomotiveLocation(locomotive) == null) return null;
+
+        return withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
+    }
+
     public void updateState(Locomotive someLoc)
+    {
+        updateState(someLoc, null, false);
+    }
+
+    /**
+     * @param found paths already worked out by findPaths, or null to search here
+     * @param haveFound whether {@code found} is an answer rather than an absence - the search
+     *        legitimately returns null, so the two cannot be told apart by the value alone
+     */
+    public void updateState(Locomotive someLoc, List<List<Edge>> found, boolean haveFound)
     {
         // We only need to update if the callback corresponding to our locomotive was fired
         if (someLoc == null || someLoc.equals(locomotive))
@@ -199,8 +231,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Layout is standing by.  Show the list.
             else
             {                
+                // Already searched, if somebody did it off the EDT for us.  Searching here is the
+                // fallback for the callers that have no worker to do it on, and it is the reason this
+                // method still can.
                 // true -> Only include unique starts/end pairs
-                this.paths = withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
+                this.paths = haveFound && found != null ? found
+                    : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
                 
                 if (!this.paths.isEmpty())
                 {

@@ -692,6 +692,14 @@ public class TileAnnotation
         double wing = Math.max(2.5, span / 7.0);
         double depth = Math.max(3.0, span / 5.0);
 
+        // Pushed along the edge, clear of the middle.
+        //
+        // The direction arrows sit at the middle of each side, which is where these were too - so on a
+        // station that both restricts arrivals and shows its directions, two different marks about two
+        // different questions were drawn on top of each other.  Offset to one side they read as two
+        // marks, and there is room: a tile edge is much wider than an arrowhead.
+        double offset = span / 4.0;
+
         g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -715,9 +723,10 @@ public class TileAnnotation
             double px = -dy;
             double py = dx;
 
-            // Pulled off the edge itself, which is shared with the neighbouring square
-            double baseX = at[0] + dx * 1.5;
-            double baseY = at[1] + dy * 1.5;
+            // Pulled off the edge itself, which is shared with the neighbouring square, and along
+            // it, clear of the direction arrow in the middle
+            double baseX = at[0] + dx * 1.5 + px * offset;
+            double baseY = at[1] + dy * 1.5 + py * offset;
 
             double tipX = baseX + dx * depth;
             double tipY = baseY + dy * depth;
@@ -1128,15 +1137,20 @@ public class TileAnnotation
      * tested path (yellow), nor track autonomy ignores (grey).  A colour of its own for a question of
      * its own.
      */
-    private static final Color ARRIVAL = new Color(83, 86, 194);
+    private static final Color ARRIVAL = new Color(255, 205, 0);
 
-    private static final Color ARRIVAL_EDGE = new Color(40, 42, 120);
+    /**
+     * Outlined in near-black rather than in a darker yellow.  Yellow on the pale grey of an unlit tile
+     * is the one colour on this diagram that disappears, and the outline is what stops it - it also
+     * tells the filled mark from the hollow one at a glance, which is the whole distinction.
+     */
+    private static final Color ARRIVAL_EDGE = new Color(60, 45, 0);
 
     /**
      * And a barred one, which is the same mark drawn as an absence: hollow, struck through, and closer
      * to grey than to indigo, so a shut side recedes and the open ones read as the answer.
      */
-    private static final Color ARRIVAL_BARRED = new Color(120, 120, 135);
+    private static final Color ARRIVAL_BARRED = new Color(150, 140, 100);
 
     /**
      * Whether a reversing point is drawn as a cross rather than as a small square.

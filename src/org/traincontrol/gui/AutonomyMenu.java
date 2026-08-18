@@ -78,9 +78,15 @@ public class AutonomyMenu extends JMenu
     {
         boolean hasLayout = ui.getModel() != null && !ui.getModel().getLayoutList().isEmpty();
 
-        setEnabled(hasLayout);
+        // And a LOCAL one.  A setup lives in files beside the diagram, so a diagram read straight from
+        // the Central Station has nowhere to keep one - which was true before and simply not said, so
+        // every autonomy gesture came back having done nothing and the captions never appeared.
+        boolean local = ui.canUseAutonomy();
 
-        setToolTipText(hasLayout ? null : I18n.t("autosetup.ui.tooltipNoLayout"));
+        setEnabled(hasLayout && local);
+
+        setToolTipText(!hasLayout ? I18n.t("autosetup.ui.tooltipNoLayout")
+            : !local ? I18n.t("autosetup.ui.tooltipNeedsLocalLayout") : null);
     }
 
     /**

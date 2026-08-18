@@ -15,6 +15,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.automation.Point;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import static org.traincontrol.gui.TrainControlUI.AUTONOMY_BLANK;
@@ -301,5 +303,76 @@ public class testAutoLayout
     @AfterMethod
     public void tearDownMethod() throws Exception
     {
+    }
+    /**
+     * A locomotive cannot be in two places, and the model will not represent it.
+     *
+     * It used to be left to the callers.  moveLocomotive swept the graph but stopped at the FIRST copy
+     * it found - written when a station was one Point, and a square has been several since - and
+     * parseAuto placed straight from the file without looking at all.  So a locomotive could end up
+     * standing on two copies of one platform: the diagram showed one of them, removing it cleared one
+     * of them, and the next build produced a configuration fromJSON refused outright.
+     *
+     * Enforced in Point now, so no caller has to remember.  A Point with no layout behind it - which is
+     * every Point built by hand - is untouched by this.
+     */
+    @Test
+    public void testALocomotiveCanOnlyBeInOnePlace() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        Point first = layout.createPoint("EX_First", true, "1");
+        Point second = layout.createPoint("EX_Second", true, "2");
+        Point third = layout.createPoint("EX_Third", true, "3");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        first.setLocomotive(loc);
+        second.setLocomotive(loc);
+
+        assertNull(first.getCurrentLocomotive(),
+            "the locomotive is standing in two places, which nothing physical can do");
+
+        assertEquals(second.getCurrentLocomotive(), loc);
+
+        // and from a state that already had it twice - which is what an older configuration file, or a
+        // build from before this rule, hands over
+        first.setLocomotive(loc);
+
+        assertEquals(first.getCurrentLocomotive(), loc);
+        assertNull(second.getCurrentLocomotive());
+
+        third.setLocomotive(loc);
+
+        assertNull(first.getCurrentLocomotive(), "every other copy is cleared, not just the first");
+        assertNull(second.getCurrentLocomotive());
+        assertEquals(third.getCurrentLocomotive(), loc);
     }
+
+    /**
+     * Clearing a Point does not disturb anything else.
+     *
+     * The sweep only runs when a locomotive is being PUT somewhere.  Setting null is a removal, and a
+     * removal that swept would be a removal that could take a different train off a different platform.
+     */
+    @Test
+    public void testRemovingALocomotiveLeavesTheOthersAlone() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        Point one = layout.createPoint("EX_One", true, "1");
+        Point two = layout.createPoint("EX_Two", true, "2");
+
+        Locomotive a = model.getLocByName(model.getLocList().get(0));
+        Locomotive b = model.getLocByName(model.getLocList().get(1));
+
+        one.setLocomotive(a);
+        two.setLocomotive(b);
+
+        one.setLocomotive(null);
+
+        assertNull(one.getCurrentLocomotive());
+        assertEquals(two.getCurrentLocomotive(), b, "a removal swept a platform it had no business at");
+    }
+
 }

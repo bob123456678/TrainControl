@@ -434,11 +434,37 @@ public class LayoutDiagram
                     ? originalFilePath.resolveSibling(filename.trim() + ".cs2")
                     : originalFilePath;
 
-            // Write the data to the file using Files.newBufferedWriter()
-            try (BufferedWriter writer = Files.newBufferedWriter(newFilePath))
+            // Staged and moved into place, never truncated where it stands.
+            //
+            // This is a page of somebody's track diagram, and it is rewritten by things they did not
+            // ask for - the caption migration runs on the first repaint after an upgrade.  A plain
+            // truncate-in-place turns a crash or a power cut during that write into a lost page, and
+            // the same care is already taken over the locomotive database and the UI state.
+            //
+            // A copy of what was there is kept beside it the first time a page is rewritten, so that
+            // a migration which strips something a user wanted is recoverable by hand.  Only the
+            // first: the point is the state before this build touched it, not before the last save.
+            Path backup = newFilePath.resolveSibling(newFilePath.getFileName() + ".bak");
+
+            if (Files.exists(newFilePath) && !Files.exists(backup))
             {
-                writer.write(data);
+                try
+                {
+                    Files.copy(newFilePath, backup);
+                }
+                catch (IOException backupFailed)
+                {
+                    // Not fatal.  A backup that cannot be written is worth less than the save that
+                    // follows it, and refusing to save because of it would be the wrong trade.
+                }
             }
+
+            final String contents = data;
+
+            org.traincontrol.util.Util.writeAtomically(newFilePath.toFile(), out ->
+            {
+                out.write(contents.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            });
 
             // If filename is not null, delete the original file - unless it IS the new file.
             //

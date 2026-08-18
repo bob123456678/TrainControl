@@ -397,11 +397,50 @@ public class Point
         return this.currentLoc;
     }
     
-    synchronized public Point setLocomotive(Locomotive l)
+    public Point setLocomotive(Locomotive l)
+    {
+        // One locomotive, one place - enforced HERE, because here is the only door.
+        //
+        // A train is a physical object and cannot be in two places, but nothing in the model said so:
+        // every caller was trusted to take it off wherever it was first, and they did not all do it.
+        // moveLocomotive stopped at the first copy it found; parseAuto placed from the file without
+        // looking; and a square is several Points now, so "wherever it was" is a set rather than a
+        // place.  The result was a locomotive standing on two copies of one platform, a removal that
+        // cleared one of them, and a configuration that fromJSON then refused outright.
+        //
+        // Backwards compatible in the way that matters: a Point with no layout behind it - every Point
+        // built by hand in a test, and every one built before this - behaves exactly as it did.
+        // Swept BEFORE this Point's own monitor is taken, which is why the sweep is not inside the
+        // synchronized part.  Holding one Point's lock while taking another's is how two placements on
+        // two threads deadlock each other, and there is nothing here that needs the two to be atomic:
+        // the worst a race can do is leave a locomotive nowhere for an instant, and the next placement
+        // says where it is.
+        if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
+
+        return assign(l);
+    }
+
+    synchronized private Point assign(Locomotive l)
     {
         this.currentLoc = l;
-        
+
         return this;
+    }
+
+    /**
+     * The layout this Point belongs to, so that placing a locomotive can clear it from everywhere else.
+     *
+     * Set by the layout as it takes the Point, and never by anything else.  Null on a Point that was
+     * built and not added, which is exactly when there is nowhere else for a locomotive to be.
+     */
+    private Layout layout;
+
+    /**
+     * @param layout the layout taking ownership of this Point
+     */
+    void setLayout(Layout layout)
+    {
+        this.layout = layout;
     }
     
     public String getS88()

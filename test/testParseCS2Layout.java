@@ -777,7 +777,10 @@ public class testParseCS2Layout
 
         parsed.get(0).saveChanges("MAIN", false);
 
-        File[] left = pages.listFiles();
+        // PAGES, not files.  A page is found by the name the index gives it, so anything in this
+        // folder that is not a .cs2 - the backup saveChanges keeps of a file it is about to rewrite -
+        // is not a page and cannot become one.
+        File[] left = pages.listFiles((dir, name) -> name.endsWith(".cs2"));
 
         assertEquals(left.length, 1,
             "a case-only rename should leave exactly one page: " + java.util.Arrays.toString(left));

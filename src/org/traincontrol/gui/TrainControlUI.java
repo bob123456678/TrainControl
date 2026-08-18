@@ -1512,6 +1512,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @return the session, or null when this layout cannot hold one
      */
+    /**
+     * Whether autonomy can be set up at all.
+     *
+     * It needs a local copy of the track diagram, and always has: the setup lives in files beside the
+     * diagram, and a diagram read straight from the Central Station has nowhere to put them.  That was
+     * left implicit - the session simply came back null and everything that needed one quietly did
+     * nothing, including the station captions, which stopped appearing with no explanation.
+     *
+     * Said out loud instead.  The menu is disabled with the reason on it, so the answer to "why is
+     * there no autonomy here" is in the place somebody looks for autonomy.
+     *
+     * @return true when there is a local layout folder to keep a setup in
+     */
+    public boolean canUseAutonomy()
+    {
+        String path = getLocalLayoutPath();
+
+        return path != null && !path.isEmpty();
+    }
+
     public org.traincontrol.automationui.AutonomySession getAutonomySession()
     {
         if (autonomySession != null) return autonomySession;
@@ -2334,6 +2354,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automationui.TilePorts.Side facing =
             session.getStationIndex().facingsAt(square).get(at.getName());
 
+        // Falls back to what the square remembers, which is what a hand-placed train wrote there.  A
+        // square that never splits has one copy and no facing of its own, and that copy's train is
+        // still pointing somewhere.
         if (facing == null) return facingArrow(square);
 
         switch (facing)
@@ -2405,8 +2428,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else if (current != null)
                     {
+                        // The arrow comes from the COPY the train is standing on, exactly as it
+                        // does when two trains share the square.  It used to come from the square's
+                        // own stored facing here, which is only written when somebody places a train
+                        // by hand - so the arrow appeared for a train you had placed and vanished for
+                        // one autonomy had driven there, on the same platform, minutes apart.
                         j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim()
-                            + facingArrow(square) + "]");
+                            + facingArrowOf(p, square) + "]");
 
                         if (milestones != null)
                         {                                 
@@ -17409,16 +17437,52 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
 
-            // On the EDT, which this block is already inside.  updateState sets text, swaps list
-            // models, toggles visibility and reassigns each panel's path list, and the raw thread that
-            // used to wrap it did all of that off the EDT - from arrival and departure callbacks fired
-            // by locomotive driving threads, with no synchronization against the EDT or against a
-            // second such thread from the next event.  It also made the dispatch race below possible.
+            // Which panels there are is read HERE, on the EDT, because the component list belongs to
+            // Swing.  What goes in them is worked out somewhere else.
+            final java.util.List<AutoLocomotiveStatus> panels = new java.util.ArrayList<>();
+
             for (Object o : this.autoLocPanel.getComponents())
             {
-                AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                status.updateState(null);
+                panels.add((AutoLocomotiveStatus) o);
             }
+
+            // The search off the EDT, the drawing back on it.
+            //
+            // updateState sets text, swaps list models and toggles visibility, so it has to be on the
+            // EDT - a raw thread used to run the whole thing off it, which was the fault that got the
+            // thread removed.  But the search inside it is synchronized on the Layout and walks the
+            // whole graph, once per panel, on every arrival and departure: on the EDT that stalls the
+            // interface, and lets it block on a monitor a driving thread holds.
+            //
+            // So both halves go where they belong rather than both going to one place.
+            AutonomyRenderer.submit(() ->
+            {
+                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
+                    new java.util.LinkedHashMap<>();
+
+                for (AutoLocomotiveStatus panel : panels)
+                {
+                    try
+                    {
+                        found.put(panel, panel.findPaths());
+                    }
+                    catch (RuntimeException e)
+                    {
+                        // The layout is being replaced underneath us; the next refresh catches up
+                        this.model.log(e);
+
+                        return;
+                    }
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    for (AutoLocomotiveStatus panel : panels)
+                    {
+                        panel.updateState(null, found.get(panel), true);
+                    }
+                });
+            });
         });
     }
     

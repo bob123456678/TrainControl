@@ -806,12 +806,19 @@ public class AutonomyEditorPanel extends JPanel
 
             stationMenu.add(auto);
 
-            // Where trains may pull IN from.
+
+            menu.add(stationMenu);
+
+            // Where trains may pull IN from - on the menu itself, beside what the square IS, rather
+            // than buried under it.
             //
-            // Under the station group because it is only a question about a station, and only where
-            // there is more than one way in: a square with a single arrival side has no choice to
-            // offer, and barring its only side would leave a station no train could ever be sent to.
-            // Somebody who wants that wants a pass-through, which is the choice directly above.
+            // It sat inside the station group, which put a question people ask often two levels down
+            // from the tile they are pointing at.  It belongs beside the usage choice, not inside it:
+            // one says what the square is for and the other says which ends of it are open.
+            //
+            // Only where there is more than one way in.  A square with a single arrival side has no
+            // choice to offer, and barring its only side would leave a station no train could ever be
+            // sent to - somebody who wants that wants a pass-through, which is the choice above.
             final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
                 session.arrivalSides(target);
 
@@ -840,10 +847,8 @@ public class AutonomyEditorPanel extends JPanel
                     arrivals.add(allow);
                 }
 
-                stationMenu.add(arrivals);
+                menu.add(arrivals);
             }
-
-            menu.add(stationMenu);
 
             // Switching direction, on any square, and not entangled with anything above.  A berth is
             // usually both - autonomy leaves it alone AND trains reverse in it - and that combination
