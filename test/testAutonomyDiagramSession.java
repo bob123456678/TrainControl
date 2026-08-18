@@ -777,4 +777,93 @@ public class testAutonomyDiagramSession
         assertFalse(new File(layout, "config/autonomy/setup.json").exists(),
             "a setup file was created for a layout that has no autonomy and gained no captions");
     }
+
+    /**
+     * Names out of a legacy autonomy.json land on the squares carrying the same sensors.
+     *
+     * The graph this replaces held points by name and recorded the s88 each watched; the diagram
+     * derives its points from the feedback squares themselves.  The sensor is the one thing both
+     * models agree on, so it is what the two are matched by.
+     *
+     * The names were never derivable from a diagram - the track's shape is, but what any of it is
+     * CALLED is a decision - so without this every upgrading user would enter them all again.
+     */
+    @Test
+    public void testLegacyNamesLandOnTheSquaresCarryingTheirSensors() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        // pageOnDisk puts a feedback with raw address 11 at 1,1 - and the raw address is what an
+        // autonomy Point's s88 has always meant
+        org.json.JSONObject named = new org.json.JSONObject();
+        named.put("name", "Hauptbahnhof");
+        named.put("station", true);
+        named.put("s88", 11);
+        named.put("maxTrainLength", 240);
+        points.put(named);
+
+        org.json.JSONObject elsewhere = new org.json.JSONObject();
+        elsewhere.put("name", "NotOnThisDiagram");
+        elsewhere.put("s88", 9999);
+        points.put(elsewhere);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyNames result = session.importLegacyNames(legacy);
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        assertEquals(session.getStore().getPointName(tile), "Hauptbahnhof",
+            "the name did not reach the square carrying its sensor");
+
+        assertTrue(session.getStore().isStation(tile), "the station flag did not come across");
+
+        assertEquals(session.getStore().getTileLength(tile), 240, "the length did not come across");
+
+        assertEquals(result.matched, 1, "exactly one point should have matched");
+
+        assertEquals(result.unmatched, Arrays.asList("NotOnThisDiagram"),
+            "a point whose sensor is not on this diagram must be reported, not silently dropped");
+    }
+
+    /**
+     * A square that already has a name keeps it.
+     *
+     * Same rule as importing a configuration: this fills gaps, it does not overwrite somebody's work
+     * with a file's.  Without the assertion a fix that adopted the file wholesale would look correct
+     * against the test above.
+     */
+    @Test
+    public void testLegacyNamesDoNotOverwriteNamesAlreadyEntered() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.setPointName(tile, "The name I typed");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        org.json.JSONObject named = new org.json.JSONObject();
+        named.put("name", "The name in the file");
+        named.put("s88", 11);
+        points.put(named);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyNames result = session.importLegacyNames(legacy);
+
+        assertEquals(session.getStore().getPointName(tile), "The name I typed",
+            "importing overwrote a name that was already there");
+
+        assertEquals(result.skipped, 1, "the skip should be counted and reported");
+    }
 }

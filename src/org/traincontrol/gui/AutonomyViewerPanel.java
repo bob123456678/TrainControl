@@ -896,6 +896,43 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
+     * Reads station names out of a legacy autonomy.json and onto the squares carrying the same sensors.
+     *
+     * The way across for anybody who set their railway up in the graph this replaces: the names and
+     * stations were never derivable from a diagram, so without this they would have to be entered
+     * again, one square at a time.
+     */
+    public void importLegacyNames()
+    {
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+
+        if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        try
+        {
+            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
+
+            AutonomySession.LegacyNames result = session.importLegacyNames(
+                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
+
+            save();
+
+            String unmatched = result.unmatched.isEmpty()
+                ? "" : "\n\n" + String.join(", ", result.unmatched);
+
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyNamesImported",
+                result.matched, result.skipped, result.unmatched.size()) + unmatched);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+        }
+
+        refresh();
+    }
+
+    /**
      * Writes the active configuration out where the user chooses, for another machine to import.
      */
     public void exportConfiguration()

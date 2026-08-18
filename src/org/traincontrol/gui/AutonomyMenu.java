@@ -400,6 +400,21 @@ public class AutonomyMenu extends JMenu
 
         manage.add(importItem);
 
+        // Also always enabled, and for the same reason: this is how a setup that has nothing in it
+        // gets the names somebody already entered once, in the graph this replaces.
+        JMenuItem legacyItem = item(I18n.t("autosetup.ui.menuImportLegacyNames"), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                actions.importLegacyNames();
+
+                ui.autonomyMenuActed();
+            }
+        });
+
+        manage.add(legacyItem);
+
         manage.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
         {
             @Override
@@ -415,7 +430,8 @@ public class AutonomyMenu extends JMenu
         // somebody wants them.
         for (int i = 2; i < manage.getItemCount(); i++)
         {
-            if (manage.getItem(i) == null || manage.getItem(i) == importItem) continue;
+            if (manage.getItem(i) == null || manage.getItem(i) == importItem
+                || manage.getItem(i) == legacyItem) continue;
 
             manage.getItem(i).setEnabled(loaded);
 

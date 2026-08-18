@@ -200,6 +200,106 @@ public class AutonomySession
         return graph;
     }
 
+    /**
+     * What came back from a legacy autonomy.json, so the caller can say what happened.
+     */
+    public static class LegacyNames
+    {
+        /**
+         * Names written onto a square that had none.
+         */
+        public int matched = 0;
+
+        /**
+         * Names left alone because the square already had one.
+         */
+        public int skipped = 0;
+
+        /**
+         * Names whose sensor is not on this diagram, in the order the file gave them.
+         */
+        public final List<String> unmatched = new ArrayList<>();
+    }
+
+    /**
+     * Brings station names, station flags and lengths across from a legacy autonomy.json.
+     *
+     * The graph this replaces held its points by NAME and carried the s88 each one watched.  The
+     * diagram derives its points from the feedback squares themselves, so the two can be matched by
+     * that s88 - it is the one thing both models agree on, and it is what makes a square a point in
+     * the first place.
+     *
+     * This exists because the names were never derivable.  A diagram gives the track's shape; what any
+     * of it is CALLED, and which squares count as stations, are decisions somebody made once and would
+     * otherwise have to make again, square by square, on upgrading.
+     *
+     * Names already here are kept, the same rule importing a configuration follows: this fills gaps,
+     * it does not overwrite somebody's work with a file's.
+     *
+     * Nothing is written to disk - the caller saves, so a bad match can still be cancelled.
+     *
+     * @param legacy the parsed autonomy.json
+     * @return what was matched, skipped and not found
+     */
+    public LegacyNames importLegacyNames(org.json.JSONObject legacy)
+    {
+        LegacyNames result = new LegacyNames();
+
+        org.json.JSONArray points = legacy.optJSONArray("points");
+
+        if (points == null || reducer == null) return result;
+
+        Map<Integer, TileKey> bySensor = new LinkedHashMap<>();
+
+        for (GraphReducer.ReducedPoint point : reducer.getPoints().values())
+        {
+            if (point.getS88() > 0) bySensor.put(point.getS88(), point.getTile());
+        }
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.optJSONObject(i);
+
+            if (point == null) continue;
+
+            String name = point.optString("name", "");
+
+            if (name.trim().isEmpty()) continue;
+
+            int sensor = point.optInt("s88", 0);
+
+            TileKey tile = sensor > 0 ? bySensor.get(sensor) : null;
+
+            // A point with no sensor, or one watching a sensor this diagram does not draw.  Reported
+            // rather than dropped: it is how somebody finds out that a page is missing or excluded.
+            if (tile == null)
+            {
+                result.unmatched.add(name);
+                continue;
+            }
+
+            String existing = store.getPointName(tile);
+
+            if (existing != null && !existing.trim().isEmpty())
+            {
+                result.skipped++;
+                continue;
+            }
+
+            store.setPointName(tile, name);
+
+            if (point.optBoolean("station", false)) store.setStation(tile, true);
+
+            int length = point.optInt("maxTrainLength", 0);
+
+            if (length > 0) store.setTileLength(tile, length);
+
+            result.matched++;
+        }
+
+        return result;
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;
