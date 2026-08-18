@@ -812,6 +812,19 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        // BEFORE anything is derived or loaded, so the pages that cannot be told apart are already out
+        // when the first graph is built - rather than the user meeting a screenful of duplicate-sensor
+        // errors and being told about the exclusions afterwards.
+        List<String> shut = session.excludeRepeatedSensorPages();
+
+        if (!shut.isEmpty())
+        {
+            save();
+
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                shut.size(), String.join(", ", shut)));
+        }
+
         refresh();
 
         // And run it.  Creating a configuration nobody is using leaves the window showing the old one
@@ -944,6 +957,21 @@ public class AutonomyViewerPanel extends JPanel
 
         if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
 
+        // First, because an s88 on two squares is what stops an import deciding anything: those points
+        // are refused and listed, and the user is left to work out that a repeated page is the reason.
+        // Shutting the repeats before reading the file is what makes the import unambiguous instead.
+        //
+        // Here as well as at setup creation, because a setup made before this existed - or one whose
+        // pages have been redrawn since - has never had it applied, and importing is exactly when it
+        // matters.
+        List<String> shut = session.excludeRepeatedSensorPages();
+
+        if (!shut.isEmpty())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                shut.size(), String.join(", ", shut)));
+        }
+
         try
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
@@ -1030,13 +1058,6 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null || name.trim().isEmpty()) return;
 
-        // Only for the FIRST configuration on a layout, which is the moment the setup itself is new.
-        //
-        // The excluded pages are shared, not per-configuration, so doing this every time somebody adds
-        // a configuration would quietly undo pages they had turned back on - and being able to turn
-        // them back on is the whole reason this is a starting point rather than a rule.
-        boolean firstEver = session.getStore().getConfigurationNames().isEmpty();
-
         try
         {
             // as a copy, so a variant that differs only in where the locomotives start does not mean
@@ -1054,20 +1075,6 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         session.getStore().setActiveConfiguration(name.trim());
-
-        if (firstEver)
-        {
-            List<String> shut = session.excludeRepeatedSensorPages();
-
-            if (!shut.isEmpty())
-            {
-                // Said out loud, and naming them.  A page quietly missing from a setup is a puzzle;
-                // a page somebody was told about, with the reason and the way to undo it, is a
-                // decision they can disagree with.
-                JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
-                    shut.size(), String.join(", ", shut)));
-            }
-        }
 
         save();
         refresh();
