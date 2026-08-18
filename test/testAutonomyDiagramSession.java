@@ -1355,4 +1355,97 @@ public class testAutonomyDiagramSession
         assertNull(session.getStore().getPointName(new TileKey("main", 3, 1)),
             "a name was written to the other square anyway");
     }
+
+    /**
+     * A page repeating an earlier page's sensor is left out; the earlier page stays in.
+     *
+     * A layout that draws the same track twice - an overview and a detail view of one yard - gives two
+     * squares the same s88, and nothing downstream can tell which one a train is on.  The reduction
+     * makes a Point of each, so one sensor becomes two destinations, and a legacy import cannot decide
+     * which square a name belongs to.
+     *
+     * Earliest page wins, in the order the layout lists them: it is the one a reader thinks of as the
+     * real one, and it is the only rule that does not depend on which page happens to be open.
+     */
+    @Test
+    public void testAPageRepeatingASensorIsLeftOut() throws Exception
+    {
+        LayoutDiagram first = pageOnDisk();
+
+        LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
+
+        // 11 is pageOnDisk's own sensor; 21 is this page's alone
+        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        repeat.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        repeat.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
+
+        repeat.setPageId("2");
+        repeat.checkBounds();
+
+        session.open(Arrays.asList(first, repeat));
+
+        List<String> shut = session.excludeRepeatedSensorPages();
+
+        assertEquals(shut, Arrays.asList("repeat"),
+            "the page repeating an earlier sensor should have been the one left out");
+
+        assertTrue(session.getStore().getExcludedPages().contains("repeat"),
+            "the repeating page is not actually excluded");
+
+        assertFalse(session.getStore().getExcludedPages().contains("main"),
+            "the earlier page was excluded, which is the wrong one of the two");
+    }
+
+    /**
+     * Pages that share nothing are all left in.
+     *
+     * The precondition that keeps the test above honest: a rule that excluded every page after the
+     * first would satisfy it and be useless.
+     */
+    @Test
+    public void testPagesWithDistinctSensorsAreAllKept() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk(), secondPage()));
+
+        assertTrue(session.excludeRepeatedSensorPages().isEmpty(),
+            "nothing repeats between these pages, so nothing should have been shut");
+
+        assertTrue(session.getStore().getExcludedPages().isEmpty(),
+            "a page was excluded even though it shares no sensor with any other");
+    }
+
+    /**
+     * Running again over a settled setup changes nothing.
+     *
+     * Worth pinning because the excluded pages are SHARED, not per-configuration: anything here that
+     * re-asserted itself would fight the user, and the page checkboxes are the whole point.
+     *
+     * Note what this does NOT promise.  A page the user deliberately switches back on WOULD be shut
+     * again by another run - the method has no record of having been overruled, and inventing one to
+     * carry that would be a second source of truth beside the checkbox itself.  What protects that
+     * choice is the caller: this runs only when the first configuration on a layout is created, which
+     * is the one moment there are no decisions to overrule.  If a second call site ever appears, this
+     * is the test whose comment explains why it must not.
+     */
+    @Test
+    public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
+    {
+        LayoutDiagram first = pageOnDisk();
+
+        LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
+        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        repeat.setPageId("2");
+        repeat.checkBounds();
+
+        session.open(Arrays.asList(first, repeat));
+
+        assertEquals(session.excludeRepeatedSensorPages(), Arrays.asList("repeat"),
+            "precondition: the first run shuts the repeating page");
+
+        assertTrue(session.excludeRepeatedSensorPages().isEmpty(),
+            "a second run reported shutting something that was already shut");
+
+        assertEquals(session.getStore().getExcludedPages().size(), 1,
+            "a second run changed which pages are excluded");
+    }
 }

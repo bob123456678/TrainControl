@@ -506,6 +506,70 @@ public class AutonomySession
         return filled;
     }
 
+    /**
+     * Shuts any page that repeats a sensor an earlier page already carries.
+     *
+     * A layout whose pages draw the same track twice - an overview and a detail view of one yard, say -
+     * gives two squares the same s88, and nothing downstream can tell which one a train is standing on.
+     * The reduction makes a Point of each, so the same sensor becomes two destinations; a legacy import
+     * cannot decide which square a name belongs to and refuses it; and the checks report the duplicate
+     * on every page it appears on.
+     *
+     * Earliest page wins, in the order the layout lists them, because that is the one a reader thinks
+     * of as the real one and the only rule that does not depend on which page happens to be open.
+     * A page that is shut does NOT contribute its sensors to what counts as seen: the next page
+     * repeating them is then repeating the page that is still in play, not one nobody is using.
+     *
+     * Only ever run when a setup is brand new - see the caller.  It is a starting point, not a policy:
+     * the page checkboxes are still there, and turning one back on must not be undone by this the next
+     * time a configuration is added.
+     *
+     * @return the pages this shut, in the order they appear
+     */
+    public List<String> excludeRepeatedSensorPages()
+    {
+        Set<Integer> seen = new LinkedHashSet<>();
+
+        List<String> shut = new ArrayList<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (store.getExcludedPages().contains(page.getName())) continue;
+
+            Set<Integer> here = new LinkedHashSet<>();
+
+            boolean repeats = false;
+
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component == null || !component.isFeedback()) continue;
+
+                int sensor = component.getRawAddress();
+
+                if (sensor <= 0) continue;
+
+                if (seen.contains(sensor)) repeats = true;
+
+                here.add(sensor);
+            }
+
+            if (repeats)
+            {
+                store.setPageExcluded(page.getName(), true);
+
+                shut.add(page.getName());
+
+                continue;
+            }
+
+            seen.addAll(here);
+        }
+
+        if (!shut.isEmpty()) rebuild();
+
+        return shut;
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;

@@ -1005,6 +1005,13 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null || name.trim().isEmpty()) return;
 
+        // Only for the FIRST configuration on a layout, which is the moment the setup itself is new.
+        //
+        // The excluded pages are shared, not per-configuration, so doing this every time somebody adds
+        // a configuration would quietly undo pages they had turned back on - and being able to turn
+        // them back on is the whole reason this is a starting point rather than a rule.
+        boolean firstEver = session.getStore().getConfigurationNames().isEmpty();
+
         try
         {
             // as a copy, so a variant that differs only in where the locomotives start does not mean
@@ -1022,6 +1029,20 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         session.getStore().setActiveConfiguration(name.trim());
+
+        if (firstEver)
+        {
+            List<String> shut = session.excludeRepeatedSensorPages();
+
+            if (!shut.isEmpty())
+            {
+                // Said out loud, and naming them.  A page quietly missing from a setup is a puzzle;
+                // a page somebody was told about, with the reason and the way to undo it, is a
+                // decision they can disagree with.
+                JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                    shut.size(), String.join(", ", shut)));
+            }
+        }
 
         save();
         refresh();
