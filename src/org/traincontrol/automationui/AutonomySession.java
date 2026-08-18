@@ -438,6 +438,30 @@ public class AutonomySession
                             extras.put(AutonomyBuilder.LOCOMOTIVE,
                                 new org.json.JSONObject(standing.toString()));
 
+                            // And which way it is pointing, chosen at random from this square's
+                            // copies.
+                            //
+                            // The old graph had one Point per sensor and no notion of facing, so the
+                            // file cannot say - and without one every imported locomotive lands on
+                            // whichever copy the build walked in by first, which on a real layout
+                            // means a yard full of trains all facing the same arbitrary way.
+                            //
+                            // Not legality-checked, unlike placing one by hand on the diagram: that
+                            // asks the RUNNING graph which copies can be left, and during an import
+                            // there is no running graph to ask.  A copy that cannot be left is
+                            // reported by the checks, which is the same answer arrived at later.
+                            if (getFacing(tile) == null)
+                            {
+                                java.util.List<Side> ways =
+                                    new ArrayList<>(facingsFor(tile).values());
+
+                                if (!ways.isEmpty())
+                                {
+                                    setFacing(tile,
+                                        ways.get(new java.util.Random().nextInt(ways.size())));
+                                }
+                            }
+
                             result.placed++;
                         }
                     }

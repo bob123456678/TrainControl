@@ -1,7 +1,6 @@
 package org.traincontrol.gui;
 
 import java.util.List;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -167,48 +166,36 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         && !ui.isAutonomyBusy()
                         && !ui.getActiveLoc().equals(locomotive))
                     {
-                        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings =
-                            session == null ? new java.util.LinkedHashMap<String,
-                                org.traincontrol.automationui.TilePorts.Side>()
-                                : session.facingsFor(station);
+                        // Chosen for them, from the ways a train could actually leave.
+                        //
+                        // Asking was tried and is the wrong question here: on the diagram a user
+                        // is pointing at a platform, not at one of the several Points that platform
+                        // became, and the sides mean nothing at that moment.  Any legal copy will
+                        // do - autonomy drives the train out and learns the real facing from where
+                        // it goes - so one is taken at random, and choosing a direction stays in
+                        // the autonomy editor, where directions are what the reader is looking at.
+                        //
+                        // And if NO copy can leave, placing here is placing a train that cannot
+                        // move.  Refused with a reason, rather than accepted and reported much
+                        // later as a setup that will not run.
+                        final java.util.List<String> usable = placeableCopies();
 
-                        // One copy is one answer, so there is nothing to ask
-                        if (facings.size() <= 1)
+                        menuItem = new JMenuItem(
+                            I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
+                        );
+
+                        menuItem.setEnabled(!usable.isEmpty());
+
+                        if (usable.isEmpty())
                         {
-                            menuItem = new JMenuItem(
-                                I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
-                            );
-
-                            final String only = facings.isEmpty()
-                                ? current.getName() : facings.keySet().iterator().next();
-
-                            menuItem.addActionListener(event -> placeFacing(only, null));
-
-                            add(menuItem);
+                            menuItem.setToolTipText(I18n.t("layout.ui.hintNoWayOut"));
                         }
                         else
                         {
-                            JMenu placing = new JMenu(
-                                I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName()));
-
-                            for (java.util.Map.Entry<String,
-                                org.traincontrol.automationui.TilePorts.Side> copy
-                                    : facings.entrySet())
-                            {
-                                final String name = copy.getKey();
-                                final org.traincontrol.automationui.TilePorts.Side facing =
-                                    copy.getValue();
-
-                                JMenuItem where = new JMenuItem(
-                                    I18n.f("layout.ui.menuPlaceFacing", facing.toString()));
-
-                                where.addActionListener(event -> placeFacing(name, facing));
-
-                                placing.add(where);
-                            }
-
-                            add(placing);
+                            menuItem.addActionListener(event -> placeSomewhereLegal(usable));
                         }
+
+                        add(menuItem);
                     }
 
                     if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
@@ -297,6 +284,53 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * @param pointName the copy to place on
      * @param facing which way it is pointing, or null when the square has only one copy
      */
+    /**
+     * The copies of this square a train could actually be driven away from.
+     *
+     * A copy with no outgoing edge is one the split made arrivable and not leavable.  Placing there
+     * is placing a train that cannot move, which autonomy reports much later as a configuration
+     * that will not run.
+     *
+     * @return the point names, empty when nothing here can move
+     */
+    private java.util.List<String> placeableCopies()
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        if (session == null || !ui.getModel().hasAutoLayout()) return out;
+
+        for (String name : session.facingsFor(station).keySet())
+        {
+            Point copy = ui.getModel().getAutoLayout().getPoint(name);
+
+            if (copy == null) continue;
+
+            java.util.List<Edge> away = ui.getModel().getAutoLayout().getNeighbors(copy);
+
+            if (away != null && !away.isEmpty()) out.add(name);
+        }
+
+        return out;
+    }
+
+    /**
+     * Places the active locomotive on one of the copies it could leave from, chosen at random.
+     *
+     * At random rather than always the first: the first is whichever side the build happened to walk
+     * in by, which is stable but arbitrary, and placing several trains along one platform would face
+     * them all the same way for no reason a reader could see.
+     *
+     * @param usable the copies a train can be driven away from
+     */
+    private void placeSomewhereLegal(java.util.List<String> usable)
+    {
+        if (usable.isEmpty()) return;
+
+        String name = usable.get(new java.util.Random().nextInt(usable.size()));
+
+        placeFacing(name, session == null ? null : session.facingsFor(station).get(name));
+    }
+
     private void placeFacing(String pointName,
         org.traincontrol.automationui.TilePorts.Side facing)
     {

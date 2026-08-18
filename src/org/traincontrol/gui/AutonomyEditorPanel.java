@@ -1119,6 +1119,29 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * A tooltip that wraps instead of running off the screen.
+     *
+     * Swing lays a tooltip out on one line however long it is, and these explain what a setting MEANS
+     * rather than naming it - so the most useful ones were the widest, and the widest were the ones
+     * that ran past the edge of the display.  The width is in pixels because that is the only unit the
+     * renderer here understands.
+     *
+     * @param text
+     * @return the same text, wrapped
+     */
+    static String wrapped(String text)
+    {
+        if (text == null || text.trim().isEmpty()) return text;
+
+        // Already somebody's own markup: left exactly as it is
+        if (text.trim().toLowerCase().startsWith("<html")) return text;
+
+        return "<html><body style='width: 320px'>"
+            + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            + "</body></html>";
+    }
+
+    /**
      * @param tooltipKey the graph window's own tooltip for this setting, so the explanation travels
      *        with the option rather than being lost when the dialog that carried it went
      */
@@ -1127,7 +1150,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         final javax.swing.JCheckBoxMenuItem menuItem = new javax.swing.JCheckBoxMenuItem(text, on);
 
-        if (tooltipKey != null) menuItem.setToolTipText(I18n.t(tooltipKey));
+        if (tooltipKey != null) menuItem.setToolTipText(wrapped(I18n.t(tooltipKey)));
 
         menuItem.addActionListener(e ->
         {
@@ -1349,7 +1372,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JRadioButtonMenuItem menuItem = new javax.swing.JRadioButtonMenuItem(text, on);
 
-        if (tooltipKey != null) menuItem.setToolTipText(I18n.t(tooltipKey));
+        if (tooltipKey != null) menuItem.setToolTipText(wrapped(I18n.t(tooltipKey)));
 
         group.add(menuItem);
 
