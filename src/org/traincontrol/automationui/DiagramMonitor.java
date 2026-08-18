@@ -287,8 +287,16 @@ public class DiagramMonitor
 
             lay(overlays, run, states);
 
-            // and the locomotive itself, at whichever point it has most recently reached
-            Point at = layout.getLocomotiveLocation(entry.getKey());
+            // and the locomotive itself, at the point it has most recently reached.
+            //
+            // getLocomotiveLocation returns an ARBITRARY one of the several points a running train
+            // reserves at once (the reservation legitimately holds them all), so the marker could jump
+            // to a point the train has not reached yet.  The milestones are in the order they were
+            // reached, so the last is where the train actually is; getLocomotiveLocation is the
+            // fallback for a stationary train, which reserves only one point.
+            Point at = milestones != null && !milestones.isEmpty()
+                ? milestones.get(milestones.size() - 1)
+                : layout.getLocomotiveLocation(entry.getKey());
 
             if (at != null) markTrain(overlays, at);
         }
