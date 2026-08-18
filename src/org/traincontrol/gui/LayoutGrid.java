@@ -156,6 +156,27 @@ public class LayoutGrid
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
                     ui == null ? null : ui.autonomyCaptionAt(square);
 
+                // Debug only, and only for the first square of a page, so it costs one line per page.
+                //
+                // Three readings of this path have each explained the symptom and each been wrong, so
+                // it says out loud what it actually had to work with: whether there was a session at
+                // all when the grid was built, how many captions it knew about, and whether this page
+                // is one autonomy has been told to ignore.  Between them those three separate every
+                // remaining explanation for a caption that draws as ordinary text.
+                if (ui != null && ui.getModel() != null && ui.getModel().isDebug()
+                    && x == 0 && y == 0)
+                {
+                    org.traincontrol.automationui.AutonomySession diag = ui.getAutonomySession();
+
+                    ui.getModel().log("[grid] page=" + layout.getName()
+                        + " edit=" + layout.getEdit()
+                        + " session=" + (diag == null ? "NULL" : "present")
+                        + " captions=" + (diag == null ? -1 : diag.getCaptions().size())
+                        + " excluded=" + ui.isPageExcludedFromAutonomy(layout.getName())
+                        + " firstSquare=" + square
+                        + " captionedHere=" + captioned);
+                }
+
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;

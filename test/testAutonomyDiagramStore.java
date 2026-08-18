@@ -928,4 +928,74 @@ public class testAutonomyDiagramStore
             delete(second);
         }
     }
+
+    /**
+     * A caption survives being written to disk and read back under the page's id.
+     *
+     * Captions are the only thing in the setup whose KEY and VALUE are both squares, so they are the
+     * only thing that goes through translateTileMap and untranslateTileMap - a different pair from the
+     * ones every other field uses, and therefore a pair no other test exercises.  Everything else here
+     * would keep passing if these two disagreed, and a caption that does not resolve after a reload is
+     * indistinguishable, on screen, from one that was never saved.
+     */
+    @Test
+    public void testACaptionResolvesAfterAReloadUnderPageIds() throws IOException
+    {
+        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
+        ids.put("1 - Main", "1");
+
+        store.setPageIds(ids);
+
+        TileKey station = new TileKey("1 - Main", 4, 7);
+        TileKey where = new TileKey("1 - Main", 5, 7);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Hauptbahnhof");
+        store.setCaption(where, station);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(ids);
+        reloaded.load();
+
+        assertEquals(reloaded.getCaptionTarget(where), station,
+            "the caption does not resolve by page name after a reload, so the diagram has nothing to "
+                + "draw even though the file plainly holds it");
+
+        assertEquals(reloaded.captionsFor(station), java.util.Collections.singleton(where),
+            "the station cannot find its own caption after a reload");
+    }
+
+    /**
+     * And a caption placed on the station's own square, which is what an import leaves.
+     *
+     * The same square on both sides of the entry is the shape most likely to be mangled by a
+     * translation that treats keys and values differently.
+     */
+    @Test
+    public void testACaptionOnItsOwnStationResolvesAfterAReload() throws IOException
+    {
+        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
+        ids.put("1 - Main", "1");
+
+        store.setPageIds(ids);
+
+        TileKey station = new TileKey("1 - Main", 4, 7);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Hauptbahnhof");
+        store.setCaption(station, station);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(ids);
+        reloaded.load();
+
+        assertEquals(reloaded.getCaptionTarget(station), station,
+            "a station captioned on its own square does not resolve after a reload");
+    }
 }
