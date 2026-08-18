@@ -379,6 +379,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         List<List<Edge>> out = new java.util.ArrayList<>();
 
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+
         for (List<Edge> path : paths)
         {
             if (path == null || path.isEmpty()) continue;
@@ -387,6 +389,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             String to = path.get(path.size() - 1).getEnd().getName();
 
             if (session.sameSquare(from, to)) continue;
+
+            // One entry per STATION, not per copy.  getPossiblePaths is asked for unique
+            // destinations and answers per Point, so a station a train could reach facing either way
+            // appeared twice - and once the copies stopped being named apart, twice identically.
+            String square = String.valueOf(session.tileForPointName(
+                path.get(path.size() - 1).getEnd().getName()));
+
+            if (!seen.add(square)) continue;
 
             out.add(path);
         }

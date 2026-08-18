@@ -260,7 +260,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 current.getName(),
                                 false
                             );
+
+                            // The setup as well, or the next build puts the train back: the
+                            // configuration still records it standing here, and the running layout is
+                            // rebuilt from the configuration.  The facing goes with it - it belonged
+                            // to that train, not to the square.
+                            if (session != null) session.clearLocomotive(station);
+
                             ui.repaintAutoLocList(false);
+
+                            // The label still says the locomotive's name until something rewrites it
+                            ui.updateVisiblePoints();
                         });
 
                         add(menuItem); 
@@ -359,12 +369,22 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         List<List<Edge>> out = new java.util.ArrayList<>();
 
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+
         for (List<Edge> path : paths)
         {
             if (path == null || path.isEmpty()) continue;
 
             if (session.sameSquare(path.get(0).getStart().getName(),
                 path.get(path.size() - 1).getEnd().getName())) continue;
+
+            // One entry per STATION, not per copy.  getPossiblePaths is asked for unique
+            // destinations and answers per Point, so a station a train could reach facing either way
+            // appeared twice - and once the copies stopped being named apart, twice identically.
+            String square = String.valueOf(session.tileForPointName(
+                path.get(path.size() - 1).getEnd().getName()));
+
+            if (!seen.add(square)) continue;
 
             out.add(path);
         }
@@ -452,6 +472,16 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         ui.getModel().getAutoLayout().moveLocomotive(
             ui.getActiveLoc().getName(), pointName, false);
+
+        if (session != null)
+        {
+            // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
+            // where it was; the configuration was never told, so the locomotive kept its old placement
+            // too - and the next build emitted it at two Points, which fromJSON answers by
+            // invalidating the whole layout.  Every path was then refused as "configuration is
+            // invalid", from a placement made minutes earlier.
+            session.placeLocomotive(station, ui.getActiveLoc().getName());
+        }
 
         if (facing != null && session != null)
         {

@@ -2175,4 +2175,81 @@ public class testAutonomyDiagramSession
         assertEquals(session.getCaptionTarget(caption), station,
             "deleting an unrelated square disturbed a caption");
     }
+
+    /**
+     * A locomotive is recorded standing in one place, never two.
+     *
+     * The running layout enforces that when a train is moved - it leaves where it was - but the
+     * CONFIGURATION was never told, so a locomotive placed by hand on one square kept its old
+     * placement on another.  Nothing looked wrong until the next build, which emitted the same
+     * locomotive at two Points; fromJSON answers that by invalidating the whole layout, and from then
+     * on every path was refused as "configuration is invalid" - from a placement made minutes before.
+     *
+     * Found in a real exported graph, with 065 001-0 DB standing at both BottomMainA and BottomMainC.
+     */
+    @Test
+    public void testALocomotiveIsRecordedInOnePlaceOnly() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey was = new TileKey("main", 1, 1);
+        TileKey now = new TileKey("main", 4, 1);
+
+        assertTrue(session.placeLocomotive(was, "065 001-0 DB"), "the first placement did nothing");
+
+        // Its settings, which have to travel with it
+        session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE);
+
+        ((org.json.JSONObject) session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE))
+            .put("speed", 42);
+
+        assertTrue(session.placeLocomotive(now, "065 001-0 DB"), "the move did nothing");
+
+        assertNull(session.getPointProperty(was, AutonomyBuilder.LOCOMOTIVE),
+            "the locomotive is still recorded where it was, so the next build emits it twice and "
+                + "invalidates the whole layout");
+
+        org.json.JSONObject standing =
+            (org.json.JSONObject) session.getPointProperty(now, AutonomyBuilder.LOCOMOTIVE);
+
+        assertNotNull(standing, "the locomotive is not recorded where it was put");
+
+        assertEquals(standing.getInt("speed"), 42,
+            "the placement was rebuilt rather than moved, so its settings were lost");
+    }
+
+    /**
+     * Taking a locomotive off forgets it, and forgets which way it was pointing.
+     *
+     * The configuration is what the next build reads, so a placement left behind puts the train back.
+     * The facing goes with it because it belonged to that train, not to the square - otherwise the
+     * next locomotive placed there inherits the last one's direction without being asked.
+     */
+    @Test
+    public void testTakingALocomotiveOffForgetsItAndItsFacing() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        TileKey tile = new TileKey("main", 1, 1);
+
+        session.placeLocomotive(tile, "SM31-108");
+        session.setFacing(tile, org.traincontrol.automationui.TilePorts.Side.E);
+
+        assertTrue(session.clearLocomotive(tile), "there was nothing to forget");
+
+        assertNull(session.getPointProperty(tile, AutonomyBuilder.LOCOMOTIVE),
+            "the next build would put the train straight back");
+
+        assertNull(session.getFacing(tile), "the square kept a direction belonging to a train that has gone");
+    }
 }

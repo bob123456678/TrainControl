@@ -744,7 +744,20 @@ public class Layout
     public void invalidate()
     {
         this.isValid = false;
+
+        if (this.invalidReason == null) this.invalidReason = "(no reason was recorded)";
     }
+
+    /**
+     * Why this layout was invalidated, kept apart from lastError.
+     *
+     * lastError is written by every path that fails for any reason - a busy edge, an excluded
+     * locomotive, a destination already occupied - so by the time somebody reads "the configuration is
+     * invalid" it holds whatever went wrong most recently, which is usually the failed path they were
+     * looking at rather than the invalidation from minutes earlier.  Printing it beside the refusal
+     * was worse than printing nothing: it looked like an explanation and named the wrong thing.
+     */
+    private String invalidReason;
     
     /**
      * Marks the layout state as invalid
@@ -754,8 +767,17 @@ public class Layout
     public void invalidate(String message)
     {
         this.isValid = false;
+        this.invalidReason = message;
         Layout.lastError = message;
         this.control.log(message);
+    }
+
+    /**
+     * @return why this layout was invalidated, or null while it is still valid
+     */
+    public String getInvalidReason()
+    {
+        return this.invalidReason;
     }
     
     /**
@@ -3150,15 +3172,13 @@ public class Layout
         // Sanity check
         if (!this.isValid())
         {
-            // With the reason, which is held from whenever the invalidation happened.  Without it this
-            // said only that something was wrong, and the message that explained it had scrolled past
-            // - so the report that reaches anybody is "it says it is invalid", and the answer is a
-            // search through the log for a line nobody knew to keep.
+            // With the reason THIS layout recorded when it was invalidated - not lastError, which by
+            // now holds whatever path failed most recently and named the wrong thing convincingly.
             this.control.logf("autolayout.errorConfigurationInvalidMustReload");
 
-            if (Layout.lastError != null && !Layout.lastError.trim().isEmpty())
+            if (this.invalidReason != null)
             {
-                this.control.log(Layout.lastError);
+                this.control.log(this.invalidReason);
             }
 
             return false;

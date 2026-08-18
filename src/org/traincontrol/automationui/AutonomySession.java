@@ -759,6 +759,119 @@ public class AutonomySession
         return ImportFormat.UNKNOWN;
     }
 
+    /**
+     * Records that a locomotive is standing on a square, and that it is standing nowhere else.
+     *
+     * One locomotive, one place.  The running layout enforces that when a train is moved - it leaves
+     * where it was - but the CONFIGURATION was never told, so a locomotive placed by hand on one
+     * square kept its old placement on another.  Nothing looked wrong until the next build, which
+     * emitted the same locomotive at two Points; fromJSON answers that by invalidating the whole
+     * layout, and from then on every path was refused as "configuration is invalid".
+     *
+     * The placement OBJECT is moved rather than rebuilt, so the speed, the arrival and departure
+     * functions and the train length recorded with it travel to the new square.
+     *
+     * @param tile where it is now, or null to record only that it has been taken off
+     * @param locomotive the name, as the locomotive database spells it
+     * @return true when something was changed
+     */
+    public boolean placeLocomotive(TileKey tile, String locomotive)
+    {
+        if (locomotive == null || locomotive.trim().isEmpty()) return false;
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return false;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return false;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        boolean changed = false;
+
+        // Whatever was recorded about it wherever it was, so the settings travel with the locomotive
+        org.json.JSONObject carried = null;
+
+        for (String key : new LinkedHashSet<>(points.keySet()))
+        {
+            org.json.JSONObject extras = points.optJSONObject(key);
+
+            if (extras == null) continue;
+
+            org.json.JSONObject standing = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            if (standing == null) continue;
+
+            if (!locomotive.equals(standing.optString("name", null))) continue;
+
+            if (tile != null && key.equals(tile.toString())) continue;
+
+            if (carried == null) carried = new org.json.JSONObject(standing.toString());
+
+            extras.remove(AutonomyBuilder.LOCOMOTIVE);
+
+            // The facing belonged to the train that was standing there, not to the square
+            extras.remove(AutonomyBuilder.FACING);
+
+            changed = true;
+        }
+
+        if (tile != null)
+        {
+            org.json.JSONObject extras = configurationExtras(tile);
+
+            if (extras != null && !extras.has(AutonomyBuilder.LOCOMOTIVE))
+            {
+                if (carried == null)
+                {
+                    carried = new org.json.JSONObject();
+                    carried.put("name", locomotive);
+                }
+
+                extras.put(AutonomyBuilder.LOCOMOTIVE, carried);
+
+                changed = true;
+            }
+        }
+
+        if (changed) touched();
+
+        return changed;
+    }
+
+    /**
+     * Forgets that anything is standing on a square.
+     *
+     * @param tile
+     * @return true when there was something to forget
+     */
+    public boolean clearLocomotive(TileKey tile)
+    {
+        if (tile == null) return false;
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return false;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return false;
+
+        org.json.JSONObject extras =
+            configuration.getJSONObject("points").optJSONObject(tile.toString());
+
+        if (extras == null || !extras.has(AutonomyBuilder.LOCOMOTIVE)) return false;
+
+        extras.remove(AutonomyBuilder.LOCOMOTIVE);
+        extras.remove(AutonomyBuilder.FACING);
+
+        touched();
+
+        return true;
+    }
+
     public GraphReducer getReducer()
     {
         return reducer;
