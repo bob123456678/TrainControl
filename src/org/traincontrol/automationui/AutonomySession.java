@@ -117,6 +117,64 @@ public class AutonomySession
     }
 
     /**
+     * Every caption on one page, as a snapshot something else can hold and hand back.
+     *
+     * For the track diagram editor's undo.  A caption belongs to the setup rather than to the tile, so
+     * it does not ride the editor's snapshot of components - and the editor moves and deletes captions
+     * as tiles are moved and deleted, which left Ctrl+Z restoring the tile and not the name on it.
+     *
+     * By page, because that is what an editor session is about, and because restoring captions for
+     * squares on pages nobody was editing would undo somebody else's work.
+     *
+     * @param page the page name
+     * @return caption square to station square, for that page only
+     */
+    public Map<TileKey, TileKey> captionsOnPage(String page)
+    {
+        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+
+        if (page == null) return out;
+
+        for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
+        {
+            if (page.equals(caption.getKey().getPage())) out.put(caption.getKey(), caption.getValue());
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts a page's captions back the way a snapshot found them.
+     *
+     * Everything currently on the page goes first, so a caption ADDED since the snapshot is removed
+     * rather than left beside the ones being restored.  Written through the store directly: the
+     * one-station-one-caption rule in setCaption would fight a wholesale restore, and a snapshot
+     * already satisfies it by construction - it is a state this session was in.
+     *
+     * @param page the page name
+     * @param captions what captionsOnPage returned earlier
+     */
+    public void restoreCaptionsOnPage(String page, Map<TileKey, TileKey> captions)
+    {
+        if (page == null) return;
+
+        for (TileKey where : captionsOnPage(page).keySet())
+        {
+            store.setCaption(where, null);
+        }
+
+        if (captions != null)
+        {
+            for (Map.Entry<TileKey, TileKey> caption : captions.entrySet())
+            {
+                store.setCaption(caption.getKey(), caption.getValue());
+            }
+        }
+
+        touched();
+    }
+
+    /**
      * Drops arrival restrictions naming sides the square no longer has.
      *
      * getBarredArrivals hides them from every reader, so this is only about the file: left in it, a

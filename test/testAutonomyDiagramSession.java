@@ -2651,6 +2651,95 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A page's captions can be taken away and put back exactly.
+     *
+     * This is what the track diagram editor's undo holds on to.  A caption belongs to the setup rather
+     * than to the tile - which is what stops a rename rewriting every page - so it cannot ride in the
+     * editor's snapshot of components beside it, and without a snapshot of its own Ctrl+Z brought a
+     * deleted platform back with no name on it.
+     */
+    @Test
+    public void testAPagesCaptionsRoundTripThroughASnapshot() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey plaque = new TileKey("main", 3, 2);
+
+        session.setStation(station, true);
+        session.setCaption(plaque, station);
+
+        java.util.Map<TileKey, TileKey> before = session.captionsOnPage("main");
+
+        assertEquals(before.get(plaque), station, "precondition: the plaque is up");
+
+        // what deleting the captioned square does
+        session.forgetCaptionsAt(station);
+
+        assertNull(session.getCaptionTarget(plaque), "precondition: and then it is not");
+
+        session.restoreCaptionsOnPage("main", before);
+
+        assertEquals(session.getCaptionTarget(plaque), station,
+            "undo brought the platform back without its name");
+    }
+
+    /**
+     * Restoring a snapshot removes captions added since it was taken.
+     *
+     * Putting the old ones back is only half of it: a caption placed after the snapshot has to go, or
+     * undo leaves the page with both, which is a state the user was never in.
+     */
+    @Test
+    public void testRestoringASnapshotRemovesWhatWasAddedAfterIt() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey first = new TileKey("main", 3, 2);
+        TileKey later = new TileKey("main", 3, 0);
+
+        session.setStation(station, true);
+        session.setCaption(first, station);
+
+        java.util.Map<TileKey, TileKey> before = session.captionsOnPage("main");
+
+        session.setCaption(later, station);
+
+        assertNull(session.getCaptionTarget(first),
+            "precondition: one station, one caption - the second move took the first down");
+
+        session.restoreCaptionsOnPage("main", before);
+
+        assertEquals(session.getCaptionTarget(first), station);
+
+        assertNull(session.getCaptionTarget(later),
+            "the caption added after the snapshot survived the undo");
+    }
+
+    /**
+     * A snapshot of one page leaves the other pages alone.
+     *
+     * The editor works on one page, so restoring every caption in the setup would undo work done
+     * somewhere it was never looking.
+     */
+    @Test
+    public void testACaptionSnapshotIsPerPage() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setCaption(new TileKey("main", 3, 2), station);
+
+        assertTrue(session.captionsOnPage("elsewhere").isEmpty(),
+            "a page with no captions answered with somebody else's");
+
+        assertEquals(session.captionsOnPage("main").size(), 1);
+    }
+
+    /**
      * Demoting a station takes its name plaque with it.
      *
      * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption

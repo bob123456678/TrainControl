@@ -89,6 +89,51 @@ public class LayoutEditor extends PositionAwareJFrame
     Deque<List<LayoutDiagramComponent>> previousLayoutComponents = new ConcurrentLinkedDeque<>();
     Deque<List<LayoutDiagramComponent>> previousLayoutComponentsRedo = new ConcurrentLinkedDeque<>();
 
+    /**
+     * The names on the squares, one snapshot per component snapshot.
+     *
+     * A caption belongs to the setup rather than to the tile - which is what stops a rename having to
+     * rewrite every page - so it cannot ride in the component snapshot beside it.  Kept in step with
+     * that stack instead: pushed together, popped together, and the same size at every moment.
+     *
+     * Only this page's captions.  Restoring the others would undo edits made somewhere this editor was
+     * never looking.
+     */
+    Deque<java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>> previousCaptions =
+        new ConcurrentLinkedDeque<>();
+
+    Deque<java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>> previousCaptionsRedo =
+        new ConcurrentLinkedDeque<>();
+
+    /**
+     * What the setup currently says about this page's captions.
+     *
+     * @return caption square to station square, or an empty map when there is no setup to ask
+     */
+    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captionSnapshot()
+    {
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        return autonomy == null
+            ? new java.util.LinkedHashMap<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>()
+            : autonomy.captionsOnPage(layout.getName());
+    }
+
+    /**
+     * Puts this page's captions back as a snapshot found them.
+     *
+     * @param captions a snapshot, or null to do nothing - a null means the stacks disagreed, and
+     *        leaving the captions alone is a better answer than clearing them
+     */
+    private void restoreCaptions(java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captions)
+    {
+        if (captions == null) return;
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy != null) autonomy.restoreCaptionsOnPage(layout.getName(), captions);
+    }
+
     public static final int MAX_UNDO_HISTORY = 100;
     
     // Repaint state
@@ -1751,7 +1796,15 @@ public class LayoutEditor extends PositionAwareJFrame
         }
                 
         this.previousLayoutComponents.push(deepCopyLayout());
+        this.previousCaptions.push(captionSnapshot());
+
+        while (this.previousCaptions.size() > this.previousLayoutComponents.size())
+        {
+            this.previousCaptions.removeLast();
+        }
+
         this.previousLayoutComponentsRedo.clear();
+        this.previousCaptionsRedo.clear();
     }
     
     /**
@@ -1765,6 +1818,20 @@ public class LayoutEditor extends PositionAwareJFrame
             {         
                 List<LayoutDiagramComponent> history = this.previousLayoutComponents.pop();
                 this.previousLayoutComponentsRedo.push(deepCopyLayout());
+
+                // The names on the squares travel with the squares.
+                //
+                // A caption belongs to the SETUP rather than to the tile - that is what stops a rename
+                // rewriting every page - so it does not ride the component snapshot.  But this editor
+                // moves and deletes captions as it moves and deletes tiles, so without this Ctrl+Z
+                // brought a deleted platform back with no name on it, or moved a tile back and left
+                // its name at the square it had been dragged to.
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileGraph.TileKey> captionsBefore = captionSnapshot();
+
+                restoreCaptions(this.previousCaptions.isEmpty() ? null : this.previousCaptions.pop());
+
+                this.previousCaptionsRedo.push(captionsBefore);
                 
                 // Delete all existing components
                 for (LayoutDiagramComponent lc : this.layout.getAll())
@@ -1798,11 +1865,24 @@ public class LayoutEditor extends PositionAwareJFrame
             {         
                 List<LayoutDiagramComponent> history = this.previousLayoutComponentsRedo.pop();
                 this.previousLayoutComponents.push(deepCopyLayout());
+
+                // The captions go forward with it, exactly as they came back
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captionsBefore = captionSnapshot();
+
+                restoreCaptions(this.previousCaptionsRedo.isEmpty()
+                    ? null : this.previousCaptionsRedo.pop());
+
+                this.previousCaptions.push(captionsBefore);
                 
                 // Enforce undo limit
                 if (this.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
                 {
                     this.previousLayoutComponents.removeLast();
+                }
+
+                while (this.previousCaptions.size() > this.previousLayoutComponents.size())
+                {
+                    this.previousCaptions.removeLast();
                 }
                 
                 // Delete all existing components
