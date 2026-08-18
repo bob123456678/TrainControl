@@ -1073,6 +1073,30 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             
             layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
+
+            // Whatever autonomy had written on that square goes with it.
+            //
+            // A caption is not part of the diagram - it belongs to the setup, keyed by the square
+            // it sits on - so moving the tile underneath one used to leave it behind, pointing at
+            // track that is no longer there.  On a layout being rearranged that is every label,
+            // replaced by hand, which is most of the reason not to rearrange one.
+            //
+            // Only on a MOVE.  Copying a tile does not copy what was written about the square it
+            // came from: two squares cannot both be where one station name is shown.
+            if (move && lastX >= 0 && lastY >= 0)
+            {
+                org.traincontrol.automationui.AutonomySession autonomy =
+                    parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.moveCaption(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), lastX, lastY),
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), getX(destLabel), getY(destLabel)));
+                }
+            }
             
             // Avoid clearing if we are placing new items
             if (lastX != -1 || lastY != -1)

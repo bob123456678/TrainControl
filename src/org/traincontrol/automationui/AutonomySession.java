@@ -802,8 +802,47 @@ public class AutonomySession
      */
     public void setCaption(TileKey captionTile, TileKey stationTile)
     {
+        // One station, one caption - decided HERE rather than at each door.
+        //
+        // There are three ways to caption a station: place it automatically, choose the square
+        // yourself in the autonomy editor, and now drag the square it sits on in the track diagram
+        // editor.  Only the first knew to remove the old one, so choosing a new square left the
+        // station named twice on the diagram and nothing said which was current.
+        //
+        // Cleared before setting rather than after, so moving a caption onto a square that already
+        // shows the same station is not a clear-then-set of the same entry.
+        if (stationTile != null) clearCaptions(stationTile, captionTile);
+
         store.setCaption(captionTile, stationTile);
         touched();
+    }
+
+    /**
+     * Moves a station's caption from one square to another, for the track diagram editor.
+     *
+     * Dragging a tile carries whatever was written on it.  Without this, rearranging a diagram meant
+     * every caption on every square that moved had to be placed again by hand, which on a real layout
+     * is most of the reason not to rearrange it.
+     *
+     * @param from the square being vacated
+     * @param to where it is going
+     * @return true when a caption actually moved, so the caller can say so
+     */
+    public boolean moveCaption(TileKey from, TileKey to)
+    {
+        if (from == null || to == null || from.equals(to)) return false;
+
+        TileKey station = store.getCaptionTarget(from);
+
+        if (station == null) return false;
+
+        store.setCaption(from, null);
+
+        // Through setCaption, so anything already captioning that station elsewhere - including
+        // whatever was on the destination square - goes with it.
+        setCaption(to, station);
+
+        return true;
     }
 
     /**
@@ -888,8 +927,6 @@ public class AutonomySession
             // nothing else - insisting on the bare type found no square at all on a real layout.
             if (!runsStraightThrough(next)) continue;
 
-            clearCaptions(tile);
-
             setCaption(at, tile);
 
             return null;
@@ -915,8 +952,6 @@ public class AutonomySession
 
             if (store.getCaptionTarget(at) != null) continue;
 
-            clearCaptions(tile);
-
             setCaption(at, tile);
 
             return null;
@@ -926,8 +961,6 @@ public class AutonomySession
         // a station with no name anywhere - which is the thing the checks complain about.
         if (!here.hasLabel())
         {
-            clearCaptions(tile);
-
             setCaption(tile, tile);
 
             return null;
@@ -944,10 +977,12 @@ public class AutonomySession
      *
      * @param station
      */
-    private void clearCaptions(TileKey station)
+    private void clearCaptions(TileKey station, TileKey except)
     {
         for (TileKey where : new LinkedHashSet<>(captionsFor(station)))
         {
+            if (where.equals(except)) continue;
+
             store.setCaption(where, null);
         }
     }

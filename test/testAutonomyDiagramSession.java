@@ -1935,4 +1935,104 @@ public class testAutonomyDiagramSession
 
         return AutonomySession.detectImportFormat(new org.json.JSONObject(text));
     }
+
+    /**
+     * Captioning a station somewhere new takes the caption off wherever it was.
+     *
+     * There are three ways to caption a station - place it automatically, choose the square in the
+     * autonomy editor, or drag the square it sits on in the track diagram editor - and only the first
+     * knew to remove the old one.  So choosing a new square left the station named twice on the
+     * diagram, with nothing saying which was current.  The rule belongs to setCaption, which all three
+     * go through.
+     */
+    @Test
+    public void testAStationIsOnlyEverCaptionedInOnePlace() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+
+        session.setCaption(new TileKey("main", 1, 2), station);
+
+        assertEquals(session.captionsFor(station).size(), 1, "precondition: shown exactly once");
+
+        // and now somewhere else entirely
+        session.setCaption(new TileKey("main", 3, 2), station);
+
+        assertEquals(session.captionsFor(station).size(), 1,
+            "the station is captioned in two places at once");
+
+        assertEquals(session.getCaptionTarget(new TileKey("main", 3, 2)), station,
+            "the caption is not where it was just put");
+
+        assertNull(session.getCaptionTarget(new TileKey("main", 1, 2)),
+            "the caption was left behind on the square it came from");
+    }
+
+    /**
+     * Dragging a square in the track diagram editor carries its caption with it.
+     *
+     * A caption belongs to the setup, keyed by the square it sits on, so moving the tile underneath
+     * one used to leave it behind pointing at track that is no longer there.  On a layout being
+     * rearranged that is every label, replaced by hand.
+     */
+    @Test
+    public void testACaptionFollowsTheSquareItSitsOn() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey was = new TileKey("main", 1, 2);
+        TileKey now = new TileKey("main", 3, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(was, station);
+
+        assertTrue(session.moveCaption(was, now), "the move reported doing nothing");
+
+        assertEquals(session.getCaptionTarget(now), station, "the caption did not arrive");
+
+        assertNull(session.getCaptionTarget(was), "the caption did not leave");
+
+        assertEquals(session.captionsFor(station).size(), 1, "the station is now captioned twice");
+    }
+
+    /**
+     * Moving a square that has no caption on it does nothing, and says so.
+     *
+     * Most dragged tiles are plain track.  The caller asks on every move, so the common answer has to
+     * be cheap and has to be distinguishable from having moved something.
+     */
+    @Test
+    public void testMovingASquareWithNoCaptionDoesNothing() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        assertFalse(session.moveCaption(new TileKey("main", 2, 1), new TileKey("main", 3, 1)),
+            "a square with nothing written on it reported moving a caption");
+
+        assertTrue(session.getCaptions().isEmpty(), "a caption was invented by moving a bare tile");
+
+        // and a move onto itself is not a move
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(station, station);
+
+        assertFalse(session.moveCaption(station, station), "a square moved onto itself is not a move");
+
+        assertEquals(session.getCaptionTarget(station), station,
+            "moving a caption onto its own square deleted it");
+    }
 }
