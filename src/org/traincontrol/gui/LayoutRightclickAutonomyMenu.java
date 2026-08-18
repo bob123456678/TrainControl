@@ -431,6 +431,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
 
         ui.repaintAutoLocList(false);
+
+        // And the station labels, which is where the facing is actually shown.  The arrow beside a
+        // locomotive name is drawn from the recorded facing, so changing it without rewriting the
+        // labels leaves the diagram asserting the old direction - which is the one place a reader
+        // would look to check that the change took.
+        ui.updateVisiblePoints();
     }
 }
    

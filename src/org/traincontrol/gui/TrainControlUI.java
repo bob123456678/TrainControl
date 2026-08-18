@@ -2364,6 +2364,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the setup cannot run, with the count hidden underneath it.  Their fix appeared not to have
         // taken.
         refreshAutonomyPrompt();
+
+        // And the graph the trains would run on is rebuilt from what the setup now says.
+        //
+        // The editor changes the SETUP; the running layout was built from the setup as it was.  Most
+        // edits leave the two describing the same Points and nothing shows - but anything that changes
+        // how a square SPLITS does not: turning a terminus into a may-turn station changes how many
+        // copies that square becomes and what they are called, and from that moment the running
+        // layout holds names the setup no longer knows.
+        //
+        // Everything that goes through those names then quietly stops working.  The caption looks up
+        // its station and finds nothing, so the label goes blank; the right-click menu looks up the
+        // Point for that square and finds none, so there is nothing to place a locomotive on.  Both
+        // come back on a restart, which is simply the same rebuild arrived at the long way round.
+        //
+        // Not while trains are moving.  Rebuilding underneath a running railway is what
+        // prepareAutonomyReload exists to refuse, and somebody editing during a run has already been
+        // warned once; this is a courtesy, not a reason to stop their trains.
+        if (activeDiagramConfiguration != null && !isAutonomyBusy()
+            && getAutonomyViewerPanel() != null)
+        {
+            getAutonomyViewerPanel().load(activeDiagramConfiguration, false);
+        }
     }
 
     /**
