@@ -235,6 +235,24 @@ public class AutonomySession
          * Names whose sensor is not on this diagram, in the order the file gave them.
          */
         public final List<String> unmatched = new ArrayList<>();
+
+        /**
+         * Locomotives the file places that this database has never heard of.
+         *
+         * Not placed.  The running model refuses a placement naming a locomotive it cannot find, and
+         * refuses it by invalidating the WHOLE layout - so writing these in would have produced a
+         * setup that will not load, reported as a locomotive problem with nothing to connect it to
+         * the import that caused it.
+         */
+        public final List<String> unknownLocomotives = new ArrayList<>();
+
+        /**
+         * Locomotives the file places at more than one point.  Only the first is placed.
+         *
+         * The running model invalidates on this too - one locomotive cannot stand in two places - and
+         * an old graph that has drifted can easily name the same one twice.
+         */
+        public final List<String> duplicateLocomotives = new ArrayList<>();
     }
 
     /**
@@ -306,7 +324,22 @@ public class AutonomySession
 
     public LegacyImport importLegacy(org.json.JSONObject legacy)
     {
+        return importLegacy(legacy, null);
+    }
+
+    /**
+     * @param legacy the parsed autonomy.json
+     * @param knownLocomotives the names the locomotive database holds, or null not to check
+     * @return what was matched, placed, marked, carried and refused
+     */
+    public LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives)
+    {
         LegacyImport result = new LegacyImport();
+
+        // One locomotive stands in one place.  Tracked across the whole file rather than per point,
+        // because the model's objection is global: two points naming the same locomotive invalidate
+        // the layout, whichever pages they are on.
+        Set<String> placedAlready = new LinkedHashSet<>();
 
         org.json.JSONArray points = legacy.optJSONArray("points");
 
@@ -377,13 +410,34 @@ public class AutonomySession
                 {
                     if (standing != null && !extras.has(AutonomyBuilder.LOCOMOTIVE))
                     {
-                        // Copied whole: the old graph recorded the speed, the arrival and departure
-                        // functions and the train length alongside the name, and the builder reads
-                        // exactly this shape back out.
-                        extras.put(AutonomyBuilder.LOCOMOTIVE,
-                            new org.json.JSONObject(standing.toString()));
+                        String locName = standing.optString("name", "").trim();
 
-                        result.placed++;
+                        // Checked here rather than left to the load.  The model answers an unknown
+                        // locomotive by invalidating the whole layout, so a file naming one that has
+                        // since been renamed would have produced a setup that refuses to open, with
+                        // an error about a locomotive and nothing saying the import put it there.
+                        if (locName.isEmpty())
+                        {
+                            // a placement with no name: nothing to place, nothing worth reporting
+                        }
+                        else if (knownLocomotives != null && !knownLocomotives.contains(locName))
+                        {
+                            result.unknownLocomotives.add(locName);
+                        }
+                        else if (!placedAlready.add(locName))
+                        {
+                            result.duplicateLocomotives.add(locName);
+                        }
+                        else
+                        {
+                            // Copied whole: the old graph recorded the speed, the arrival and
+                            // departure functions and the train length alongside the name, and the
+                            // builder reads exactly this shape back out.
+                            extras.put(AutonomyBuilder.LOCOMOTIVE,
+                                new org.json.JSONObject(standing.toString()));
+
+                            result.placed++;
+                        }
                     }
 
                     if (!home.trim().isEmpty() && !extras.has("home")) extras.put("home", home.trim());

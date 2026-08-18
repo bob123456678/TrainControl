@@ -1448,4 +1448,135 @@ public class testAutonomyDiagramSession
         assertEquals(session.getStore().getExcludedPages().size(), 1,
             "a second run changed which pages are excluded");
     }
+
+    /**
+     * A placement naming a locomotive this database does not have is refused, not written in.
+     *
+     * The running model does not skip an unknown locomotive - it invalidates the WHOLE layout, by
+     * name, with errorLocomotiveNotInDatabase.  So an old graph naming one that has since been renamed
+     * or deleted would have imported cleanly and then produced a setup that refuses to open, reported
+     * as a locomotive problem with nothing to say the import put it there.
+     *
+     * Refused here and named instead, which is a thing the user can act on.
+     */
+    @Test
+    public void testAPlacementForAnUnknownLocomotiveIsRefused() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONObject standing = new org.json.JSONObject();
+        standing.put("name", "Sold Years Ago");
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St21");
+        point.put("station", true);
+        point.put("s88", 11);
+        point.put("loc", standing);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        Set<String> known = new LinkedHashSet<>(Arrays.asList("Q 343", "MY 1106"));
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy, known);
+
+        assertEquals(result.placed, 0, "a locomotive the database does not have must not be placed");
+
+        assertEquals(result.unknownLocomotives, Arrays.asList("Sold Years Ago"),
+            "the unknown locomotive must be named, since it is the reason a placement is missing");
+
+        assertEquals(session.getStore().getPointName(new TileKey("main", 1, 1)), "St21",
+            "the name should still have been imported - only the placement was refused");
+    }
+
+    /**
+     * A locomotive named at two points is placed once, and the second is reported.
+     *
+     * One locomotive cannot stand in two places, and the running model says so by invalidating the
+     * layout rather than by ignoring the second.  An old graph that has drifted names the same
+     * locomotive twice easily enough.
+     */
+    @Test
+    public void testALocomotiveNamedTwiceIsPlacedOnce() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        // pageOnDisk draws feedback 11 at 1,1 and feedback 12 at 4,1
+        for (int sensor : new int[] {11, 12})
+        {
+            org.json.JSONObject standing = new org.json.JSONObject();
+            standing.put("name", "Q 343");
+
+            org.json.JSONObject point = new org.json.JSONObject();
+            point.put("name", "St" + sensor);
+            point.put("station", true);
+            point.put("s88", sensor);
+            point.put("loc", standing);
+
+            points.put(point);
+        }
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy,
+            new LinkedHashSet<>(Arrays.asList("Q 343")));
+
+        assertEquals(result.placed, 1, "the locomotive should have been placed exactly once");
+
+        assertEquals(result.duplicateLocomotives, Arrays.asList("Q 343"),
+            "the second placement must be reported rather than silently dropped");
+    }
+
+    /**
+     * Without a database to check against, placements are taken as given.
+     *
+     * The check is the caller's to supply - the session has no locomotive database of its own - and
+     * passing nothing must not mean refusing everything.
+     */
+    @Test
+    public void testPlacementsAreTakenAsGivenWhenThereIsNothingToCheckAgainst() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Restored", null);
+        session.getStore().setActiveConfiguration("Restored");
+
+        org.json.JSONObject standing = new org.json.JSONObject();
+        standing.put("name", "Anything At All");
+
+        org.json.JSONObject point = new org.json.JSONObject();
+        point.put("name", "St21");
+        point.put("s88", 11);
+        point.put("loc", standing);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+        points.put(point);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy, null);
+
+        assertEquals(result.placed, 1, "with no database given, the placement should be taken as-is");
+
+        assertTrue(result.unknownLocomotives.isEmpty(), "nothing can be unknown with nothing to check");
+    }
 }

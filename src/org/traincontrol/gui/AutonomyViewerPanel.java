@@ -942,13 +942,32 @@ public class AutonomyViewerPanel extends JPanel
         {
             byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
 
+            // The names this database actually holds, so a placement naming something else is
+            // refused here rather than by the whole layout failing to build later
+            java.util.Set<String> known = ui.getModel() == null
+                ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
+
             AutonomySession.LegacyImport result = session.importLegacy(
-                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
+                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)),
+                known);
 
             save();
 
             String unmatched = result.unmatched.isEmpty()
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
+
+            // Named, because these are the ones that would otherwise have stopped the setup loading
+            if (!result.unknownLocomotives.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyUnknownLocs",
+                    String.join(", ", result.unknownLocomotives));
+            }
+
+            if (!result.duplicateLocomotives.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateLocs",
+                    String.join(", ", result.duplicateLocomotives));
+            }
 
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
