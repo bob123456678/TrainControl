@@ -37,7 +37,7 @@ That is all. You do not need to describe your track anywhere: TrainControl reads
 
 Automation rests on three things, and everything else in this guide is a refinement of one of them.
 
-**Stations are where trains stop.** You mark a square as a station and give it a name. A station square has a sensor under it — that sensor is how a train arriving there is noticed.
+**Stations are where trains stop.** You do not create them: every sensor square on your diagram becomes a station when the setup is built, because a sensor is exactly the thing that can tell TrainControl a train has arrived. What you do is give them names, and say which ones trains may actually stop at as opposed to merely pass through.
 
 **Links say where a train may go.** TrainControl traces the track on your diagram and works out the connections by itself. You do not draw them. What you do is switch off the few that you do not want used — a siding you would rather trains kept out of, or a connection that only makes sense in one direction.
 
@@ -58,19 +58,21 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
       s88 1                        s88 2
 ```
 
-**1. Open the autonomy view.** On the track diagram, use the autonomy toolbar. The diagram stays exactly as it is; what changes is that clicking a square now sets automation up rather than throwing a switch.
+**1. Build the setup.** `Autonomy` → `Add a Configuration...`. This reads your track diagram as it stands and works out the railway from it: every sensor becomes a station, and the track between them becomes the links trains can use. Nothing is asked of you yet.
 
-![PLACEHOLDER: the autonomy toolbar, with the "station" tool selected](assets/automation/02-autonomy-toolbar.png)
+![PLACEHOLDER: the Autonomy menu, with "Add a Configuration..." highlighted](assets/automation/02-add-configuration.png)
 
-**2. Mark the two station squares.** Click the square at A, then the square at B. Each becomes a station, taking its sensor address from the square itself.
+**2. Open the editor.** `Autonomy` → `Edit Autonomy on Page`, and pick your page. The diagram looks the same; what changes is that right-clicking a square now sets automation up rather than throwing a switch.
 
-**3. Name them.** Right-click each and give it a name — `Station A` and `Station B` will do. The name is what you will see in every list and every log line, so name them the way you talk about them.
+**3. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under — so name them the way you talk about them out loud.
 
-**4. Put the train somewhere.** Right-click Station A and place your locomotive there. This is a statement of fact about your railway: the train really does need to be standing at A.
+![PLACEHOLDER: the right-click menu on a station square in the setup editor](assets/automation/03-station-menu.png)
 
-![PLACEHOLDER: the right-click menu on a station square, showing the place-locomotive option](assets/automation/03-place-locomotive.png)
+**4. Check both may be stopped at.** The same menu has `Station (...)`, with three choices: trains can stop here, trains can only pass through, or nothing can pass. The first is what a station is. Sensors that are only there to track a train through a junction are the second.
 
-**5. Press start.** The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
+**5. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
+
+**6. Save, and press start.** The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
 
 **What just happened.** TrainControl traced your diagram, found that A connects to B, saw a train at A, and found exactly one place it could go. Nothing else was needed.
 
@@ -89,17 +91,17 @@ Two trains, three stations, and the first arrangement where TrainControl has a c
              \___________________________/
 ```
 
-Set the three squares up as stations, as before. Place a train at A and a train at B.
+Name the three sensor squares, as before, and place a train at A and a train at B.
 
 Press start. A train leaves A. It can reach B two ways — through the loop past C, or round the other side — and TrainControl picks one. Meanwhile the train at B can leave too, because its route does not need the track the first train is on.
 
 **What this example is really showing** is that TrainControl reserves the track a train needs, and only that track. Two trains run at once here because their routes do not overlap. If they did, the second would wait.
 
-**Try this.** Right-click the link on one side of the loop and switch it off. Now every train goes past C. A switched-off link is greyed out on the diagram, so you can see at a glance what is not being used.
+**Try this.** Right-click one side of the loop and untick `Autonomy Uses This Link`. Now every train goes past C. A switched-off link is greyed out on the diagram, so you can see at a glance what is not being used.
 
 ![PLACEHOLDER: a diagram with one link greyed out, and two trains running](assets/automation/04-two-trains.png)
 
-**Try this too.** Right-click C and set its priority higher than the others. Trains will now favour calling there. Priority does not force it — it tips the choice.
+**Try this too.** Right-click C, open `Advanced Parameters...`, and set `Station Priority` higher than the others. Trains will now favour calling there. Priority does not force it — it tips the choice.
 
 ---
 
@@ -112,13 +114,13 @@ A terminus is a station where the track stops. A train arriving must leave the w
                                       terminus
 ```
 
-Mark T as a station in the usual way, and then mark it as a **reversing point** as well.
+Name T as before, and then set `Changing Direction` on it so that a train arriving may turn round.
 
 This tells TrainControl two things. First, a train that arrives here will need to change direction before it can leave — so the locomotive must actually be able to do that. Second, and less obviously: a reversing point is treated as somewhere to **park**, not somewhere to route trains through. Autonomy running on its own will not send trains there and will not drive them through it on the way somewhere else.
 
 That is deliberate, and it is worth understanding because it surprises people. Reversing points are usually parking tracks and shunting necks, and trains being parked at random in the shunting neck — or stopping and changing direction in the middle of a run — is not operation, it is chaos. So autonomy leaves them alone.
 
-**You can still use it.** Send a train there yourself from the route menu, and [Return Home](#sending-everything-home) will still park trains there. What will not happen is a train ending up there because a dice roll put it there.
+**You can still use it.** Send a train there yourself from the route menu, and [Return Locomotives Home](#sending-everything-home) will still park trains there. What will not happen is a train ending up there because a dice roll put it there.
 
 ![PLACEHOLDER: a terminus station on the diagram, showing the reversing marker](assets/automation/05-terminus.png)
 
@@ -128,7 +130,7 @@ That is deliberate, and it is worth understanding because it surprises people. R
 
 Some stations only make sense to arrive at from one direction. A platform on a one-way loop; a bay that faces east; a station where arriving from the west means fouling a junction.
 
-Right-click the station and open **Arrivals**. By default a station accepts trains from every direction. Switch off the directions you do not want, and TrainControl will only route trains to it from the ones you left on.
+Right-click the station and open **Trains May Arrive...** in the setup editor. By default a station accepts trains from every direction. Switch off the directions you do not want, and TrainControl will only route trains to it from the ones you left on.
 
 The diagram marks this: a station that only takes trains one way shows a small arrow. That arrow is the only outward sign, so it is worth knowing what it means when you meet one on somebody else's layout.
 
@@ -152,13 +154,13 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 ![PLACEHOLDER: a running layout, with a route drawn in red and green and a train's name showing at a station](assets/automation/07-running.png)
 
-**Graceful Stop** lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies.
+**Gracefully Stop Autonomy** lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies.
 
 ---
 
 ## Choosing how trains pick their route
 
-When more than one route will do, TrainControl has to choose. Under **Preferences** you can say how:
+When more than one route will do, TrainControl has to choose. Under the **Autonomy** menu, **Route Choice**, you can say how:
 
 | Setting | What it does |
 | --- | --- |
@@ -194,19 +196,19 @@ It is worth recording a timetable that ends where it began. That way it can be r
 
 ## Sending everything home
 
-`Return Home` sends every locomotive back to the station it belongs at. By default that is the station it was standing on when the layout was loaded; you can say otherwise by right-clicking a station and picking `Home locomotive`.
+`Return Locomotives Home` sends every locomotive back to the station it belongs at. By default that is the station it was standing on when the layout was loaded; you can say otherwise by right-clicking a station and picking `Home locomotive`.
 
 Getting everyone home is rarely as simple as driving each train to its own station, because a station holds one train at a time — a train cannot go home while another is standing there. TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.
 
-Trains must be stopped first, so press `Graceful Stop` if autonomy is running. If no arrangement can be found you are told so and nothing moves.
+Trains must be stopped first, so use `Gracefully Stop Autonomy` if autonomy is running. If no arrangement can be found you are told so and nothing moves.
 
-A station with a home locomotive is outlined in teal on the diagram: solid when that locomotive is standing there, dotted when it is somewhere else. The dotted ones are exactly what `Return Home` would move.
+A station with a home locomotive is outlined in teal on the diagram: solid when that locomotive is standing there, dotted when it is somewhere else. The dotted ones are exactly what `Return Locomotives Home` would move.
 
 ---
 
 ## Settings, and what each one is for
 
-These live in the autonomy options. Most layouts need to change two or three of them at most.
+These live under `Autonomy` -> `Autonomy Settings...`. Most layouts need to change two or three of them at most.
 
 | Setting | What it is for |
 | --- | --- |
@@ -215,7 +217,7 @@ These live in the autonomy options. Most layouts need to change two or three of 
 | Pre-arrival speed reduction | How much a train slows on the approach. This is what the third sensor is for |
 | Maximum active trains | How many run at once. Zero means as many as the track allows |
 | Atomic routes | Whether a train reserves its whole route before setting off, or releases track behind it as it goes. Off is more capable and needs your lengths to be right |
-| Train lengths | Set a length on a station and a length on a locomotive, and a train too long for a station will not be sent there |
+| Train lengths | `Advanced Parameters...` on a station sets its maximum train length; a train too long for it will not be sent there |
 | Functions on departure and arrival | Whether each locomotive's preferred functions are switched on when it leaves and off when it arrives. Turn the arrival one off to keep sound running between routes |
 | Locomotive exclusions | Trains that must not stop at a particular station. Set on a non-station instead, and those trains will not pass through it at all |
 | Maximum inactive seconds | A train that has not run for this long is prioritised, so nothing sits forgotten |
@@ -257,8 +259,8 @@ The placeholders above want real pictures. Each is a single screen capture; the 
 | File | What to capture |
 | --- | --- |
 | `assets/automation/01-overview.png` | The autonomy view of a small layout, with two stations marked and the link between them visible |
-| `assets/automation/02-autonomy-toolbar.png` | The autonomy toolbar on the track diagram, with the station tool selected |
-| `assets/automation/03-place-locomotive.png` | The right-click menu on a station square, open, showing the place-locomotive item |
+| `assets/automation/02-add-configuration.png` | The Autonomy menu open, with "Add a Configuration..." highlighted |
+| `assets/automation/03-station-menu.png` | The right-click menu on a station square in the setup editor, open, showing Rename and Station |
 | `assets/automation/04-two-trains.png` | A layout with one link greyed out and two trains running at once |
 | `assets/automation/05-terminus.png` | A terminus station showing the reversing marker |
 | `assets/automation/06-arrivals.png` | The Arrivals view with one direction switched off, and the resulting arrow on the diagram |

@@ -398,7 +398,7 @@ public class Layout
      * another to clear its way, and ending a run that would have worked is worse than a late finish.
      * Not final so a test can shorten it; there is no user-facing setting for it.
      */
-    public static long TIMETABLE_STUCK_MS = 180000;
+    public static volatile long TIMETABLE_STUCK_MS = 180000;
 
     private static final int STAGING_MAX_ATTEMPTS = 3;
     private static final int STAGING_RETRY_PAUSE = 2000;

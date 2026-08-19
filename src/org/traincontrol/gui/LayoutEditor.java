@@ -2025,6 +2025,12 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             layout.addRowsAndColumns(1, 1);
 
+            // The picked squares are let go of.  A selection that outlived a resize would still name
+            // coordinates by number, and after a SHRINK some of those numbers are off the diagram -
+            // the next group move would then read a square that no longer exists.  Growing is safe
+            // today, but the two have to behave the same way or the difference becomes a trap.
+            clearSelection();
+
             refreshGrid();
         }
         catch (Exception e)
@@ -2055,6 +2061,8 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             layout.trimEdges();
+
+            clearSelection();
 
             refreshGrid();
         }

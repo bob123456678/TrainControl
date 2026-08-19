@@ -25,6 +25,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  */
 public class testRouteCapture
 {
+    // High addresses, the convention testAccessory follows.
+    //
+    // This claimed 71, 72 and 73 against a control station initialised from the operator's REAL
+    // accessory database - three addresses a layout is quite likely to be using.  Creating an
+    // accessory at an address that already has one is not a test failure, it is a test quietly
+    // altering somebody's railway.
     private static MarklinControlStation model;
 
     @BeforeClass
@@ -44,7 +50,7 @@ public class testRouteCapture
     @Test
     public void testAThrownAccessoryProducesALineTheParserUnderstands() throws Exception
     {
-        MarklinAccessory signal = model.newSignal(71, Accessory.accessoryDecoderType.MM2, false);
+        MarklinAccessory signal = model.newSignal(291, Accessory.accessoryDecoderType.MM2, false);
 
         signal.setSwitched(true);
 
@@ -72,7 +78,7 @@ public class testRouteCapture
     @Test
     public void testACapturedLineBecomesAnEditableRow() throws Exception
     {
-        MarklinAccessory turnout = model.newSwitch(72, Accessory.accessoryDecoderType.MM2, false);
+        MarklinAccessory turnout = model.newSwitch(292, Accessory.accessoryDecoderType.MM2, false);
 
         turnout.setSwitched(true);
 
@@ -107,7 +113,7 @@ public class testRouteCapture
             throw new SkipException("the route editor is a window - this needs a display");
         }
 
-        MarklinAccessory signal = model.newSignal(73, Accessory.accessoryDecoderType.MM2, false);
+        MarklinAccessory signal = model.newSignal(293, Accessory.accessoryDecoderType.MM2, false);
 
         signal.setSwitched(true);
 
@@ -211,6 +217,58 @@ public class testRouteCapture
 
         assertEquals(frame[0].commandCount(), 0,
             "rubbish was captured as a command");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+    }
+
+    /**
+     * Capture can be pointed at the CONDITIONS instead of the commands.
+     *
+     * "Run this route when these points are already set the way I have just set them" is otherwise a
+     * lot of addresses typed by hand.  The destination is explicit rather than guessed, because a
+     * capture that quietly wrote to the wrong table would be worse than one that did nothing.
+     */
+    @Test
+    public void testCaptureCanBePointedAtTheConditions() throws Exception
+    {
+        if (GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("the route editor is a window - this needs a display");
+        }
+
+        MarklinAccessory turnout = model.newSwitch(294, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(true);
+
+        final String captured = turnout.toAccessorySettingString();
+
+        final org.traincontrol.gui.RouteEditorFrame[] frame =
+            new org.traincontrol.gui.RouteEditorFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            frame[0] = new org.traincontrol.gui.RouteEditorFrame(null, null);
+
+            frame[0].setCapturingIntoConditions(true);
+            frame[0].appendCommand(captured);
+            frame[0].appendCommand(captured);
+        });
+
+        assertEquals(frame[0].conditionCount(), 2,
+            "a capture pointed at the conditions did not reach them");
+
+        assertEquals(frame[0].commandCount(), 0,
+            "it went into the commands as well, so the destination is not being honoured");
+
+        // And back the other way, so the control is a control rather than a one-way switch
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            frame[0].setCapturingIntoConditions(false);
+            frame[0].appendCommand(captured);
+        });
+
+        assertEquals(frame[0].commandCount(), 1, "pointing it back at the commands had no effect");
+        assertEquals(frame[0].conditionCount(), 2, "and it must not have added another condition");
 
         javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].dispose());
     }

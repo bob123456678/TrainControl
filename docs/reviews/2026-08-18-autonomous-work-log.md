@@ -156,27 +156,47 @@ single-colour image, and it did, on the first run.
 | `Automation.md` | Rewritten as a user guide, diagram-first, with four worked examples and a troubleshooting section. The old JSON and API material is preserved in `AutomationAPI.md`. Eight screenshots are placeholders; the guide lists what each should show |
 | Diagram export | `DiagramExport`, on the Layout menu. Writes a whole page to a PNG at any size |
 
-### Outstanding
+### The carried items, closed
 
-Not yet done, in the order they will be:
+The findings recorded earlier as "not yet acted on" have been:
 
-1. Multi-select editor wiring - shift-click, Escape, group drag, paint/erase/rotate, copy and paste,
-   the row and column controls, and the deprecations Adam listed
-2. Fable reviewers
-3. The UI consistency proposal
-4. Feature completeness and 3.1.0 ideas
-5. Test profiling and a lite battery
-6. Readme: drop the 3.0.0-only bugfixes
-7. `Automation.md`, with a full-size track-diagram export in the Layout menu
+| Item | What was done |
+| --- | --- |
+| T3's give-up is invisible | The plain Execute Timetable path discarded `executeTimetable`'s answer, so a run that gave up looked exactly like one that finished. It now names the entry that stopped and says the timetable can be run again. A graceful stop is still not reported - the operator asked for it |
+| "Across the Fewest/Most Sensors" counts Points, not sensors | Counted by distinct sensor now. On a derived graph a square is several Points, so a hop count was a count of the model's own structure: two routes over the same s88s could differ, and the winner won for a reason nothing on the diagram showed |
+| Least-recently-visited is missing | Added. It is the only rule that ranks by where trains have BEEN, which is what stops a layout with a favourite loop leaving its far corner untouched all evening. Station priority still applies first |
+| Capture for conditions | Added, with the destination stated explicitly rather than guessed. Accessories only - s88 is deliberately absent, because a layout with trains on it reports sensors constantly and none of those reports is the user saying anything |
+| `testRouteCommandParity` builds a model no test reads | Removed. It bound the Central Station's UDP port and loaded the operator's real locomotive database for nothing - in a suite where one class holding that port makes every later class report "Address already in use" out of its own setup |
+| `testRouteCapture` claims addresses 71-73 | Moved to 291-293, the convention `testAccessory` follows. Creating an accessory at an address a layout is already using is not a test failure, it is a test quietly altering somebody's railway |
+| `TIMETABLE_STUCK_MS` is not volatile | It is now |
+| Six keys shipped in English in every translation | Translated |
 
-Also carried, from earlier findings not yet acted on:
+### Still outstanding
 
-- T3's give-up is invisible: the return value is discarded, "path finished" is logged after the
-  failure, and nothing says that Execute can be pressed again. Three minutes also measures the wrong
-  thing - no-progress detection would be better than a fixed bound
-- "Across the Fewest/Most Sensors" counts derived-graph Points rather than sensors
-- Least-recently-visited is the path preference an operator would reach for first, and is missing
-- Capture for conditions - explicit destination, accessories yes, s88 no by default
-- `testRouteCommandParity` builds a full `MarklinControlStation` for a field no test reads, which binds
-  the CS2 port and loads the operator's locomotive database for nothing
-- `testRouteCapture` claims addresses 71-73 without clearing them first
+Everything in the work order is done. What remains is for Adam.
+
+**Decisions waiting on him**, each flagged where it lives as well as here:
+
+| What | Where it is written down |
+| --- | --- |
+| The diagram "+" does not add a row at the TOP, only at the right and bottom. Doing it properly means rewriting every key the companion store holds for that page - stations, signals, arrivals, homes, captions are all keyed by square and would otherwise be left one row out | `LayoutEditor.growEdges` javadoc |
+| `TEST_CS2_ADDRESS` is a `public static volatile` test seam read by production code. Kept deliberately; the tightening the reviewer suggested is a larger change than the risk | This log, section 5-6 |
+| Is "say why the train is not moving" worth holding 3.0.0 for? I think it is the highest-value thing left, and it is not small | `2026-08-19-completeness-and-3.1.0.md` |
+| Station↔signal pairings and barred arrivals are both invisible in bulk - auditable only one station at a time | same |
+| Seven UI consistency items, each with a cost and a recommendation. Four plain `showConfirmDialog` calls are the one I would actually do: their buttons follow the SYSTEM language rather than TrainControl's | `2026-08-19-ui-consistency-proposal.md` |
+| Eight screenshots for the new `Automation.md`. The guide lists what each should show, and the new export writes them | `Automation.md`, last section |
+
+**Known and not a defect:**
+
+- `testAutoDetect` fails all three of its tests and has throughout. It asks a Central Station on the
+  network to answer, and nothing is answering. A third of the suite's runtime on its own.
+
+**Deliberately not attempted:**
+
+- The fetch/apply split for `syncWithCS2` - phase one fetching and parsing into detached structures off
+  the event thread, phase two swapping them in on it. It is the real fix for the paint-mid-swap hazard
+  the modal spinner only narrows, and it is a restructuring of two hundred lines of database
+  reconciliation. Recorded in the deferred-optimisations list, where it already was.
+- Recording what a timetable replay actually traversed, leg by leg. Without it,
+  `testTimetableOnDerivedGraph` can only verify each locomotive's LAST destination - which it now says
+  in its own javadoc rather than claiming more.

@@ -1,13 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.marklin.MarklinControlStation;
-import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Every kind of route command survives being written out and read back.
@@ -23,14 +20,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  */
 public class testRouteCommandParity
 {
-    private static MarklinControlStation model;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception
-    {
-        model = init(null, true, false, false, true);
-        model.stop();
-    }
+    // No MarklinControlStation.
+    //
+    // There was one, built in a @BeforeClass and read by no test in the class.  Building it binds the
+    // Central Station's UDP port and loads the operator's real locomotive database - for nothing, and
+    // in a suite where one class holding that port makes every later model-based class report
+    // "Address already in use" out of its own setup, which TestNG then renders as a clean skip.  A
+    // pure round-trip test should not be able to do that to the rest of the battery.
 
     /**
      * Every command kind, written and read back, must describe the same thing.

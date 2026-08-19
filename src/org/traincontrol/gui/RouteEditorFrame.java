@@ -80,6 +80,20 @@ public class RouteEditorFrame extends JFrame
      */
     private final JCheckBox captureBox = new JCheckBox(I18n.t("route.ui.frameCapture"));
 
+    /**
+     * Where a captured accessory goes: the command list, or the conditions.
+     *
+     * Asked rather than guessed.  Capturing into conditions is genuinely useful - "run this route when
+     * these points are already set the way I have just set them" is otherwise a lot of addresses typed
+     * by hand - but it is not what capture has always meant, and a capture that quietly wrote to the
+     * wrong table would be worse than one that did nothing.
+     *
+     * s88 is deliberately absent.  A feedback condition is the commonest kind there is, and it is also
+     * the one that would fill the table with noise: a layout with trains on it reports sensors
+     * constantly, and none of those reports is the user saying anything.
+     */
+    private final JComboBox<String> captureTarget = new JComboBox<>();
+
     /** Says which way the joins nest, because that is the one thing a row list cannot show. */
     private final JLabel readsAs = new JLabel(" ");
 
@@ -125,7 +139,12 @@ public class RouteEditorFrame extends JFrame
 
         captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
 
+        captureTarget.addItem(I18n.t("route.ui.frameCaptureIntoCommands"));
+        captureTarget.addItem(I18n.t("route.ui.frameCaptureIntoConditions"));
+        captureTarget.setToolTipText(I18n.t("route.ui.tooltipCaptureTarget"));
+
         ((JPanel) commandSection.getComponent(1)).add(captureBox);
+        ((JPanel) commandSection.getComponent(1)).add(captureTarget);
 
         middle.add(commandSection);
 
@@ -253,6 +272,12 @@ public class RouteEditorFrame extends JFrame
             // kept exactly as found when the route is saved
             conditionsEditable = false;
             conditions.setEnabled(false);
+
+            // And capture cannot be pointed at it either.  Left enabled, the user could tick capture,
+            // choose Conditions, throw switches, and have every one of them silently dropped - a
+            // control that offers a destination nothing can reach.
+            captureTarget.setSelectedIndex(0);
+            captureTarget.setEnabled(false);
         }
         else
         {
@@ -324,6 +349,31 @@ public class RouteEditorFrame extends JFrame
 
             if (parsed == null) return;
 
+            if (capturingIntoConditions())
+            {
+                // Only into a condition list rows can express.  A bracketed expression is kept exactly
+                // as found and its table is read-only, so appending to it would be building something
+                // that Save is going to throw away.
+                if (!conditionsEditable) return;
+
+                // The row before this one has to join to it, and AND is what a list of conditions
+                // means when nobody has said otherwise
+                if (!conditions.rows.isEmpty())
+                {
+                    int last = conditions.rows.size() - 1;
+
+                    conditions.rows.set(last, new ConditionRows.Row(ConditionRows.Joiner.AND,
+                        conditions.rows.get(last).getCommand()));
+                }
+
+                conditions.rows.add(new ConditionRows.Row(null, parsed));
+                conditions.fireTableDataChanged();
+
+                updateReadsAs();
+
+                return;
+            }
+
             commands.rows.add(Entry.of(parsed));
             commands.fireTableDataChanged();
         }
@@ -331,6 +381,30 @@ public class RouteEditorFrame extends JFrame
         {
             // A line that will not parse is not worth interrupting a capture for
         }
+    }
+
+    /**
+     * Whether captures are going into the conditions rather than the commands.
+     */
+    public boolean capturingIntoConditions()
+    {
+        return captureTarget.getSelectedIndex() == 1;
+    }
+
+    /**
+     * Sends captures to the conditions or to the commands, for a test that cannot click.
+     */
+    public void setCapturingIntoConditions(boolean intoConditions)
+    {
+        captureTarget.setSelectedIndex(intoConditions ? 1 : 0);
+    }
+
+    /**
+     * How many conditions the list holds, so a test can see that a capture arrived.
+     */
+    public int conditionCount()
+    {
+        return conditions.rows.size();
     }
 
     /**

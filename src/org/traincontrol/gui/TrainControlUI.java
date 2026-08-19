@@ -14557,7 +14557,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.returnHomeButton.setEnabled(false);
                 });
 
-                this.model.getAutoLayout().executeTimetable();
+                // The ANSWER, not just the call.  It was discarded, so a timetable that gave up part
+                // way through looked exactly like one that finished: the trains stopped, the buttons
+                // came back, and the only account of it was a line in a scrolling log.  What the
+                // operator is looking at is trains that stopped halfway with no explanation.
+                //
+                // A graceful stop is not a failure - the operator asked for it and watched it happen -
+                // so it is not reported.
+                final boolean completed = this.model.getAutoLayout().executeTimetable();
+                final int stoppedAt = this.model.getAutoLayout().getUnfinishedTimetablePathIndex();
+
+                if (!completed && !this.gracefulStopRequested)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                        I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
+                }
 
                 // Marshalled, like the staging flow next door does.  These lines are new in this
                 // feature; the surrounding handler predates it and touches Swing from this worker
