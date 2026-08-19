@@ -282,4 +282,4 @@ The placeholders above want real pictures. Each is a single screen capture; the 
 | `assets/automation/07-running.png` | A running layout: a route drawn in red and green, arrows, and a train's name showing at a station |
 | `assets/automation/08-timetable.png` | The timetable panel with several captured entries in it |
 
-**The easiest way to produce a clean diagram picture** is `Layout` → `Save Diagram as a Picture...`, which writes the whole of a page to a PNG at whatever size you ask for — the whole page, not just the part scrolled into view, and with none of the window around it. Sixty pixels per square reads well in a document; twenty is about what the screen shows.
+**The easiest way to produce a clean diagram picture** is `Layout` -> `Save This Diagram as a Picture...`, which writes the page you are looking at to a PNG at whatever size you ask for - the whole page, not just the part scrolled into view, and with none of the window around it. The item below it asks which page, for the times it is not the one on screen. Sixty pixels per square reads well in a document; twenty is about what the screen shows.

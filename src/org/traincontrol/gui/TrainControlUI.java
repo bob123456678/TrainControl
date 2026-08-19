@@ -5012,14 +5012,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (layoutMenu == null) return;
 
+        // The page already on screen, which is what somebody looking at a diagram and wanting a
+        // picture of it means.  First, because it is the common case: asking which page when the
+        // answer is "this one" is a question with a visible answer.
+        javax.swing.JMenuItem active =
+            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
+
+        active.setToolTipText(I18n.t("layout.ui.tooltipExportActiveDiagram"));
+
+        active.addActionListener(event -> exportDiagram(activeLayoutPage()));
+
         javax.swing.JMenuItem item =
             new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportDiagram"));
 
         item.setToolTipText(I18n.t("layout.ui.tooltipExportDiagram"));
 
-        item.addActionListener(event -> exportDiagram());
+        item.addActionListener(event -> exportDiagram(null));
 
         layoutMenu.addSeparator();
+        layoutMenu.add(active);
         layoutMenu.add(item);
     }
 
@@ -5031,7 +5042,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * tile images to be decoded, and those are applied on the event thread.  Holding that thread
      * would mean waiting for work that cannot happen until the wait is over.
      */
-    private void exportDiagram()
+    /**
+     * The diagram page currently on screen, or null when there is none.
+     *
+     * The selector's own answer rather than a remembered one, so it cannot disagree with what the
+     * user is looking at.
+     */
+    private String activeLayoutPage()
+    {
+        Object showing = this.LayoutList == null ? null : this.LayoutList.getSelectedItem();
+
+        return showing == null ? null : showing.toString();
+    }
+
+    /**
+     * Writes a diagram page to a picture file.
+     *
+     * @param page the page to draw, or null to ask which one.  The active-page item passes the page
+     *        so that the common case - "a picture of what I am looking at" - is one click and no
+     *        question, while the menu still offers any other page for the times it is not
+     */
+    private void exportDiagram(String page)
     {
         java.util.List<String> pages = this.model.getLayoutList();
 
@@ -5042,9 +5073,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        String page = (String) JOptionPane.showInputDialog(this,
-            I18n.t("layout.ui.promptWhichDiagram"), I18n.t("layout.ui.menuExportDiagram"),
-            JOptionPane.PLAIN_MESSAGE, null, pages.toArray(), pages.get(0));
+        // A page that is no longer there - a rename or a reload between opening the menu and choosing
+        // from it - falls back to asking rather than exporting the wrong thing or nothing
+        if (page != null && !pages.contains(page)) page = null;
+
+        if (page == null)
+        {
+            page = (String) JOptionPane.showInputDialog(this,
+                I18n.t("layout.ui.promptWhichDiagram"), I18n.t("layout.ui.menuExportDiagram"),
+                JOptionPane.PLAIN_MESSAGE, null, pages.toArray(), pages.get(0));
+        }
 
         if (page == null) return;
 

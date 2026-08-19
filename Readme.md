@@ -384,6 +384,8 @@ Tab icons provided by Freepik.
         - You can now pick out several squares at once in the track diagram editor.  Shift-click picks a square, shift-click again unpicks it, and Escape lets everything go; a picked group can then be dragged, copied, pasted, rotated or deleted as one, and one press of undo takes the whole thing back.  A group dragged or pasted past the edge of the diagram is refused rather than losing the part that would fall off
         - The editor now has a matching pair of size controls: one adds a column on the right and a row at the top and bottom, the other takes the same three away.  Shrinking is refused if any of those edges still holds track
         - Removed the "paste entire row" and "paste entire column" options, and the four options that shifted the whole diagram from a chosen square.  Picking the squares you mean and dragging them does the same job, visibly, and can be corrected before it happens rather than after
+    - Track Diagrams
+        - A track diagram page can now be saved as a picture.  The Layout menu offers the page you are looking at in one click, or any other page if you ask, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it
     - Central Station Sync
         - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, and a second sync started while one is running is turned away rather than run alongside it
     - Locomotive Bug Fixes

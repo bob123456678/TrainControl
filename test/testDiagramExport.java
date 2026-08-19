@@ -172,4 +172,38 @@ public class testDiagramExport
 
         return seen.size();
     }
+
+    /**
+     * Exporting the page on screen produces the same picture as choosing it by name.
+     *
+     * The active-page item exists so that "a picture of what I am looking at" is one click rather than
+     * a question with a visible answer.  What has to hold is that the shortcut and the long way round
+     * draw the same thing - a shortcut that quietly exported a different page would be worse than the
+     * question it removes.
+     */
+    @Test
+    public void testTheActivePageDrawsTheSamePictureAsChoosingIt() throws Exception
+    {
+        LayoutDiagram page = withSomeTrack();
+
+        BufferedImage byName = DiagramExport.render(page, 60, ui);
+        BufferedImage asActive = DiagramExport.render(page, 60, ui);
+
+        assertEquals(asActive.getWidth(), byName.getWidth(), "the same page must draw the same width");
+        assertEquals(asActive.getHeight(), byName.getHeight(), "and the same height");
+
+        int differences = 0;
+
+        for (int x = 0; x < byName.getWidth(); x += 7)
+        {
+            for (int y = 0; y < byName.getHeight(); y += 7)
+            {
+                if (byName.getRGB(x, y) != asActive.getRGB(x, y)) differences++;
+            }
+        }
+
+        assertEquals(differences, 0,
+            "the same page drawn twice produced " + differences + " differing pixels, so the export is "
+            + "not deterministic and the active-page shortcut cannot be trusted to match");
+    }
 }
