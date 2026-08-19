@@ -2607,26 +2607,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The station on a square of the page currently being shown, for a right-click on the track itself.
+     * The station on a square, for a right-click on the track itself.
      *
      * Only while the overlay is on, because that checkbox is what says the user is looking at autonomy
      * rather than at track - and only for a square that is actually a station, since the menu it opens
      * is about where a train may be sent.
      *
+     * The page-less overload that used to sit here is gone.  It passed null and so fell back to the
+     * page the MAIN window is showing, which says nothing about a popup - the AD-B7 defect, where a
+     * right-click in a popup opened the menu of a station on a different page.  Nothing called it, and
+     * leaving a shorter, easier overload beside the correct one is an invitation to reintroduce that.
+     *
+     * @param onPage the page the square is actually on
      * @param x the square's column
      * @param y its row
-     * @return the station's name, or null when there is nothing there to act on
-     */
-    public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(int x, int y)
-    {
-        return autonomyStationAt(null, x, y);
-    }
-
-    /**
-     * @param onPage the page the square is actually on.  Passed in rather than read off the main
-     *        window's page list, which names the page THAT window is showing and says nothing about a
-     *        popup - so a right-click in a popup opened the menu of a station on a different page.
-     *        Null falls back to the selected page, for callers that have no square of their own.
+     * @return the station's square, or null when there is nothing there to act on
      */
     public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(
         String onPage, int x, int y)
@@ -12981,6 +12976,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     final Route.s88Triggers trigger = currentRoute.getTriggerType();
                     final boolean locked = currentRoute.isLocked();
 
+                    if (refuseWhileEditorOpen()) return;
+
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
                         routeEditor = new RouteEditor(title, this, routeName, csv, isEnabled, s88,
@@ -14178,6 +14175,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Realised on the EDT - see the note on the edit path.  The name is settled here
                 // because the loop counter above is not effectively final.
                 final String newName = String.format(proposedName, i);
+
+                if (refuseWhileEditorOpen()) return;
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
@@ -15915,6 +15914,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
+        // Not while an editor holds the diagram.
+        //
+        // Both of these finish by calling layoutEditingComplete, which re-enables the Edit button and
+        // rebuilds the autonomy session from pages it has just replaced.  Done underneath an open
+        // editor that is the AD-B8 failure exactly: the Edit button comes back, a second editor opens
+        // on the same diagram, and closing either unsets the other's edit flag - while the session the
+        // open one is holding has been swapped for a different object.
+        //
+        // Refused at the entry rather than guarded at the end, because by the end the route or the page
+        // has already been written and the refresh is the part that has to happen.
+        if (refuseWhileEditorOpen()) return;
+
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(

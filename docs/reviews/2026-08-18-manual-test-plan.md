@@ -236,6 +236,10 @@ Not scheduled - recorded so they are not lost.
 - **Semantic station shapes** (deferred 18 August): a triangle pointing the way a station accepts
   arrivals, instead of the current badge plus arrival chevrons. Needs a way to tell "can reverse" from
   "must reverse" first. The current yellow arrival chevrons are fine, so this is polish, not a fix.
+- **The station-label rebuild is roughly cubic on the feedback path.** `AutonomyBuilder` and
+  `uniqueNames()` are rebuilt per point per feedback event. Slow, not wrong, and it has not been felt
+  on a layout this size - but it is on the wrong side of the curve, so it wants doing before somebody
+  brings a bigger one. (Deferred out of the disposition audit's C6.)
 - **A configurable path-choosing rule.** Autonomy picks a path from those available by one fixed rule
   today. Offer the choice: prefer the shortest, always the shortest, random, or another rule. "Prefer"
   and "always" are different railways - always-shortest will queue trains behind one another on the

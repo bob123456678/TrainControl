@@ -238,6 +238,70 @@ public class testAutonomyDiagramTiles
     }
 
     /**
+     * A walk over the track as drawn cannot change tracks at a crossing.
+     *
+     * Two independent lines meeting on one square: north-south, and east-west.  Asking for a route from
+     * a square on one to a square on the other must answer "no continuous track", because there is
+     * none - the two lines cross without joining.
+     *
+     * The walk used to union the sides of every route on a square, so it arrived along one line and
+     * left along the other.  setOneWayRun then reported success and restricted stretches of both, and
+     * applyOneWay could not catch it: at the crossing no single route touches both the side it came
+     * from and the side it left by, so that square was skipped in silence.
+     */
+    @Test
+    public void testAWalkCannotChangeTracksAtACrossing() throws IOException
+    {
+        LayoutDiagram page = page("main", 5, 5);
+
+        // the east-west line, straights at orientation 0
+        straight(page, 1, 2);
+        add(page, componentType.CROSSING, 2, 2, 0);
+        straight(page, 3, 2);
+
+        // and the north-south one, across it - a straight is east-west until it is turned
+        add(page, componentType.STRAIGHT, 2, 1, 1);
+        add(page, componentType.STRAIGHT, 2, 3, 1);
+
+        TileGraph graph = graph(page);
+
+        assertNotNull(graph.findUndirectedPath(key("main", 1, 2), key("main", 3, 2)),
+            "the east-west line is continuous and must still be walkable");
+
+        assertNotNull(graph.findUndirectedPath(key("main", 2, 1), key("main", 2, 3)),
+            "and so is the north-south one");
+
+        assertNull(graph.findUndirectedPath(key("main", 1, 2), key("main", 2, 1)),
+            "the two lines cross without joining, so no track runs from one to the other");
+
+        assertNull(graph.findUndirectedPath(key("main", 2, 3), key("main", 3, 2)),
+            "nor the other way round");
+    }
+
+    /**
+     * A switch is the opposite case, and must keep working: its forks DO meet, at the toe.
+     */
+    @Test
+    public void testAWalkStillTakesEitherForkOfASwitch() throws IOException
+    {
+        LayoutDiagram page = page("main", 5, 5);
+
+        // a SWITCH_LEFT at orientation 0 has its toe S and its legs N and W
+        add(page, componentType.SWITCH_LEFT, 2, 2, 0);
+        add(page, componentType.STRAIGHT, 2, 3, 1);
+        add(page, componentType.STRAIGHT, 2, 1, 1);
+        straight(page, 1, 2);
+
+        TileGraph graph = graph(page);
+
+        assertNotNull(graph.findUndirectedPath(key("main", 2, 3), key("main", 2, 1)),
+            "straight through the switch");
+
+        assertNotNull(graph.findUndirectedPath(key("main", 2, 3), key("main", 1, 2)),
+            "and out by the diverging fork - both routes touch the toe, so both are continuous track");
+    }
+
+    /**
      * An overpass behaves identically here - what separates it from a crossing is lock derivation, not
      * connectivity.
      */

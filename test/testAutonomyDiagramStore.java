@@ -195,6 +195,59 @@ public class testAutonomyDiagramStore
      * Renaming a configuration does not leave the old file behind, which would come back as a duplicate
      * on the next load.
      */
+    /**
+     * A configuration file that cannot be parsed leaves the loaded setup exactly as it was.
+     *
+     * The failure has to arrive as an IOException, because that is what every caller of load catches -
+     * discardEdits and open both promise that a failed load changes nothing, and a bare JSONException
+     * walks straight out through them.  And the store must still hold what it held, rather than the
+     * half of it that was refilled before the bad file was reached.
+     */
+    @Test
+    public void testACorruptConfigurationChangesNothing() throws IOException
+    {
+        store.createConfiguration("Morning", null);
+        store.createConfiguration("Evening", null);
+        store.setActiveConfiguration("Morning");
+        store.setStation(new TileKey("main", 2, 3), true);
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(reloaded.getConfigurationNames().size(), 2, "precondition: both were written");
+
+        // One of them is now unreadable
+        File broken = new File(new File(layout, "config" + File.separator + "autonomy"),
+            "configuration-Evening.json");
+
+        assertTrue(broken.isFile(), "precondition: the file this test corrupts must exist");
+
+        Files.write(broken.toPath(), "{ not json at all".getBytes(StandardCharsets.UTF_8));
+
+        try
+        {
+            reloaded.load();
+
+            fail("a corrupt configuration must not load quietly");
+        }
+        catch (IOException expected)
+        {
+            assertTrue(String.valueOf(expected.getMessage()).contains("Evening"),
+                "the message must name the file, or the user cannot act on it: "
+                    + expected.getMessage());
+        }
+
+        // and the store is untouched - not emptied, and not half refilled
+        assertEquals(reloaded.getConfigurationNames().size(), 2,
+            "a failed load emptied the store it was supposed to leave alone");
+
+        assertEquals(reloaded.getActiveConfiguration(), "Morning");
+
+        assertTrue(reloaded.isStation(new TileKey("main", 2, 3)),
+            "the shared settings went with it");
+    }
+
     @Test
     public void testRenamingAConfigurationDoesNotLeaveTheOldFile() throws IOException
     {

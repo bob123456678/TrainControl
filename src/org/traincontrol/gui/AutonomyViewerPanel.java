@@ -1252,13 +1252,11 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            // The last configuration cannot go: a setup with none is a state nothing here could act on.
-            // Any OTHER failure - a permission problem, a full disk - is reported as itself rather than
-            // blamed on that rule.
-            JOptionPane.showMessageDialog(ui,
-                AutonomyCompanionStore.ERROR_LAST_CONFIGURATION.equals(e.getMessage())
-                    ? I18n.t("autosetup.ui.errorLastConfiguration")
-                    : String.valueOf(e.getMessage()));
+            // Reported as itself.  The special case for "that was the last configuration" went when the
+            // store stopped refusing to delete it, and testing for a message nothing throws any more
+            // only made the real failure - a permission problem, a sync lock, a full disk - look like a
+            // rule the program was enforcing.
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
         }
 
         refresh();

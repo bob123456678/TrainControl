@@ -1035,27 +1035,42 @@ public class TileGraph
 
         if (from.equals(to)) return new ArrayList<>(Collections.singletonList(from));
 
-        Map<TileKey, TileKey> cameFrom = new LinkedHashMap<>();
-        java.util.ArrayDeque<TileKey> frontier = new java.util.ArrayDeque<>();
+        // Walked as (square, side it was entered by), not as squares.
+        //
+        // A square can carry more than one piece of track - a crossing, a double curve - and asking
+        // only "which squares does this one touch" unions the sides of every route on it.  The walk
+        // could then arrive along one track and leave along the other, so a one-way run drawn between
+        // two points on genuinely separate tracks reported success and restricted stretches of both.
+        // applyOneWay could not save it either: at the jump square no single route touches both the
+        // side it came from and the side it left by, so that square was skipped in silence.
+        //
+        // Carrying the entry side means a route is only usable if it touches that side, which is the
+        // definition of continuous track and the same rule the reducer follows when it derives edges.
+        Map<String, Step> cameFrom = new LinkedHashMap<>();
+        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
 
-        frontier.add(from);
-        cameFrom.put(from, null);
+        // The first square has no entry side, so every route on it is open - which is right: the user
+        // picked that square and has not said which of its tracks they meant.
+        Step first = new Step(from, null);
+
+        frontier.add(first);
+        cameFrom.put(first.key(), null);
 
         while (!frontier.isEmpty())
         {
-            TileKey here = frontier.poll();
+            Step here = frontier.poll();
 
-            for (TileKey next : undirectedNeighbours(here))
+            for (Step next : continuations(here))
             {
-                if (cameFrom.containsKey(next)) continue;
+                if (cameFrom.containsKey(next.key())) continue;
 
-                cameFrom.put(next, here);
+                cameFrom.put(next.key(), here);
 
-                if (next.equals(to))
+                if (next.tile.equals(to))
                 {
                     List<TileKey> path = new ArrayList<>();
 
-                    for (TileKey at = to; at != null; at = cameFrom.get(at)) path.add(0, at);
+                    for (Step at = next; at != null; at = cameFrom.get(at.key())) path.add(0, at.tile);
 
                     return path;
                 }
@@ -1068,39 +1083,84 @@ public class TileGraph
     }
 
     /**
-     * Every square this one shares a route with, whichever way trains are allowed to run.
+     * One square of an undirected walk, remembered with the side it was entered by.
      */
-    private List<TileKey> undirectedNeighbours(TileKey tile)
+    private static final class Step
     {
-        List<TileKey> out = new ArrayList<>();
+        private final TileKey tile;
+        private final Side entrySide;
 
-        LayoutDiagramComponent component = tiles.get(tile);
+        Step(TileKey tile, Side entrySide)
+        {
+            this.tile = tile;
+            this.entrySide = entrySide;
+        }
+
+        /**
+         * Two arrivals at one square by different sides are different places to be, because different
+         * track leads on from each.  Keyed as both, so the walk explores both.
+         */
+        String key()
+        {
+            return tile + "@" + entrySide;
+        }
+    }
+
+    /**
+     * Where a walk that arrived here can go next, over continuous track only.
+     */
+    private List<Step> continuations(Step here)
+    {
+        List<Step> out = new ArrayList<>();
+
+        LayoutDiagramComponent component = tiles.get(here.tile);
 
         if (component == null) return out;
 
-        Set<Side> sides = new LinkedHashSet<>();
+        Set<Side> exits = new LinkedHashSet<>();
 
-        for (Route route : getRoutes(tile).values())
+        for (Route route : getRoutes(here.tile).values())
         {
-            sides.add(route.getA());
-            sides.add(route.getB());
+            // A route that does not touch the side we arrived by is a different piece of track laid
+            // across this square, not a way on from here.
+            if (here.entrySide != null && !route.touches(here.entrySide))
+            {
+                continue;
+            }
+
+            if (here.entrySide == null)
+            {
+                exits.add(route.getA());
+                exits.add(route.getB());
+            }
+            else
+            {
+                exits.add(route.getA() == here.entrySide ? route.getB() : route.getA());
+            }
         }
 
-        for (Side side : sides)
+        for (Side side : exits)
         {
-            if (side == null) continue;
+            if (side == null || side == here.entrySide) continue;
 
-            Landing landing = landing(tile, side);
+            Landing landing = landing(here.tile, side);
 
-            if (landing != null && tiles.containsKey(landing.getTile())) out.add(landing.getTile());
+            if (landing != null && tiles.containsKey(landing.getTile()))
+            {
+                out.add(new Step(landing.getTile(), landing.getEntrySide()));
+            }
         }
 
         // A portal's partner is a neighbour reached through no side at all, so the loop above cannot
         // find it - which made every path search stop dead at a tunnel or link, even though the reducer
-        // walks straight through one and derives edges over it.
-        TileKey partner = portals.get(tile);
+        // walks straight through one and derives edges over it.  It is entered by no side either, so
+        // every route on the far square is open, exactly as at the square the walk started from.
+        TileKey partner = portals.get(here.tile);
 
-        if (partner != null && tiles.containsKey(partner)) out.add(partner);
+        if (partner != null && tiles.containsKey(partner))
+        {
+            out.add(new Step(partner, null));
+        }
 
         return out;
     }

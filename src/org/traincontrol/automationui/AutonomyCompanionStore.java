@@ -1,5 +1,6 @@
 package org.traincontrol.automationui;
 
+import org.traincontrol.util.I18n;
 import org.traincontrol.base.LayoutDiagram;
 
 import java.io.File;
@@ -54,7 +55,6 @@ public class AutonomyCompanionStore
     public static final int VERSION = 1;
 
     public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
-    public static final String ERROR_LAST_CONFIGURATION = "autosetup.ui.errorLastConfiguration";
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
     public static final String ERROR_NAME_IN_USE = "autosetup.ui.errorNameInUse";
 
@@ -375,11 +375,14 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
         }
 
-        clear();
-
-        readShared(root);
-
-        activeConfiguration = root.optString("activeConfiguration", null);
+        // The configurations are read and parsed before anything is thrown away too.
+        //
+        // The rule above was applied to setup.json and stopped there, so a locked or corrupt
+        // configuration-*.json still emptied the store and then failed part way through refilling it -
+        // the same live, half-loaded state, arrived at by the same route.  Worse for a corrupt one: a
+        // bare JSONException is unchecked and walked straight out through every catch (IOException)
+        // that guards discardEdits and open, which expect a failed load to change nothing.
+        Map<String, JSONObject> loaded = new LinkedHashMap<>();
 
         File[] files = folder().listFiles();
 
@@ -391,15 +394,37 @@ public class AutonomyCompanionStore
 
                 if (!name.startsWith(CONFIGURATION_PREFIX) || !name.endsWith(".json")) continue;
 
-                JSONObject configuration = new JSONObject(
-                    new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+                JSONObject configuration;
 
-                configurations.put(
+                try
+                {
+                    configuration = new JSONObject(
+                        new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+                }
+                catch (org.json.JSONException e)
+                {
+                    // Named, and as an IOException.  Which file is unreadable is the only thing that
+                    // tells the user what to do about it, and a load failure is something the callers
+                    // already know how to survive - as long as it arrives in the form they catch.
+                    throw new IOException(
+                        I18n.f("autosetup.ui.errorConfigurationUnreadable", name,
+                            String.valueOf(e.getMessage())), e);
+                }
+
+                loaded.put(
                     configuration.optString("name",
                         name.substring(CONFIGURATION_PREFIX.length(), name.length() - 5)),
                     configuration);
             }
         }
+
+        clear();
+
+        readShared(root);
+
+        activeConfiguration = root.optString("activeConfiguration", null);
+
+        configurations.putAll(loaded);
 
         if (activeConfiguration != null && !configurations.containsKey(activeConfiguration))
         {
@@ -971,7 +996,10 @@ public class AutonomyCompanionStore
 
         if (file.isFile() && !file.delete())
         {
-            throw new IOException(file.getName());
+            // A sentence, because the caller shows this as the whole dialog.  It used to be the bare
+            // filename, so a user who could not delete a configuration was shown a window saying only
+            // "configuration-Yard.json" and left to work out both what had happened and what to do.
+            throw new IOException(I18n.f("autosetup.ui.errorDeleteConfigurationFailed", name));
         }
 
         configurations.remove(name);

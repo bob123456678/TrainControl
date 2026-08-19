@@ -111,9 +111,9 @@ Verified by hand: the copy constructor's body. The whole-file unmodelled element
 | | Finding | Status |
 |---|---|---|
 | B1 | `AD-A6`'s gate covers the Autonomy menu but not the banner's Load button | **Fixed 2026-08-17** |
-| B2 | `AD-B8`'s single gate is cleared underneath an open editor by three unguarded paths | Open |
-| B3 | `AD-B3`'s fix has an unfixed sibling in the one-way-run tracer | Open |
-| B4 | `AD-B4`'s residual: INFO findings are counted in one place and not the other | Open |
+| B2 | `AD-B8`'s single gate is cleared underneath an open editor by three unguarded paths | **Fixed 2026-08-18** - the three paths refuse while an editor is open |
+| B3 | `AD-B3`'s fix has an unfixed sibling in the one-way-run tracer | **Fixed 2026-08-18** - the undirected walk carries the side it arrived by |
+| B4 | `AD-B4`'s residual: INFO findings are counted in one place and not the other | **Fixed** before 2026-08-18 - INFO is bucketed with notices in both counts |
 | B5 | The caption migration rewrites every page on every launch when a label matches nothing | **Fixed 2026-08-17** |
 
 ### B1. `AD-A6`: the menu is gated, the banner button is not
@@ -176,12 +176,12 @@ skip. Introduced by `ddff66e`.
 
 | | Finding | Status |
 |---|---|---|
-| C1 | `AD-C15`'s twin: the Manage popup still offers the raw graph export | Open |
-| C2 | `AD-A5`'s residual: configuration files are read after `clear()` | Open |
-| C3 | `AD-B12` reports the failure as a bare filename, and left dead code | Open |
-| C4 | Deleting the running configuration lacks its sibling's busy check | Open |
-| C5 | Stale javadoc contradicts the `AD-A8`/`AD-C13` fixes | Open |
-| C6 | Dead overload, undeduplicated warning, cubic label rebuild | Open |
+| C1 | `AD-C15`'s twin: the Manage popup still offers the raw graph export | **Fixed** before 2026-08-18 - gated on a setup existing and no blocking problems |
+| C2 | `AD-A5`'s residual: configuration files are read after `clear()` | **Fixed 2026-08-18** - configurations are read before anything is cleared |
+| C3 | `AD-B12` reports the failure as a bare filename, and left dead code | **Fixed 2026-08-18** - a sentence instead of a filename, dead branch removed |
+| C4 | Deleting the running configuration lacks its sibling's busy check | **Fixed** before 2026-08-18 - `delete()` refuses while autonomy is busy |
+| C5 | Stale javadoc contradicts the `AD-A8`/`AD-C13` fixes | **Fixed** before 2026-08-18 - the javadoc matches the code |
+| C6 | Dead overload, undeduplicated warning, cubic label rebuild | **Fixed 2026-08-18** - dead overload removed; the cubic label rebuild is deferred |
 
 **C1.** The Auto tab's Manage popup still offers "Export raw graph as JSON" gated only on debug, in
 the two states the `AutonomyMenu` fix's own comment forbids - no setup, or blocking errors.
@@ -270,3 +270,26 @@ unfixed twin anyway, the C tier probably holds one or two more of the same shape
 **The two-construct question was not asked.** This pass checked each fix against its own finding. It
 did not ask whether the eleven passes' fixes interact - `DA-A1` and `DA-A2` compound, and that was
 noticed only because both landed in the same file. Nothing systematically looked for other pairs.
+
+
+---
+
+## Re-checked 2026-08-18
+
+Every row above is now closed. Four of them - B4, C1, C4, C5 - turned out to have been fixed already
+and never marked, which is its own small lesson: a review that keeps reporting settled work as
+outstanding is read as current and quietly wastes the next person's afternoon.
+
+Five needed doing. B2 was the one with teeth: `duplicateOrRenameCurrentLayout` and both places a route
+editor opens now refuse while an editor holds the diagram, rather than finishing by re-enabling the
+Edit button and rebuilding the autonomy session underneath one. B3 was next: `findUndirectedPath`
+walks `(square, side it arrived by)` instead of squares, so a one-way run drawn between two tracks that
+merely cross can no longer restrict stretches of both and report success. C2 reads every configuration
+file before anything is cleared, so a locked or corrupt one leaves the setup exactly as it was - and
+arrives as an IOException, which is what the callers catch. C3 and C6 are tidying.
+
+Pinned by tests: the crossing and the switch for B3, a corrupt configuration for C2. The rest are
+structural or wording and are covered by the suite continuing to pass.
+
+Left deferred: the cubic label rebuild inside C6, which belongs on the optimisation list rather than
+here - it is slow, not wrong.
