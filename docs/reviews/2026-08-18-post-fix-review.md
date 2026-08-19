@@ -61,12 +61,12 @@ do in silence, because the copy written to is not always the copy the user was l
 | | Finding | Disposition |
 |---|---|---|
 | B1 | "Locks are symmetric, nothing is given up" is false for hand-authored graphs | **Open** - claim withdrawn, fix stands |
-| B2 | The tile-settled counter is global, so one diagram waits on another's decodes | **Open** |
-| B3 | `parseAuto` is a second, unguarded door to two trains on one square | **Open** |
-| B4 | B6's twin `repaintAutoLocListFull` still searches on the EDT | **Open** |
-| B5 | A4 of the arrivals review: only the tooltip landed | **Open**, row corrected |
-| B6 | B4 of the audit: a third surface still buckets INFO as a warning | **Open** |
-| B7 | `testEveryFieldParseAutoReadsIsAlsoWritten` asserts two fields, not an invariant | **Open** |
+| B2 | The tile-settled counter is global, so one diagram waits on another's decodes | **Fixed 2026-08-18** (`0f743bf`) - only a first draw is counted, never an update |
+| B3 | `parseAuto` is a second, unguarded door to two trains on one square | **Fixed 2026-08-18** (`0f743bf`) - repaired on load, and the displaced train is named |
+| B4 | B6's twin `repaintAutoLocListFull` still searches on the EDT | **Fixed 2026-08-18** (`0f743bf`) - a deferSearch constructor; routes arrive from AutonomyRenderer |
+| B5 | A4 of the arrivals review: only the tooltip landed | **Fixed 2026-08-18** (`0f743bf`) - the marker is stripped and the name drawn |
+| B6 | B4 of the audit: a third surface still buckets INFO as a warning | **Fixed 2026-08-18** (`0f743bf`) - the viewer shows errors and warnings only |
+| B7 | `testEveryFieldParseAutoReadsIsAlsoWritten` asserts two fields, not an invariant | **Fixed 2026-08-18** (`0f743bf`) - the field list now comes from the reader |
 | B8 | Non-default route preferences enumerate every path to every station | **Open**, measure first |
 
 **B1 is the one to read.** The commit message for `2ab59d4` asserts that nothing is given up because the
