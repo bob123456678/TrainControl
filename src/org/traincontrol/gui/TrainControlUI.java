@@ -15870,6 +15870,65 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Asks a yes/no question on the event thread and waits for the answer.
+     *
+     * For the worker threads that need one: a modal dialog has to be built and shown on the EDT, and
+     * the caller genuinely cannot go on until it is answered.
+     *
+     * @param message the question
+     * @return the JOptionPane option chosen, or NO_OPTION if the dialog could not be shown - refusing
+     *         is the safe reading of "we could not ask"
+     */
+    private int confirmOnEventThread(String message)
+    {
+        final int[] answer = new int[]{JOptionPane.NO_OPTION};
+
+        try
+        {
+            Runnable ask = () -> answer[0] = JOptionPane.showOptionDialog(
+                this,
+                message,
+                I18n.t("ui.dialogConfirm"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
+            );
+
+            if (javax.swing.SwingUtilities.isEventDispatchThread())
+            {
+                ask.run();
+            }
+            else
+            {
+                javax.swing.SwingUtilities.invokeAndWait(ask);
+            }
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException e)
+        {
+            if (this.model != null) this.model.log(e);
+        }
+
+        return answer[0];
+    }
+
+    /**
+     * Reloads the configuration that is running, if one is and it is safe to.
+     *
+     * For changes made outside the editor that the running layout has to be rebuilt from - leaving a
+     * page out, most of all, which otherwise leaves the interface saying a page is out of autonomy
+     * while the railway carries on routing trains to the stations on it.
+     */
+    public void reloadActiveDiagramConfiguration()
+    {
+        if (this.activeDiagramConfiguration != null && !isAutonomyBusy())
+        {
+            getAutonomyViewerPanel().load(this.activeDiagramConfiguration, false);
+        }
+    }
+
+    /**
      * Opens the autonomy UI
      */
     public void ensureGraphUIVisible()
@@ -15885,7 +15944,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
+        // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
+        // a worker thread several checks later got round to disabling it, and there are three ways to
+        // press it - this button, the diagram strip's mirror, and the station right-click item - so
+        // two quick presses each spawned a worker, both passed the busy check, and both called
+        // runLocomotives, which has no reentrancy guard of its own.  A double dispatch of every train
+        // on the layout is not something to leave to how fast somebody clicks.
+        this.startAutonomy.setEnabled(false);
+
+        final java.util.concurrent.atomic.AtomicBoolean started =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
         new Thread(() ->
+            {
+            try
             {
                 if (!this.model.getPowerState())
                 {
@@ -15908,16 +15980,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (!conditionalRouteWarningShown)
                         {
-                            int dialogResult = JOptionPane.showOptionDialog(
-                                this,
-                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"), // message
-                                I18n.t("ui.dialogConfirm"),                               // title
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                YES_NO_OPTS,
-                                YES_NO_OPTS[0] // default selection
-                            );
+                            // On the EDT, like every other dialog in this method.  This one was
+                            // raised straight from the worker thread - building and showing a modal
+                            // dialog off the EDT, which is the kind of violation that mispaints on a
+                            // good day and deadlocks on a bad one.
+                            int dialogResult = confirmOnEventThread(
+                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
                             
                             if (dialogResult == JOptionPane.NO_OPTION)
                             {
@@ -15943,13 +16011,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                 {
+                    started.set(true);
+
                     new Thread( () ->
                     {
                         this.model.getAutoLayout().runLocomotives();
                     }).start();
 
-                    this.startAutonomy.setEnabled(false);
-                    this.gracefulStop.setEnabled(true);
+                    // Swing, so on the EDT.  These two were being set from the worker thread
+                    // directly, which the run-button mirror beside them already defends itself
+                    // against by re-marshalling - the buttons themselves did not.
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        this.startAutonomy.setEnabled(false);
+                        this.gracefulStop.setEnabled(true);
+                    });
 
                     // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
                     // thread, so isRunning() may still be false here and a refresh would re-enable the
@@ -15981,6 +16057,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                     ));
                 }
+            }
+            finally
+            {
+                // Given back on every path that did not start anything - a refused dialog, no power,
+                // no locomotives, an invalid layout.  Not on the path that did: there the button
+                // stays greyed, and the run is what gives it back.
+                if (!started.get())
+                {
+                    javax.swing.SwingUtilities.invokeLater(
+                        () -> this.startAutonomy.setEnabled(true));
+                }
+            }
             }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
 

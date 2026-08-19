@@ -5,6 +5,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -263,6 +265,84 @@ public class testControlStationFaults
         assertFalse(reloaded.isTimetableSequential(),
             "an ordinary layout came back sequential, so every timetable would wait for each entry "
             + "to arrive before starting the next");
+    }
+
+    /**
+     * An MFX locomotive whose file gives no address gets a real address, not its UID.
+     *
+     * The Central Station leaves the address out for some records, and the importer falls back to the
+     * UID - which is the address plus the decoder type's base. The DCC branch has always subtracted
+     * its base back off; the MFX branch never did. So such a locomotive was created pointing past the
+     * highest MFX address there is: every command sent to a decoder that cannot exist, every state
+     * update from the real one unmatched, and the bad address written into the database, where it
+     * stays. Nothing catches it later, because only setAddress validates and a fresh import does not
+     * go through setAddress.
+     */
+    @Test
+    public void testAnMfxLocomotiveWithNoAddressGetsARealOne() throws Exception
+    {
+        java.util.Map<String, String> record = new java.util.HashMap<>();
+
+        record.put("_type", "lokomotive");
+        record.put("name", "TC_MFX_NO_ADDRESS");
+        record.put("typ", "mfx");
+
+        // No "adresse" at all, which is the case the fallback exists for
+        record.put("uid", "0x4005");
+
+        java.util.List<java.util.Map<String, String>> records = new java.util.LinkedList<>();
+        records.add(record);
+
+        java.util.List<MarklinLocomotive> parsed =
+            new CS2File("localhost:8080", model).parseLocomotives(records);
+
+        assertEquals(parsed.size(), 1, "the record should have produced one locomotive");
+
+        MarklinLocomotive loc = parsed.get(0);
+
+        assertEquals(loc.getAddress(), 5,
+            "the UID was used as the address without the MFX base being taken back off, so this "
+            + "locomotive addresses a decoder that cannot exist - and nothing downstream will "
+            + "notice, because only setAddress validates and an import does not go through it");
+    }
+
+    /**
+     * Two identical commands far enough apart are two commands, not one and an echo.
+     *
+     * The CS3 sends its responses twice and the second is dropped, which is right - but the drop had
+     * no time bound at all, so an accessory told to go to the same place twice with no other traffic
+     * in between had the second command swallowed whole: no confirmation, no log, nothing to wake
+     * whatever was waiting on the actuation. Repeating a route is an ordinary thing to do.
+     */
+    @Test
+    public void testAnIdenticalCommandLaterIsNotADuplicate() throws Exception
+    {
+        int before = model.getNumMessagesProcessed();
+
+        model.receiveMessage(accessoryPacket());
+        model.receiveMessage(accessoryPacket());
+
+        assertEquals(model.getNumMessagesProcessed(), before + 1,
+            "the back-to-back repeat is the station saying the same thing twice, and only one of "
+            + "them is news");
+
+        // Past the window a double-send could possibly span
+        Thread.sleep(400);
+
+        model.receiveMessage(accessoryPacket());
+
+        assertEquals(model.getNumMessagesProcessed(), before + 2,
+            "an identical command a moment later was dropped as an echo.  It is a second real "
+            + "command - the same accessory told to go to the same place again - and dropping it "
+            + "leaves whatever waits on the actuation waiting");
+    }
+
+    /**
+     * One accessory command, built fresh each time so the two are equal without being the same object.
+     */
+    private static CS2Message accessoryPacket()
+    {
+        return new CS2Message(CS2Message.CMD_ACC_SWITCH, new byte[]{0x00, 0x00, 0x30, 0x40, 0x01, 0x01});
     }
 
     /**

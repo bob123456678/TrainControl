@@ -2082,23 +2082,6 @@ public class Layout
         }
     }
    
-    /**
-     * Returns a list of possible new neighbors (edges) that could be added from the specified point
-     * @param pointName
-     * @return 
-     */
-    public List<Point> getPossibleEdges(String pointName)
-    {
-        List<Point> pointList = new LinkedList<>();
-        
-        if (this.points.containsKey(pointName))
-        {
-            pointList.addAll(this.getPoints());
-            pointList.removeAll(this.getNeighbors(this.getPoint(pointName)));
-        }
-        
-        return pointList;    
-    }
     
     /**
      * Renames a point

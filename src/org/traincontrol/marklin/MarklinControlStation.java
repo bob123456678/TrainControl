@@ -218,6 +218,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Thread pools for network messages
     CS2Message lastPacket;
+
+    /**
+     * When lastPacket arrived.  The CS3's duplicate arrives back to back, so anything later than this
+     * window is a second real command rather than an echo of the first.
+     */
+    private long lastPacketAt;
+
+    private static final long DUPLICATE_WINDOW_NS = 250L * 1000000L;
     private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
@@ -2029,9 +2037,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         synchronized (this)
         {
             // CS3 seems to send respones packets twice.  Ignore the second.
-            if (lastPacket != null && 
-                    (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) && 
+            // Within a window, now.  The CS3's duplicate follows its original by milliseconds; an
+            // identical packet an hour later is a second real command - the same accessory told to go
+            // to the same place again, which is an ordinary thing to do - and dropping it meant no
+            // confirmation, no log, and nothing to wake whatever was waiting for the actuation.
+            if (lastPacket != null &&
+                    (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) &&
                     message.equals(lastPacket)
+                    && (System.nanoTime() - this.lastPacketAt) < DUPLICATE_WINDOW_NS
             )
             {
                 if (this.debug && DEBUG_LOG_NETWORK)
@@ -2042,6 +2055,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 return;
             }
         
+            this.lastPacketAt = System.nanoTime();
+
             numMessagesProcessed +=1;
             
             // Prints out each message
@@ -2240,6 +2255,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
+            // A discarded SYSTEM command is said out loud whether or not debugging is on.  Stop, go
+            // and emergency stop all come through here and all return void, so pressing Stop while
+            // the application is in its not-connected state did nothing and reported nothing - and
+            // that state is reached by a failed startup sync, which is exactly when the power may
+            // still physically be on from an earlier session.
+            if (m.isSysCommand() && !(debug && MarklinControlStation.DEBUG_LOG_NETWORK))
+            {
+                this.logf("network.transmissionDisabled", m.toString());
+            }
+
             if (debug && MarklinControlStation.DEBUG_LOG_NETWORK)
             {
                 this.logf("network.transmissionDisabled", m.toString());
@@ -3415,8 +3440,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            try (Scanner scanner = new Scanner(System.in))
+                            // Not try-with-resources: closing a Scanner closes System.in with it,
+                            // and this prompt is inside a retry loop.  A headless user who mistyped
+                            // the address once got NoSuchElementException out of the second prompt -
+                            // uncaught, since only HeadlessException is - instead of another go.
                             {
+                                Scanner scanner = new Scanner(System.in);
+
                                 System.out.print(I18n.t("ui.enterCentralStationIpPrompt"));
                                 initIP = scanner.next();
                             }

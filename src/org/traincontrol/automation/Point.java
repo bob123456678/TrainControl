@@ -506,12 +506,6 @@ public class Point
         return this.protectingSignal;
     }
 
-    /**
-     * The aspect this Point's signal was last told to show, so an unchanged one is not commanded again.
-     *
-     * Null until the first command, which is what makes the first one always go out - a signal left red
-     * by a previous session must be corrected even if the platform is free.
-     */
 
 
     public Point setProtectingSignal(String accessory)

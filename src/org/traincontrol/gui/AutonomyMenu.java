@@ -556,6 +556,22 @@ public class AutonomyMenu extends JMenu
 
             box.addActionListener(e ->
             {
+                // Refused while trains are running.  The running layout is built from the
+                // configuration as it was when it was loaded, and nothing here rebuilds it - so
+                // ticking a page off mid-run turned the strip red, took the station captions away and
+                // made right-clicks on that page's stations do nothing, while the layout carried on
+                // routing trains to those very stations.  The interface said the page was out of
+                // autonomy and the railway disagreed.
+                if (ui.isAutonomyBusy())
+                {
+                    box.setSelected(!box.isSelected());
+
+                    JOptionPane.showMessageDialog(ui,
+                        I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+                    return;
+                }
+
                 session.setPageExcluded(name, !box.isSelected());
 
                 try
@@ -568,6 +584,10 @@ public class AutonomyMenu extends JMenu
                 }
 
                 ui.autonomyMenuActed();
+
+                // And the layout itself, so that what is drawn and what is driven are built from the
+                // same list of pages.  Does nothing when none is loaded.
+                ui.reloadActiveDiagramConfiguration();
             });
 
             pages.add(box);
