@@ -58,7 +58,16 @@ public class testTimetableOnDerivedGraph
 
     private static final long SETTLE_TIMEOUT_MS = 90000;
 
-    private static final Random RANDOM = new Random();
+    /**
+     * Seeded, and the seed is in every failure message.
+     *
+     * This test picks stations and locomotives at random and then drives trains for minutes.  An
+     * unseeded Random makes a failure something nobody can repeat, which is the worst property a test
+     * of this size can have.  Pass -Dtimetable.seed to re-run a particular one.
+     */
+    private static final long SEED = Long.getLong("timetable.seed", 20260819L);
+
+    private static final Random RANDOM = new Random(SEED);
 
     /** The configuration this runs against, by name. */
     private static final String CONFIGURATION = "Autonomy 1";
@@ -226,23 +235,74 @@ public class testTimetableOnDerivedGraph
         awaitStopped(layout);
 
         // ---- and it drove what it was captured driving ---------------------------------------
+        //
+        // Compared against where the trains ACTUALLY are, rather than against the timetable itself.
+        //
+        // The obvious check here was to snapshot the timetable again and compare each entry's route to
+        // the string built from it before the replay.  That cannot fail: getTimetableSnapshot copies
+        // the LIST, not the entries, TimetablePath has no setter for its path, and executePath never
+        // writes one back - so both sides of the comparison were the same object, and a replay that
+        // drove a completely different arrival side would have passed.
+        //
+        // The layout's own state is an independent witness.  Every locomotive named in the timetable
+        // must be standing on the Point its last entry ends at, and on a derived graph a Point IS an
+        // arrival side - "Tunnel (northbound)" and "Tunnel (southbound)" are different names.  So this
+        // is exactly the substitution the old assertion claimed to catch, actually caught.
         List<TimetablePath> afterwards = layout.getTimetableSnapshot();
 
         assertEquals(afterwards.size(), captured.size(),
-            "the replay changed the timetable it was given");
+            "the replay changed the timetable it was given" + andTheSeed());
+
+        java.util.Map<String, String> shouldEndAt = new java.util.LinkedHashMap<>();
 
         for (int i = 0; i < afterwards.size(); i++)
         {
             TimetablePath entry = afterwards.get(i);
 
-            assertEquals(entry.getLoc().getName() + ": " + via(entry.getPath()), capturedRoutes.get(i),
-                "entry " + i + " ran a different route from the one captured.  A timetable names its "
-                + "points, and on this graph a station is several of them - so a route that still "
-                + "reaches the same station by a different arrival side is not the same route");
-
             assertTrue(entry.isExecuted(),
-                "entry " + i + " is not marked executed even though the run reported success");
+                "entry " + i + " is not marked executed even though the run reported success"
+                + andTheSeed());
+
+            List<Edge> path = entry.getPath();
+
+            if (path != null && !path.isEmpty())
+            {
+                // Later entries overwrite earlier ones, so this ends up holding each locomotive's LAST
+                // destination, which is where it should be standing now
+                shouldEndAt.put(entry.getLoc().getName(), path.get(path.size() - 1).getEnd().getName());
+            }
         }
+
+        assertFalse(shouldEndAt.isEmpty(),
+            "no entry carried a path, so nothing above was actually checked - which is how the "
+            + "assertion this replaced managed to pass while comparing an object with itself"
+            + andTheSeed());
+
+        for (java.util.Map.Entry<String, String> expected : shouldEndAt.entrySet())
+        {
+            Point at = layout.getLocomotiveLocation(model.getLocByName(expected.getKey()));
+
+            assertNotNull(at, expected.getKey() + " is on no square at all after the replay"
+                + andTheSeed());
+
+            assertEquals(at.getName(), expected.getValue(),
+                expected.getKey() + " finished at " + at.getName() + " rather than at "
+                + expected.getValue() + ", which is where the captured timetable said it would.  A "
+                + "station is several Points on this graph, so reaching the same station by a "
+                + "different arrival side is a different route" + andTheSeed());
+        }
+
+        // The recorded route strings are still worth keeping: they name what was captured, so a
+        // failure above can be read against them
+        assertEquals(capturedRoutes.size(), captured.size());
+    }
+
+    /**
+     * The seed, for a failure message, so a failing run can be repeated.
+     */
+    private static String andTheSeed()
+    {
+        return "  (seed " + SEED + " - re-run with -Dtimetable.seed=" + SEED + ")";
     }
 
     /**

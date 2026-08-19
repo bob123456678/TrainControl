@@ -282,7 +282,13 @@ public class Layout
      * How long a timetable entry may go on being unexecutable before the run gives up, in ms.
      *
      * A TIME rather than a count of attempts, because the pause between attempts is the user's own
-     * delay setting and may be zero - a count would mean six seconds on one layout and none on another.
+     * delay setting, which ranges from nothing to tens of seconds - so a count of attempts would mean
+     * a wildly different wall-clock bound on one layout than on another, and the thing being bounded
+     * here is how long a train stands still.
+     *
+     * (An earlier version of this said the pause "may be zero".  It may not: pacedWait falls back to
+     * COMPLETION_POLL when both delay settings are zero, precisely so that no wait loop spins.  The
+     * conclusion was right and the reason was wrong.)
      *
      * Minutes, deliberately. A train in a parallel timetable may legitimately wait a long while for
      * another to clear its way, and ending a run that would have worked is worse than a late finish.
@@ -3072,8 +3078,9 @@ public class Layout
      *
      * Blocks until every train has arrived, not merely until the last one has set off.
      *
-     * @return false if a move was abandoned because its path would not clear - only possible in
-     *         sequential (staging) mode.  A graceful stop is not an abandonment and returns true.
+     * @return false if a move was abandoned because its path would not clear.  Reachable in BOTH
+     *         modes: sequential gives up after a few attempts, parallel after TIMETABLE_STUCK_MS of
+     *         being refused.  A graceful stop is not an abandonment and returns true.
      */
     public boolean executeTimetable()
     {
@@ -3205,8 +3212,9 @@ public class Layout
                                 // saying so.
                                 //
                                 // Time rather than attempts here because the pause between attempts is
-                                // pacedWait, which honours the user's delay settings and may be zero.
-                                // Attempts would then mean something different on every layout.
+                                // pacedWait, which honours the user's delay settings - anything from a
+                                // quarter second to tens of them.  Attempts would then bound a
+                                // different amount of standing still on every layout.
                                 boolean stuck = this.timetableSequential
                                     ? attempts >= STAGING_MAX_ATTEMPTS
                                     : System.currentTimeMillis() - refusingSince >= TIMETABLE_STUCK_MS;

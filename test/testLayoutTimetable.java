@@ -277,8 +277,8 @@ public class testLayoutTimetable
      * noticed. Here the refusal is an invalidated layout, which executePath rejects on its first line.
      *
      * The bound is a TIME rather than a count of attempts, because the pause between attempts is the
-     * user's own delay setting and may be zero - a count would mean one thing on one layout and
-     * something else on another.
+     * user's own delay setting, anything from a quarter second to tens of them - a count would bound a
+     * different amount of standing still on one layout than on another.
      */
     @Test(timeOut = 60000)
     public void testAPermanentlyUnexecutableEntryEndsTheRun() throws Exception
