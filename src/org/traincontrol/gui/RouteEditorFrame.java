@@ -245,7 +245,8 @@ public class RouteEditorFrame extends JFrame
 
         if (rows == null)
         {
-            // A bracket.  Shown, but not editable here - the text editor still handles it.
+            // A bracket: rows cannot say it, so the expression is written out beneath the table and
+            // kept exactly as found when the route is saved
             conditionsEditable = false;
             conditions.setEnabled(false);
         }
@@ -341,7 +342,14 @@ public class RouteEditorFrame extends JFrame
 
         if (!conditionsEditable)
         {
-            readsAs.setText(I18n.t("route.ui.frameConditionsNotShown"));
+            // Actually show them.  The message said the conditions were "shown but not edited here"
+            // beneath an EMPTY table, which reads as having lost them.  A bracket cannot be a row list,
+            // but it can certainly be written out.
+            String text = conditionsAsFound == null ? ""
+                : NodeExpression.toTextRepresentation(conditionsAsFound,
+                    parent == null ? null : parent.getModel());
+
+            readsAs.setText(I18n.f("route.ui.frameConditionsNotShown", text));
             return;
         }
 

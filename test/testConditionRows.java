@@ -181,4 +181,65 @@ public class testConditionRows
 
         return out.append(')').toString();
     }
+
+    /**
+     * A condition chain that leans the other way is still a row list.
+     *
+     * The importer and the text parser disagree about nesting: NodeExpression.fromList builds
+     * LEFT-nested, and that is what MarklinRoute.addConditionS88 uses, so every route imported from the
+     * Central Station with three or more conditions arrives as AND(AND(a, b), c).  Refusing those made
+     * the condition editor unavailable for the most ordinary condition a route has.  AND is
+     * associative, so the two lean the same railway.
+     */
+    @Test
+    public void testALeftNestedChainIsAccepted()
+    {
+        NodeExpression left = new NodeAnd(
+            new NodeAnd(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(21, true)),
+                        new NodeRouteCommand(RouteCommand.RouteCommandFeedback(22, true))),
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(23, true)));
+
+        List<ConditionRows.Row> rows = ConditionRows.of(left);
+
+        assertNotNull(rows,
+            "a left-nested AND chain was refused, which is every Central Station route with three "
+            + "conditions in it");
+
+        assertEquals(rows.size(), 3);
+
+        assertEquals(rows.get(0).getJoiner(), ConditionRows.Joiner.AND);
+        assertEquals(rows.get(1).getJoiner(), ConditionRows.Joiner.AND);
+        assertNull(rows.get(2).getJoiner(), "the last row joins to nothing after it");
+
+        // And the rebuild says the same thing, leaning the way rows lean
+        NodeExpression rebuilt = ConditionRows.toExpression(rows);
+
+        NodeExpression sameThingLeaningRight = new NodeAnd(
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(21, true)),
+            new NodeAnd(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(22, true)),
+                        new NodeRouteCommand(RouteCommand.RouteCommandFeedback(23, true))));
+
+        assertEquals(describe(rebuilt), describe(sameThingLeaningRight),
+            "the rebuild has to mean what the original meant - AND is associative, so it may lean the "
+            + "other way, but it may not regroup");
+    }
+
+    /**
+     * A left-leaning chain of MIXED operators is still refused.
+     *
+     * The line the fix above must not cross.  OR(AND(a, b), c) is a bracket: it is not AND(a, OR(b,
+     * c)), and no list of rows says it.  Flattening it would change what the route does.
+     */
+    @Test
+    public void testALeftNestedMixedChainIsStillRefused()
+    {
+        NodeExpression mixed = new NodeOr(
+            new NodeAnd(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(21, true)),
+                        new NodeRouteCommand(RouteCommand.RouteCommandFeedback(22, true))),
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(23, true)));
+
+        assertNull(ConditionRows.of(mixed),
+            "OR(AND(a, b), c) was flattened into rows, which read as AND(a, OR(b, c)) - a different "
+            + "condition, and the route would change the next time anybody pressed Save");
+    }
 }
