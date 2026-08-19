@@ -13102,18 +13102,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {  
             if (routeName != null && this.model.getRoute(routeName) != null)
             {          
-                if (routeEditor != null && routeEditor.isVisible())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                        );
-                        routeEditor.requestFocus();
-                    });
-                }
-                else
                 {
                     Route currentRoute = this.model.getRoute(routeName);
                     
@@ -13138,6 +13126,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
+            // Checked on the EDT, immediately before constructing, so the two cannot be separated.
+            //
+            // The check used to run out here on the worker while the construction was posted to the
+            // event thread, which left a window between them: two clicks in quick succession - a
+            // double-click on the button is enough - both saw a null field, both posted, and two
+            // editors opened.  The field then held whichever was assigned last, and captured commands
+            // went to that one while the user was typing in the other.
+            //
+            // The model reads above stay off the EDT.  Only the decision moves.
+                        if (routeEditor != null && routeEditor.isVisible())
+                        {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                            );
+
+                            routeEditor.requestFocus();
+                            routeEditor.toFront();
+
+                            return;
+                        }
+
                         routeEditor = new RouteEditor(title, this, routeName, csv, isEnabled, s88,
                             trigger, conditions, locked);
                     });
@@ -14323,19 +14333,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 i++;
             }
 
-            if (routeEditor != null && routeEditor.isVisible())
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                    );
-                    routeEditor.requestFocus();
-                    routeEditor.toFront();
-                });
-            }
-            else
             {
                 // Realised on the EDT - see the note on the edit path.  The name is settled here
                 // because the loop counter above is not effectively final.
@@ -14345,6 +14342,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
+            // Checked on the EDT, immediately before constructing, so the two cannot be separated.
+            //
+            // The check used to run out here on the worker while the construction was posted to the
+            // event thread, which left a window between them: two clicks in quick succession - a
+            // double-click on the button is enough - both saw a null field, both posted, and two
+            // editors opened.  The field then held whichever was assigned last, and captured commands
+            // went to that one while the user was typing in the other.
+            //
+            // The model reads above stay off the EDT.  Only the decision moves.
+                    if (routeEditor != null && routeEditor.isVisible())
+                    {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                        );
+
+                        routeEditor.requestFocus();
+                        routeEditor.toFront();
+
+                        return;
+                    }
+
                     routeEditor = new RouteEditor(
                         I18n.t("route.ui.dialogAddNewRoute"),
                         this,
