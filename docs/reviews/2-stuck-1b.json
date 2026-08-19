@@ -1,0 +1,2978 @@
+{
+  "minDelay": 1,
+  "atomicRoutes": true,
+  "maxActiveTrains": 0,
+  "preArrivalSpeedReduction": 0.5,
+  "defaultLocSpeed": 35,
+  "maxLatency": 0,
+  "edges": [
+    {
+      "start": "TopMainR2Inter (southbound)",
+      "length": 0,
+      "end": "TopMainR2Pre (northbound)",
+      "commands": [{
+        "acc": "Signal 108",
+        "state": "green"
+      }]
+    },
+    {
+      "start": "1 - Main 0,3",
+      "length": 0,
+      "end": "TopMainR2Inter (southbound)"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TopMainR1Inter (westbound)",
+          "end": "TopR1ParkLong"
+        },
+        {
+          "start": "1 - Main 1,3",
+          "end": "TopMainR1Inter (southbound)"
+        }
+      ],
+      "start": "TopMainR1Inter (westbound)",
+      "length": 0,
+      "end": "TopR1ParkShort",
+      "commands": [
+        {
+          "acc": "Switch 73",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 97",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TopMainR1Inter (westbound)",
+          "end": "TopR1ParkShort"
+        },
+        {
+          "start": "1 - Main 1,3",
+          "end": "TopMainR1Inter (southbound)"
+        }
+      ],
+      "start": "TopMainR1Inter (westbound)",
+      "length": 0,
+      "end": "TopR1ParkLong",
+      "commands": [{
+        "acc": "Switch 73",
+        "state": "turn"
+      }]
+    },
+    {
+      "start": "TopMainR1Inter (southbound)",
+      "length": 0,
+      "end": "TopMainR1Pre (northbound)",
+      "commands": [{
+        "acc": "Signal 107",
+        "state": "green"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TopMainR1Inter (westbound)",
+          "end": "TopR1ParkShort"
+        },
+        {
+          "start": "TopMainR1Inter (westbound)",
+          "end": "TopR1ParkLong"
+        }
+      ],
+      "start": "1 - Main 1,3",
+      "length": 0,
+      "end": "TopMainR1Inter (southbound)",
+      "commands": [
+        {
+          "acc": "Switch 68",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 73",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 97",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainBCPre (westbound)",
+      "length": 0,
+      "end": "TunnelRightPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 87",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "BottomMainBCPre (eastbound)",
+        "end": "BottomMainC"
+      }],
+      "start": "BottomMainBCPre (eastbound)",
+      "length": 0,
+      "end": "BottomMainB (eastbound)",
+      "commands": [{
+        "acc": "Switch 60",
+        "state": "straight"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (eastbound)",
+          "end": "BottomMainB (eastbound)"
+        },
+        {
+          "start": "BottomMainB (westbound)",
+          "end": "BottomMainBCPre (westbound)"
+        }
+      ],
+      "start": "BottomMainBCPre (eastbound)",
+      "length": 0,
+      "end": "BottomMainC",
+      "commands": [{
+        "acc": "Switch 60",
+        "state": "turn"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainBCPre (westbound)",
+      "length": 0,
+      "end": "Tunnel (northbound)",
+      "commands": [
+        {
+          "acc": "Signal 87",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainBCPre (westbound)",
+      "length": 0,
+      "end": "TunnelLeftPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 87",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainBCPre (westbound)",
+      "length": 0,
+      "end": "TunnelCenterPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 87",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 12,7",
+          "end": "Tunnel (southbound)"
+        },
+        {
+          "start": "Tunnel (northbound)",
+          "end": "BottomInnerOtherside"
+        }
+      ],
+      "start": "TunnelPre",
+      "length": 0,
+      "end": "Tunnel (southbound)",
+      "commands": [
+        {
+          "acc": "Switch 10",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 104",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 41",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 12,7",
+          "end": "Tunnel (southbound)"
+        },
+        {
+          "start": "Tunnel (northbound)",
+          "end": "BottomInnerOtherside"
+        }
+      ],
+      "start": "1 - Main 12,7",
+      "length": 0,
+      "end": "BottomInnerOtherside",
+      "commands": [
+        {
+          "acc": "Switch 103",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 90",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TunnelPre",
+          "end": "Tunnel (southbound)"
+        },
+        {
+          "start": "1 - Main 12,7",
+          "end": "BottomInnerOtherside"
+        },
+        {
+          "start": "Tunnel (northbound)",
+          "end": "BottomInnerOtherside"
+        }
+      ],
+      "start": "1 - Main 12,7",
+      "length": 0,
+      "end": "Tunnel (southbound)",
+      "commands": [
+        {
+          "acc": "Switch 10",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 103",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 104",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 41",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomSecondary",
+          "end": "1 - Main 12,7"
+        },
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "TunnelLongPark"
+        }
+      ],
+      "start": "BottomSecondary",
+      "length": 0,
+      "end": "TunnelPre",
+      "commands": [
+        {
+          "acc": "Signal 62",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 58",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomSecondary",
+          "end": "TunnelPre"
+        },
+        {
+          "start": "BottomInner (northbound)",
+          "end": "1 - Main 12,7"
+        }
+      ],
+      "start": "BottomSecondary",
+      "length": 0,
+      "end": "1 - Main 12,7",
+      "commands": [
+        {
+          "acc": "Signal 61",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 58",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 59",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "BottomSecondary",
+        "end": "1 - Main 12,7"
+      }],
+      "start": "BottomInner (northbound)",
+      "length": 0,
+      "end": "1 - Main 12,7",
+      "commands": [{
+        "acc": "Switch 59",
+        "state": "turn"
+      }]
+    },
+    {
+      "start": "BottomInner (eastbound)",
+      "length": 0,
+      "end": "1 - Main 17,10 (eastbound)"
+    },
+    {
+      "lockedges": [{
+        "start": "BottomInnerOtherside",
+        "end": "1 - Main 19,7 (southbound)"
+      }],
+      "start": "BottomInnerOtherside",
+      "length": 0,
+      "end": "BottomCrossover (southbound)",
+      "commands": [
+        {
+          "acc": "Switch 50",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 52",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "BottomInnerOtherside",
+        "end": "BottomCrossover (southbound)"
+      }],
+      "start": "BottomInnerOtherside",
+      "length": 0,
+      "end": "1 - Main 19,7 (southbound)",
+      "commands": [{
+        "acc": "Switch 52",
+        "state": "straight"
+      }]
+    },
+    {
+      "start": "1 - Main 17,10 (westbound)",
+      "length": 0,
+      "end": "BottomInner (northbound)"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomCrossover (southbound)",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "RampDown",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "1 - Main 17,10 (eastbound)",
+      "length": 0,
+      "end": "1 - Main 19,7 (northbound)",
+      "commands": [{
+        "acc": "Switch 6",
+        "state": "turn"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 17,10 (eastbound)",
+          "end": "1 - Main 19,7 (northbound)"
+        },
+        {
+          "start": "1 - Main 19,7 (southbound)",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "RampDown",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "RampDown",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "BottomCrossover (southbound)",
+      "length": 0,
+      "end": "BottomSecondary",
+      "commands": [
+        {
+          "acc": "Switch 51",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 99",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomCrossover (southbound)",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "RampDown",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "1 - Main 19,7 (southbound)",
+      "length": 0,
+      "end": "1 - Main 17,10 (westbound)",
+      "commands": [{
+        "acc": "Switch 6",
+        "state": "turn"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomSecondary",
+          "end": "TunnelPre"
+        },
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "BottomMainAPre (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomMainA (eastbound)"
+        }
+      ],
+      "start": "BottomMainA (westbound)",
+      "length": 0,
+      "end": "TunnelLongPark",
+      "commands": [
+        {
+          "acc": "Signal 81",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 100",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 69",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 98",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainB (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainC",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainB (westbound)"
+        }
+      ],
+      "start": "BottomMainA (eastbound)",
+      "length": 0,
+      "end": "BottomMainPost (northbound)",
+      "commands": [
+        {
+          "acc": "Signal 40",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 11",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 72",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "TunnelLongPark"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "BottomMainA (westbound)",
+      "length": 0,
+      "end": "BottomMainAPre (westbound)",
+      "commands": [
+        {
+          "acc": "Switch 100",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 69",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "BottomMainBCPre (eastbound)",
+        "end": "BottomMainC"
+      }],
+      "start": "BottomMainB (westbound)",
+      "length": 0,
+      "end": "BottomMainBCPre (westbound)",
+      "commands": [{
+        "acc": "Switch 60",
+        "state": "straight"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainA (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainC",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainA (westbound)"
+        }
+      ],
+      "start": "BottomMainB (eastbound)",
+      "length": 0,
+      "end": "BottomMainPost (northbound)",
+      "commands": [
+        {
+          "acc": "Signal 38",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 11",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 72",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 74",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainA (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainB (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainA (westbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainB (westbound)"
+        }
+      ],
+      "start": "BottomMainC",
+      "length": 0,
+      "end": "BottomMainPost (northbound)",
+      "commands": [
+        {
+          "acc": "Signal 94",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 11",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 70",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 72",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 74",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomCrossover (southbound)",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "RampDown",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "RampDown",
+      "length": 0,
+      "end": "BottomSecondary",
+      "commands": [
+        {
+          "acc": "Signal 39",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 12",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 2",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 51",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 99",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 17,10 (eastbound)",
+          "end": "1 - Main 19,7 (northbound)"
+        },
+        {
+          "start": "BottomCrossover (southbound)",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "1 - Main 19,7 (southbound)",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "RampDown",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "RampDown",
+      "length": 0,
+      "end": "1 - Main 17,10 (westbound)",
+      "commands": [
+        {
+          "acc": "Switch 12",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 6",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainB (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainC",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainB (westbound)"
+        }
+      ],
+      "start": "BottomMainPost (southbound)",
+      "length": 0,
+      "end": "BottomMainA (westbound)",
+      "commands": [
+        {
+          "acc": "Signal 40",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 11",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 72",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainA (eastbound)",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainC",
+          "end": "BottomMainPost (northbound)"
+        },
+        {
+          "start": "BottomMainPost (southbound)",
+          "end": "BottomMainA (westbound)"
+        }
+      ],
+      "start": "BottomMainPost (southbound)",
+      "length": 0,
+      "end": "BottomMainB (westbound)",
+      "commands": [
+        {
+          "acc": "Signal 38",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 11",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 72",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 74",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "start": "BottomMainPost (northbound)",
+      "length": 0,
+      "end": "1 - Main 7,1 (westbound)"
+    },
+    {
+      "lockedges": [{
+        "start": "RampUp (westbound)",
+        "end": "1 - Main 1,3"
+      }],
+      "start": "RampUp (westbound)",
+      "length": 0,
+      "end": "1 - Main 0,3",
+      "commands": [
+        {
+          "acc": "Switch 128",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 9",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "RampUp (westbound)",
+        "end": "1 - Main 0,3"
+      }],
+      "start": "RampUp (westbound)",
+      "length": 0,
+      "end": "1 - Main 1,3",
+      "commands": [{
+        "acc": "Switch 9",
+        "state": "turn"
+      }]
+    },
+    {
+      "start": "RampUp (eastbound)",
+      "length": 0,
+      "end": "1 - Main 7,1 (eastbound)"
+    },
+    {
+      "start": "1 - Main 4,3 (southbound)",
+      "length": 0,
+      "end": "TopMainR0"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TopMainR1 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR2 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR1 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR2 (southbound)"
+        }
+      ],
+      "start": "1 - Main 4,3 (northbound)",
+      "length": 0,
+      "end": "TopMainPost (eastbound)",
+      "commands": [
+        {
+          "acc": "Switch 18",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 19",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 3",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "start": "TopMainR1 (southbound)",
+      "length": 0,
+      "end": "TopMainR1Pre (southbound)"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 4,3 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR2 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "1 - Main 4,3 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR2 (southbound)"
+        }
+      ],
+      "start": "TopMainR1 (northbound)",
+      "length": 0,
+      "end": "TopMainPost (eastbound)",
+      "commands": [
+        {
+          "acc": "Signal 63",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 3",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "start": "TopMainR1Pre (southbound)",
+      "length": 0,
+      "end": "TopMainR1Inter (westbound)",
+      "commands": [{
+        "acc": "Signal 107",
+        "state": "green"
+      }]
+    },
+    {
+      "start": "TopMainR1Pre (northbound)",
+      "length": 0,
+      "end": "TopMainR1 (northbound)"
+    },
+    {
+      "start": "TopMainR2 (southbound)",
+      "length": 0,
+      "end": "TopMainR2Pre (southbound)"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 4,3 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR1 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "1 - Main 4,3 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR1 (southbound)"
+        }
+      ],
+      "start": "TopMainR2 (northbound)",
+      "length": 0,
+      "end": "TopMainPost (eastbound)",
+      "commands": [
+        {
+          "acc": "Signal 64",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "start": "TopMainR2Pre (southbound)",
+      "length": 0,
+      "end": "TopMainR2Inter (westbound)",
+      "commands": [{
+        "acc": "Signal 108",
+        "state": "green"
+      }]
+    },
+    {
+      "start": "TopMainR2Pre (northbound)",
+      "length": 0,
+      "end": "TopMainR2 (northbound)"
+    },
+    {
+      "start": "1 - Main 7,1 (eastbound)",
+      "length": 0,
+      "end": "BottomMainPost (southbound)"
+    },
+    {
+      "start": "1 - Main 7,1 (westbound)",
+      "length": 0,
+      "end": "RampUp (westbound)"
+    },
+    {
+      "start": "TopMainPost (eastbound)",
+      "length": 0,
+      "end": "RampDown"
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TopMainR1 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR2 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR1 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR2 (southbound)"
+        }
+      ],
+      "start": "TopMainPost (westbound)",
+      "length": 0,
+      "end": "1 - Main 4,3 (southbound)",
+      "commands": [
+        {
+          "acc": "Switch 18",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 19",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 3",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 4,3 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR2 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "1 - Main 4,3 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR2 (southbound)"
+        }
+      ],
+      "start": "TopMainPost (westbound)",
+      "length": 0,
+      "end": "TopMainR1 (southbound)",
+      "commands": [
+        {
+          "acc": "Signal 63",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 3",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 4,3 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainR1 (northbound)",
+          "end": "TopMainPost (eastbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "1 - Main 4,3 (southbound)"
+        },
+        {
+          "start": "TopMainPost (westbound)",
+          "end": "TopMainR1 (southbound)"
+        }
+      ],
+      "start": "TopMainPost (westbound)",
+      "length": 0,
+      "end": "TopMainR2 (southbound)",
+      "commands": [
+        {
+          "acc": "Signal 64",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 75",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "Tunnel (southbound)",
+      "length": 0,
+      "end": "BottomMainBCPre (eastbound)",
+      "commands": [
+        {
+          "acc": "Signal 87",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "TunnelPre",
+          "end": "Tunnel (southbound)"
+        },
+        {
+          "start": "1 - Main 12,7",
+          "end": "BottomInnerOtherside"
+        },
+        {
+          "start": "1 - Main 12,7",
+          "end": "Tunnel (southbound)"
+        }
+      ],
+      "start": "Tunnel (northbound)",
+      "length": 0,
+      "end": "BottomInnerOtherside",
+      "commands": [
+        {
+          "acc": "Switch 10",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 41",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 90",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "Tunnel (southbound)",
+      "length": 0,
+      "end": "BottomMainAPre (eastbound)",
+      "commands": [
+        {
+          "acc": "Signal 86",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainAPre (westbound)",
+      "length": 0,
+      "end": "TunnelRightPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 86",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "1 - Main 17,10 (eastbound)",
+          "end": "1 - Main 19,7 (northbound)"
+        },
+        {
+          "start": "BottomCrossover (southbound)",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "1 - Main 19,7 (southbound)",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "TunnelLongPark"
+        },
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "BottomMainAPre (westbound)"
+        },
+        {
+          "start": "RampDown",
+          "end": "BottomSecondary"
+        },
+        {
+          "start": "RampDown",
+          "end": "1 - Main 17,10 (westbound)"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomMainA (eastbound)"
+        }
+      ],
+      "start": "BottomMainAPre (eastbound)",
+      "length": 0,
+      "end": "BottomCrossover (northbound)",
+      "commands": [
+        {
+          "acc": "Switch 100",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 51",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 69",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 99",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainA (westbound)",
+          "end": "TunnelLongPark"
+        },
+        {
+          "start": "BottomMainAPre (eastbound)",
+          "end": "BottomCrossover (northbound)"
+        }
+      ],
+      "start": "BottomMainAPre (eastbound)",
+      "length": 0,
+      "end": "BottomMainA (eastbound)",
+      "commands": [
+        {
+          "acc": "Switch 100",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 69",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainAPre (westbound)",
+      "length": 0,
+      "end": "Tunnel (northbound)",
+      "commands": [
+        {
+          "acc": "Signal 86",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelCenterPark"
+        }
+      ],
+      "start": "BottomMainAPre (westbound)",
+      "length": 0,
+      "end": "TunnelLeftPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 86",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelLeftPark"
+        },
+        {
+          "start": "BottomMainBCPre (westbound)",
+          "end": "TunnelCenterPark"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainAPre (eastbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelRightPark"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "Tunnel (northbound)"
+        },
+        {
+          "start": "BottomMainAPre (westbound)",
+          "end": "TunnelLeftPark"
+        }
+      ],
+      "start": "BottomMainAPre (westbound)",
+      "length": 0,
+      "end": "TunnelCenterPark",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Signal 86",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 1",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 49",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 79",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 80",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "2 - Bottom 13,13",
+      "commands": [{
+        "acc": "Switch 5",
+        "state": "straight"
+      }]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack10",
+      "commands": [
+        {
+          "acc": "Switch 4",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 55",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 56",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 71",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "2 - Bottom 14,10 (eastbound)",
+      "commands": [
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack9",
+      "commands": [
+        {
+          "acc": "Switch 29",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 31",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 4",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 55",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 56",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack8",
+      "commands": [
+        {
+          "acc": "Switch 29",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 31",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 4",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 55",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 56",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack7",
+      "commands": [
+        {
+          "acc": "Switch 31",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 4",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 55",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 56",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack4",
+      "commands": [
+        {
+          "acc": "Switch 4",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 7",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack5"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack6",
+      "commands": [
+        {
+          "acc": "Switch 4",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 55",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 56",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 13,13"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack10"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "2 - Bottom 14,10 (eastbound)"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack9"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack8"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack7"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack4"
+        },
+        {
+          "start": "LowerDownPre",
+          "end": "ParkingTrack6"
+        }
+      ],
+      "start": "LowerDownPre",
+      "length": 0,
+      "end": "ParkingTrack5",
+      "commands": [
+        {
+          "acc": "Switch 4",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 5",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 7",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 8",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "2 - Bottom 13,13",
+        "end": "2 - Bottom 17,12"
+      }],
+      "start": "2 - Bottom 13,13",
+      "length": 0,
+      "end": "2 - Bottom 16,13",
+      "commands": [
+        {
+          "acc": "Switch 53",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 54",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "2 - Bottom 13,13",
+        "end": "2 - Bottom 16,13"
+      }],
+      "start": "2 - Bottom 13,13",
+      "length": 0,
+      "end": "2 - Bottom 17,12",
+      "commands": [
+        {
+          "acc": "Switch 53",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 54",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 91",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "LowerFront",
+        "end": "ParkingTrack12"
+      }],
+      "start": "LowerFront",
+      "length": 0,
+      "end": "LowerFrontPre",
+      "commands": [{
+        "acc": "Switch 57",
+        "state": "straight"
+      }]
+    },
+    {
+      "lockedges": [{
+        "start": "LowerFront",
+        "end": "LowerFrontPre"
+      }],
+      "start": "LowerFront",
+      "length": 0,
+      "end": "ParkingTrack12",
+      "commands": [
+        {
+          "acc": "Signal 116",
+          "state": "green"
+        },
+        {
+          "acc": "Switch 101",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 57",
+          "state": "turn"
+        }
+      ]
+    },
+    {
+      "start": "2 - Bottom 14,10 (eastbound)",
+      "length": 0,
+      "end": "LowerDown"
+    },
+    {
+      "start": "LowerBackPre",
+      "length": 0,
+      "end": "LowerFront",
+      "commands": [{
+        "acc": "Switch 36",
+        "state": "straight"
+      }]
+    },
+    {
+      "lockedges": [{
+        "start": "LowerFrontPre",
+        "end": "2 - Bottom 7,12"
+      }],
+      "start": "LowerFrontPre",
+      "length": 0,
+      "end": "LowerParkingReverse",
+      "commands": [
+        {
+          "acc": "Switch 82",
+          "state": "straight"
+        },
+        {
+          "acc": "Switch 92",
+          "state": "straight"
+        }
+      ]
+    },
+    {
+      "lockedges": [{
+        "start": "LowerFrontPre",
+        "end": "LowerParkingReverse"
+      }],
+      "start": "LowerFrontPre",
+      "length": 0,
+      "end": "2 - Bottom 7,12",
+      "commands": [
+        {
+          "acc": "Switch 82",
+          "state": "turn"
+        },
+        {
+          "acc": "Switch 84",
+          "state": "turn"
+        }
+      ]
+    }
+  ],
+  "timetable": [],
+  "points": [
+    {
+      "s88": 1016,
+      "name": "TopMainR2Inter (southbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:0,11"
+    },
+    {
+      "s88": 1016,
+      "name": "TopMainR2Inter (westbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:0,11"
+    },
+    {
+      "s88": 1025,
+      "name": "1 - Main 0,3",
+      "station": false
+    },
+    {
+      "s88": 1015,
+      "name": "TopMainR1Inter (southbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:1,10"
+    },
+    {
+      "s88": 1015,
+      "name": "TopMainR1Inter (westbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:1,10"
+    },
+    {
+      "s88": 1026,
+      "name": "1 - Main 1,3",
+      "station": false
+    },
+    {
+      "s88": 1006,
+      "name": "BottomMainBCPre (westbound)",
+      "station": false,
+      "block": "1 - Main:10,13"
+    },
+    {
+      "s88": 1006,
+      "name": "BottomMainBCPre (eastbound)",
+      "station": false,
+      "block": "1 - Main:10,13"
+    },
+    {
+      "s88": 1029,
+      "name": "TunnelRightPark",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1018,
+      "name": "TunnelLongPark",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1030,
+      "name": "TunnelPre",
+      "station": false
+    },
+    {
+      "s88": 1008,
+      "name": "1 - Main 12,7",
+      "station": false
+    },
+    {
+      "s88": 1009,
+      "name": "BottomSecondary",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1011,
+      "name": "BottomInner (northbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:13,9"
+    },
+    {
+      "s88": 1011,
+      "name": "BottomInner (eastbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:13,9"
+    },
+    {
+      "s88": 2011,
+      "name": "BottomInnerOtherside",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 8,
+      "name": "1 - Main 17,10 (westbound)",
+      "station": false,
+      "block": "1 - Main:17,10"
+    },
+    {
+      "s88": 8,
+      "name": "1 - Main 17,10 (eastbound)",
+      "station": false,
+      "block": "1 - Main:17,10"
+    },
+    {
+      "s88": 14,
+      "name": "BottomCrossover (southbound)",
+      "station": false,
+      "block": "1 - Main:18,7"
+    },
+    {
+      "s88": 14,
+      "name": "BottomCrossover (northbound)",
+      "station": false,
+      "block": "1 - Main:18,7"
+    },
+    {
+      "s88": 15,
+      "name": "1 - Main 19,7 (southbound)",
+      "station": false,
+      "block": "1 - Main:19,7"
+    },
+    {
+      "s88": 15,
+      "name": "1 - Main 19,7 (northbound)",
+      "station": false,
+      "block": "1 - Main:19,7"
+    },
+    {
+      "s88": 1017,
+      "name": "TopR1ParkShort",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1024,
+      "name": "TopR1ParkLong",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 9,
+      "name": "BottomMainA (westbound)",
+      "station": false,
+      "maxTrainLength": 0,
+      "block": "1 - Main:20,12"
+    },
+    {
+      "loc": {"name": "BR 628 2"},
+      "s88": 9,
+      "name": "BottomMainA (eastbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:20,12"
+    },
+    {
+      "s88": 10,
+      "name": "BottomMainB (westbound)",
+      "station": false,
+      "maxTrainLength": 0,
+      "block": "1 - Main:20,13"
+    },
+    {
+      "loc": {"name": "BR 232 241-0"},
+      "s88": 10,
+      "name": "BottomMainB (eastbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:20,13"
+    },
+    {
+      "s88": 4,
+      "name": "BottomMainC",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2012,
+      "name": "RampDown",
+      "station": false
+    },
+    {
+      "s88": 2013,
+      "name": "BottomMainPost (southbound)",
+      "station": false,
+      "block": "1 - Main:22,6"
+    },
+    {
+      "s88": 2013,
+      "name": "BottomMainPost (northbound)",
+      "station": false,
+      "block": "1 - Main:22,6"
+    },
+    {
+      "s88": 1027,
+      "name": "RampUp (westbound)",
+      "station": false,
+      "block": "1 - Main:3,1"
+    },
+    {
+      "s88": 1027,
+      "name": "RampUp (eastbound)",
+      "station": false,
+      "block": "1 - Main:3,1"
+    },
+    {
+      "s88": 1021,
+      "name": "1 - Main 4,3 (southbound)",
+      "station": false,
+      "block": "1 - Main:4,3"
+    },
+    {
+      "s88": 1021,
+      "name": "1 - Main 4,3 (northbound)",
+      "station": false,
+      "block": "1 - Main:4,3"
+    },
+    {
+      "s88": 1010,
+      "name": "TopMainR0",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1022,
+      "name": "TopMainR1 (southbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:5,4"
+    },
+    {
+      "s88": 1022,
+      "name": "TopMainR1 (northbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:5,4"
+    },
+    {
+      "s88": 1012,
+      "name": "TopMainR1Pre (southbound)",
+      "station": false,
+      "block": "1 - Main:5,9"
+    },
+    {
+      "s88": 1012,
+      "name": "TopMainR1Pre (northbound)",
+      "station": false,
+      "block": "1 - Main:5,9"
+    },
+    {
+      "s88": 1023,
+      "name": "TopMainR2 (southbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:6,4"
+    },
+    {
+      "s88": 1023,
+      "name": "TopMainR2 (northbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:6,4"
+    },
+    {
+      "s88": 1013,
+      "name": "TopMainR2Pre (southbound)",
+      "station": false,
+      "block": "1 - Main:6,9"
+    },
+    {
+      "s88": 1013,
+      "name": "TopMainR2Pre (northbound)",
+      "station": false,
+      "block": "1 - Main:6,9"
+    },
+    {
+      "s88": 2014,
+      "name": "1 - Main 7,1 (westbound)",
+      "station": false,
+      "block": "1 - Main:7,1"
+    },
+    {
+      "s88": 2014,
+      "name": "1 - Main 7,1 (eastbound)",
+      "station": false,
+      "block": "1 - Main:7,1"
+    },
+    {
+      "s88": 2015,
+      "name": "TopMainPost (westbound)",
+      "station": false,
+      "block": "1 - Main:7,2"
+    },
+    {
+      "s88": 2015,
+      "name": "TopMainPost (eastbound)",
+      "station": false,
+      "block": "1 - Main:7,2"
+    },
+    {
+      "loc": {"name": "MY 1106"},
+      "s88": 1032,
+      "name": "Tunnel (southbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:7,7"
+    },
+    {
+      "s88": 1032,
+      "name": "Tunnel (northbound)",
+      "station": true,
+      "maxTrainLength": 0,
+      "block": "1 - Main:7,7"
+    },
+    {
+      "s88": 1028,
+      "name": "TunnelLeftPark",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1007,
+      "name": "BottomMainAPre (westbound)",
+      "station": false,
+      "block": "1 - Main:9,12"
+    },
+    {
+      "s88": 1007,
+      "name": "BottomMainAPre (eastbound)",
+      "station": false,
+      "block": "1 - Main:9,12"
+    },
+    {
+      "s88": 1031,
+      "name": "TunnelCenterPark",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1001,
+      "name": "LowerDownPre",
+      "station": false
+    },
+    {
+      "s88": 2004,
+      "name": "ParkingTrack11",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 3,
+      "name": "2 - Bottom 13,13",
+      "station": false
+    },
+    {
+      "s88": 5,
+      "name": "LowerFront",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2016,
+      "name": "ParkingTrack10",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2,
+      "name": "2 - Bottom 14,10 (westbound)",
+      "station": false,
+      "block": "2 - Bottom:14,10"
+    },
+    {
+      "s88": 2,
+      "name": "2 - Bottom 14,10 (eastbound)",
+      "station": false,
+      "block": "2 - Bottom:14,10"
+    },
+    {
+      "s88": 2007,
+      "name": "ParkingTrack9",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2006,
+      "name": "ParkingTrack8",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 6,
+      "name": "2 - Bottom 16,13",
+      "station": false
+    },
+    {
+      "s88": 2008,
+      "name": "ParkingTrack7",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2002,
+      "name": "ParkingTrack4",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2001,
+      "name": "LowerDown",
+      "station": false
+    },
+    {
+      "s88": 7,
+      "name": "2 - Bottom 17,12",
+      "station": false
+    },
+    {
+      "s88": 2009,
+      "name": "ParkingTrack6",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2003,
+      "name": "ParkingTrack5",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 2005,
+      "name": "LowerBack",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1,
+      "name": "LowerBackPre",
+      "station": false
+    },
+    {
+      "s88": 1003,
+      "name": "LowerParkingReverse",
+      "station": false
+    },
+    {
+      "s88": 1004,
+      "name": "2 - Bottom 4,6",
+      "station": false
+    },
+    {
+      "s88": 2010,
+      "name": "2 - Bottom 7,1",
+      "station": false
+    },
+    {
+      "s88": 1014,
+      "name": "2 - Bottom 7,12",
+      "station": false
+    },
+    {
+      "s88": 1002,
+      "name": "LowerFrontPre",
+      "station": false
+    },
+    {
+      "s88": 1020,
+      "name": "ParkingTrack12",
+      "station": true,
+      "maxTrainLength": 0
+    }
+  ],
+  "maxDelay": 5,
+  "turnOffFunctionsOnArrival": false,
+  "maxLocInactiveSeconds": 0,
+  "activateRoutes": false,
+  "activateRouteIDs": [],
+  "turnOnFunctionsOnDeparture": true,
+  "simulate": true
+}

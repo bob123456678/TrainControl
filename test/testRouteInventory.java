@@ -109,6 +109,12 @@ public class testRouteInventory
     {
         StringBuilder out = new StringBuilder("# ").append(label).append("\n\n");
 
+        // the configuration itself, so it can be read alongside the routes.  Written from the
+        // real-model path deliberately: a config dumped from a hand-built graph is not the one that
+        // runs, and reading one while believing it is the other has wasted a whole afternoon.
+        Files.write(new File(OUT, label + ".json").toPath(),
+            configuration.getBytes(StandardCharsets.UTF_8));
+
         model.parseAuto(configuration);
 
         Layout layout = model.getAutoLayout();
