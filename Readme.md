@@ -373,19 +373,18 @@ Tab icons provided by Freepik.
         - A station can now be paired with a signal, which is set to red while a train is standing at that station and back to green once it leaves.  Pick the signal by clicking it on the diagram, or by typing its address
         - A running train now draws its route along the track: red for the track ahead of it, green for the track it has already covered, and black arrows showing which way it is going
         - Stations can now say which directions trains are allowed to arrive from.  By default they accept trains from any direction; the autonomy editor has a new Arrivals view and a right-click setting, and the track diagram shows a small arrow where a station only takes trains one way
-        - Fixed bug where a platform holding two trains showed only one of them
-        - Fixed bug where a square that stopped being a station kept its name label, which then lit up whenever a train passed over it
         - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
-        - Fixed bug where switching between track diagram pages left the station labels on the previous page frozen, showing trains at platforms they had already left
-        - Fixed bug where cancelling an edit in the track diagram editor still deleted the autonomy settings of any squares that had been removed during that edit
-        - Fixed bug where two trains could be left standing on the same station square if the second was placed there by hand
-        - Fixed bug where trains stopped moving even though routes were available, because a train standing at a station blocked every route that merely passed nearby rather than only the routes that actually needed that track
-        - Fixed bug where a length set on a station counted for nothing, so train lengths were compared against routes that measured zero
-        - Fixed bug where the Start Autonomous Operation button was missing from the track diagram on any layout that already had autonomy set up
-        - Fixed bug where exporting an autonomy setup and importing it again lost the signal paired with each station
         - The route drawn on the diagram now follows the track through curves and switches, instead of turning square corners across it
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
+    - Routes
+        - A new route editor that is built from dropdowns rather than typed commands.  Each command is a row - what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards - so a route can be built and read without knowing the command syntax.  Conditions are rows too, with the operator joining each row to the ones below it, and a line underneath spelling out how the whole condition reads.  Capturing commands by working the railway still works exactly as before, and the older text editor is still there.  A command the new editor has no controls for is shown greyed and kept exactly as it was
+    - Track Diagrams
+        - You can now pick out several squares at once in the track diagram editor.  Shift-click picks a square, shift-click again unpicks it, and Escape lets everything go; a picked group can then be dragged, copied, pasted, rotated or deleted as one, and one press of undo takes the whole thing back.  A group dragged or pasted past the edge of the diagram is refused rather than losing the part that would fall off
+        - The editor now has a matching pair of size controls: one adds a column on the right and a row at the top and bottom, the other takes the same three away.  Shrinking is refused if any of those edges still holds track
+        - Removed the "paste entire row" and "paste entire column" options, and the four options that shifted the whole diagram from a chosen square.  Picking the squares you mean and dragging them does the same job, visibly, and can be corrected before it happens rather than after
+    - Central Station Sync
+        - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, and a second sync started while one is running is turned away rather than run alongside it
     - Locomotive Bug Fixes
         - Fixed bug where pressing Go on the Central Station while trains were already running discarded their accumulated running time from the statistics.  This also happened when clicking a track diagram accessory, which turns track power on first
         - The duplicate address check no longer reports an address as free when one locomotive is already using it.  Previously only addresses already shared by two or more locomotives counted
