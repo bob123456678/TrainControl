@@ -279,7 +279,7 @@ public class testRouteInventory
 
         StringBuilder out = new StringBuilder("# why BottomSecondary offers nothing\n\n");
 
-        for (String start : new String[]{"BottomSecondary", "BottomInnerOtherside"})
+        for (String start : new String[]{"BottomSecondary", "LowerBack", "LowerFront", "ParkingTrack6", "BottomMainC (eastbound)"})
         {
             Point from = layout.getPoint(start);
 

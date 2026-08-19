@@ -260,3 +260,30 @@ Length propagation is fixed too (`53e2327`): a length set on a platform never re
 because the sum covered only the track strictly BETWEEN two sensors and a station is an endpoint. All
 eleven lengths on the test layout summed to nothing. The tile an edge arrives on is counted now, which
 gives every tile along a route exactly once.
+
+## The stuck trains, diagnosed 18 August
+
+`Layout.debugPath` reports every candidate route with the reason it was refused, which is what made
+this findable. "No paths" is the same words for traffic and for a bug.
+
+**The cause.** Every route out of BottomSecondary was refused with *lock edge
+`1 - Main 12,7 -> BottomInnerOtherside` occupied* - because a train stood at BottomInnerOtherside. The
+two trains that could have moved both needed BottomSecondary, where that train was. A three-way cycle
+with nothing to break it.
+
+A lock edge is track kept clear so two routes cannot take one throat at once. A train standing at the
+Point one leads to is not on that track and cannot be: reduction cuts an edge at every sensor, so a
+Point's tile is an endpoint of the edges meeting there and an intermediate step of none of them - 54
+endpoint tiles and 259 intermediate tiles on this layout, none in both. Fixed in `2ab59d4`; BR 628
+went from nothing to seven destinations, matching what Adam said should be possible.
+
+**What is left, and is correct.** The other two trains are still held, now by a train genuinely
+standing on the platform they both want. That resolves itself the moment BR 628 moves.
+
+**Still open: `LowerBack` reaches nothing.** Zero destinations by BFS on an empty railway, so this is
+structural rather than traffic. `LowerFront` reaches only ParkingTrack12. Worth a look at page 2's
+connections.
+
+**Not a bug: `BottomMainC`.** Ten destinations reachable, four clear. The six refusals are all
+legitimate - three are out-and-back routes that reverse at BottomMainPost and then need the same
+switch in two positions, three pass back through a terminus.
