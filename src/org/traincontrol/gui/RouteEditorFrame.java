@@ -20,6 +20,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
@@ -64,14 +65,6 @@ public class RouteEditorFrame extends JFrame
 
     private final CommandTable commands = new CommandTable();
     private final ConditionTable conditions = new ConditionTable();
-
-    /**
-     * Commands the tables cannot show, kept exactly as they were and put back in place on save.
-     *
-     * Keyed by the position they held, so a route that mixes editable and non-editable commands keeps
-     * its order - the order is the route.
-     */
-    private final java.util.Map<Integer, RouteCommand> untouchable = new java.util.TreeMap<>();
 
     /** The condition expression as loaded, kept when the rows cannot express it. */
     private NodeExpression conditionsAsFound;
@@ -236,19 +229,14 @@ public class RouteEditorFrame extends JFrame
 
         List<RouteCommand> stored = route.getRoute();
 
-        for (int i = 0; i < stored.size(); i++)
+        for (RouteCommand command : stored)
         {
-            CommandRow row = CommandRow.of(stored.get(i));
-
-            if (row == null)
-            {
-                // No controls for this kind: keep it exactly as found, and remember where it sat
-                untouchable.put(i, stored.get(i));
-            }
-            else
-            {
-                commands.rows.add(row);
-            }
+            // A kind with no controls becomes a read-only row rather than a remembered index.  It was
+            // an index, held against the ORIGINAL position, and the editable rows moved under it: a
+            // route of [Switch 1, run "Yard", Switch 2] whose first row is deleted put "Yard" AFTER
+            // Switch 2, silently, having never shown it at all.  One list, one order, all of it on
+            // screen.
+            commands.rows.add(Entry.of(command));
         }
 
         conditionsAsFound = route.getConditions();
@@ -280,6 +268,31 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * The commands this route would be saved as, in order.
+     *
+     * The order IS the route, so this is the one thing about the editor most worth being able to look
+     * at directly: kept commands and edited rows come out interleaved exactly as the table shows them.
+     *
+     * @throws IllegalArgumentException when a row cannot be made into a command
+     */
+    public List<RouteCommand> commandsAsSaved()
+    {
+        List<RouteCommand> built = new LinkedList<>();
+
+        for (Entry entry : commands.rows) built.add(entry.toCommand());
+
+        return built;
+    }
+
+    /**
+     * Removes one command, which is what the minus button does to the selected row.
+     */
+    public void removeCommandAt(int index)
+    {
+        commands.removeAt(index);
+    }
+
+    /**
      * Whether a thrown accessory should write itself into the command list.
      */
     public boolean isCapturing()
@@ -306,17 +319,8 @@ public class RouteEditorFrame extends JFrame
 
             if (parsed == null) return;
 
-            CommandRow row = CommandRow.of(parsed);
-
-            if (row == null)
-            {
-                untouchable.put(commands.rows.size() + untouchable.size(), parsed);
-            }
-            else
-            {
-                commands.rows.add(row);
-                commands.fireTableDataChanged();
-            }
+            commands.rows.add(Entry.of(parsed));
+            commands.fireTableDataChanged();
         }
         catch (Exception e)
         {
@@ -405,28 +409,17 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
-        List<RouteCommand> built = new LinkedList<>();
+        List<RouteCommand> built;
 
         try
         {
-            for (CommandRow row : commands.rows)
-            {
-                built.add(row.toCommand());
-            }
+            built = commandsAsSaved();
         }
         catch (IllegalArgumentException e)
         {
             JOptionPane.showMessageDialog(this,
                 I18n.f("route.ui.frameRowIsWrong", String.valueOf(e.getMessage())));
             return;
-        }
-
-        // The commands with no controls go back where they were
-        for (java.util.Map.Entry<Integer, RouteCommand> kept : untouchable.entrySet())
-        {
-            int at = Math.min(kept.getKey(), built.size());
-
-            built.add(at, kept.getValue());
         }
 
         if (built.isEmpty())
@@ -509,6 +502,68 @@ public class RouteEditorFrame extends JFrame
     // ================================================================ the tables
 
     /**
+     * One line of the command list: either a row the user can edit, or a command kept as found.
+     *
+     * Both live in the same list because the ORDER is the route, and an order kept in two places is an
+     * order that comes apart.  It did: the kept commands used to be held in a map keyed by the position
+     * they had when the route was loaded, while the editable rows moved around underneath them, so
+     * deleting one editable row moved a sub-route call to the wrong side of a turnout.
+     *
+     * A kept command is shown, greyed and uneditable, rather than hidden.  A user who cannot see it
+     * cannot understand why the route does something the table does not mention.
+     */
+    private static final class Entry
+    {
+        private final CommandRow row;
+        private final RouteCommand kept;
+
+        private Entry(CommandRow row, RouteCommand kept)
+        {
+            this.row = row;
+            this.kept = kept;
+        }
+
+        /**
+         * An entry for a stored command: editable when the editor has controls for its kind.
+         */
+        static Entry of(RouteCommand command)
+        {
+            CommandRow row = CommandRow.of(command);
+
+            return row == null ? new Entry(null, command) : new Entry(row, null);
+        }
+
+        static Entry of(CommandRow row)
+        {
+            return new Entry(row, null);
+        }
+
+        boolean isEditable()
+        {
+            return row != null;
+        }
+
+        CommandRow getRow()
+        {
+            return row;
+        }
+
+        RouteCommand toCommand()
+        {
+            return row != null ? row.toCommand() : kept;
+        }
+
+        /**
+         * How a kept command reads in the table: its own stored line, which is what the old text
+         * editor showed and what the file holds.
+         */
+        String describe()
+        {
+            return kept == null ? "" : kept.toLine(null);
+        }
+    }
+
+    /**
      * The columns every command shares: what kind, which one, what to do, and - for the kinds that
      * have them - which decoder speaks to it and how long to wait afterwards.
      *
@@ -520,7 +575,7 @@ public class RouteEditorFrame extends JFrame
      */
     private final class CommandTable extends JTable
     {
-        private final List<CommandRow> rows = new ArrayList<>();
+        private final List<Entry> rows = new ArrayList<>();
 
         private final AbstractTableModel model = new AbstractTableModel()
         {
@@ -552,7 +607,16 @@ public class RouteEditorFrame extends JFrame
             @Override
             public Object getValueAt(int row, int column)
             {
-                CommandRow at = rows.get(row);
+                Entry entry = rows.get(row);
+
+                // A kept command has no columns to fill, so it reads as its own stored line in the
+                // first one.  Better an unfamiliar line than a blank row doing something unexplained.
+                if (!entry.isEditable())
+                {
+                    return column == 0 ? entry.describe() : "";
+                }
+
+                CommandRow at = entry.getRow();
 
                 switch (column)
                 {
@@ -574,7 +638,11 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int row, int column)
             {
-                CommandRow at = rows.get(row);
+                Entry entry = rows.get(row);
+
+                if (!entry.isEditable()) return false;
+
+                CommandRow at = entry.getRow();
 
                 if (column == 1) return CommandRow.hasTarget(at.getKind());
                 if (column == 2) return CommandRow.hasSetting(at.getKind());
@@ -587,7 +655,11 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void setValueAt(Object value, int row, int column)
             {
-                CommandRow at = rows.get(row);
+                Entry entry = rows.get(row);
+
+                if (!entry.isEditable()) return;
+
+                CommandRow at = entry.getRow();
 
                 String text = value == null ? "" : value.toString().trim();
 
@@ -609,7 +681,7 @@ public class RouteEditorFrame extends JFrame
                 if (!CommandRow.hasProtocol(kind)) protocol = null;
                 if (!CommandRow.hasDelay(kind)) delay = 0;
 
-                rows.set(row, new CommandRow(kind, target, setting, protocol, delay));
+                rows.set(row, Entry.of(new CommandRow(kind, target, setting, protocol, delay)));
 
                 fireTableRowsUpdated(row, row);
             }
@@ -640,19 +712,47 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(3).setPreferredWidth(70);
             getColumnModel().getColumn(4).setPreferredWidth(70);
+
+            // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
+            // says rather than something the user discovers by clicking
+            setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
+            {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean selected, boolean focused, int row, int column)
+                {
+                    java.awt.Component c = super.getTableCellRendererComponent(table, value, selected,
+                        focused, row, column);
+
+                    boolean editable = row < rows.size() && rows.get(row).isEditable();
+
+                    c.setEnabled(editable);
+
+                    if (!selected)
+                    {
+                        c.setForeground(editable
+                            ? table.getForeground() : java.awt.Color.GRAY);
+                    }
+
+                    return c;
+                }
+            });
         }
 
         void addRow()
         {
-            rows.add(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight"));
+            rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
             model.fireTableDataChanged();
         }
 
         void removeSelected()
         {
-            int at = getSelectedRow();
+            removeAt(getSelectedRow());
+        }
 
-            if (at < 0) return;
+        void removeAt(int at)
+        {
+            if (at < 0 || at >= rows.size()) return;
 
             rows.remove(at);
             model.fireTableDataChanged();

@@ -130,6 +130,64 @@ public class testRouteCapture
     }
 
     /**
+     * A command the editor has no controls for keeps its PLACE when the rows around it are edited.
+     *
+     * The order is the route.  A sub-route call sitting between two turnouts has to still sit between
+     * them after the user deletes one of the other rows - and it did not: kept commands were held in a
+     * map keyed by the position they had when the route was loaded, while the editable rows moved
+     * around underneath them.  Deleting the first row put the sub-route call on the wrong side of the
+     * second, silently, having never shown it in the table at all.
+     */
+    @Test
+    public void testAKeptCommandStaysWhereItWasWhenARowIsDeleted() throws Exception
+    {
+        if (GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("the route editor is a window - this needs a display");
+        }
+
+        final org.traincontrol.gui.RouteEditorFrame[] frame = new org.traincontrol.gui.RouteEditorFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            frame[0] = new org.traincontrol.gui.RouteEditorFrame(null, null);
+
+            // An editable command, one the editor has no controls for, then another editable one
+            frame[0].appendCommand(RouteCommand.RouteCommandAccessory(
+                1, Accessory.accessoryDecoderType.MM2, true).toLine(null));
+
+            frame[0].appendCommand(RouteCommand.RouteCommandRoute("Yard").toLine(null));
+
+            frame[0].appendCommand(RouteCommand.RouteCommandAccessory(
+                5, Accessory.accessoryDecoderType.MM2, true).toLine(null));
+        });
+
+        assertEquals(frame[0].commandCount(), 3,
+            "a command with no controls must still occupy a row - hiding it is what let it drift");
+
+        List<RouteCommand> before = frame[0].commandsAsSaved();
+
+        assertTrue(before.get(1).isRoute(),
+            "the kept command should sit between the two turnouts, where it was put");
+
+        // Delete the FIRST row, which is the ordinary edit that used to move the kept command
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].removeCommandAt(0));
+
+        List<RouteCommand> after = frame[0].commandsAsSaved();
+
+        assertEquals(after.size(), 2);
+
+        assertTrue(after.get(0).isRoute(),
+            "deleting the row ABOVE a kept command moved that command below the row beneath it - the "
+            + "sub-route now runs after the turnout instead of before it, and nothing on screen said "
+            + "so");
+
+        assertEquals(after.get(1).getAddress(), 5);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+    }
+
+    /**
      * A line that means nothing is ignored rather than ending the capture.
      */
     @Test
