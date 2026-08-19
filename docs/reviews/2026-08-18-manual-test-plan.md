@@ -12,47 +12,117 @@ in particular have never been seen rendered by anyone.
 
 ---
 
+Priority: In Autonomy 1b.json (the currently loaded config), trains are stuck and nothing moves, even though there are plenty of apparently valid routes.  Diagnose on priority.
+
+Bugs unrelated to what's explicitly in this review:
+
+Unrelated: path tracing doesn't follow switch angles, but rather right angles.  Make it follow switches and curves correctly.
+
+Unrelated: in station (yes/no), make it say yes, terminus if the MUST option is set, or reversing if the may option is set.
+
+Unrelated: diagram viewer right-click autonomy menus are active when the autonomy editor is open.  either ensure consistency, or (preferred) disable rightclickautonomymenu during that time. (with a warning)
+
+Unrelated: move "changing direction" just below station yes/no in the autonomy editor right click menu
+
+Unrelated: home locomotive option disappears from the track viewer right click menu if I edit the station type while there is a loc there
+
+Unrelated: "a train reaching {s88} from at least one direction could not go on" move to notices for non-stations
+
+Unrelated: starting autonomy from the right click menu on the track diagram does not properly activate the autonomy running view.  graceful stop button/option not activated.  regression.
+
+
 ## Tier 1 - diagram and editor, autonomy not running
 
 1. **Arrival marks look right.** Autonomy editor, visibility dropdown set to **Station Arrivals**.
    Every station with two or more ways in shows small yellow inward chevrons at its edges. Are they
    legible at your tile size, and clearly not overlapping the red/green direction arrows?
+
+Icons are OK but the offset is odd.  Also, [---] station labels are propagating into some of the stations in the editor, which overlaps.  
+
+Idea: make station shapes semantic.  A triangle that points in the way it accepts arrivals.  We just need a way to differentiate "can reverse" and "must reverse" then.
+
+
+Bug: clicking on the arrows to cycle in the editor affects an unrelated tile.  Changing in menu works.
+
 2. **Arrivals menu placement.** Right-click a station with two ways in. **"Trains may arrive…"** is on
    the top level of the menu, beside the usage choice, not inside it. Untick one side; the last
    remaining side should refuse to be unticked.
+
+Works
+
 3. **Arrival marks in the viewer.** Close the editor. A restricted station shows its marks on the
    running diagram; an unrestricted one shows nothing. (Deliberate - no clutter for the default.)
+
+Works, but overlap with the labels makes it suboptimal.  station icon may fix this.  Side requirement: left clicking a station icon should propagate the click to the s88 and back.
+
 4. **Switched-off link.** Switch a link off. It is greyed on the main diagram, not only in the editor.
+
+Looks right in the track diagram.  But not greyed out in the editor.  Also, move the "use this link" option out of the submenu into the top level.
+
 5. **Remove a locomotive from a non-station.** Right-click a point holding a loco that is not a
    station. **Remove** is present.
+
+Works.  For the 3 type options (trains can stop, trains can pass through, neither, prefix with "Yes, No, No".  Out of service -> nothing can pass.
 
 ## Tier 2 - data safety
 
 6. **Page switching keeps captions live.** Note a caption on page A. Go to page B, then C, then back to
    A. A's captions still update.
+
+They do- but I didn't test running with autonomy.
+
 7. **Popup diagram captions.** Pop out a page window, then repaint the main window. The popup's
    captions still update.
+
+Works, but I noticed that some locomotives get a V > suffix, not just V or >.  Also, when moving a locomotive from one point to the other, it would be ideal if its natural direction could be preserved, compatible with the entrance direction to the station.
+
 8. **Cancel in the track diagram editor.** Delete two sensor squares that carry names, lengths or
    arrival settings, then press **Cancel**. The track comes back AND those squares keep their autonomy
    settings.
+
+Labels disappear, stations stay.  Bug!  Confirmed the labels stay gone after reload.
+
+Also, the confirm dialog in the diagram editor says 'are you sure you want to exit without saving', but the autonomy is 'save before existing?'  make the latter consistent.
+
 9. **Undo covers captions.** Delete a captioned sensor, Ctrl+Z: tile and name both return. Drag a
    captioned tile, Ctrl+Z: the caption follows it back.
+
+Bug- caption says, but content changes from the name itself to [---].  
+
+Also: still don't see a way to move labels in the layout editor.
+
 10. **Export / import round trip.** Export the autonomy JSON, re-import it. It loads, and Tier 4 step
     19 still holds afterwards. (This was broken until 18 August - the block field was not written.)
+
+Seems fine.  Not sure what the block field is.
+
 11. **Page files.** After a save, `config/gleisbilder/` holds a one-time `.bak` beside a rewritten
     page, and nothing is corrupted.
+
+I don't see the .bak, but check on your end.
 
 ## Tier 3 - autonomy in simulation, one train
 
 12. **Running path drawing.** The route is a line along the track - red ahead of the train, green
     behind - with black arrowheads for direction. The train marker sits on the tile it has actually
     reached, not one ahead.
+
+Looks OK for now, couldn't test much.
+
 13. **Caption direction arrow.** The `>` `<` `^` `v` arrow appears consistently, both for a train you
     placed by hand and for one autonomy drove there.
+
+No, see above.  The arrow is sometimes duplicated.
+
 14. **Barred arrival is honoured.** Bar one side of a two-ended station, reload, run. Trains only pull
     in from the allowed side, and the station is still reachable.
+
+Honored.
+
 15. **Barred terminus loads.** Mark a terminus "trains may turn round here", bar one of its sides,
     reload. It loads - no "configuration is invalid and must be reloaded".
+
+Correct. And reversible locomotives are enforced.
 
 ## Tier 4 - the routing comparison (the one that matters most)
 
@@ -68,8 +138,18 @@ new model and were modelled as reversing stations in the old, so they are not co
     stations - pick ones with a reversing point, a double curve, a one-way section, and a busy junction
     - place a locomotive there and write down every destination offered (the locomotive panel's path
     list, or the station's right-click menu).
+
+Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1.  I will then validate.
+
+Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
+
 17. **Collect what the old model offered.** Load the v2.8.1 hand-authored `autonomy.json`. Place the
     same locomotive at the same station. Write down the destinations offered.
+
+Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1.  I will then validate.
+
+Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
+
 18. **Compare, and scrutinise the NEW-ONLY entries.** A destination the new model offers and the old
     one did not is the dangerous direction - it may be a journey no train can physically make. For each
     one, ask: does the route reverse at a square where a train cannot reverse? Does it change track
@@ -87,6 +167,8 @@ new model and were modelled as reversing stations in the old, so they are not co
     anything physically impossible? This is the strongest single test in the plan.
 
 ## Tier 5 - autonomy in simulation, several trains
+
+Deferred due to priority issue above.
 
 20. **Two trains, shared junction.** Run two trains whose routes cross a junction. They never receive
     conflicting routes through it; the second waits.
@@ -121,6 +203,8 @@ hand-authored railway said was impossible.
 That is a stronger oracle than the reachability set currently pinned in
 `test/autonomy_formats/v2_8_1-station-paths.txt`, which compares which pairs connect and is blind to
 whether the path between them is physically runnable.
+
+List them for me (start, end, intermediate) so I can test top examples here.
 
 **How weak that pinned file is, precisely:** on the sample layout every one of the 240 station pairs is
 reachable in the hand-authored graph, so pair reachability cannot distinguish a good model from a
