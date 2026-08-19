@@ -106,6 +106,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             copySelected.setEnabled(anyPicked);
             selectionMenu.add(copySelected);
 
+            JMenuItem fillSelected = new JMenuItem(I18n.t("layout.ui.menuFillSelection"));
+            fillSelected.addActionListener(event -> edit.fillSelection());
+            fillSelected.setEnabled(anyPicked && edit.hasToolFlag());
+            selectionMenu.add(fillSelected);
+
             JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
             rotateSelected.addActionListener(event -> edit.rotateSelection());
             rotateSelected.setEnabled(anyPicked);

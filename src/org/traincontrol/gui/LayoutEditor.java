@@ -1733,6 +1733,76 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Puts the armed tile on every picked square, as ONE undoable step.
+     *
+     * The verb the selection was missing.  Copy, paste, rotate and delete were all there, and the most
+     * ordinary thing anybody wants a row of squares for - laying a run of straight track, or turning a
+     * line of plain track into a row of nothing - had to be done a square at a time, which is the
+     * thing the selection exists to avoid.
+     *
+     * Needs a tile armed from the palette; with nothing armed there is nothing to put down, and it
+     * says so rather than clearing the squares, because "fill with nothing" is Delete and the two
+     * should not be one gesture with a hidden mode.
+     *
+     * @return true if anything was filled
+     */
+    synchronized public boolean fillSelection()
+    {
+        if (this.selection.isEmpty()) return false;
+
+        if (!this.hasToolFlag() || this.lastComponent == null)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNothingToFillWith"));
+
+            return false;
+        }
+
+        this.snapshotLayout();
+
+        boolean was = this.pauseRepaint;
+
+        this.pauseRepaint = true;
+
+        try
+        {
+            org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+            for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+            {
+                LayoutDiagramComponent placing = new LayoutDiagramComponent(this.lastComponent);
+
+                placing.setX(at.getX());
+                placing.setY(at.getY());
+
+                layout.addComponent(placing, at.getX(), at.getY());
+
+                // Whatever was written about the square being written over is about track that has
+                // just been replaced.  A fill does not carry captions with it - there is one tile
+                // being copied and many squares receiving it, so there is nothing to move.
+                if (autonomy != null)
+                {
+                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), at.getX(), at.getY()));
+                }
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+        }
+        finally
+        {
+            this.pauseRepaint = was;
+        }
+
+        this.refreshGrid();
+
+        this.refreshSelectionBorders();
+
+        return true;
+    }
+
+    /**
      * Deletes every picked square, as ONE undoable step.
      *
      * One snapshot for the group rather than one per square: a user who erases a yard and changes
