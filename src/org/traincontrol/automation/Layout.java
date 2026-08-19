@@ -120,6 +120,21 @@ public class Layout
         FEWEST_POINTS,
 
         /**
+         * The route past the MOST other stations, and its two companions below.
+         *
+         * The mirror of each rule above, and not a joke: a layout that should look busy wants its
+         * trains taking the long way round and calling past things, not going straight there.  Short
+         * is right for a timetable and wrong for a railway somebody is watching.
+         *
+         * Free to implement, since every rule ranks by a number - these are the same numbers negated.
+         */
+        MOST_STATIONS,
+
+        LONGEST_LENGTH,
+
+        MOST_POINTS,
+
+        /**
          * Whatever is found first, which with the destinations shuffled is effectively at random.
          *
          * The DEFAULT, because it is what every version before this did.  A preference that changed
@@ -163,31 +178,55 @@ public class Layout
             case FEWEST_POINTS:
                 return path.size();
 
+            case MOST_POINTS:
+                return -path.size();
+
             case SHORTEST_LENGTH:
-            {
-                int total = 0;
+                return lengthOf(path);
 
-                for (Edge e : path) total += Math.max(0, e.getLength());
-
-                return total;
-            }
+            case LONGEST_LENGTH:
+                return -lengthOf(path);
 
             case FEWEST_STATIONS:
-            {
-                int stations = 0;
+                return stationsOn(path);
 
-                // Every edge END except the last, which is the destination
-                for (int i = 0; i < path.size() - 1; i++)
-                {
-                    if (path.get(i).getEnd().isDestination()) stations++;
-                }
-
-                return stations;
-            }
+            case MOST_STATIONS:
+                return -stationsOn(path);
 
             default:
                 return 0;
         }
+    }
+
+    /**
+     * How long a route is, from the lengths set on its tiles.
+     */
+    private int lengthOf(List<Edge> path)
+    {
+        int total = 0;
+
+        for (Edge e : path) total += Math.max(0, e.getLength());
+
+        return total;
+    }
+
+    /**
+     * How many stations a route runs PAST.
+     *
+     * Every edge end except the last, which is the destination.  Counting that would add one to every
+     * candidate and change no ordering, while making a route to a station look worse than the same
+     * journey described without its last step.
+     */
+    private int stationsOn(List<Edge> path)
+    {
+        int stations = 0;
+
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            if (path.get(i).getEnd().isDestination()) stations++;
+        }
+
+        return stations;
     }
 
     // Set to false to disable locomotives
@@ -3996,18 +4035,43 @@ public class Layout
 
         try
         {
-            // The whole platform, not this copy: another copy holding a train means the platform is
-            // occupied, and the signal guards the platform.
-            boolean claimed = point.getBlockLocomotive() != null;
+            // Red if ANY platform this signal protects is claimed.
+            //
+            // Asked of the SIGNAL rather than of the square, which fixes two things at once.  Every
+            // copy of a square carries the same accessory, so this covers the whole platform without
+            // having to ask for the block - and it also covers the case the pairing UI allows and
+            // nothing else handled: two different stations paired to one signal.  A signal can only
+            // show one aspect, so it must stay red while either of them is occupied.
+            boolean claimed = false;
+
+            for (Point other : this.points.values())
+            {
+                if (!accessory.equals(other.getProtectingSignal())) continue;
+
+                if (other.getCurrentLocomotive() != null)
+                {
+                    claimed = true;
+                    break;
+                }
+            }
 
             // Only when it CHANGES.  This fires from every occupancy change, including each point a
             // locked path reserves - and configureAndLockPath holds the layout monitor across that
             // whole loop, so a command per reservation would put a burst of accessory traffic under
             // the lock the event thread also needs.  A signal already showing the right aspect needs
             // nothing sent to it.
-            if (point.wasSignalClaimed() != null && point.wasSignalClaimed() == claimed) return;
+            //
+            // Remembered against the SIGNAL, not against a Point.  It used to be a field on Point
+            // while "claimed" was a fact about the whole square, so a refresh on one copy that saw the
+            // square claimed through ANOTHER copy wrote true into its own memo while standing empty.
+            // Nothing ever wrote false back - the clearing transition was recorded on the other copy -
+            // so the next real arrival there matched its stale memo and sent no command at all, and
+            // the signal stayed GREEN with a train standing at the platform.
+            Boolean showing = this.signalAspects.get(accessory);
 
-            point.rememberSignalClaimed(claimed);
+            if (showing != null && showing == claimed) return;
+
+            this.signalAspects.put(accessory, claimed);
 
             Accessory acc = this.control.getAccessoryByName(accessory);
 
@@ -4023,6 +4087,15 @@ public class Layout
             this.control.log(e);
         }
     }
+
+    /**
+     * The aspect each protecting signal was last commanded to show.
+     *
+     * Keyed by the accessory, because that is the thing being commanded.  One signal, one aspect,
+     * however many platforms are paired to it and however many Points a platform is emitted as.
+     */
+    private final java.util.Map<String, Boolean> signalAspects =
+        new java.util.concurrent.ConcurrentHashMap<>();
 
     Locomotive locomotiveInBlock(String block, Point except)
     {
@@ -4139,7 +4212,21 @@ public class Layout
 
             if (!block.equals(other.getBlock())) continue;
 
-            if (other.getCurrentLocomotive() != null) other.setLocomotive(null);
+            Locomotive displaced = other.getCurrentLocomotive();
+
+            if (displaced == null) continue;
+
+            other.setLocomotive(null);
+
+            // Said out loud, as sanitizeMultiUnits says its own evictions.
+            //
+            // A train taken off here may now be nowhere on the graph at all - it keeps its place in
+            // the run list and its home claim, but staging skips it and pickPath will never dispatch
+            // it, so it is simply out of the session.  That is the right outcome when somebody has
+            // just said a different train is standing there, and the wrong thing to do in silence:
+            // the copy that gets written to is not always the copy the user was looking at.
+            this.control.logf("autolayout.infoLocomotiveDisplacedFromSquare",
+                displaced.getName(), claiming.getName());
         }
     }
 

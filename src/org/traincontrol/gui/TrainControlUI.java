@@ -4795,17 +4795,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
 
         // The default first - which is also the behaviour every existing railway already has - then
-        // the measured choices, in the order they are worth reaching for.
+        // the measured choices in pairs, each rule beside its opposite, so the symmetry is visible
+        // rather than something to work out from six similar labels.  Null is a separator.
         org.traincontrol.automation.Layout.PathPreference[] order =
         {
             org.traincontrol.automation.Layout.PathPreference.RANDOM,
+            null,
             org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS,
+            org.traincontrol.automation.Layout.PathPreference.MOST_STATIONS,
+            null,
             org.traincontrol.automation.Layout.PathPreference.SHORTEST_LENGTH,
-            org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS
+            org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
+            null,
+            org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS,
+            org.traincontrol.automation.Layout.PathPreference.MOST_POINTS
         };
 
         for (final org.traincontrol.automation.Layout.PathPreference option : order)
         {
+            if (option == null)
+            {
+                choose.addSeparator();
+                continue;
+            }
+
             javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(
                 I18n.t("autolayout.ui.pathPreference" + option.name()), option == stored);
 

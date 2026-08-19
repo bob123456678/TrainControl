@@ -313,8 +313,10 @@ switch in two positions, three pass back through a terminus.
 
 The state to fall back to. What is true of it:
 
-- 43 test classes clean. `testAutoDetect` fails 3/3 for want of a Central Station at 192.168.50.25,
-  which is this machine and not a regression.
+- 43 test classes reported clean - but that number was produced by a runner that read only the
+  failure count. Two classes, `testAutonomyPathValidation` and `testLayoutTiles`, ask init() for the
+  UI and had silently never run under it. Both pass when given a display. `testAutoDetect` fails 3/3
+  for want of a Central Station at 192.168.50.25, which is this machine and not a regression.
 - Trains move. The lock-edge deadlock is gone; BR 628 is offered seven destinations from
   BottomSecondary, and the two trains still held are held by a train genuinely standing where they
   both want to go.

@@ -260,17 +260,22 @@ public class AutonomyMenu extends JMenu
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(edit);
 
-            addSeparator();
-
-            JMenu manage = manageMenu(actions, session, loaded);
-            add(manage);
-
+            // Directly under the editor, because it answers the question the editor list raises.
+            //
+            // A page left out does not appear in the list above, so somebody looking for a page that is
+            // missing from it needs this item next - and it sat two groups further down, past the
+            // configuration management, where the answer reads as unrelated to the question.
             JMenu pages = pagesMenu(session);
             lastPagesMenu = pages;
             pages.setEnabled(chosen);
             pages.setToolTipText(chosen ? I18n.t("autosetup.ui.promptExcludePage")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
             add(pages);
+
+            addSeparator();
+
+            JMenu manage = manageMenu(actions, session, loaded);
+            add(manage);
 
         }
 

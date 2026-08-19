@@ -65,6 +65,19 @@ public final class BusyDialog extends JDialog
      */
     public static void run(Window parent, String message, Runnable work, Runnable whenDone)
     {
+        // Called from the event thread, always.
+        //
+        // The dispose below is posted with invokeLater and the show below that blocks until it runs.
+        // Off the EDT those two race: the dispose can run before the dialog is ever shown, and what is
+        // then displayed is an undecorated, application-modal window with nothing left alive to close
+        // it and no close button - the whole program hangs, unrecoverably.  Bounced rather than
+        // refused, so a caller on the wrong thread still works.
+        if (!SwingUtilities.isEventDispatchThread())
+        {
+            SwingUtilities.invokeLater(() -> run(parent, message, work, whenDone));
+            return;
+        }
+
         final BusyDialog dialog = new BusyDialog(parent, message);
 
         Thread worker = new Thread(() ->

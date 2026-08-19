@@ -19,7 +19,9 @@
   "points": {
     "1 - Main:0,11": {"maxTrainLength": 0},
     "1 - Main:20,14": {
+      "loc": {"name": "MY 1106"},
       "maxTrainLength": 0,
+      "facing": "E",
       "canReverse": true
     },
     "1 - Main:20,12": {
@@ -28,7 +30,6 @@
       "facing": "E"
     },
     "1 - Main:20,13": {
-      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 0,
       "facing": "E"
     },
@@ -51,7 +52,11 @@
       "maxTrainLength": 0,
       "autoDestination": false
     },
-    "1 - Main:1,10": {"maxTrainLength": 0},
+    "1 - Main:1,10": {
+      "loc": {"name": "BR 628 2"},
+      "maxTrainLength": 0,
+      "facing": "E"
+    },
     "1 - Main:2,7": {
       "mustReverse": true,
       "maxTrainLength": 0,
@@ -73,7 +78,6 @@
     "2 - Bottom:3,7": {},
     "2 - Bottom:7,1": {},
     "1 - Main:14,3": {
-      "loc": {"name": "MY 1106"},
       "maxTrainLength": 0,
       "facing": "E"
     },

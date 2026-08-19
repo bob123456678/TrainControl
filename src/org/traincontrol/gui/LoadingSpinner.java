@@ -69,10 +69,18 @@ public class LoadingSpinner extends JPanel
         super.removeNotify();
     }
 
+    /**
+     * A default only, and only when nobody has said otherwise.
+     *
+     * This used to return 120x120 unconditionally, which quietly overrode both callers: the grid asks
+     * for the space the diagram is about to take so that nothing jumps when the two are swapped, and
+     * the busy dialog asks for something small enough to sit above a line of text.  Neither got what
+     * it asked for, and the grid's comment described a behaviour that could not happen.
+     */
     @Override
     public Dimension getPreferredSize()
     {
-        return new Dimension(120, 120);
+        return isPreferredSizeSet() ? super.getPreferredSize() : new Dimension(120, 120);
     }
 
     @Override

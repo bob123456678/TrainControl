@@ -171,6 +171,9 @@ Monitor the usage of different locomotives.
     * Full UI for editing autonomy graph models
     * View station information and control trains via track diagrams
     * Customize autonomous operation by setting station priority, maximum train lengths, edge lengths, speed multipliers, and maximum train idle time
+    * Choose how trains pick their route: at random, past the fewest or most stations, over the shortest or longest track, or across the fewest or most sensors
+    * Pair a station with a signal that is thrown to red while a train is standing there, and back to green when it leaves
+    * Restrict which directions a station will accept trains from
     * Record and play back timetables
 * Programmatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
 * Monitor locomotive usage stats
@@ -366,6 +369,8 @@ Tab icons provided by Freepik.
 * v3.0.0 [Beta]
     - Autonomy
         - Deprecated the autonomy graph.  All automation is now handled in the track diagram and handled automatically.
+        - You can now choose how trains pick their route when more than one will do: at random, past the fewest or the most stations, over the shortest or the longest track, or across the fewest or the most sensors.  It is under Preferences, and it applies to every layout rather than to one configuration.  Leaving it alone keeps trains behaving exactly as they always have.  "Most stations" and "longest track" are there for a layout that should look busy rather than efficient - trains call past things instead of going straight there.  Stations you have marked as higher priority are still chosen first either way
+        - A station can now be paired with a signal, which is set to red while a train is standing at that station and back to green once it leaves.  Pick the signal by clicking it on the diagram, or by typing its address
         - A running train now draws its route along the track: red for the track ahead of it, green for the track it has already covered, and black arrows showing which way it is going
         - Stations can now say which directions trains are allowed to arrive from.  By default they accept trains from any direction; the autonomy editor has a new Arrivals view and a right-click setting, and the track diagram shows a small arrow where a station only takes trains one way
         - Fixed bug where a platform holding two trains showed only one of them
@@ -373,6 +378,12 @@ Tab icons provided by Freepik.
         - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
         - Fixed bug where switching between track diagram pages left the station labels on the previous page frozen, showing trains at platforms they had already left
         - Fixed bug where cancelling an edit in the track diagram editor still deleted the autonomy settings of any squares that had been removed during that edit
+        - Fixed bug where two trains could be left standing on the same station square if the second was placed there by hand
+        - Fixed bug where trains stopped moving even though routes were available, because a train standing at a station blocked every route that merely passed nearby rather than only the routes that actually needed that track
+        - Fixed bug where a length set on a station counted for nothing, so train lengths were compared against routes that measured zero
+        - Fixed bug where the Start Autonomous Operation button was missing from the track diagram on any layout that already had autonomy set up
+        - Fixed bug where exporting an autonomy setup and importing it again lost the signal paired with each station
+        - The route drawn on the diagram now follows the track through curves and switches, instead of turning square corners across it
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
     - Locomotive Bug Fixes
@@ -383,6 +394,10 @@ Tab icons provided by Freepik.
         - Fixed bug where capturing commands into a route that drives more than one locomotive kept only the last one.  Capturing a turnout would make an earlier locomotive’s speed, direction, or function disappear from the middle of the command list, and saving kept the shortened route
         - Fixed bug where importing a routes file containing two routes with the same name left the rejected one running invisibly in the background, still triggering from its s88 and still throwing switches, until TrainControl was restarted
         - Cancelling the bulk enable or disable prompt now cancels, instead of doing nothing at all and leaving the route list unrefreshed
+    - Track Diagrams
+        - Track diagrams now show a spinner while they are being drawn.  Previously the text labels appeared about a second before the track did, which made the diagram look wrong and then correct itself
+        - Loading a layout from disk now shows what it is doing while it works.  Previously the folder chooser closed and nothing appeared to happen until the finished diagram arrived
+
     - Track Diagram Bug Fixes
         - Fixed bug where renaming a track diagram page to the same name with different capitalization, such as "Main" to "MAIN", deleted the page instead of renaming it
         - Clicking a tile in the track diagram editor no longer counts as an edit, so the editor stops asking whether to save changes that were never made

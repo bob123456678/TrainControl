@@ -684,8 +684,26 @@ public final class HomeStaging
 
                 if (!canEnter(next, loc, blocked, state)) continue;
 
-                // An edge can be refused because of track the train never drives on
-                if (!lockEdgesFree(e, loc, state)) continue;
+                // Lock edges are deliberately NOT consulted here.
+                //
+                // They used to be, by the rule the runtime used at the time: an edge counted as
+                // occupied when the point it led to held another locomotive.  The runtime stopped
+                // asking that - a lock edge holds a shared throat clear, and a train standing at the
+                // point one leads to is not on that throat - and this half was left behind, so the
+                // planner became the stricter of the two.
+                //
+                // That is the worst way round for it to be wrong.  The planner refused arrangements
+                // the runtime would have driven, and reported NO_PLAN_FOUND after exhausting its whole
+                // search budget - the vaguest message this can give, after the longest wait.
+                //
+                // Nothing replaces it, rather than the runtime's own test being copied, because a
+                // staging plan runs ONE TRAIN AT A TIME (see Layout's staging flag).  The runtime rule
+                // is "is another route holding this track", and during a staging move no other route
+                // is running, so the answer is always no.  A check that cannot fire is worse than no
+                // check: it invites a future reader to make it fire.
+                //
+                // auditAgainstRuntime is what proves the two halves agree; it compares this search
+                // against getPossiblePaths, which is where isPathClear applies the runtime rule.
 
                 Map<String, Accessory.accessorySetting> commands = withCommandsOf(e, current.commands);
 
@@ -796,29 +814,6 @@ public final class HomeStaging
         }
 
         return false;
-    }
-
-    /**
-     * Whether every edge this one locks is free.
-     *
-     * Taking an edge also claims the edges listed against it, and an edge counts as occupied when the
-     * point it leads to holds another locomotive.  So a route can be refused because of track it never
-     * touches - which is not a detail on a layout like the author's, where 54 of 92 edges carry lock
-     * edges between them.
-     *
-     * Only the endpoint is consulted: the runtime's own "locked" flag is set while a path is being
-     * driven, and the planner reasons about a layout at rest where nothing holds a lock.
-     */
-    private static boolean lockEdgesFree(Edge e, Locomotive loc, Map<Point, Locomotive> state)
-    {
-        for (Edge locked : e.getLockEdges())
-        {
-            Locomotive occupant = state.get(locked.getEnd());
-
-            if (occupant != null && !occupant.equals(loc)) return false;
-        }
-
-        return true;
     }
 
     /**
