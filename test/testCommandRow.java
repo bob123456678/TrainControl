@@ -56,6 +56,107 @@ public class testCommandRow
     }
 
     /**
+     * A DCC accessory stays DCC.
+     *
+     * The one that got away.  The corpus above is twelve commands and every one of them is MM2, so the
+     * editor's hardcoded "everything is MM2" was invisible to it.  MM2 and DCC are separate address
+     * spaces - MarklinAccessory puts them at different UIDs - so this is not a switch that fails to
+     * throw, it is a DIFFERENT switch throwing, or a phantom one being invented.
+     */
+    @Test
+    public void testADccAccessoryDoesNotBecomeMm2()
+    {
+        RouteCommand original =
+            RouteCommand.RouteCommandAccessory(3, Accessory.accessoryDecoderType.DCC, true);
+
+        CommandRow row = CommandRow.of(original);
+
+        assertEquals(row.getProtocol(), Accessory.accessoryDecoderType.DCC,
+            "the row lost the decoder type, so the editor has nothing left to save it with");
+
+        // Deliberately handed MM2, the way the editor's save does, to prove the ROW wins
+        RouteCommand rebuilt = row.toCommand(Accessory.accessoryDecoderType.MM2);
+
+        assertEquals(rebuilt.getProtocol(), Accessory.accessoryDecoderType.DCC,
+            "a DCC accessory came back as MM2, which is a different physical decoder - the route now "
+            + "throws the wrong turnout, or invents one that does not exist");
+
+        assertEquals(rebuilt.toLine(null), original.toLine(null));
+    }
+
+    /**
+     * A row the user built from scratch takes the protocol it is given.
+     *
+     * The other half of the same rule: carrying the original must not mean ignoring the caller, or a
+     * new command could never be anything but the default.
+     */
+    @Test
+    public void testANewRowTakesTheProtocolItIsGiven()
+    {
+        CommandRow fresh = new CommandRow(CommandRow.Kind.ACCESSORY, "9", "turn");
+
+        assertEquals(fresh.toCommand(Accessory.accessoryDecoderType.DCC).getProtocol(),
+            Accessory.accessoryDecoderType.DCC,
+            "a row with no protocol of its own must take the editor's choice");
+    }
+
+    /**
+     * Delays survive the trip, on every kind that can carry one.
+     *
+     * A delay is how a layout keeps a slow point motor from being overtaken by the next command, or
+     * two motors from drawing at once.  Losing them all on one Save leaves a route that still lists
+     * correctly, still runs, and fires everything at once.
+     */
+    @Test
+    public void testDelaysSurvive()
+    {
+        List<RouteCommand> corpus = Arrays.asList(
+            RouteCommand.RouteCommandAccessory(12, Accessory.accessoryDecoderType.MM2, true),
+            RouteCommand.RouteCommandAccessory(4, Accessory.accessoryDecoderType.DCC, false),
+            RouteCommand.RouteCommandLocomotiveSpeed("BR 628", 40),
+            RouteCommand.RouteCommandLocomotiveDirection("BR 628", Locomotive.locDirection.DIR_BACKWARD),
+            RouteCommand.RouteCommandFunction("BR 628", 4, true)
+        );
+
+        for (RouteCommand original : corpus)
+        {
+            original.setDelay(500);
+
+            CommandRow row = CommandRow.of(original);
+
+            assertEquals(row.getDelay(), 500,
+                "the row lost the delay of a " + row.getKind() + " command");
+
+            RouteCommand rebuilt = row.toCommand(Accessory.accessoryDecoderType.MM2);
+
+            assertEquals(rebuilt.getDelay(), 500,
+                "a " + row.getKind() + " command lost its delay on the way back.  The route still "
+                + "lists and still runs - it just fires everything at once");
+
+            assertEquals(rebuilt.toLine(null), original.toLine(null));
+        }
+    }
+
+    /**
+     * No delay stays the ABSENCE of a delay, rather than becoming a zero.
+     *
+     * RouteCommand treats those as different: toLine only writes a positive delay, so a command built
+     * with an explicit zero stops equalling its own round trip.
+     */
+    @Test
+    public void testNoDelayStaysNoDelay()
+    {
+        RouteCommand original = RouteCommand.RouteCommandAccessory(
+            7, Accessory.accessoryDecoderType.MM2, true);
+
+        RouteCommand rebuilt = CommandRow.of(original).toCommand(Accessory.accessoryDecoderType.MM2);
+
+        assertEquals(rebuilt, original,
+            "a command with no delay came back unequal to itself, so every unedited row would look "
+            + "changed");
+    }
+
+    /**
      * A kind with no controls comes back as null, so the editor keeps the original.
      */
     @Test

@@ -46,11 +46,37 @@ public final class CommandRow
     /** On/off, a speed, a function number, or a direction.  Empty where the kind has no setting. */
     private final String setting;
 
+    /**
+     * The decoder type of an accessory, or null for every other kind.
+     *
+     * Carried rather than assumed because MM2 and DCC are SEPARATE address spaces - MarklinAccessory
+     * puts them at different UIDs - so a DCC turnout saved as MM2 does not fail to move, it moves a
+     * different piece of railway, or invents a phantom one.  The editor had no column for this and
+     * defaulted every accessory to MM2, which rewrote DCC routes on Save.
+     */
+    private final Accessory.accessoryDecoderType protocol;
+
+    /**
+     * How long to wait after this command, in milliseconds.  Zero means no wait.
+     *
+     * A layout timed so a slow point motor settles before the next command, or so two motors never
+     * draw at once, is held together by these numbers and by nothing else on screen.
+     */
+    private final int delay;
+
     public CommandRow(Kind kind, String target, String setting)
+    {
+        this(kind, target, setting, null, 0);
+    }
+
+    public CommandRow(Kind kind, String target, String setting,
+        Accessory.accessoryDecoderType protocol, int delay)
     {
         this.kind = kind;
         this.target = target == null ? "" : target;
         this.setting = setting == null ? "" : setting;
+        this.protocol = protocol;
+        this.delay = delay < 0 ? 0 : delay;
     }
 
     public Kind getKind()
@@ -66,6 +92,37 @@ public final class CommandRow
     public String getSetting()
     {
         return setting;
+    }
+
+    /**
+     * The accessory's decoder type, or null where the kind has none.
+     */
+    public Accessory.accessoryDecoderType getProtocol()
+    {
+        return protocol;
+    }
+
+    public int getDelay()
+    {
+        return delay;
+    }
+
+    /**
+     * Whether this kind can carry a decoder type, so the editor can grey the cell for the rest.
+     */
+    public static boolean hasProtocol(Kind kind)
+    {
+        return kind == Kind.ACCESSORY;
+    }
+
+    /**
+     * Whether this kind can carry a delay.  Feedback, stop and functions-off cannot - RouteCommand
+     * only writes a delay for accessory, speed, direction and function commands.
+     */
+    public static boolean hasDelay(Kind kind)
+    {
+        return kind == Kind.ACCESSORY || kind == Kind.LOCOMOTIVE_SPEED
+            || kind == Kind.LOCOMOTIVE_DIRECTION || kind == Kind.FUNCTION;
     }
 
     /**
@@ -106,7 +163,7 @@ public final class CommandRow
         if (command.isAccessory())
         {
             return new CommandRow(Kind.ACCESSORY, String.valueOf(command.getAddress()),
-                command.getSetting() ? "turn" : "straight");
+                command.getSetting() ? "turn" : "straight", command.getProtocol(), command.getDelay());
         }
 
         if (command.isFeedback())
@@ -119,19 +176,21 @@ public final class CommandRow
         {
             // The only kind with three parts, so the function number rides with its setting
             return new CommandRow(Kind.FUNCTION, command.getName(),
-                command.getFunction() + ":" + (command.getSetting() ? "on" : "off"));
+                command.getFunction() + ":" + (command.getSetting() ? "on" : "off"),
+                null, command.getDelay());
         }
 
         if (command.isLocomotiveSpeed())
         {
             return new CommandRow(Kind.LOCOMOTIVE_SPEED, command.getName(),
-                String.valueOf(command.getSpeed()));
+                String.valueOf(command.getSpeed()), null, command.getDelay());
         }
 
         if (command.isLocomotiveDirection())
         {
             return new CommandRow(Kind.LOCOMOTIVE_DIRECTION, command.getName(),
-                command.getDirection() == Locomotive.locDirection.DIR_FORWARD ? "forward" : "backward");
+                command.getDirection() == Locomotive.locDirection.DIR_FORWARD ? "forward" : "backward",
+                null, command.getDelay());
         }
 
         if (command.isStop()) return new CommandRow(Kind.STOP, "", "");
@@ -144,13 +203,35 @@ public final class CommandRow
     }
 
     /**
+     * The command this row means, with the decoder type and delay the row carries.
+     */
+    public RouteCommand toCommand()
+    {
+        return toCommand(Accessory.DEFAULT_IMPLICIT_PROTOCOL);
+    }
+
+    /**
      * The command this row means.
      *
-     * @param protocol the decoder type to give an accessory, which the row does not carry
+     * @param protocol the decoder type to give an accessory that does not carry one of its own - a row
+     *        the user built from scratch.  A row read from an existing command keeps ITS protocol, so
+     *        opening a DCC route and saving it cannot silently move it to MM2.
      * @throws IllegalArgumentException when the row cannot be made into a command, so the editor can
      *         say which row is wrong instead of saving a broken route
      */
     public RouteCommand toCommand(Accessory.accessoryDecoderType protocol)
+    {
+        RouteCommand command = build(this.protocol != null ? this.protocol
+            : (protocol != null ? protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL));
+
+        // Set only when there is one: "no delay" is the absence of the key, and writing a zero makes a
+        // second representation of the same command that compares unequal to the first
+        if (delay > 0) command.setDelay(delay);
+
+        return command;
+    }
+
+    private RouteCommand build(Accessory.accessoryDecoderType protocol)
     {
         switch (kind)
         {

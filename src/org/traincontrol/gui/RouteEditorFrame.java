@@ -411,7 +411,7 @@ public class RouteEditorFrame extends JFrame
         {
             for (CommandRow row : commands.rows)
             {
-                built.add(row.toCommand(Accessory.accessoryDecoderType.MM2));
+                built.add(row.toCommand());
             }
         }
         catch (IllegalArgumentException e)
@@ -473,10 +473,50 @@ public class RouteEditorFrame extends JFrame
         }
     }
 
+    /**
+     * A decoder type from what the user chose, defaulting rather than throwing.
+     */
+    private static Accessory.accessoryDecoderType protocolOf(String text)
+    {
+        for (Accessory.accessoryDecoderType type : Accessory.accessoryDecoderType.values())
+        {
+            if (type.toString().equalsIgnoreCase(text)) return type;
+        }
+
+        return Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+    }
+
+    /**
+     * A delay from what the user typed.  Rubbish and blanks leave it as it was rather than silently
+     * becoming zero, which would be a timing change nobody asked for.
+     */
+    private static int delayOf(String text, int wasBefore)
+    {
+        if (text == null || text.trim().isEmpty()) return 0;
+
+        try
+        {
+            int parsed = Integer.parseInt(text.trim());
+
+            return parsed < 0 ? wasBefore : parsed;
+        }
+        catch (NumberFormatException e)
+        {
+            return wasBefore;
+        }
+    }
+
     // ================================================================ the tables
 
     /**
-     * The columns every command shares: what kind, which one, what to do.
+     * The columns every command shares: what kind, which one, what to do, and - for the kinds that
+     * have them - which decoder speaks to it and how long to wait afterwards.
+     *
+     * Protocol and delay are columns rather than assumptions because both were assumed once and both
+     * were lost on Save: every accessory was written as MM2, which is a DIFFERENT address space from
+     * DCC, and every delay was dropped, which is what holds a slow point motor apart from the command
+     * behind it.  A cell the kind cannot use is greyed rather than hidden, so the table stays one
+     * shape.
      */
     private final class CommandTable extends JTable
     {
@@ -493,14 +533,20 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 3;
+                return 5;
             }
 
             @Override
             public String getColumnName(int column)
             {
-                return I18n.t(column == 0 ? "route.ui.frameColKind"
-                    : column == 1 ? "route.ui.frameColTarget" : "route.ui.frameColSetting");
+                switch (column)
+                {
+                    case 0: return I18n.t("route.ui.frameColKind");
+                    case 1: return I18n.t("route.ui.frameColTarget");
+                    case 2: return I18n.t("route.ui.frameColSetting");
+                    case 3: return I18n.t("route.ui.frameColProtocol");
+                    default: return I18n.t("route.ui.frameColDelay");
+                }
             }
 
             @Override
@@ -508,8 +554,21 @@ public class RouteEditorFrame extends JFrame
             {
                 CommandRow at = rows.get(row);
 
-                return column == 0 ? at.getKind().toString()
-                    : column == 1 ? at.getTarget() : at.getSetting();
+                switch (column)
+                {
+                    case 0: return at.getKind().toString();
+                    case 1: return at.getTarget();
+                    case 2: return at.getSetting();
+
+                    case 3:
+                        if (!CommandRow.hasProtocol(at.getKind())) return "";
+                        return (at.getProtocol() == null
+                            ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : at.getProtocol()).toString();
+
+                    default:
+                        if (!CommandRow.hasDelay(at.getKind())) return "";
+                        return at.getDelay() == 0 ? "" : String.valueOf(at.getDelay());
+                }
             }
 
             @Override
@@ -519,6 +578,8 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == 1) return CommandRow.hasTarget(at.getKind());
                 if (column == 2) return CommandRow.hasSetting(at.getKind());
+                if (column == 3) return CommandRow.hasProtocol(at.getKind());
+                if (column == 4) return CommandRow.hasDelay(at.getKind());
 
                 return true;
             }
@@ -528,13 +589,27 @@ public class RouteEditorFrame extends JFrame
             {
                 CommandRow at = rows.get(row);
 
-                String text = value == null ? "" : value.toString();
+                String text = value == null ? "" : value.toString().trim();
 
-                rows.set(row, column == 0
-                    ? new CommandRow(CommandRow.Kind.valueOf(text), at.getTarget(), at.getSetting())
-                    : column == 1
-                        ? new CommandRow(at.getKind(), text, at.getSetting())
-                        : new CommandRow(at.getKind(), at.getTarget(), text));
+                CommandRow.Kind kind = column == 0 ? CommandRow.Kind.valueOf(text) : at.getKind();
+                String target = column == 1 ? text : at.getTarget();
+                String setting = column == 2 ? text : at.getSetting();
+
+                // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
+                // accessory used to move it to MM2, because the row was rebuilt from three columns
+                // and the fourth thing it knew was simply not passed on.
+                Accessory.accessoryDecoderType protocol = at.getProtocol();
+                int delay = at.getDelay();
+
+                if (column == 3) protocol = protocolOf(text);
+                if (column == 4) delay = delayOf(text, at.getDelay());
+
+                // A kind that cannot hold one does not keep it, so changing an accessory into a stop
+                // and back does not smuggle a stale decoder type through
+                if (!CommandRow.hasProtocol(kind)) protocol = null;
+                if (!CommandRow.hasDelay(kind)) delay = 0;
+
+                rows.set(row, new CommandRow(kind, target, setting, protocol, delay));
 
                 fireTableRowsUpdated(row, row);
             }
@@ -551,8 +626,20 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(kinds));
 
+            JComboBox<String> protocols = new JComboBox<>();
+
+            for (Accessory.accessoryDecoderType type : Accessory.accessoryDecoderType.values())
+            {
+                protocols.addItem(type.toString());
+            }
+
+            getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(protocols));
+
             TableColumn kindColumn = getColumnModel().getColumn(0);
             kindColumn.setPreferredWidth(170);
+
+            getColumnModel().getColumn(3).setPreferredWidth(70);
+            getColumnModel().getColumn(4).setPreferredWidth(70);
         }
 
         void addRow()
@@ -683,15 +770,18 @@ public class RouteEditorFrame extends JFrame
                 if (term == null) return;
 
                 CommandRow edited = column == 1
-                    ? new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(), term.getSetting())
+                    ? new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(),
+                        term.getSetting(), term.getProtocol(), term.getDelay())
                     : column == 2
-                        ? new CommandRow(term.getKind(), text, term.getSetting())
-                        : new CommandRow(term.getKind(), term.getTarget(), text);
+                        ? new CommandRow(term.getKind(), text, term.getSetting(),
+                            term.getProtocol(), term.getDelay())
+                        : new CommandRow(term.getKind(), term.getTarget(), text,
+                            term.getProtocol(), term.getDelay());
 
                 try
                 {
                     rows.set(row, new ConditionRows.Row(at.getJoiner(),
-                        edited.toCommand(Accessory.accessoryDecoderType.MM2)));
+                        edited.toCommand()));
                 }
                 catch (IllegalArgumentException e)
                 {

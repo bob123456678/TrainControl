@@ -4890,9 +4890,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public int syncWithCS2()
     {
+        // this.model, NOT this.  Both calls in this method were rewritten to this.syncWithCS2() by the
+        // same bulk edit that routed the sixteen call sites through here, which made the wrapper call
+        // itself: off the event thread immediately, and on it via the worker, which is also off it.
+        // Every Sync was a StackOverflowError.  The tests did not catch it because they call the
+        // model's sync directly, which is exactly the half that was still correct.
         if (!javax.swing.SwingUtilities.isEventDispatchThread())
         {
-            return this.syncWithCS2();
+            return this.model.syncWithCS2();
         }
 
         // Held in an array because a lambda cannot assign a local, and read after the dialog closes -
@@ -4900,7 +4905,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final int[] result = {-1};
 
         BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
-            () -> result[0] = this.syncWithCS2(), null);
+            () -> result[0] = this.model.syncWithCS2(), null);
 
         return result[0];
     }
