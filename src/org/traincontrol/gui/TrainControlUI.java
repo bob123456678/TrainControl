@@ -428,8 +428,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Point is derived from, so both ends of this map now agree without anything having to be spelled
      * the same way twice.
      */
+    // Concurrent because it is not only the EDT's.  It is written during grid builds on the EDT and
+    // read by updateVisiblePoints, which is reached from raw worker threads - the one that starts
+    // autonomy, and the one that runs a path from the diagram menu.  A read during a resize is a data
+    // race, and the tile registry beside it was already concurrent for the same reason.
     private final Map<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> layoutStations
-        = new HashMap<>();
+        = new java.util.concurrent.ConcurrentHashMap<>();
          
     // Quick search cache
     private String lastSearch = "";
@@ -3030,6 +3034,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Called when a setup has been deleted out from under the window.
      */
+    /**
+     * Tells the window that the running configuration has been renamed.
+     *
+     * The name is what everything else looks it up by - the exit-time capture of placements and
+     * homes, the reload after the editor closes, the heading on the menu.  Renaming while it was
+     * loaded is the ordinary case, because the menu only offers Rename for a loaded configuration,
+     * and it left this window holding a name that no longer existed: the capture found no such
+     * configuration and returned silently, so every placement and home set since the load was
+     * dropped at exit, and closing the editor tried to reload something that was gone.
+     *
+     * @param from the name it had
+     * @param to the name it now has
+     */
+    public void autonomySetupRenamed(String from, String to)
+    {
+        if (from == null || to == null) return;
+
+        if (from.equals(this.activeDiagramConfiguration))
+        {
+            this.activeDiagramConfiguration = to;
+        }
+    }
+
     public void autonomySetupDeleted()
     {
         if (this.model != null) this.model.clearAutoLayout();

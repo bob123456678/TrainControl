@@ -204,6 +204,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     private double lastLatency;
 
+    /**
+     * Whether the locomotive database was there and would not read.
+     *
+     * False for a first launch, when there is nothing to lose.  True only when a file exists and the
+     * load failed - a lock some other process was holding for a moment, a permissions change, a
+     * truncation - and in that case the application carries on with an EMPTY database, which is the
+     * dangerous part: the save on the way out would then write that emptiness over the real thing.
+     * writeAtomically does not help, because a complete successful write of nothing is not a partial
+     * write.
+     */
+    private boolean databaseLoadFailed = false;
+
     // Thread pools for network messages
     CS2Message lastPacket;
     private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
@@ -1355,6 +1367,41 @@ public class MarklinControlStation implements ViewListener, ModelListener
             l.add(new MarklinSimpleComponent(f));
         }
         
+        // The database that would not load, kept before this one goes on top of it.
+        //
+        // One transient read failure at startup plus a normal exit used to destroy every locomotive
+        // customization the user had ever made: the load failed silently, the application ran with an
+        // empty database, and closing the window saved that empty database over the real one.  There
+        // is no undo and the backups are manual.  So the old file is copied aside first, once, and
+        // said out loud - the save still happens, because refusing it for ever would lose whatever the
+        // session did instead.
+        if (!backup && this.databaseLoadFailed)
+        {
+            this.databaseLoadFailed = false;
+
+            try
+            {
+                File existing = new File(MarklinControlStation.DATA_FILE_NAME);
+
+                if (existing.exists())
+                {
+                    File kept = new File(Util.getBackupPath("unreadable"
+                        + Conversion.convertSecondsToDatetime(System.currentTimeMillis())
+                            .replace(':', '-').replace(' ', '_')
+                        + MarklinControlStation.DATA_FILE_NAME));
+
+                    java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
+                }
+            }
+            catch (IOException | RuntimeException keepFailed)
+            {
+                this.log(keepFailed);
+            }
+        }
+
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String path = backup
             ? Util.getBackupPath(prefix + MarklinControlStation.DATA_FILE_NAME)
@@ -1447,6 +1494,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * Whether the last restoreState found a database file it could not read.
+     *
+     * False for a first launch - nothing there is nothing to lose - and false after a load that
+     * worked.  saveState reads it to decide whether the file it is about to replace is worth keeping
+     * a copy of first.
+     *
+     * @return true if a database file existed and would not load
+     */
+    public boolean isDatabaseLoadFailed()
+    {
+        return this.databaseLoadFailed;
+    }
+
+    /**
      * Restores list of initialized components from a file
      * @param dataFile
      * @return 
@@ -1454,6 +1515,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final List<MarklinSimpleComponent> restoreState(String dataFile)
     {
         List<MarklinSimpleComponent> instance = new LinkedList<>();
+
+        // Cleared here rather than only set below, so a second load attempt that succeeds forgets a
+        // first one that did not
+        this.databaseLoadFailed = false;
 
         // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
         try (ObjectInputStream obj_in = new CustomObjectInputStream(new FileInputStream(dataFile)))
@@ -1471,6 +1536,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (IOException iex)
         {
+            // A file that is not there is a first launch.  A file that IS there and would not read is
+            // something else entirely, and the difference decides whether the save on the way out is
+            // allowed to replace it - see saveState.
+            this.databaseLoadFailed = new File(dataFile).exists();
+
             if (debug)
             {
                 this.log(iex.toString());
@@ -1481,6 +1551,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         } 
         catch (ClassNotFoundException cex)
         {
+            // Present but unreadable, exactly as above
+            this.databaseLoadFailed = true;
+
             this.logf("log.databaseBadDataFile");   
             
             if (debug)

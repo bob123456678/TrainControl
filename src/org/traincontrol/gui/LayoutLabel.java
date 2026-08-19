@@ -187,6 +187,15 @@ public final class LayoutLabel extends JLabel
                                // check for it.  Every station on the diagram right-clicked to nothing.
                                if (openStationMenu(e)) return;
 
+                               // A right-click that opened nothing is not a request to flip the
+                               // sensor.  This branch acted on any button, which was harmless while
+                               // right-clicking a sensor did nothing - and stopped being harmless the
+                               // moment right-clicking a station became the way to work with it: with
+                               // the overlay off, or the page left out, or no configuration loaded,
+                               // the same gesture silently faked an occupancy change, which during a
+                               // run is precisely the input the layout reacts to.
+                               if (javax.swing.SwingUtilities.isRightMouseButton(e)) return;
+
                                component.execSwitching();
 
                                // So that possible routes get dynamically updated

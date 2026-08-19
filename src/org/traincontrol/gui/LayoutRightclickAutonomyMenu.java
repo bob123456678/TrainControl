@@ -116,6 +116,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             add(menuItem);
                         }
 
+                        // Counted rather than measured off the menu, which also holds the Start item,
+                        // the Return Home item, a separator and the locomotive's name - so the list
+                        // was cut about four paths early, and would have moved again the next time
+                        // anything was added above it.
+                        int shown = 0;
+
                         for (List<Edge> path : paths)
                         {
                             menuItem = new JMenuItem("-> "
@@ -154,7 +160,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             add(menuItem);
 
-                            if (this.getComponentCount() > MAX_PATHS + 1)
+                            if (++shown >= MAX_PATHS && paths.size() > MAX_PATHS)
                             {
                                 menuItem = new JMenuItem("...");
                                 menuItem.addActionListener(event -> 

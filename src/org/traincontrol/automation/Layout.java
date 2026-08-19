@@ -3773,6 +3773,13 @@ public class Layout
                 this.locomotiveMilestones.remove(loc);
             }
 
+            // And the sensor this locomotive was said to be heading for.  A route condition asking
+            // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
+            // failure is one nothing will ever clear: the thread evaluating that route parks until
+            // the locomotive happens to be dispatched again, which after a timetable failure is
+            // never.  notifyAll inside releases anyone already waiting.
+            updatePendingS88(loc, null);
+
             // Stopping matters more than the bookkeeping: the locomotive is somewhere on the path with
             // nothing left tracking it.  Guarded so that a second failure here cannot replace the
             // exception that actually explains what went wrong.
@@ -4970,6 +4977,19 @@ public class Layout
      *
      * @return
      */
+    /**
+     * Says whether the timetable's entries must run one at a time.
+     *
+     * Public because setTimetable clears it and only the staging planner sets it, which left no way
+     * to state the flag directly - including for the file that has to remember it.
+     *
+     * @param sequential true to wait for each entry to arrive before starting the next
+     */
+    public void setTimetableSequential(boolean sequential)
+    {
+        this.timetableSequential = sequential;
+    }
+
     public boolean isTimetableSequential()
     {
         return this.timetableSequential;
@@ -5166,6 +5186,15 @@ public class Layout
         jsonObj.put("maxActiveTrains", this.maxActiveTrains);
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         jsonObj.put("timetable", timeTableJson);
+
+        // Written only when set, so an ordinary layout's file does not grow a key that means nothing
+        // to it.  Without this a saved return-home plan reloaded as an ordinary timetable: entries
+        // dispatched as soon as the previous one STARTED rather than arrived, which is the contention
+        // the flag exists to prevent, and which was observed in exactly that form before it existed.
+        if (this.timetableSequential)
+        {
+            jsonObj.put("timetableSequential", true);
+        }
         jsonObj.put("activateRoutes", this.isActivateRoutes());
         jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
 
@@ -6039,6 +6068,10 @@ public class Layout
             }
             
             layout.setTimetable(timetableList);
+
+            // After setTimetable, which clears it: overlapping execution is the normal behaviour and
+            // the flag is the exception, so the load order has to put the exception last.
+            layout.timetableSequential = o.optBoolean("timetableSequential", false);
         }
         catch (Exception e)
         {

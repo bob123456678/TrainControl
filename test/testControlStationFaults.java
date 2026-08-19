@@ -2,18 +2,21 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Three faults an independent review found in the layer between this application and the rails.
+ * Faults an independent review found below the interface, in the layers the earlier reviews had
+ * taken as settled.
  *
  * They have nothing in common except where they end up: every one of them takes a railway that is
- * running perfectly well and stops it, without anybody doing anything wrong. That is the class of
- * bug worth a test apiece, because none of the three announces itself - the train just stops, or the
- * power just goes off, and the reason is three layers away from anything the operator touched.
+ * running perfectly well and stops it, or quietly destroys something, without anybody doing anything
+ * wrong. That is the class of bug worth a test apiece, because none of them announces itself - the
+ * train just stops, or the power just goes off, or the customizations are gone, and the reason is
+ * three layers away from anything the operator touched.
  */
 public class testControlStationFaults
 {
@@ -171,6 +174,115 @@ public class testControlStationFaults
         assertEquals(p.getPriority() == other.getPriority(), true,
             "two points with no priority compare equal, which is what the path comparator asks - and "
             + "asking it was what threw");
+    }
+
+    /**
+     * A database file that exists and will not read is told apart from one that is not there.
+     *
+     * That distinction is the whole fix, so it is the thing to test. A load failure was silent: the
+     * application carried on with an EMPTY locomotive database and the save on the way out wrote that
+     * emptiness over the real file - a complete, successful write, so the atomic-write staging that
+     * protects against dying mid-save does not help at all. One transiently locked file at startup
+     * plus a normal exit destroyed every locomotive customization the user had ever made, and the
+     * backups are manual.
+     *
+     * Getting the discrimination wrong in the other direction would be its own bug: treating a first
+     * launch as a failed load would make the application keep a copy of a file that was never there
+     * and warn about data nobody has.
+     */
+    @Test
+    public void testAnUnreadableDatabaseIsToldApartFromAbsentOne() throws Exception
+    {
+        java.io.File missing = java.io.File.createTempFile("tc-absent", ".data");
+        assertTrue(missing.delete(), "the point of this one is that the file is not there");
+
+        model.restoreState(missing.getAbsolutePath());
+
+        assertFalse(model.isDatabaseLoadFailed(),
+            "a database that is not there is a first launch, and there is nothing to lose - "
+            + "treating it as a failure would warn about data nobody has");
+
+        // Present, and not a serialized component list
+        java.io.File corrupt = java.io.File.createTempFile("tc-corrupt", ".data");
+
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(corrupt))
+        {
+            out.write("this is not an object stream".getBytes("UTF-8"));
+        }
+
+        model.restoreState(corrupt.getAbsolutePath());
+
+        assertTrue(model.isDatabaseLoadFailed(),
+            "a database file that is THERE and will not read is not a first launch.  Read as one, "
+            + "the empty database it leaves behind gets saved over the real thing on the way out, "
+            + "and every locomotive customization is gone with no undo");
+
+        corrupt.delete();
+    }
+
+    /**
+     * A timetable that has to run one entry at a time still does after being saved and loaded.
+     *
+     * The flag exists because a staging plan's moves contend: dispatched in parallel, the second
+     * takes an edge the planner never considered and retries for ever on a route it cannot abandon.
+     * That was observed before the flag existed. It was written into the plan and not into the file,
+     * so saving a return-home plan and reloading it brought back exactly the failure the flag was
+     * added to prevent - and brought it back silently, because everything about the timetable looks
+     * right until it runs.
+     */
+    @Test
+    public void testAStagingPlanIsStillSequentialAfterASaveAndLoad() throws Exception
+    {
+        Layout layout = Layout.fromJSON(minimalLayout(), model);
+
+        assertTrue(layout.isValid(), "the fixture itself has to load: " + layout.getInvalidReason());
+
+        layout.setTimetableSequential(true);
+
+        Layout reloaded = Layout.fromJSON(layout.toJSON(), model);
+
+        assertTrue(reloaded.isTimetableSequential(),
+            "the timetable came back as an ordinary one, so its entries will be dispatched as soon "
+            + "as the previous entry STARTS rather than arrives - which is the contention this flag "
+            + "was added to prevent");
+    }
+
+    /**
+     * And an ordinary timetable is not turned into a sequential one by the same round trip.
+     *
+     * Overlapping execution is the normal behaviour and much the faster one; a flag that defaulted
+     * the wrong way would make every layout's timetable crawl for no visible reason.
+     */
+    @Test
+    public void testAnOrdinaryTimetableStaysParallel() throws Exception
+    {
+        Layout layout = Layout.fromJSON(minimalLayout(), model);
+
+        Layout reloaded = Layout.fromJSON(layout.toJSON(), model);
+
+        assertFalse(reloaded.isTimetableSequential(),
+            "an ordinary layout came back sequential, so every timetable would wait for each entry "
+            + "to arrive before starting the next");
+    }
+
+    /**
+     * The smallest layout fromJSON will accept: two points and the edge between them.
+     *
+     * Built rather than borrowed because an EMPTY layout is not a valid one - fromJSON invalidates it
+     * before it ever reaches the timetable - and the first version of these tests used one, which made
+     * them fail for a reason that had nothing to do with what they were asking.
+     */
+    private static String minimalLayout()
+    {
+        return "{"
+            + "\"points\": ["
+            + "  {\"name\":\"TT_a\",\"station\":true,\"s88\":180},"
+            + "  {\"name\":\"TT_b\",\"station\":true,\"s88\":181}"
+            + "],"
+            + "\"edges\": ["
+            + "  {\"start\":\"TT_a\",\"end\":\"TT_b\",\"length\":1}"
+            + "],"
+            + "\"minDelay\":1,\"maxDelay\":2,\"defaultLocSpeed\":35}";
     }
 
     /**

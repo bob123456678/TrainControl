@@ -3773,7 +3773,14 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    public void save()
+    /**
+     * Writes the setup.
+     *
+     * @return whether it was written.  The caller closes the editor on the strength of this: a save
+     *         that told the user it had failed used to close the window anyway, which reads as
+     *         success and is the opposite of what the dialog just said
+     */
+    public boolean save()
     {
         try
         {
@@ -3801,10 +3808,14 @@ public class AutonomyEditorPanel extends JPanel
             }
 
             refresh();
+
+            return true;
         }
         catch (IOException e)
         {
             JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
+
+            return false;
         }
     }
 }

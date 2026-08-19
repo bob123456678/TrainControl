@@ -1199,6 +1199,11 @@ public class AutonomyViewerPanel extends JPanel
         {
             session().getStore().renameConfiguration(from, name.trim());
             save();
+
+            // The window remembers the running configuration BY NAME, and the store has just changed
+            // it.  Deleting the running one already had a hook; renaming did not, and left the name
+            // behind pointing at nothing.
+            ui.autonomySetupRenamed(from, name.trim());
         }
         catch (IOException e)
         {

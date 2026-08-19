@@ -3054,8 +3054,14 @@ public class LayoutEditor extends PositionAwareJFrame
             // - the thing the user has actually been editing.
             if (isAutonomyMode())
             {
-                autonomyPanel.save();
-                closeAutonomyMode();
+                // Only on a save that happened.  The edits are not lost either way - they live in
+                // the shared session - but closing on a failure tells the user the opposite of what
+                // the failure dialog just told them.
+                if (autonomyPanel.save())
+                {
+                    closeAutonomyMode();
+                }
+
                 return;
             }
 
