@@ -4,7 +4,11 @@ points 77   edges 85   destinations 23
 
 probe locomotive: 02 0314-1 DDR
 
-FROM BottomMainC   -> nothing offered
+FROM BottomMainC
+    -> BottomSecondary   via BottomMainC > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
+    -> TopMainR2Inter (southbound)   via BottomMainC > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 0,3 > TopMainR2Inter (southbound)
+    -> TopMainR1 (northbound)   via BottomMainC > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound)
+    -> TopMainR1Inter (southbound)   via BottomMainC > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound)
 FROM ParkingTrack6   -> nothing offered
 FROM ParkingTrack5   -> nothing offered
 FROM ParkingTrack4   -> nothing offered
@@ -20,13 +24,13 @@ FROM Tunnel (southbound)   -> nothing offered
 FROM BottomInner   -> nothing offered
 FROM LowerBack   -> nothing offered
 FROM BottomSecondary
-    -> Tunnel (southbound)   via BottomSecondary > TunnelPre > Tunnel (southbound)
+    -> Tunnel (southbound)   via BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
     -> BottomInnerOtherside   via BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
 FROM LowerFront
     -> ParkingTrack12   via LowerFront > ParkingTrack12
 FROM TopMainR2Inter (southbound)   -> nothing offered
 FROM TopMainR1 (northbound)
-    -> Tunnel (southbound)   via TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound)
+    -> Tunnel (southbound)   via TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
     -> BottomSecondary   via TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
     -> BottomInnerOtherside   via TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
 FROM TopMainR2 (northbound)
@@ -34,26 +38,32 @@ FROM TopMainR2 (northbound)
     -> BottomSecondary   via TopMainR2 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
     -> BottomInnerOtherside   via TopMainR2 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
 FROM BottomInnerOtherside
-    -> Tunnel (southbound)   via BottomInnerOtherside > BottomCrossover (southbound) > BottomSecondary > TunnelPre > Tunnel (southbound)
+    -> Tunnel (southbound)   via BottomInnerOtherside > BottomCrossover (southbound) > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
     -> BottomSecondary   via BottomInnerOtherside > BottomCrossover (southbound) > BottomSecondary
-FROM BottomMainA (eastbound)   -> nothing offered
+FROM BottomMainA (eastbound)
+    -> Tunnel (southbound)   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
+    -> BottomSecondary   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
+    -> TopMainR2Inter (southbound)   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 0,3 > TopMainR2Inter (southbound)
+    -> TopMainR1 (northbound)   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound)
+    -> BottomInnerOtherside   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
+    -> TopMainR1Inter (southbound)   via BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound)
 FROM BottomMainB (eastbound)
     -> BottomMainC   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound) > BottomMainBCPre (eastbound) > BottomMainC
-    -> Tunnel (southbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound)
+    -> Tunnel (southbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
     -> BottomSecondary   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
     -> TopMainR2Inter (southbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 0,3 > TopMainR2Inter (southbound)
     -> TopMainR1 (northbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound)
     -> BottomInnerOtherside   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
-    -> BottomMainA (eastbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound) > BottomMainAPre (eastbound) > BottomMainA (eastbound)
+    -> BottomMainA (eastbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound) > BottomMainAPre (eastbound) > BottomMainA (eastbound)
     -> TopMainR1Inter (southbound)   via BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 1,3 > TopMainR1Inter (southbound)
 FROM TopMainR1Inter (southbound)
-    -> BottomMainC   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound) > BottomMainBCPre (eastbound) > BottomMainC
-    -> Tunnel (southbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound)
+    -> BottomMainC   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound) > BottomMainBCPre (eastbound) > BottomMainC
+    -> Tunnel (southbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound)
     -> BottomSecondary   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary
-    -> TopMainR2Inter (southbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound) > BottomMainAPre (eastbound) > BottomMainA (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 0,3 > TopMainR2Inter (southbound)
+    -> TopMainR2Inter (southbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound) > BottomMainBCPre (eastbound) > BottomMainB (eastbound) > BottomMainPost (northbound) > 1 - Main 7,1 (westbound) > RampUp (westbound) > 1 - Main 0,3 > TopMainR2Inter (southbound)
     -> TopMainR1 (northbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound)
     -> BottomInnerOtherside   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > BottomInnerOtherside
     -> BottomMainA (eastbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > TunnelPre > Tunnel (southbound) > BottomMainAPre (eastbound) > BottomMainA (eastbound)
     -> BottomMainB (eastbound)   via TopMainR1Inter (southbound) > TopMainR1Pre (northbound) > TopMainR1 (northbound) > TopMainPost (eastbound) > RampDown > BottomSecondary > 1 - Main 12,7 > Tunnel (southbound) > BottomMainBCPre (eastbound) > BottomMainB (eastbound)
 
-totals: 28 routes offered from 8 stations; 15 stations offer nothing
+totals: 38 routes offered from 10 stations; 13 stations offer nothing

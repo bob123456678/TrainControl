@@ -1433,10 +1433,14 @@ public class Layout
                 return false;
             }
 
-            // Ensure all lock edges are unoccupied
+            // Ensure all lock edges are unoccupied.
+            //
+            // Asked of the POINT rather than the whole square: a lock edge is track held clear so two
+            // routes cannot take one throat at once, not a claim on the platform beyond it.  A train
+            // standing at that platform is not in this train's way.
             for (Edge e2 : e.getLockEdges())
             {
-                if (e2.isOccupied(loc))
+                if (e2.isOccupied(loc, false))
                 {
                     logPathError(loc, path, logFailures,
                         I18n.f("autolayout.errorLockEdgeOccupied", e2.getName())

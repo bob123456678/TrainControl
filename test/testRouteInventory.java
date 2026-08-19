@@ -74,6 +74,16 @@ public class testRouteInventory
     }
 
     @Test
+    public void testLatestBundleRoutes() throws Exception
+    {
+        File bundle = new File("tc_backup/Autonomy 1e.json");
+
+        if (!bundle.isFile()) return;
+
+        report("5-bundle-1e", build(bundle));
+    }
+
+    @Test
     public void testHandAuthoredRoutes() throws Exception
     {
         File hand = new File("cs2_sample_layout/config/autorun/autonomy.json");
@@ -232,6 +242,166 @@ public class testRouteInventory
            .append(barren).append(" stations offer nothing\n");
 
         write(label, out);
+    }
+
+    /**
+     * Why does one station offer nothing when the station beside it, with the same successor, offers
+     * three?  Asks the model step by step instead of guessing.
+     */
+    @Test
+    public void testWhyBottomMainAOffersNothing() throws Exception
+    {
+        File bundle = new File("tc_backup/Autonomy 1e.json");
+
+        if (!bundle.isFile()) return;
+
+        model.parseAuto(build(bundle));
+
+        Layout layout = model.getAutoLayout();
+
+        assertTrue(layout.isValid(), "1e must load for this probe to mean anything");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        StringBuilder out = new StringBuilder("# why BottomMainA offers nothing\n\n");
+
+        for (String start : new String[]{"BottomMainA (eastbound)", "BottomMainB (eastbound)"})
+        {
+            Point from = layout.getPoint(start);
+
+            if (from == null)
+            {
+                out.append(start).append(": NOT A POINT\n");
+                continue;
+            }
+
+            boolean moved = layout.moveLocomotive(loc.getName(), start, false);
+
+            Point actually = layout.getLocomotiveLocation(loc);
+
+            out.append("\n== ").append(start)
+               .append("\n   moveLocomotive returned ").append(moved)
+               .append(", locomotive is at ")
+               .append(actually == null ? "NOWHERE" : actually.getName()).append("\n");
+
+            int reachable = 0;
+            int blocked = 0;
+
+            for (Point to : layout.getPoints())
+            {
+                if (to == from || !to.isDestination() || !to.isAutoDestination()) continue;
+
+                if (to.isReversing() || !to.isActive()) continue;
+
+                List<Edge> path = layout.bfs(from, to, null);
+
+                if (path == null) continue;
+
+                reachable++;
+
+                if (layout.isPathClear(path, loc, true))
+                {
+                    out.append("   CLEAR   -> ").append(to.getName()).append("\n");
+                }
+                else
+                {
+                    blocked++;
+                    out.append("   BLOCKED -> ").append(to.getName())
+                       .append("   ").append(via(path)).append("\n");
+                }
+            }
+
+            out.append("   reachable by bfs: ").append(reachable)
+               .append(", blocked by isPathClear: ").append(blocked).append("\n");
+        }
+
+        write("6-probe-bottommaina", out);
+    }
+
+    /**
+     * Exactly what the application shows: the locomotives the configuration places, where it places
+     * them, asked for their own paths with nothing moved.
+     *
+     * Every other probe here moves a locomotive of its own choosing, which changes the occupancy and
+     * therefore the answer.  This one touches nothing, so "the UI offers no paths" either reproduces
+     * or it does not.
+     */
+    @Test
+    public void testWhatTheUiWouldShow() throws Exception
+    {
+        File bundle = new File("tc_backup/Autonomy 1f.json");
+
+        if (!bundle.isFile()) return;
+
+        String configuration = build(bundle);
+
+        model.parseAuto(configuration);
+
+        Layout layout = model.getAutoLayout();
+
+        StringBuilder out = new StringBuilder("# what the UI would show, Autonomy 1f\n\n");
+
+        if (layout == null || !layout.isValid())
+        {
+            write("7-as-the-ui-sees-it", out.append("CONFIGURATION INVALID: ")
+                .append(layout == null ? "no layout" : layout.getInvalidReason()).append("\n"));
+            return;
+        }
+
+        // how many edges carry a length at all - the tile lengths are supposed to feed these
+        int withLength = 0;
+
+        for (Edge e : layout.getEdges())
+        {
+            if (e.getLength() > 0) withLength++;
+        }
+
+        out.append("edges ").append(layout.getEdges().size())
+           .append(", of which carry a length: ").append(withLength).append("\n\n");
+
+        for (Locomotive loc : layout.getLocomotivesToRun())
+        {
+            Point at = layout.getLocomotiveLocation(loc);
+
+            out.append("== ").append(loc.getName())
+               .append("  at ").append(at == null ? "NOWHERE" : at.getName())
+               .append("  (train length ").append(loc.getTrainLength()).append(")\n");
+
+            List<List<Edge>> paths = layout.getPossiblePaths(loc, true);
+
+            if (paths == null || paths.isEmpty())
+            {
+                out.append("   NO PATHS OFFERED\n");
+
+                // and why: every destination bfs can reach, with the refusal logged
+                if (at != null)
+                {
+                    for (Point to : layout.getPoints())
+                    {
+                        if (to == at || !to.isDestination() || !to.isAutoDestination()) continue;
+
+                        if (to.isReversing() || !to.isActive()) continue;
+
+                        List<Edge> path = layout.bfs(at, to, null);
+
+                        if (path == null) continue;
+
+                        out.append("     bfs reaches ").append(to.getName())
+                           .append(" - isPathClear=").append(layout.isPathClear(path, loc, true))
+                           .append("\n");
+                    }
+                }
+            }
+            else
+            {
+                for (List<Edge> path : paths)
+                {
+                    out.append("   -> ").append(path.get(path.size() - 1).getEnd().getName()).append("\n");
+                }
+            }
+        }
+
+        write("7-as-the-ui-sees-it", out);
     }
 
     private String via(List<Edge> path)

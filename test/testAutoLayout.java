@@ -466,6 +466,19 @@ public class testAutoLayout
         // and the copy the train is actually on is still occupied for anyone else
         assertTrue(toEast.isOccupied(second));
 
+        // But a LOCK edge asks the narrower question.  A lock edge is track held clear so that two
+        // routes cannot take one throat at once; it is not a claim on the platform beyond it, and a
+        // train standing there is not in the way of a train merely using the throat.
+        //
+        // Asked of the whole square, a pair of converging platforms refused every route out of
+        // either of them whenever either had a train on it - which is to say always, and which is
+        // what made autonomy look dead: bfs found routes and every one was refused.
+        assertFalse(toWest.isOccupied(second, false),
+            "a lock edge must not be blocked by a train standing on the far platform");
+
+        assertTrue(toWest.isOccupied(second, true),
+            "while running ONTO that track is still refused - the copies are one piece of rail");
+
         // while the train already there is not blocked by itself
         assertFalse(toEast.isOccupied(first));
         assertFalse(toWest.isOccupied(first));

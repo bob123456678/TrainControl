@@ -1,0 +1,27 @@
+# what the UI would show, Autonomy 1f
+
+edges 88, of which carry a length: 0
+
+== BR 232 241-0  at BottomMainB (eastbound)  (train length 0)
+   -> BottomSecondary
+   -> TopMainR2Inter (southbound)
+   -> TopMainR1 (northbound)
+   -> TopMainR2 (northbound)
+   -> TopMainR1Inter (southbound)
+== BR 628 2  at BottomMainA (eastbound)  (train length 0)
+   -> BottomSecondary
+   -> TopMainR2Inter (southbound)
+   -> TopMainR1 (northbound)
+   -> TopMainR2 (northbound)
+   -> TopMainR1Inter (southbound)
+== MY 1106  at Tunnel (southbound)  (train length 0)
+   NO PATHS OFFERED
+     bfs reaches BottomMainC - isPathClear=false
+     bfs reaches BottomSecondary - isPathClear=false
+     bfs reaches TopMainR2Inter (southbound) - isPathClear=false
+     bfs reaches TopMainR1 (northbound) - isPathClear=false
+     bfs reaches TopMainR2 (northbound) - isPathClear=false
+     bfs reaches BottomInnerOtherside - isPathClear=false
+     bfs reaches BottomMainA (eastbound) - isPathClear=false
+     bfs reaches BottomMainB (eastbound) - isPathClear=false
+     bfs reaches TopMainR1Inter (southbound) - isPathClear=false

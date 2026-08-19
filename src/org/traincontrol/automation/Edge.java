@@ -316,6 +316,24 @@ public class Edge
      */
     synchronized public boolean isOccupied(Locomotive loc)
     {
+        return isOccupied(loc, true);
+    }
+
+    /**
+     * @param wholeBlock whether a train on ANOTHER copy of the end square counts as occupying it.
+     *
+     * True when asking "may this train run onto that track" - the copies of a square are one piece of
+     * rail and a train on either is in the way.
+     *
+     * FALSE when asking whether a LOCK edge is free.  A lock edge is track held clear so that two
+     * routes cannot use one throat at the same time; it is not a claim on the platform beyond it.  A
+     * train standing at the far platform is not using the throat, and treating the whole square as
+     * occupied there refused every route out of a pair of converging platforms whenever either of them
+     * had a train on it - which is to say, always.  That is what made autonomy look dead: bfs found
+     * routes, every one of them was refused, and nothing moved.
+     */
+    synchronized public boolean isOccupied(Locomotive loc, boolean wholeBlock)
+    {
         // Read once.  Point.isOccupied is synchronized but getCurrentLocomotive is not, so testing the
         // first and dereferencing the second let another thread clear the point in between - which threw
         // a NullPointerException inside isPathClear, on a locomotive thread
@@ -324,7 +342,8 @@ public class Edge
         // track, and a train on the eastbound copy of a platform is on the platform.  Asking only this
         // copy let a second train be routed onto its twin, which is a collision.  On a Point with no
         // block - anything hand-written - this is exactly getCurrentLocomotive.
-        Locomotive endLocomotive = this.end.getBlockLocomotive();
+        Locomotive endLocomotive = wholeBlock
+            ? this.end.getBlockLocomotive() : this.end.getCurrentLocomotive();
 
         if (endLocomotive != null && !endLocomotive.equals(loc))
         {
