@@ -159,4 +159,65 @@ public class testTileSelection
             "an empty selection must not report a rectangle - a caller that pasted it would write at "
             + "0,0 having been told nothing was chosen");
     }
+
+    /**
+     * A whole row is one rectangle, however wide the diagram is.
+     *
+     * The gesture this backs is the answer to a real question: a diagram may be sixty squares across,
+     * and picking a row by clicking each square is not a feature.  Pinned here because the editor's
+     * selectRow is a one-liner over this method, and a one-liner is exactly the kind of thing that
+     * gets its bounds wrong by one and nobody notices until a row is short.
+     */
+    @Test
+    public void testAWholeRowIsOneRectangle()
+    {
+        TileSelection selection = new TileSelection();
+
+        // A row of a 60-wide diagram: columns 0..59 inclusive
+        selection.addRectangle(0, 7, 59, 7);
+
+        assertEquals(selection.size(), 60,
+            "a row of a sixty-wide diagram must hold sixty squares - an off-by-one here is a row that "
+            + "silently stops one short of the edge");
+
+        assertTrue(selection.contains(0, 7), "the first column");
+        assertTrue(selection.contains(59, 7), "and the last");
+        assertFalse(selection.contains(0, 6), "and nothing in the row above");
+        assertFalse(selection.contains(0, 8), "or below");
+    }
+
+    /**
+     * Picking a second row adds to the first rather than replacing it.
+     *
+     * "Rows" was the question, plural.  Two calls have to give two rows.
+     */
+    @Test
+    public void testRowsAccumulate()
+    {
+        TileSelection selection = new TileSelection();
+
+        selection.addRectangle(0, 3, 9, 3);
+        selection.addRectangle(0, 4, 9, 4);
+
+        assertEquals(selection.size(), 20,
+            "picking a second row replaced the first instead of adding to it");
+
+        assertTrue(selection.contains(5, 3) && selection.contains(5, 4));
+    }
+
+    /**
+     * A box that overlaps what is already picked does not double-count it.
+     */
+    @Test
+    public void testOverlappingBoxesDoNotDoubleCount()
+    {
+        TileSelection selection = new TileSelection();
+
+        selection.addRectangle(0, 0, 4, 4);
+        selection.addRectangle(2, 2, 6, 6);
+
+        // 25 + 25 - 9 shared
+        assertEquals(selection.size(), 41,
+            "the overlap was counted twice, which would make a group operation act on a square twice");
+    }
 }

@@ -106,6 +106,17 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean groupDragging = false;
 
     /**
+     * Where a shift-drag started, or -1 when one is not in progress.
+     *
+     * Picking one square at a time is fine for three of them and hopeless for a row: a diagram may be
+     * sixty squares wide, and asking somebody to shift-click sixty times is not a feature, it is a
+     * dare.  Dragging a box is how every other program does this, and the arithmetic for it was
+     * already written and tested - it simply had nothing calling it.
+     */
+    private int boxAnchorX = -1;
+    private int boxAnchorY = -1;
+
+    /**
      * What a group copy took: one entry per square of the BOUNDING BOX, holes included.
      *
      * The bounding box rather than only the picked squares, because a piece of railway with gaps
@@ -474,6 +485,22 @@ public class LayoutEditor extends PositionAwareJFrame
         // of accident: silent, and to the thing everything else is derived from.
         if (isAutonomyMode()) return;
 
+        // Shift held: this is a box, not a move.  Recorded and otherwise ignored - nothing is picked
+        // until the button comes up, so a shift-drag that changes its mind can simply be released
+        // back where it started.
+        if (label != null && e.isShiftDown() && getX(label) >= 0 && getY(label) >= 0)
+        {
+            this.boxAnchorX = getX(label);
+            this.boxAnchorY = getY(label);
+            this.dragSource = label;
+            this.groupDragging = false;
+
+            return;
+        }
+
+        this.boxAnchorX = -1;
+        this.boxAnchorY = -1;
+
         // A drag that starts on a picked square moves the WHOLE selection.
         //
         // This is what the selection is a state for: the user has already said which squares they
@@ -550,6 +577,30 @@ public class LayoutEditor extends PositionAwareJFrame
     public void endDrag(MouseEvent e, LayoutLabel label)
     {
         if (isAutonomyMode()) return;
+
+        // A box closes here, and never opened a drag window - so this is checked before that branch
+        // rather than inside it.
+        if (this.boxAnchorX >= 0 && this.boxAnchorY >= 0)
+        {
+            LayoutLabel to = getLastHoveredLabel();
+
+            int anchorX = this.boxAnchorX;
+            int anchorY = this.boxAnchorY;
+
+            this.boxAnchorX = -1;
+            this.boxAnchorY = -1;
+            this.dragSource = null;
+
+            // Released on the square it started on is a shift-CLICK, and receiveClickEvent toggles
+            // that one.  Handling it here as well would toggle it twice, which is to say not at all.
+            if (to == null || (getX(to) == anchorX && getY(to) == anchorY)) return;
+
+            this.selection.addRectangle(anchorX, anchorY, getX(to), getY(to));
+
+            this.refreshSelectionBorders();
+
+            return;
+        }
 
         if (dragWindow != null)
         {
@@ -1629,6 +1680,48 @@ public class LayoutEditor extends PositionAwareJFrame
         this.refreshSelectionBorders();
 
         return true;
+    }
+
+    /**
+     * Picks out a whole row, or adds it to what is already picked.
+     *
+     * Dragging a box works, and on a diagram sixty squares wide dragging one accurately across all
+     * sixty is its own small ordeal - the pointer has to stay in the row the whole way. Naming the
+     * row is exact, takes one click, and cannot go one square wrong.
+     *
+     * @param y the row
+     */
+    public void selectRow(int y)
+    {
+        if (y < 0 || y >= layout.getSy()) return;
+
+        this.selection.addRectangle(0, y, layout.getSx() - 1, y);
+
+        this.refreshSelectionBorders();
+    }
+
+    /**
+     * Picks out a whole column.
+     *
+     * @param x the column
+     */
+    public void selectColumn(int x)
+    {
+        if (x < 0 || x >= layout.getSx()) return;
+
+        this.selection.addRectangle(x, 0, x, layout.getSy() - 1);
+
+        this.refreshSelectionBorders();
+    }
+
+    /**
+     * Picks out everything on the page.
+     */
+    public void selectAll()
+    {
+        this.selection.addRectangle(0, 0, layout.getSx() - 1, layout.getSy() - 1);
+
+        this.refreshSelectionBorders();
     }
 
     /**

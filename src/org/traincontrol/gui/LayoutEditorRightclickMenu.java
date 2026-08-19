@@ -67,24 +67,54 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         add(pasteMenuItem);
 
         // What can be done to a group of squares, gathered in one place so that the selection is a
-        // thing the interface talks about rather than a hidden mode
-        if (!edit.getSelection().isEmpty())
+        // thing the interface talks about rather than a hidden mode.
+        //
+        // Shown whether or not anything is picked, because this is also where a user finds out that
+        // picking is possible - a menu that appears only once you have already worked out the gesture
+        // is no use to the person who has not.
         {
             JMenu selectionMenu = new JMenu(
                 I18n.f("layout.ui.menuSelection", edit.getSelection().size()));
 
+            // Naming a row is exact and takes one click.  Dragging a box across sixty squares works
+            // and is a small ordeal; on a wide diagram this is the one people will use.
+            JMenuItem wholeRow = new JMenuItem(I18n.t("layout.ui.menuSelectRow"));
+            wholeRow.addActionListener(event -> edit.selectRow(edit.getGridY(label)));
+            selectionMenu.add(wholeRow);
+
+            JMenuItem wholeColumn = new JMenuItem(I18n.t("layout.ui.menuSelectColumn"));
+            wholeColumn.addActionListener(event -> edit.selectColumn(edit.getGridX(label)));
+            selectionMenu.add(wholeColumn);
+
+            JMenuItem everything = new JMenuItem(I18n.t("layout.ui.menuSelectAll"));
+            everything.addActionListener(event -> edit.selectAll());
+            selectionMenu.add(everything);
+
+            // Only reachable on a grid square - the palette has no row to speak of
+            boolean onDiagram = edit.getGridX(label) >= 0 && edit.getGridY(label) >= 0;
+
+            wholeRow.setEnabled(onDiagram);
+            wholeColumn.setEnabled(onDiagram);
+
+            selectionMenu.addSeparator();
+
+            boolean anyPicked = !edit.getSelection().isEmpty();
+
             JMenuItem copySelected = new JMenuItem(I18n.t("ui.copy"));
             copySelected.addActionListener(event -> edit.copySelection());
             copySelected.setToolTipText("Control+C");
+            copySelected.setEnabled(anyPicked);
             selectionMenu.add(copySelected);
 
             JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
             rotateSelected.addActionListener(event -> edit.rotateSelection());
+            rotateSelected.setEnabled(anyPicked);
             selectionMenu.add(rotateSelected);
 
             JMenuItem deleteSelected = new JMenuItem(I18n.t("ui.delete"));
             deleteSelected.addActionListener(event -> edit.deleteSelection());
             deleteSelected.setToolTipText("Delete");
+            deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
 
             selectionMenu.addSeparator();
@@ -92,7 +122,10 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             JMenuItem clearSelected = new JMenuItem(I18n.t("layout.ui.clearSelection"));
             clearSelected.addActionListener(event -> edit.clearSelection());
             clearSelected.setToolTipText("Escape");
+            clearSelected.setEnabled(anyPicked);
             selectionMenu.add(clearSelected);
+
+            selectionMenu.setToolTipText(I18n.t("layout.ui.tooltipSelection"));
 
             add(selectionMenu);
         }
