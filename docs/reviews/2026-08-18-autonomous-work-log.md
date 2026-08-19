@@ -171,6 +171,71 @@ The findings recorded earlier as "not yet acted on" have been:
 | `TIMETABLE_STUCK_MS` is not volatile | It is now |
 | Six keys shipped in English in every translation | Translated |
 
+---
+
+# Second autonomous run, 2026-08-19
+
+Adam's seven-step order, worked end to end. Committed and pushed throughout.
+
+## 1. Open reviewer feedback and test results
+
+Everything from the first run was already closed. Two things were still open and both are now done:
+
+- **The four plain `showConfirmDialog` calls**, which was the one UI-consistency item I had
+  recommended actually doing. `showConfirmDialog` takes no button labels, so Swing supplies them from
+  the look-and-feel and they follow the JVM's locale rather than the language the user picked - four
+  places, and nowhere else. A guard now holds the line, and its FIRST version failed on its first run
+  by flagging every confirmation, because the title argument is always built from `I18n` too. It
+  checks the message argument specifically.
+- **Two stale claims in the manual test plan**: Route Choice living under Preferences (it is under
+  Autonomy) and four options where there are now nine.
+
+## 2. Route UI, multi-drag, and the rest of the backlog
+
+Both were complete. One verb was missing and is now there: **filling a selection with the armed
+tile**. Copy, paste, rotate and delete all existed, and the most ordinary reason to pick a row of
+squares - laying a run of straight track - still had to be done one square at a time.
+
+## 3-4. Two Fable reviewers, and the iteration
+
+One regression pass and one new-features pass, run in parallel. **Between them they found eleven real
+defects, nine of them mine from this session.** All eleven are fixed. The ones worth your attention:
+
+| What | Why it mattered |
+| --- | --- |
+| The why-not tooltip **re-introduced the freeze it exists to explain** | It ran on the event thread, once per panel, walking every candidate route to every station while holding the Layout's monitor. Placing a locomotive rebuilt every panel with its search deliberately deferred - and then did the whole enumeration synchronously anyway. It is worked out on hover now |
+| A group move **ate its own captions** | The tiles were read-all-first with a comment explaining why; the captions were moved one at a time against the live store. Two captioned squares dragged one to the right: one caption travelled two squares, the other was destroyed. Dragging LEFT worked, so it looked intermittent |
+| **Least-recently-visited did nothing** on a derived graph | Arrivals were keyed per Point, but a station is several Points there. Every station read as never-visited, so the rule degraded to random - and then worse than random |
+| A typed setting was **guessed rather than refused** | "backwards" silently became FORWARD, with the table still showing what was typed. The exact failure `RouteCommand.fromLine` was hardened against, in the class whose purpose is removing syntax risk |
+| **Selection outlines vanished on the first mouse move** | Every hover cleared them; the selection persisted and Delete still preferred it. Seeing no green and pressing Delete to remove the tile under the cursor deleted a whole invisible row - and the new one-click row selector made that sixty squares |
+| Two tool buttons could **both look armed** | Un-pressing the stale one set the tool to NONE while the other still looked pressed, and the next click fell through to the handler that changes a square's direction |
+| Conditions **could not say DCC** | No protocol column, so a hand-added accessory condition always meant MM2 - a different physical accessory, and a route that never fires |
+
+Plus: a stale group clipboard hijacking paste, the explanation listing a station once per arrival side
+and listing the train's own platform as blocked by itself, a thirty-second export stall from a
+check-then-act race, a weak test oracle that could not tell "available" from "never considered", and
+five comments that described behaviour the code does not have.
+
+## 5. Progress against the 3.0.0 phase plan
+
+Written up in `2026-08-19-phase-plan-status.md`. In short: **the plan's two outstanding build items -
+the documentation rewrite and the editor-side placement/homes UI - are done.** Phase 1's tidy-up is
+not: 32 `graphViewer` references remain, guarded rather than removed. Phase 2 has correctly not
+started, because the plan gates it on real use of the real layout.
+
+## 6. Rendering
+
+Written up in `2026-08-19-rendering-cost.md`, and every figure in it is measured by
+`testRenderingCost`, which is in the battery so the report cannot quietly stop being true.
+
+**The model side is not the problem** - a full reduction of a five-hundred-tile layout is 1.65ms.
+**Where the time goes is the Swing grid**: 613 label constructions for 384 cells.
+
+The obvious optimisation - applying icons inline rather than posting one `invokeLater` per tile - was
+implemented, tested, **found to break the diagram export reproducibly, and reverted**, with the
+evidence recorded so the next person does not spend the afternoon I did. It also closed out a stale
+"cubic on the feedback path" entry in the test plan: measured, and no longer true.
+
 ### Still outstanding
 
 Everything in the work order is done. What remains is for Adam.
