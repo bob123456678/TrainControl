@@ -296,4 +296,64 @@ public class testRenderingCost
             "decoding one image per distinct tile appearance took " + ms + "ms.  That is the cold-cache "
             + "cost of opening a diagram, and it is what the spinner is covering");
     }
+
+    /**
+     * How many LayoutLabels a grid builds, against how many cells it has.
+     *
+     * Needs a display, and is skipped without one.  The point is a ratio, not a duration: if a grid
+     * builds more labels than it keeps, that is the largest lever on this page and no amount of
+     * tuning anything else matters.
+     */
+    @Test
+    public void testLabelsBuiltPerCell() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("building labels needs a display");
+        }
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+        ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+        LayoutDiagram page = null;
+
+        for (LayoutDiagram p : parsed)
+        {
+            if (!pageExclusions.contains(p.getName())) { page = p; break; }
+        }
+
+        final LayoutDiagram drawing = page;
+        final javax.swing.JPanel host = new javax.swing.JPanel();
+
+        org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.set(0);
+        org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.set(0);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            new org.traincontrol.gui.LayoutGrid(drawing, 30, host, null, true, ui[0]);
+        });
+
+        int cells = (drawing.getMaxx() - drawing.getMinx() + 2)
+            * (drawing.getMaxy() - drawing.getMiny() + 2);
+
+        System.out.println("RENDERCOST page=" + drawing.getName()
+            + " cells=" + cells
+            + " labelsBuilt=" + org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get()
+            + " iconApplications=" + org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.get());
+
+        final org.traincontrol.gui.TrainControlUI toClose = ui[0];
+        javax.swing.SwingUtilities.invokeAndWait(() -> toClose.dispose());
+
+        // Measured at 1.6 labels per cell (613 for 384) on 2026-08-19, which is a real overhead and
+        // the largest single lever on this page - see the rendering report.  The bound is TWICE the
+        // cell count: it is not asserting that the waste is gone, it is catching the day somebody
+        // makes it worse.
+        assertTrue(org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get() <= cells * 2,
+            "the grid built " + org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get()
+            + " labels for " + cells + " cells.  It was 1.6 per cell when this was written; more than "
+            + "two per cell means something has started building the grid twice over");
+    }
 }

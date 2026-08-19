@@ -112,6 +112,7 @@ public final class LayoutLabel extends JLabel
         this.setMaximumSize(new Dimension(size, size));*/
         this.setForeground(Color.white);
         
+        COUNT_CONSTRUCTED.incrementAndGet();
         this.setImage(false);
         
         // Edit mode callback
@@ -498,8 +499,14 @@ public final class LayoutLabel extends JLabel
      * Applies the (already-cached) image and its Swing updates on the EDT.
      * @param update are we updating an existing image?
      */
+    public static final java.util.concurrent.atomic.AtomicInteger COUNT_CONSTRUCTED =
+        new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger COUNT_APPLIED =
+        new java.util.concurrent.atomic.AtomicInteger();
+
     private void setImageOnEDT(boolean update)
     {
+        COUNT_APPLIED.incrementAndGet();
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.component != null)

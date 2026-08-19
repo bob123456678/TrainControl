@@ -299,10 +299,11 @@ Not scheduled - recorded so they are not lost.
 - **Semantic station shapes** (deferred 18 August): a triangle pointing the way a station accepts
   arrivals, instead of the current badge plus arrival chevrons. Needs a way to tell "can reverse" from
   "must reverse" first. The current yellow arrival chevrons are fine, so this is polish, not a fix.
-- **The station-label rebuild is roughly cubic on the feedback path.** `AutonomyBuilder` and
-  `uniqueNames()` are rebuilt per point per feedback event. Slow, not wrong, and it has not been felt
-  on a layout this size - but it is on the wrong side of the curve, so it wants doing before somebody
-  brings a bigger one. (Deferred out of the disposition audit's C6.)
+- ~~**The station-label rebuild is roughly cubic on the feedback path.**~~ Measured 2026-08-19 and no
+  longer true: `getStationIndex` returns a cached, eagerly-derived index and `updateStationLabels`
+  reaches it with a map read, while `uniqueNames` costs 0.01ms and is not on the feedback path at all.
+  See `2026-08-19-rendering-cost.md`, which also says where the time DOES go - the Swing grid builds
+  about 1.6 labels for every cell it has.
 - ~~**A configurable path-choosing rule.**~~ Done: **Autonomy > Route Choice**, offering At Random
   (the default), Past the Fewest or the Most Stations, Over the Shortest or the Longest Track, Across
   the Fewest or the Most Sensors, and Least Recently Visited. An application preference rather than a
