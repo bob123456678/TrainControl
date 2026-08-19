@@ -142,6 +142,18 @@ public class testTimetableOnDerivedGraph
             "every locomotive standing somewhere should have been recorded");
 
         // ---- capture -------------------------------------------------------------------------
+        //
+        // Emptied first.  A configuration carries its own saved timetable - it rides along in the
+        // globals - so parseAuto loads one, and capture APPENDS.  Without this the snapshot is four
+        // entries of somebody else's run followed by this one's, and a replay then tries to drive
+        // routes whose preconditions were never going to hold: trains stand nowhere near the start of
+        // an entry recorded on a different day.
+        layout.setTimetable(new ArrayList<TimetablePath>());
+
+        assertTrue(layout.getTimetableSnapshot().isEmpty(),
+            "the timetable must be empty before capture, or what is captured cannot be told from what "
+            + "was already there");
+
         layout.setTimetableCapture(true);
 
         layout.runLocomotives();
@@ -205,27 +217,6 @@ public class testTimetableOnDerivedGraph
         // What the replay is about to be asked to do, against where everyone actually is.  Printed
         // rather than asserted, because the first run of this test needs to show which of the two is
         // wrong before anything is claimed about either.
-        System.out.println("TT recorded starts: " + startedAt);
-        System.out.println("TT restored:");
-
-        for (Locomotive loc : layout.getLocomotivesToRun())
-        {
-            Point at = layout.getLocomotiveLocation(loc);
-
-            System.out.println("   " + loc.getName() + " at "
-                + (at == null ? "NOWHERE" : at.getName())
-                + "   first entry starts at "
-                + (layout.getTimetableStartingPoint(loc) == null ? "(none)"
-                    : layout.getTimetableStartingPoint(loc).getName()));
-        }
-
-        System.out.println("TT captured " + captured.size() + " entries:");
-
-        for (TimetablePath entry : captured)
-        {
-            System.out.println("   " + entry.getLoc().getName() + ": " + via(entry.getPath()));
-        }
-
         // ---- replay ---------------------------------------------------------------------------
         assertTrue(layout.executeTimetable(),
             "the captured timetable did not run to the end.  Entry "
