@@ -2682,10 +2682,16 @@ public class AutonomyEditorPanel extends JPanel
 
         LayoutDiagramComponent.componentType type = component.getType();
 
+        // Only the curves WITHOUT a sensor.
+        //
+        // Following the chord puts the arrow along the rail, which reads beautifully on plain track and
+        // disappears on a sensor: a feedback curve carries the heaviest art on the diagram, and a red
+        // arrow laid at forty-five degrees across it is the one thing on the page nobody can see.
+        // Square N/E/S/W arrows sit clear of the icon and are legible - which is what an arrow is for.
+        //
+        // The sensor tiles are also the ones that matter most to read: they are the Points.
         return type == LayoutDiagramComponent.componentType.CURVE
-            || type == LayoutDiagramComponent.componentType.FEEDBACK_CURVE
-            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || type == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE;
     }
 
     /**

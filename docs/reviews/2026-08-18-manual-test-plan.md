@@ -211,3 +211,17 @@ reachable in the hand-authored graph, so pair reachability cannot distinguish a 
 broken one there at all.  And reachability cannot see a constraint that lives in EDGE CONFIGURATION -
 BottomMainA reaches BottomSecondary in the graph and must not be routed there, because of a signal.
 The pinned file is still worth keeping as a change-detector; it is not a correctness oracle.
+
+---
+
+## Feature backlog (Adam, 18 August)
+
+Not scheduled - recorded so they are not lost.
+
+- **Multiple select in the diagram editor.** Select a range of tiles and act on them at once.
+- **+/- buttons to add rows and columns** to a diagram, rather than editing its size numerically.
+- **Build a new track diagram from chosen linked pages**, joined together into one - so a layout split
+  across pages for drawing convenience can be viewed and worked on as a single diagram.
+- **Semantic station shapes** (deferred 18 August): a triangle pointing the way a station accepts
+  arrivals, instead of the current badge plus arrival chevrons. Needs a way to tell "can reverse" from
+  "must reverse" first. The current yellow arrival chevrons are fine, so this is polish, not a fix.
