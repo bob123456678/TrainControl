@@ -238,10 +238,59 @@ Not scheduled - recorded so they are not lost.
   boundary is the thing to hold to - the text form stays the source of truth, so a route the new
   interface cannot express is still editable, and nothing that reads routes has to learn anything new.
 
+  **Decided 18 August: commands AND conditions both get ovals.**
+
+  Commands are the easy half - a flat list of seven kinds (accessory, feedback, function, locomotive
+  speed, locomotive direction, stop, functions-off), each a row of two or three ovals with an add and a
+  delete. That part is a table.
+
+  Conditions are not a list. `MarklinRoute` holds them as a `NodeExpression` **tree**, normalized to
+  right-nested form, with AND and OR mixed - so a flat row of ovals joined by "AND" would misrepresent
+  any route whose conditions are not a single conjunction, and silently change what the route means the
+  moment somebody edited it. Three ways out, in order of how much they promise:
+
+  1. Render the tree as indented groups, each with its own operator. Honest, and the only shape that can
+     round-trip everything.
+  2. Offer ovals only for a flat conjunction, and fall back to the text field for anything else - with
+     the reason shown, not just a disabled control.
+  3. Normalize everything to a conjunction on save. Do NOT do this: it changes routes people already
+     have.
+
+  Either 1 or 2 is fine; 2 first is defensible if the tree work looks large. What must not happen is a
+  widget that shows a nested condition as though it were flat.
+
+
 - **Multiple select in the diagram editor.** Select a range of tiles and act on them at once.
+
+  **Decided 18 August: paint, erase, rotate and copy/paste all act on the selection.**
+  Rotate turns each selected tile about its own centre rather than rotating the shape of the block.
+  Copy takes the bounding rectangle of the selection, including squares inside it that were not
+  selected, and paste drops it at the cursor.
+
+  Still to settle when the work starts: what paste does to squares it lands on that are not empty
+  (overwrite, or skip and report), and whether a paste that would run off the edge of the diagram grows
+  it or is refused.
+
 - **+/- buttons to add rows and columns** to a diagram, rather than editing its size numerically.
+
+  **Decided 18 August: removing a row or column that still carries track is ALLOWED**, with no refusal
+  and no confirmation. The editor has an undo clipboard and nothing is written until the user confirms
+  in the editor, so the cost of getting it wrong is one undo. Note the "+" half already exists on a
+  keyboard shortcut and a right-click item and only wants buttons; the "-" half does not exist at all -
+  `LayoutDiagram.addRowsAndColumns` clamps negatives to zero.
+
+  Still to settle: whether the minus button removes the LAST row/column or the one at the cursor.
+
 - **Build a new track diagram from chosen linked pages**, joined together into one - so a layout split
   across pages for drawing convenience can be viewed and worked on as a single diagram.
+
+  **Decided 18 August: position the pages from the portal pairs, and report disagreements** rather than
+  silently picking one offset. Each pair of paired portals implies an offset between two pages; where
+  several pairs join the same two pages and disagree, use one and say which pair is out and by how much.
+
+  Still to settle: whether the result is a new saved page or a read-only view, and what happens when two
+  pages want the same square. The second is the one that decides the feature - a layout drawn as
+  overlapping pages cannot be joined without either moving track or refusing.
 - **Semantic station shapes** (deferred 18 August): a triangle pointing the way a station accepts
   arrivals, instead of the current badge plus arrival chevrons. Needs a way to tell "can reverse" from
   "must reverse" first. The current yellow arrival chevrons are fine, so this is polish, not a fix.
