@@ -3115,8 +3115,19 @@ public class AutonomySession
 
         String name = store.getPointName(tile);
 
+        // A plain point draws no badge on the running diagram.
+        //
+        // The tile is a feedback tile and looks like one, so the badge only repeated what the art
+        // already said - on every sensor of the layout, which is most of them.  What a badge is FOR is
+        // the things the art cannot say: this is a station, trains turn round here, autonomy is not
+        // using it.  Those still draw.
+        //
+        // A non-station where trains turn round keeps its mark, because "trains reverse here" is a fact
+        // about behaviour that nothing on the tile shows.
+        boolean worthABadge = store.isStation(tile) || isTurnAround(tile);
+
         return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false,
-            new TileAnnotation.Badge(
+            !worthABadge ? null : new TileAnnotation.Badge(
                 store.isStation(tile),
                 store.isStation(tile) && isTurnAround(tile),
                 !store.isStation(tile) && isTurnAround(tile),
