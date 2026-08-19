@@ -1828,6 +1828,31 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A link is never offered a direction, and ordinary track always is.
+     *
+     * The guard this pins is the only thing standing between a user and a setting that silently does
+     * nothing.  A link's route is a stub - the same side twice - so "toward A" and "toward B" name the
+     * same place, and the traversal would allow both whichever was chosen.  See the note on
+     * TileGraph.PORTAL_ROUTE.
+     */
+    @Test
+    public void testALinkIsNotOfferedADirection() throws Exception
+    {
+        LayoutDiagram page = throughStationPage();
+
+        page.addComponent(componentType.LINK, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        session.open(Arrays.asList(page));
+        session.rebuild();
+
+        assertFalse(session.canCarryDirection(new TileKey("main", 6, 1)),
+            "a link was offered the four direction answers, none of which can mean anything on it");
+
+        assertTrue(session.canCarryDirection(new TileKey("main", 2, 1)),
+            "ordinary track must still be able to carry a direction, or the rule has gone too far");
+    }
+
+    /**
      * A home authored on a split square is emitted onto exactly ONE copy.
      *
      * The running model hangs a home on a Point and refuses to let two Points claim one locomotive, so

@@ -260,6 +260,11 @@ Not scheduled - recorded so they are not lost.
   widget that shows a nested condition as though it were flat.
 
 
+- **One-way running through a link.** A link cannot carry a direction today: its route is a stub - the
+  same side twice - so "toward A" and "toward B" name the same place, and the editor does not offer the
+  setting rather than appear to accept one that does nothing. Expressing it needs the JUMP itself to
+  carry a direction, which is a change to how a portal is traversed rather than a new menu.
+
 - **Multiple select in the diagram editor.** Select a range of tiles and act on them at once.
 
   **Decided 18 August: paint, erase, rotate and copy/paste all act on the selection.**

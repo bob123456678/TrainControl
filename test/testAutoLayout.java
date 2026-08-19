@@ -615,6 +615,40 @@ public class testAutoLayout
     }
 
     /**
+     * An accessory this layout already has, borrowed rather than created.
+     *
+     * newSignal adds to the live accessory database, and that database is the user's real one - these
+     * tests run against the installed data, not a fixture.  Two invented signals therefore ended up
+     * persisted in it, which no test has the right to do: the suite had come back byte-identical on
+     * every previous run and stopped doing so.
+     *
+     * Nothing about these tests needs a signal in particular.  refreshProtectingSignal resolves the
+     * pairing by NAME and calls setState on whatever it finds, so any accessory the layout already
+     * carries exercises the same path - and leaves the database exactly as it was found.
+     *
+     * @param which how many to skip, so two tests can each have one of their own
+     */
+    private MarklinAccessory borrowedAccessory(int which)
+    {
+        int seen = 0;
+
+        for (int address = 1; address <= 256; address++)
+        {
+            MarklinAccessory found = model.getAccessoryByAddressIfPresent(
+                address, Accessory.accessoryDecoderType.MM2);
+
+            if (found == null) continue;
+
+            if (seen++ == which) return found;
+        }
+
+        fail("this layout has no accessories to borrow, so the signal tests cannot run without "
+            + "adding one - which is what they exist to avoid");
+
+        return null;
+    }
+
+    /**
      * A protecting signal follows the PLATFORM, not one copy of it.
      *
      * The memo that stops a redundant command used to live on the Point while "claimed" was a fact
@@ -634,7 +668,7 @@ public class testAutoLayout
         MarklinFeedback fb = model.newFeedback(101, null);
         model.setFeedbackState(fb.getName(), false);
 
-        MarklinAccessory signal = model.newSignal(61, Accessory.accessoryDecoderType.MM2, true);
+        MarklinAccessory signal = borrowedAccessory(0);
 
         layout.createPoint("SIG_east", true, fb.getName());
         layout.createPoint("SIG_west", true, fb.getName());
@@ -689,7 +723,7 @@ public class testAutoLayout
         model.setFeedbackState(one.getName(), false);
         model.setFeedbackState(two.getName(), false);
 
-        MarklinAccessory signal = model.newSignal(62, Accessory.accessoryDecoderType.MM2, true);
+        MarklinAccessory signal = borrowedAccessory(1);
 
         layout.createPoint("SHARE_A", true, one.getName());
         layout.createPoint("SHARE_B", true, two.getName());

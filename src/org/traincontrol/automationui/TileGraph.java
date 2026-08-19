@@ -356,6 +356,26 @@ public class TileGraph
      * The route identifier a portal traversal carries.  A portal is not one of the tile's drawn routes,
      * so it needs an identity of its own to hang direction off - and it takes the default, both ways.
      */
+    /**
+     * The route id a link is traversed under, which is deliberately not one getRoutes will ever return.
+     *
+     * A link's own route is a STUB - the same side twice - because the tile conducts track on one face
+     * and a jump on the other, and a jump is not a side.  getRoutes lists that stub as (0,0); this is
+     * (0,-1), so the two never collide and nothing can correlate them by accident.
+     *
+     * Two things follow, and both are load-bearing:
+     *
+     * A link cannot carry a direction. Direction here means "toward side A or side B", and a stub has
+     * one side, so directionAllows would compare it with itself and answer true whichever way was
+     * asked. Consulting it on this branch would look like one-way cross-page running and do nothing -
+     * which is worse than not offering it. AutonomyEditorPanel therefore does not offer the four
+     * direction answers on a link tile, and testALinkIsNotOfferedADirection pins that: the guard is not
+     * tidiness, it is the only thing standing between a user and a setting that silently does nothing.
+     *
+     * Making a link one-way is a real thing somebody may want, and it needs the JUMP to carry the
+     * direction rather than a side of the tile. That is a feature, recorded in the backlog, not
+     * something to bolt onto this id.
+     */
     private static final RouteId PORTAL_ROUTE = new RouteId(0, -1);
 
     private final Map<TileKey, LayoutDiagramComponent> tiles = new LinkedHashMap<>();

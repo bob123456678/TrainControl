@@ -960,12 +960,14 @@ public class AutonomyEditorPanel extends JPanel
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         // A link has no direction of its own, by decision: it just links, and the track either side of
-        // it governs which way trains may run.  Its one route is a stub - the same side twice - so the
-        // four answers below would be offered on a square where none of them means anything.
-        boolean linked = component != null
-            && org.traincontrol.automationui.TilePorts.hasPortal(component.getType());
-
-        if (!routes.isEmpty() && !linked)
+        // it governs which way trains may run.  Its one route is a stub - the same side twice - so
+        // "toward A" and "toward B" name the same place, and the traversal would allow both whichever
+        // was chosen.  Offering the four answers here would be a setting that silently does nothing.
+        //
+        // Pinned by testALinkIsNotOfferedADirection, because that is the whole guard - see the note on
+        // TileGraph.PORTAL_ROUTE.  One-way cross-page running is a feature that needs the jump itself
+        // to carry a direction, and it is on the backlog rather than bolted onto this.
+        if (session.canCarryDirection(target))
         {
             boolean many = routes.size() > 1;
 
@@ -1921,6 +1923,18 @@ public class AutonomyEditorPanel extends JPanel
         List<TileKey> candidates = new java.util.ArrayList<>();
         List<String> labels = new java.util.ArrayList<>();
 
+        // Like pairs with like: a link with a link, a tunnel with a tunnel.
+        //
+        // The two are the same thing to autonomy - both are portals, both are traversed the same way,
+        // both carry a stub route - and they differ only in what they may point at.  This list offered
+        // every portal of either kind whatever it was asked about, so a link could be paired to a
+        // tunnel: the jump then worked, and the diagram showed a train leaving through an arrow and
+        // arriving out of a tunnel mouth, which is not what either symbol says.
+        LayoutDiagramComponent from =
+            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (from == null) return;
+
         for (Map.Entry<TileKey, LayoutDiagramComponent> entry
             : session.getGraph().getTiles().entrySet())
         {
@@ -1928,8 +1942,7 @@ public class AutonomyEditorPanel extends JPanel
 
             if (component == null || entry.getKey().equals(tile)) continue;
 
-            if (!component.isLink()
-                && component.getType() != LayoutDiagramComponent.componentType.TUNNEL) continue;
+            if (component.getType() != from.getType()) continue;
 
             String named = session.getStore().getLinkName(entry.getKey());
 

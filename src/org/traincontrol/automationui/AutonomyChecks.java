@@ -130,6 +130,7 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
+    public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
 
     /**
      * A station no train can arrive at any more.
@@ -275,6 +276,20 @@ public class AutonomyChecks
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         Set<TileKey> homes)
     {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes,
+            Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param signalsGone the stations whose paired protecting signal no longer resolves to an accessory
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        Set<TileKey> homes, Set<TileKey> signalsGone)
+    {
         List<Finding> findings = new ArrayList<>();
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
@@ -305,6 +320,7 @@ public class AutonomyChecks
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
         findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
+        findings.addAll(checkProtectingSignals(reducer, signalsGone));
 
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {
@@ -379,6 +395,37 @@ public class AutonomyChecks
             ReducedPoint point = reducer.getPoints().get(tile);
 
             findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A station paired with a signal that is no longer there.
+     *
+     * The pairing is stored against the signal's SQUARE and resolved to an accessory at build time, so
+     * a signal deleted from the diagram - or a setup imported against a different layout - leaves a
+     * pairing pointing at nothing.  Everything downstream then does the safe thing quietly: the build
+     * omits the accessory, and the refresh returns without sending a command, because a placement must
+     * not fail over a signal.
+     *
+     * Quietly is the problem.  The operator set that pairing because they wanted a platform protected,
+     * and nothing anywhere told them it had stopped being.
+     *
+     * @param signalsGone the station squares whose pairing no longer resolves
+     */
+    private static List<Finding> checkProtectingSignals(GraphReducer reducer, Set<TileKey> signalsGone)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (signalsGone == null) return findings;
+
+        for (TileKey tile : signalsGone)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, SIGNAL_GONE,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 

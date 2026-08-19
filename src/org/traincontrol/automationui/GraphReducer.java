@@ -286,6 +286,19 @@ public class GraphReducer
     private final Map<TileKey, ReducedPoint> points = new LinkedHashMap<>();
     private final List<ReducedEdge> edges = new ArrayList<>();
     private final Map<ReducedEdge, Set<ReducedEdge>> locks = new LinkedHashMap<>();
+
+    /**
+     * Sensors where a branch was refused because its switch settings contradicted the path to it.
+     *
+     * Recorded rather than warned about at the time.  A fork whose two legs need one switch two ways is
+     * ORDINARY - it is what a switch is - and warning per branch would put a line on the findings list
+     * for every turnout on the layout.  What is worth saying is the case where the refusal was the only
+     * way through: a wye or a folded loop with no sensor between the two crossings leaves the two ends
+     * with no edge between them at all, and the user's first sight of that is a connectivity test
+     * answering no.  So the note is kept and read at the end, when it is known whether anything else
+     * got out of that sensor.
+     */
+    private final Set<TileKey> refusedForConflict = new LinkedHashSet<>();
     private final List<TileGraph.Problem> problems = new ArrayList<>();
     private int isolatedFeedbackTiles = 0;
 
@@ -301,6 +314,11 @@ public class GraphReducer
      * A run of track leaves a sensor and returns to it without passing another - a balloon loop.
      */
     public static final String WARN_SELF_LOOP = "autosetup.ui.warnSelfLoop";
+
+    /**
+     * A run that exists on the diagram but cannot be driven, because it needs one switch two ways.
+     */
+    public static final String WARN_SWITCH_NEEDED_TWICE = "autosetup.ui.warnSwitchNeededTwice";
 
     /**
      * A double-curve sensor with track on both of its curves.  The s88 is on ONE of them; the other is
@@ -324,11 +342,13 @@ public class GraphReducer
         edges.clear();
         edgeByPair.clear();
         locks.clear();
+        refusedForConflict.clear();
         problems.clear();
         isolatedFeedbackTiles = 0;
 
         buildPoints();
         walkEdges();
+        reportRunsNoSwitchCanServe();
         deriveLocks();
     }
 
@@ -843,7 +863,11 @@ public class GraphReducer
 
             // A branch whose settings contradict the path so far cannot be taken - the same rule the
             // autonomy model applies when it refuses a path with conflicting accessory commands
-            if (!collectCommands(tile, exit.getState(), branchCommands)) continue;
+            if (!collectCommands(tile, exit.getState(), branchCommands))
+            {
+                refusedForConflict.add(start);
+                continue;
+            }
 
             Landing next = graph.landing(tile, exit.getSide());
 
@@ -938,6 +962,34 @@ public class GraphReducer
      * backwards is costly either way - treating it as a conflict needlessly serialises two independent
      * routes, while treating a same-route share as safe would allow a real collision.
      */
+    /**
+     * Says so where a sensor lost its only way out to a switch it needed two ways.
+     *
+     * Only where NOTHING got out.  A fork refusing one of its legs is what a switch is for, and warning
+     * about that would put a line on the findings list for every turnout on the layout.  A sensor with
+     * no edge at all, whose branches were all refused for contradicting themselves, is the case the
+     * user cannot otherwise see: the track is drawn, the route is physically there, and the graph simply
+     * has no edge - first noticed when a connectivity test says no.
+     */
+    private void reportRunsNoSwitchCanServe()
+    {
+        for (TileKey start : refusedForConflict)
+        {
+            boolean gotOut = false;
+
+            for (ReducedEdge edge : edges)
+            {
+                if (edge.getStart().equals(start))
+                {
+                    gotOut = true;
+                    break;
+                }
+            }
+
+            if (!gotOut) problems.add(new TileGraph.Problem(start, WARN_SWITCH_NEEDED_TWICE, false));
+        }
+    }
+
     private void deriveLocks()
     {
         // index every edge by the locations it occupies

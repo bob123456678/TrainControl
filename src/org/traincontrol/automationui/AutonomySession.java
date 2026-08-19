@@ -2214,6 +2214,57 @@ public class AutonomySession
     }
 
     /**
+     * Whether a square can meaningfully be given a direction.
+     *
+     * False for a link.  A link's route is a stub - the same side twice - because the tile conducts
+     * track on one face and a jump on the other, and a jump is not a side.  "Toward A" and "toward B"
+     * therefore name the same place, and the traversal would allow both whichever was chosen: a
+     * setting that silently does nothing, which is worse than no setting at all.
+     *
+     * Here rather than in the menu that asks it, so the rule has a name, one home, and a test.  Making
+     * a link one-way is a real thing to want and needs the JUMP to carry the direction; that is on the
+     * backlog, and this returns false until it exists.
+     *
+     * @param tile the square
+     * @return true when the direction answers mean something there
+     */
+    public boolean canCarryDirection(TileKey tile)
+    {
+        if (graph == null || tile == null) return false;
+
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+        if (component == null) return false;
+
+        if (org.traincontrol.automationui.TilePorts.hasPortal(component.getType())) return false;
+
+        return !getRoutes(tile).isEmpty();
+    }
+
+    /**
+     * The stations whose paired protecting signal no longer resolves to an accessory.
+     *
+     * The same walk protectingSignalNames does, keeping what it skips.  It has to skip them - a build
+     * cannot emit an accessory that is not there - but skipping in silence is what leaves an operator
+     * believing a platform is protected when it is not.
+     */
+    private java.util.Set<TileKey> signalsThatAreGone()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        if (graph == null) return out;
+
+        for (java.util.Map.Entry<TileKey, TileKey> pair : store.getProtectingSignals().entrySet())
+        {
+            LayoutDiagramComponent signal = graph.getTiles().get(pair.getValue());
+
+            if (signal == null || signal.getAccessory() == null) out.add(pair.getKey());
+        }
+
+        return out;
+    }
+
+    /**
      * The squares an authored home locomotive lives at.
      */
     private java.util.Set<TileKey> homeTiles()
@@ -2362,7 +2413,7 @@ public class AutonomySession
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
-            mayTurnTiles(), mandatoryTurnTiles(), homeTiles());
+            mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone());
     }
 
     /**
