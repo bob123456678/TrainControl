@@ -14907,6 +14907,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (this.startAutonomy.isEnabled())
         {
             startAutonomyActionPerformed(null);
+
+            // And bring up the view that shows what is running.
+            //
+            // Started from the button, the user is already looking at that tab.  Started from the
+            // track diagram - a right-click on a station, which is the natural place to set a railway
+            // going - they were not, so autonomy began with nothing on screen to say so and no visible
+            // way to stop it again.
+            showAutonomyRunTab();
         }
         else
         {

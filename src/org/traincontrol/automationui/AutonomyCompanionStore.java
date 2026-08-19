@@ -166,6 +166,64 @@ public class AutonomyCompanionStore
     private final Map<String, String> portals = new LinkedHashMap<>();
 
     /**
+     * The signal that protects each station, keyed by the station's square.
+     *
+     * One per station, and paired by hand rather than inferred.  The nearest signal on the approach is
+     * not always the protecting one, and a wrong guess here throws a real signal on real hardware.
+     *
+     * Keyed like the portals - square to square - so it survives a page rename for the same reason
+     * they do, and so it is reconciled away when either tile goes.
+     */
+    private final Map<String, String> stationSignals = new LinkedHashMap<>();
+
+    /**
+     * @param station the station's square
+     * @return the square of the signal protecting it, or null
+     */
+    public TileKey getProtectingSignal(TileKey station)
+    {
+        if (station == null) return null;
+
+        return parseTileKey(stationSignals.get(station.toString()));
+    }
+
+    /**
+     * @param station the station's square
+     * @param signal the signal's square, or null to unpair
+     */
+    public void setProtectingSignal(TileKey station, TileKey signal)
+    {
+        if (station == null) return;
+
+        if (signal == null)
+        {
+            stationSignals.remove(station.toString());
+        }
+        else
+        {
+            stationSignals.put(station.toString(), signal.toString());
+        }
+    }
+
+    /**
+     * @return every station that has a protecting signal, against that signal's square
+     */
+    public Map<TileKey, TileKey> getProtectingSignals()
+    {
+        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : stationSignals.entrySet())
+        {
+            TileKey station = parseTileKey(entry.getKey());
+            TileKey signal = parseTileKey(entry.getValue());
+
+            if (station != null && signal != null) out.put(station, signal);
+        }
+
+        return out;
+    }
+
+    /**
      * Where each station caption is drawn, and which square it is about: caption square -> sensor square.
      *
      * Kept here rather than in the diagram, which is what makes a caption a thing rather than a piece of
@@ -643,6 +701,7 @@ public class AutonomyCompanionStore
         root.put("tileLengths", new JSONObject(translateLengths()));
         root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
         root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
+        root.put("stationSignals", new JSONObject(translateTileMap(stationSignals)));
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
@@ -807,6 +866,7 @@ public class AutonomyCompanionStore
         tileLengths.clear();
         tileDirections.clear();
         barredArrivals.clear();
+        stationSignals.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();
@@ -993,6 +1053,11 @@ public class AutonomyCompanionStore
         rekey(tileLengths, from, to);
         rekey(tileDirections, from, to);
         rekey(barredArrivals, from, to);
+
+        // Both halves, like the captions: the key is the station's square and the value is the
+        // signal's, and a rename moves both.
+        rekeyValues(stationSignals, from, to);
+        rekey(stationSignals, from, to);
         rekeyValues(portals, from, to);
         rekey(portals, from, to);
         rekey(linkNames, from, to);
@@ -1132,6 +1197,7 @@ public class AutonomyCompanionStore
         report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
         report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
         report.droppedTileProperties.addAll(dropMissing(barredArrivals, keys, false));
+        report.droppedTileProperties.addAll(dropMissing(stationSignals, keys, false));
 
         // A caption goes when either end of it does - the square it is drawn on, or the sensor it is
         // about.  Text pointing at track that no longer exists is the orphan this whole change removes.
@@ -1297,7 +1363,7 @@ public class AutonomyCompanionStore
      */
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "barredArrivals",
+        "barredArrivals", "stationSignals",
         "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
 
 
@@ -1320,6 +1386,7 @@ public class AutonomyCompanionStore
         readStringSet(root, "stations", stations);
         readStringMap(root, "tileDirections", tileDirections);
         readStringMap(root, "barredArrivals", barredArrivals);
+        readStringMap(root, "stationSignals", stationSignals);
         readStringMap(root, "portals", portals);
         readStringMap(root, "captions", captions);
         readStringMap(root, "linkNames", linkNames);
@@ -1342,6 +1409,7 @@ public class AutonomyCompanionStore
         untranslate(pointNames);
         untranslate(tileDirections);
         untranslate(barredArrivals);
+        untranslateTileMap(stationSignals);
         untranslate(linkNames);
         untranslatePortals();
         untranslateTileMap(captions);

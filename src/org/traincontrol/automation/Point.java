@@ -421,7 +421,18 @@ public class Point
         // something ever needs to would be a placement lock, not a wider monitor here.
         if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
 
-        return assign(l);
+        assign(l);
+
+        // The signal follows the platform, through the one door every occupancy change goes through.
+        //
+        // Red while the platform is claimed and green when it is not - and "claimed" covers a train
+        // standing there AND a locked path that has reserved it, because reserving sets the locomotive
+        // exactly as arriving does.  One derived rule rather than a hook on arrival and another on
+        // departure, so a released or failed path cannot leave a signal stuck red: whatever clears the
+        // reservation clears the signal with it.
+        if (this.layout != null) this.layout.refreshProtectingSignal(this);
+
+        return this;
     }
 
     /**
@@ -441,7 +452,11 @@ public class Point
      */
     Point reserve(Locomotive l)
     {
-        return assign(l);
+        assign(l);
+
+        if (this.layout != null) this.layout.refreshProtectingSignal(this);
+
+        return this;
     }
 
     synchronized private Point assign(Locomotive l)
@@ -468,6 +483,44 @@ public class Point
      * each stand alone, and behave as they always have.
      */
     private String block;
+
+    /**
+     * The accessory thrown to red while this platform is claimed, or null.
+     *
+     * A station's protection, not a side's: every copy of a square carries the same one, because the
+     * copies are one platform.
+     */
+    private String protectingSignal;
+
+    public String getProtectingSignal()
+    {
+        return this.protectingSignal;
+    }
+
+    /**
+     * The aspect this Point's signal was last told to show, so an unchanged one is not commanded again.
+     *
+     * Null until the first command, which is what makes the first one always go out - a signal left red
+     * by a previous session must be corrected even if the platform is free.
+     */
+    private Boolean signalClaimed;
+
+    Boolean wasSignalClaimed()
+    {
+        return this.signalClaimed;
+    }
+
+    void rememberSignalClaimed(boolean claimed)
+    {
+        this.signalClaimed = claimed;
+    }
+
+    public Point setProtectingSignal(String accessory)
+    {
+        this.protectingSignal = accessory;
+
+        return this;
+    }
 
     /**
      * @return the block this Point shares with the other copies of its square, or null

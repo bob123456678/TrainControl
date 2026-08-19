@@ -3823,6 +3823,56 @@ public class Layout
      * @param except the Point asking, whose own occupancy the caller has already read
      * @return the locomotive on another copy of that square, or null
      */
+    /**
+     * Sets a station's protecting signal to match whether its platform is claimed.
+     *
+     * Red when a train is standing there or a locked path has reserved it, green when it is free.
+     * Derived rather than remembered, so nothing has to undo it: a path released after a failure
+     * clears the reservation, and the signal follows on the same call.
+     *
+     * Quiet about failures.  A signal that has gone from the layout, or a control station that is not
+     * listening, must not stop a train being placed - and this runs on the driving thread.
+     *
+     * @param point the Point whose occupancy just changed
+     */
+    void refreshProtectingSignal(Point point)
+    {
+        if (point == null || this.control == null) return;
+
+        String accessory = point.getProtectingSignal();
+
+        if (accessory == null) return;
+
+        try
+        {
+            // The whole platform, not this copy: another copy holding a train means the platform is
+            // occupied, and the signal guards the platform.
+            boolean claimed = point.getBlockLocomotive() != null;
+
+            // Only when it CHANGES.  This fires from every occupancy change, including each point a
+            // locked path reserves - and configureAndLockPath holds the layout monitor across that
+            // whole loop, so a command per reservation would put a burst of accessory traffic under
+            // the lock the event thread also needs.  A signal already showing the right aspect needs
+            // nothing sent to it.
+            if (point.wasSignalClaimed() != null && point.wasSignalClaimed() == claimed) return;
+
+            point.rememberSignalClaimed(claimed);
+
+            Accessory acc = this.control.getAccessoryByName(accessory);
+
+            if (acc == null) return;
+
+            // Through Accessory.setState, the same door the edge configuration uses, so a signal
+            // thrown here is thrown exactly as one thrown by a route.
+            acc.setState(claimed
+                ? Accessory.accessorySetting.RED : Accessory.accessorySetting.GREEN);
+        }
+        catch (Exception e)
+        {
+            this.control.log(e);
+        }
+    }
+
     Locomotive locomotiveInBlock(String block, Point except)
     {
         if (block == null) return null;
@@ -4701,6 +4751,14 @@ public class Layout
                 if (point.has("block"))
                 {
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
+                }
+
+                // The signal thrown to red while this platform is claimed.  Absent everywhere it has
+                // not been paired, and on everything hand-written.
+                if (point.has("protectingSignal"))
+                {
+                    layout.getPoint(point.getString("name"))
+                        .setProtectingSignal(point.optString("protectingSignal", null));
                 }
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive

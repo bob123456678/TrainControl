@@ -822,6 +822,23 @@ public class AutonomyEditorPanel extends JPanel
             final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
                 session.arrivalSides(target);
 
+            // The signal that is thrown to red while this platform is claimed.
+            //
+            // Paired by hand rather than inferred: the nearest signal on the approach is not always the
+            // one that protects a platform, and a wrong guess here throws a real signal on real
+            // hardware.  Picked from a list rather than by a second click on the diagram, which is how
+            // links are paired - the same shape of question, so the same shape of answer.
+            if (isStation)
+            {
+                TileKey paired = session.getProtectingSignal(target);
+
+                menu.add(item(
+                    paired == null
+                        ? I18n.t("autosetup.ui.menuPairSignal")
+                        : I18n.f("autosetup.ui.menuPairedSignal", describeTile(paired)),
+                    () -> pairProtectingSignal(target)));
+            }
+
             if (isStation && ways.size() > 1)
             {
                 javax.swing.JMenu arrivals = new javax.swing.JMenu(
@@ -1919,6 +1936,63 @@ public class AutonomyEditorPanel extends JPanel
         if (chosen == null) return;
 
         session.pairPortals(tile, candidates.get(labels.indexOf(String.valueOf(chosen))));
+    }
+
+    /**
+     * Asks which signal protects a station, from the signals on this setup.
+     *
+     * Every signal the graph knows, named by its accessory, because that is what a person reads off
+     * the diagram - and the accessory is what the running layout will actually throw.  A signal with
+     * no address cannot be commanded, so it is not offered.
+     *
+     * @param station the station's square
+     */
+    private void pairProtectingSignal(TileKey station)
+    {
+        java.util.List<TileKey> candidates = new java.util.ArrayList<>();
+        java.util.List<String> labels = new java.util.ArrayList<>();
+
+        if (session.getGraph() != null)
+        {
+            for (java.util.Map.Entry<TileKey, LayoutDiagramComponent> entry
+                : session.getGraph().getTiles().entrySet())
+            {
+                LayoutDiagramComponent component = entry.getValue();
+
+                if (component == null || !component.isSignal()) continue;
+
+                if (component.getAccessory() == null) continue;
+
+                candidates.add(entry.getKey());
+                labels.add(component.getAccessory().getName() + "  -  " + entry.getKey().toString());
+            }
+        }
+
+        if (candidates.isEmpty())
+        {
+            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNoSignals"));
+            return;
+        }
+
+        // Clearing is an answer too, and the only way back once a pairing is made
+        labels.add(0, I18n.t("autosetup.ui.labelNoSignal"));
+        candidates.add(0, null);
+
+        TileKey current = session.getProtectingSignal(station);
+
+        Object chosen = JOptionPane.showInputDialog(owner(),
+            I18n.t("autosetup.ui.promptPickSignal"), I18n.t("autosetup.ui.menuPairSignal"),
+            JOptionPane.PLAIN_MESSAGE, null, labels.toArray(),
+            labels.get(current == null ? 0 : Math.max(0, candidates.indexOf(current))));
+
+        if (chosen == null) return;
+
+        session.setProtectingSignal(station,
+            candidates.get(labels.indexOf(String.valueOf(chosen))));
+
+        refresh();
+
+        flashMenuTarget();
     }
 
     private void applyLength(TileKey tile)

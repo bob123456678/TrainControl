@@ -319,6 +319,25 @@ public class AutonomyBuilder
      * @param barred square to the sides it bars, or null for no restrictions
      * @return this
      */
+    /**
+     * Which accessory protects each station.
+     *
+     * Emitted on every copy of the square, because the copies are one platform and the signal guards
+     * the platform rather than a side of it.
+     *
+     * @param signals station square to accessory name
+     * @return this
+     */
+    public AutonomyBuilder withProtectingSignals(Map<TileKey, String> signals)
+    {
+        this.protectingSignals = signals == null
+            ? Collections.<TileKey, String>emptyMap() : signals;
+
+        return this;
+    }
+
+    private Map<TileKey, String> protectingSignals = Collections.emptyMap();
+
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
         this.barredArrivals = barred == null
@@ -724,6 +743,12 @@ public class AutonomyBuilder
                 // a station, its approach guard and a reversing point can be three Points on one
                 // feedback - so the sensor cannot say which Points are one square.  The tile can.
                 if (nodes.size() > 1) json.put("block", point.getTile().toString());
+
+                // The signal that is thrown to red while this platform is claimed.  On every copy,
+                // because the copies are one platform.
+                String protecting = protectingSignals.get(point.getTile());
+
+                if (protecting != null && stops) json.put("protectingSignal", protecting);
 
                 if (coordinatePages != null)
                 {

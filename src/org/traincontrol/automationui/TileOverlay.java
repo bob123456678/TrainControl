@@ -140,6 +140,21 @@ public class TileOverlay
      */
     private static final float LOCKED_ALPHA = 0.4f;
 
+    /**
+     * How much a square of held track is washed out.
+     *
+     * Locked track was drawn as a near-white line at low alpha, which on a pale diagram is very nearly
+     * nothing: a held square looked like an ordinary one, and the whole point of showing it is that a
+     * reader can see which track is spoken for.
+     *
+     * Lightened rather than coloured in.  It is not somewhere a train is going - it is somewhere
+     * nobody else may go - so it should recede from the running path rather than compete with it, and
+     * paling the tile says "held" without adding another colour to a diagram that already has four.
+     */
+    private static final Color LOCKED_WASH = Color.WHITE;
+
+    private static final float LOCKED_WASH_ALPHA = 0.45f;
+
     private static final float DOT_ALPHA = 0.9f;
 
     private final State state;
@@ -335,6 +350,30 @@ public class TileOverlay
     {
         int span = Math.min(width, height);
         int[] centre = new int[] {width / 2, height / 2};
+
+        // Held track is paled out first, under everything else.
+        //
+        // Only where nothing is actually running over this square: a square carrying a live path is
+        // described by that path, and washing it as well would say two things about one piece of rail.
+        boolean onlyHeld = true;
+
+        for (Segment segment : segments)
+        {
+            if (segment.getState() != State.LOCKED) onlyHeld = false;
+        }
+
+        if (onlyHeld && !segments.isEmpty())
+        {
+            java.awt.Composite before = g.getComposite();
+
+            g.setComposite(java.awt.AlphaComposite.getInstance(
+                java.awt.AlphaComposite.SRC_OVER, LOCKED_WASH_ALPHA));
+
+            g.setColor(LOCKED_WASH);
+            g.fillRect(0, 0, width, height);
+
+            g.setComposite(before);
+        }
 
         // Track merely held clear is dropped where a path is actually running over the same square.
         // Same rule the merged state follows, and without it the grey line and the coloured one are

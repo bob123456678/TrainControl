@@ -329,7 +329,7 @@ public class testRouteInventory
     @Test
     public void testWhatTheUiWouldShow() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1f.json");
+        File bundle = new File("tc_backup/Autonomy 1g.json");
 
         if (!bundle.isFile()) return;
 
@@ -339,7 +339,7 @@ public class testRouteInventory
 
         Layout layout = model.getAutoLayout();
 
-        StringBuilder out = new StringBuilder("# what the UI would show, Autonomy 1f\n\n");
+        StringBuilder out = new StringBuilder("# what the UI would show, Autonomy 1g\n\n");
 
         if (layout == null || !layout.isValid())
         {

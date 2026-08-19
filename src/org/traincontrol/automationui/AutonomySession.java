@@ -1500,7 +1500,8 @@ public class AutonomySession
             .withReversibleTiles(reversibleTiles())
             .withMandatoryTurns(mandatoryTurnTiles())
             .withParkingTiles(parkingTiles())
-            .withBarredArrivals(barredArrivals());
+            .withBarredArrivals(barredArrivals())
+            .withProtectingSignals(protectingSignalNames());
     }
 
     /**
@@ -1508,6 +1509,55 @@ public class AutonomySession
      *
      * @return square to barred sides, only for the squares that restrict anything
      */
+    /**
+     * @param station a station's square
+     * @return the square of the signal protecting it, or null
+     */
+    public TileKey getProtectingSignal(TileKey station)
+    {
+        return store.getProtectingSignal(station);
+    }
+
+    /**
+     * @param station a station's square
+     * @param signal the signal's square, or null to unpair
+     */
+    public void setProtectingSignal(TileKey station, TileKey signal)
+    {
+        store.setProtectingSignal(station, signal);
+        touched();
+    }
+
+    /**
+     * Which ACCESSORY protects each station, by name.
+     *
+     * The store pairs squares, because a square survives everything; the running layout commands
+     * accessories, which it knows by name.  This is the join, and it is made here because only the
+     * session has the diagram to read the address off.
+     *
+     * A pairing whose signal tile has gone, or carries no address, is left out rather than emitted as
+     * something the layout would fail to find.
+     *
+     * @return station square to accessory name
+     */
+    public Map<TileKey, String> protectingSignalNames()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        if (graph == null) return out;
+
+        for (Map.Entry<TileKey, TileKey> pair : store.getProtectingSignals().entrySet())
+        {
+            LayoutDiagramComponent signal = graph.getTiles().get(pair.getValue());
+
+            if (signal == null || signal.getAccessory() == null) continue;
+
+            out.put(pair.getKey(), signal.getAccessory().getName());
+        }
+
+        return out;
+    }
+
     public Map<TileKey, Set<Side>> barredArrivals()
     {
         return store.getBarredArrivals();
@@ -2403,6 +2453,9 @@ public class AutonomySession
         // not a station, so leaving it costs nothing today and everything the day somebody makes the
         // square a station again and finds it refusing trains for a reason recorded months ago.
         if (!station) store.setBarredArrivals(tile, null);
+
+        // And the signal that protected it: a plain point is not somewhere trains are held out of.
+        if (!station) store.setProtectingSignal(tile, null);
 
         touched();
     }

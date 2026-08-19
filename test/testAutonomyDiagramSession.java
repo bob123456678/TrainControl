@@ -2740,6 +2740,40 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station's protecting signal survives a save, and goes when the station does.
+     *
+     * Kept with the captions and the arrival restrictions rather than beside the running state: it is a
+     * fact about the railway, not about today's traffic.
+     */
+    @Test
+    public void testAProtectingSignalIsKeptAndForgottenWithTheStation() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignal(station, signal);
+
+        assertEquals(session.getProtectingSignal(station), signal);
+
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(pageOnDisk()));
+
+        assertEquals(reopened.getProtectingSignal(station), signal,
+            "the pairing did not survive the file");
+
+        // and a square that stops being a station is not somewhere trains are held out of
+        reopened.setStation(station, false);
+
+        assertNull(reopened.getProtectingSignal(station),
+            "a plain point kept a signal protecting it");
+    }
+
+    /**
      * Demoting a station takes its name plaque with it.
      *
      * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption
