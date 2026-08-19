@@ -180,6 +180,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
+
+    /**
+     * Which route autonomy takes when it has a choice.  Stored by name, so a value written by a newer
+     * version simply falls back to the default here rather than throwing.
+     */
+    public static final String PATH_PREFERENCE_PREF = "AutonomyPathPreference";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
     public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
@@ -704,6 +710,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
         // Restore UI component state
+        buildPathPreferenceMenu();
+
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
@@ -4751,9 +4759,146 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.ImageLoader;
     }
 
+    /**
+     * Adds "how should autonomy choose a route" to the Autonomy preferences submenu.
+     *
+     * Built here rather than in the form, because the generated block is the GUI builder\u2019s and
+     * hand edits to it do not survive the next time somebody opens the form.
+     *
+     * An application preference rather than a per-configuration one: it is how the user wants their
+     * trains to behave, not a fact about a particular railway, and it has to outlive a configuration
+     * being reloaded.  Applied to the model as soon as it is read, so the choice is in force before
+     * anything is loaded.
+     */
+    private void buildPathPreferenceMenu()
+    {
+        if (autonomyToolbarMenu == null) return;
+
+        org.traincontrol.automation.Layout.PathPreference stored;
+
+        try
+        {
+            stored = org.traincontrol.automation.Layout.PathPreference.valueOf(
+                prefs.get(PATH_PREFERENCE_PREF,
+                    org.traincontrol.automation.Layout.PathPreference.RANDOM.name()));
+        }
+        catch (IllegalArgumentException e)
+        {
+            // Written by a version that had a choice this one does not
+            stored = org.traincontrol.automation.Layout.PathPreference.RANDOM;
+        }
+
+        org.traincontrol.automation.Layout.setPathPreference(stored);
+
+        javax.swing.JMenu choose = new javax.swing.JMenu(I18n.t("autolayout.ui.menuPathPreference"));
+
+        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        // The default first - which is also the behaviour every existing railway already has - then
+        // the measured choices, in the order they are worth reaching for.
+        org.traincontrol.automation.Layout.PathPreference[] order =
+        {
+            org.traincontrol.automation.Layout.PathPreference.RANDOM,
+            org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS,
+            org.traincontrol.automation.Layout.PathPreference.SHORTEST_LENGTH,
+            org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS
+        };
+
+        for (final org.traincontrol.automation.Layout.PathPreference option : order)
+        {
+            javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(
+                I18n.t("autolayout.ui.pathPreference" + option.name()), option == stored);
+
+            item.setToolTipText(I18n.t("autolayout.ui.tooltip.pathPreference" + option.name()));
+
+            item.addActionListener(event ->
+            {
+                org.traincontrol.automation.Layout.setPathPreference(option);
+                prefs.put(PATH_PREFERENCE_PREF, option.name());
+            });
+
+            group.add(item);
+            choose.add(item);
+        }
+
+        autonomyToolbarMenu.add(choose);
+    }
+
     public ExecutorService getTileImageLoader()
     {
         return this.TileImageLoader;
+    }
+
+    /**
+     * How many tile images are being decoded right now.
+     *
+     * Counted rather than inferred from the executor, because the pool has several threads: a task
+     * submitted last can start before an earlier one finishes, so "the queue is empty" does not mean
+     * "the work is done" and a trailing marker task would lie.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger tilesDecoding
+        = new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * What to run when the last decode finishes.  Drained on the EDT, so a listener never sees a
+     * half-applied grid.
+     */
+    private final java.util.List<Runnable> tilesSettledListeners
+        = java.util.Collections.synchronizedList(new java.util.LinkedList<Runnable>());
+
+    public void tileDecodeStarted()
+    {
+        tilesDecoding.incrementAndGet();
+    }
+
+    /**
+     * One decode finished.  When it was the last, everything waiting is released.
+     *
+     * The release goes through invokeLater rather than running here, because "the decode is done" and
+     * "the image is on the label" are different moments - the label applies it on the EDT - and a
+     * listener that reveals the diagram wants the second one.  Posting from this thread puts the
+     * release behind the label updates already queued.
+     */
+    public void tileDecodeFinished()
+    {
+        if (tilesDecoding.decrementAndGet() > 0) return;
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (tilesDecoding.get() > 0) return;
+
+            java.util.List<Runnable> waiting;
+
+            synchronized (tilesSettledListeners)
+            {
+                waiting = new java.util.LinkedList<>(tilesSettledListeners);
+                tilesSettledListeners.clear();
+            }
+
+            for (Runnable r : waiting) r.run();
+        });
+    }
+
+    /**
+     * Runs something once no tile image is still being decoded.
+     *
+     * Immediately - on the EDT - when nothing is pending, which is the second time a diagram is opened
+     * and every tile comes from the cache.  Callers use this to avoid showing a diagram that is only
+     * half drawn.
+     *
+     * @param whenDone what to run, on the EDT
+     */
+    public void whenTilesSettled(Runnable whenDone)
+    {
+        if (whenDone == null) return;
+
+        if (tilesDecoding.get() == 0)
+        {
+            javax.swing.SwingUtilities.invokeLater(whenDone);
+            return;
+        }
+
+        tilesSettledListeners.add(whenDone);
     }
 
     @Override
@@ -13699,39 +13844,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_initializeLocalLayoutMenuItemActionPerformed
 
     private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
-        new Thread(()->
-        { 
-            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
-            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            int i = fc.showOpenDialog(this);
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
-                String filepath = f.getPath();
+        JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
-            }
-            else
-            {
-                return;
-            }
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
-            this.model.syncWithCS2();
-            
-            if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())
-            {   
-                this.initializeTrackDiagram(true);
-            }
-            else
+        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, fc.getSelectedFile().getPath());
+
+        // Behind a spinner, and split in two.
+        //
+        // This whole handler used to run on one raw thread: the chooser closed, nothing appeared for as
+        // long as the fetch and parse took, and the first sign that anything had happened was the
+        // finished diagram.  Asked to pick a folder and then shown nothing, a user reasonably concludes
+        // the command was ignored - and clicks it again.
+        //
+        // The split is the other half of the fix.  syncWithCS2 replaces the locomotive, route and
+        // layout databases and belongs off the event thread; initializeTrackDiagram builds Swing
+        // components and belongs on it.  Both were on the raw thread, so the track diagram was being
+        // built off the EDT entirely.
+        BusyDialog.run(this, I18n.t("layout.ui.busyLoadingLayout"),
+            () -> this.model.syncWithCS2(),
+            () ->
             {
-                this.repaintLoc();
-                this.repaintLayout();
-                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("layout.ui.errorInvalidPathOrCorruptData")
-                ));
-            }
-        }).start();
+                if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())
+                {
+                    this.initializeTrackDiagram(true);
+
+                    // Said out loud.  The diagram appearing is evidence only for somebody watching the
+                    // right part of the window, and this replaces a whole database.
+                    this.model.logf("layout.ui.infoLayoutLoadedFrom",
+                        prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+                }
+                else
+                {
+                    this.repaintLoc();
+                    this.repaintLayout();
+
+                    JOptionPane.showMessageDialog(this,
+                        I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+                }
+            });
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed

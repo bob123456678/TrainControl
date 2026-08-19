@@ -449,6 +449,10 @@ public final class LayoutLabel extends JLabel
 
             if (imageCache.get(key) == null)
             {
+                // Counted before it is submitted, so that a grid asking "are the tiles ready" cannot
+                // see zero in the window between building the labels and the pool picking the work up.
+                this.tcUI.tileDecodeStarted();
+
                 // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
                 this.tcUI.getTileImageLoader().submit(() ->
                 {
@@ -465,8 +469,14 @@ public final class LayoutLabel extends JLabel
                     {
                         this.tcUI.getModel().log(ex.getMessage());
                     }
+                    finally
+                    {
+                        // In a finally: a tile that fails to decode still has to stop being counted, or
+                        // one unreadable image leaves the diagram waiting for it for ever.
+                        setImageOnEDT(update);
 
-                    setImageOnEDT(update);
+                        this.tcUI.tileDecodeFinished();
+                    }
                 });
 
                 return;

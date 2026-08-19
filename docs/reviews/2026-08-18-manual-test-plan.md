@@ -240,11 +240,19 @@ Not scheduled - recorded so they are not lost.
   `uniqueNames()` are rebuilt per point per feedback event. Slow, not wrong, and it has not been felt
   on a layout this size - but it is on the wrong side of the curve, so it wants doing before somebody
   brings a bigger one. (Deferred out of the disposition audit's C6.)
-- **A configurable path-choosing rule.** Autonomy picks a path from those available by one fixed rule
-  today. Offer the choice: prefer the shortest, always the shortest, random, or another rule. "Prefer"
-  and "always" are different railways - always-shortest will queue trains behind one another on the
-  short way round rather than send the second train the long way, which is what somebody wants for a
-  timetable and not what they want for a layout that should look busy.
+- ~~**A configurable path-choosing rule.**~~ Done: Preferences > Autonomy > Route Choice, offering
+  At Random (the default), Past the Fewest Stations, Over the Shortest Track, and Across the Fewest
+  Sensors. An application preference rather than a per-configuration one - it is how the user wants
+  their trains to behave, not a fact about a railway, and it survives a reload.
+
+  The default is deliberately the OLD behaviour. A preference that changed how existing railways run
+  the moment their owner upgraded would be a regression with a switch beside it, and the people most
+  affected drive from scripts and would never see the menu. It is also the cheapest option, so the
+  upgrade costs nothing either: the ranked choices enumerate the alternatives before comparing them,
+  and this one stops at the first route that works.
+
+  Station priority still wins. Ranking happens between stations of EQUAL priority, so a station
+  somebody marked important is not beaten by a shorter route to an ordinary one.
 
 ## Manual review items - closed 18 August
 

@@ -14,6 +14,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.automation.Point;
@@ -503,6 +504,156 @@ public class testAutoLayout
         // while the train already there is not blocked by itself
         assertFalse(toEast.isOccupied(first));
         assertFalse(toWest.isOccupied(first));
+    }
+
+    /**
+     * The route preference defaults to what every earlier version did, and nothing has to be set for
+     * that to be true.
+     *
+     * The point of the default is that upgrading changes nothing.  A railway driven from a script has
+     * no menu to look at, so the one thing this preference must never do is quietly re-route somebody
+     * else's trains the moment they install a new build.
+     */
+    @Test
+    public void testTheRoutePreferenceDefaultsToTheOldBehaviour()
+    {
+        assertEquals(Layout.getPathPreference(), Layout.PathPreference.RANDOM,
+            "the default must be the behaviour existing layouts already have");
+    }
+
+    /**
+     * Each rule measures a route by the thing it says it measures.
+     *
+     * Two routes to one place: a short one past two stations, and a longer way round past none.  Every
+     * preference should pick a different winner, which is the only evidence that the setting does
+     * anything at all - a comparator that always returns the same route is indistinguishable from no
+     * comparator.
+     *
+     * The cost function is exercised through pickPath's own choice rather than called directly, so this
+     * fails if the ranking is wired up wrongly as well as if it is computed wrongly.
+     */
+    @Test
+    public void testEachRuleMeasuresWhatItSaysItMeasures() throws Exception
+    {
+        Layout.PathPreference was = Layout.getPathPreference();
+
+        Layout layout = new Layout(model);
+
+        MarklinFeedback start = model.newFeedback(91, null);
+        MarklinFeedback middleA = model.newFeedback(92, null);
+        MarklinFeedback middleB = model.newFeedback(93, null);
+        MarklinFeedback middleC = model.newFeedback(94, null);
+        MarklinFeedback end = model.newFeedback(95, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{start, middleA, middleB, middleC, end})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        // The short way: two hops, and both intermediate squares are stations
+        layout.createPoint("RP_Start", true, start.getName());
+        layout.createPoint("RP_ViaStation", true, middleA.getName());
+        layout.createPoint("RP_End", true, end.getName());
+
+        // The long way: three hops, and neither intermediate square is a station
+        layout.createPoint("RP_Plain1", false, middleB.getName());
+        layout.createPoint("RP_Plain2", false, middleC.getName());
+
+        // short route, 2 edges, 1 station passed, 100 long
+        layout.createEdge("RP_Start", "RP_ViaStation").setLength(50);
+        layout.createEdge("RP_ViaStation", "RP_End").setLength(50);
+
+        // long route, 3 edges, 0 stations passed, 12 long
+        layout.createEdge("RP_Start", "RP_Plain1").setLength(4);
+        layout.createEdge("RP_Plain1", "RP_Plain2").setLength(4);
+        layout.createEdge("RP_Plain2", "RP_End").setLength(4);
+
+        // A station, but not one autonomy may send a train TO.
+        //
+        // Otherwise the fixture cannot tell the two rules apart: "go to RP_ViaStation" is itself a
+        // route past no stations, so fewest-stations would pick it and the assertion below could not
+        // say whether it had measured the route or simply chosen a nearer destination.
+        layout.getPoint("RP_ViaStation").setAutoDestination(false);
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "RP_Start", false);
+
+        try
+        {
+            Layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_ViaStation",
+                "fewest sensors must take the two-hop route");
+
+            Layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
+                "fewest stations must take the way round that passes none");
+
+            Layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "RP_Plain1",
+                "shortest track must take the 12-long route over the 100-long one");
+        }
+        finally
+        {
+            Layout.setPathPreference(was);
+        }
+    }
+
+    /**
+     * The name of the point a route reaches first, which is what says which way it went.
+     */
+    private String nameOfSecondPoint(java.util.List<Edge> path)
+    {
+        assertNotNull(path, "no route was offered at all");
+
+        return path.get(0).getEnd().getName();
+    }
+
+    /**
+     * Everything parseAuto reads off a Point, toJSON writes back.
+     *
+     * The configuration JSON is the interchange format - exported, hand-edited in the advanced tab,
+     * imported on another machine - so a field the reader understands and the writer omits is silently
+     * lossy: the setup comes back missing something, and nothing anywhere says so.
+     *
+     * This has happened twice.  "block" was omitted, so an export and import undid the block-occupancy
+     * rule and put the railway back to routing two trains onto one platform.  Then "protectingSignal"
+     * was omitted the same way, and a setup round-tripped came back with every station-signal pairing
+     * gone.  Both are asserted together, because the failure is not really about either field - it is
+     * the two halves of the format drifting apart, and the next field added will drift the same way
+     * unless something is watching.
+     */
+    @Test
+    public void testEveryFieldParseAutoReadsIsAlsoWritten() throws Exception
+    {
+        Layout layout = model.getAutoLayout();
+
+        Point point = layout.getPoints().iterator().next();
+
+        String was = point.getBlock();
+        String hadSignal = point.getProtectingSignal();
+
+        try
+        {
+            point.setBlock("main:9,9");
+            point.setProtectingSignal("Signal 12");
+
+            org.json.JSONObject json = point.toJSON();
+
+            assertEquals(json.optString("block", null), "main:9,9",
+                "the block a square shares was not exported, so an import would undo the block rule");
+
+            assertEquals(json.optString("protectingSignal", null), "Signal 12",
+                "the protecting signal was not exported, so an import would lose every pairing");
+        }
+        finally
+        {
+            point.setBlock(was);
+            point.setProtectingSignal(hadSignal);
+        }
     }
 
     /**

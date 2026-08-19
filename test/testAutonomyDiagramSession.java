@@ -1828,6 +1828,81 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A bundle from a BIGGER railway lands what it can and keeps the rest.
+     *
+     * The realistic import: somebody's setup, exported, brought to a layout that is not the same shape.
+     * Squares the diagram does have take their settings; squares it does not have are kept in the store
+     * rather than dropped, and neither refuses the import nor throws.
+     *
+     * Kept rather than dropped, deliberately.  A square that is not in the derivation is not the same
+     * thing as a square that does not exist - a page switched off is absent from the graph too, and an
+     * earlier version of this pruned against the graph and destroyed the arrival restrictions of every
+     * excluded page.  So the rule is that the store remembers what it was told, and the derivation uses
+     * what it can find.
+     *
+     * That does mean an import onto a genuinely different layout is quiet about the half that did not
+     * apply.  Asserted here so the behaviour is at least written down, and so that anyone adding a
+     * report of it later has to come through this test.
+     */
+    @Test
+    public void testAnImportFromADifferentLayoutKeepsWhatItCannotPlace() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+        session.getStore().createConfiguration("Existing", null);
+        session.getStore().setActiveConfiguration("Existing");
+        session.rebuild();
+
+        TileKey here = new TileKey("main", 4, 1);
+
+        // A square on a page this layout has never heard of
+        TileKey elsewhere = new TileKey("goods yard", 30, 30);
+
+        File other = Files.createTempDirectory("tc-bundle-bigger").toFile();
+
+        try
+        {
+            AutonomySession source = new AutonomySession(other);
+            source.open(Arrays.asList(page));
+
+            source.getStore().setStation(here, true);
+            source.setPointName(here, "Hauptbahnhof");
+
+            // authored against track this layout does not have
+            source.getStore().setPointName(elsewhere, "Goods Arrival");
+            source.getStore().setTileLength(elsewhere, 9);
+
+            source.getStore().createConfiguration("Adam 1", null);
+
+            org.json.JSONObject bundle = source.getStore().exportBundle("Adam 1");
+
+            session.importBundle("Adam 1", new org.json.JSONObject(bundle.toString()));
+
+            // what this layout does have, applied
+            assertTrue(session.getReducer().getPoints().get(here).isStation(),
+                "a square the diagram has did not take its imported setting");
+
+            assertEquals(session.getReducer().getPoints().get(here).getName(), "Hauptbahnhof");
+
+            // what it does not have, kept rather than lost
+            assertEquals(session.getStore().getPointName(elsewhere), "Goods Arrival",
+                "a setting for a square this diagram lacks was dropped, so re-importing onto the "
+                    + "layout it came from would not bring it back");
+
+            assertEquals(session.getStore().getTileLength(elsewhere), 9);
+
+            // and it is not in the derivation, because there is no such track to derive
+            assertFalse(session.getReducer().getPoints().containsKey(elsewhere),
+                "a square that is not on any page must not appear in the graph");
+        }
+        finally
+        {
+            delete(other);
+        }
+    }
+
+    /**
      * An import reloads whatever was already running, rather than leaving it alone.
      *
      * This is the rule the screen depended on and no test could see, because it lived as an early

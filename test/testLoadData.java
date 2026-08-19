@@ -29,6 +29,16 @@ public class testLoadData
     private final String data2_8_0 =
             Paths.get(getClass().getResource("LocDB2_8_0.data").toURI()).toString();
 
+    /**
+     * The database the 3.0.0 beta is actually running on.
+     *
+     * Taken from the working install rather than written by hand, because the point of these fixtures
+     * is that a file some earlier version really produced still opens.  A hand-made one only proves
+     * that the writer and the reader in this build agree with each other.
+     */
+    private final String data3_0_0 =
+            Paths.get(getClass().getResource("LocDB3_0_0.data").toURI()).toString();
+
     
     private final String data2_3_3 =
             Paths.get(getClass().getResource("LocDB2_3_3.data").toURI()).toString();
@@ -73,6 +83,12 @@ public class testLoadData
     public void testLoad2_8_0() throws Exception
     {   
         assertTrue(!model.restoreState(data2_8_0).isEmpty());
+    }
+
+    @Test
+    public void testLoad3_0_0() throws Exception
+    {
+        assertTrue(!model.restoreState(data3_0_0).isEmpty());
     }
          
     @BeforeClass

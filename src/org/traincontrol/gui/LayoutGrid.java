@@ -460,7 +460,80 @@ public class LayoutGrid
         if (!container.equals(parent))
         {
             parent.add(container);
+
+            showWhenTilesAreReady(parent, ui);
         } 
+    }
+
+    /**
+     * Holds the diagram back until its track has been decoded, showing a spinner in the meantime.
+     *
+     * A diagram used to arrive in two stages: text labels immediately, because text needs no image,
+     * then the track a second or so later as the decodes came back off the pool.  The staging is an
+     * accident of how the work is split, not something the user asked to watch, and while it lasts the
+     * labels appear to float on nothing.
+     *
+     * Only when there is actually a wait.  The second time a page is opened every tile is a cache hit,
+     * whenTilesSettled runs on the next EDT pass, and swapping a spinner in and straight out again
+     * would be a flicker where there had been none - so the spinner is only mounted if the tiles are
+     * still not ready a moment later.
+     *
+     * @param parent the panel the grid was just added to
+     * @param ui the window whose tile loader is doing the decoding
+     */
+    private void showWhenTilesAreReady(JPanel parent, TrainControlUI ui)
+    {
+        if (ui == null) return;
+
+        container.setVisible(false);
+
+        final LoadingSpinner spinner = new LoadingSpinner();
+
+        // Sized to the space the diagram will take, so nothing jumps when the two are swapped
+        spinner.setPreferredSize(new Dimension(Math.min(maxWidth, 400), Math.min(maxHeight, 400)));
+
+        final boolean[] revealed = {false};
+
+        final Runnable reveal = () ->
+        {
+            if (revealed[0]) return;
+
+            revealed[0] = true;
+
+            parent.remove(spinner);
+
+            container.setVisible(true);
+
+            parent.revalidate();
+            parent.repaint();
+        };
+
+        ui.whenTilesSettled(reveal);
+
+        // And revealed anyway after a few seconds, whatever the count says.
+        //
+        // Hiding the diagram until a signal arrives means a signal that never arrives hides the diagram
+        // for the rest of the session, and a blank window is a far worse fault than the flicker this
+        // exists to remove.  Nothing known can swallow the count - the decrement is in a finally - but
+        // "nothing known" is not a good enough reason to make the diagram depend on it.
+        javax.swing.Timer failsafe = new javax.swing.Timer(8000, e -> reveal.run());
+
+        failsafe.setRepeats(false);
+        failsafe.start();
+
+        // A short grace period before the spinner is shown at all - see above
+        javax.swing.Timer grace = new javax.swing.Timer(120, e ->
+        {
+            if (revealed[0]) return;
+
+            parent.add(spinner);
+
+            parent.revalidate();
+            parent.repaint();
+        });
+
+        grace.setRepeats(false);
+        grace.start();
     } 
     
     /**

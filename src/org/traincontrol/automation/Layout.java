@@ -87,6 +87,109 @@ public class Layout
      */
     private static final long NO_PATH_IDLE_MS = 250;
 
+    /**
+     * How autonomy chooses between the routes a train could take.
+     *
+     * An application preference rather than a property of a railway: it is how the user wants their
+     * trains to behave, and it has to survive a configuration being reloaded.  Static and volatile for
+     * the same reason - one running program, one answer, read on whichever thread is dispatching.
+     */
+    public enum PathPreference
+    {
+        /**
+         * The route that runs past the fewest OTHER stations.
+         *
+         * Not the fewest sensors: a route counted in sensors prefers whatever happens to be lightly
+         * instrumented, which is an accident of where the s88s were installed rather than anything
+         * about the railway.  Stations are the places trains stop, so a route past few of them is a
+         * route that interferes with few other trains - which is what somebody means by "direct".
+         */
+        FEWEST_STATIONS,
+
+        /**
+         * The route over the shortest track, added up from the lengths set on the tiles.
+         *
+         * Only as good as the lengths that have been set.  With none set every route measures zero and
+         * this falls back to whichever was found first, so it is offered rather than assumed.
+         */
+        SHORTEST_LENGTH,
+
+        /**
+         * The route crossing the fewest sensors, which is what a plain breadth-first search returns.
+         */
+        FEWEST_POINTS,
+
+        /**
+         * Whatever is found first, which with the destinations shuffled is effectively at random.
+         *
+         * The DEFAULT, because it is what every version before this did.  A preference that changed
+         * how existing railways behave the moment its owner upgraded would not be a preference, it
+         * would be a regression with a switch next to it - and the people most affected drive from
+         * scripts and would never see the menu.
+         *
+         * It is also the cheapest, so defaulting to it means the upgrade costs nothing either: the
+         * ranked options have to enumerate the alternatives before they can compare them, and this one
+         * stops at the first route that works.
+         */
+        RANDOM
+    }
+
+    private static volatile PathPreference pathPreference = PathPreference.RANDOM;
+
+    public static void setPathPreference(PathPreference preference)
+    {
+        if (preference != null) Layout.pathPreference = preference;
+    }
+
+    public static PathPreference getPathPreference()
+    {
+        return Layout.pathPreference;
+    }
+
+    /**
+     * What a route costs under the current preference.  Lower is better.
+     *
+     * The destination itself is never counted.  Every candidate ends at a station, so counting it would
+     * add one to all of them and change nothing except to make a route to a station look worse than a
+     * route to the same place.
+     *
+     * @param path the route being weighed
+     * @return its cost, or 0 where the preference does not rank
+     */
+    private int costOf(List<Edge> path)
+    {
+        switch (Layout.pathPreference)
+        {
+            case FEWEST_POINTS:
+                return path.size();
+
+            case SHORTEST_LENGTH:
+            {
+                int total = 0;
+
+                for (Edge e : path) total += Math.max(0, e.getLength());
+
+                return total;
+            }
+
+            case FEWEST_STATIONS:
+            {
+                int stations = 0;
+
+                // Every edge END except the last, which is the destination
+                for (int i = 0; i < path.size() - 1; i++)
+                {
+                    if (path.get(i).getEnd().isDestination()) stations++;
+                }
+
+                return stations;
+            }
+
+            default:
+                return 0;
+        }
+    }
+
     // Set to false to disable locomotives
     private volatile boolean running = false;
     
@@ -2552,8 +2655,25 @@ public class Layout
                     && start.isActive() && start.isDestination() // not needed from a validation perspective, but will speed things up
             )
             {
+                // The best route found so far, within one band of station priority.
+                //
+                // Banded, because priority must still win: a station the user marked important is not
+                // beaten by a shorter route to an ordinary one.  Ranking happens BETWEEN equals, and
+                // with every priority left at its default that is simply every station.
+                List<Edge> best = null;
+                int bestCost = Integer.MAX_VALUE;
+                Integer band = null;
+
                 for (Point end : ends)
-                {                        
+                {
+                    // A band is settled before the next one is looked at
+                    if (best != null && band != null && !band.equals(end.getPriority()))
+                    {
+                        return best;
+                    }
+
+                    band = end.getPriority();
+
                     // Reversing stations are parking, not traffic: Automation.md has always said they
                     // are chosen only in semi-autonomous operation, where the user picks the route.
                     // The exclusion belongs here and not in isPathClear, because executeTimetable sets
@@ -2581,7 +2701,23 @@ public class Layout
                                 if (path != null && !this.passesThroughReversingStation(path)
                                         && this.isPathClear(path, loc, false))
                                 {
-                                    return path;
+                                    // Whatever works, at once.  This is the behaviour every version
+                                    // before the preference existed had, and it is the cheap one: the
+                                    // ranked options have to enumerate the alternatives to compare
+                                    // them, and this one does not have to look at any of them.
+                                    if (Layout.pathPreference == PathPreference.RANDOM) return path;
+
+                                    int cost = this.costOf(path);
+
+                                    if (cost < bestCost)
+                                    {
+                                        bestCost = cost;
+                                        best = path;
+                                    }
+
+                                    // Accepted, and still recorded, or bfs hands back the same route
+                                    // for ever and the enumeration never ends
+                                    seenPaths.add(path);
                                 }
                                 else if (path != null)
                                 {
@@ -2602,6 +2738,9 @@ public class Layout
                         }
                     }
                 }
+
+                // The last band, which has no successor to close it
+                if (best != null) return best;
 
                 break;
             }
@@ -3723,11 +3862,21 @@ public class Layout
 
             // Placing by hand DISPLACES whoever was there, and deliberately so: it is a person telling
             // the model where a train actually is, and the previous occupant is by definition no longer
-            // there.  setLocomotive's sweep then takes that train off every other square, so this can
-            // never leave two trains on one piece of track - which is the only thing the block rule
-            // has to prevent.  Refusing instead was tried and broke every displacing placement the
-            // multi-unit tests pin.
-                        
+            // there.  Refusing instead was tried and broke every displacing placement the multi-unit
+            // tests pin.
+            //
+            // The whole SQUARE is displaced, not just the copy being written to.  setLocomotive clears
+            // the train being placed off everywhere else - "one locomotive, one place" - but that says
+            // nothing about the other direction, and a square is several Points now: putting a second
+            // train on the other copy of an occupied platform left both standing on one piece of track.
+            // Autonomy cannot reach that state, because the block check refuses a route onto a platform
+            // whose sibling holds a train; hand placement was the way in.
+            //
+            // Only here, and deliberately not inside setLocomotive.  Path reservation goes through
+            // reserve(), which does not sweep, and a sweep on the shared setter is what collapsed
+            // reservations and stranded trains the last time this rule was widened.
+            this.clearBlockExcept(target);
+
             // Set new location
             target.setLocomotive(l);
 
@@ -3961,6 +4110,37 @@ public class Layout
         }
 
         return false;
+    }
+
+    /**
+     * Takes every OTHER locomotive off the square this Point belongs to.
+     *
+     * The companion of clearLocomotiveExcept, and the other invariant: that one keeps a train from
+     * being in two places, this keeps two trains from being in one.  A square emitted as several Points
+     * is one piece of rail, so a train on any copy of it is on the platform.
+     *
+     * Called only from hand placement.  Autonomy never needs it - a route onto a platform whose sibling
+     * copy holds a train is refused by the block check long before anything is placed - and calling it
+     * from the shared setter would sweep away the reservations a locked path has made.
+     *
+     * @param claiming the Point being placed on, which keeps whatever is put there
+     */
+    void clearBlockExcept(Point claiming)
+    {
+        if (claiming == null) return;
+
+        String block = claiming.getBlock();
+
+        if (block == null) return;
+
+        for (Point other : this.points.values())
+        {
+            if (other == claiming) continue;
+
+            if (!block.equals(other.getBlock())) continue;
+
+            if (other.getCurrentLocomotive() != null) other.setLocomotive(null);
+        }
     }
 
     void clearLocomotiveExcept(Locomotive l, Point claiming)

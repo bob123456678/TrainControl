@@ -732,6 +732,17 @@ public class Point
         // it silently - a graph exported and re-imported came back with every square split into
         // independent Points again, so two trains could once more be routed onto one platform.  The
         // operator would have had no way to tell: the file looks like a faithful copy of the graph.
+        // The signal thrown to red while this platform is claimed.
+        //
+        // Written as well as read.  parseAuto has always taken this back in, and leaving it out of the
+        // export made the configuration JSON quietly lossy: a setup exported and imported came back
+        // with every station-signal pairing gone, and nothing said so.  Exactly what happened to the
+        // block field before it, which is the line below.
+        if (this.protectingSignal != null)
+        {
+            jsonObj.put("protectingSignal", this.protectingSignal);
+        }
+
         if (this.block != null)
         {
             jsonObj.put("block", this.block);

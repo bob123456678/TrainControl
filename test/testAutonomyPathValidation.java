@@ -488,6 +488,60 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * Two different locomotives cannot end up on one square, however they are put there.
+     *
+     * The sweep in setLocomotive enforces "one locomotive, one place" - a train taken off every square
+     * but the one claiming it.  This is the other invariant, "one square, one locomotive", and hand
+     * placement is the only thing that can still break it: autonomy is refused by the block occupancy
+     * check long before it gets here.
+     *
+     * Placing by hand displaces, deliberately - it is a person saying where a train actually is, and
+     * whoever was there is by definition not.  But displacing only cleared the target Point, and a
+     * square is several Points now, so putting a second train on the OTHER copy of an occupied platform
+     * left both standing on one piece of track.  Which is a collision on the layout, and on the diagram
+     * a caption naming two trains where the menu below it can only answer for one.
+     */
+    @Test
+    public void testHandPlacingOnAnOccupiedSquareDisplacesWhoeverIsThere() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+
+        MarklinFeedback fb = model.newFeedback(85, null);
+        model.setFeedbackState(fb.getName(), false);
+
+        // One platform, emitted as two copies - which is what an arrival-side split produces
+        layout.createPoint("BLK_east", true, fb.getName());
+        layout.createPoint("BLK_west", true, fb.getName());
+
+        layout.getPoint("BLK_east").setBlock("main:4,4");
+        layout.getPoint("BLK_west").setBlock("main:4,4");
+
+        // Through moveLocomotive, because that is the hand-placement door and the rule lives there.
+        // Real locomotives, since it resolves them by name against the control station.
+        String first = model.getLocList().get(0);
+        String second = model.getLocList().get(1);
+
+        assertTrue(layout.moveLocomotive(first, "BLK_east", false),
+            "precondition: the first train can be placed");
+
+        assertEquals(layout.getPoint("BLK_east").getCurrentLocomotive(),
+            model.getLocByName(first), "precondition: it is standing on one copy");
+
+        // and now somebody puts another train on the other copy of the same platform
+        assertTrue(layout.moveLocomotive(second, "BLK_west", false),
+            "the placement itself must still take effect");
+
+        assertEquals(layout.getPoint("BLK_west").getCurrentLocomotive(),
+            model.getLocByName(second));
+
+        assertNull(layout.getPoint("BLK_east").getCurrentLocomotive(),
+            "two trains were left standing on one square");
+    }
+
+    /**
      * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked
      * at the point it leads to.
      *
@@ -519,8 +573,11 @@ public class testAutonomyPathValidation
 
         // A crossing off the path, locked whenever the first edge is, with somewhere for a train to
         // stand at the end of it
+        MarklinFeedback beyond = model.newFeedback(84, null);
+        model.setFeedbackState(beyond.getName(), false);
+
         layout.createPoint("LK_X", false, null);
-        layout.createPoint("LK_Y", true, null);
+        layout.createPoint("LK_Y", true, beyond.getName());
         Edge crossing = layout.createEdge("LK_X", "LK_Y");
 
         Edge ab = layout.createEdge("LK_A", "LK_B");
