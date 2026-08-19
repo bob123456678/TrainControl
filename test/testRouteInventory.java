@@ -42,7 +42,16 @@ public class testRouteInventory
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        try
+        {
+            model = init(null, true, false, false, true);
+        }
+        catch (Throwable t)
+        {
+            System.out.println("SETUP FAILED: " + t);
+            t.printStackTrace(System.out);
+            throw t;
+        }
 
         OUT.mkdirs();
     }
@@ -384,9 +393,22 @@ public class testRouteInventory
 
                         if (path == null) continue;
 
-                        out.append("     bfs reaches ").append(to.getName())
-                           .append(" - isPathClear=").append(layout.isPathClear(path, loc, true))
-                           .append("\n");
+                        out.append("     bfs reaches ").append(to.getName()).append("\n");
+
+                        // Every candidate route to that destination WITH the reason it was refused.
+                        //
+                        // "isPathClear=false" says a train cannot get there and nothing about why, and
+                        // the why is the whole question: an occupied platform is traffic and clears
+                        // itself, a refused lock edge is a fault in this program.  debugPath is the
+                        // layout's own answer, and it is what the UI reports to the user.
+                        for (java.util.Map.Entry<List<Edge>, String> tried
+                            : layout.debugPath(loc, at, to).entrySet())
+                        {
+                            out.append("        via ").append(via(tried.getKey())).append("\n")
+                               .append("            ")
+                               .append(tried.getValue() == null ? "CLEAR" : tried.getValue())
+                               .append("\n");
+                        }
                     }
                 }
             }
