@@ -355,6 +355,25 @@ public class Layout
 
     // Set to false to disable locomotives
     private volatile boolean running = false;
+
+    /**
+     * How many locomotive threads are alive, including any between one path and the next.
+     *
+     * isRunning() used to be "the flag, or somebody is on a path", and there is a window where neither
+     * is true and a train is nevertheless about to move: the thread has passed its `while (running)`
+     * check and is inside pickPath - a shuffle, a sort and a breadth-first search of the whole graph -
+     * and does not appear in activeLocomotives until executePath registers it.
+     *
+     * So a graceful stop could report itself finished while a locomotive was one instruction from
+     * departing, and everything that asks "is it safe to edit now" believed it: moveLocomotive refuses
+     * while running and would accept, and the interface re-enables what it disables during a run.  The
+     * timetable test caught it - it waited for the layout to stop, got its answer, and had its very
+     * next edit refused by the train it had waited for.
+     *
+     * Counted from the moment the thread starts to the moment it exits, so the window closes exactly.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger locomotiveThreads =
+        new java.util.concurrent.atomic.AtomicInteger();
     
     // Is the layout state valid?
     private boolean isValid = true;
@@ -1195,7 +1214,8 @@ public class Layout
      */
     public boolean isRunning()
     {
-        return this.running || !this.getActiveLocomotives().isEmpty();
+        return this.running || !this.getActiveLocomotives().isEmpty()
+            || this.locomotiveThreads.get() > 0;
     }
     
     /**
@@ -2749,6 +2769,12 @@ public class Layout
         
         new Thread( () ->
         {    
+            // Counted before the first check and released in the finally below, so a locomotive
+            // choosing its next path is never invisible to isRunning()
+            this.locomotiveThreads.incrementAndGet();
+
+            try
+            {
             while(running)
             {                
                 List<Edge> path = this.pickPath(loc);
@@ -2789,6 +2815,14 @@ public class Layout
                         yieldLoc.blockUntilMotion(YIELD_SECONDS);
                     }
                 }                   
+            }
+            }
+            finally
+            {
+                // In a finally, so a thread killed by anything at all still stops being counted -
+                // otherwise one failure would leave the layout reporting itself as running for ever,
+                // and nothing could be edited again without a restart.
+                this.locomotiveThreads.decrementAndGet();
             }
         }).start();
     }

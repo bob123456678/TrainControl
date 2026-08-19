@@ -216,6 +216,32 @@ and listing the train's own platform as blocked by itself, a thirty-second expor
 check-then-act race, a weak test oracle that could not tell "available" from "never considered", and
 five comments that described behaviour the code does not have.
 
+## 4a. What the full battery found: a graceful stop that had not finished stopping
+
+The battery came back 55 clean with one real failure, and it is the most interesting thing in this
+run - because it is a product race, not a test artefact, and the test found it by being unlucky
+rather than by looking for it.
+
+`testTimetableOnDerivedGraph` failed with "could not put SP45-090 back at BottomMainA (eastbound)".
+The layout's own log answers why, at the same millisecond: **"Cannot edit auto layout while running"**
+alongside **"Executing path ... for SP45-090"**. The test had asked autonomy to stop, waited for
+`isRunning()` to go false, been told it had - and then had its edit refused by a train that departed
+after it was told the layout was stopped.
+
+`isRunning()` was `running || !activeLocomotives.isEmpty()`. A locomotive thread checks `while
+(running)`, then calls `pickPath` - a shuffle, a sort and a breadth-first search of the whole graph -
+and only appears in `activeLocomotives` when `executePath` registers it. **Between those two points a
+train is about to move and nothing can see it.** Clear the flag in that window and the layout reports
+itself stopped.
+
+This is not only a test problem. `moveLocomotive` refuses while running and would have accepted; the
+interface re-enables during that window everything it disables for a run. Anything that asks "is it
+safe to edit now" was being told yes while a train was one instruction from departing.
+
+Fixed by counting live locomotive threads from the moment each starts to the moment it exits, and
+including that count in `isRunning()`. The decrement is in a `finally`, so a thread that dies for any
+reason cannot leave the layout permanently "running".
+
 ## 5. Progress against the 3.0.0 phase plan
 
 Written up in `2026-08-19-phase-plan-status.md`. In short: **the plan's two outstanding build items -
