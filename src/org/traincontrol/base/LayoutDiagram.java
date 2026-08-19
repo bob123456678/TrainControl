@@ -498,6 +498,79 @@ public class LayoutDiagram
     }
     
     /**
+     * Whether the rightmost column and the top and bottom rows are all empty.
+     *
+     * Asked before trimming them, so a diagram is never made smaller by throwing track away.  The
+     * answer is what lets the editor refuse the whole operation rather than removing what it can.
+     */
+    synchronized public boolean edgesAreEmpty()
+    {
+        if (sx < 2 || sy < 3) return false;
+
+        for (int y = 0; y < sy; y++)
+        {
+            if (grid.get(sx - 1).get(y) != null) return false;
+        }
+
+        for (int x = 0; x < sx; x++)
+        {
+            if (grid.get(x).get(0) != null) return false;
+            if (grid.get(x).get(sy - 1) != null) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Removes the rightmost column and the top and bottom rows.
+     *
+     * The mirror of what a single "+" adds, so the two undo each other exactly - a diagram grown by
+     * one press and shrunk by the next is the diagram it started as.  Removing the TOP row moves
+     * everything up by one, so every component's stored row is corrected as it goes.
+     *
+     * Refuses unless {@link #edgesAreEmpty} - a smaller diagram must never mean less railway.
+     */
+    synchronized public void trimEdges() throws IOException
+    {
+        if (!edgesAreEmpty()) return;
+
+        // The rightmost column
+        grid.remove(sx - 1);
+        sx -= 1;
+
+        // The bottom row
+        for (List<LayoutDiagramComponent> col : grid)
+        {
+            col.remove(col.size() - 1);
+        }
+
+        sy -= 1;
+
+        // The top row, which moves everything above it up
+        for (List<LayoutDiagramComponent> col : grid)
+        {
+            col.remove(0);
+        }
+
+        sy -= 1;
+
+        for (int x = 0; x < sx; x++)
+        {
+            for (int y = 0; y < sy; y++)
+            {
+                LayoutDiagramComponent component = grid.get(x).get(y);
+
+                if (component != null) component.setY(y);
+            }
+        }
+
+        maxx = sx - 1;
+        maxy = sy - 1;
+
+        checkBounds();
+    }
+
+    /**
      * Expands the layout by the specified number of rows and columns
      * @param numRows
      * @param numColumns

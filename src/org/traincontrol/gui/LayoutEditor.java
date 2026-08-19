@@ -81,6 +81,55 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_COPIED_COLOR = Color.RED;
     private static final Color COMPONENT_BORDER_HOVERED_COLOR = Color.BLUE;
     private static final Color COMPONENT_BORDER_DEFAULT_COLOR = Color.LIGHT_GRAY;
+
+    /**
+     * The colour a picked square is outlined in.
+     *
+     * Distinct from the red of a copied tile and the blue of a hovered one, because all three can be
+     * on screen at once and they mean different things.
+     */
+    private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(0, 150, 60);
+
+    /**
+     * The squares picked out for a group operation.
+     *
+     * Selection is a STATE rather than a key held down, which is the whole point of it: dragging a
+     * group needs both hands free, so the selection cannot be something the user is holding shift to
+     * maintain.  Shift-click picks and unpicks, Escape lets everything go.
+     *
+     * The geometry lives in TileSelection, where it can be tested without a mouse.
+     */
+    private final org.traincontrol.base.TileSelection selection =
+        new org.traincontrol.base.TileSelection();
+
+    /** True while a drag that began on a picked square is in progress. */
+    private boolean groupDragging = false;
+
+    /**
+     * What a group copy took: one entry per square of the BOUNDING BOX, holes included.
+     *
+     * The bounding box rather than only the picked squares, because a piece of railway with gaps
+     * punched in it is not the piece the user pointed at - and pasting one over existing track would
+     * leave the old tiles showing through the holes, which reads as a paste that half worked.
+     */
+    private java.util.List<CarriedTile> groupClipboard;
+
+    /**
+     * One square of a copied group, by its offset from the top left of what was copied.
+     */
+    private static final class CarriedTile
+    {
+        private final int dx;
+        private final int dy;
+        private final LayoutDiagramComponent component;
+
+        CarriedTile(int dx, int dy, LayoutDiagramComponent component)
+        {
+            this.dx = dx;
+            this.dy = dy;
+            this.component = component;
+        }
+    }
     
     // When true, the diagram does not get repainted, i.e. during bulk operations
     private boolean pauseRepaint = false;
@@ -204,6 +253,83 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
+
+        bindSelectionKeys();
+    }
+
+    /**
+     * Escape lets a selection go; Delete erases it.
+     *
+     * On the root pane's WHEN_IN_FOCUSED_WINDOW map rather than a key listener, because the focus in
+     * this window is on whichever tile was last clicked and a listener attached to one component would
+     * work only sometimes - which is worse than not working at all.
+     */
+    private void bindSelectionKeys()
+    {
+        javax.swing.JComponent root = this.getRootPane();
+
+        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "clearSelection");
+
+        root.getActionMap().put("clearSelection", new javax.swing.AbstractAction()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                if (isAutonomyMode()) return;
+
+                clearSelection();
+            }
+        });
+
+        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "deleteSelection");
+
+        int menuKey = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+
+        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_C, menuKey), "copySelection");
+
+        root.getActionMap().put("copySelection", new javax.swing.AbstractAction()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                if (isAutonomyMode()) return;
+
+                copySelection();
+            }
+        });
+
+        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_V, menuKey), "pasteSelection");
+
+        root.getActionMap().put("pasteSelection", new javax.swing.AbstractAction()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                // At the square under the pointer, which is the only place a paste could sensibly go -
+                // there is no caret in a track diagram
+                if (isAutonomyMode() || !hasGroupClipboard()) return;
+
+                pasteSelection(lastHoveredX, lastHoveredY);
+            }
+        });
+
+        root.getActionMap().put("deleteSelection", new javax.swing.AbstractAction()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                // Nothing picked means nothing to erase.  Deliberately NOT falling through to
+                // "delete whatever is under the cursor" - a Delete key that erases something the user
+                // did not point at is how a diagram loses track silently.
+                if (isAutonomyMode()) return;
+
+                deleteSelection();
+            }
+        });
     }
     
     public boolean hasToolFlag()
@@ -211,6 +337,22 @@ public class LayoutEditor extends PositionAwareJFrame
         return this.toolFlag != null;
     }
     
+    /**
+     * The column a label sits in, for callers outside this class.
+     */
+    public int getGridX(LayoutLabel label)
+    {
+        return getX(label);
+    }
+
+    /**
+     * The row a label sits in.
+     */
+    public int getGridY(LayoutLabel label)
+    {
+        return getY(label);
+    }
+
     private int getX(LayoutLabel label)
     {
         return grid.getCoordinates(label)[0];
@@ -409,6 +551,33 @@ public class LayoutEditor extends PositionAwareJFrame
         // of accident: silent, and to the thing everything else is derived from.
         if (isAutonomyMode()) return;
 
+        // A drag that starts on a picked square moves the WHOLE selection.
+        //
+        // This is what the selection is a state for: the user has already said which squares they
+        // mean, so both hands are free for the drag.  Starting on an unpicked square is the old
+        // single-tile drag, unchanged - and does not disturb the selection, so a mis-aimed drag does
+        // not throw away the picking that preceded it.
+        if (label != null && !this.selection.isEmpty()
+            && this.selection.contains(getX(label), getY(label)))
+        {
+            this.dragSource = label;
+            this.groupDragging = true;
+
+            ghostLabel = new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size()));
+            ghostLabel.setOpaque(true);
+            ghostLabel.setBackground(Color.WHITE);
+            ghostLabel.setBorder(new LineBorder(COMPONENT_BORDER_SELECTED_COLOR, 2));
+
+            dragWindow = new JWindow();
+            dragWindow.getContentPane().add(ghostLabel);
+            dragWindow.pack();
+            dragWindow.setVisible(false);
+
+            return;
+        }
+
+        this.groupDragging = false;
+
         if (label != null && label.getComponent() != null)
         {
             // Remembered so that a press and release on one square can be told from a drag.
@@ -469,6 +638,18 @@ public class LayoutEditor extends PositionAwareJFrame
             LayoutLabel source = this.dragSource;
 
             this.dragSource = null;
+
+            if (this.groupDragging)
+            {
+                this.groupDragging = false;
+
+                if (target != null && source != null)
+                {
+                    moveSelection(getX(target) - getX(source), getY(target) - getY(source));
+                }
+
+                return;
+            }
 
             // Nothing under the pointer.  Hovering the palette sets the hovered square to -1,-1, so a
             // plain click there reached executeTool with no target: execCopy then built a component at
@@ -903,6 +1084,20 @@ public class LayoutEditor extends PositionAwareJFrame
             this.highlightLabel(label, NEW_COMPONENT_BORDER_ACTIVE_COLOR);
             return;
         }
+
+        // Shift-click picks a square out, or puts it back.
+        //
+        // Before anything else on a grid square, because every other branch below does something to
+        // the diagram and picking must not.  Toggling rather than adding, so one square too many is
+        // corrected by clicking it again rather than by starting over.
+        if (e.isShiftDown() && javax.swing.SwingUtilities.isLeftMouseButton(e))
+        {
+            this.selection.toggle(getX(label), getY(label));
+
+            this.refreshSelectionBorders();
+
+            return;
+        }
                
         LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
         
@@ -1220,6 +1415,379 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
+     * The squares currently picked out.
+     */
+    public org.traincontrol.base.TileSelection getSelection()
+    {
+        return this.selection;
+    }
+
+    /**
+     * Lets everything go.  What Escape does.
+     */
+    public void clearSelection()
+    {
+        if (this.selection.isEmpty()) return;
+
+        this.selection.clear();
+
+        this.refreshSelectionBorders();
+    }
+
+    /**
+     * Draws the outline round every picked square, and takes it off the rest.
+     */
+    private void refreshSelectionBorders()
+    {
+        this.clearBordersFromChildren(this.grid.getContainer());
+
+        for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+        {
+            LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
+
+            if (label != null) this.highlightLabel(label, COMPONENT_BORDER_SELECTED_COLOR);
+        }
+    }
+
+    /**
+     * Takes a copy of everything picked, as the rectangle it occupies.
+     *
+     * @return true if there was something to copy
+     */
+    synchronized public boolean copySelection()
+    {
+        int[] bounds = this.selection.bounds();
+
+        if (bounds == null) return false;
+
+        java.util.List<CarriedTile> taken = new java.util.ArrayList<>();
+
+        try
+        {
+            for (int x = bounds[0]; x <= bounds[2]; x++)
+            {
+                for (int y = bounds[1]; y <= bounds[3]; y++)
+                {
+                    LayoutDiagramComponent lc = layout.getComponent(x, y);
+
+                    taken.add(new CarriedTile(x - bounds[0], y - bounds[1],
+                        lc == null ? null : new LayoutDiagramComponent(lc)));
+                }
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+
+            return false;
+        }
+
+        this.groupClipboard = taken;
+
+        return true;
+    }
+
+    /**
+     * Whether a group copy is waiting to be pasted.
+     */
+    public boolean hasGroupClipboard()
+    {
+        return this.groupClipboard != null && !this.groupClipboard.isEmpty();
+    }
+
+    /**
+     * Pastes a copied group with its top left corner at a square, as ONE undoable step.
+     *
+     * OVERWRITES what is there.  Merging would mean deciding, per square, whether the copy or the
+     * original wins - and either answer is wrong half the time.  Overwriting is at least the answer
+     * the user can predict, and undo takes it back in one step.
+     *
+     * @param atX the column to put the top left corner on
+     * @param atY the row
+     * @return true if anything was pasted
+     */
+    synchronized public boolean pasteSelection(int atX, int atY)
+    {
+        if (!hasGroupClipboard() || atX < 0 || atY < 0) return false;
+
+        int width = 0;
+        int height = 0;
+
+        for (CarriedTile tile : this.groupClipboard)
+        {
+            width = Math.max(width, tile.dx);
+            height = Math.max(height, tile.dy);
+        }
+
+        if (atX + width >= this.grid.maxWidth || atY + height >= this.grid.maxHeight)
+        {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                I18n.t("layout.ui.errorPasteWouldLeaveTheDiagram"));
+
+            return false;
+        }
+
+        this.snapshotLayout();
+
+        boolean was = this.pauseRepaint;
+
+        this.pauseRepaint = true;
+
+        try
+        {
+            org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+            for (CarriedTile tile : this.groupClipboard)
+            {
+                int x = atX + tile.dx;
+                int y = atY + tile.dy;
+
+                LayoutDiagramComponent placing = tile.component == null
+                    ? null : new LayoutDiagramComponent(tile.component);
+
+                if (placing != null)
+                {
+                    placing.setX(x);
+                    placing.setY(y);
+                }
+
+                layout.addComponent(placing, x, y);
+
+                // Whatever was written about the square being written over is about track that is no
+                // longer there.  A copy does NOT bring the source's captions with it - two squares
+                // cannot both be where one station name is shown - so this only forgets.
+                if (autonomy != null)
+                {
+                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), x, y));
+                }
+            }
+
+            // What was just pasted becomes the selection, so it can be nudged into place
+            this.selection.clear();
+
+            for (CarriedTile tile : this.groupClipboard)
+            {
+                this.selection.add(atX + tile.dx, atY + tile.dy);
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+        }
+        finally
+        {
+            this.pauseRepaint = was;
+        }
+
+        this.refreshGrid();
+
+        this.refreshSelectionBorders();
+
+        return true;
+    }
+
+    /**
+     * Moves every picked square by a delta, as ONE undoable step.
+     *
+     * Read everything first, then clear, then write.  A group that overlaps where it is going - which
+     * is every short drag - would otherwise erase tiles it had already placed: move a row one square
+     * right, and clearing the second source square deletes the tile just written there from the first.
+     *
+     * Refused WHOLE if any square would land off the diagram, rather than clipped.  Clipping would
+     * drop a column of track off the side with nothing on screen saying so.
+     *
+     * @param dx columns to move by
+     * @param dy rows to move by
+     * @return true if the move happened
+     */
+    synchronized public boolean moveSelection(int dx, int dy)
+    {
+        if (this.selection.isEmpty() || (dx == 0 && dy == 0)) return false;
+
+        if (!this.selection.fitsAfterMove(dx, dy, this.grid.maxWidth, this.grid.maxHeight))
+        {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                I18n.t("layout.ui.errorSelectionWouldLeaveTheDiagram"));
+
+            return false;
+        }
+
+        this.snapshotLayout();
+
+        boolean was = this.pauseRepaint;
+
+        this.pauseRepaint = true;
+
+        try
+        {
+            // Read
+            java.util.List<org.traincontrol.base.TileSelection.At> from = this.selection.all();
+            java.util.List<LayoutDiagramComponent> carried = new java.util.ArrayList<>();
+
+            for (org.traincontrol.base.TileSelection.At at : from)
+            {
+                LayoutDiagramComponent lc = layout.getComponent(at.getX(), at.getY());
+
+                carried.add(lc == null ? null : new LayoutDiagramComponent(lc));
+            }
+
+            org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+            // Clear
+            for (org.traincontrol.base.TileSelection.At at : from)
+            {
+                layout.addComponent(null, at.getX(), at.getY());
+            }
+
+            // Write
+            for (int i = 0; i < from.size(); i++)
+            {
+                org.traincontrol.base.TileSelection.At at = from.get(i);
+
+                int toX = at.getX() + dx;
+                int toY = at.getY() + dy;
+
+                LayoutDiagramComponent carrying = carried.get(i);
+
+                if (carrying != null)
+                {
+                    carrying.setX(toX);
+                    carrying.setY(toY);
+                }
+
+                layout.addComponent(carrying, toX, toY);
+
+                // Whatever autonomy had written on that square goes with it, the same as a single-tile
+                // move - a caption left behind names track that is no longer there
+                if (autonomy != null)
+                {
+                    autonomy.moveCaption(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), at.getX(), at.getY()),
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), toX, toY));
+                }
+            }
+
+            // The selection travels with the tiles, so a group can be nudged twice
+            java.util.List<org.traincontrol.base.TileSelection.At> landed =
+                this.selection.movedBy(dx, dy);
+
+            this.selection.clear();
+
+            for (org.traincontrol.base.TileSelection.At at : landed)
+            {
+                this.selection.add(at.getX(), at.getY());
+            }
+        }
+        catch (IOException ex)
+        {
+            this.parent.getModel().log(ex);
+        }
+        finally
+        {
+            this.pauseRepaint = was;
+        }
+
+        this.refreshGrid();
+
+        this.refreshSelectionBorders();
+
+        return true;
+    }
+
+    /**
+     * Deletes every picked square, as ONE undoable step.
+     *
+     * One snapshot for the group rather than one per square: a user who erases a yard and changes
+     * their mind means the yard, not the last tile of it.
+     *
+     * @return true if anything was picked to delete
+     */
+    synchronized public boolean deleteSelection()
+    {
+        if (this.selection.isEmpty()) return false;
+
+        this.snapshotLayout();
+
+        // Suppressed so the per-tile delete does not take a snapshot of its own inside the group one
+        boolean was = this.pauseRepaint;
+
+        this.pauseRepaint = true;
+
+        try
+        {
+            for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+            {
+                LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
+
+                if (label != null) this.delete(label);
+            }
+        }
+        finally
+        {
+            this.pauseRepaint = was;
+        }
+
+        this.clearSelection();
+
+        this.refreshGrid();
+
+        return true;
+    }
+
+    /**
+     * Rotates every picked square where it stands, as one undoable step.
+     *
+     * In place, not around the group: turning a yard through ninety degrees would move every tile of
+     * it, which is a different operation and one nobody asked for.
+     *
+     * @return true if anything was picked to rotate
+     */
+    synchronized public boolean rotateSelection()
+    {
+        if (this.selection.isEmpty()) return false;
+
+        this.snapshotLayout();
+
+        boolean was = this.pauseRepaint;
+
+        this.pauseRepaint = true;
+
+        try
+        {
+            for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+            {
+                LayoutDiagramComponent lc = layout.getComponent(at.getX(), at.getY());
+
+                if (lc == null) continue;
+
+                lc.rotate();
+
+                try
+                {
+                    layout.addComponent(lc, at.getX(), at.getY());
+                }
+                catch (IOException ex)
+                {
+                    this.parent.getModel().log(ex);
+                }
+            }
+        }
+        finally
+        {
+            this.pauseRepaint = was;
+        }
+
+        this.refreshGrid();
+
+        this.refreshSelectionBorders();
+
+        return true;
+    }
+
+    /**
      * Deletes this label from the layout
      * @param label 
      */
@@ -1478,19 +2046,43 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
     }
-    
-    public void shiftUp()
+    // The four "shift the whole diagram" wrappers used to live here.
+    //
+    // Each inserted a row or a column at the hovered square and pushed everything past it along, and
+    // each has been taken off the menu in favour of picking the squares that are in the way and
+    // dragging them.  Removed rather than left behind: a method with no caller is the half of a
+    // removal that gets forgotten, and the next person to read this file would have to work out
+    // whether it was still wanted.
+
+
+    /**
+     * Grows the diagram by one all round: a column on the right, a row at the top, a row at the
+     * bottom.
+     *
+     * Top AND bottom because a diagram grows in the middle - track added at one edge usually wants
+     * room at the other - and because it makes the shrink its exact mirror.  A row at the top means
+     * everything moves down by one, which shiftDown already does correctly, captions included.
+     */
+    public void growEdges()
     {
+        if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("layout.ui.errorMaxSizeExceeded", MAX_SIZE));
+
+            return;
+        }
+
         this.snapshotLayout();
-        
+
         try
         {
-            if (lastHoveredY > -1)
-            {
-                layout.shiftUp(lastHoveredY);
+            // A row at the top, everything shifted down to make room for it
+            layout.shiftDown(0);
 
-                refreshGrid();
-            }
+            // Then a row at the bottom and a column at the right
+            layout.addRowsAndColumns(1, 1);
+
+            refreshGrid();
         }
         catch (Exception e)
         {
@@ -1498,59 +2090,30 @@ public class LayoutEditor extends PositionAwareJFrame
             this.parent.getModel().log(e);
         }
     }
-    
-    public void shiftDown()
-    {
-        this.snapshotLayout();
-        
-        try
-        {
-            if (lastHoveredY > -1)
-            {
-                layout.shiftDown(lastHoveredY);
 
-                refreshGrid();
-            }
-        }
-        catch (Exception e)
-        {
-            this.parent.getModel().log(e.getMessage());
-            this.parent.getModel().log(e);
-        }
-    }
-    
-    public void shiftLeft()
+    /**
+     * Shrinks the diagram by one all round, undoing exactly what growEdges adds.
+     *
+     * Refused outright when any of those three edges holds track.  Trimming what it could would take
+     * a piece of railway off the diagram to save the user a scroll, which is not a trade anybody would
+     * accept if they were asked - so this asks, by refusing and saying why.
+     */
+    public void shrinkEdges()
     {
+        if (!layout.edgesAreEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorEdgesNotEmpty"));
+
+            return;
+        }
+
         this.snapshotLayout();
 
         try
         {
-            if (lastHoveredX > -1)
-            {
-                layout.shiftLeft(lastHoveredX);
+            layout.trimEdges();
 
-                refreshGrid();
-            }
-        }
-        catch (Exception e)
-        {
-            this.parent.getModel().log(e.getMessage());
-            this.parent.getModel().log(e);
-        }
-    }
-    
-    public void shiftRight()
-    {
-        this.snapshotLayout();
-
-        try
-        {
-            if (lastHoveredX > -1)
-            {
-                layout.shiftRight(lastHoveredX);
-
-                refreshGrid();
-            }
+            refreshGrid();
         }
         catch (Exception e)
         {

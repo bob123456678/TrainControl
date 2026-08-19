@@ -30,72 +30,72 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        JMenu pasteSubMenu = new JMenu(I18n.t("ui.paste")); // Create the submenu
+        // Paste, singular.
+        //
+        // There used to be three of these - a tile, an entire row, an entire column - which is not
+        // three ways to paste so much as three answers to a question the user was never asked.  The
+        // row and column variants filled from the pasted tile to the edge of the diagram, so a
+        // mis-aimed one wrote over a whole row of track and undo was the only way back.  Selecting the
+        // squares and dragging them says the same thing, visibly, and can be corrected before it
+        // happens rather than after.
+        JMenuItem pasteMenuItem = new JMenuItem(I18n.t("ui.paste"));
 
-        JMenuItem pasteMenuItem = new JMenuItem(I18n.t("layout.ui.tile"));
-        pasteMenuItem.addActionListener(event -> 
+        pasteMenuItem.addActionListener(event ->
         {
             try
             {
-                edit.executeTool(label, null);
+                // A group on the clipboard wins: it is the more recent and the more deliberate thing
+                // the user did
+                if (edit.hasGroupClipboard())
+                {
+                    edit.pasteSelection(edit.getGridX(label), edit.getGridY(label));
+                }
+                else
+                {
+                    edit.executeTool(label, null);
+                }
             }
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
+
         pasteMenuItem.setToolTipText("Control+V");
+        pasteMenuItem.setEnabled(edit.hasToolFlag() || edit.hasGroupClipboard());
 
-        pasteSubMenu.add(pasteMenuItem);
+        add(pasteMenuItem);
 
-        JMenuItem pasteColumnMenuItem = new JMenuItem(I18n.t("layout.ui.entireCol"));
-        pasteColumnMenuItem.addActionListener(event -> 
+        // What can be done to a group of squares, gathered in one place so that the selection is a
+        // thing the interface talks about rather than a hidden mode
+        if (!edit.getSelection().isEmpty())
         {
-            try
-            {
-                edit.executeTool(label, LayoutEditor.bulk.COL);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        pasteColumnMenuItem.setToolTipText("Shift+C");
-        
-        if (edit.addBoxHighlighted())
-        {
-            pasteColumnMenuItem.setEnabled(false);
+            JMenu selectionMenu = new JMenu(
+                I18n.f("layout.ui.menuSelection", edit.getSelection().size()));
+
+            JMenuItem copySelected = new JMenuItem(I18n.t("ui.copy"));
+            copySelected.addActionListener(event -> edit.copySelection());
+            copySelected.setToolTipText("Control+C");
+            selectionMenu.add(copySelected);
+
+            JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
+            rotateSelected.addActionListener(event -> edit.rotateSelection());
+            selectionMenu.add(rotateSelected);
+
+            JMenuItem deleteSelected = new JMenuItem(I18n.t("ui.delete"));
+            deleteSelected.addActionListener(event -> edit.deleteSelection());
+            deleteSelected.setToolTipText("Delete");
+            selectionMenu.add(deleteSelected);
+
+            selectionMenu.addSeparator();
+
+            JMenuItem clearSelected = new JMenuItem(I18n.t("layout.ui.clearSelection"));
+            clearSelected.addActionListener(event -> edit.clearSelection());
+            clearSelected.setToolTipText("Escape");
+            selectionMenu.add(clearSelected);
+
+            add(selectionMenu);
         }
-
-        pasteSubMenu.add(pasteColumnMenuItem);
-
-        JMenuItem pasteRowMenuItem = new JMenuItem(I18n.t("layout.ui.entireRow"));
-        pasteRowMenuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.executeTool(label, LayoutEditor.bulk.ROW);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        pasteRowMenuItem.setToolTipText("Shift+R");
-
-        if (edit.addBoxHighlighted())
-        {
-            pasteRowMenuItem.setEnabled(false);
-        }
-        
-        if (!edit.hasToolFlag()) 
-        {
-            pasteSubMenu.setEnabled(false);
-        }
-
-        pasteSubMenu.add(pasteRowMenuItem); 
-
-        add(pasteSubMenu); // Add the submenu to the parent menu
         
         menuItem = new JMenuItem(I18n.t("ui.undo"));
         menuItem.addActionListener(event -> 
@@ -324,6 +324,16 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             I18n.t("layout.ui.menuDiagram")
         ); // Create the submenu
 
+        // Bigger and smaller, as a matched pair.
+        //
+        // "+" adds a column on the right and a row at the top AND the bottom; "-" takes the same three
+        // away.  Being exact mirrors is the point: a diagram grown by one press and shrunk by the next
+        // is the diagram it started as, which the old single "increase size" could not promise.
+        //
+        // The four "shift the whole diagram" items that used to sit below have gone.  Each inserted a
+        // row or column at the hovered square and pushed everything past it along - a thing users
+        // reached for to make room and then could not undo by eye.  With a selection, making room is
+        // dragging what is in the way out of it, which can be seen before it happens.
         menuItem = new JMenuItem(
             I18n.f(
                 "layout.ui.menuIncreaseSize",
@@ -332,95 +342,38 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             )
         );
 
-        menuItem.addActionListener(event -> 
+        menuItem.addActionListener(event ->
         {
             try
             {
-                edit.addRowsAndColumns(1, 1);
+                edit.growEdges();
             }
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        
+
         menuItem.setToolTipText("Control+I");
         diagramSubmenu.add(menuItem);
-        
-        diagramSubmenu.addSeparator();
-        
-        menuItem = new JMenuItem(I18n.t("layout.ui.shiftRight"));
-        menuItem.addActionListener(event -> 
+
+        menuItem = new JMenuItem(I18n.t("layout.ui.menuDecreaseSize"));
+
+        menuItem.addActionListener(event ->
         {
             try
             {
-                edit.shiftRight();
+                edit.shrinkEdges();
             }
             catch (Exception e)
             {
                 JOptionPane.showMessageDialog(this, e.getMessage());
             }
         });
-        
-        menuItem.setToolTipText(
-            I18n.t("layout.ui.tooltip.shiftDiagramRight")
-        );
+
+        menuItem.setEnabled(edit.getMarklinLayout().edgesAreEmpty());
         diagramSubmenu.add(menuItem);
-                
-        menuItem = new JMenuItem(I18n.t("layout.ui.shiftDown"));
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.shiftDown();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        
-        menuItem.setToolTipText(
-            I18n.t("layout.ui.tooltip.shiftDiagramDown")
-        );
-        diagramSubmenu.add(menuItem);
-        
-        menuItem = new JMenuItem(I18n.t("layout.ui.shiftLeft"));
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.shiftLeft();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        
-        menuItem.setToolTipText(
-            I18n.t("layout.ui.tooltip.shiftDiagramLeft")
-        );
-        diagramSubmenu.add(menuItem);
-        
-        menuItem = new JMenuItem(I18n.t("layout.ui.shiftUp"));
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.shiftUp();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-        });
-        
-        menuItem.setToolTipText(
-            I18n.t("layout.ui.tooltip.shiftDiagramUp")
-        );
-        diagramSubmenu.add(menuItem);
-        
+
         diagramSubmenu.addSeparator();
         
         menuItem = new JMenuItem(I18n.t("layout.ui.clearDiagram"));
