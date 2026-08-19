@@ -56,6 +56,15 @@ public class AutonomyEditorPanel extends JPanel
         NONE,
 
         /**
+         * Ask why a particular TRAIN is not going anywhere, and see where it can go.
+         *
+         * The other test answers a question about the track: could anything get from here to there.
+         * This one answers the question users actually ask, which is about a locomotive and about
+         * now - every station it might be sent to, and for each one the reason it was refused.
+         */
+        WHY,
+
+        /**
          * Ask whether a train could get from one sensor to another, and see the route it would take.
          *
          * The only thing here that genuinely needs a mode, because it takes two clicks to say one
@@ -215,6 +224,24 @@ public class AutonomyEditorPanel extends JPanel
 
     private TileKey testFrom;
 
+    private javax.swing.JToggleButton whyButton;
+
+    /**
+     * How the panel reaches the running layout, for the "why" test.
+     *
+     * A supplier rather than the Layout itself, because the layout is replaced wholesale when a
+     * configuration is loaded and a held reference would go stale without saying so.
+     */
+    private java.util.function.Supplier<org.traincontrol.automation.Layout> layoutSource;
+
+    /**
+     * Where the "why" test looks for the running layout.
+     */
+    public void setLayoutSource(java.util.function.Supplier<org.traincontrol.automation.Layout> source)
+    {
+        this.layoutSource = source;
+    }
+
     /**
      * Held so that a gesture can be called off from somewhere other than the button itself - a tool
      * left pressed while nothing is waiting for a click is a control lying about what it is doing.
@@ -367,6 +394,9 @@ public class AutonomyEditorPanel extends JPanel
         // The hint line below already speaks, and it speaks about whatever was last clicked.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
+        whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
+        whyButton.setToolTipText(I18n.t("autosetup.ui.tooltipWhy"));
+
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
@@ -390,8 +420,10 @@ public class AutonomyEditorPanel extends JPanel
 
         // Both the width of the column, like the window's own Save and Cancel below them
         fillWidth(testButton, nameAll);
+        fillWidth(whyButton, nameAll);
 
         panel.add(row(testButton));
+        panel.add(row(whyButton));
         panel.add(row(nameAll));
         panel.add(row(excludePage));
 
@@ -495,6 +527,7 @@ public class AutonomyEditorPanel extends JPanel
         traces.clear();
 
         if (testButton != null) testButton.setSelected(false);
+        if (whyButton != null) whyButton.setSelected(false);
 
         say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
 
@@ -524,8 +557,9 @@ public class AutonomyEditorPanel extends JPanel
             oneWayFrom = null;
             signalFor = null;
 
-            say(hint, tool == Tool.TEST
-                ? I18n.t("autosetup.ui.promptTestStart") : I18n.t("autosetup.ui.hintClickToCycle"));
+            say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
+                : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
+                : I18n.t("autosetup.ui.hintClickToCycle"));
 
             refresh();
         });
@@ -2256,6 +2290,7 @@ public class AutonomyEditorPanel extends JPanel
             switch (tool)
             {
                 case TEST: applyTest(tile, component); break;
+                case WHY: applyWhy(tile, component); break;
                 default: cycle(tile); break;
             }
         }
@@ -2580,6 +2615,156 @@ public class AutonomyEditorPanel extends JPanel
      * Two clicks, like portal pairing.  The answer comes from the same reduction everything else uses,
      * so what this says is what a running train would find - not a second opinion.
      */
+    /**
+     * Says why the train on this square is not going anywhere, and draws where it could go.
+     *
+     * The other test asks a question about the TRACK - could anything get from here to there - and
+     * answers it from the reduction. This one asks the question users actually ask, which is about a
+     * locomotive and about now: every station it might be sent to, and for each one the reason it was
+     * refused. Occupancy, exclusions, switched-off squares and parking rules are all in the answer,
+     * because all of them are in the decision.
+     *
+     * Both halves matter. The list says why, and the traces say where: a train with somewhere to go
+     * draws lines, and a train with nowhere draws none - which is the same answer read two ways, and
+     * the second one is visible from across the room.
+     *
+     * Against the layout as last LOADED, which while this editor is open is the last saved
+     * configuration. Unsaved edits are not in it, and the hint says so rather than letting the user
+     * assume otherwise - an explanation that quietly describes a different railway is worse than none.
+     */
+    private void applyWhy(TileKey tile, LayoutDiagramComponent component)
+    {
+        org.traincontrol.automation.Layout layout =
+            layoutSource == null ? null : layoutSource.get();
+
+        if (layout == null)
+        {
+            say(hint, I18n.t("autosetup.ui.whyNoLayout"));
+            return;
+        }
+
+        if (component == null || !component.isFeedback())
+        {
+            say(hint, I18n.t("autosetup.ui.labelPointNotStation"));
+            return;
+        }
+
+        // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
+        // the layout's opinion of where trains are that decides what runs.
+        org.traincontrol.base.Locomotive standing = null;
+
+        // Through StationIndex, which is the one place that knows a square is several Points and which
+        // ones.  Asking the builder again would be a second opinion about the same thing.
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        for (String pointName : index.pointNamesAt(tile))
+        {
+            org.traincontrol.automation.Point p = layout.getPoint(pointName);
+
+            if (p != null && p.getCurrentLocomotive() != null)
+            {
+                standing = p.getCurrentLocomotive();
+                break;
+            }
+        }
+
+        if (standing == null)
+        {
+            say(hint, I18n.t("autosetup.ui.whyNoTrainHere"));
+            return;
+        }
+
+        traces.clear();
+
+        String cannotStart = layout.explainCannotStart(standing);
+
+        if (cannotStart != null)
+        {
+            sayRich(hint, I18n.f("autosetup.ui.whyCannotStart",
+                escape(standing.getName()), escape(cannotStart)) + unsavedWarning());
+
+            refresh();
+            return;
+        }
+
+        java.util.Map<String, String> reasons = layout.explainDestinations(standing);
+
+        java.util.List<String> available = new java.util.LinkedList<>();
+        StringBuilder blocked = new StringBuilder();
+
+        java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
+        java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
+
+        for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
+        {
+            TileKey where = index.squareOf(entry.getKey());
+
+            if (entry.getValue() == null)
+            {
+                available.add(entry.getKey());
+
+                // Drawn, so "where can it go" is read off the track rather than out of a list
+                if (where != null && session.getReducer() != null)
+                {
+                    trace(session.getReducer().findPath(tile, where, mayTurn, mustTurn), tile, true);
+                }
+            }
+            else
+            {
+                blocked.append("<br>").append(escape(entry.getKey())).append(": ")
+                       .append(escape(entry.getValue()));
+            }
+        }
+
+        sayRich(hint, I18n.f("autosetup.ui.whyReport", escape(standing.getName()),
+            available.isEmpty() ? I18n.t("autosetup.ui.whyNowhere")
+                : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(available))),
+            blocked.toString() + unsavedWarning()));
+
+        refresh();
+    }
+
+    /**
+     * A line warning that this answer is about the SAVED setup, when there are edits that are not in it.
+     *
+     * Only when there are.  A caveat printed every time is a caveat nobody reads, and on the ordinary
+     * path - open the editor, ask why, close it - there is nothing to caveat: the running layout and
+     * the setup on screen are the same thing.
+     *
+     * @return the warning, or an empty string when the setup is saved
+     */
+    private String unsavedWarning()
+    {
+        return session != null && session.isDirty()
+            ? "<br><br>" + escape(I18n.t("autosetup.ui.whyUnsaved")) : "";
+    }
+
+    /**
+     * Station names, comma separated, capped so one line stays one line.
+     */
+    private static String join(java.util.List<String> names)
+    {
+        StringBuilder out = new StringBuilder();
+
+        int shown = 0;
+
+        for (String name : names)
+        {
+            if (shown == 4)
+            {
+                out.append(", ...");
+                break;
+            }
+
+            if (shown > 0) out.append(", ");
+
+            out.append(name);
+            shown++;
+        }
+
+        return out.toString();
+    }
+
     private void applyTest(TileKey tile, LayoutDiagramComponent component)
     {
         if (component == null || !component.isFeedback())
@@ -3192,6 +3377,7 @@ public class AutonomyEditorPanel extends JPanel
         // no Points to name and no run to test.  Greyed rather than hidden, so the column keeps its
         // shape and it is clear they come back when the box is unticked.
         if (testButton != null) testButton.setEnabled(!ignored);
+        if (whyButton != null) whyButton.setEnabled(!ignored);
 
         findingsModel.clear();
         findingTiles.clear();

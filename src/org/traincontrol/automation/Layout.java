@@ -2924,6 +2924,161 @@ public class Layout
     }
     
     /**
+     * Why this locomotive cannot leave at all, or null when it can.
+     *
+     * The four reasons that have nothing to do with any particular destination: they are about the
+     * train and the square it is standing on, and while one of them holds no destination is worth
+     * asking about.
+     *
+     * @param loc the locomotive
+     * @return the reason, ready to show, or null when the train is free to be given a route
+     */
+    public String explainCannotStart(Locomotive loc)
+    {
+        if (loc == null) return null;
+
+        if (loc.isAutonomyPaused()) return I18n.t("autolayout.why.paused");
+
+        Point at = this.getLocomotiveLocation(loc);
+
+        if (at == null) return I18n.t("autolayout.why.notOnGraph");
+
+        if (!at.isDestination()) return I18n.f("autolayout.why.startNotStation", at.getName());
+
+        if (!at.isActive()) return I18n.f("autolayout.why.startInactive", at.getName());
+
+        return null;
+    }
+
+    /**
+     * Every station this locomotive might be sent to, and why each one is or is not available.
+     *
+     * The answer to "I pressed start and nothing happened", which is the commonest thing a new user
+     * asks and which nothing in the interface could tell them. All of this was already computed on
+     * every attempt and then thrown away: pickPath rejects a destination with ONE conjunction of
+     * seven terms and records nothing, and isPathClear names its reasons properly but is called with
+     * logging off, so its message went into lastError and was overwritten by the next candidate.
+     *
+     * So this is the same set of questions asked in the same order, keeping the answer instead of
+     * discarding it. It deliberately does NOT re-implement the rules - the second stage calls
+     * isPathClear itself, so a route this says is clear is a route the running layout agrees is
+     * clear. A "why not" that disagrees with the thing it explains is worse than no explanation.
+     *
+     * Non-stations are left out entirely rather than listed as "not a station", because on a real
+     * layout they are most of the graph and a list of two hundred of them answers nothing.
+     *
+     * @param loc the locomotive
+     * @return station name to reason, in priority order, with a null value where the train could go
+     */
+    synchronized public java.util.Map<String, String> explainDestinations(Locomotive loc)
+    {
+        java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
+
+        if (loc == null) return out;
+
+        Point start = this.getLocomotiveLocation(loc);
+
+        if (start == null) return out;
+
+        // The same order pickPath walks, so the first available entry here is the one it would have
+        // taken - which makes this readable as "what it decided" and not merely "what is true"
+        List<Point> ends = new LinkedList<>(this.points.values());
+
+        Collections.sort(ends, (Point p1, Point p2) ->
+            p1.getPriority() == p2.getPriority() ? 0 : (p2.getPriority() < p1.getPriority() ? -1 : 1));
+
+        for (Point end : ends)
+        {
+            // Not a station: not a candidate, and not worth a line
+            if (!end.isDestination() || end.equals(start)) continue;
+
+            String reason = null;
+
+            if (end.getBlockLocomotive() != null)
+            {
+                // The BLOCK, not the point: a train on another arrival-side copy of this square is
+                // standing on this platform, and naming the copy would be telling the user about the
+                // model rather than about their railway
+                reason = I18n.f("autolayout.why.occupied", end.getBlockLocomotive().getName());
+            }
+            else if (!end.isActive())
+            {
+                reason = I18n.t("autolayout.why.inactive");
+            }
+            else if (end.isReversing())
+            {
+                reason = I18n.t("autolayout.why.reversing");
+            }
+            else if (!end.isAutoDestination())
+            {
+                reason = I18n.t("autolayout.why.notAutoDestination");
+            }
+            else if (end.getExcludedLocs().contains(loc))
+            {
+                reason = I18n.f("autolayout.why.excluded", loc.getName());
+            }
+            else
+            {
+                // Past the filter, so the question becomes whether any route is clear.  Every
+                // alternative is tried, exactly as pickPath does, because the first one being blocked
+                // says nothing about the second.
+                reason = firstClearOrWhyNot(loc, start, end);
+            }
+
+            out.put(end.getName(), reason);
+        }
+
+        return out;
+    }
+
+    /**
+     * Null when some route from start to end is clear, and otherwise why the last one was not.
+     *
+     * The reason comes from isPathClear itself, through lastError, which it sets whether or not it is
+     * logging.  Enumerating the alternatives matters: a layout with a train parked across one way
+     * round is the ordinary case, and reporting that first blocked route as though it were the only
+     * one would tell the user their railway is broken when it is merely busy.
+     */
+    private String firstClearOrWhyNot(Locomotive loc, Point start, Point end)
+    {
+        List<Edge> path;
+        List<List<Edge>> seenPaths = new LinkedList<>();
+
+        String why = null;
+
+        try
+        {
+            do
+            {
+                path = this.bfs(start, end, seenPaths);
+
+                if (path == null) break;
+
+                seenPaths.add(path);
+
+                if (this.passesThroughReversingStation(path))
+                {
+                    why = I18n.t("autolayout.why.throughReversing");
+                    continue;
+                }
+
+                if (this.isPathClear(path, loc, false)) return null;
+
+                why = Layout.getLastError();
+
+            } while (path != null);
+        }
+        catch (Exception e)
+        {
+            return String.valueOf(e.getMessage());
+        }
+
+        // No route at all is a different answer from every route being blocked, and the difference is
+        // the difference between "build some track" and "wait a minute"
+        return why == null ? I18n.t("autolayout.why.noRoute") : why;
+    }
+
+    /**
      * Debugs a connection between two points.  Output value will be null for valid paths
      * @param loc
      * @param start

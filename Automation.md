@@ -248,7 +248,22 @@ This is the section to read first when nothing happens. In rough order of how of
 
 **A train is standing somewhere in the way.** Not necessarily on the route itself — a train occupying a crossing or a shared block can hold up a route that merely passes nearby.
 
-The log is verbose about all of this, and worth reading: it names the train, the route, and the reason.
+**Two places tell you which it is, rather than making you guess.**
+
+In the locomotive list, hover over "No available paths". The tooltip names every station the train
+might have been sent to and, for each one, the reason it was refused - occupied and by whom, switched
+off, excluded, no track at all.
+
+In the setup editor, the **Why is it not moving?** tool answers the same question on the diagram.
+Click the square a train is standing on: every route it *could* take is drawn on the track, and the
+reasons for the ones it cannot are listed underneath. A train with somewhere to go draws lines; a
+train with nowhere draws none, which is the same answer read from across the room.
+
+That tool reads the configuration as last **saved**. If you have unsaved changes it says so, and
+otherwise it does not mention it - so a plain answer is an answer about the railway in front of you.
+
+The log is verbose about all of this too, and worth reading: it names the train, the route, and the
+reason.
 
 ---
 

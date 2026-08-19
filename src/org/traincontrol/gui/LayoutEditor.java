@@ -701,6 +701,9 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (autonomyPanel == null)
         {
+            // The panel needs a way to the RUNNING layout for its "why is it not moving" test - the
+            // one question that is about locomotives and occupancy rather than about track, and so
+            // cannot be answered from the setup alone.
             autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
             {
                 @Override
@@ -713,6 +716,11 @@ public class LayoutEditor extends PositionAwareJFrame
                     parent.refreshStaticAutonomyLayer();
                 }
             });
+
+            // Asked for on every use rather than held, because loading a configuration replaces the
+            // Layout wholesale and a kept reference would answer about the previous one without
+            // saying so.
+            autonomyPanel.setLayoutSource(() -> parent.getModel().getAutoLayout());
 
             // Setup mode writes to a page only when a station name is put on a square.  The caption is
             // part of the tile art, so the grid is rebuilt rather than repainted, and the annotations

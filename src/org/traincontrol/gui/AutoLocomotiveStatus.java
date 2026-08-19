@@ -321,6 +321,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
+
+                    // And WHY, on hover.  "No available paths" is the symptom; the reason is a
+                    // different thing every time - a station occupied, one switched off, an exclusion,
+                    // no track at all - and until now the user had no way to find out which, because
+                    // the answer was computed on every attempt and thrown away.
+                    this.locDest.setToolTipText(whyNotToolTip());
                     this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
                         + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
@@ -462,6 +468,69 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 .addGap(6, 6, 6))
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    /**
+     * Why this locomotive has nowhere to go, as a tooltip.
+     *
+     * Built here rather than in the panel's text, because it is a list and the line it hangs off is one
+     * line - and because a user who is not asking should not have to read it.
+     *
+     * Station names, not Point names: the reasons come back keyed by the running graph's Points, and a
+     * square is several of those, so the same reason would otherwise appear three times under names
+     * the user never chose.  Only the first reason per station is kept, which is the one that would
+     * have stopped it.
+     */
+    private String whyNotToolTip()
+    {
+        if (layout == null || locomotive == null) return null;
+
+        try
+        {
+            String cannotStart = layout.explainCannotStart(locomotive);
+
+            if (cannotStart != null) return cannotStart;
+
+            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive);
+
+            java.util.Map<String, String> byStation = new java.util.LinkedHashMap<>();
+
+            for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
+            {
+                if (entry.getValue() == null) continue;
+
+                String station = stationName(layout.getPoint(entry.getKey()));
+
+                if (!byStation.containsKey(station)) byStation.put(station, entry.getValue());
+            }
+
+            if (byStation.isEmpty()) return null;
+
+            StringBuilder out = new StringBuilder("<html>");
+
+            int shown = 0;
+
+            for (java.util.Map.Entry<String, String> entry : byStation.entrySet())
+            {
+                if (shown == 12)
+                {
+                    out.append("<br>...");
+                    break;
+                }
+
+                if (shown > 0) out.append("<br>");
+
+                out.append(entry.getKey()).append(": ").append(entry.getValue());
+                shown++;
+            }
+
+            return out.append("</html>").toString();
+        }
+        catch (RuntimeException e)
+        {
+            // A tooltip is not worth breaking a repaint for
+            return null;
+        }
+    }
 
     /**
      * A path as "from -> to", with both ends named the way the diagram names them.

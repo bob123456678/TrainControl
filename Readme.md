@@ -375,6 +375,7 @@ Tab icons provided by Freepik.
         - Stations can now say which directions trains are allowed to arrive from.  By default they accept trains from any direction; the autonomy editor has a new Arrivals view and a right-click setting, and the track diagram shows a small arrow where a station only takes trains one way
         - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
         - The route drawn on the diagram now follows the track through curves and switches, instead of turning square corners across it
+        - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why is it not moving?" tool that answers the same question on the diagram: click the square a train is standing on, and every route it could take is drawn on the track while the reasons for the rest are listed underneath
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
     - Routes

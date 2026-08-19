@@ -13,30 +13,33 @@ short of what somebody would expect it to do. Every item here is a gap in someth
 
 ## Where I think the answer is "no, and it matters"
 
-### 1. Nothing tells a user WHY autonomy will not move a train
+### 1. ~~Nothing tells a user WHY autonomy will not move a train~~ - BUILT
 
 The single most common state a new user reaches is "I pressed start and nothing happened", and the
 answer is almost always one of a small, knowable set: every station is occupied, the destination
 excludes this locomotive, the route needs a switched-off link, the only destination is a reversing
 point, the locomotive has no speed.
 
-TrainControl works out which of those it is every time it looks for a route — and then throws the
-answer away. The log gets `{0} has no free paths at the moment`, which names the train and not the
-reason; the locomotive panel says "No available paths", which is the symptom. Neither tells the user
-the one thing they need.
+All of it was computed on every attempt and thrown away. `pickPath` rejected a destination with ONE
+conjunction of seven terms and recorded nothing; `isPathClear` named its reasons properly but is
+called with logging off, so its message went into `lastError` and was overwritten by the next
+candidate.
 
-**Proposal.** Keep the reason at the point the decision is made and put it on the panel — a tooltip, or
-the line itself.
+**Now built**, in two places:
 
-Being honest about the size of it: `pickPath` rejects a candidate with one conjunction —
-`!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination() && end.isActive() && ...`
-— so every reason is already computed and none of them is separable as it stands. The work is splitting
-that condition into named checks and carrying the first failure out, per locomotive, without slowing
-down a search that runs on every arrival. That is why this is the item worth deciding about rather
-than the item to squeeze in.
+- `Layout.explainCannotStart` and `Layout.explainDestinations` ask the same questions in the same
+  order and keep the answers. The second stage calls `isPathClear` itself rather than restating its
+  rules, so a route this says is clear is one the running layout agrees is clear - an explanation that
+  disagrees with the thing it explains is worse than none.
+- The locomotive panel's "No available paths" carries them as a tooltip; the setup editor has a
+  **Why is it not moving?** tool that draws every route the train COULD take and lists the reasons for
+  the rest.
 
-This is the item I would spend the remaining 3.0.0 time on. It converts the most common support
-question into something the interface answers by itself.
+`testWhyStuck` covers one obstacle at a time and asserts that the reason names THAT one - a "why not"
+that says the same thing whatever is wrong looks like an answer and sends the user to check the wrong
+thing.
+
+The remaining part of the original proposal is the whole-layout version, which is part two, item 1.
 
 ### 2. The route drawn on the diagram has no key
 
@@ -154,8 +157,9 @@ anybody to write logic.
 
 # What I would ask Adam
 
-1. **Item 1 of part one** - is "say why the train is not moving" worth holding 3.0.0 for? I think it is
-   the highest-value thing left, and it is not small.
+1. ~~**Item 1 of part one** - is "say why the train is not moving" worth holding 3.0.0 for?~~ Built,
+   per locomotive. What is still open is the whole-layout version (part two, item 1) - one panel that
+   answers "why is nothing happening?" for every train at once rather than one at a time.
 2. **Items 3 and 4** - the signal pairing and the barred arrivals are both invisible in bulk. Is that
    acceptable for a first release of diagram autonomy, or does it need the list?
 3. **Part two ordering** - the list above is my judgement, not yours. The one I am least sure about is

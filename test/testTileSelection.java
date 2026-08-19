@@ -206,6 +206,46 @@ public class testTileSelection
     }
 
     /**
+     * Columns accumulate the same way rows do.
+     *
+     * Asked outright, so pinned outright: selectRow and selectColumn are both one line over
+     * addRectangle, and "does the same convenience apply to columns" should be answerable by a test
+     * rather than by reading the two methods and hoping they match.
+     */
+    @Test
+    public void testColumnsAccumulateToo()
+    {
+        TileSelection selection = new TileSelection();
+
+        // Two columns of a 12-row diagram, picked one after the other
+        selection.addRectangle(3, 0, 3, 11);
+        selection.addRectangle(7, 0, 7, 11);
+
+        assertEquals(selection.size(), 24,
+            "picking a second column replaced the first instead of adding to it");
+
+        assertTrue(selection.contains(3, 0) && selection.contains(3, 11), "all of the first column");
+        assertTrue(selection.contains(7, 0) && selection.contains(7, 11), "and all of the second");
+        assertFalse(selection.contains(5, 5), "and nothing between them");
+    }
+
+    /**
+     * A row and a column together give a cross, with the crossing square counted once.
+     */
+    @Test
+    public void testARowAndAColumnCrossCleanly()
+    {
+        TileSelection selection = new TileSelection();
+
+        selection.addRectangle(0, 5, 9, 5);
+        selection.addRectangle(5, 0, 5, 9);
+
+        assertEquals(selection.size(), 19,
+            "ten plus ten less the one square they share - counting the crossing twice would apply a "
+            + "group operation to it twice");
+    }
+
+    /**
      * A box that overlaps what is already picked does not double-count it.
      */
     @Test
