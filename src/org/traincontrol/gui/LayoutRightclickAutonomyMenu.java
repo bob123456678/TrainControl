@@ -42,6 +42,25 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         this.session = ui.getAutonomySession();
 
         JMenuItem menuItem;
+
+        // Nothing here while an editor has the diagram.
+        //
+        // An open editor holds its own unsaved copy of the setup, so anything done from this menu is
+        // done against a picture that is about to be overwritten - and overwritten silently: a
+        // locomotive placed here vanishes when the editor saves, and one removed comes back.  The
+        // Autonomy menu has been shut for exactly this reason since the editor existed.  The diagram's
+        // own menu was simply missed, and it is the one people actually reach for.
+        //
+        // Shown and disabled rather than left out, with the reason on it, so a right-click that does
+        // nothing does not read as a broken menu.
+        if (ui.isLayoutEditorOpen())
+        {
+            menuItem = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+            menuItem.setEnabled(false);
+            add(menuItem);
+
+            return;
+        }
         
         if (ui.getModel().hasAutoLayout())
         {     
@@ -320,7 +339,31 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // Which locomotive belongs here, as opposed to which one happens to be here now
                     addSeparator();
 
-                    HomeLocomotiveMenu.addStationItem(this, ui, current, ui, null,
+                    // Asked of the copy that answers for the SQUARE, not of the one the train is on.
+                    //
+                    // A home belongs to a platform and the build writes it onto every copy of one, so
+                    // any copy can be asked - but the copy that speaks for a square is the OCCUPIED
+                    // one, and a train can be standing on a copy that is not itself a destination.
+                    // Editing the square's type while a train is there produces exactly that, and so
+                    // does barring an arrival side.  Asked about that copy the item took itself off
+                    // the menu, which is to say it vanished precisely when a train was standing on the
+                    // platform - the moment somebody is most likely to be setting its home.
+                    Point speaksForTheSquare = current;
+
+                    if (session != null)
+                    {
+                        for (Point copy : session.getStationIndex()
+                            .pointsAt(ui.getModel().getAutoLayout(), station))
+                        {
+                            if (copy.isDestination())
+                            {
+                                speaksForTheSquare = copy;
+                                break;
+                            }
+                        }
+                    }
+
+                    HomeLocomotiveMenu.addStationItem(this, ui, speaksForTheSquare, ui, null,
                         ui::updateVisiblePoints);
                 }
             }

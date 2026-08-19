@@ -809,6 +809,35 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.add(stationMenu);
 
+            // Switching direction, on any square, and not entangled with anything above.  A berth is
+            // usually both - autonomy leaves it alone AND trains reverse in it - and that combination
+            // used to be unauthorable, because it meant a terminus and a reversing flag on one Point,
+            // which the model refuses in either order.
+            // Three answers, because "may" and "must" are different railways.  May leaves the plain
+            // copies, so a train can pass straight through and the path finder chooses; must leaves
+            // only the turning ones, so every arrival turns.  On a dead end they are the same thing.
+            javax.swing.JMenu turning = new javax.swing.JMenu(
+                I18n.t("autosetup.ui.menuTurningGroup"));
+
+            javax.swing.ButtonGroup turns = new javax.swing.ButtonGroup();
+
+            boolean must = session.isMustTurnAround(target);
+            boolean may = session.isTurnAround(target) && !must;
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
+                "autosetup.ui.hintTurnNever", !may && !must,
+                () -> setTurning(target, false, false)));
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMay"),
+                "autosetup.ui.hintCanReverse", may,
+                () -> setTurning(target, true, false)));
+
+            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMust"),
+                "autosetup.ui.hintTurnMust", must,
+                () -> setTurning(target, true, true)));
+
+            menu.add(turning);
+
             // Where trains may pull IN from - on the menu itself, beside what the square IS, rather
             // than buried under it.
             //
@@ -866,35 +895,6 @@ public class AutonomyEditorPanel extends JPanel
 
                 menu.add(arrivals);
             }
-
-            // Switching direction, on any square, and not entangled with anything above.  A berth is
-            // usually both - autonomy leaves it alone AND trains reverse in it - and that combination
-            // used to be unauthorable, because it meant a terminus and a reversing flag on one Point,
-            // which the model refuses in either order.
-            // Three answers, because "may" and "must" are different railways.  May leaves the plain
-            // copies, so a train can pass straight through and the path finder chooses; must leaves
-            // only the turning ones, so every arrival turns.  On a dead end they are the same thing.
-            javax.swing.JMenu turning = new javax.swing.JMenu(
-                I18n.t("autosetup.ui.menuTurningGroup"));
-
-            javax.swing.ButtonGroup turns = new javax.swing.ButtonGroup();
-
-            boolean must = session.isMustTurnAround(target);
-            boolean may = session.isTurnAround(target) && !must;
-
-            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
-                "autosetup.ui.hintTurnNever", !may && !must,
-                () -> setTurning(target, false, false)));
-
-            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMay"),
-                "autosetup.ui.hintCanReverse", may,
-                () -> setTurning(target, true, false)));
-
-            turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnMust"),
-                "autosetup.ui.hintTurnMust", must,
-                () -> setTurning(target, true, true)));
-
-            menu.add(turning);
 
             menu.addSeparator();
 
