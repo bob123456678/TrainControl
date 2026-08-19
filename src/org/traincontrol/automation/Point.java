@@ -222,8 +222,17 @@ public class Point
      */
     public Point setPriority(Integer value)
     {
-        this.priority = value;
-        
+        // Null means "no priority", which is the meaning 0 already has - and the priority dialog
+        // sends null every time somebody clears the box, which is the obvious way to say exactly
+        // that.  Stored as null it read back through getPriority(), which returns int, and through
+        // toJSON's `!= 0`: both unbox.  So clearing one point's priority threw NullPointerException
+        // out of the path-choosing comparator - outside the try that guards executePath, so the
+        // locomotive's dispatch thread died and that train silently stopped being sent anywhere for
+        // the rest of the session - and threw again out of every attempt to SAVE the layout.
+        //
+        // The same fix setMaxTrainLength already carries, for the same reason.
+        this.priority = (value == null) ? 0 : value;
+
         return this;
     }
 

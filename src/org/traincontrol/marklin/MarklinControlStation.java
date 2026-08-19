@@ -180,7 +180,28 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private int numMessagesProcessed = 0;
     
     // Ping metrics
-    private long pingStart;
+    /**
+     * How long an unanswered ping is left in flight before the keepalive sends another.
+     *
+     * Under the interval the interface pings on, so a lost response costs one cycle rather than the
+     * session.
+     */
+    private static final long PING_RETRY_NS = 2000L * 1000000L;
+
+    // Written by the ping timer thread and cleared by the message processor, read by both
+    private volatile long pingStart;
+
+    /**
+     * When the current run of unanswered pings began, or 0 when the last one was answered.
+     *
+     * Separate from pingStart, which is when the LATEST ping went out, because the two questions have
+     * different answers as soon as a ping is resent: how long the station has been silent, and how
+     * long the outstanding ping has been in flight.  Measuring latency against the first of a run
+     * would report a whole outage as the round trip of the packet that ended it - and that figure is
+     * wired to the latency cutoff, so recovering from an outage would have cut the power.
+     */
+    private volatile long pingOutstandingSince;
+
     private double lastLatency;
 
     // Thread pools for network messages
@@ -2096,6 +2117,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     this.lastLatency = ((double) (System.nanoTime() - this.pingStart)) / 1000000.0;
                     this.pingStart = 0;
+                    this.pingOutstandingSince = 0;
 
                     if (this.view != null)
                     {
@@ -2237,8 +2259,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void sendPing(boolean force)
     {        
-        if (this.pingStart == 0 || force)
+        // A ping already in flight used to silence this method until an answer arrived - and the only
+        // thing that clears pingStart is an answer.  UDP does not promise one.  So a single dropped
+        // response stopped the keepalive for the rest of the session: no ping was ever sent again, the
+        // age of that one ping grew for ever, the status line read "lost connection" permanently even
+        // after the network came back, and - the part that matters - the five-second latency check
+        // kept firing, so a running layout with a latency limit had its power cut every five seconds,
+        // including five seconds after the operator switched it back on.  Only a restart recovered.
+        //
+        // An unanswered ping is now retried rather than treated as still pending.  The outage clock
+        // below is what keeps the lost-connection warning honest across the retries.
+        if (this.pingStart == 0 || force
+            || (System.nanoTime() - this.pingStart) > PING_RETRY_NS)
         {
+            if (this.pingOutstandingSince == 0 || force)
+            {
+                this.pingOutstandingSince = System.nanoTime();
+            }
+
             this.pingStart = System.nanoTime();
         
             this.exec(new CS2Message(
@@ -2255,11 +2293,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public long getTimeSinceLastPing()
     {
-        if (this.pingStart > 0)
+        // The start of the silence, not the latest retry.  Reading the retry would reset this to zero
+        // every time the keepalive tried again, so a station that had been unreachable for an hour
+        // would look like one that had been unreachable for five seconds - which is exactly the
+        // reading the lost-connection warning exists to distinguish.
+        if (this.pingOutstandingSince > 0)
         {
-            return (System.nanoTime() - this.pingStart) / 1000000;
+            return (System.nanoTime() - this.pingOutstandingSince) / 1000000;
         }
-        
+
         return 0;
     }
     

@@ -250,6 +250,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     {
                         java.util.List<String> ways = placeableCopies();
 
+                        // The train standing here, captured now.  Autonomy is not running - the menu
+                        // is gated on that - so nothing but the user can move it between opening the
+                        // menu and choosing from it.
+                        final String standing = current.getCurrentLocomotive().getName();
+
                         if (ways.size() > 1)
                         {
                             javax.swing.JMenu facing = new javax.swing.JMenu(
@@ -271,7 +276,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                         I18n.f("layout.ui.menuPlaceFacing", side.toString()),
                                         side == session.getFacing(station));
 
-                                which.addActionListener(event -> placeFacing(copy, side));
+                                which.addActionListener(event -> placeFacing(standing, copy, side));
 
                                 facing.add(which);
                             }
@@ -520,14 +525,27 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         String name = usable.get(new java.util.Random().nextInt(usable.size()));
 
-        placeFacing(name, session == null ? null : session.facingsFor(station).get(name));
+        placeFacing(ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName(), name,
+            session == null ? null : session.facingsFor(station).get(name));
     }
 
-    private void placeFacing(String pointName,
+    /**
+     * Puts a named locomotive on a named copy of this square, facing a given way.
+     *
+     * Takes the locomotive rather than reading the active one, because it has two callers that mean
+     * different trains.  Placing means the active locomotive - that is what the menu item says.
+     * Turning means the one already standing there, and this used to move the active one instead: with
+     * some other locomotive selected on the keyboard, "face east" picked THAT train up and put it down
+     * on this platform, in the running layout and in the saved configuration both, while the train the
+     * user was pointing at did not move.  With nothing selected it threw instead, and the menu item
+     * did nothing at all.
+     */
+    private void placeFacing(String locName, String pointName,
         org.traincontrol.automationui.TilePorts.Side facing)
     {
-        ui.getModel().getAutoLayout().moveLocomotive(
-            ui.getActiveLoc().getName(), pointName, false);
+        if (locName == null) return;
+
+        ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false);
 
         if (session != null)
         {
@@ -536,7 +554,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // too - and the next build emitted it at two Points, which fromJSON answers by
             // invalidating the whole layout.  Every path was then refused as "configuration is
             // invalid", from a placement made minutes earlier.
-            session.placeLocomotive(station, ui.getActiveLoc().getName());
+            session.placeLocomotive(station, locName);
         }
 
         if (facing != null && session != null)
