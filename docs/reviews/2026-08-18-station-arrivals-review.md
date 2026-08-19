@@ -39,9 +39,9 @@ Three commits, and the code around them:
 | A1 | barring an arrival side of a turn-around station invalidates the whole configuration | fixed, `d4cc22a` |
 | A2 | excluding a page permanently destroyed the arrival restrictions on it | fixed, `a5de425` |
 | A3 | Cancel in the diagram editor destroyed the setup of every square it had touched | fixed, next commit |
-| A4 | station captions do not exist at all without a local layout folder | OPEN - for Adam |
-| A5 | undo does not undo the caption edits the diagram editor performs | OPEN - for Adam |
-| A6 | the caption migration rewrites .cs2 pages in place, with no atomic write | OPEN - for Adam |
+| A4 | station captions do not exist at all without a local layout folder | **Fixed 2026-08-18** - a local layout folder is now required, with the menu saying so |
+| A5 | undo does not undo the caption edits the diagram editor performs | **Fixed 2026-08-18** - LayoutEditor snapshots and restores the captions on Cancel |
+| A6 | the caption migration rewrites .cs2 pages in place, with no atomic write | **Fixed 2026-08-18** - written through a temp file and moved, covered by testAtomicWrite |
 
 ### A1 - a barred terminus copy is emitted as a terminus that is not a destination
 
@@ -148,7 +148,7 @@ what happens to a user's files, which is Adam's call.
 | B3 | with no train there, the menu still hung off whichever copy sorted first | fixed, next commit |
 | B4 | a locomotive could be placed at random onto a barred copy | fixed, `a5de425` |
 | B5 | switching pages killed the live captions of the page left behind | fixed, next commit |
-| B6 | the path search moved from a worker thread onto the EDT | OPEN - for Adam |
+| B6 | the path search moved from a worker thread onto the EDT | **Fixed 2026-08-18** - AutoLocomotiveStatus.findPaths runs on AutonomyRenderer, drawing marshalled back |
 
 ### B1 - stale barred sides were counted, hidden, and unremovable
 
@@ -682,8 +682,8 @@ silently reopen the rebuild race and the caption bug.
 - **Import of a legacy graph carrying arrival restrictions** was not exercised - the legacy format has
   no such concept, so there is nothing to map, but the assertion is by inspection.
 - **The regression pass did not run anything.** Every claim in it is from reading code and git history;
-  A4, A5, A6 and B6 are open on that basis and want a person at the machine before they are called
-  settled.
+  A4, A5, A6 and B6 were open on that basis; all four have since been implemented and the suite runs
+  clean, but none has been exercised by a person at the machine.
 - **Nothing was checked against a Central Station.** The autosave and legacy-autonomy.json paths (D9)
   matter most to users who have one and no local layout folder, which is precisely the configuration
   none of these passes could exercise.
