@@ -839,4 +839,38 @@ public class testAutonomyDiagramReducer
         assertNotNull(reducer.findPath(a, dc), "and on the possible one");
     }
 
+    /**
+     * A length set on a station counts toward the edge that arrives there.
+     *
+     * The sum used to cover only the track strictly BETWEEN two sensors, so a user who put lengths on
+     * their platforms - which is where the length of a train matters, and the first place anybody would
+     * put them - saw every edge come out as zero.  The tile a train ARRIVES on is part of the journey to
+     * it, and counting the end of each edge gives every tile along a route exactly once.
+     */
+    @Test
+    public void testALengthOnAStationCountsTowardTheEdgeIntoIt() throws IOException
+    {
+        LayoutDiagram page = page("main", 6, 4);
+
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+
+        final TileKey middle = key("main", 2, 1);
+        final TileKey end = key("main", 3, 1);
+
+        java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
+        lengths.put(middle, 2);
+        lengths.put(end, 5);
+
+        GraphReducer reducer = reduce(graph(page), authored(lengths, null, null));
+
+        List<ReducedEdge> run = edgesBetween(reducer, key("main", 1, 1), end);
+
+        assertFalse(run.isEmpty(), "the two sensors should be joined");
+
+        assertEquals(run.get(0).getLength(), 7,
+            "2 for the track between them and 5 for the platform arrived at");
+    }
+
 }

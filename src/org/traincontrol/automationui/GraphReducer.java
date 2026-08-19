@@ -814,7 +814,8 @@ public class GraphReducer
             }
 
             ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),
-                new LinkedHashMap<>(commands), sumLength(path), exitSide, landing.getEntrySide());
+                new LinkedHashMap<>(commands), sumLength(path) + lengthOf(tile),
+                exitSide, landing.getEntrySide());
 
             edges.add(edge);
             edgeByPair.put(pair, edge);
@@ -897,6 +898,22 @@ public class GraphReducer
         }
 
         return true;
+    }
+
+    /**
+     * The length assigned to one tile.
+     *
+     * The END of an edge is included in that edge's length, and the start is not.  A route is a chain
+     * of edges, so counting the tile a train ARRIVES on gives every tile along the way exactly once -
+     * and it is what makes a length set on a station count for anything.
+     *
+     * Without it the sum covered only the track strictly BETWEEN two sensors, and a user who set
+     * lengths on their platforms - which is where the length of a train matters, and the first place
+     * anybody would put them - saw every edge come out as zero.
+     */
+    private int lengthOf(TileKey tile)
+    {
+        return Math.max(0, authored.getTileLength(tile));
     }
 
     private int sumLength(List<TileStep> path)
