@@ -17,11 +17,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * as columns, a row rebuilds the command it came from. This asks the question those cannot: when the
  * route actually runs, does the right accessory move?
  *
- * That question could not be asked before Adam pointed out `DEBUG_SIMULATE_PACKETS`. With the network
- * off, debug on and that flag set, every outgoing CAN message is echoed back as though a Central
- * Station had answered - so an accessory command reaches the model's own view of the layout and can be
- * read back. It is a loopback, not a Central Station: it proves the command was formed and dispatched
- * correctly, not that real hardware would obey it.
+ * WHAT THIS DOES AND DOES NOT REST ON, stated precisely because the first version of this comment got
+ * it wrong. `DEBUG_SIMULATE_PACKETS` is set, so outgoing CAN messages are echoed back as though a
+ * station had answered - but the assertions do not depend on that echo. `setAccessoryState` calls
+ * `MarklinAccessory.turn()`, which sets the local state directly, so the accessory database reflects
+ * the command whether or not anything answers.
+ *
+ * What the assertions DO rest on is real, and is the point: `UIDfromAddress` puts MM2 and DCC in
+ * separate spaces, so a protocol dropped on the way through makes the WRONG TWIN flip - which is
+ * exactly what these tests read. The delays are timed rather than inspected. The loopback is
+ * belt-and-braces: it makes the dispatch path run as it does in life instead of taking the
+ * transmission-disabled branch.
+ *
+ * And none of it is a Central Station. It proves a command was formed and dispatched correctly, not
+ * that hardware obeys.
  *
  * The two bugs this exists for both lived in `CommandRow`, and both were invisible until Save:
  * a DCC accessory silently became MM2, and every per-command delay was dropped. MM2 and DCC are

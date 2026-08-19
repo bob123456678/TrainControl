@@ -285,7 +285,14 @@ whole, and delays are measured by elapsed time rather than read back as fields. 
 original bugs fails three of its four tests - the MM2 one correctly still passes, because MM2 was
 always the default, which makes it the control.
 
-It is a loopback and not a Central Station: it proves the command was formed and dispatched correctly,
+Two corrections, both from the second review round and both to my own claims. The loopback is NOT what
+makes those assertions work: `setAccessoryState` sets the local state directly, so the accessory
+database reflects the command whether or not anything answers. What the tests genuinely rest on is
+that MM2 and DCC occupy separate UID spaces, so a dropped protocol flips the wrong twin - which is
+real, and is what they read. The flag makes the dispatch path run as it does in life rather than
+taking the transmission-disabled branch; it is belt-and-braces, not the mechanism.
+
+And it is not a Central Station either way: it proves a command was formed and dispatched correctly,
 not that hardware obeys.
 
 ## 5. Progress against the 3.0.0 phase plan
