@@ -453,8 +453,14 @@ public class RouteEditorFrame extends JFrame
                     return;
                 }
 
-                parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(),
-                    expression);
+                if (!parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(),
+                    expression))
+                {
+                    // Checked, the way the edit path below is.  It was discarded, so a refusal closed
+                    // the window with no route made and nothing said.
+                    JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                    return;
+                }
             }
             else if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
                 enabledBox.isSelected(), expression))
@@ -465,6 +471,12 @@ public class RouteEditorFrame extends JFrame
 
             parent.refreshRouteList();
             parent.repaintLayout();
+
+            // Every other route mutation in the interface syncs afterwards, on the same reasoning -
+            // the Central Station holds routes too, and a route changed only here is a route the next
+            // sync can undo.  This one did not, which was an undocumented divergence rather than a
+            // decision.
+            parent.syncWithCS2();
 
             dispose();
         }

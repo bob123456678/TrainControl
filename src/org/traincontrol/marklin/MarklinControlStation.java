@@ -360,8 +360,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
                 try
                 {
-                    this.clearLayouts();
-                
+                    // syncLayouts clears for itself, once it has something to put back
                     syncLayouts();
                 }
                 catch (Exception e)
@@ -430,7 +429,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        for (LayoutDiagram l : fileParser.parseLayout(accs))
+        // Fetch and parse FIRST, then swap.  The caller used to call clearLayouts() before this method,
+        // so layoutDB sat empty for the whole of the fetch above and the parse below - HTTP requests
+        // for every layout page, seconds rather than a repaint - and anything asking for a diagram in
+        // that window was told there were none.  Nothing here is atomic, but the empty state now lasts
+        // as long as a loop over already-parsed objects instead of as long as a network round trip.
+        List<LayoutDiagram> parsed = fileParser.parseLayout(accs);
+
+        this.clearLayouts();
+
+        for (LayoutDiagram l : parsed)
         {
             this.layoutDB.add(l, l.getName(), l.getName());
 

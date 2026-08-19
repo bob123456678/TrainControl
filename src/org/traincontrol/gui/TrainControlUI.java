@@ -340,10 +340,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Coalesces a burst of arrivals into one repaint.  Cleared in a finally by the task that set it,
      * so a refresh that fails cannot leave the panels frozen for the rest of the session.
      */
+    /** True while a Central Station sync is running, so a second one is turned away rather than run. */
+    private final java.util.concurrent.atomic.AtomicBoolean syncInFlight =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+
     private final java.util.concurrent.atomic.AtomicBoolean autoRefreshInFlight =
         new java.util.concurrent.atomic.AtomicBoolean(false);
 
-    private List<Future<?>> autonomyFutures = new LinkedList<>();
     private List<Future<?>> locFutures = new LinkedList<>();
 
     // The keyboard being displayed
@@ -4886,28 +4889,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Off the event thread this is a plain call, because there is nothing to block and nothing to show.
      *
-     * @return whatever syncWithCS2 returned, so a caller can still read it
+     * ONE AT A TIME.  Moving the work off the event thread also made two syncs possible where the old
+     * code made them impossible: the event thread WAS the swap, so a second one could not begin until
+     * the first returned.  A modal dialog runs a nested event loop, which blocks input but happily
+     * dequeues runnables already posted - and three call sites reach here from invokeLater or a raw
+     * thread.  Two workers inside the same two hundred lines of database reconciliation is a worse
+     * problem than the one this method set out to solve, so a second caller is turned away rather than
+     * queued.  Turned away rather than made to wait because the callers are all "sync after I changed
+     * something", and a sync already running will pick that change up.
+     *
+     * @return whatever syncWithCS2 returned, so a caller can still read it, or -1 when another sync
+     *         was already running
      */
     public int syncWithCS2()
     {
-        // this.model, NOT this.  Both calls in this method were rewritten to this.syncWithCS2() by the
-        // same bulk edit that routed the sixteen call sites through here, which made the wrapper call
-        // itself: off the event thread immediately, and on it via the worker, which is also off it.
-        // Every Sync was a StackOverflowError.  The tests did not catch it because they call the
-        // model's sync directly, which is exactly the half that was still correct.
-        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        if (!syncInFlight.compareAndSet(false, true))
         {
-            return this.model.syncWithCS2();
+            this.log(I18n.t("ui.infoSyncAlreadyRunning"));
+
+            return -1;
         }
 
-        // Held in an array because a lambda cannot assign a local, and read after the dialog closes -
-        // BusyDialog.run does not return until the worker has disposed it
-        final int[] result = {-1};
+        try
+        {
+            // this.model, NOT this.  Both calls in this method were rewritten to this.syncWithCS2() by
+            // the same bulk edit that routed the sixteen call sites through here, which made the
+            // wrapper call itself: off the event thread immediately, and on it via the worker, which is
+            // also off it.  Every Sync was a StackOverflowError.
+            if (!javax.swing.SwingUtilities.isEventDispatchThread())
+            {
+                return this.model.syncWithCS2();
+            }
 
-        BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
-            () -> result[0] = this.model.syncWithCS2(), null);
+            // Held in an array because a lambda cannot assign a local, and read after the dialog
+            // closes - BusyDialog.run does not return until the worker has disposed it
+            final int[] result = {-1};
 
-        return result[0];
+            BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
+                () -> result[0] = this.model.syncWithCS2(), null);
+
+            return result[0];
+        }
+        finally
+        {
+            syncInFlight.set(false);
+        }
     }
 
     /**
@@ -17757,6 +17783,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // take the display with it.
                 if (!this.autoRefreshInFlight.compareAndSet(false, true)) return;
 
+                try
+                {
                 this.AutonomyRenderer.submit(() ->
                 {
                     try
@@ -17777,6 +17805,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.autoRefreshInFlight.set(false);
                     }
                 });
+                }
+                catch (Exception e)
+                {
+                    // Submitting can be refused - the pool is shut down when the window closes - and
+                    // the flag is set by then.  Clearing it here keeps the latch from coming back at
+                    // one remove: a single rejected submit would otherwise suppress every refresh for
+                    // the rest of the session, which is the exact failure the flag replaced.
+                    this.autoRefreshInFlight.set(false);
+                }
             }
             else
             {
@@ -17840,7 +17877,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     for (AutoLocomotiveStatus panel : panels)
                     {
-                        panel.updateState(null, found.get(panel), true);
+                        // null is "did not search", not "searched and found nothing".  findPaths bails
+                        // while the layout is running, and by the time THIS runnable reaches the event
+                        // thread the run can have ended - so the panel would take the standing-by
+                        // branch, be handed a null answer stamped as authoritative, and print "no
+                        // available paths" with nothing left to correct it.  That is what a panel stuck
+                        // on that line at the end of a run was.
+                        java.util.List<java.util.List<Edge>> answer = found.get(panel);
+
+                        panel.updateState(null, answer, answer != null);
                     }
                 });
             });
@@ -17931,6 +17976,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     catch (Exception e)
                     {
+                        // Still entered, as "did not search".  A panel left out of the map was never
+                        // updated at all, so one locomotive whose search threw sat blank until
+                        // something else repainted the whole list.
+                        found.put(panel, null);
+
                         if (this.model.isDebug()) this.model.log(e);
                     }
                 }
@@ -17941,7 +17991,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         java.util.List<java.util.List<Edge>>> entry : found.entrySet())
                     {
                         entry.getKey().updateState(entry.getKey().getLocomotive(),
-                            entry.getValue(), true);
+                            entry.getValue(), entry.getValue() != null);
                     }
                 });
             });

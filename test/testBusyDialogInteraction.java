@@ -27,13 +27,26 @@ import org.traincontrol.gui.BusyDialog;
  */
 public class testBusyDialogInteraction
 {
+    /**
+     * One model for the whole class.
+     *
+     * init() binds the Central Station's UDP port, and stop() does not give it back promptly - so three
+     * tests each building their own model meant two of them failing on "Address already in use", which
+     * looks exactly like a product fault and is not one.
+     */
+    private static org.traincontrol.marklin.MarklinControlStation model;
+
     @BeforeClass
-    public static void setUpClass()
+    public static void setUpClass() throws Exception
     {
         if (GraphicsEnvironment.isHeadless())
         {
             throw new SkipException("BusyDialog is a window - this needs a display");
         }
+
+        model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+        model.stop();
     }
 
     /**
@@ -148,16 +161,18 @@ public class testBusyDialogInteraction
     }
 
     /**
-     * The real thing: a Central Station sync, run the way the sync wrapper runs it.
+     * A Central Station sync run in the ARRANGEMENT the sync wrapper uses.
      *
-     * This is the interaction that matters, and the one the wrapper exists for.  A station is served
-     * over HTTP, the sync runs inside BusyDialog exactly as TrainControlUI.syncWithCS2 arranges it, and
-     * the result is read the moment run() returns - which is what every one of the sixteen call sites
-     * does.  What it proves: the databases are replaced off the event thread, the caller still gets its
-     * answer, and the interface is not left holding a dialog.
+     * Worth being exact about what this does and does not prove, because an earlier version of this
+     * comment was not.  It builds the same shape TrainControlUI.syncWithCS2 builds - a station served
+     * over HTTP, the sync inside BusyDialog, the result read the moment run() returns - and shows that
+     * the shape works: the databases are replaced off the event thread, the caller still gets its
+     * answer, and no dialog is left standing.
      *
-     * Built here rather than by constructing TrainControlUI, which would bring up the whole application
-     * and, on close, write the operator's locomotive database.
+     * What it does NOT do is call the wrapper.  It restates the wrapper's intent in the test, so it
+     * passed while the shipped method called itself instead of the model and every sync was a
+     * StackOverflowError.  testTheWrapperItselfSyncs below is the one that drives the real method, and
+     * testNoSelfRecursiveWrappers covers the textual mistake that caused it.
      */
     @Test(timeOut = 120000)
     public void testASyncRunsInsideTheDialogAndStillAnswers() throws Exception
@@ -192,11 +207,6 @@ public class testBusyDialogInteraction
         });
 
         station.start();
-
-        org.traincontrol.marklin.MarklinControlStation model =
-            org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
-
-        model.stop();
 
         String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
 
@@ -262,5 +272,226 @@ public class testBusyDialogInteraction
         assertTrue(done.get(),
             "a call from a worker thread never completed, which off the event thread is a deadlock "
             + "rather than a slow answer");
+    }
+
+    /**
+     * The wrapper itself: it syncs, and it does not call itself.
+     *
+     * The one test in this class that touches TrainControlUI.syncWithCS2.  Everything else here builds
+     * the same arrangement by hand and therefore could not tell the difference between a wrapper that
+     * forwards to the model and one that forwards to itself - which is what shipped, and what turned
+     * every Central Station sync into a StackOverflowError.
+     *
+     * A StackOverflowError is an Error rather than an Exception, so it would not fail a test that only
+     * catches Exception.  Caught explicitly here.
+     */
+    @Test(timeOut = 180000)
+    public void testTheWrapperItselfSyncs() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("the wrapper puts a dialog on screen - this needs a display");
+        }
+
+        com.sun.net.httpserver.HttpServer station = servingTheSampleFiles();
+
+        station.start();
+
+        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+
+        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS =
+            "127.0.0.1:" + station.getAddress().getPort();
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            final int[] answer = {-2};
+            final Throwable[] threw = {null};
+
+            // Off the event thread, which is the branch the Sync menu item takes, and the one that
+            // recursed immediately
+            Thread caller = new Thread(() ->
+            {
+                try
+                {
+                    answer[0] = ui[0].syncWithCS2();
+                }
+                catch (Throwable t)
+                {
+                    threw[0] = t;
+                }
+            });
+
+            caller.start();
+            caller.join(120000);
+
+            assertNull(threw[0], "the wrapper threw " + threw[0] + " - a wrapper that forwards to "
+                + "itself rather than to the model recurses until the stack runs out");
+
+            assertTrue(answer[0] >= 0,
+                "the wrapper reported failure against a station that was answering, got " + answer[0]);
+
+            assertFalse(model.getLocList().isEmpty(),
+                "the wrapper returned without the sync having brought anything in");
+        }
+        finally
+        {
+            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+
+            closeQuietly(ui[0]);
+
+            station.stop(0);
+        }
+    }
+
+    /**
+     * A second sync while one is running is turned away rather than run alongside it.
+     *
+     * Moving the sync off the event thread created a hazard the old code could not have: the event
+     * thread WAS the swap, so a second sync could not begin until the first returned.  A modal dialog
+     * runs a nested event loop, which blocks input but still dequeues runnables already posted - and
+     * three call sites reach the wrapper from invokeLater or a raw thread.  Two workers inside the same
+     * two hundred lines of database reconciliation is worse than the freeze the dialog removed.
+     */
+    @Test(timeOut = 180000)
+    public void testASecondSyncIsTurnedAway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("the wrapper puts a dialog on screen - this needs a display");
+        }
+
+        final java.util.concurrent.CountDownLatch holdTheFirst =
+            new java.util.concurrent.CountDownLatch(1);
+
+        com.sun.net.httpserver.HttpServer station =
+            com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+
+        // The station answers slowly, so the two calls genuinely overlap rather than happening to miss
+        station.createContext("/", exchange ->
+        {
+            try
+            {
+                holdTheFirst.await(30, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+
+        station.start();
+
+        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+
+        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS =
+            "127.0.0.1:" + station.getAddress().getPort();
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            final java.util.concurrent.CountDownLatch firstIsInside =
+                new java.util.concurrent.CountDownLatch(1);
+
+            Thread first = new Thread(() ->
+            {
+                firstIsInside.countDown();
+                ui[0].syncWithCS2();
+            });
+
+            first.start();
+
+            assertTrue(firstIsInside.await(30, java.util.concurrent.TimeUnit.SECONDS));
+
+            // Long enough for the first to be genuinely inside the sync before the second arrives
+            Thread.sleep(3000);
+
+            final int[] second = {0};
+
+            Thread other = new Thread(() -> second[0] = ui[0].syncWithCS2());
+
+            other.start();
+            other.join(30000);
+
+            assertEquals(second[0], -1,
+                "a second sync ran while the first was still inside the reconciliation - two workers "
+                + "replacing the same databases at once, which the event thread used to make "
+                + "impossible");
+
+            holdTheFirst.countDown();
+
+            first.join(60000);
+        }
+        finally
+        {
+            holdTheFirst.countDown();
+
+            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+
+            closeQuietly(ui[0]);
+
+            station.stop(0);
+        }
+    }
+
+    /**
+     * Disposes the window WITHOUT the closing handler, which calls saveState and would write the
+     * operator's own locomotive database.
+     */
+    private static void closeQuietly(org.traincontrol.gui.TrainControlUI ui) throws Exception
+    {
+        if (ui == null) return;
+
+        SwingUtilities.invokeAndWait(() -> ui.dispose());
+    }
+
+    /**
+     * The mock station, serving the sample files this suite keeps.
+     */
+    private static com.sun.net.httpserver.HttpServer servingTheSampleFiles() throws Exception
+    {
+        com.sun.net.httpserver.HttpServer station =
+            com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+
+        station.createContext("/", exchange ->
+        {
+            java.io.File file = exchange.getRequestURI().getPath().endsWith("/lokomotive.cs2")
+                ? new java.io.File("test/lokomotive.cs2")
+                : exchange.getRequestURI().getPath().endsWith("/fahrstrassen.cs2")
+                    ? new java.io.File("test/fahrstrassen.cs2")
+                    : exchange.getRequestURI().getPath().endsWith("/magnetartikel.cs2")
+                        ? new java.io.File("test/magnetartikel.cs2") : null;
+
+            if (file == null || !file.isFile())
+            {
+                exchange.sendResponseHeaders(404, -1);
+                exchange.close();
+                return;
+            }
+
+            byte[] body = java.nio.file.Files.readAllBytes(file.toPath());
+
+            exchange.sendResponseHeaders(200, body.length);
+
+            try (java.io.OutputStream out = exchange.getResponseBody())
+            {
+                out.write(body);
+            }
+        });
+
+        return station;
     }
 }

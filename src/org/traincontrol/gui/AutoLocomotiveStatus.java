@@ -179,8 +179,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     /**
      * @param found paths already worked out by findPaths, or null to search here
-     * @param haveFound whether {@code found} is an answer rather than an absence - the search
-     *        legitimately returns null, so the two cannot be told apart by the value alone
+     * @param haveFound whether {@code found} is to be used as it stands rather than searched for
+     *        here.  Callers that ran findPaths pass {@code found != null}, because findPaths answers
+     *        null when it did not search at all; the deferred build passes true with a null found,
+     *        which is "no answer, and do not go and get one".
      */
     public void updateState(Locomotive someLoc, List<List<Edge>> found, boolean haveFound)
     {
@@ -289,12 +291,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // fallback for the callers that have no worker to do it on, and it is the reason this
                 // method still can.
                 //
-                // haveFound ALONE decides, which is what its own javadoc says and what the previous
-                // reading contradicted: "haveFound && found != null" fell through to the inline search
-                // whenever the answer was legitimately null - and null is the answer for every
-                // locomotive while autonomy is running, since findPaths refuses to search then.  So the
-                // caller that had carefully searched off the event thread was searched for again, on
-                // the event thread, and the deferred build searched twice rather than not at all.
+                // haveFound means "the caller has an answer, do not search".  It is NOT the same as
+                // "the caller called findPaths": findPaths returns null when it did not search - the
+                // layout was running, or the locomotive is not on the graph - and a null stamped as an
+                // answer reads here as "searched, found nothing", which prints "no available paths".
+                //
+                // That is a race at the end of a run, and it latches.  findPaths bails because the
+                // layout is running; by the time the drawing runnable reaches the event thread the run
+                // has ended, so this branch is taken, and nothing repaints the list again to correct
+                // it.  The callers now pass haveFound = (answer != null) for exactly that reason.
+                //
+                // The deferred build is the other side of it: that one has no answer AND does not want
+                // one yet, which is haveFound with a null found, and it must not search.
                 // true -> Only include unique starts/end pairs
                 List<List<Edge>> answer = haveFound ? found
                     : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
@@ -456,32 +464,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     /**
-     * Drops the paths that end where the train already is.
-     *
-     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
-     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
-     * That is not a destination, it is the platform under its own wheels, and it appeared in the
-     * list a user picks from.
-     *
-     * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
-     * sensor, and a station and its approach guard share one while being genuinely two places.  What
-     * makes two Points one place is the square they were built from, and only the setup knows that.
-     *
-     * @param paths what the layout offered
-     * @return the ones that actually go somewhere
-     */
-    /**
-     * What to call a Point when a person is reading it.
-     *
-     * The built graph names the copies of a square apart - "Tunnel (northbound)" - so a running log
-     * can say which one a train is on.  That is a name for the model.  Somebody watching their
-     * railway did not create a northbound Tunnel and a southbound one; they created a station, and
-     * being shown the internals invites them to wonder which is the real one.
-     *
-     * @param point a Point of the running graph
-     * @return the station name a reader would recognise
-     */
-    /**
      * A path as "from -> to", with both ends named the way the diagram names them.
      *
      * @param path the route being described, or null
@@ -497,6 +479,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             + stationName(path.get(path.size() - 1).getEnd());
     }
 
+    /**
+     * What to call a Point when a person is reading it.
+     *
+     * The built graph names the copies of a square apart - "Tunnel (northbound)" - so a running log
+     * can say which one a train is on.  That is a name for the model.  Somebody watching their
+     * railway did not create a northbound Tunnel and a southbound one; they created a station, and
+     * being shown the internals invites them to wonder which is the real one.
+     *
+     * @param point a Point of the running graph
+     * @return the station name a reader would recognise
+     */
     private String stationName(org.traincontrol.automation.Point point)
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
@@ -505,6 +498,21 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             : session.getStationIndex().describe(point);
     }
 
+    /**
+     * Drops the paths that end where the train already is.
+     *
+     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
+     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
+     * That is not a destination, it is the platform under its own wheels, and it appeared in the
+     * list a user picks from.
+     *
+     * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
+     * sensor, and a station and its approach guard share one while being genuinely two places.  What
+     * makes two Points one place is the square they were built from, and only the setup knows that.
+     *
+     * @param paths what the layout offered
+     * @return the ones that actually go somewhere
+     */
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
