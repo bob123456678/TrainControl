@@ -391,7 +391,12 @@ public class AutonomyChecks
         {
             ReducedPoint point = reducer.getPoints().get(tile);
 
-            findings.add(new Finding(Severity.WARNING, ARRIVAL_TRAPPED,
+            // A NOTICE on a square trains only pass through.  "Could not go on" warns about a place a
+            // train can be SENT and then be stuck; nothing is ever sent to a plain point, so there the
+            // same sentence is a remark about the shape of the track rather than something to fix.
+            findings.add(new Finding(
+                point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
+                ARRIVAL_TRAPPED,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 

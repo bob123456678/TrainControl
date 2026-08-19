@@ -2454,9 +2454,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Highlight destination
                                 j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
                                 
-                                // New: Incoming arrow
-                                j.setText(">" + j.getText().substring(1));
-                                j.setText(j.getText().substring(0, j.getText().length() - 1));
+                                // No arrow of its own here.  The label already carries the way the
+                                // train is FACING, and the running path is drawn along the track in
+                                // red and green - so a > bolted onto the brackets said a third time,
+                                // less clearly, what those two already say, and cost two characters
+                                // of a name that has just been cut to fit.
                             }
                             else
                             {
@@ -2473,12 +2475,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     j.setBackground(new Color(160,160,160, LayoutGrid.LAYOUT_STATION_OPACITY));
                                     j.setForeground(new Color(255,255,255));
                                     
-                                    // New: Outgoing arrow
-                                    j.setText(j.getText().substring(0, j.getText().length() - 1) + ">");
-                                    j.setText(j.getText().substring(1));
-
-                                    // Old green look
-                                    //j.setBackground(new Color(131,251,131, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                    // Likewise no outgoing arrow - the grey ground already says this
+                                    // is where the train started, and the facing arrow says which way
+                                    // it is pointing.
                                 }  
                             }
                         }

@@ -1379,7 +1379,23 @@ public class AutonomyEditorPanel extends JPanel
         // without opening anything.
         String star = stops && !session.isAutoDestination(tile) ? " *" : "";
 
-        return I18n.t(stops ? "autosetup.ui.stationYes" : "autosetup.ui.stationNo") + star;
+        if (!stops) return I18n.t("autosetup.ui.stationNo") + star;
+
+        // And which KIND of stop, where the square turns trains round.  "Yes" alone answered the
+        // heading's question and left the more interesting half - does every train reverse here, or
+        // may it - to be found by opening the group.  Both are worth seeing at a glance, and they are
+        // the two settings people confuse.
+        if (session.isMustTurnAround(tile))
+        {
+            return I18n.t("autosetup.ui.stationYesTerminus") + star;
+        }
+
+        if (session.isTurnAround(tile))
+        {
+            return I18n.t("autosetup.ui.stationYesReversing") + star;
+        }
+
+        return I18n.t("autosetup.ui.stationYes") + star;
     }
 
     /**

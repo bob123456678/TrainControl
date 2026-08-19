@@ -214,6 +214,17 @@ The pinned file is still worth keeping as a change-detector; it is not a correct
 
 ---
 
+## KNOWN GOOD: autonomy works at `41b10ac`
+
+Adam, 18 August, after testing: "Autonomy works well now."
+
+That is the first build on this branch where trains actually run on the diagram-derived model.  The
+commit that made the difference is `b3c86cc` - lock edges asking about the throat rather than the
+platform beyond it - which undid a regression of mine that had refused every route out of a pair of
+converging platforms whenever either had a train on it.
+
+If autonomy stops working again, `41b10ac` is the state to diff against.
+
 ## Feature backlog (Adam, 18 August)
 
 Not scheduled - recorded so they are not lost.
