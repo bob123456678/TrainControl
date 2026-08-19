@@ -270,6 +270,13 @@ public class LayoutGrid
                             // nothing is standing there - so the square looks like what it will look
                             // like.
                             text.setText(LAYOUT_STATION_EMPTY);
+
+                            // Greyed HERE and nowhere else.  This placeholder says only "a caption
+                            // lands on this square", and in the editor it sits on top of the arrows
+                            // that say which way trains may arrive - which are the thing somebody has
+                            // opened the editor to look at.  Kept rather than hidden: where the
+                            // captions are is worth seeing while arranging them.
+                            labelColour = new Color(150, 150, 150);
                         }
                         else if (captioned != null)
                         {

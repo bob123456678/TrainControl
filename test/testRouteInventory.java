@@ -64,6 +64,16 @@ public class testRouteInventory
     }
 
     @Test
+    public void testLaterBundleRoutes() throws Exception
+    {
+        File bundle = new File("tc_backup/Autonomy 1d.json");
+
+        if (!bundle.isFile()) return;
+
+        report("4-bundle-1d", build(bundle));
+    }
+
+    @Test
     public void testHandAuthoredRoutes() throws Exception
     {
         File hand = new File("cs2_sample_layout/config/autorun/autonomy.json");
@@ -79,7 +89,20 @@ public class testRouteInventory
      */
     private String build(File bundle) throws Exception
     {
-        AutonomySession session = new AutonomySession(new File("cs2_sample_layout"));
+        File folder = new File("cs2_sample_layout");
+
+        // A bundle is imported into an EMPTY store, in a scratch copy of the layout folder.
+        //
+        // importBundle merges rather than adopts - it fills in what the local setup does not already
+        // have, and keeps whatever it does.  Imported over the live setup, a bundle therefore changes
+        // nothing at all, and three different bundles produced three identical reports before I noticed.
+        // With nothing local to keep, the bundle is the setup.
+        if (bundle != null)
+        {
+            folder = scratchLayout();
+        }
+
+        AutonomySession session = new AutonomySession(folder);
 
         List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
 
@@ -92,11 +115,29 @@ public class testRouteInventory
 
         if (bundle != null)
         {
-            session.importBundle("probe", new JSONObject(
+            int filled = session.importBundle("probe", new JSONObject(
                 new String(Files.readAllBytes(bundle.toPath()), StandardCharsets.UTF_8)));
+
+            System.out.println("  imported " + filled + " values from " + bundle.getName());
         }
 
         return session.buildConfiguration();
+    }
+
+    /**
+     * A copy of the layout folder with no autonomy setup in it, so an imported bundle has nothing to
+     * merge against.  The diagram pages themselves come from the model and are not copied.
+     */
+    private File scratchLayout() throws Exception
+    {
+        File scratch = new File(System.getProperty("java.io.tmpdir"),
+            "tc-scratch-" + System.nanoTime());
+
+        assertTrue(scratch.mkdirs(), "could not make " + scratch);
+
+        scratch.deleteOnExit();
+
+        return scratch;
     }
 
     /**
