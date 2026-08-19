@@ -135,13 +135,42 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         if (layout.isAutoRunning() || layout.getLocomotiveLocation(locomotive) == null) return null;
 
+        // The legend reads come from here too, on this thread, for the reason above.
+        this.gatheredTimetableStart = layout.getTimetableStartingPoint(locomotive);
+        this.haveGatheredTimetableStart = true;
+
         return withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
+    }
+
+    /**
+     * The timetable start, from the gather where there was one and from the Layout otherwise.
+     */
+    private Point timetableStart()
+    {
+        return haveGatheredTimetableStart ? gatheredTimetableStart
+            : layout.getTimetableStartingPoint(locomotive);
     }
 
     public Locomotive getLocomotive()
     {
         return this.locomotive;
     }
+
+    /**
+     * The timetable's starting point for this locomotive, read when the paths were.
+     *
+     * getTimetableStartingPoint is synchronized on the Layout, and this panel reads it three times per
+     * repaint.  A map lookup costs nothing, but TAKING that monitor on the event thread can cost
+     * everything: configureAndLockPath holds it across its per-command sleeps, half a second to two
+     * seconds per path, and the interface is frozen for as long as it does.  Moving the path search off
+     * the event thread and leaving these behind would have left the stall in place and made it look
+     * fixed.
+     *
+     * Null when nothing was gathered, in which case the reads happen inline as before.
+     */
+    private Point gatheredTimetableStart;
+
+    private boolean haveGatheredTimetableStart;
 
     public void updateState(Locomotive someLoc)
     {
@@ -262,7 +291,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + stationName(layout.getLocomotiveLocation(locomotive))                     
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
 
                     );
@@ -271,7 +300,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
                     );
                 }
@@ -289,7 +318,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + stationName(path.get(path.size() - 1).getEnd())
-                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(path.get(path.size() - 1).getEnd(), locomotive)
                     );
                     //Edge.pathToString(path));
