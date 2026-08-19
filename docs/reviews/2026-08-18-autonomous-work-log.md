@@ -242,6 +242,52 @@ Fixed by counting live locomotive threads from the moment each starts to the mom
 including that count in `isRunning()`. The decrement is in a `finally`, so a thread that dies for any
 reason cannot leave the layout permanently "running".
 
+## 4b. The final review, and the tail of my own fix
+
+The third reviewer's verdict was "broadly ready for an evening", with two things worth knowing first.
+Both were real, and the first was the tail of the fix in 4a - which is worth recording, because it is
+the shape of mistake that repeats: **the fix was right and incomplete, and the incompleteness looked
+exactly like the bug it had just fixed.**
+
+Counting locomotive threads made `isRunning()` honest. But two sleeps inside that counted loop were
+not stop-aware - `pickPath`'s no-path throttle (seconds, user-settable to tens) and `blockUntilMotion`
+(up to thirty) - and a train with nowhere to go is precisely the one sitting in the first when Stop is
+pressed. Worse, **nothing happened when the count reached zero.** Nothing reads `isRunning()` on a
+timer: the interface re-reads it when a path ENDS, and an idle train produces no path end. So the last
+thread could exit with the buttons still greyed and Return Home still insisting trains were running.
+
+And one consequence that is data-loss-adjacent: the exit-path capture of placements and homes is gated
+on `!isRunning()` and **skips silently**, so closing the application in that window lost the session's
+changes without a word.
+
+Both sleeps are stop-aware now, and the last thread out announces itself.
+
+The second finding: **the condition table's Kind could never be changed.** Every cell edit rebuilds the
+term and a failed rebuild silently reverts - but the setting vocabularies are disjoint, so changing
+FEEDBACK to ACCESSORY carried "on" into a row accepting only turn or straight, threw, and snapped the
+dropdown back with no message. In both directions. And since a new row is always a feedback term, a
+hand-built accessory condition was impossible - which made the protocol column added two commits
+earlier unreachable. Two clicks to reproduce.
+
+## 4c. What Adam's DEBUG_SIMULATE_PACKETS pointer unlocked
+
+Adam mentioned the flag mid-run: with the network off and debug on, outgoing CAN messages are echoed
+back as though a station had answered.
+
+That closed a gap I had recorded as untestable. The two worst bugs of the session both lived in
+`CommandRow` and both were invisible until Save - a DCC accessory silently becoming MM2, and every
+per-command delay dropped - and both were covered only at the round-trip level, which is "the field
+survived" rather than "the right switch moved".
+
+`testRouteReachesTheRails` builds routes exactly as the new editor does and runs them: a DCC command
+moves the DCC switch while its MM2 twin at the same address stays put, a mixed-protocol route arrives
+whole, and delays are measured by elapsed time rather than read back as fields. Reinstating both
+original bugs fails three of its four tests - the MM2 one correctly still passes, because MM2 was
+always the default, which makes it the control.
+
+It is a loopback and not a Central Station: it proves the command was formed and dispatched correctly,
+not that hardware obeys.
+
 ## 5. Progress against the 3.0.0 phase plan
 
 Written up in `2026-08-19-phase-plan-status.md`. In short: **the plan's two outstanding build items -
