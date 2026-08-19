@@ -507,12 +507,15 @@ public class AutonomyMenu extends JMenu
 
         int names = session.getStore().getConfigurationNames().size();
 
-        int answer = JOptionPane.showConfirmDialog(ui,
+        // TrainControl's own button text - see the note in AutonomyEditorPanel.  An INDEX comes back,
+        // and defaulting to No matters more here than anywhere: this deletes a whole setup.
+        int answer = JOptionPane.showOptionDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteSetup", names),
             I18n.t("autosetup.ui.menuDeleteSetup"),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
 
-        if (answer != JOptionPane.YES_OPTION) return;
+        if (answer != 0) return;
 
         try
         {

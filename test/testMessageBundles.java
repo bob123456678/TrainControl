@@ -485,4 +485,89 @@ public class testMessageBundles
 
         return found;
     }
+
+    /**
+     * A plain yes/no confirmation uses TrainControl's own button text.
+     *
+     * showConfirmDialog does not take button labels: Swing supplies them from the look-and-feel, which
+     * follows the JVM's locale rather than the language the user picked in TrainControl.  So a German
+     * user on an English Windows got German dialogs with English Yes/No buttons - in four places, and
+     * nowhere else, because every other confirmation passes YES_NO_OPTS.
+     *
+     * What this allows is a confirmation whose MESSAGE is a component rather than a string.  Those are
+     * input dialogs wearing a confirmation's clothes - a panel of controls with OK and Cancel - and
+     * their buttons are the least of what is unusual about them.
+     *
+     * So the check is on the MESSAGE argument, the one after the parent, and not on the call as a
+     * whole: the TITLE is always built from I18n, so a rule that looked anywhere in the call flagged
+     * every one of them.  That was the first version of this test, and it is worth saying because the
+     * looser rule looked perfectly reasonable until it was run.
+     */
+    @Test
+    public void testConfirmationsUseTranslatedButtons() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File source : javaSources(new File("src")))
+        {
+            String text = new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
+
+            int at = text.indexOf("showConfirmDialog(");
+
+            while (at >= 0)
+            {
+                String message = secondArgument(text, at + "showConfirmDialog(".length());
+
+                if (message != null && message.startsWith("I18n."))
+                {
+                    offenders.add(source.getName() + ": " + message);
+                }
+
+                at = text.indexOf("showConfirmDialog(", at + 1);
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "these are plain yes/no confirmations built with showConfirmDialog, whose buttons come "
+            + "from the look-and-feel and follow the SYSTEM language rather than the one the user "
+            + "chose.  Use showOptionDialog with TrainControlUI.YES_NO_OPTS - and remember it returns "
+            + "an index, not YES_OPTION: " + offenders);
+    }
+
+    /**
+     * The second argument of a call, given the offset just past its opening bracket.
+     *
+     * Bracket-aware, so a first argument that is itself a call - which the parent component often is -
+     * does not end the argument early.
+     */
+    private static String secondArgument(String text, int from)
+    {
+        int depth = 0;
+        int firstComma = -1;
+
+        for (int i = from; i < text.length(); i++)
+        {
+            char c = text.charAt(i);
+
+            if (c == '(') depth++;
+            else if (c == ')')
+            {
+                if (depth == 0) return null;
+                depth--;
+            }
+            else if (c == ',' && depth == 0)
+            {
+                if (firstComma < 0)
+                {
+                    firstComma = i;
+                }
+                else
+                {
+                    return text.substring(firstComma + 1, i).trim();
+                }
+            }
+        }
+
+        return null;
+    }
 }

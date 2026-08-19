@@ -3608,12 +3608,16 @@ public class AutonomyEditorPanel extends JPanel
 
         if (excluded)
         {
-            int answer = JOptionPane.showConfirmDialog(owner(),
+            // showOptionDialog with TrainControl's own button text, not showConfirmDialog, whose
+            // buttons come from the look-and-feel and so follow the JVM's locale rather than the
+            // language the user picked.  Note the return: an INDEX, where 0 is the first option.
+            int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmExcludePage", page),
                 I18n.t("autosetup.ui.btnExcludeThisPage"),
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
 
-            if (answer != JOptionPane.YES_OPTION)
+            if (answer != 0)
             {
                 excludePage.setSelected(false);
                 return;

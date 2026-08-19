@@ -986,11 +986,13 @@ public class AutonomyViewerPanel extends JPanel
         // importing over an existing name replaces it, which is sometimes wanted and never silent
         if (session().getStore().getConfigurationNames().contains(name.trim()))
         {
-            int replace = JOptionPane.showConfirmDialog(ui,
+            int replace = JOptionPane.showOptionDialog(ui,
                 I18n.f("autosetup.ui.confirmImportOverwrites", name.trim()),
-                I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION);
+                I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null,
+                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
 
-            if (replace != JOptionPane.YES_OPTION) return;
+            if (replace != 0) return;
         }
 
         try
@@ -1229,10 +1231,11 @@ public class AutonomyViewerPanel extends JPanel
 
         // Named in the question, because the list and the running configuration can differ and deleting
         // is not undoable.
-        if (JOptionPane.showConfirmDialog(ui,
+        if (JOptionPane.showOptionDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
             I18n.t("autosetup.ui.menuDeleteConfiguration"),
-            JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0) return;
 
         boolean wasRunning = name.equals(ui.getActiveDiagramConfiguration());
 

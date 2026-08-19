@@ -303,10 +303,16 @@ Not scheduled - recorded so they are not lost.
   `uniqueNames()` are rebuilt per point per feedback event. Slow, not wrong, and it has not been felt
   on a layout this size - but it is on the wrong side of the curve, so it wants doing before somebody
   brings a bigger one. (Deferred out of the disposition audit's C6.)
-- ~~**A configurable path-choosing rule.**~~ Done: Preferences > Autonomy > Route Choice, offering
-  At Random (the default), Past the Fewest Stations, Over the Shortest Track, and Across the Fewest
-  Sensors. An application preference rather than a per-configuration one - it is how the user wants
-  their trains to behave, not a fact about a railway, and it survives a reload.
+- ~~**A configurable path-choosing rule.**~~ Done: **Autonomy > Route Choice**, offering At Random
+  (the default), Past the Fewest or the Most Stations, Over the Shortest or the Longest Track, Across
+  the Fewest or the Most Sensors, and Least Recently Visited. An application preference rather than a
+  per-configuration one - it is how the user wants their trains to behave, not a fact about a railway,
+  and it survives a reload.
+
+  Two corrections to what this entry said when it was written: the menu is under Autonomy rather than
+  Preferences, and "fewest sensors" now counts SENSORS. It counted hops of the running graph, and on a
+  derived graph a square is several Points - so two routes over exactly the same s88s could come out
+  with different numbers.
 
   The default is deliberately the OLD behaviour. A preference that changed how existing railways run
   the moment their owner upgraded would be a regression with a switch beside it, and the people most
