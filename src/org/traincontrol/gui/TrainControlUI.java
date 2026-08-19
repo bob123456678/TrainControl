@@ -334,6 +334,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private ExecutorService ImageLoaderLoc = Executors.newFixedThreadPool(2);
     // Decodes/scales layout tile images off the EDT so the diagram can paint while tiles load
     private ExecutorService TileImageLoader = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()));
+    /**
+     * Whether an autonomy panel refresh is already on its way.
+     *
+     * Coalesces a burst of arrivals into one repaint.  Cleared in a finally by the task that set it,
+     * so a refresh that fails cannot leave the panels frozen for the rest of the session.
+     */
+    private final java.util.concurrent.atomic.AtomicBoolean autoRefreshInFlight =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+
     private List<Future<?>> autonomyFutures = new LinkedList<>();
     private List<Future<?>> locFutures = new LinkedList<>();
 
@@ -17604,39 +17613,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid())
         {
-            // If called from another UI component, no need to refresh if there are no trains or if autonomy is on
+            // Called from another UI component - an arrival, a departure, a placement.
             if (external)
             {
                 if (this.model.getAutoLayout().getPoints().isEmpty()) return;
-                if (this.model.getAutoLayout().isAutoRunning() && !this.model.getAutoLayout().getActiveLocomotives().isEmpty()) return;
-                
-                // Prevent concurrent calls
-                for (Future<?> f : this.autonomyFutures)
+
+                // THROTTLED, not suppressed.
+                //
+                // This used to return outright while autonomy was running with anything active - so
+                // every arrival during a run was dropped, the panels sat frozen for the whole session,
+                // and the display only caught up when the last train stopped and the list emptied.  A
+                // run is precisely when somebody is watching these panels.
+                //
+                // What made suppression look necessary was cost, and that is now paid elsewhere: the
+                // Lite refresh does its searching off the event thread and marshals only the drawing
+                // back.  What remains is coalescing, which is what the flag and the pause below are
+                // for - a burst of arrivals collapses into one repaint rather than one each.
+                //
+                // A flag rather than a list of Futures.  The list was scanned for "any not done", so a
+                // task that never completed suppressed every later refresh for the rest of the session
+                // - a latch with no way back, which is the shape of "after a few start/stops nothing
+                // refreshes at all".  This one is cleared in a finally, so a refresh that throws cannot
+                // take the display with it.
+                if (!this.autoRefreshInFlight.compareAndSet(false, true)) return;
+
+                this.AutonomyRenderer.submit(() ->
                 {
-                    if (!f.isDone()) 
+                    try
                     {
-                        // this.model.log("Auto UI refresh in progress");
-                        return;
-                    }
-                }
-
-                // this.model.log("Refreshing auto UI");
-                this.autonomyFutures.clear();
-
-                this.autonomyFutures.add(
-                    this.AutonomyRenderer.submit(() -> 
-                    {
-                        try 
+                        try
                         {
                             Thread.sleep(REPAINT_ROUTE_INTERVAL);
-                        } catch (InterruptedException ex)
+                        }
+                        catch (InterruptedException ex)
                         {
                             Thread.currentThread().interrupt();
                         }
-                        
+
                         this.repaintAutoLocListLite();
-                    })
-                );
+                    }
+                    finally
+                    {
+                        this.autoRefreshInFlight.set(false);
+                    }
+                });
             }
             else
             {
