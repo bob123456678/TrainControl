@@ -532,6 +532,52 @@ public class AutonomyBuilder
      *
      * @return the index into nodes, always a valid one
      */
+    /**
+     * Which copy of a split square a HOME belongs on.
+     *
+     * A home is a property of the square - "this locomotive lives here" - but the running model hangs
+     * it on a Point, and rebuildHomeStations refuses to let two Points claim one locomotive.  Emitted
+     * on every copy, as it was, the second and later copies were stripped at every load with a warning
+     * that blames a hand-edited file, and the home ended up on whichever copy parsed first: a specific
+     * arrival side, chosen by enum order, meaning nothing to the person who authored it.  Where the
+     * railway does not allow that approach, Return Home then refuses a home that looks perfectly good
+     * on the diagram.
+     *
+     * Preferred in the order that keeps the most trains able to use it:
+     *
+     *   1. a plain copy trains may arrive at - somewhere any locomotive can stand and drive out of;
+     *   2. any copy trains may arrive at, which on a must-turn square is a turning copy;
+     *   3. copy zero, so a home is never silently dropped.
+     *
+     * A turning station copy is emitted as a TERMINUS, and HomeStaging.canRest refuses a terminus to a
+     * locomotive that cannot reverse - so where 2 is the best available, the home works only for
+     * reversible locomotives.  That is a real property of a berth every train must back out of rather
+     * than a defect, and checkHomeOnTurningSquareOnly says so on the findings list instead of leaving
+     * it to be discovered as an IMPOSSIBLE from Return Home.
+     *
+     * @param nodes the copies this square was emitted as
+     * @return the index of the copy to carry the home
+     */
+    private int homeCopy(List<Node> nodes)
+    {
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;
+        }
+
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (arrivalAllowed(nodes.get(copy))) return copy;
+        }
+
+        return 0;
+    }
+
+    /**
+     * The per-square key naming the locomotive that lives at a station.
+     */
+    private static final String HOME = "home";
+
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
         if (extras == null || !extras.has(FACING)) return 0;
@@ -711,6 +757,9 @@ public class AutonomyBuilder
             // belongs on all of them.
             int placed = placementCopy(nodes, extras);
 
+            // The other per-square singleton.  See homeCopy.
+            int homeOn = homeCopy(nodes);
+
             for (int copy = 0; copy < nodes.size(); copy++)
             {
                 Node node = nodes.get(copy);
@@ -772,6 +821,11 @@ public class AutonomyBuilder
                         // two trains with one name standing on the same sensor, which the running model
                         // has no way to reconcile.
                         if (LOCOMOTIVE.equals(key) && copy != placed) continue;
+
+                        // One home, one copy, for the same reason and with a different rule for which
+                        // copy - a train stands where it stands, but a home should land where the most
+                        // locomotives can reach it.  See homeCopy.
+                        if (HOME.equals(key) && copy != homeOn) continue;
 
                         // On a split tile, turning round is what the COPY means, so the authored flag
                         // is not carried onto either of them: it would make the plain copy reverse too,

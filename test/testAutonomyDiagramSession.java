@@ -1828,6 +1828,94 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A home authored on a split square is emitted onto exactly ONE copy.
+     *
+     * The running model hangs a home on a Point and refuses to let two Points claim one locomotive, so
+     * emitting it on every copy meant rebuildHomeStations stripped all but the first at every load -
+     * logging a "assigned twice, check your hand-edited file" warning per copy, for a file no hand had
+     * edited - and the home came to rest on whichever copy parsed first: an arrival side chosen by enum
+     * order, meaning nothing to whoever authored it.  The locomotive placement had already been given
+     * this treatment; the home had not.
+     *
+     * Needs a THROUGH station: a square with one way in cannot be split, so the fault does not arise on
+     * the straight line the other tests use.
+     */
+    @Test
+    public void testAHomeOnASplitSquareIsEmittedOnce() throws Exception
+    {
+        LayoutDiagram page = throughStationPage();
+
+        session.open(Arrays.asList(page));
+        session.getStore().createConfiguration("Homes", null);
+        session.getStore().setActiveConfiguration("Homes");
+
+        TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+
+        // "trains may turn round here" - what a berth or a stub platform gets, and what gives the
+        // square a turning copy of every arrival on top of its plain ones
+        session.setPointProperty(station, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE,
+            Boolean.TRUE);
+
+        session.setPointProperty(station, "home", "BR 218");
+
+        session.rebuild();
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        int copies = 0;
+        int carrying = 0;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            // the builder writes "block" only where a square became more than one Point, so this is
+            // also the precondition: without it the test would pass for want of a split
+            if (station.toString().equals(point.optString("block", null))) copies++;
+
+            if ("BR 218".equals(point.optString("home", null))) carrying++;
+        }
+
+        assertTrue(copies > 1,
+            "precondition: this square must be emitted as several copies, or there is nothing to test");
+
+        assertEquals(carrying, 1,
+            "a home emitted onto every copy of a split square is stripped back to one at load, with a "
+                + "warning per copy blaming a file nobody edited");
+    }
+
+    /**
+     * A line with a feedback in the MIDDLE, so that square has two ways in and can be split.
+     */
+    private LayoutDiagram throughStationPage() throws IOException
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        pageFile = new File(pages, "main.cs2");
+
+        Files.write(pageFile.toPath(),
+            "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + pageFile.getAbsolutePath().replace('\\', '/');
+
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
      * A bundle from a BIGGER railway lands what it can and keeps the rest.
      *
      * The realistic import: somebody's setup, exported, brought to a layout that is not the same shape.

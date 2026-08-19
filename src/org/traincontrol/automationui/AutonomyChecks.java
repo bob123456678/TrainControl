@@ -129,6 +129,7 @@ public class AutonomyChecks
     public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
+    public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
 
     /**
      * A station no train can arrive at any more.
@@ -260,6 +261,20 @@ public class AutonomyChecks
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
     {
+        return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
+            coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn,
+            Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param homes the squares an authored home locomotive lives at
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        Set<TileKey> homes)
+    {
         List<Finding> findings = new ArrayList<>();
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
@@ -289,6 +304,7 @@ public class AutonomyChecks
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
+        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
 
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {
@@ -364,6 +380,43 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A home on a square every train must turn round at.
+     *
+     * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS -
+     * which HomeStaging.canRest refuses to a locomotive that cannot reverse.  So the home is perfectly
+     * good for a reversible locomotive and impossible for any other, and the only way to find that out
+     * used to be Return Home reporting IMPOSSIBLE with no mention of the square.
+     *
+     * Not an error, and not something to fix in the setup: a berth every train must back out of is a
+     * real place, and a home there is a reasonable thing to want.  It is said out loud so the
+     * limitation is read here rather than discovered at the end of a session.
+     *
+     * @param homes the squares carrying an authored home
+     * @param mustTurn the squares where turning round is compulsory
+     */
+    private static List<Finding> checkHomesThatNeedReversing(GraphReducer reducer,
+        Set<TileKey> homes, Set<TileKey> mustTurn)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (homes == null || mustTurn == null) return findings;
+
+        for (TileKey tile : homes)
+        {
+            if (!mustTurn.contains(tile)) continue;
+
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            if (point == null || !point.isStation()) continue;
+
+            findings.add(new Finding(Severity.WARNING, HOME_NEEDS_REVERSIBLE,
+                point.getName(), tile));
         }
 
         return findings;

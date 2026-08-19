@@ -2214,6 +2214,41 @@ public class AutonomySession
     }
 
     /**
+     * The squares an authored home locomotive lives at.
+     */
+    private java.util.Set<TileKey> homeTiles()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        String active = store.getActiveConfiguration();
+
+        if (active == null) return out;
+
+        org.json.JSONObject configuration = store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String id : points.keySet())
+        {
+            org.json.JSONObject stored = points.optJSONObject(id);
+
+            if (stored == null) continue;
+
+            String home = stored.optString("home", "");
+
+            if (home.trim().isEmpty()) continue;
+
+            TileKey tile = AutonomyCompanionStore.parseTileKey(id);
+
+            if (tile != null) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
      * Everything wrong or worth knowing about the setup as it stands.
      * @return
      */
@@ -2327,7 +2362,7 @@ public class AutonomySession
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
-            mayTurnTiles(), mandatoryTurnTiles());
+            mayTurnTiles(), mandatoryTurnTiles(), homeTiles());
     }
 
     /**
