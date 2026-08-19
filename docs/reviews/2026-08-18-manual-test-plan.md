@@ -236,3 +236,27 @@ Not scheduled - recorded so they are not lost.
 - **Semantic station shapes** (deferred 18 August): a triangle pointing the way a station accepts
   arrivals, instead of the current badge plus arrival chevrons. Needs a way to tell "can reverse" from
   "must reverse" first. The current yellow arrival chevrons are fine, so this is polish, not a fix.
+- **A configurable path-choosing rule.** Autonomy picks a path from those available by one fixed rule
+  today. Offer the choice: prefer the shortest, always the shortest, random, or another rule. "Prefer"
+  and "always" are different railways - always-shortest will queue trains behind one another on the
+  short way round rather than send the second train the long way, which is what somebody wants for a
+  timetable and not what they want for a layout that should look busy.
+
+## Manual review items - closed 18 August
+
+All five carried since the manual pass are fixed:
+
+- Path tracing followed right angles rather than the track. Both highlights - the editor's tested path
+  and the running one - now draw the chord the rail is drawn as. `4589c6a`
+- The diagram's right-click autonomy menu was live while an editor held the diagram. Shut, with the
+  reason on it, exactly as the Autonomy menu already was. `fb0bd4b`
+- "Changing direction" moved up under the station group. `fb0bd4b`
+- The home item vanished from the viewer menu when a train was standing on a square whose type had
+  just been edited. It asks a copy that speaks for the square now. `fb0bd4b`
+- The three usage options read Yes / No / No, and "neither - out of service" says "nothing can pass".
+  `fb0bd4b`
+
+Length propagation is fixed too (`53e2327`): a length set on a platform never reached the graph,
+because the sum covered only the track strictly BETWEEN two sensors and a station is an endpoint. All
+eleven lengths on the test layout summed to nothing. The tile an edge arrives on is counted now, which
+gives every tile along a route exactly once.
