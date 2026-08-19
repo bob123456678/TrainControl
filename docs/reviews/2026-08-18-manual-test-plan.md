@@ -287,3 +287,17 @@ connections.
 **Not a bug: `BottomMainC`.** Ten destinations reachable, four clear. The six refusals are all
 legitimate - three are out-and-back routes that reverse at BottomMainPost and then need the same
 switch in two positions, three pass back through a terminus.
+
+## KNOWN GOOD: `95a91f6`, tagged `autonomy-clean-2026-08-18`
+
+The state to fall back to. What is true of it:
+
+- 43 test classes clean. `testAutoDetect` fails 3/3 for want of a Central Station at 192.168.50.25,
+  which is this machine and not a regression.
+- Trains move. The lock-edge deadlock is gone; BR 628 is offered seven destinations from
+  BottomSecondary, and the two trains still held are held by a train genuinely standing where they
+  both want to go.
+- Edge lengths reach the graph: 26 of 99 edges carry one.
+- `LocDB.data`, `UIState.data` and `setup.json` byte-identical after the runs.
+
+Not covered: no hardware, and no Swing rendering seen rather than reasoned about.

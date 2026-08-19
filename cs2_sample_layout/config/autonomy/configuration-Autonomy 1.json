@@ -23,10 +23,12 @@
       "canReverse": true
     },
     "1 - Main:20,12": {
+      "loc": {"name": "BR 232 241-0"},
       "maxTrainLength": 0,
       "facing": "E"
     },
     "1 - Main:20,13": {
+      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 0,
       "facing": "E"
     },
@@ -57,7 +59,6 @@
     },
     "2 - Bottom:16,9": {"maxTrainLength": 0},
     "1 - Main:6,4": {
-      "loc": {"name": "BR 232 241-0"},
       "maxTrainLength": 0,
       "facing": "N"
     },
@@ -103,7 +104,6 @@
     "2 - Bottom:17,6": {"maxTrainLength": 0},
     "2 - Bottom:13,5": {"maxTrainLength": 0},
     "1 - Main:13,11": {
-      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 0,
       "facing": "W"
     },
