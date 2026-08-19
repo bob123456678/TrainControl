@@ -930,7 +930,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (station == null || value == null) return;
 
-        Set<JLabel> here = layoutStations.computeIfAbsent(station, k -> new HashSet<>());
+        // The SET as well as the map.  Making only the map concurrent moved the hazard rather than
+        // removing it: the iterator-with-removal below runs on the event thread while
+        // updateStationLabels walks the same set from a worker, so a plain HashSet still gives a
+        // ConcurrentModificationException or a caption that quietly goes missing during a rebuild.
+        Set<JLabel> here = layoutStations.computeIfAbsent(station,
+            k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
 
         // Registering a label for this square is the moment the old ones for it became rubbish, and
         // the only moment anything can tell.  This was done wholesale on every repaint instead, which
@@ -15905,7 +15910,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeAndWait(ask);
             }
         }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException e)
+        catch (InterruptedException e)
+        {
+            // Passed on rather than swallowed: this thread's caller may want to know
+            Thread.currentThread().interrupt();
+
+            if (this.model != null) this.model.log(e);
+        }
+        catch (java.lang.reflect.InvocationTargetException e)
         {
             if (this.model != null) this.model.log(e);
         }
@@ -15922,9 +15934,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void reloadActiveDiagramConfiguration()
     {
-        if (this.activeDiagramConfiguration != null && !isAutonomyBusy())
+        if (this.activeDiagramConfiguration != null && !isAutonomyBusy()
+            && getAutonomyViewerPanel() != null)
         {
-            getAutonomyViewerPanel().load(this.activeDiagramConfiguration, false);
+            // Interactive, unlike the reload after the editor closes.  Somebody who has just ticked a
+            // page out of autonomy is waiting for an answer, and a rebuild that the new page list
+            // makes impossible leaves the OLD layout running - page included - while the menu and the
+            // strip both say the page is out.  That is the disagreement this reload exists to prevent,
+            // and refusing it silently reintroduces it in the one case that matters.
+            getAutonomyViewerPanel().load(this.activeDiagramConfiguration, true);
         }
     }
 
@@ -15987,7 +16005,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             int dialogResult = confirmOnEventThread(
                                 I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
                             
-                            if (dialogResult == JOptionPane.NO_OPTION)
+                            // Anything that is not the first option.  With a custom option array the
+                            // dialog returns an INDEX, and closing it with Escape returns -1 - which
+                            // is neither yes nor no, and was being read as "carry on and start the
+                            // trains".  Dismissing a warning is not agreeing with it.
+                            if (dialogResult != JOptionPane.YES_OPTION)
                             {
                                 return;
                             }

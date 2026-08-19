@@ -123,6 +123,22 @@ public class testControlStationFaults
             "with no answer, the time since the last ping must keep growing - that reading is what "
             + "the lost-connection warning is made of");
 
+        // A retry, with still nothing answering, and then the same reading again.  This is the half
+        // of the fix the assertions above cannot see: the outage clock and the in-flight clock are
+        // separate, and reading the retry instead would reset this to nearly zero - a station that
+        // has been unreachable for hours looking like one that has been unreachable for a moment,
+        // which is exactly the distinction the warning exists to draw.
+        model.sendPing(false);
+
+        assertTrue(model.getTimeSinceLastPing() >= 2000,
+            "the retry reset the outage clock, so the connection reads as healthy for five seconds "
+            + "out of every five while the station says nothing at all");
+
+        // Past the retry window again.  The retry above reset the in-flight clock, which is what it
+        // is supposed to do - so asking for another one immediately would be refused as a ping
+        // already in flight, and the recovery below would have nothing to answer.
+        Thread.sleep(2100);
+
         // Now the station answers again, as it would when the network came back
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
@@ -220,6 +236,13 @@ public class testControlStationFaults
             + "and every locomotive customization is gone with no undo");
 
         corrupt.delete();
+
+        // Put the shared model back.  The flag is process-global state on an instance every test in
+        // this class shares, and leaving it set would have the next save keep a needless copy of a
+        // database that loaded perfectly well.
+        model.restoreState(missing.getAbsolutePath());
+
+        assertFalse(model.isDatabaseLoadFailed(), "the flag should not outlive this test");
     }
 
     /**
