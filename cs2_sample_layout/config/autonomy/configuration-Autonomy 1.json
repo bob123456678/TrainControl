@@ -6,7 +6,128 @@
     "preArrivalSpeedReduction": 0.5,
     "defaultLocSpeed": 35,
     "maxLatency": 0,
-    "timetable": [],
+    "timetable": [
+      {
+        "executionTime": 1787138804632,
+        "secondsToNext": 0,
+        "loc": "MY 1106",
+        "path": [
+          {
+            "start": "BottomMainC (eastbound)",
+            "end": "BottomMainPost (northbound)"
+          },
+          {
+            "start": "BottomMainPost (northbound)",
+            "end": "1 - Main 7,1 (westbound)"
+          },
+          {
+            "start": "1 - Main 7,1 (westbound)",
+            "end": "RampUp (westbound)"
+          },
+          {
+            "start": "RampUp (westbound)",
+            "end": "1 - Main 0,3"
+          },
+          {
+            "start": "1 - Main 0,3",
+            "end": "TopMainR2Inter (southbound)"
+          },
+          {
+            "start": "TopMainR2Inter (southbound)",
+            "end": "TopMainR2Pre (northbound)"
+          },
+          {
+            "start": "TopMainR2Pre (northbound)",
+            "end": "TopMainR2 (northbound)"
+          }
+        ]
+      },
+      {
+        "executionTime": 1787138805115,
+        "secondsToNext": 483,
+        "loc": "BR 628 2",
+        "path": [
+          {
+            "start": "TopMainR1Inter (southbound)",
+            "end": "TopMainR1Pre (northbound)"
+          },
+          {
+            "start": "TopMainR1Pre (northbound)",
+            "end": "TopMainR1 (northbound)"
+          }
+        ]
+      },
+      {
+        "executionTime": 1787138823504,
+        "secondsToNext": 18389,
+        "loc": "BR 628 2",
+        "path": [
+          {
+            "start": "TopMainR1 (northbound)",
+            "end": "TopMainPost (eastbound)"
+          },
+          {
+            "start": "TopMainPost (eastbound)",
+            "end": "RampDown (southbound)"
+          },
+          {
+            "start": "RampDown (southbound)",
+            "end": "BottomSecondary"
+          },
+          {
+            "start": "BottomSecondary",
+            "end": "TunnelPre"
+          },
+          {
+            "start": "TunnelPre",
+            "end": "Tunnel (southbound)"
+          },
+          {
+            "start": "Tunnel (southbound)",
+            "end": "BottomMainBCPre (eastbound)"
+          },
+          {
+            "start": "BottomMainBCPre (eastbound)",
+            "end": "BottomMainB (eastbound)"
+          }
+        ]
+      },
+      {
+        "executionTime": 1787138870756,
+        "secondsToNext": 47252,
+        "loc": "BR 232 241-0",
+        "path": [
+          {
+            "start": "BottomMainA (eastbound)",
+            "end": "BottomMainPost (northbound, reverse)"
+          },
+          {
+            "start": "BottomMainPost (northbound, reverse)",
+            "end": "BottomMainA (westbound)"
+          },
+          {
+            "start": "BottomMainA (westbound)",
+            "end": "BottomMainAPre (westbound)"
+          },
+          {
+            "start": "BottomMainAPre (westbound)",
+            "end": "Tunnel (northbound)"
+          },
+          {
+            "start": "Tunnel (northbound)",
+            "end": "BottomInnerOtherside"
+          },
+          {
+            "start": "BottomInnerOtherside",
+            "end": "BottomCrossover (southbound)"
+          },
+          {
+            "start": "BottomCrossover (southbound)",
+            "end": "BottomSecondary"
+          }
+        ]
+      }
+    ],
     "maxDelay": 5,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
@@ -19,13 +140,11 @@
   "points": {
     "1 - Main:0,11": {"maxTrainLength": 0},
     "1 - Main:20,14": {
-      "loc": {"name": "MY 1106"},
       "maxTrainLength": 0,
       "facing": "E",
       "canReverse": true
     },
     "1 - Main:20,12": {
-      "loc": {"name": "BR 232 241-0"},
       "maxTrainLength": 0,
       "facing": "E"
     },
@@ -53,7 +172,6 @@
       "autoDestination": false
     },
     "1 - Main:1,10": {
-      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 0,
       "facing": "E"
     },
@@ -64,6 +182,7 @@
     },
     "2 - Bottom:16,9": {"maxTrainLength": 0},
     "1 - Main:6,4": {
+      "loc": {"name": "BR 232 241-0"},
       "maxTrainLength": 0,
       "facing": "N"
     },
@@ -78,6 +197,7 @@
     "2 - Bottom:3,7": {},
     "2 - Bottom:7,1": {},
     "1 - Main:14,3": {
+      "loc": {"name": "MY 1106"},
       "maxTrainLength": 0,
       "facing": "E"
     },
@@ -121,6 +241,7 @@
     "1 - Main:10,13": {},
     "1 - Main:7,2": {},
     "1 - Main:5,4": {
+      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 0,
       "facing": "N"
     },

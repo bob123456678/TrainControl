@@ -60,6 +60,9 @@ public class testTimetableOnDerivedGraph
 
     private static final Random RANDOM = new Random();
 
+    /** The configuration this runs against, by name. */
+    private static final String CONFIGURATION = "Autonomy 1";
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -77,10 +80,30 @@ public class testTimetableOnDerivedGraph
         }
     }
 
-    @Test
+    @Test(timeOut = 300000)
     public void testACapturedTimetableReplaysOverTheSameTrack() throws Exception
     {
         Layout layout = derivedLayout();
+
+        // A stuck replay must FAIL rather than hang.  The shipped bound is three minutes, because a
+        // train may legitimately wait a long while for another to clear - here that would just mean a
+        // test that takes three minutes to say something is wrong.
+        long stuckWas = Layout.TIMETABLE_STUCK_MS;
+        Layout.TIMETABLE_STUCK_MS = 20000;
+
+        try
+        {
+            runCaptureAndReplay(layout);
+        }
+        finally
+        {
+            Layout.TIMETABLE_STUCK_MS = stuckWas;
+            layout.stopLocomotives();
+        }
+    }
+
+    private void runCaptureAndReplay(Layout layout) throws Exception
+    {
 
         List<Point> stations = ordinaryStations(layout);
 
@@ -96,17 +119,27 @@ public class testTimetableOnDerivedGraph
             throw new SkipException("fewer than two locomotives could be placed - nothing to capture");
         }
 
-        // Where each train began, so it can be put back before the replay
+        // Where EVERY train began, not just the ones this test placed.
+        //
+        // The configuration carries its own placements, so the graph holds more locomotives than were
+        // put there here - and all of them move once autonomy starts.  Restoring only the placed ones
+        // left the rest wherever the run finished, and a captured route then found its track occupied
+        // by a train the replay had never accounted for.
+        //
+        // One of them was worse than misplaced: restoring a train onto a square whose sibling copy held
+        // another swept that other one off the graph entirely, which is the block rule working exactly
+        // as it should and a thing this test has to plan for rather than trip over.
         java.util.Map<String, String> startedAt = new java.util.LinkedHashMap<>();
 
-        for (String name : locomotives)
+        for (Locomotive loc : layout.getLocomotivesToRun())
         {
-            Point at = layout.getLocomotiveLocation(model.getLocByName(name));
+            Point at = layout.getLocomotiveLocation(loc);
 
-            assertNotNull(at, name + " was placed but is standing nowhere");
-
-            startedAt.put(name, at.getName());
+            if (at != null) startedAt.put(loc.getName(), at.getName());
         }
+
+        assertTrue(startedAt.size() >= locomotives.size(),
+            "every locomotive standing somewhere should have been recorded");
 
         // ---- capture -------------------------------------------------------------------------
         layout.setTimetableCapture(true);
@@ -138,11 +171,33 @@ public class testTimetableOnDerivedGraph
         }
 
         // ---- put everyone back --------------------------------------------------------------
+        //
+        // Twice through.  A single pass can sweep a train that has already been restored, because
+        // placing onto one copy of a square clears the others - so the first pass settles the
+        // arrangement and the second repairs anything the first displaced.
+        for (int pass = 1; pass <= 2; pass++)
+        {
+            for (java.util.Map.Entry<String, String> where : startedAt.entrySet())
+            {
+                Point at = layout.getLocomotiveLocation(model.getLocByName(where.getKey()));
+
+                if (at != null && at.getName().equals(where.getValue())) continue;
+
+                assertTrue(layout.moveLocomotive(where.getKey(), where.getValue(), false),
+                    "could not put " + where.getKey() + " back at " + where.getValue()
+                    + " before the replay");
+            }
+        }
+
         for (java.util.Map.Entry<String, String> where : startedAt.entrySet())
         {
-            assertTrue(layout.moveLocomotive(where.getKey(), where.getValue(), false),
-                "could not put " + where.getKey() + " back at " + where.getValue()
-                + " before the replay");
+            Point at = layout.getLocomotiveLocation(model.getLocByName(where.getKey()));
+
+            assertNotNull(at, where.getKey() + " is on no square at all after the restore");
+
+            assertEquals(at.getName(), where.getValue(),
+                where.getKey() + " did not go back where it started, so the replay would be asked to "
+                + "run a timetable captured from a different arrangement");
         }
 
         layout.resetTimetable();
@@ -150,6 +205,7 @@ public class testTimetableOnDerivedGraph
         // What the replay is about to be asked to do, against where everyone actually is.  Printed
         // rather than asserted, because the first run of this test needs to show which of the two is
         // wrong before anything is claimed about either.
+        System.out.println("TT recorded starts: " + startedAt);
         System.out.println("TT restored:");
 
         for (Locomotive loc : layout.getLocomotivesToRun())
@@ -217,6 +273,13 @@ public class testTimetableOnDerivedGraph
         for (String name : model.getLayoutList()) pages.add(model.getLayout(name));
 
         session.open(pages);
+
+        // The configuration Adam actually runs.  Deriving whichever happened to be active last would
+        // make this test describe a different railway from one machine to the next.
+        if (session.getStore().getConfigurationNames().contains(CONFIGURATION))
+        {
+            session.getStore().setActiveConfiguration(CONFIGURATION);
+        }
 
         if (session.getStore().getActiveConfiguration() == null)
         {

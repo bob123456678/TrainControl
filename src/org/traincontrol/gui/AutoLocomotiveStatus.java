@@ -254,7 +254,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 List<Point> milestones = layout.getReachedMilestones(locomotive);
                 
-                this.locDest.setText(Edge.pathToString(layout.getActiveLocomotives().get(locomotive)));
+                // Named as the diagram names them.  Edge.pathToString spells out the Points, and on a
+                // derived graph a station is several of those - so a panel reading "BottomMainA
+                // (eastbound) -> Tunnel (southbound)" is telling the user about the arrival-side split,
+                // which is machinery they never asked to see and cannot act on.  The log keeps the
+                // Point names, where they are worth having.
+                this.locDest.setText(describePath(layout.getActiveLocomotives().get(locomotive)));
                 
                 this.locStation.setText("@" + stationName(milestones.get(milestones.size() - 1)));
                 
@@ -283,9 +288,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // Already searched, if somebody did it off the EDT for us.  Searching here is the
                 // fallback for the callers that have no worker to do it on, and it is the reason this
                 // method still can.
+                //
+                // haveFound ALONE decides, which is what its own javadoc says and what the previous
+                // reading contradicted: "haveFound && found != null" fell through to the inline search
+                // whenever the answer was legitimately null - and null is the answer for every
+                // locomotive while autonomy is running, since findPaths refuses to search then.  So the
+                // caller that had carefully searched off the event thread was searched for again, on
+                // the event thread, and the deferred build searched twice rather than not at all.
                 // true -> Only include unique starts/end pairs
-                this.paths = haveFound && found != null ? found
+                List<List<Edge>> answer = haveFound ? found
                     : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
+
+                this.paths = answer == null ? new java.util.LinkedList<>() : answer;
                 
                 if (!this.paths.isEmpty())
                 {
@@ -467,6 +481,22 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * @param point a Point of the running graph
      * @return the station name a reader would recognise
      */
+    /**
+     * A path as "from -> to", with both ends named the way the diagram names them.
+     *
+     * @param path the route being described, or null
+     */
+    private String describePath(List<Edge> path)
+    {
+        if (path == null || path.isEmpty()) return Edge.pathToString(path == null
+            ? new java.util.LinkedList<Edge>() : path);
+
+        if (path.get(0) == null || path.get(path.size() - 1) == null) return Edge.pathToString(path);
+
+        return stationName(path.get(0).getStart()) + " -> "
+            + stationName(path.get(path.size() - 1).getEnd());
+    }
+
     private String stationName(org.traincontrol.automation.Point point)
     {
         org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
