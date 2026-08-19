@@ -1839,7 +1839,7 @@ public class Layout
         {
             if (callback != null)
             {
-                callback.apply(new LinkedList<>(this.getEdges()), null, false);
+                fireCallback(callback, new LinkedList<>(this.getEdges()), null, false);
             }
         }
     }
@@ -3236,7 +3236,7 @@ public class Layout
                         // only reloading the graph clears.
                         try
                         {
-                            callback.apply(path, loc, true);
+                            fireCallback(callback, path, loc, true);
                         }
                         catch (Exception e)
                         {
@@ -3486,7 +3486,7 @@ public class Layout
                 {
                     if (callback != null)
                     {
-                        callback.apply(path, loc, true);
+                        fireCallback(callback, path, loc, true);
 
                         // Repaint other routes in non-atomic route mode
                         if (!this.atomicRoutes)
@@ -3496,7 +3496,7 @@ public class Layout
                                 // Our loc is still active, so skip repainting it
                                 if (!otherLoc.equals(loc))
                                 {
-                                    callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                                    fireCallback(callback, this.activeLocomotives.get(otherLoc), otherLoc, true); 
                                 }
                             }
                         }     
@@ -3534,14 +3534,14 @@ public class Layout
             {
                 if (callback != null)
                 {
-                    callback.apply(path, loc, false);
+                    fireCallback(callback, path, loc, false);
 
                     // Repaint other routes in non-atomic route mode
                     if (!this.atomicRoutes)
                     {
                         for (Locomotive otherLoc : this.getActiveLocomotives().keySet())
                         {
-                            callback.apply(this.activeLocomotives.get(otherLoc), otherLoc, true); 
+                            fireCallback(callback, this.activeLocomotives.get(otherLoc), otherLoc, true); 
                         }
                     }                    
                 }
@@ -3687,7 +3687,7 @@ public class Layout
             {
                 if (callback != null)
                 {
-                    callback.apply(new LinkedList<>(this.getEdges()), locomotive == null ? null : this.control.getLocByName(locomotive), false);
+                    fireCallback(callback, new LinkedList<>(this.getEdges()), locomotive == null ? null : this.control.getLocByName(locomotive), false);
                 }
             }
         }
@@ -3713,6 +3713,39 @@ public class Layout
         return this.points.values();
     }
     
+    /**
+     * Fires one callback, and never lets it take the driving thread down with it.
+     *
+     * Every callback runs synchronously on the DRIVING thread and every registered one repaints
+     * something, so an exception out of the UI - a graph view that has drifted from the layout, a null
+     * node - unwinds into executePath's wrapper, which unlocks nothing: it removes the locomotive from
+     * the active set, stops it, logs, and rethrows.  runLocomotive has no try around executePath, so
+     * that locomotive's autonomy thread dies and it is never dispatched again for the session, and the
+     * path is deliberately left locked, so recovery means reloading the graph.
+     *
+     * The dispatch site was guarded on its own; the milestone and completion loops were not, and they
+     * fire the same callbacks on the same threads.  This is the one door, so there is nowhere left to
+     * fire one unguarded.
+     */
+    private void fireCallback(TriFunction<List<Edge>, Locomotive, Boolean, Void> callback,
+        List<Edge> edges, Locomotive loc, boolean flag)
+    {
+        if (callback == null) return;
+
+        try
+        {
+            callback.apply(edges, loc, flag);
+        }
+        catch (Throwable e)
+        {
+            // Throwable, not Exception.  The usual advice against catching Errors assumes the
+            // alternative is an orderly shutdown; here the alternative is a train stopped mid-block
+            // with its track locked for the rest of the session, and every other train refused that
+            // track.  A NoClassDefFoundError out of a repaint is not a reason to strand a railway.
+            this.control.log(e instanceof Exception ? (Exception) e : new Exception(e));
+        }
+    }
+
     /**
      * Checks if the specified callback has been defined
      * @param callbackName 

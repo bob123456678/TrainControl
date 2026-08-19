@@ -101,7 +101,57 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * Refreshes the available routes shown in the UI
      * @param someLoc 
      */
+    /**
+     * The Layout reads this panel needs, taken where taking the Layout's monitor is safe.
+     *
+     * getPossiblePaths is synchronized on the Layout and walks the whole graph; getTimetableStartingPoint
+     * is synchronized too, and this panel reads it three times per repaint.  On the event thread both
+     * are a hazard, and not because of their own cost: configureAndLockPath holds that monitor across
+     * its per-command sleeps - half a second to two seconds per path - so the interface freezes for as
+     * long as a train is having its switches thrown.  In semi-autonomous operation with two or more
+     * trains that is reachable at every arrival.
+     *
+     * Safe off the event thread because it touches no Swing state: it asks the layout questions and
+     * keeps the answers for updateState to draw.
+     *
+     * @return the paths worth showing, or null when the list is not shown at all
+     */
+    public List<List<Edge>> findPaths()
+    {
+        if (layout == null || locomotive == null) return null;
+
+        if (layout.isAutoRunning() || layout.getLocomotiveLocation(locomotive) == null) return null;
+
+        this.gatheredTimetableStart = layout.getTimetableStartingPoint(locomotive);
+        this.haveGatheredTimetableStart = true;
+
+        return layout.getPossiblePaths(locomotive, true);
+    }
+
+    /**
+     * The timetable start, from the gather where there was one and from the Layout otherwise.
+     */
+    private Point timetableStart()
+    {
+        return haveGatheredTimetableStart ? gatheredTimetableStart
+            : layout.getTimetableStartingPoint(locomotive);
+    }
+
+    private Point gatheredTimetableStart;
+
+    private boolean haveGatheredTimetableStart;
+
     public void updateState(Locomotive someLoc)
+    {
+        updateState(someLoc, null, false);
+    }
+
+    /**
+     * @param found paths already worked out by findPaths, or null to search here
+     * @param haveFound whether {@code found} is an answer rather than an absence - the search
+     *        legitimately returns null, so the two cannot be told apart by the value alone
+     */
+    public void updateState(Locomotive someLoc, List<List<Edge>> found, boolean haveFound)
     {
         // We only need to update if the callback corresponding to our locomotive was fired
         if (someLoc == null || someLoc.equals(locomotive))
@@ -199,14 +249,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Layout is standing by.  Show the list.
             else
             {                
+                // Already searched, if somebody did it off the event thread for us.  Searching here is
+                // the fallback for callers with no worker to do it on, and is why this method still can.
                 // true -> Only include unique starts/end pairs
-                this.paths = layout.getPossiblePaths(locomotive, true);
+                this.paths = haveFound && found != null ? found
+                    : layout.getPossiblePaths(locomotive, true);
                 
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + layout.getLocomotiveLocation(locomotive).getName()                     
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
 
                     );
@@ -215,7 +268,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
                     this.locStation.setText("@" +  layout.getLocomotiveLocation(locomotive).getName()
-                        + (layout.getLocomotiveLocation(locomotive).equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
                     );
                 }
@@ -233,7 +286,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 for (List<Edge> path : this.paths)
                 {
                     pathList.add(pathList.getSize(), "-> " + path.get(path.size() - 1).getEnd().getName()
-                        + (path.get(path.size() - 1).getEnd().equals(layout.getTimetableStartingPoint(locomotive)) ? " *" : "")
+                        + (path.get(path.size() - 1).getEnd().equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(path.get(path.size() - 1).getEnd(), locomotive)
                     );
                     //Edge.pathToString(path));

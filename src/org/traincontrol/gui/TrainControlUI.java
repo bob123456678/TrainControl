@@ -11219,18 +11219,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {  
             if (routeName != null && this.model.getRoute(routeName) != null)
             {          
-                if (routeEditor != null && routeEditor.isVisible())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                        );
-                        routeEditor.requestFocus();
-                    });
-                }
-                else
                 {
                     Route currentRoute = this.model.getRoute(routeName);
                     
@@ -11253,6 +11241,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
+            // Checked on the EDT, immediately before constructing, so the two cannot be separated.
+            //
+            // The check used to run out here on the worker while the construction was posted to the
+            // event thread, which left a window between them: two clicks in quick succession - a
+            // double-click on the button is enough - both saw a null field, both posted, and two
+            // editors opened.  The field then held whichever was assigned last, and captured commands
+            // went to that one while the user was typing in the other.
+            //
+            // The model reads above stay off the EDT.  Only the decision moves.
+                        if (routeEditor != null && routeEditor.isVisible())
+                        {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                            );
+
+                            routeEditor.requestFocus();
+                            routeEditor.toFront();
+
+                            return;
+                        }
+
                         routeEditor = new RouteEditor(title, this, routeName, csv, isEnabled, s88,
                             trigger, conditions, locked);
                     });
@@ -12384,19 +12394,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 i++;
             }
 
-            if (routeEditor != null && routeEditor.isVisible())
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                    );
-                    routeEditor.requestFocus();
-                    routeEditor.toFront();
-                });
-            }
-            else
             {
                 // Realised on the EDT - see the note on the edit path.  The name is settled here
                 // because the loop counter above is not effectively final.
@@ -12404,6 +12401,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
+            // Checked on the EDT, immediately before constructing, so the two cannot be separated.
+            //
+            // The check used to run out here on the worker while the construction was posted to the
+            // event thread, which left a window between them: two clicks in quick succession - a
+            // double-click on the button is enough - both saw a null field, both posted, and two
+            // editors opened.  The field then held whichever was assigned last, and captured commands
+            // went to that one while the user was typing in the other.
+            //
+            // The model reads above stay off the EDT.  Only the decision moves.
+                    if (routeEditor != null && routeEditor.isVisible())
+                    {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
+                        );
+
+                        routeEditor.requestFocus();
+                        routeEditor.toFront();
+
+                        return;
+                    }
+
                     routeEditor = new RouteEditor(
                         I18n.t("route.ui.dialogAddNewRoute"),
                         this,
@@ -15665,16 +15684,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
 
-            // On the EDT, which this block is already inside.  updateState sets text, swaps list
-            // models, toggles visibility and reassigns each panel's path list, and the raw thread that
-            // used to wrap it did all of that off the EDT - from arrival and departure callbacks fired
-            // by locomotive driving threads, with no synchronization against the EDT or against a
-            // second such thread from the next event.  It also made the dispatch race below possible.
+            // The search off the event thread, the drawing on it.
+            //
+            // updateState sets text, swaps list models, toggles visibility and reassigns each panel's
+            // path list, so it has to be on the EDT - a raw thread used to run the whole thing off it,
+            // which is the fault that got the thread removed and made the dispatch race possible.
+            //
+            // But the search inside it is synchronized on the Layout and walks the whole graph, once
+            // per panel, and this method is fired at EVERY path start and end.  On the EDT that is not
+            // merely slow: configureAndLockPath holds the same monitor across its per-command sleeps,
+            // so an arrival that overlaps another train's configuration freezes the interface until
+            // that train's switches are thrown.  Semi-autonomous operation with two or more trains
+            // reaches it routinely, which is the mode this release's own fixes exist to polish.
+            //
+            // So both halves go where they belong rather than both going to one place.
+            final java.util.List<AutoLocomotiveStatus> panels = new java.util.LinkedList<>();
+
             for (Object o : this.autoLocPanel.getComponents())
             {
-                AutoLocomotiveStatus status = (AutoLocomotiveStatus) o;
-                status.updateState(null);
+                panels.add((AutoLocomotiveStatus) o);
             }
+
+            AutonomyRenderer.submit(() ->
+            {
+                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
+                    = new java.util.LinkedHashMap<>();
+
+                for (AutoLocomotiveStatus panel : panels)
+                {
+                    try
+                    {
+                        found.put(panel, panel.findPaths());
+                    }
+                    catch (Exception e)
+                    {
+                        if (this.model.isDebug()) this.model.log(e);
+                    }
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    for (java.util.Map.Entry<AutoLocomotiveStatus,
+                        java.util.List<java.util.List<Edge>>> entry : found.entrySet())
+                    {
+                        entry.getKey().updateState(null, entry.getValue(), true);
+                    }
+                });
+            });
         });
     }
     
