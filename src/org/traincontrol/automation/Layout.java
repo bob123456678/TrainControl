@@ -3227,22 +3227,13 @@ public class Layout
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
                 {
-                    if (callback != null)
-                    {
-                        // A listener must not be able to strand the run.  This fires after the
-                        // locomotive is in activeLocomotives, on the driving thread, and every
-                        // registered callback repaints something - so an exception out of the UI
-                        // killed the thread with the entry left behind, which is the wedged state that
-                        // only reloading the graph clears.
-                        try
-                        {
-                            fireCallback(callback, path, loc, true);
-                        }
-                        catch (Exception e)
-                        {
-                            this.control.log(e);
-                        }
-                    }
+                    // Guarded inside fireCallback, which is the only account of why - see its
+                    // javadoc.  The try/catch that used to sit here became unreachable when every fire
+                    // site moved behind that door, and the paragraph above it described a failure mode
+                    // that stopped being true when executePath grew its wrapper: a throw aborts the
+                    // run, it does not wedge the layout.  Two authorities disagreeing a screen apart is
+                    // worse than one, so this one goes.
+                    fireCallback(callback, path, loc, true);
                 }
                             
                 if (ttp != null)

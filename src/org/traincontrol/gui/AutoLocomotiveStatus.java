@@ -8,6 +8,7 @@ import org.traincontrol.base.Locomotive;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Insets;
+import java.util.LinkedList;
 import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
@@ -252,7 +253,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // Already searched, if somebody did it off the event thread for us.  Searching here is
                 // the fallback for callers with no worker to do it on, and is why this method still can.
                 // true -> Only include unique starts/end pairs
-                this.paths = haveFound && found != null ? found
+                // An answer of null is still an answer.
+                //
+                // findPaths returns null for a locomotive that is not on the graph, and treating that
+                // as "nobody gathered" sent this branch back to getPossiblePaths - on the event thread,
+                // taking the Layout monitor, which is the whole thing the gather exists to avoid.  It
+                // needed an unplaced locomotive in the run list on top of the other conditions, so it
+                // was narrow, but it was the one path where the fix quietly did not apply.
+                //
+                // haveFound is the flag that says whether to search, and it is the only one consulted
+                // now.  A fresh list because the sort below writes to it.
+                this.paths = haveFound
+                    ? (found == null ? new LinkedList<>() : found)
                     : layout.getPossiblePaths(locomotive, true);
                 
                 if (!this.paths.isEmpty())
