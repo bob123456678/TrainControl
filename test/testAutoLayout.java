@@ -304,7 +304,8 @@ public class testAutoLayout
     @AfterMethod
     public void tearDownMethod() throws Exception
     {
-    }
+    }
+
     /**
      * A locomotive cannot be in two places, and the model will not represent it.
      *
@@ -473,11 +474,31 @@ public class testAutoLayout
         // Asked of the whole square, a pair of converging platforms refused every route out of
         // either of them whenever either had a train on it - which is to say always, and which is
         // what made autonomy look dead: bfs found routes and every one was refused.
-        assertFalse(toWest.isOccupied(second, false),
+        assertFalse(toWest.isLockHeld(second),
             "a lock edge must not be blocked by a train standing on the far platform");
 
         assertTrue(toWest.isOccupied(second, true),
             "while running ONTO that track is still refused - the copies are one piece of rail");
+
+        // And the same of the copy the train is ACTUALLY standing on, which is the half of this the
+        // first fix left out.  The reason a lock edge does not care about the far platform is that the
+        // sensor a train stands on is never the track a lock edge protects: reduction cuts an edge at
+        // every sensor, so a Point's tile is an endpoint of its edges and appears in the path of none
+        // of them.  That is as true of the copy the train is on as of its twin.
+        //
+        // Left in, it made any train parked next to a junction a permanent roadblock for every route
+        // across that junction - and with two such trains, a deadlock neither could leave.
+        assertFalse(toEast.isLockHeld(second),
+            "a lock edge must not be blocked by a train standing at the point it leads to");
+
+        // But a lock edge another route is HOLDING is refused, which is the whole mechanism.  Symmetric
+        // locks are what makes the narrow question above safe, so this is the assertion that carries it.
+        toEast.setOccupied();
+
+        assertTrue(toEast.isLockHeld(second),
+            "a lock edge held by another route must refuse this one");
+
+        toEast.setUnoccupied();
 
         // while the train already there is not blocked by itself
         assertFalse(toEast.isOccupied(first));

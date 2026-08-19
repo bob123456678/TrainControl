@@ -260,21 +260,26 @@ public class testRouteInventory
     @Test
     public void testWhyBottomMainAOffersNothing() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1e.json");
-
-        if (!bundle.isFile()) return;
-
-        model.parseAuto(build(bundle));
+        model.parseAuto(build(null));
 
         Layout layout = model.getAutoLayout();
 
-        assertTrue(layout.isValid(), "1e must load for this probe to mean anything");
+        assertTrue(layout.isValid(), "the live setup must load for this probe to mean anything");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
-        StringBuilder out = new StringBuilder("# why BottomMainA offers nothing\n\n");
+        // Nothing else standing anywhere.  The question is what the TRACK allows, and with the setup's
+        // own three locomotives still placed every answer is also a statement about where they are.
+        for (Locomotive other : layout.getLocomotivesToRun())
+        {
+            Point where = layout.getLocomotiveLocation(other);
 
-        for (String start : new String[]{"BottomMainA (eastbound)", "BottomMainB (eastbound)"})
+            if (where != null && !other.equals(loc)) layout.moveLocomotive(null, where.getName(), false);
+        }
+
+        StringBuilder out = new StringBuilder("# why BottomSecondary offers nothing\n\n");
+
+        for (String start : new String[]{"BottomSecondary", "BottomInnerOtherside"})
         {
             Point from = layout.getPoint(start);
 
@@ -315,8 +320,16 @@ public class testRouteInventory
                 else
                 {
                     blocked++;
-                    out.append("   BLOCKED -> ").append(to.getName())
-                       .append("   ").append(via(path)).append("\n");
+                    out.append("   BLOCKED -> ").append(to.getName()).append("\n");
+
+                    for (java.util.Map.Entry<List<Edge>, String> tried
+                        : layout.debugPath(loc, from, to).entrySet())
+                    {
+                        out.append("        via ").append(via(tried.getKey())).append("\n")
+                           .append("            ")
+                           .append(tried.getValue() == null ? "CLEAR" : tried.getValue())
+                           .append("\n");
+                    }
                 }
             }
 
@@ -422,6 +435,57 @@ public class testRouteInventory
         }
 
         write("7-as-the-ui-sees-it", out);
+    }
+
+    /**
+     * Does a train standing at BottomInnerOtherside actually stand on track BR 628 needs?
+     *
+     * The refusal says "lock edge ... -> BottomInnerOtherside occupied".  A lock edge is meant to hold
+     * a shared THROAT clear, and the sensor at the far end of one is not the throat - but that is the
+     * intent written in a comment, and the question here is what the tiles say.
+     */
+    @Test
+    public void testWhatTheLockEdgeActuallyShares() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = liveSession();
+
+        org.traincontrol.automationui.GraphReducer reducer = session.getReducer();
+
+        StringBuilder out = new StringBuilder("# what the lock edge shares\n");
+
+        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            String name = session.getStationIndex() == null ? "" : "";
+
+            out.append(edge.getStart()).append("  ->  ").append(edge.getEnd()).append("\n");
+
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
+            {
+                out.append("        ").append(step.getTile()).append("\n");
+            }
+        }
+
+        write("8-edge-tiles", out);
+    }
+
+    /**
+     * The live setup, opened against the model's own pages.
+     */
+    private org.traincontrol.automationui.AutonomySession liveSession() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session =
+            new org.traincontrol.automationui.AutonomySession(new File("cs2_sample_layout"));
+
+        List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
+
+        for (String name : model.getLayoutList())
+        {
+            pages.add(model.getLayout(name));
+        }
+
+        session.open(pages);
+
+        return session;
     }
 
     private String via(List<Edge> path)

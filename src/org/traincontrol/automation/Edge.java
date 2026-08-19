@@ -320,17 +320,42 @@ public class Edge
     }
 
     /**
+     * Whether this edge is held by another route, which is the question a LOCK edge asks.
+     *
+     * The reservation flag and nothing else.  A lock edge is track held clear so that two routes cannot
+     * take one throat at the same time; it is not a claim on the point beyond it, and a train standing
+     * at that point is not using the throat.
+     *
+     * That is not a judgement call, it is how the graph is built.  Reduction cuts an edge at every
+     * sensor, so a Point's tile is an ENDPOINT of the edges that meet there and an intermediate step of
+     * none of them - on the author's layout, 54 sensor tiles and 259 intermediate tiles with not one
+     * tile in both.  A train stands on a sensor.  The track a lock edge protects is the rest of the
+     * run.  They cannot be the same piece of rail.
+     *
+     * Nothing is given up by asking the narrow question, because locks are symmetric: GraphReducer
+     * locks every pair of edges that share a tile, in both directions.  So if the train standing there
+     * later wants to leave over track this route is using, its edge is one of this route's lock edges
+     * and carries the flag while this route holds it.  The parked train is stopped by the lock, which
+     * is what a lock is for - not by being counted as an obstruction it is not standing on.
+     *
+     * Left as an occupancy question, a train parked next to a junction was a permanent roadblock for
+     * every route across that junction, and two such trains could deadlock with no way out for either.
+     *
+     * @param loc the locomotive asking, kept for symmetry with isOccupied and for future ownership
+     */
+    synchronized public boolean isLockHeld(Locomotive loc)
+    {
+        return occupied;
+    }
+
+    /**
      * @param wholeBlock whether a train on ANOTHER copy of the end square counts as occupying it.
      *
      * True when asking "may this train run onto that track" - the copies of a square are one piece of
-     * rail and a train on either is in the way.
+     * rail and a train on either is in the way.  False asks only about the copy itself, which is what
+     * a caller wants when it has already decided which copy it means.
      *
-     * FALSE when asking whether a LOCK edge is free.  A lock edge is track held clear so that two
-     * routes cannot use one throat at the same time; it is not a claim on the platform beyond it.  A
-     * train standing at the far platform is not using the throat, and treating the whole square as
-     * occupied there refused every route out of a pair of converging platforms whenever either of them
-     * had a train on it - which is to say, always.  That is what made autonomy look dead: bfs found
-     * routes, every one of them was refused, and nothing moved.
+     * Neither is the question a lock edge asks - see isLockHeld.
      */
     synchronized public boolean isOccupied(Locomotive loc, boolean wholeBlock)
     {

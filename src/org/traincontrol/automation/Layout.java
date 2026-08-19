@@ -1433,14 +1433,16 @@ public class Layout
                 return false;
             }
 
-            // Ensure all lock edges are unoccupied.
+            // Ensure no lock edge is already held by another route.
             //
-            // Asked of the POINT rather than the whole square: a lock edge is track held clear so two
-            // routes cannot take one throat at once, not a claim on the platform beyond it.  A train
-            // standing at that platform is not in this train's way.
+            // Held, not occupied.  A lock edge is track kept clear so two routes cannot take one throat
+            // at once; a train STANDING at the point one leads to is not using the throat, and cannot
+            // be - a sensor is an endpoint of the edges that meet there and part of the path of none of
+            // them.  See Edge.isLockHeld, which also explains why nothing is given up by asking only
+            // this.
             for (Edge e2 : e.getLockEdges())
             {
-                if (e2.isOccupied(loc, false))
+                if (e2.isLockHeld(loc))
                 {
                     logPathError(loc, path, logFailures,
                         I18n.f("autolayout.errorLockEdgeOccupied", e2.getName())

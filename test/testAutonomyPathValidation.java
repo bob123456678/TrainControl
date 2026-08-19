@@ -488,6 +488,72 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked
+     * at the point it leads to.
+     *
+     * The two halves are one test on purpose.  Dropping the parked-train refusal is only safe because
+     * the held-lock refusal exists, so an assertion that the first is gone means nothing without an
+     * assertion that the second still bites - and someone reinstating the first would want to see, in
+     * one place, what it was traded against.
+     *
+     * The parked train cannot be on the track the lock protects: reduction cuts an edge at every
+     * sensor, so a Point's tile is an endpoint of the edges meeting there and part of the path of none
+     * of them.  Counted as an obstruction anyway, a train standing next to a junction was a permanent
+     * roadblock for every route across it, and two such trains deadlocked with no way out for either.
+     */
+    @Test
+    public void testALockEdgeRefusesAHeldRouteButNotAParkedTrain() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        Layout layout = new Layout(model);
+        layout.setAtomicRoutes(false);
+
+        layout.createPoint("LK_A", false, null);
+        layout.createPoint("LK_B", false, null);
+
+        MarklinFeedback fb = model.newFeedback(83, null);
+        model.setFeedbackState(fb.getName(), false);
+        layout.createPoint("LK_C", true, fb.getName());
+
+        // A crossing off the path, locked whenever the first edge is, with somewhere for a train to
+        // stand at the end of it
+        layout.createPoint("LK_X", false, null);
+        layout.createPoint("LK_Y", true, null);
+        Edge crossing = layout.createEdge("LK_X", "LK_Y");
+
+        Edge ab = layout.createEdge("LK_A", "LK_B");
+        Edge bc = layout.createEdge("LK_B", "LK_C");
+        ab.addLockEdge(crossing);
+
+        MarklinLocomotive loc = dummyLoc();
+        MarklinLocomotive parked = dummyLoc();
+
+        layout.getPoint("LK_A").setLocomotive(loc);
+
+        List<Edge> path = Arrays.asList(ab, bc);
+
+        assertTrue(layout.isPathClear(path, loc), "precondition: the path is clear with nothing about");
+
+        // A train standing at the far end of the crossing.  It is not on the crossing.
+        layout.getPoint("LK_Y").setLocomotive(parked);
+
+        assertTrue(layout.isPathClear(path, loc),
+            "a train parked at the point a lock edge leads to is not on the track the lock protects");
+
+        // ...but a route that has actually taken that track is.
+        crossing.setOccupied();
+
+        assertFalse(layout.isPathClear(path, loc),
+            "a lock edge held by another route must refuse this one");
+
+        crossing.setUnoccupied();
+
+        assertTrue(layout.isPathClear(path, loc), "and is offered again once that route releases it");
+    }
+
+    /**
      * Control: the identical path runs normally once the accessory exists, confirming the tests above
      * fail for the missing accessory and not for anything else in the setup.
      */
