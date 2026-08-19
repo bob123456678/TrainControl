@@ -426,10 +426,17 @@ public class testBusyDialogInteraction
             other.start();
             other.join(30000);
 
-            assertEquals(second[0], -1,
+            // The CONSTANT, not a literal.  A refusal has a value of its own precisely because -1
+            // already means "the sync failed" to every caller - so a test written against -1 would go
+            // on passing if the two were ever confused again.
+            assertEquals(second[0], org.traincontrol.gui.TrainControlUI.SYNC_ALREADY_RUNNING,
                 "a second sync ran while the first was still inside the reconciliation - two workers "
                 + "replacing the same databases at once, which the event thread used to make "
                 + "impossible");
+
+            assertNotEquals(second[0], -1,
+                "a refusal must not look like a failure: every caller reads -1 as one, and the Sync "
+                + "menu reports it as such");
 
             holdTheFirst.countDown();
 

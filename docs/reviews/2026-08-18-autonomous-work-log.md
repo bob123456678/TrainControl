@@ -120,6 +120,42 @@ disagreed are recorded as such rather than quietly dropped.**
 | **I.4** - `BusyDialog.run` is non-blocking when called off the event thread, so the same method has two contracts | Real, and deliberate: the alternative is to block a background thread on a dialog it cannot see. Documented rather than changed |
 | **II.7** - a captured signal renders as `ACCESSORY / 4 / straight` rather than green/red | Correct as it stands. `KEY_ACCESSORY_TYPE` is never populated from route storage, so nothing is lost. The vocabulary could be friendlier; **noted for the UI consistency pass** rather than changed mid-fix |
 
+### 6. Fable reviewers
+
+Two more, one regression and one independent. They found nine real things between them, and agreed
+with each other on the most serious. Every one was verified before being acted on.
+
+| Finding | What it was | Fixed in |
+| --- | --- | --- |
+| **Both, independently** | The multi-select key bindings never fired. WHEN_IN_FOCUSED_WINDOW is dead in a window whose FRAME holds focus, and the old key handler went on deleting whatever the mouse was over - so Delete with ten squares picked erased one unrelated tile | `902c647` |
+| **Independent, #1** | Six messages used `%s`. MessageFormat leaves it in the text and discards the argument, so the route editor's "kept as they are: %s" printed the placeholder where the condition should be - in the same commit that claimed to fix conditions being invisible | `902c647`, with two new bundle checks |
+| **Regression, #1** | `fitsAfterMove` was handed PIXELS against a column number, so a group dragged past the edge was never refused - and since the move clears before it writes, the group was already deleted when it threw | `902c647` |
+| **Regression, #4** | `groupClipboard` was never cleared, so one group copy hijacked every later paste for the session | `902c647` |
+| **Regression, #5** | Capture in the new route editor did nothing unless the OLD editor was open - the outer gate was never extended | `902c647` |
+| **Regression, #3** | "+" moved every tile down one row, and every autonomy annotation is keyed by square, so stations, signals, arrivals and captions would all have been left one row out | `902c647` - grows at the far edges only; the top row is **flagged for Adam** |
+| **Regression, #6** | A refused sync returned -1, which callers read as "failed" - the Sync menu announced a failure that had not happened, and the switch-layout path cleared the layouts then did not sync | `902c647` |
+| **Regression, #7** | The condition editor offered kinds `Route.evaluate` cannot evaluate, giving a permanently false condition and a route that silently stopped firing | `902c647` |
+| **Independent, #4** | Add and Remove stayed enabled on a bracketed condition whose contents Save then discarded | `902c647` |
+| **Independent, #5, #6** | Two test defects: a class javadoc describing a comparison replaced two commits earlier, and a "MatchTheFile" test that matched nothing against the file | `902c647` |
+
+**And one the reviewers did not find, which its own test did.** The diagram export produced a blank
+image. Three causes, all uncovered by chasing one assertion: `printAll` and `paintAll` both begin with
+an `isShowing()` check and do nothing offscreen; tile images decode on a worker and apply on the event
+thread, so a render holding that thread paints before any icon arrives; and tile icons exist as files
+only at 30 and 60 pixels, so asking for 40 failed every icon. The test was written to fail on a
+single-colour image, and it did, on the first run.
+
+### 7-11. The rest of the work order
+
+| Item | Where |
+| --- | --- |
+| UI consistency proposal | `docs/reviews/2026-08-19-ui-consistency-proposal.md` - seven items, each with a cost and a recommendation, nothing changed |
+| Feature completeness and 3.1.0 | `docs/reviews/2026-08-19-completeness-and-3.1.0.md` - and three questions for Adam at the end |
+| Test profiling and a lite battery | `docs/reviews/2026-08-19-test-suite-timings.md`; `runlite.sh` in the scratchpad. Ten classes are 606 seconds; the other fifty are under ten each |
+| Readme | `86167bf` - nine 3.0.0-only bugfixes removed, this session's features added |
+| `Automation.md` | Rewritten as a user guide, diagram-first, with four worked examples and a troubleshooting section. The old JSON and API material is preserved in `AutomationAPI.md`. Eight screenshots are placeholders; the guide lists what each should show |
+| Diagram export | `DiagramExport`, on the Layout menu. Writes a whole page to a PNG at any size |
+
 ### Outstanding
 
 Not yet done, in the order they will be:
