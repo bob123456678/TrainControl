@@ -315,6 +315,44 @@ implemented, tested, **found to break the diagram export reproducibly, and rever
 evidence recorded so the next person does not spend the afternoon I did. It also closed out a stale
 "cubic on the feedback path" entry in the test plan: measured, and no longer true.
 
+## Run three: the review with no context
+
+Adam asked for "one more fully independent fable reviewer with zero context on the codebase". That is
+what it got - no description of the branch, no earlier findings, no list of changed files, just a Java
+application that drives a model railway and an instruction to take seriously that it moves physical
+objects. It fanned out into the automation core, the Marklin/network layer and the GUI wiring.
+
+**Fourteen findings. Every one held up under checking.** No false positives, which had not happened in
+the previous seven rounds.
+
+The result worth recording is not any single finding but the shape of them: **almost none of this is
+new code.** Two are on this branch; the rest have been in TrainControl for a long time, in layers the
+primed reviews had no reason to reread. Being told what changed is what makes a review efficient, and
+it is also what stops a reviewer opening the ping handler.
+
+The four that stop a railway - a lost ping ending the keepalive for the session and cutting power
+every five seconds under autonomy; a short CAN frame reading as an emergency stop; an emptied priority
+box killing that locomotive's dispatch thread; and "face the other way" turning whichever train
+happened to be selected - and the one that destroys data - an unreadable locomotive database being
+saved over with an empty one - are all written up in full, with the reasoning and the fixes, in
+`2026-08-19-eighth-review.md`.
+
+**Twelve fixed, in three commits, each with its tests seen failing first.** Two deferred deliberately,
+with reasons rather than shrugs:
+
+- The `maxActiveTrains` cap can be exceeded by disjoint paths racing between the check and the
+  registration. Track locking holds throughout, so this exceeds a preference rather than risking a
+  collision, and closing it means reordering the path-locking protocol under a running layout.
+- The locomotive wait loops busy-spin if a thread is ever interrupted. Nothing interrupts them today.
+  The fix is small and I know what it is; it touches six blocking waits in the train-control path and
+  an interruption cannot be tested end-to-end here.
+
+Both are items 19 and 20 on Adam's list.
+
+**One thing this round could not do, same as the seven before it:** prove the hardware obeys. Nine new
+tests say commands are formed and dispatched correctly. A Central Station is the only thing that says
+the rest.
+
 ### Still outstanding
 
 Everything in the work order is done. What remains is for Adam.

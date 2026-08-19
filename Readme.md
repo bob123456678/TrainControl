@@ -378,6 +378,13 @@ Tab icons provided by Freepik.
         - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why is it not moving?" tool that answers the same question on the diagram: click the square a train is standing on, and every route it could take is drawn on the track while the reasons for the rest are listed underneath
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
+        - Fixed bug where clearing a station's priority stopped that train from ever being sent anywhere again for the rest of the session, and made the layout impossible to save.  Emptying the priority box is the obvious way to say "no priority", and it left the station in a state nothing could read
+        - Fixed bug where turning a standing train round moved the wrong locomotive.  Right-clicking a station and choosing a direction moved whichever locomotive was selected for keyboard control onto that platform instead - in the running layout and in the saved setup both - or did nothing at all if none was selected
+        - Fixed bug where a return-home plan came back as an ordinary timetable after being saved and reloaded, so its moves were started before the previous one had arrived and could block each other
+        - Fixed bug where renaming the setup that was running left it running under a name that no longer existed, so every train placement and home made since it was loaded was quietly dropped when TrainControl closed
+        - Fixed bug where right-clicking a sensor silently changed whether it read as occupied, whenever the right-click menu did not open.  During a run that is the same as a train appearing where there is none
+        - Fixed bug where leaving a page out of autonomy while trains were running left the diagram and the railway disagreeing: the page went red and its stations stopped responding, while trains carried on being sent to them.  It is now refused while trains are running
+        - Pressing Start twice quickly no longer starts twice
     - Routes
         - A new route editor that is built from dropdowns rather than typed commands.  Each command is a row - what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards - so a route can be built and read without knowing the command syntax.  Conditions are rows too, with the operator joining each row to the ones below it, and a line underneath spelling out how the whole condition reads.  Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead - so "run this route when these points are already set the way I have just set them" can be built by setting them.  The older text editor is still there.  A command the new editor has no controls for is shown greyed and kept exactly as it was
     - Track Diagrams
@@ -388,6 +395,14 @@ Tab icons provided by Freepik.
         - A track diagram page can now be saved as a picture.  The Layout menu offers the page you are looking at in one click, or any other page if you ask, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it
     - Central Station Sync
         - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, and a second sync started while one is running is turned away rather than run alongside it
+    - Central Station Bug Fixes
+        - Fixed bug where a single lost reply from the Central Station stopped TrainControl checking the connection for the rest of the session.  It showed "Lost network connection" from then on, even after the network came back - and if autonomy was running with a latency limit set, it turned the track power off every five seconds, including five seconds after you turned it back on.  Only restarting recovered
+        - Fixed bug where a short message from anything else on the CAN bus was read as an emergency stop, so TrainControl believed the power had been cut while the layout was still running
+        - Fixed bug where a locomotive database that could not be read at startup was replaced with an empty one when TrainControl closed, losing every locomotive customization.  The unreadable file is now kept, and its location is written to the log
+        - Fixed bug where a layout download interrupted part way through left a half-written diagram file that the next sync then treated as the real one
+        - Fixed bug where importing an MFX locomotive whose record has no address gave it an address no decoder can have, so nothing sent to it arrived
+        - Fixed bug where the same accessory commanded twice to the same position had the second command ignored
+        - Pressing Stop while TrainControl is not connected now says so in the log instead of doing nothing silently
     - Locomotive Bug Fixes
         - Fixed bug where pressing Go on the Central Station while trains were already running discarded their accumulated running time from the statistics.  This also happened when clicking a track diagram accessory, which turns track power on first
         - The duplicate address check no longer reports an address as free when one locomotive is already using it.  Previously only addresses already shared by two or more locomotives counted
