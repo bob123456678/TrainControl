@@ -2035,7 +2035,7 @@ public class RouteEditor extends PositionAwareJFrame
                     
                     // Ensure route changes are synced
                     // Moved into this condition as this is no longer needed when editing, since CS routes can't be edited
-                    parent.getModel().syncWithCS2();
+                    parent.syncWithCS2();
                     parent.repaintLayout();
                     parent.repaintLoc();
                 }

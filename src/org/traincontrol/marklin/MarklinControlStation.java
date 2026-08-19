@@ -94,6 +94,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Do we parse mock packets when not connected to the central station and in debug mode?
     // This will update the UI when locomotive/function/switch commands get sent
     public static boolean DEBUG_SIMULATE_PACKETS = false;
+
+    /**
+     * Where a sync reads from, when it must not be the configured Central Station.
+     *
+     * A test seam, in the same spirit as DEBUG_SIMULATE_PACKETS above.  The address is a bare string
+     * that CS2File turns into "http://" + it, so a host:port pair pointed at a local server makes the
+     * whole of syncWithCS2 - the fetch AND the database reconciliation that follows it - exercisable
+     * without a Central Station on the network.
+     *
+     * The reconciliation is two hundred lines that decide what happens to every locomotive the user
+     * owns, and until this existed none of it could be tested at all.  Null in every normal run.
+     */
+    public static volatile String TEST_CS2_ADDRESS = null;
+
+    /**
+     * The address a sync should read from.
+     */
+    private String cs2Address()
+    {
+        return TEST_CS2_ADDRESS != null ? TEST_CS2_ADDRESS : NetworkInterface.getIP();
+    }
         
     // Network sleep interval
     public static final long SLEEP_INTERVAL = 50;
@@ -983,7 +1004,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final int syncWithCS2()
     {        
         // Read remote config files
-        this.fileParser = new CS2File(NetworkInterface.getIP(), this);
+        this.fileParser = new CS2File(cs2Address(), this);
              
         this.logf("log.csDBSyncStarting");
 
@@ -1009,7 +1030,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Is this a CS2 or CS3?
             try
             {
-                this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(NetworkInterface.getIP()));
+                this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
                 this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)

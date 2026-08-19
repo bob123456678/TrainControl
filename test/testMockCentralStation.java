@@ -38,6 +38,12 @@ public class testMockCentralStation
 {
     private static HttpServer server;
 
+    /**
+     * One model for the whole class.  init binds the Central Station's UDP port, so a second call in
+     * the same JVM fails with "address already in use" - which reads as a test failure and is not one.
+     */
+    private static org.traincontrol.marklin.MarklinControlStation model;
+
     private static String address;
 
     /** How many times the mock was asked for anything, so a test can prove a fetch happened. */
@@ -58,6 +64,9 @@ public class testMockCentralStation
         server.start();
 
         address = "127.0.0.1:" + server.getAddress().getPort();
+
+        model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+        model.stop();
     }
 
     @AfterClass
@@ -276,6 +285,83 @@ public class testMockCentralStation
             assertTrue(took < 30000,
                 "an unreachable station took " + took + "ms to fail - the connect timeout is what stops "
                 + "the interface hanging on a station that has been switched off");
+        }
+    }
+
+    // ---------------------------------------------------------------- the whole sync, end to end
+
+    /**
+     * A full sync against the mock station, reconciliation and all.
+     *
+     * syncWithCS2 is two hundred lines that decide what happens to every locomotive the user owns -
+     * matched by UID, renamed, re-addressed, function types compared - and until the TEST_CS2_ADDRESS
+     * seam existed none of it could be run without a Central Station on the network.  What this asserts
+     * is modest on purpose: that a sync against a station which IS there succeeds and brings its
+     * locomotives in.  The value is that the path now executes at all, so the reconciliation can be
+     * given sharper tests later, and the fetch/apply split has something to prove itself against.
+     *
+     * Nothing is saved.  The databases are mutated in memory, this class runs in its own JVM, and
+     * saveState is a UI action - so the operator's LocDB.data on disk is not touched.
+     */
+    @Test
+    public void testAFullSyncAgainstTheMockStationSucceeds() throws Exception
+    {
+        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+
+        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = address;
+
+        try
+        {
+            int result = model.syncWithCS2();
+
+            assertTrue(result >= 0,
+                "a sync against a station that is answering should not report failure, got " + result);
+
+            assertFalse(model.getLocList().isEmpty(),
+                "the sync brought in no locomotives at all, though the station served a full file");
+
+            // Something from the fixture, so this cannot pass on a database that was already loaded
+            assertTrue(requests.get() > 0, "the sync never asked the station for anything");
+        }
+        finally
+        {
+            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+        }
+    }
+
+    /**
+     * A sync against a station that is not there reports failure rather than emptying the database.
+     *
+     * The whole reason the seam is worth having: this is the case that would cost a user every
+     * locomotive they own, and it could not be tested before.
+     */
+    @Test
+    public void testASyncAgainstNothingDoesNotEmptyTheDatabase() throws Exception
+    {
+        int before = model.getLocList().size();
+
+        int dead;
+
+        try (java.net.ServerSocket socket = new java.net.ServerSocket(0))
+        {
+            dead = socket.getLocalPort();
+        }
+
+        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+
+        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = "127.0.0.1:" + dead;
+
+        try
+        {
+            model.syncWithCS2();
+
+            assertEquals(model.getLocList().size(), before,
+                "a sync against a station that is not there changed the locomotive database - it had "
+                + before + " and now has " + model.getLocList().size());
+        }
+        finally
+        {
+            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
         }
     }
 

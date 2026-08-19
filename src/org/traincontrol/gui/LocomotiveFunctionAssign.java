@@ -444,7 +444,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
                 {
                     this.loc.setCustomFunctions(false);
                     this.loc.unsetLocalFunctionImageURLs();
-                    this.parent.getModel().syncWithCS2();
+                    this.parent.syncWithCS2();
                     this.parent.repaintLoc(true, null);
                     this.customIconPath = null;
 

@@ -3922,7 +3922,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.model.logf("layout.ui.infoLayoutInitializedAt", path);
                         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
-                        this.model.syncWithCS2();
+                        this.syncWithCS2();
                         this.repaintLoc();
                     }
 
@@ -4249,7 +4249,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (l != null)
         {
             javax.swing.SwingUtilities.invokeLater(() -> {
-                this.model.syncWithCS2();
+                this.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 this.repaintLayout();
@@ -4844,6 +4844,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         autonomyToolbarMenu.add(choose);
+    }
+
+    /**
+     * Syncs with the Central Station without freezing the interface, and says that it is working.
+     *
+     * The sync fetches and parses several files over HTTP and then REPLACES the locomotive, route and
+     * accessory databases.  Called straight from the event thread - which is what sixteen call sites in
+     * this class did - the whole interface stops responding for as long as the network takes, with
+     * nothing on screen to say why.  On a station that has been switched off that is the connect
+     * timeout, twice.
+     *
+     * So the fetch runs on a worker and a modal spinner stands in front of it.  Modal for a reason
+     * beyond politeness: the databases are swapped wholesale, and a user clicking around during the
+     * swap is clicking at things that are about to be replaced underneath them.
+     *
+     * WHAT THIS DOES NOT DO, and what a full fix would.  Modality blocks input, not painting - a
+     * repaint that lands mid-swap can still draw from a half-replaced database.  Closing that properly
+     * means the fetch/apply split recorded in the deferred-optimisations list: phase one fetches and
+     * parses into detached structures off the event thread, phase two swaps them in on it, in one step.
+     * That is a restructuring of two hundred lines of database reconciliation - the part that must not
+     * break - and is deliberately not attempted here.  This removes the freeze and the silence, which
+     * is what a user experiences; the remaining hazard is a paint, is brief, and has never been
+     * reported.
+     *
+     * Off the event thread this is a plain call, because there is nothing to block and nothing to show.
+     *
+     * @return whatever syncWithCS2 returned, so a caller can still read it
+     */
+    public int syncWithCS2()
+    {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            return this.syncWithCS2();
+        }
+
+        // Held in an array because a lambda cannot assign a local, and read after the dialog closes -
+        // BusyDialog.run does not return until the worker has disposed it
+        final int[] result = {-1};
+
+        BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
+            () -> result[0] = this.syncWithCS2(), null);
+
+        return result[0];
     }
 
     public ExecutorService getTileImageLoader()
@@ -11780,7 +11823,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 refreshRouteList();
 
                 // Ensure route changes are synced
-                this.model.syncWithCS2();
+                this.syncWithCS2();
                 this.repaintLayout();
                 this.repaintLoc();
             }
@@ -11873,7 +11916,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             new Thread(() ->
             {
-                Integer r = this.model.syncWithCS2();
+                Integer r = this.syncWithCS2();
                 refreshRouteList();
                 this.selector.refreshLocSelectorList();
                 this.repaintLoc(true, null);
@@ -12048,7 +12091,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             );
                         }
 
-                        this.model.syncWithCS2();
+                        this.syncWithCS2();
                         this.repaintLayout();
                         this.refreshRouteList();
                     }
@@ -13226,7 +13269,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
                     // Ensure route changes are synced
-                    this.model.syncWithCS2();
+                    this.syncWithCS2();
                     this.repaintLayout();   
                     
                     refreshRouteList();
@@ -13268,7 +13311,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 // Ensure route changes are synced
-                this.model.syncWithCS2();
+                this.syncWithCS2();
                 this.repaintLayout();
                 
                 refreshRouteList();
@@ -13288,7 +13331,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         r.getConditions());
 
                 // Ensure route changes are synced
-                this.model.syncWithCS2();
+                this.syncWithCS2();
                 this.repaintLayout();
                 
                 refreshRouteList();
@@ -13834,7 +13877,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
                 this.model.clearLayouts();
-                this.model.syncWithCS2();
+                this.syncWithCS2();
                 
                 // Set the updated list of layout pages
                 initializeTrackDiagram(true);
@@ -15790,7 +15833,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         prefs.put(LAST_USED_FOLDER, f.getParent());
 
                         // Ensure route changes are synced
-                        this.model.syncWithCS2();
+                        this.syncWithCS2();
                         this.repaintLayout();
                         this.repaintLoc();
                         refreshRouteList();
@@ -16409,7 +16452,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         // Load the layout
                         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
-                        this.model.syncWithCS2();
+                        this.syncWithCS2();
                         this.repaintLayout();
                         this.KeyboardTab.setSelectedIndex(1);
 
@@ -16901,7 +16944,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             l.setLocalImageURL(null);
-            this.model.syncWithCS2();
+            this.syncWithCS2();
             this.repaintLoc(true, null);
             this.repaintMappings(Collections.singletonList(l), true);
             this.selector.refreshLocSelectorList();
