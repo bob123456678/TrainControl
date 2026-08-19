@@ -229,6 +229,15 @@ If autonomy stops working again, `41b10ac` is the state to diff against.
 
 Not scheduled - recorded so they are not lost.
 
+- **Prettify the route editor.** Users should not have to type strings. An overlay table with an oval
+  per setting, clicked through rather than typed, would say the same thing far more legibly - and the
+  route editor is one of the few places left where the interface asks somebody to get syntax right.
+
+  Sits on top of the existing window: no change under the hood beyond the UI interactions and a
+  translation each way between the ovals and the text format the editor already reads and writes. That
+  boundary is the thing to hold to - the text form stays the source of truth, so a route the new
+  interface cannot express is still editable, and nothing that reads routes has to learn anything new.
+
 - **Multiple select in the diagram editor.** Select a range of tiles and act on them at once.
 - **+/- buttons to add rows and columns** to a diagram, rather than editing its size numerically.
 - **Build a new track diagram from chosen linked pages**, joined together into one - so a layout split
