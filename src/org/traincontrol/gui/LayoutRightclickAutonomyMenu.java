@@ -415,6 +415,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         java.util.List<String> shut = new java.util.ArrayList<>();
 
+        // copies a train could sit on but never be dispatched from
+        java.util.List<String> stranded = new java.util.ArrayList<>();
+
         for (String name : session.facingsFor(station).keySet())
         {
             Point copy = ui.getModel().getAutoLayout().getPoint(name);
@@ -425,14 +428,23 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             if (away == null || away.isEmpty()) continue;
 
-            // A copy trains may STOP at, in preference to one they may not.
+            // A copy the train can actually LEAVE, in preference to one it merely sits on.
             //
-            // Barring an arrival side makes that copy a non-destination, and this list is drawn at
-            // random - so half the time the train was put on the copy the user had just said trains
-            // may not arrive at.  parseAuto then warns about a locomotive on a non-station every
-            // single time the configuration loads, and the gate on this menu item, which the same
-            // change added to keep placement at destinations, was defeated by the item it guarded.
-            if (copy.isDestination())
+            // "Has an outgoing edge" was the old test and it is not the same question.  A copy of a
+            // split square can have somewhere to go and nowhere to be SENT - everything it reaches is
+            // a plain point, a reversing point or parking - and this list is drawn at RANDOM, so a
+            // train was put on a dead copy about half the time and then never moved.  That is the
+            // "nothing moves" fault: on the sample layout, Tunnel (northbound) offers routes and
+            // Tunnel (southbound) offers none, and placement could not tell them apart.
+            //
+            // Barred copies come second for the reason they always did: barring an arrival side makes
+            // that copy a non-destination, and placing a train there earns a warning from parseAuto on
+            // every load.
+            if (!ui.getModel().getAutoLayout().canReachAnyDestination(copy))
+            {
+                stranded.add(name);
+            }
+            else if (copy.isDestination())
             {
                 out.add(name);
             }
@@ -443,9 +455,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
 
         // Nothing open is not the same as nowhere to go.  A square whose copies are all shut to
-        // arrivals is still somewhere a train physically stands, and refusing to place one there
-        // would be a different message from the "no way out" one this list exists to produce.
-        return out.isEmpty() ? shut : out;
+        // arrivals, or all stranded, is still somewhere a train physically stands, and refusing to
+        // place one there would be a different message from the "no way out" one this list produces.
+        if (!out.isEmpty()) return out;
+
+        return shut.isEmpty() ? stranded : shut;
     }
 
     /**

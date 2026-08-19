@@ -502,4 +502,64 @@ public class testAutoLayout
             "a shared sensor must not block a path the layout has always allowed");
     }
 
+    /**
+     * Somewhere to GO is not the same as somewhere to be sent.
+     *
+     * This is the fault behind "I place a train and it never moves".  A square is emitted as one Point
+     * per arrival side, and placement picked among the copies at random, keeping any copy that had an
+     * outgoing edge.  But a copy can have somewhere to go and nowhere to be DISPATCHED - everything it
+     * reaches is a plain point, a reversing point or parking - and autonomy only ever sends a train to
+     * a destination.  On the sample layout Tunnel (northbound) offers routes and Tunnel (southbound)
+     * offers none, and placement could not tell them apart.
+     */
+    @Test
+    public void testACopyWithNowhereToBeSentIsNotPlaceable() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        // the two arrival copies of one platform
+        Point northbound = layout.createPoint("RD_Platform (northbound)", true, "1");
+        Point southbound = layout.createPoint("RD_Platform (southbound)", true, "2");
+
+        // northbound leads on to a real station; southbound leads only to a plain point
+        Point onward = layout.createPoint("RD_Onward", true, "3");
+        Point deadEnd = layout.createPoint("RD_PlainPoint", false, null);
+
+        layout.createEdge("RD_Platform (northbound)", "RD_Onward");
+        layout.createEdge("RD_Platform (southbound)", "RD_PlainPoint");
+
+        assertTrue(layout.canReachAnyDestination(northbound),
+            "this copy reaches a station and a train placed here can be dispatched");
+
+        assertFalse(layout.canReachAnyDestination(southbound),
+            "this copy has an outgoing edge and nowhere to be SENT - a train here never moves");
+
+        // and the plain point itself is a place with no destination beyond it
+        assertFalse(layout.canReachAnyDestination(deadEnd));
+    }
+
+    /**
+     * Parking does not count as somewhere to be sent.
+     *
+     * A berth is a station autonomy is told not to choose, so a copy whose only reachable station is a
+     * berth is still a copy a train would sit on forever.
+     */
+    @Test
+    public void testParkingDoesNotMakeACopyPlaceable() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        Point from = layout.createPoint("RD_From", true, "1");
+        Point berth = layout.createPoint("RD_Berth", true, "2");
+
+        layout.createEdge("RD_From", "RD_Berth");
+
+        assertTrue(layout.canReachAnyDestination(from), "precondition: a plain station counts");
+
+        berth.setAutoDestination(false);
+
+        assertFalse(layout.canReachAnyDestination(from),
+            "a berth is somewhere autonomy will not send a train, so it is not somewhere to go");
+    }
+
 }

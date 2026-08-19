@@ -3852,6 +3852,61 @@ public class Layout
      * @param l the locomotive being placed
      * @param claiming the Point placing it, which keeps it
      */
+    /**
+     * Whether a train standing here could be sent anywhere at all.
+     *
+     * Not "does this point have an outgoing edge" - that is the question that produced the fault this
+     * exists to fix.  A copy of a split square can have somewhere to go and still have nowhere to be
+     * SENT: every square it reaches is a plain point, a reversing point or parking, and autonomy only
+     * ever dispatches a train to a destination.  A train placed there never moves, and nothing says
+     * why.
+     *
+     * A plain walk of the edges rather than a path search per candidate: the question is reachability
+     * over the track, and running the full path finder against every destination to answer "any?" is
+     * work nobody needs.  Occupancy and locking are deliberately NOT considered - this asks what the
+     * railway allows, not what is free this second.
+     *
+     * @param from where the train would stand
+     * @return true when some destination is reachable from there
+     */
+    public boolean canReachAnyDestination(Point from)
+    {
+        if (from == null) return false;
+
+        Set<Point> seen = new HashSet<>();
+        java.util.ArrayDeque<Point> queue = new java.util.ArrayDeque<>();
+
+        seen.add(from);
+        queue.add(from);
+
+        while (!queue.isEmpty())
+        {
+            Point at = queue.poll();
+
+            List<Edge> away = this.getNeighbors(at);
+
+            if (away == null) continue;
+
+            for (Edge e : away)
+            {
+                Point end = e.getEnd();
+
+                if (end == null || !seen.add(end)) continue;
+
+                // Somewhere a train can actually be sent, and not the square it started on
+                if (!end.equals(from) && end.isDestination() && end.isActive()
+                    && end.isAutoDestination() && !end.isReversing())
+                {
+                    return true;
+                }
+
+                queue.add(end);
+            }
+        }
+
+        return false;
+    }
+
     void clearLocomotiveExcept(Locomotive l, Point claiming)
     {
         if (l == null) return;
