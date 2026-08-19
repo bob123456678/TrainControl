@@ -2803,7 +2803,14 @@ public class Layout
                     loc.delay(NO_PATH_IDLE_MS);
                 }
 
-                loc.delay(this.getMinDelay() * 1000);
+                // Skipped once the run has been asked to stop.
+                //
+                // This paces one path against the next, and after a graceful stop there is no next -
+                // so paying it delays only the moment the thread exits.  That matters now that
+                // isRunning() waits for these threads: without this, the interface stayed disabled for
+                // the length of the user's own delay setting after the last train had already
+                // arrived, which reads as the stop having hung.
+                if (running) loc.delay(this.getMinDelay() * 1000);
 
                 // If another locomotive is falling behind, attempt to yield to it
                 if (this.isAutoRunning() && this.maxLocInactiveSeconds > 0)
