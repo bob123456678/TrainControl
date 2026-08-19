@@ -411,10 +411,16 @@ public class TileOverlay
 
             g.setColor(colour);
 
-            // Through the centre in two strokes rather than corner to corner, so the line bends where
-            // the track bends instead of cutting across it
-            g.drawLine(a[0], a[1], centre[0], centre[1]);
-            g.drawLine(centre[0], centre[1], b[0], b[1]);
+            // Edge to edge in one stroke, along the rail rather than around it.
+            //
+            // A curve on this diagram is not an arc and a switch's diverging leg is not a right angle:
+            // both are drawn as a straight chord from the midpoint of one edge to the midpoint of the
+            // next, which is what TileAnnotation.heading has always taken its arrow directions from.
+            // Bending the run line through the tile centre instead put it at forty-five degrees to the
+            // track under it - two strokes cutting across the corner the rail cuts through - so on
+            // every turn of a route the highlight and the railway disagreed about where the train was
+            // going.  Straight through is unchanged by this: the chord and the centre lie on one line.
+            g.drawLine(a[0], a[1], b[0], b[1]);
         }
 
         // Which way, in black, on the half the train is heading INTO - clear of the centre, where two
@@ -433,9 +439,19 @@ public class TileOverlay
         {
             if (segment.getState() == State.LOCKED || segment.getTo() == null) continue;
 
+            // Along the segment's own chord, for the same reason the line follows it.  An arrowhead
+            // squared to the edge on a curve points across the rail it is meant to be running on.
+            //
+            // Tilted here where the editor's static arrows are not, and the difference is real: those
+            // draw one arrowhead per SIDE, shared by every route through it, and two chords meeting at
+            // one edge disagree by forty-five degrees, so there is no honest angle to pick.  A run
+            // segment is one route, and its heading is not in doubt.
+            int[] from = segment.getFrom() == null
+                ? centre : TileAnnotation.midpoint(segment.getFrom(), width, height);
+
             int[] b = TileAnnotation.midpoint(segment.getTo(), width, height);
 
-            if (b != null) TileAnnotation.chevron(g, centre, b, span);
+            if (b != null) TileAnnotation.chevron(g, from == null ? centre : from, b, span);
         }
     }
 

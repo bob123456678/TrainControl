@@ -914,10 +914,8 @@ public class TileAnnotation
                 : trace.forward ? TRACE : TRACE_RETURN);
 
             // A square crossed more than once - a switch a route passes through on its way out and
-            // again on its way round - carries two segments that share a side.  Drawn both through the
-            // centre they join there and read as one straight run between the two sides that are NOT
-            // connected: at a switch, the two forks join the toe and never each other.  Nudged apart,
-            // they read as what they are, which is two passes.
+            // again on its way round - carries two segments that share a side.  Nudged apart so they
+            // read as what they are, which is two passes, rather than as one shape.
             double nudge = drawn.size() == 1 || shared.size() < 2 ? 0 : span / 9.0 * (index - 0.5);
 
             double dx = b[0] - a[0];
@@ -927,10 +925,14 @@ public class TileAnnotation
             double px = length < 1 ? 0 : -dy / length * nudge;
             double py = length < 1 ? 0 : dx / length * nudge;
 
+            // Edge to edge in one stroke, along the rail rather than around it.
+            //
+            // A curve here is not an arc and a switch's diverging leg is not a right angle: both are
+            // drawn as a straight chord between the midpoints of two edges, which is what heading()
+            // below has always taken its arrow directions from.  Bending the tested line through the
+            // tile centre put it at forty-five degrees to the track beneath it, so the answer to "which
+            // way does this route run" was drawn across the very rails it was answering about.
             g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
-                (int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py));
-
-            g.drawLine((int) Math.round(centre[0] + px), (int) Math.round(centre[1] + py),
                 (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
 
             index++;
@@ -952,8 +954,9 @@ public class TileAnnotation
             if (a == null || b == null) continue;
 
             // On the half the train is heading INTO, so a chevron sits on open track rather than in
-            // the middle where the two halves meet and two of them would overlap.
-            chevron(g, centre, b, span);
+            // the middle where two of them would overlap - and along the segment's own chord, so that
+            // on a curve it points down the rail instead of across it.
+            chevron(g, a, b, span);
         }
     }
 
