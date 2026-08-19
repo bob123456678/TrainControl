@@ -278,6 +278,18 @@ public class Layout
 
     // A staging entry that cannot run will not become runnable by waiting: nothing else is moving.  A
     // few retries ride out a sensor settling; beyond that the assumption is wrong and it must say so.
+    /**
+     * How long a timetable entry may go on being unexecutable before the run gives up, in ms.
+     *
+     * A TIME rather than a count of attempts, because the pause between attempts is the user's own
+     * delay setting and may be zero - a count would mean six seconds on one layout and none on another.
+     *
+     * Minutes, deliberately. A train in a parallel timetable may legitimately wait a long while for
+     * another to clear its way, and ending a run that would have worked is worse than a late finish.
+     * Not final so a test can shorten it; there is no user-facing setting for it.
+     */
+    public static long TIMETABLE_STUCK_MS = 180000;
+
     private static final int STAGING_MAX_ATTEMPTS = 3;
     private static final int STAGING_RETRY_PAUSE = 2000;
 
@@ -3174,16 +3186,41 @@ public class Layout
                         {
                             int attempts = 0;
 
+                            // When this entry first refused, so a parallel run can give up on time
+                            long refusingSince = 0;
+
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
                                 attempts++;
 
-                                if (this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
+                                if (refusingSince == 0) refusingSince = System.currentTimeMillis();
+
+                                // A PARALLEL timetable gives up on time, where a sequential one gives up
+                                // on attempts.
+                                //
+                                // Both bounds used to be gated on timetableSequential, which is true
+                                // only for a return-home plan - so a captured timetable retried a
+                                // refusal that could never change until somebody noticed and stopped it
+                                // by hand.  That was filed as T3 and pinned by a characterisation test
+                                // saying so.
+                                //
+                                // Time rather than attempts here because the pause between attempts is
+                                // pacedWait, which honours the user's delay settings and may be zero.
+                                // Attempts would then mean something different on every layout.
+                                boolean stuck = this.timetableSequential
+                                    ? attempts >= STAGING_MAX_ATTEMPTS
+                                    : System.currentTimeMillis() - refusingSince >= TIMETABLE_STUCK_MS;
+
+                                if (stuck)
                                 {
-                                    // Retrying cannot help here - with one train moving at a time,
-                                    // nothing will free the path.  Stop and say so rather than spin.
+                                    // Retrying has stopped being worth it: with one train moving at a
+                                    // time nothing will free the path, and in a parallel run nothing
+                                    // has freed it for long enough that nothing is going to.  Stop and
+                                    // say so rather than spin.
                                     this.control.logf(
-                                        "autolayout.errorReturnToHomeEntryStuck",
+                                        this.timetableSequential
+                                            ? "autolayout.errorReturnToHomeEntryStuck"
+                                            : "autolayout.errorTimetableEntryStuck",
                                         ttp.toString()
                                     );
 

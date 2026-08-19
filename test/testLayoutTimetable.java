@@ -266,21 +266,22 @@ public class testLayoutTimetable
     }
 
     /**
-     * CHARACTERISATION TEST - this pins current behaviour, which is a known defect (T3).
+     * An entry that can never execute ends the run, rather than being retried for ever.
      *
-     * The per-entry retry loop is `while (running && !executePath(...))`, so a refusal that can never
-     * change - here an invalidated layout, which executePath rejects on its first line - is retried
-     * forever. The run only ends when a human notices and asks for a graceful stop.
+     * This was a characterisation test pinning the opposite - T3, a known defect - with a note saying
+     * it must be inverted when the retry loop learned to give up. It has been.
      *
-     * **When T3 is fixed, this test must be inverted**: the run should end on its own, and the
-     * assertion below should become `assertFalse(layout.isAutoRunning())` without anyone intervening.
-     * It is written this way rather than left failing so the suite stays honest about what ships.
+     * The loop is `while (running && !executePath(...))`, and both the attempt cap and the pause that
+     * bounded it were gated on `timetableSequential` - true only for a return-home plan. So a captured
+     * timetable, which is the parallel kind, retried a refusal that could never change until a human
+     * noticed. Here the refusal is an invalidated layout, which executePath rejects on its first line.
      *
-     * The retry delay is set to one second so the loop cannot spin hot during the test; with the
-     * default of zero it would busy-loop, which is itself part of the finding.
+     * The bound is a TIME rather than a count of attempts, because the pause between attempts is the
+     * user's own delay setting and may be zero - a count would mean one thing on one layout and
+     * something else on another.
      */
     @Test(timeOut = 60000)
-    public void testPermanentlyUnexecutableEntryKeepsRetrying() throws Exception
+    public void testAPermanentlyUnexecutableEntryEndsTheRun() throws Exception
     {
         Layout layout = layoutWithOnePath();
 
@@ -292,39 +293,89 @@ public class testLayoutTimetable
 
         layout.invalidate();
 
-        Thread runner = new Thread(layout::executeTimetable);
+        long was = Layout.TIMETABLE_STUCK_MS;
 
-        // Daemon, so that a failure here can never hold the JVM open
-        runner.setDaemon(true);
-        runner.start();
+        // Short enough to finish inside the timeout above.  The shipped value is minutes, because a
+        // train in a parallel timetable may legitimately wait a long time for another to clear its way.
+        Layout.TIMETABLE_STUCK_MS = 4000;
 
         try
         {
-            Thread.sleep(5000);
+            Thread runner = new Thread(layout::executeTimetable);
 
-            assertTrue(layout.isAutoRunning(),
-                "current behaviour: the entry can never execute, the retry loop has no permanent-failure "
-                + "exit, and so the run is still going five seconds and several retries later");
+            // Daemon, so that a failure here can never hold the JVM open
+            runner.setDaemon(true);
+            runner.start();
+
+            long deadline = System.currentTimeMillis() + 40000;
+
+            while (layout.isAutoRunning() && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(100);
+            }
+
+            assertFalse(layout.isAutoRunning(),
+                "the entry can never execute, so the run must end on its own - nobody asked it to stop");
 
             assertFalse(layout.getTimetable().get(0).isExecuted(),
                 "and it has of course never executed");
         }
         finally
         {
+            Layout.TIMETABLE_STUCK_MS = was;
             layout.stopLocomotives();
         }
+    }
 
-        // Whatever else it does, the loop must honour a graceful stop
-        long deadline = System.currentTimeMillis() + 20000;
+    /**
+     * A graceful stop still ends the retry loop, whatever else it does.
+     *
+     * Kept as its own test after T3 was fixed. An unstoppable loop would be far worse than an unbounded
+     * one, and the fix touches exactly the code that ends it.
+     */
+    @Test(timeOut = 60000)
+    public void testAGracefulStopEndsTheRetryLoop() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
 
-        while (layout.isAutoRunning() && System.currentTimeMillis() < deadline)
+        layout.setMaxDelay(1);
+        layout.setMinDelay(1);
+
+        setEntries(layout, 0L);
+
+        layout.invalidate();
+
+        long was = Layout.TIMETABLE_STUCK_MS;
+
+        // Long enough that the give-up cannot be what ends this run - the stop below must be
+        Layout.TIMETABLE_STUCK_MS = 600000;
+
+        try
         {
-            Thread.sleep(100);
-        }
+            Thread runner = new Thread(layout::executeTimetable);
+            runner.setDaemon(true);
+            runner.start();
 
-        assertFalse(layout.isAutoRunning(),
-            "a graceful stop must end the retry loop - if this fails the loop is unstoppable, which "
-            + "would be far worse than it being unbounded");
+            Thread.sleep(3000);
+
+            assertTrue(layout.isAutoRunning(), "precondition: the run should still be going");
+
+            layout.stopLocomotives();
+
+            long deadline = System.currentTimeMillis() + 20000;
+
+            while (layout.isAutoRunning() && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(100);
+            }
+
+            assertFalse(layout.isAutoRunning(), "a graceful stop must end the retry loop");
+        }
+        finally
+        {
+            Layout.TIMETABLE_STUCK_MS = was;
+            layout.stopLocomotives();
+        }
     }
 
     /**
