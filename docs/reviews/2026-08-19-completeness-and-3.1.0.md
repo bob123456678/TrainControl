@@ -20,13 +20,20 @@ answer is almost always one of a small, knowable set: every station is occupied,
 excludes this locomotive, the route needs a switched-off link, the only destination is a reversing
 point, the locomotive has no speed.
 
-TrainControl knows which of those it is — the log says so, per train, in as many words. But the log is
-a scrolling text panel that a user has to think to look at, and the locomotive panel says only "no
-available paths", which is the symptom rather than the cause.
+TrainControl works out which of those it is every time it looks for a route — and then throws the
+answer away. The log gets `{0} has no free paths at the moment`, which names the train and not the
+reason; the locomotive panel says "No available paths", which is the symptom. Neither tells the user
+the one thing they need.
 
-**Proposal.** Make the panel's "no available paths" line a tooltip or a hover that names the reason for
-that particular locomotive. The information already exists at the point the decision is made; it is
-thrown away on the way to the display.
+**Proposal.** Keep the reason at the point the decision is made and put it on the panel — a tooltip, or
+the line itself.
+
+Being honest about the size of it: `pickPath` rejects a candidate with one conjunction —
+`!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination() && end.isActive() && ...`
+— so every reason is already computed and none of them is separable as it stands. The work is splitting
+that condition into named checks and carrying the first failure out, per locomotive, without slowing
+down a search that runs on every arrival. That is why this is the item worth deciding about rather
+than the item to squeeze in.
 
 This is the item I would spend the remaining 3.0.0 time on. It converts the most common support
 question into something the interface answers by itself.

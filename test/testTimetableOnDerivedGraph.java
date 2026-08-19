@@ -148,15 +148,39 @@ public class testTimetableOnDerivedGraph
         // as it should and a thing this test has to plan for rather than trip over.
         java.util.Map<String, String> startedAt = new java.util.LinkedHashMap<>();
 
+        // Only the ones standing on a STATION.
+        //
+        // moveLocomotive refuses a point that is not a destination, and rightly - placing a train by
+        // hand is a person saying where it is, and "halfway along the approach" is not somewhere a
+        // train is put. But a configuration's saved placements are not all stations, so requiring
+        // every locomotive to go back where it was made this test fail in its own setup, on a
+        // precondition it could never satisfy.
+        //
+        // The ones that cannot go back are taken OFF the graph instead. Left where the run finished
+        // they would sit on track a captured route needs, and the replay would fail for a reason that
+        // has nothing to do with what is being tested.
+        java.util.List<String> cannotRestore = new java.util.LinkedList<>();
+
         for (Locomotive loc : layout.getLocomotivesToRun())
         {
             Point at = layout.getLocomotiveLocation(loc);
 
-            if (at != null) startedAt.put(loc.getName(), at.getName());
+            if (at == null) continue;
+
+            if (at.isDestination())
+            {
+                startedAt.put(loc.getName(), at.getName());
+            }
+            else
+            {
+                cannotRestore.add(at.getName());
+            }
         }
 
         assertTrue(startedAt.size() >= locomotives.size(),
-            "every locomotive standing somewhere should have been recorded");
+            "every locomotive this test placed stands on a station, so all of them should have been "
+            + "recorded as restorable - found " + startedAt.size() + " for " + locomotives.size()
+            + " placed" + andTheSeed());
 
         // ---- capture -------------------------------------------------------------------------
         //
@@ -204,6 +228,12 @@ public class testTimetableOnDerivedGraph
         // Twice through.  A single pass can sweep a train that has already been restored, because
         // placing onto one copy of a square clears the others - so the first pass settles the
         // arrangement and the second repairs anything the first displaced.
+        // Off the graph first, so they cannot hold track the replay needs
+        for (String square : cannotRestore)
+        {
+            layout.moveLocomotive(null, square, true);
+        }
+
         for (int pass = 1; pass <= 2; pass++)
         {
             for (java.util.Map.Entry<String, String> where : startedAt.entrySet())
@@ -214,7 +244,7 @@ public class testTimetableOnDerivedGraph
 
                 assertTrue(layout.moveLocomotive(where.getKey(), where.getValue(), false),
                     "could not put " + where.getKey() + " back at " + where.getValue()
-                    + " before the replay");
+                    + " before the replay" + andTheSeed());
             }
         }
 

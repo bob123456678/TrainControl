@@ -33,6 +33,22 @@ the lite battery slow.
 
 The harness lives in the session scratchpad rather than the repository, alongside `runeach.sh`.
 
+## A flake that was the test's own fault
+
+`testTimetableOnDerivedGraph` failed one full battery in its SETUP, not its assertions: "could not put
+BR 628 2 back at TopMainR1Inter (southbound) before the replay".
+
+The cause is worth recording because it is not obvious. The test restores every locomotive to where it
+began, and `moveLocomotive` refuses a point that is not a destination - rightly, since placing a train
+by hand is a person saying where it is, and "halfway along the approach" is not somewhere a train is
+put. But a configuration's own saved placements are not all stations. So the test had a precondition it
+could not satisfy, and whether it hit one depended on which locomotives the configuration happened to
+carry.
+
+It now restores the ones standing on stations and takes the rest OFF the graph, because a train left
+where the run finished would sit on track a captured route needs - and the replay would then fail for
+a reason that has nothing to do with what is being tested.
+
 ## Worth knowing
 
 - **`testAutoDetect` currently fails all three of its tests**, and has throughout this session. It
