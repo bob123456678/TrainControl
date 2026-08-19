@@ -17737,10 +17737,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return l1.getName().compareTo(l2.getName());
             });
             
+            // The panels are built here, on the event thread, where Swing components belong - but the
+            // search each one used to do in its own constructor is not done here any more.
+            //
+            // AutoLocomotiveStatus's constructor calls updateState, which calls getPossiblePaths: a
+            // method synchronized on the Layout that walks the whole graph, once per locomotive.  On
+            // the EDT that stalls the interface and lets it block on a monitor a driving thread holds.
+            // The Lite path was moved off the event thread for exactly this reason and its twin here
+            // was left behind, reached from every manual placement and removal.
+            //
+            // Built empty and filled in afterwards: the panels appear at once, and each takes its
+            // routes when the worker has them.
+            final java.util.List<AutoLocomotiveStatus> panels = new java.util.LinkedList<>();
+
             for (Locomotive loc : locs)
             {
-                this.autoLocPanel.add(new AutoLocomotiveStatus(loc, this));
+                AutoLocomotiveStatus panel = new AutoLocomotiveStatus(loc, this, true);
+
+                panels.add(panel);
+
+                this.autoLocPanel.add(panel);
             }
+
+            AutonomyRenderer.submit(() ->
+            {
+                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
+                    = new java.util.LinkedHashMap<>();
+
+                for (AutoLocomotiveStatus panel : panels)
+                {
+                    try
+                    {
+                        found.put(panel, panel.findPaths());
+                    }
+                    catch (Exception e)
+                    {
+                        if (this.model.isDebug()) this.model.log(e);
+                    }
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    for (java.util.Map.Entry<AutoLocomotiveStatus,
+                        java.util.List<java.util.List<Edge>>> entry : found.entrySet())
+                    {
+                        entry.getKey().updateState(entry.getKey().getLocomotive(),
+                            entry.getValue(), true);
+                    }
+                });
+            });
             
             // Speed up scrolling
             autoLocScroll.getVerticalScrollBar().setUnitIncrement(16);

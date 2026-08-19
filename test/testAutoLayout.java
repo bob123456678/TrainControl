@@ -15,6 +15,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinFeedback;
+import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.automation.Point;
@@ -613,46 +615,241 @@ public class testAutoLayout
     }
 
     /**
-     * Everything parseAuto reads off a Point, toJSON writes back.
+     * A protecting signal follows the PLATFORM, not one copy of it.
      *
-     * The configuration JSON is the interchange format - exported, hand-edited in the advanced tab,
-     * imported on another machine - so a field the reader understands and the writer omits is silently
-     * lossy: the setup comes back missing something, and nothing anywhere says so.
+     * The memo that stops a redundant command used to live on the Point while "claimed" was a fact
+     * about the whole square.  A refresh on one copy that saw the square claimed through ANOTHER copy
+     * wrote true into its own memo while standing empty, and nothing wrote false back - so the next
+     * real arrival there matched its stale memo, sent nothing, and left the signal GREEN with a train
+     * standing at the platform.
      *
-     * This has happened twice.  "block" was omitted, so an export and import undid the block-occupancy
-     * rule and put the railway back to routing two trains onto one platform.  Then "protectingSignal"
-     * was omitted the same way, and a setup round-tripped came back with every station-signal pairing
-     * gone.  Both are asserted together, because the failure is not really about either field - it is
-     * the two halves of the format drifting apart, and the next field added will drift the same way
-     * unless something is watching.
+     * The sequence below is that exact poisoning: claim through the west copy, refresh the east one,
+     * release the west, then arrive properly on the east.
      */
     @Test
-    public void testEveryFieldParseAutoReadsIsAlsoWritten() throws Exception
+    public void testAProtectingSignalIsRedWheneverThePlatformIsHeld() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback fb = model.newFeedback(101, null);
+        model.setFeedbackState(fb.getName(), false);
+
+        MarklinAccessory signal = model.newSignal(61, Accessory.accessoryDecoderType.MM2, true);
+
+        layout.createPoint("SIG_east", true, fb.getName());
+        layout.createPoint("SIG_west", true, fb.getName());
+
+        for (String name : new String[]{"SIG_east", "SIG_west"})
+        {
+            layout.getPoint(name).setBlock("main:5,5");
+            layout.getPoint(name).setProtectingSignal(signal.getName());
+        }
+
+        MarklinLocomotive first = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive second = model.getLocByName(model.getLocList().get(1));
+
+        // a train claims the platform through the west copy
+        layout.getPoint("SIG_west").setLocomotive(first);
+
+        assertTrue(signal.isRed(), "a claimed platform must show red");
+
+        // the east copy is written to while the platform is still claimed through the west one.
+        // Every occupancy change refreshes the signal, so this is the ordinary door, not a back one.
+        layout.getPoint("SIG_east").setLocomotive(second);
+        layout.getPoint("SIG_east").setLocomotive(null);
+
+        assertTrue(signal.isRed(), "still claimed - the other copy holds a train");
+
+        // the west copy releases, and the platform is genuinely empty
+        layout.getPoint("SIG_west").setLocomotive(null);
+
+        assertTrue(signal.isGreen(), "an empty platform must show green");
+
+        // and now a train really does arrive on the east copy
+        layout.getPoint("SIG_east").setLocomotive(first);
+
+        assertTrue(signal.isRed(),
+            "the signal was left GREEN with a train standing at the platform");
+    }
+
+    /**
+     * One signal, two platforms: red while EITHER is occupied.
+     *
+     * The pairing menu lets two stations pick the same signal, and a signal can only show one aspect.
+     * Asking the square rather than the signal made the second platform going free turn it green while
+     * a train still stood at the first.
+     */
+    @Test
+    public void testASignalSharedByTwoStationsStaysRedWhileEitherIsHeld() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback one = model.newFeedback(102, null);
+        MarklinFeedback two = model.newFeedback(103, null);
+        model.setFeedbackState(one.getName(), false);
+        model.setFeedbackState(two.getName(), false);
+
+        MarklinAccessory signal = model.newSignal(62, Accessory.accessoryDecoderType.MM2, true);
+
+        layout.createPoint("SHARE_A", true, one.getName());
+        layout.createPoint("SHARE_B", true, two.getName());
+
+        layout.getPoint("SHARE_A").setProtectingSignal(signal.getName());
+        layout.getPoint("SHARE_B").setProtectingSignal(signal.getName());
+
+        MarklinLocomotive first = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive second = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("SHARE_A").setLocomotive(first);
+        layout.getPoint("SHARE_B").setLocomotive(second);
+
+        assertTrue(signal.isRed(), "both platforms held");
+
+        layout.getPoint("SHARE_B").setLocomotive(null);
+
+        assertTrue(signal.isRed(),
+            "one platform is still occupied, so the signal it protects cannot be green");
+
+        layout.getPoint("SHARE_A").setLocomotive(null);
+
+        assertTrue(signal.isGreen(), "and green once both are clear");
+    }
+
+    /**
+     * Everything comes back from a configuration that already had two trains on one square.
+     *
+     * Hand placement was closed, but a FILE was the other door - one written by a version before the
+     * rule existed, hand-edited, or brought from another machine.  fromJSON checks for a duplicate
+     * locomotive and never for a duplicate square, so the state was reinstated on every load and the
+     * fix that was supposed to end it never touched anything already saved.
+     */
+    @Test
+    public void testAConfigurationWithTwoTrainsOnOneSquareIsRepairedOnLoad() throws Exception
+    {
+        String first = model.getLocList().get(0);
+        String second = model.getLocList().get(1);
+
+        String json = "{"
+            + "\"points\": ["
+            + "  {\"name\":\"LOAD_east\",\"station\":true,\"s88\":110,\"block\":\"main:6,6\","
+            + "   \"loc\":{\"name\":\"" + first + "\"}},"
+            + "  {\"name\":\"LOAD_west\",\"station\":true,\"s88\":110,\"block\":\"main:6,6\","
+            + "   \"loc\":{\"name\":\"" + second + "\"}},"
+            + "  {\"name\":\"LOAD_far\",\"station\":true,\"s88\":111}"
+            + "],"
+            + "\"edges\": ["
+            + "  {\"start\":\"LOAD_east\",\"end\":\"LOAD_far\",\"length\":1}"
+            + "],"
+            + "\"minDelay\":1,\"maxDelay\":2,\"defaultLocSpeed\":35}";
+
+        // parseAuto replaces the model's layout wholesale, and every test in this class shares the one
+        // loaded in setUpClass - so this puts it back, or everything after it runs against a railway
+        // with three points on it.
+        try
+        {
+            model.parseAuto(json);
+
+            Layout loaded = model.getAutoLayout();
+
+            assertTrue(loaded.isValid(),
+                "the configuration must still load - refusing it leaves a railway nobody can use: "
+                    + loaded.getInvalidReason());
+
+            int standing = 0;
+
+            for (String name : new String[]{"LOAD_east", "LOAD_west"})
+            {
+                if (loaded.getPoint(name).getCurrentLocomotive() != null) standing++;
+            }
+
+            assertEquals(standing, 1,
+                "a file holding two trains on one square put them both back on load");
+        }
+        finally
+        {
+            reloadSampleLayout();
+        }
+    }
+
+    /**
+     * Puts back the layout setUpClass loaded, for a test that had to replace it.
+     */
+    private static void reloadSampleLayout() throws Exception
+    {
+        model.parseAuto(new BufferedReader(new InputStreamReader(
+            TrainControlUI.class.getResource(RESOURCE_PATH + AUTONOMY_SAMPLE).openStream()))
+            .lines().collect(Collectors.joining("\n")));
+    }
+
+    /**
+     * Every key parseAuto reads off a Point, toJSON writes back - checked by asking the reader.
+     *
+     * This began as two assertions, on `block` and `protectingSignal`, wearing the name of an
+     * invariant.  Both had been omitted from the writer in turn while the reader understood them, and
+     * the javadoc claimed "the next field added will drift the same way unless something is watching" -
+     * while watching exactly two.  A test that names the fields it knows about cannot catch the field
+     * nobody thought of, which is the entire failure mode.
+     *
+     * So the source of truth is the READER.  Every key parseAuto looks for on a point is listed here,
+     * and the test fails if any of them is absent from what toJSON produced.  Adding a key to the
+     * reader without adding it to the writer now fails here rather than silently losing a setting on
+     * the next export; adding one to both means adding it to this list, which is the point at which
+     * somebody has to think about it.
+     */
+    @Test
+    public void testEveryKeyParseAutoReadsIsAlsoWritten() throws Exception
     {
         Layout layout = model.getAutoLayout();
 
         Point point = layout.getPoints().iterator().next();
 
-        String was = point.getBlock();
+        String hadBlock = point.getBlock();
         String hadSignal = point.getProtectingSignal();
+        String hadHome = point.getHomeLoc();
+        boolean wasActive = point.isActive();
 
         try
         {
+            // Everything optional set to a non-default, so nothing is omitted for being absent
             point.setBlock("main:9,9");
             point.setProtectingSignal("Signal 12");
+            point.setHomeLoc("Test loc 1");
+            point.setMaxTrainLength(7);
+            point.setPriority(3);
+            point.setSpeedMultiplier(0.75);
+            point.setAutoDestination(false);
+
+            // Not the default, deliberately.  The format omits a field that holds its default value -
+            // "active" is written only when false, and parseAuto defaults it to true - so a test that
+            // demanded every key be present would be asserting something the format does not promise.
+            // What it DOES promise is that a value somebody set is written, and that is what is asked
+            // here: every field is moved off its default first.
+            point.setActive(false);
 
             org.json.JSONObject json = point.toJSON();
 
-            assertEquals(json.optString("block", null), "main:9,9",
-                "the block a square shares was not exported, so an import would undo the block rule");
+            // The keys parseAuto looks for on a point.  Kept in the reader's order so the two can be
+            // compared by eye.
+            String[] readsOffAPoint =
+            {
+                "name", "station", "s88", "x", "y",
+                "block", "protectingSignal", "home", "maxTrainLength",
+                "active", "autoDestination", "priority", "speedMultiplier"
+            };
 
-            assertEquals(json.optString("protectingSignal", null), "Signal 12",
-                "the protecting signal was not exported, so an import would lose every pairing");
+            for (String key : readsOffAPoint)
+            {
+                assertTrue(json.has(key),
+                    "parseAuto reads \"" + key + "\" off a point and toJSON did not write it, so a "
+                        + "setup exported and imported comes back without it: " + json.toString());
+            }
         }
         finally
         {
-            point.setBlock(was);
+            point.setBlock(hadBlock);
             point.setProtectingSignal(hadSignal);
+            point.setHomeLoc(hadHome);
+            point.setActive(wasActive);
         }
     }
 

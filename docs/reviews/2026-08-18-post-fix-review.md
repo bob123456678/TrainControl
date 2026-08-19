@@ -92,6 +92,15 @@ quietly amending:
   bundle" - is also not in that diff.
 - **`6be8999`** describes the test-runner change. The runner lives in a scratchpad outside the repo, so
   no commit contains it.
+- **`6c897c8`** - written while listing the two above, and guilty of the same thing. Its message covers
+  the reviewers' findings and nothing else, while the commit also carries the Readme entries for the new
+  features, the three "longest" route options, the `Pages with Autonomy Enabled` rename and its move, and
+  the menu capitalization pass across eight bundles. `git add -A` swept a session's worth of work into a
+  commit named for one part of it.
+
+The pattern in all three is the same and worth naming: a commit message written from what was in mind
+rather than from what is in the diff. `git show --stat` before writing the message costs nothing and
+would have caught every one.
 
 Also corrected: the `KNOWN GOOD: 43 test classes clean` block in the manual test plan was written before
 it was discovered that two classes needing a display had never run at all.

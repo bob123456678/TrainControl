@@ -1426,6 +1426,22 @@ public class AutonomyViewerPanel extends JPanel
             String subject = finding.getTile() == null
                 ? finding.getSubject() : describeTile(finding.getTile());
 
+            // Errors and warnings only, and a notice is neither.
+            //
+            // This read "not an error, therefore a warning", which made an INFO finding a warning here
+            // while the editor called it a notice and the diagram strip - which counts errors and
+            // warnings - ignored it.  Close one tile's routes both ways and the same setup reported a
+            // warning, a notice, and nothing at all, depending which window was open.
+            //
+            // Dropped rather than given a section of its own: this panel exists to say whether anything
+            // is WRONG, which is what the hint below it is shown for.  A notice is tidiness, and the
+            // editor is where the full list lives.
+            if (finding.getSeverity() != AutonomyChecks.Severity.ERROR
+                && finding.getSeverity() != AutonomyChecks.Severity.WARNING)
+            {
+                continue;
+            }
+
             (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
                 new Object[] {finding.getTile(), describe(finding.getMessageKey(), subject)});
         }

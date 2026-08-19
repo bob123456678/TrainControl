@@ -451,7 +451,15 @@ public final class LayoutLabel extends JLabel
             {
                 // Counted before it is submitted, so that a grid asking "are the tiles ready" cannot
                 // see zero in the window between building the labels and the pool picking the work up.
-                this.tcUI.tileDecodeStarted();
+                //
+                // Only a FIRST draw is counted, never an update.  A tile's image key includes its state
+                // while the diagram is not being edited, so every switch thrown and every s88 event is
+                // a fresh key, a cache miss, and another decode - and autonomy throws several per path.
+                // Counting those meant the count was almost never at rest on a running layout, so a
+                // grid built while trains were moving waited on traffic that had nothing to do with it
+                // and sat behind its spinner until the failsafe fired.  A grid only ever waits for the
+                // batch it was built from.
+                if (!update) this.tcUI.tileDecodeStarted();
 
                 // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
                 this.tcUI.getTileImageLoader().submit(() ->
@@ -475,7 +483,7 @@ public final class LayoutLabel extends JLabel
                         // one unreadable image leaves the diagram waiting for it for ever.
                         setImageOnEDT(update);
 
-                        this.tcUI.tileDecodeFinished();
+                        if (!update) this.tcUI.tileDecodeFinished();
                     }
                 });
 

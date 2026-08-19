@@ -32,7 +32,20 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * @param loc
      * @param parent
      */
-    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent) 
+    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent)
+    {
+        this(loc, parent, false);
+    }
+
+    /**
+     * @param deferSearch true to skip the route search this normally does while being built.
+     *
+     * The search is synchronized on the Layout and walks the whole graph, so doing it per panel while
+     * the list is rebuilt stalls the event thread and can block it on a monitor a driving thread holds.
+     * A caller that passes true is promising to call findPaths off the event thread and hand the result
+     * back through updateState - which is what the full list repaint does.
+     */
+    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent, boolean deferSearch)
     {
         this.parent = parent;
         this.control = parent.getModel();
@@ -47,7 +60,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         locStation.setBackground(new Color(0,0,115));
         locStation.setForeground(new Color(255,255,255));
         
-        updateState(loc);
+        // With the search deferred, the panel is drawn from what is known without walking the graph -
+        // name, station, direction - and its route list is filled in when the worker returns.
+        updateState(loc, null, deferSearch);
         
         Font font = new Font("Arial Unicode MS", Font.PLAIN, 12); 
         if (font.canDisplay('\u23F8'))
@@ -121,6 +136,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         if (layout.isAutoRunning() || layout.getLocomotiveLocation(locomotive) == null) return null;
 
         return withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
+    }
+
+    public Locomotive getLocomotive()
+    {
+        return this.locomotive;
     }
 
     public void updateState(Locomotive someLoc)

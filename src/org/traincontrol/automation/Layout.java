@@ -2359,12 +2359,19 @@ public class Layout
                     // that crosses them.
                     //
                     // Safe for a crossing declared symmetrically - each of the two edges naming the
-                    // other as a lock edge, which is how the editor writes them - because the crossing
+                    // other as a lock edge, written symmetrically - because the crossing
                     // edge is then itself part of any conflicting path, so isPathClear rejects that path
-                    // on the edge's own occupancy flag while we hold it.  Note that isPathClear does NOT
-                    // inspect lock edges, and occupancy is a flag rather than a count, so this reasoning
-                    // does not extend to a hand-edited autonomy.json in which two edges name a third as
-                    // a lock edge without either of them traversing it.
+                    // on the edge's own occupancy flag while we hold it.
+                    //
+                    // Two claims that used to stand here are false and the reasoning must not be
+                    // extended on either.  Symmetry is NOT "how the editor writes them" - only
+                    // GraphReducer writes symmetric locks, GraphEdgeEdit.applyLockEdges writes one
+                    // direction, and the sample layout that ships carries 104 asymmetric relations out
+                    // of 118.  And isPathClear DOES inspect lock edges, through Edge.isLockHeld.
+                    //
+                    // Occupancy is still a flag rather than a count, so the caution about a hand-edited
+                    // autonomy.json in which two edges name a third they never traverse stands on that
+                    // ground alone.
                     for (Edge lockEdge : e.getLockEdges())
                     {
                         lockEdge.setLockedEdgeUnoccupied();
@@ -5313,9 +5320,25 @@ public class Layout
 
                             // De-conflict with other multi-units
                             layout.sanitizeMultiUnits(l);
-                            
+
+                            Point placeOn = layout.getPoint(point.getString("name"));
+
+                            // And with anything already standing on the same square.
+                            //
+                            // The second door into two trains on one piece of track, and the one that
+                            // matters more than hand placement: a file written while the layout was in
+                            // that state - by a version before the rule existed, hand-edited, or brought
+                            // from another machine - reinstated it on every load, so the fault outlived
+                            // the fix meant to end it.  fromJSON checks for a duplicate LOCOMOTIVE and
+                            // never for a duplicate square.
+                            //
+                            // Repaired rather than refused.  A configuration that will not load is a
+                            // railway nobody can use, and clearBlockExcept names the train it displaces,
+                            // so the repair is not a silent one.
+                            layout.clearBlockExcept(placeOn);
+
                             // Place the locomotive
-                            layout.getPoint(point.getString("name")).setLocomotive(l);
+                            placeOn.setLocomotive(l);
                             
                             // Reset if none present
                             l.setDepartureFunc(null);
