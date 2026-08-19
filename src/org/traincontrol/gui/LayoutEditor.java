@@ -1375,6 +1375,14 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
+        // Picking up a single tile puts the group down.
+        //
+        // Clearing it only in resetClipboard was not enough: that runs on Escape and on a click that
+        // turns out not to be a drag, but NOT on cut or copy - and both paste paths prefer the group.
+        // So copying a group, then later cutting one tile and pasting, stamped the old group's whole
+        // bounding box over the layout and left the cut tile where it was.
+        this.groupClipboard = null;
+
         this.lastX = getX(label);
         this.lastY = getY(label);
         this.pauseRepaint = false;
@@ -1627,10 +1635,35 @@ public class LayoutEditor extends PositionAwareJFrame
 
             org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
+            // Captions read first too, for exactly the reason the tiles are.
+            //
+            // moveCaption reads the live store and writes to it, so calling it per tile inside the
+            // write loop below made a group that overlaps its own footprint eat itself: two captioned
+            // squares side by side, dragged one to the right, and the first move overwrote the second
+            // square's caption before the second move came to read it - so one caption travelled two
+            // squares and the other was destroyed.  Dragging LEFT happened to work, which made it look
+            // intermittent rather than wrong.
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> carriedCaptions =
+                new java.util.ArrayList<>();
+
+            for (org.traincontrol.base.TileSelection.At at : from)
+            {
+                carriedCaptions.add(autonomy == null ? null
+                    : autonomy.getCaptionTarget(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), at.getX(), at.getY())));
+            }
+
             // Clear
             for (org.traincontrol.base.TileSelection.At at : from)
             {
                 layout.addComponent(null, at.getX(), at.getY());
+
+                // The caption goes with the tile, so the square it is leaving keeps nothing
+                if (autonomy != null)
+                {
+                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), at.getX(), at.getY()));
+                }
             }
 
             // Write
@@ -1651,15 +1684,21 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 layout.addComponent(carrying, toX, toY);
 
-                // Whatever autonomy had written on that square goes with it, the same as a single-tile
-                // move - a caption left behind names track that is no longer there
+                // Written from what was READ, not moved from a store the previous iterations have
+                // already changed.  A destination that carried a caption of its own loses it: the
+                // square now holds different track, and a caption that outlived the tile it described
+                // is the hazard the delete path exists to prevent.
                 if (autonomy != null)
                 {
-                    autonomy.moveCaption(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), at.getX(), at.getY()),
-                        new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), toX, toY));
+                    org.traincontrol.automationui.TileGraph.TileKey landing =
+                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), toX, toY);
+
+                    autonomy.forgetCaptionsAt(landing);
+
+                    if (carriedCaptions.get(i) != null)
+                    {
+                        autonomy.setCaption(landing, carriedCaptions.get(i));
+                    }
                 }
             }
 
@@ -2148,6 +2187,22 @@ public class LayoutEditor extends PositionAwareJFrame
             if (this.hasToolFlag() && layout.getComponent(lastX, lastY) != null)
             {
                 this.highlightLabel(this.grid.getValueAt(lastX, lastY), COMPONENT_BORDER_COPIED_COLOR);
+            }
+
+            // And the PICKED squares, which this used to wipe.
+            //
+            // Every hover of a tile clears the borders and redraws the blue one, so a selection
+            // vanished the instant the pointer moved on - while the selection itself stayed, and
+            // Delete still preferred it.  A user who could see no green anywhere and pressed Delete to
+            // remove the tile under the cursor deleted a whole invisible row instead.
+            if (panel == this.grid.getContainer())
+            {
+                for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+                {
+                    LayoutLabel picked = this.grid.getValueAt(at.getX(), at.getY());
+
+                    if (picked != null) this.highlightLabel(picked, COMPONENT_BORDER_SELECTED_COLOR);
+                }
             }
         }
     }

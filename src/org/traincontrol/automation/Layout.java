@@ -273,7 +273,7 @@ public class Layout
 
         if (destination == null) return 0;
 
-        Long last = this.lastArrival.get(destination.getUniqueId());
+        Long last = this.lastArrival.get(recencyKeyOf(destination));
 
         if (last == null) return Integer.MIN_VALUE;
 
@@ -284,6 +284,26 @@ public class Layout
         if (waited > Integer.MAX_VALUE) waited = Integer.MAX_VALUE;
 
         return (int) -waited;
+    }
+
+    /**
+     * What "this station" means when recording a visit: the SQUARE, not the arrival-side copy.
+     *
+     * By block where a Point has one, exactly as sensorsOn counts, and by the Point's own identity
+     * otherwise - a hand-built graph has no blocks and its Points already are one square each.
+     *
+     * Keying by uniqueId made the whole preference useless on the graphs it was written for. A train
+     * arriving at Tunnel by its north copy recorded nothing about the south copy, so a later route to
+     * the south copy found no visit and won outright as "never visited" - which on a derived graph is
+     * every station, every time. The rule degraded to random, and worse than random: once every
+     * station had one visited side, the just-visited ones kept beating the far corner nobody had been
+     * near, which is the exact opposite of what it promises.
+     */
+    private String recencyKeyOf(Point point)
+    {
+        if (point == null) return "";
+
+        return point.getBlock() != null ? point.getBlock() : point.getUniqueId();
     }
 
     /**
@@ -311,7 +331,7 @@ public class Layout
         // By unique id, which is what the real recording uses.  Keying by NAME here made the lookup
         // miss every time, so every station looked never-visited and the preference silently did
         // nothing - which the test caught, having been written to fail if it did nothing.
-        if (at != null) this.lastArrival.put(at.getUniqueId(), System.currentTimeMillis());
+        if (at != null) this.lastArrival.put(recencyKeyOf(at), System.currentTimeMillis());
     }
 
     /**
@@ -3062,9 +3082,19 @@ public class Layout
                     continue;
                 }
 
+                // Read INSIDE this method's synchronized block, immediately after the call that set
+                // it - but lastError is static and every running locomotive's thread writes it from
+                // pickPath, which is not synchronized on this Layout. So with trains moving, the
+                // message read here can be one generated for a different train's candidate route.
+                //
+                // The DECISION is never wrong: that comes from isPathClear's return value. Only the
+                // wording can be misattributed, and it is labelled as such rather than silently
+                // trusted, because a reason naming an edge nowhere near this route would send the user
+                // to look at the wrong piece of railway.
                 if (this.isPathClear(path, loc, false)) return null;
 
-                why = Layout.getLastError();
+                why = this.isAutoRunning()
+                    ? I18n.t("autolayout.why.blockedWhileRunning") : Layout.getLastError();
 
             } while (path != null);
         }
@@ -4067,7 +4097,7 @@ public class Layout
         
         // Recorded HERE, at the point the train has actually stopped at its destination, rather than
         // when the route was chosen - LEAST_RECENTLY_VISITED ranks by where trains have BEEN.
-        this.lastArrival.put(path.get(path.size() - 1).getEnd().getUniqueId(),
+        this.lastArrival.put(recencyKeyOf(path.get(path.size() - 1).getEnd()),
             System.currentTimeMillis());
 
         // Reverse at terminus station

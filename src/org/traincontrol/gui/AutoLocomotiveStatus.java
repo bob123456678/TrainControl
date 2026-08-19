@@ -60,6 +60,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         locStation.setBackground(new Color(0,0,115));
         locStation.setForeground(new Color(255,255,255));
         
+        explainOnHover();
+
         // With the search deferred, the panel is drawn from what is known without walking the graph -
         // name, station, direction - and its route list is filled in when the worker returns.
         updateState(loc, null, deferSearch);
@@ -251,6 +253,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             
             this.locStation.setToolTipText("");
 
+            // Cleared every time round, because only ONE branch below sets it.  Left standing, the
+            // explanation survived into the states it does not describe: the panel would say
+            // "double-click to execute", or draw a running route, while hovering the same label still
+            // listed obstacles that had stopped the train several minutes earlier.
+            this.noPathsNow = false;
+            this.locDest.setToolTipText(null);
+
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive))
             {
@@ -322,11 +331,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 {                    
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
 
-                    // And WHY, on hover.  "No available paths" is the symptom; the reason is a
-                    // different thing every time - a station occupied, one switched off, an exclusion,
-                    // no track at all - and until now the user had no way to find out which, because
-                    // the answer was computed on every attempt and thrown away.
-                    this.locDest.setToolTipText(whyNotToolTip());
+                    // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
+                    // stops on the label - see the mouse listener in the constructor.
+                    //
+                    // Computing them here was a mistake, and an expensive one.  updateState runs on the
+                    // event thread, once per panel; explainDestinations walks every candidate route to
+                    // every station and takes the Layout's monitor to do it.  So placing a locomotive
+                    // or loading a configuration - which rebuilds every panel with its search
+                    // deliberately DEFERRED, leaving each one in exactly this branch - did that whole
+                    // enumeration once per panel on the event thread, before the worker it had been
+                    // deferred to even started.  That is the freeze this file's own comments say must
+                    // never happen, reintroduced by the feature meant to explain it.
+                    this.noPathsNow = true;
                     this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
                         + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
@@ -480,6 +496,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * the user never chose.  Only the first reason per station is kept, which is the one that would
      * have stopped it.
      */
+    /**
+     * Whether this panel is currently showing "no available paths", and so has something to explain.
+     *
+     * Written on the event thread by updateState and read there by the hover listener.
+     */
+    private boolean noPathsNow;
+
+    /**
+     * Works the reasons out when the pointer stops on the destination label, and not before.
+     *
+     * Hovering is one panel, once, and the user asking - which is the only time this cost is worth
+     * paying.  Called from the constructor.
+     */
+    private void explainOnHover()
+    {
+        this.locDest.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e)
+            {
+                locDest.setToolTipText(noPathsNow ? whyNotToolTip() : null);
+            }
+        });
+    }
+
     private String whyNotToolTip()
     {
         if (layout == null || locomotive == null) return null;

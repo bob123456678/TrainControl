@@ -892,7 +892,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 4;
+                return 5;
             }
 
             @Override
@@ -903,7 +903,8 @@ public class RouteEditorFrame extends JFrame
                     case 0: return I18n.t("route.ui.frameColJoin");
                     case 1: return I18n.t("route.ui.frameColKind");
                     case 2: return I18n.t("route.ui.frameColTarget");
-                    default: return I18n.t("route.ui.frameColSetting");
+                    case 3: return I18n.t("route.ui.frameColSetting");
+                    default: return I18n.t("route.ui.frameColProtocol");
                 }
             }
 
@@ -925,8 +926,20 @@ public class RouteEditorFrame extends JFrame
                 // A term with no controls is shown whole and left alone, as the commands are
                 if (term == null) return column == 1 ? String.valueOf(at.getCommand()) : "";
 
-                return column == 1 ? term.getKind().toString()
-                    : column == 2 ? term.getTarget() : term.getSetting();
+                if (column == 1) return term.getKind().toString();
+                if (column == 2) return term.getTarget();
+                if (column == 3) return term.getSetting();
+
+                // The decoder type, for the kinds that have one.  A condition is evaluated by address
+                // AND protocol, and MM2 and DCC are separate address spaces - so without this column a
+                // hand-added accessory condition always meant the MM2 one, which on a DCC layout is a
+                // different physical accessory and a route that never fires.  Conditions LOADED from a
+                // route were always safe: CommandRow.of carries their protocol.  It was only the ones
+                // built here that could not say it.
+                if (!CommandRow.hasProtocol(term.getKind())) return "";
+
+                return (term.getProtocol() == null
+                    ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : term.getProtocol()).toString();
             }
 
             @Override
@@ -942,6 +955,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == 2) return CommandRow.hasTarget(term.getKind());
                 if (column == 3) return CommandRow.hasSetting(term.getKind());
+                if (column == 4) return CommandRow.hasProtocol(term.getKind());
 
                 return true;
             }
@@ -967,14 +981,28 @@ public class RouteEditorFrame extends JFrame
 
                 if (term == null) return;
 
-                CommandRow edited = column == 1
-                    ? new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(),
-                        term.getSetting(), term.getProtocol(), term.getDelay())
-                    : column == 2
-                        ? new CommandRow(term.getKind(), text, term.getSetting(),
-                            term.getProtocol(), term.getDelay())
-                        : new CommandRow(term.getKind(), term.getTarget(), text,
-                            term.getProtocol(), term.getDelay());
+                CommandRow edited;
+
+                if (column == 1)
+                {
+                    edited = new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(),
+                        term.getSetting(), term.getProtocol(), term.getDelay());
+                }
+                else if (column == 2)
+                {
+                    edited = new CommandRow(term.getKind(), text, term.getSetting(),
+                        term.getProtocol(), term.getDelay());
+                }
+                else if (column == 4)
+                {
+                    edited = new CommandRow(term.getKind(), term.getTarget(), term.getSetting(),
+                        protocolOf(text), term.getDelay());
+                }
+                else
+                {
+                    edited = new CommandRow(term.getKind(), term.getTarget(), text,
+                        term.getProtocol(), term.getDelay());
+                }
 
                 try
                 {
@@ -1017,6 +1045,17 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
             getColumnModel().getColumn(1).setPreferredWidth(150);
+
+            // The decoder type, chosen rather than typed - the same control the command table uses
+            JComboBox<String> conditionProtocols = new JComboBox<>();
+
+            for (Accessory.accessoryDecoderType type : Accessory.accessoryDecoderType.values())
+            {
+                conditionProtocols.addItem(type.toString());
+            }
+
+            getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(conditionProtocols));
+            getColumnModel().getColumn(4).setPreferredWidth(70);
         }
 
         void addRow()

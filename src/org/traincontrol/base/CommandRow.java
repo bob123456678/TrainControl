@@ -256,11 +256,11 @@ public final class CommandRow
 
             case ACCESSORY:
                 return RouteCommand.RouteCommandAccessory(number(target, "address"), protocol,
-                    "turn".equalsIgnoreCase(setting));
+                    oneOf(setting, "turn", "straight"));
 
             case FEEDBACK:
                 return RouteCommand.RouteCommandFeedback(number(target, "address"),
-                    "on".equalsIgnoreCase(setting));
+                    oneOf(setting, "on", "off"));
 
             case LOCOMOTIVE_SPEED:
                 requireName();
@@ -269,7 +269,7 @@ public final class CommandRow
             case LOCOMOTIVE_DIRECTION:
                 requireName();
                 return RouteCommand.RouteCommandLocomotiveDirection(target,
-                    "backward".equalsIgnoreCase(setting)
+                    oneOf(setting, "backward", "forward")
                         ? Locomotive.locDirection.DIR_BACKWARD
                         : Locomotive.locDirection.DIR_FORWARD);
 
@@ -287,12 +287,37 @@ public final class CommandRow
 
                 return RouteCommand.RouteCommandFunction(target,
                     number(setting.substring(0, colon), "function number"),
-                    "on".equalsIgnoreCase(setting.substring(colon + 1)));
+                    oneOf(setting.substring(colon + 1), "on", "off"));
             }
 
             default:
                 throw new IllegalArgumentException("no controls for " + kind);
         }
+    }
+
+    /**
+     * True for the first word, false for the second, and a refusal for anything else.
+     *
+     * The setting column is typed rather than chosen, and the old reading was
+     * `"backward".equalsIgnoreCase(setting) ? BACKWARD : FORWARD` - so a user who typed "backwards",
+     * or "back", or mis-hit a key, got FORWARD. Silently, with the table still showing what they had
+     * typed, and the locomotive running the other way when the route fired.
+     *
+     * That is precisely the failure RouteCommand.fromLine was hardened against, in a class whose whole
+     * purpose is to take the syntax risk away. An address typo is already refused with a dialog naming
+     * the row; a direction typo has to be refused the same way rather than quietly guessed.
+     *
+     * @throws IllegalArgumentException when the text is neither
+     */
+    private static boolean oneOf(String setting, String whenTrue, String whenFalse)
+    {
+        String text = setting == null ? "" : setting.trim();
+
+        if (whenTrue.equalsIgnoreCase(text)) return true;
+        if (whenFalse.equalsIgnoreCase(text)) return false;
+
+        throw new IllegalArgumentException(
+            "\"" + setting + "\" is not " + whenTrue + " or " + whenFalse);
     }
 
     private void requireName()

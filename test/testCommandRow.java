@@ -244,4 +244,75 @@ public class testCommandRow
         assertNull(rows.get(1), "the kind with no controls is a hole, not a missing entry");
         assertNotNull(rows.get(2));
     }
+
+    /**
+     * A misspelt setting is refused, not guessed.
+     *
+     * The setting column is typed rather than chosen, and the reading used to be
+     * "backward".equalsIgnoreCase(setting) ? BACKWARD : FORWARD - so "backwards", or "back", or a
+     * mis-hit key, silently became FORWARD.  The table went on showing what the user typed, and the
+     * locomotive ran the other way when the route fired.
+     *
+     * That is the exact failure RouteCommand.fromLine was hardened against, in a class whose purpose
+     * is to take the syntax risk away.  An address typo was already refused with a dialog naming the
+     * row; a direction typo has to be refused the same way.
+     */
+    @Test
+    public void testAMisspeltSettingIsRefusedRatherThanGuessed()
+    {
+        String[][] typos = {
+            {"LOCOMOTIVE_DIRECTION", "BR 628", "backwards"},
+            {"LOCOMOTIVE_DIRECTION", "BR 628", "back"},
+            {"ACCESSORY", "12", "turned"},
+            {"FEEDBACK", "21", "yes"},
+            {"FUNCTION", "BR 628", "4:enabled"},
+        };
+
+        for (String[] typo : typos)
+        {
+            CommandRow row = new CommandRow(
+                CommandRow.Kind.valueOf(typo[0]), typo[1], typo[2]);
+
+            try
+            {
+                row.toCommand(Accessory.accessoryDecoderType.MM2);
+
+                fail("\"" + typo[2] + "\" was accepted as a " + typo[0] + " setting and quietly "
+                    + "turned into whichever value the code defaults to.  A route saved this way does "
+                    + "the opposite of what the row on screen says");
+            }
+            catch (IllegalArgumentException expected)
+            {
+                // The offending PART, which for a function is what follows the colon - naming
+                // "enabled" rather than "4:enabled" points at the half that is wrong
+                String offending = typo[2].contains(":")
+                    ? typo[2].substring(typo[2].indexOf(':') + 1) : typo[2];
+
+                assertTrue(expected.getMessage().contains(offending),
+                    "the refusal must quote what was typed, so the user can see which cell is wrong: "
+                    + expected.getMessage());
+            }
+        }
+    }
+
+    /**
+     * And the spellings that ARE right still work, in either case.
+     */
+    @Test
+    public void testTheRealSettingsAreStillAccepted()
+    {
+        assertEquals(new CommandRow(CommandRow.Kind.LOCOMOTIVE_DIRECTION, "BR 628", "BACKWARD")
+            .toCommand(Accessory.accessoryDecoderType.MM2).getDirection(),
+            Locomotive.locDirection.DIR_BACKWARD, "case must not matter");
+
+        assertEquals(new CommandRow(CommandRow.Kind.LOCOMOTIVE_DIRECTION, "BR 628", "forward")
+            .toCommand(Accessory.accessoryDecoderType.MM2).getDirection(),
+            Locomotive.locDirection.DIR_FORWARD);
+
+        assertTrue(new CommandRow(CommandRow.Kind.ACCESSORY, "12", "turn")
+            .toCommand(Accessory.accessoryDecoderType.MM2).getSetting());
+
+        assertFalse(new CommandRow(CommandRow.Kind.ACCESSORY, "12", "straight")
+            .toCommand(Accessory.accessoryDecoderType.MM2).getSetting());
+    }
 }

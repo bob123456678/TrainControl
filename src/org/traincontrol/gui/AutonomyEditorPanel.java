@@ -538,14 +538,36 @@ public class AutonomyEditorPanel extends JPanel
      * The one tool.  Deliberately NOT in a ButtonGroup: with a single toggle, a group would make it
      * impossible to switch back off again.
      */
+    /**
+     * Every tool toggle, so that arming one disarms the rest.
+     *
+     * A ButtonGroup would not do: it makes the selection permanent, and these have to be un-pressable
+     * to get back to the ordinary state where clicking a square edits it.
+     */
+    private final java.util.List<JToggleButton> toolButtons = new java.util.ArrayList<>();
+
     private JToggleButton toolButton(final Tool which, String text)
     {
         final JToggleButton button = new JToggleButton(text, false);
+
+        toolButtons.add(button);
 
         button(button);
 
         button.addActionListener(e ->
         {
+            // Every OTHER tool button comes up.
+            //
+            // There was one tool button and no group, and a comment saying so deliberately.  A second
+            // arrived and inherited the arrangement, so both could look pressed at once - and
+            // un-pressing the stale one set the tool to NONE while the other still looked armed.  The
+            // next click then fell through to cycle(), which CHANGES a square's direction: a read-only
+            // inspection tool that appeared to be armed silently edited the railway.
+            for (JToggleButton other : toolButtons)
+            {
+                if (other != button) other.setSelected(false);
+            }
+
             tool = button.isSelected() ? which : Tool.NONE;
             pendingPortal = null;
             selection.clear();
