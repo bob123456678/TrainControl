@@ -1845,13 +1845,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         getDiagramMonitorDriver().bind(session);
         getDiagramMonitorDriver().start();
 
-        boolean firstTime = autonomyOverlayToggle == null;
-
         ensureDiagramStrip();
 
-        if (firstTime)
+        // Handed over whenever a configuration is loaded, not only when this method built the strip.
+        //
+        // The strip has a second builder: the banner that says a layout HAS a setup nobody has loaded.
+        // That fires at startup on every layout with a saved setup, so by the time a configuration was
+        // actually loaded the toggle already existed, "first time" was false, and the two buttons were
+        // never handed over at all.  syncRun then had nothing to copy and hid the control - which is to
+        // say the Start button was missing from the diagram on exactly the layouts that had autonomy
+        // set up on them, and present only on the ones that did not.
+        //
+        // Cheap to repeat: it assigns two fields and re-reads them.
+        autonomyOverlayToggle.bindRunButtons(this.startAutonomy, this.gracefulStop);
+
+        if (!listeningToRunButtons)
         {
-            autonomyOverlayToggle.bindRunButtons(this.startAutonomy, this.gracefulStop);
+            listeningToRunButtons = true;
 
             // Listened for rather than called at each site.  Fourteen places in this class switch these
             // two buttons on and off - power, placement, a locomotive still rolling, a refused load,
@@ -3028,6 +3038,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autonomyDiagramStrip;
 
     private AutonomyOverlayToggle autonomyOverlayToggle;
+
+    /**
+     * Whether the strip's copy of the run buttons is already following the real ones.
+     *
+     * Kept apart from whether the strip EXISTS, which is what this used to be read off.  Two different
+     * things build the strip and only one of them owned the binding, so the answer was wrong whenever
+     * the other one got there first.
+     */
+    private boolean listeningToRunButtons;
 
     /**
      * Which on-screen tiles stand for which square of the diagram, for autonomy to light up.

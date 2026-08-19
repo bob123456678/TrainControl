@@ -329,17 +329,15 @@ public class testRouteInventory
     @Test
     public void testWhatTheUiWouldShow() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1g.json");
-
-        if (!bundle.isFile()) return;
-
-        String configuration = build(bundle);
+        // The LIVE setup, not a bundle.  Every time this harness has been pointed at an export it
+        // has answered a question about a snapshot somebody took hours ago.
+        String configuration = build(null);
 
         model.parseAuto(configuration);
 
         Layout layout = model.getAutoLayout();
 
-        StringBuilder out = new StringBuilder("# what the UI would show, Autonomy 1g\n\n");
+        StringBuilder out = new StringBuilder("# what the UI would show, live setup\n\n");
 
         if (layout == null || !layout.isValid())
         {

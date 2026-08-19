@@ -228,6 +228,9 @@ public class AutonomyEditorPanel extends JPanel
     // A one-way run started from the right-click menu, waiting for its far end
     private TileKey oneWayFrom;
 
+    // The station whose protecting signal is being picked by clicking one, waiting for that click
+    private TileKey signalFor;
+
     // Where the locomotive roster comes from.  Supplied rather than read here, because the session is
     // headless and knows nothing about the control station.
     private java.util.function.Supplier<List<String>> locomotiveNames;
@@ -476,7 +479,7 @@ public class AutonomyEditorPanel extends JPanel
     private void cancelPendingGesture()
     {
         boolean pending = tool != Tool.NONE || testFrom != null || oneWayFrom != null
-            || pendingPortal != null;
+            || pendingPortal != null || signalFor != null;
 
         if (!pending) return;
 
@@ -484,6 +487,7 @@ public class AutonomyEditorPanel extends JPanel
         testFrom = null;
         oneWayFrom = null;
         pendingPortal = null;
+        signalFor = null;
         traces.clear();
 
         if (testButton != null) testButton.setSelected(false);
@@ -514,6 +518,7 @@ public class AutonomyEditorPanel extends JPanel
             // A one-way run waiting for its far end survived this, so the next click anywhere was
             // swallowed by a gesture the user had already moved on from.
             oneWayFrom = null;
+            signalFor = null;
 
             say(hint, tool == Tool.TEST
                 ? I18n.t("autosetup.ui.promptTestStart") : I18n.t("autosetup.ui.hintClickToCycle"));
@@ -1939,60 +1944,153 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks which signal protects a station, from the signals on this setup.
+     * Whether a square is something a station can be told is its protecting signal.
      *
-     * Every signal the graph knows, named by its accessory, because that is what a person reads off
-     * the diagram - and the accessory is what the running layout will actually throw.  A signal with
-     * no address cannot be commanded, so it is not offered.
+     * A SIGNAL with an address, and nothing else.  isSignal() answers true for a lamp as well - the two
+     * share a drawing path - and a lamp is decoration with nothing behind it to throw.  No address means
+     * no way to command it, which is the whole point of the pairing.
+     *
+     * @param component what is drawn on the square, or null for an empty one
+     */
+    private boolean isPairableSignal(LayoutDiagramComponent component)
+    {
+        return component != null
+            && component.getType() == LayoutDiagramComponent.componentType.SIGNAL
+            && component.getAccessory() != null;
+    }
+
+    /**
+     * Asks which signal protects a station, and how the user would like to say.
+     *
+     * Two ways, because two quite different people ask this question.  Somebody looking at the diagram
+     * knows the signal by where it is and can point at it; somebody who set the layout up knows it by
+     * its address and would have to hunt for it on screen.  A list of every signal on the railway served
+     * neither: it named them by accessory and coordinate, which is the one description nobody holds in
+     * their head.
+     *
+     * Clicking is the default, and it is the one offered first.
      *
      * @param station the station's square
      */
     private void pairProtectingSignal(TileKey station)
     {
-        java.util.List<TileKey> candidates = new java.util.ArrayList<>();
-        java.util.List<String> labels = new java.util.ArrayList<>();
+        boolean paired = session.getProtectingSignal(station) != null;
+
+        java.util.List<String> choices = new java.util.ArrayList<>();
+
+        choices.add(I18n.t("autosetup.ui.optionClickSignal"));
+        choices.add(I18n.t("autosetup.ui.optionSignalAddress"));
+
+        // Only where there is something to remove.  "Remove the pairing" on a station that has none is
+        // a button that cannot do anything, sitting where the user is choosing between two that can.
+        if (paired) choices.add(I18n.t("autosetup.ui.optionClearSignal"));
+
+        int answer = JOptionPane.showOptionDialog(owner(),
+            I18n.f("autosetup.ui.promptSignalHow", describeTile(station)),
+            I18n.t("autosetup.ui.menuPairSignal"),
+            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            choices.toArray(), choices.get(0));
+
+        if (answer < 0) return;
+
+        if (paired && answer == 2)
+        {
+            applyProtectingSignal(station, null);
+            return;
+        }
+
+        if (answer == 0)
+        {
+            // Waits for a click.  Nothing else about the editor changes except that everything which is
+            // not a signal goes grey, which is what makes "click the signal" a thing that can be done
+            // rather than a thing that has to be searched for.
+            signalFor = station;
+
+            waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
+
+            refresh();
+            return;
+        }
+
+        pairSignalByAddress(station);
+    }
+
+    /**
+     * Finds a signal by the address written on it and pairs that.
+     *
+     * The LOGICAL address, which is the number the user sees everywhere - on the tile, in the switch
+     * panel, in the accessory list.  Taken off the diagram component, which holds exactly that number:
+     * the control station subtracts one from it to reach the accessory, because the protocol counts
+     * from zero.  Asking the accessory instead would mean asking the user to subtract that one
+     * themselves, from the label in front of them.
+     *
+     * @param station the station's square
+     */
+    private void pairSignalByAddress(TileKey station)
+    {
+        String typed = JOptionPane.showInputDialog(owner(),
+            I18n.t("autosetup.ui.promptSignalAddress"), I18n.t("autosetup.ui.menuPairSignal"),
+            JOptionPane.PLAIN_MESSAGE);
+
+        if (typed == null) return;
+
+        int wanted;
+
+        try
+        {
+            wanted = Integer.parseInt(typed.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(owner(),
+                I18n.f("autosetup.ui.errorSignalAddressNotANumber", typed.trim()));
+            return;
+        }
+
+        TileKey found = null;
 
         if (session.getGraph() != null)
         {
             for (java.util.Map.Entry<TileKey, LayoutDiagramComponent> entry
                 : session.getGraph().getTiles().entrySet())
             {
-                LayoutDiagramComponent component = entry.getValue();
+                if (!isPairableSignal(entry.getValue())) continue;
 
-                if (component == null || !component.isSignal()) continue;
-
-                if (component.getAccessory() == null) continue;
-
-                candidates.add(entry.getKey());
-                labels.add(component.getAccessory().getName() + "  -  " + entry.getKey().toString());
+                if (entry.getValue().getAddress() == wanted)
+                {
+                    found = entry.getKey();
+                    break;
+                }
             }
         }
 
-        if (candidates.isEmpty())
+        if (found == null)
         {
-            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNoSignals"));
+            JOptionPane.showMessageDialog(owner(),
+                I18n.f("autosetup.ui.errorNoSignalAtAddress", wanted));
             return;
         }
 
-        // Clearing is an answer too, and the only way back once a pairing is made
-        labels.add(0, I18n.t("autosetup.ui.labelNoSignal"));
-        candidates.add(0, null);
+        applyProtectingSignal(station, found);
+    }
 
-        TileKey current = session.getProtectingSignal(station);
+    /**
+     * Records the pairing, or clears it, and says which in words.
+     *
+     * @param station the station's square
+     * @param signal the signal's square, or null to remove the pairing
+     */
+    private void applyProtectingSignal(TileKey station, TileKey signal)
+    {
+        session.setProtectingSignal(station, signal);
 
-        Object chosen = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptPickSignal"), I18n.t("autosetup.ui.menuPairSignal"),
-            JOptionPane.PLAIN_MESSAGE, null, labels.toArray(),
-            labels.get(current == null ? 0 : Math.max(0, candidates.indexOf(current))));
-
-        if (chosen == null) return;
-
-        session.setProtectingSignal(station,
-            candidates.get(labels.indexOf(String.valueOf(chosen))));
+        say(hint, signal == null
+            ? I18n.f("autosetup.ui.clearedSignal", describeTile(station))
+            : I18n.f("autosetup.ui.setSignal", describeTile(station), describeTile(signal)));
 
         refresh();
 
-        flashMenuTarget();
+
     }
 
     private void applyLength(TileKey tile)
@@ -2060,6 +2158,27 @@ public class AutonomyEditorPanel extends JPanel
                 : I18n.f("autosetup.ui.oneWayDone", changed));
 
             refresh();
+            return;
+        }
+
+        // A station is waiting to be told which signal protects it, and this is that click.
+        //
+        // Answered BEFORE the ignored check below, because a signal is one of the squares that check
+        // greys out: autonomy routes no trains through a signal, so ordinarily there is nothing to set
+        // on one.  Here it is the only thing worth clicking.
+        if (signalFor != null)
+        {
+            TileKey station = signalFor;
+
+            if (!isPairableSignal(component))
+            {
+                say(hint, I18n.t("autosetup.ui.errorNotASignal"));
+                return;
+            }
+
+            signalFor = null;
+
+            applyProtectingSignal(station, tile);
             return;
         }
 
@@ -2649,6 +2768,15 @@ public class AutonomyEditorPanel extends JPanel
         java.util.List<org.traincontrol.automationui.TileAnnotation.Mark> marks = new java.util.ArrayList<>();
 
         boolean ignored = isIgnored(tile);
+
+        // While a signal is being picked, everything that is not one is greyed.
+        //
+        // The gesture is "click the signal", and on a diagram of several hundred squares that is a
+        // sentence rather than an instruction until the squares it could possibly mean are the only
+        // ones left in colour.  It inverts the usual meaning of grey here - a signal is normally the
+        // greyed thing, because autonomy runs no trains through one - which is exactly why the two
+        // states cannot be on screen at once.
+        if (signalFor != null) ignored = !isPairableSignal(componentAt(tile));
 
         // A link autonomy has been told to ignore carries no trains, so it carries no arrows either.
         // Its route is still a stub the port map knows about, and drawn from that it kept an arrow
