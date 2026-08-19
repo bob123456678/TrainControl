@@ -231,6 +231,9 @@ public class AutonomyEditorPanel extends JPanel
     // The station whose protecting signal is being picked by clicking one, waiting for that click
     private TileKey signalFor;
 
+    // A signal drawn outlined, so that "protected by signal 12" can be pointed at rather than read
+    private TileKey highlightedSignal;
+
     // Where the locomotive roster comes from.  Supplied rather than read here, because the session is
     // headless and knows nothing about the control station.
     private java.util.function.Supplier<List<String>> locomotiveNames;
@@ -488,6 +491,7 @@ public class AutonomyEditorPanel extends JPanel
         oneWayFrom = null;
         pendingPortal = null;
         signalFor = null;
+        highlightedSignal = null;
         traces.clear();
 
         if (testButton != null) testButton.setSelected(false);
@@ -856,23 +860,6 @@ public class AutonomyEditorPanel extends JPanel
             final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
                 session.arrivalSides(target);
 
-            // The signal that is thrown to red while this platform is claimed.
-            //
-            // Paired by hand rather than inferred: the nearest signal on the approach is not always the
-            // one that protects a platform, and a wrong guess here throws a real signal on real
-            // hardware.  Picked from a list rather than by a second click on the diagram, which is how
-            // links are paired - the same shape of question, so the same shape of answer.
-            if (isStation)
-            {
-                TileKey paired = session.getProtectingSignal(target);
-
-                menu.add(item(
-                    paired == null
-                        ? I18n.t("autosetup.ui.menuPairSignal")
-                        : I18n.f("autosetup.ui.menuPairedSignal", describeTile(paired)),
-                    () -> pairProtectingSignal(target)));
-            }
-
             if (isStation && ways.size() > 1)
             {
                 javax.swing.JMenu arrivals = new javax.swing.JMenu(
@@ -899,6 +886,30 @@ public class AutonomyEditorPanel extends JPanel
                 }
 
                 menu.add(arrivals);
+            }
+
+            // The signal that is thrown to red while this platform is claimed.
+            //
+            // Paired by hand rather than inferred: the nearest signal on the approach is not always the
+            // one that protects a platform, and a wrong guess here throws a real signal on real
+            // hardware.
+            //
+            // Last of the station settings, under the arrivals it belongs beside.  What the square IS,
+            // then which way trains turn on it, then which ends they may come in by, then what is held
+            // against them while one is standing there - each answer assuming the one above it.
+            //
+            // Labelled with the signal's ADDRESS, which is how anybody refers to a signal, and outlined
+            // on the diagram while the item is being acted on: the address says which signal, the
+            // outline says where.
+            if (isStation)
+            {
+                TileKey paired = session.getProtectingSignal(target);
+
+                menu.add(item(
+                    paired == null
+                        ? I18n.t("autosetup.ui.menuPairSignal")
+                        : I18n.f("autosetup.ui.menuPairedSignal", addressOf(paired)),
+                    () -> pairProtectingSignal(target)));
             }
 
             menu.addSeparator();
@@ -1974,8 +1985,34 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void pairProtectingSignal(TileKey station)
     {
-        boolean paired = session.getProtectingSignal(station) != null;
+        TileKey already = session.getProtectingSignal(station);
 
+        boolean paired = already != null;
+
+        // Outlined on the diagram for as long as the question is on screen.  The item names the signal
+        // by address, which identifies it; the outline is what says WHERE it is, and that is the half
+        // somebody checking an existing pairing has come to find out.
+        highlightedSignal = already;
+
+        if (paired) refresh();
+
+        try
+        {
+            askAboutProtectingSignal(station, already, paired);
+        }
+        finally
+        {
+            highlightedSignal = null;
+
+            if (paired) refresh();
+        }
+    }
+
+    /**
+     * The question itself, with the highlight held around it by the caller.
+     */
+    private void askAboutProtectingSignal(TileKey station, TileKey already, boolean paired)
+    {
         java.util.List<String> choices = new java.util.ArrayList<>();
 
         choices.add(I18n.t("autosetup.ui.optionClickSignal"));
@@ -1986,7 +2023,9 @@ public class AutonomyEditorPanel extends JPanel
         if (paired) choices.add(I18n.t("autosetup.ui.optionClearSignal"));
 
         int answer = JOptionPane.showOptionDialog(owner(),
-            I18n.f("autosetup.ui.promptSignalHow", describeTile(station)),
+            !paired ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
+                    : I18n.f("autosetup.ui.promptSignalHowPaired",
+                        describeTile(station), addressOf(already)),
             I18n.t("autosetup.ui.menuPairSignal"),
             JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
             choices.toArray(), choices.get(0));
@@ -2690,6 +2729,22 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What a square is, for a message that would otherwise be a coordinate.
      */
+    /**
+     * The address written on a signal, which is how anybody refers to one.
+     *
+     * describeTile falls back to a grid coordinate, and a coordinate is the one description of a signal
+     * that means nothing to a person: it is not on the tile, not in the accessory list, and not what
+     * they would say out loud.  The LOGICAL address is all three.
+     *
+     * @param tile the signal's square
+     */
+    private String addressOf(TileKey tile)
+    {
+        LayoutDiagramComponent component = componentAt(tile);
+
+        return component == null ? describeTile(tile) : String.valueOf(component.getAddress());
+    }
+
     private String describeTile(TileKey tile)
     {
         String named = session.getStore().getPointName(tile);
@@ -2855,7 +2910,11 @@ public class AutonomyEditorPanel extends JPanel
         // Only the square a test is waiting on borrows the selection outline now.  The route itself is
         // drawn as a line through the track, which says which way it goes; an outline around every
         // square it crossed said only that it went somewhere.
-        boolean outlined = selection.contains(tile) || tile.equals(testFrom);
+        // The paired signal borrows the outline too, while its menu item is being acted on.  An
+        // address names the signal but does not say where it is, and where it is is the thing somebody
+        // checking a pairing actually wants to know.
+        boolean outlined = selection.contains(tile) || tile.equals(testFrom)
+            || tile.equals(highlightedSignal);
 
         // In the arrivals view every station shows every side it has, so the setting can be READ -
         // an unrestricted station drawing nothing is right on the running diagram and useless in the
