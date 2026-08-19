@@ -498,14 +498,14 @@ public class LayoutDiagram
     }
     
     /**
-     * Whether the rightmost column and the top and bottom rows are all empty.
+     * Whether the rightmost column and the bottom row are both empty.
      *
      * Asked before trimming them, so a diagram is never made smaller by throwing track away.  The
      * answer is what lets the editor refuse the whole operation rather than removing what it can.
      */
     synchronized public boolean edgesAreEmpty()
     {
-        if (sx < 2 || sy < 3) return false;
+        if (sx < 2 || sy < 2) return false;
 
         for (int y = 0; y < sy; y++)
         {
@@ -514,7 +514,6 @@ public class LayoutDiagram
 
         for (int x = 0; x < sx; x++)
         {
-            if (grid.get(x).get(0) != null) return false;
             if (grid.get(x).get(sy - 1) != null) return false;
         }
 
@@ -522,11 +521,11 @@ public class LayoutDiagram
     }
 
     /**
-     * Removes the rightmost column and the top and bottom rows.
+     * Removes the rightmost column and the bottom row.
      *
      * The mirror of what a single "+" adds, so the two undo each other exactly - a diagram grown by
-     * one press and shrunk by the next is the diagram it started as.  Removing the TOP row moves
-     * everything up by one, so every component's stored row is corrected as it goes.
+     * one press and shrunk by the next is the diagram it started as, with every square still where it
+     * was.
      *
      * Refuses unless {@link #edgesAreEmpty} - a smaller diagram must never mean less railway.
      */
@@ -546,24 +545,9 @@ public class LayoutDiagram
 
         sy -= 1;
 
-        // The top row, which moves everything above it up
-        for (List<LayoutDiagramComponent> col : grid)
-        {
-            col.remove(0);
-        }
-
-        sy -= 1;
-
-        for (int x = 0; x < sx; x++)
-        {
-            for (int y = 0; y < sy; y++)
-            {
-                LayoutDiagramComponent component = grid.get(x).get(y);
-
-                if (component != null) component.setY(y);
-            }
-        }
-
+        // Nothing MOVES.  Removing only the far edges leaves every remaining square where it was,
+        // which is what keeps every coordinate anything else has stored about this page - stations,
+        // signal pairings, arrival restrictions, captions - pointing at the same square it did before.
         maxx = sx - 1;
         maxy = sy - 1;
 

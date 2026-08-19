@@ -605,6 +605,142 @@ public class testAutoLayout
     }
 
     /**
+     * "Fewest sensors" counts SENSORS, not hops of the running graph.
+     *
+     * On a derived graph a square is several Points - one per arrival side - and they share a block.
+     * Counting hops therefore counts the model's own structure: two routes crossing exactly the same
+     * physical s88s can come out with different numbers, and the route that "wins" wins for a reason
+     * nothing on the diagram shows.
+     *
+     * The fixture makes that concrete.  One way round goes through two Points that are two copies of a
+     * single square; the other goes through two genuinely different squares.  By hops they are equal.
+     * By sensors the first is one shorter, and that is the one it must take.
+     */
+    @Test
+    public void testFewestSensorsCountsSensorsAndNotGraphHops() throws Exception
+    {
+        Layout.PathPreference was = Layout.getPathPreference();
+
+        Layout layout = new Layout(model);
+
+        MarklinFeedback start = model.newFeedback(81, null);
+        MarklinFeedback shared = model.newFeedback(82, null);
+        MarklinFeedback plainA = model.newFeedback(83, null);
+        MarklinFeedback plainB = model.newFeedback(84, null);
+        MarklinFeedback end = model.newFeedback(85, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{start, shared, plainA, plainB, end})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("SC_Start", true, start.getName());
+        layout.createPoint("SC_End", true, end.getName());
+
+        // Two copies of ONE square, the way the builder emits an arrival-side split: different Points,
+        // same block
+        layout.createPoint("SC_Split1", false, shared.getName());
+        layout.createPoint("SC_Split2", false, shared.getName());
+
+        layout.getPoint("SC_Split1").setBlock("SC_SharedSquare");
+        layout.getPoint("SC_Split2").setBlock("SC_SharedSquare");
+
+        // Two genuinely different squares
+        layout.createPoint("SC_PlainA", false, plainA.getName());
+        layout.createPoint("SC_PlainB", false, plainB.getName());
+
+        layout.getPoint("SC_PlainA").setBlock("SC_SquareA");
+        layout.getPoint("SC_PlainB").setBlock("SC_SquareB");
+
+        // Both ways are THREE hops
+        layout.createEdge("SC_Start", "SC_Split1");
+        layout.createEdge("SC_Split1", "SC_Split2");
+        layout.createEdge("SC_Split2", "SC_End");
+
+        layout.createEdge("SC_Start", "SC_PlainA");
+        layout.createEdge("SC_PlainA", "SC_PlainB");
+        layout.createEdge("SC_PlainB", "SC_End");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "SC_Start", false);
+
+        try
+        {
+            Layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "SC_Split1",
+                "the two routes are the same length in hops, so a hop count cannot tell them apart - "
+                + "but one crosses ONE sensor and the other crosses two, and fewest-sensors has to "
+                + "take the one that crosses one");
+        }
+        finally
+        {
+            Layout.setPathPreference(was);
+        }
+    }
+
+    /**
+     * "Least recently visited" sends trains where they have not been.
+     *
+     * The rule an operator reaches for first, and the one every other rule here cannot express: none
+     * of the others knows or cares where trains have already been, so a layout with a favourite loop
+     * can leave its far corner untouched all evening.
+     */
+    @Test
+    public void testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen() throws Exception
+    {
+        Layout.PathPreference was = Layout.getPathPreference();
+
+        Layout layout = new Layout(model);
+
+        MarklinFeedback start = model.newFeedback(86, null);
+        MarklinFeedback nearby = model.newFeedback(87, null);
+        MarklinFeedback faraway = model.newFeedback(88, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{start, nearby, faraway})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("LR_Start", true, start.getName());
+        layout.createPoint("LR_Nearby", true, nearby.getName());
+        layout.createPoint("LR_Faraway", true, faraway.getName());
+
+        layout.createEdge("LR_Start", "LR_Nearby");
+        layout.createEdge("LR_Start", "LR_Faraway");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "LR_Start", false);
+
+        try
+        {
+            Layout.setPathPreference(Layout.PathPreference.LEAST_RECENTLY_VISITED);
+
+            // One of them has just had a train.  The other has never had one.
+            layout.noteArrivalForTest("LR_Nearby");
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Faraway",
+                "a station that has just had a train was chosen over one that has never had one, so "
+                + "the rule is not ranking by where trains have been at all");
+
+            // And now the other way round, so this cannot be passing by luck of the ordering
+            Thread.sleep(1100);
+
+            layout.noteArrivalForTest("LR_Faraway");
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "LR_Nearby",
+                "with the far station now the more recently visited, the choice has to swap - a rule "
+                + "that always picks the same one is indistinguishable from no rule");
+        }
+        finally
+        {
+            Layout.setPathPreference(was);
+        }
+    }
+
+    /**
      * The name of the point a route reaches first, which is what says which way it went.
      */
     private String nameOfSecondPoint(java.util.List<Edge> path)

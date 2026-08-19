@@ -340,6 +340,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Coalesces a burst of arrivals into one repaint.  Cleared in a finally by the task that set it,
      * so a refresh that fails cannot leave the panels frozen for the rest of the session.
      */
+    /**
+     * What syncWithCS2 answers when it turned a caller away because one was already running.
+     *
+     * A value of its own rather than -1, because -1 already means "the sync FAILED" and every caller
+     * reads it that way. Returning -1 for a refusal made the Sync menu report a failure that had not
+     * happened, and made a caller that clears the layouts first do so and then not sync.
+     */
+    public static final int SYNC_ALREADY_RUNNING = -2;
+
     /** True while a Central Station sync is running, so a second one is turned away rather than run. */
     private final java.util.concurrent.atomic.AtomicBoolean syncInFlight =
         new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -724,6 +733,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Restore UI component state
         buildPathPreferenceMenu();
         buildNewRouteEditorMenu();
+        buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -4477,7 +4487,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 key.setFont(font.deriveFont(attributes));
             }
             
-            if (this.routeEditor != null || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
+            // The NEW editor belongs in this gate too.  It was not added when the capture branch below
+            // was written, so capture in the new editor did nothing at all unless the OLD editor
+            // happened to be open beside it - the box ticked, switches were thrown, and no command
+            // appeared.  Precisely the feature its own commit message called "easy to leave out of a
+            // rebuild and hard to notice missing until somebody tried".
+            if (this.routeEditor != null || this.newRouteEditor != null
+                || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
@@ -4836,7 +4852,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH,
             null,
             org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS,
-            org.traincontrol.automation.Layout.PathPreference.MOST_POINTS
+            org.traincontrol.automation.Layout.PathPreference.MOST_POINTS,
+            null,
+            // On its own at the bottom, because it is the only one that ranks by where trains have
+            // BEEN rather than by the shape of the route
+            org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED
         };
 
         for (final org.traincontrol.automation.Layout.PathPreference option : order)
@@ -4898,8 +4918,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * queued.  Turned away rather than made to wait because the callers are all "sync after I changed
      * something", and a sync already running will pick that change up.
      *
-     * @return whatever syncWithCS2 returned, so a caller can still read it, or -1 when another sync
-     *         was already running
+     * @return whatever syncWithCS2 returned, so a caller can still read it, or SYNC_ALREADY_RUNNING
+     *         when another sync was in progress - which is NOT a failure and must not be reported as
+     *         one
      */
     public int syncWithCS2()
     {
@@ -4907,7 +4928,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.log(I18n.t("ui.infoSyncAlreadyRunning"));
 
-            return -1;
+            return SYNC_ALREADY_RUNNING;
         }
 
         try
@@ -4976,6 +4997,130 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         routesMenu.addSeparator();
         routesMenu.add(item);
+    }
+
+    /**
+     * "Save diagram as a picture", on the Layout menu.
+     *
+     * Built by hand rather than in the form editor, so this whole feature is one method and one class
+     * and can be read in one place.
+     *
+     * Asks which page and how big, because both answers are the user's: a manual wants the whole
+     * layout at a size somebody can read, and a forum post wants something smaller.
+     */
+    private void buildDiagramExportMenu()
+    {
+        if (layoutMenu == null) return;
+
+        javax.swing.JMenuItem item =
+            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportDiagram"));
+
+        item.setToolTipText(I18n.t("layout.ui.tooltipExportDiagram"));
+
+        item.addActionListener(event -> exportDiagram());
+
+        layoutMenu.addSeparator();
+        layoutMenu.add(item);
+    }
+
+    /**
+     * Asks which page, at what size, and where, and then writes it.
+     *
+     * The drawing itself happens on the event thread deliberately: it builds Swing components, which
+     * may only be touched there, and it is fast - a big layout at the largest size is well under a
+     * second.  A spinner would be more machinery than the wait deserves.
+     */
+    private void exportDiagram()
+    {
+        java.util.List<String> pages = this.model.getLayoutList();
+
+        if (pages == null || pages.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNoDiagramToExport"));
+
+            return;
+        }
+
+        String page = (String) JOptionPane.showInputDialog(this,
+            I18n.t("layout.ui.promptWhichDiagram"), I18n.t("layout.ui.menuExportDiagram"),
+            JOptionPane.PLAIN_MESSAGE, null, pages.toArray(), pages.get(0));
+
+        if (page == null) return;
+
+        String sizeText = JOptionPane.showInputDialog(this,
+            I18n.f("layout.ui.promptDiagramSize", DiagramExport.MAX_TILE_SIZE),
+            String.valueOf(DiagramExport.DEFAULT_TILE_SIZE));
+
+        if (sizeText == null) return;
+
+        int tileSize;
+
+        try
+        {
+            tileSize = Integer.parseInt(sizeText.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorDiagramSizeNotANumber"));
+
+            return;
+        }
+
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+
+        chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
+
+        // A sensible name that is also a legal one, since a page may be called anything at all
+        chooser.setSelectedFile(new java.io.File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
+
+        if (chooser.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        java.io.File destination = chooser.getSelectedFile();
+
+        if (!destination.getName().toLowerCase().endsWith(".png"))
+        {
+            destination = new java.io.File(destination.getParentFile(), destination.getName() + ".png");
+        }
+
+        final java.io.File writeTo = destination;
+        final int pixels = tileSize;
+        final String chosen = page;
+        final Exception[] failed = new Exception[1];
+
+        // Off the event thread, behind the spinner.  The render WAITS for tile images to be decoded,
+        // and those are applied on the event thread - so holding it would mean waiting for work that
+        // cannot happen until the wait is over.  It also takes long enough on a big layout to be worth
+        // saying something about.
+        BusyDialog.run(this, I18n.t("layout.ui.busyExportingDiagram"),
+            () ->
+            {
+                try
+                {
+                    DiagramExport.writePng(this.model.getLayout(chosen), pixels, this, writeTo);
+                }
+                catch (Exception e)
+                {
+                    failed[0] = e;
+                }
+            },
+            () ->
+            {
+                if (failed[0] != null)
+                {
+                    this.model.log(failed[0]);
+
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("layout.ui.errorDiagramExportFailed",
+                            String.valueOf(failed[0].getMessage())));
+
+                    return;
+                }
+
+                this.log(I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
+
+                JOptionPane.showMessageDialog(this,
+                    I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
+            });
     }
 
     /**
@@ -12030,7 +12175,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (c != null)
                 {
-                    if ("-1".equals(r.toString()))
+                    if (r == SYNC_ALREADY_RUNNING)
+                    {
+                        // Not a failure.  Reporting it as one told the user their sync had failed
+                        // when in fact another one was doing the job for them.
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                            c,
+                            I18n.t("ui.infoSyncAlreadyRunning")
+                        ));
+                    }
+                    else if (r == -1)
                     {
                         javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             c,
@@ -13979,8 +14133,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 
                 prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+                // Cleared FIRST because an empty layout database is what makes the sync fetch the
+                // pages again.  A refusal after the clear left the diagram tab blank with nothing on
+                // its way to fill it, so the refusal is now said out loud.
                 this.model.clearLayouts();
-                this.syncWithCS2();
+
+                if (this.syncWithCS2() == SYNC_ALREADY_RUNNING)
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
+                }
                 
                 // Set the updated list of layout pages
                 initializeTrackDiagram(true);
@@ -14040,8 +14201,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // layout databases and belongs off the event thread; initializeTrackDiagram builds Swing
         // components and belongs on it.  Both were on the raw thread, so the track diagram was being
         // built off the EDT entirely.
+        // Through the wrapper, so this takes the one-sync-at-a-time guard like every other caller.
+        // Calling the model directly went round it: this sync neither set the flag - so a guarded sync
+        // could start alongside it - nor respected one already set.
+        //
+        // No second dialog results: BusyDialog runs its work OFF the event thread, and off it the
+        // wrapper is a plain guarded call to the model.
         BusyDialog.run(this, I18n.t("layout.ui.busyLoadingLayout"),
-            () -> this.model.syncWithCS2(),
+            () -> this.syncWithCS2(),
             () ->
             {
                 if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())

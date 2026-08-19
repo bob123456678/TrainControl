@@ -1,524 +1,268 @@
 # Automating your layout
 
-Beyond its GUI, the TrainControl software can be used to progammatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
+This guide takes you from a track diagram with nothing set up on it to a layout running trains on its own, one step at a time. Every step is something you do on the diagram; there is no file to write and no code to run.
 
-There are three types of automation described on this page:
-* Manually defining basic automation logic and commands via the Java API (good)
-* Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
-* Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
+If you want to drive TrainControl from Java instead, or you need the reference for a particular setting, see **[the programmatic guide](AutomationAPI.md)**.
 
-The only hardware requirement is that you have feedback modules (S88 sensors) configured at your stations.  The minimum is one S88 per station, but we recommend having sensors before, at, and after the stopping point for the smoothest and most versatile operation.
+**Contents**
 
-## API
+- [What you need](#what-you-need)
+- [The idea in one page](#the-idea-in-one-page)
+- [Example 1: a shuttle between two stations](#example-1-a-shuttle-between-two-stations)
+- [Example 2: an oval with a passing loop](#example-2-an-oval-with-a-passing-loop)
+- [Example 3: a terminus, and trains that must turn round](#example-3-a-terminus-and-trains-that-must-turn-round)
+- [Example 4: a through station that only takes trains one way](#example-4-a-through-station-that-only-takes-trains-one-way)
+- [Watching it run](#watching-it-run)
+- [Choosing how trains pick their route](#choosing-how-trains-pick-their-route)
+- [Timetables: recording a sequence and playing it back](#timetables-recording-a-sequence-and-playing-it-back)
+- [Sending everything home](#sending-everything-home)
+- [Settings, and what each one is for](#settings-and-what-each-one-is-for)
+- [When trains will not move](#when-trains-will-not-move)
 
-Before jumping into layout automation, it is important to understand the basics of the TrainControl Java API.  
-The `MarklinControlStation` class is your gateway to the CS2/CS3's database of locomotives, switches, signals, and accessories. Several examples are provided in [`ProgrammaticControlExample.java`](src/org/traincontrol/examples/ProgrammaticControlExample.java), where it is initialized and accessible via the `data` variable.
+---
 
-Note that as of v2.3.2, all TrainControl code has been moved into the org.traincontrol package.  Custom code using older versions would therefore need to be updated.
+## What you need
 
-Refer to the Java docs for class and method details.
+**Feedback sensors.** This is the only hardware requirement, and it is not optional: TrainControl knows where a train is because a sensor told it. One S88 contact per station is the minimum. Three is much better — before the stopping point, at it, and after it — because that is what lets a train slow down as it arrives rather than stopping dead on the contact.
 
-## Sample Layout
+**A track diagram.** Either downloaded from your Central Station or drawn in TrainControl's own editor. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
 
-Let's consider a minimal layout with two stations.
+**Locomotives with addresses that work.** If you cannot drive a locomotive by hand from TrainControl, automation will not be able to either.
 
-![Sample layout](assets/sample_layout.gif?raw=true)
+That is all. You do not need to describe your track anywhere: TrainControl reads the diagram and works out for itself which squares connect to which.
 
-# Basic automation
+---
 
-With this simple setup, we could run the trains with the following logic:
-* The locomotive at station 1 departs and stops once it arrives back at station 1
-* The locomotive at station 2 departs and stops once it arrives back at station 2
-* Rinse and repeat
+## The idea in one page
 
-The code below implements this logic, along with some additional commands to turn on light and sound functions (and is itself a great example of using the API):
+Automation rests on three things, and everything else in this guide is a refinement of one of them.
 
-    while (true)
-    {
-        // Fetch the locomotive at Station 1
-        data.getLocByName("Loc1")
-                // Flip some signals
-                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, true)
-                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
-                // Turnout
-                .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, true)
-                // Wait 2-20 seconds
-                .delay(2,20)
-                // Turn on locomotive sound and lights
-                .setF(3, true)
-                .lightsOn()
-                // Start rolling
-                .setSpeed(40)
-                .waitForOccupiedFeedback("3")
-                // Signal should now be red
-                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
-                // Slow down
-                .setSpeed(20)
-                // Stop the locomotive when it arrives at the station
-                // (S88 address 1)
-                .waitForOccupiedFeedback("1")
-                .setSpeed(0);
+**Stations are where trains stop.** You mark a square as a station and give it a name. A station square has a sensor under it — that sensor is how a train arriving there is noticed.
 
-        // Fetch the locomotive at Station 2
-        data.getLocByName("Loc2")
-                // Do not proceed unless Loc1 is at its station
-                .waitForOccupiedFeedback("1")
-                // Flip some signals
-                .setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false)
-                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, true)
-                // Go straight
-                .setAccessoryState(10, Accessory.accessoryDecoderType.MM2, false)
-                // Wait 2-20 seconds
-                .delay(2,20)
-                // Turn on locomotive sound and lights
-                .setF(3, true)
-                .lightsOn()
-                // Start rolling
-                .setSpeed(40)
-                .waitForOccupiedFeedback("3")
-                // Signal should now be red
-                .setAccessoryState(2, Accessory.accessoryDecoderType.MM2, false)
-                // Slow down
-                .setSpeed(20)
-                // Stop the locomotive when it arrives at the station
-                // (S88 address 1)
-                .waitForOccupiedFeedback("2")
-                .setSpeed(0);
-    }
+**Links say where a train may go.** TrainControl traces the track on your diagram and works out the connections by itself. You do not draw them. What you do is switch off the few that you do not want used — a siding you would rather trains kept out of, or a connection that only makes sense in one direction.
 
-Unfortunately this approach makes the behavior of the trains entirely predictable (and therefore boring!).  
-It is also difficult to concurrently operate trains unless they are run in sequence or somehow blocked by signals (which is unnatural).
+**A locomotive has to be somewhere to start.** You tell TrainControl which train is standing at which station. From then on it keeps track by itself.
 
-# Smart automation
+Press start, and TrainControl picks a train, picks somewhere it can go, sets the switches and signals along the way, sends it, and watches the sensors until it arrives. Then it does it again.
 
-How can we make things more dynamic? The `Layout` class enables us to represent the layout as a graph so that we do not need to explicitly define the route or command sequence for any locomotive.  
-Instead, each locomotive will figure out what route to follow, and it will continuously execute unoccupied routes.
+![PLACEHOLDER: the autonomy view of a small layout, with two stations marked and the link between them drawn](assets/automation/01-overview.png)
 
-Before we can use this class, we first need to come up with a graph representation of the layout.  The graph below corresponds to the sample layout from the previous example.
-We define a point for each station and for every other S88 feedback sensor, and then we connect them with edges.
+---
 
-Notice the shared edge from "Main Track" to "Pre Arrival": this design ensures that the routes are mutually exclusive (the two trains won't be able to run simultaneously, and therefore can't crash).  Conceptually (and perhaps more commonly), edges can also be referred to as "Blocks".
+## Example 1: a shuttle between two stations
 
-![Sample layout represented as a graph](assets/graph.png?raw=true)
-
-This graph representation can then easily be translated into code (full example can be found in `FullAutonomyExample.java`.  
-Note that the edge definitions also include accessory commands, such as setting turnouts and signals correctly.  
-These commands will execute before that edge is traversed by a locomotive.
-
-    // Initialize the graph
-    Layout layout = new Layout(data);
-
-    //
-    // Define our stations and shared track segments
-    //
-    layout.createPoint("Station 1", true, "1");
-    layout.createPoint("Station 2", true, "2");
-    layout.createPoint("Pre Arrival", true, "3");
-
-    // The train cannot stop here, but we create an extra point so that both routes share a common edge
-    layout.createPoint("Main Track", false, null);
-
-    //
-    // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
-    //
-    // The addConfigCommand API provies sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would never be chosen
-    layout.createEdge("Station 2", "Main Track").addConfigCommand("Signal 2", GREEN);
-    layout.createEdge("Station 1", "Main Track").addConfigCommand("Signal 1", GREEN);
-
-    layout.createEdge("Main Track", "Pre Arrival");
-
-    layout.createEdge("Pre Arrival", "Station 1").addConfigCommand("Switch 10", TURN).addConfigCommand("Signal 1", RED);
-    layout.createEdge("Pre Arrival", "Station 2").addConfigCommand("Switch 10", STRAIGHT).addConfigCommand("Signal 2", RED);
-
-    // From here, all we need to do is place our locomotives on the layout and tell them to run!
-
-    layout.getPoint("Station 1").setLocomotive(data.getLocByName("SNCF 422365"));
-    layout.getPoint("Station 2").setLocomotive(data.getLocByName("140 024-1 DB AG"));
-
-    //
-    // Now we can run the locomotives!  This method also specifies the desired speed
-    // The layout class will automatically choose and execute an available route
-    //
-    layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
-    layout.runLocomotive(data.getLocByName("140 024-1 DB AG"), 50);
-
-The `Layout` class also allows *optional* pre-departure, pre-arrival, and post-arrival callbacks to be set to turn on functions and lights as desired.
-In these lambda functions, `loc` is a reference to the locomotive itself.
-                
-    // You can also simply use layout.applyDefaultLocCallbacks(data.getLocByName("SNCF 422365")) to use the preferred functions set in the TrainControl UI
-    data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3);});
-    data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_START, (loc) -> {loc.lightsOn().delay(1, 3).toggleF(11);});
-
-    data.getLocByName("SNCF 422365").setCallback(Layout.CB_PRE_ARRIVAL, (loc) -> {loc.toggleF(3);});
-    data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_PRE_ARRIVAL, (loc) -> {loc.toggleF(3);});
-
-    data.getLocByName("SNCF 422365").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(1, 3).lightsOff();});
-    data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_END, (loc) -> {loc.delay(1, 3).lightsOff();});
-
-    // Progress through intermediate stations
-    data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_PROG, (lc) -> 
-    {
-        Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
-
-        for (Edge e : layout.getActiveLocomotives().get(lc))
-        {
-            if (!layout.getReachedMilestones(lc).contains(e.getEnd()))
-            {
-                ((MarklinLocomotive) lc).getModel().log("UPDATE: Loc " + lc.getName() + " is at " + e.getStart());
-            }
-        }
-    });
-
-Now we have everything we need to proceed.
-When the code in `FullAutonomyExample.java` is executed, the following things will happen:
-* For both locomotives, the graph will try to pick a path to an unoccupied destination station, as long as that path is not blocked by other trains
-* Since the paths are mutually exclusive, only one locomotive will be allowed to proceed.  All graph edges in that locomotive's path will be locked.
-* That locomotive will run from its station to "Pre Arrival".  It will stop there (because in the current graph implementation, cycles are not allowed).  The prior path gets unlocked.
-* That same locomotive will then run from "Pre Arrival" back to its original station, since the opposite station is occupied.  Note that the other locomotive cannot go to "Pre Arrival", because it is marked as occupied by the first locomotive.
-* Once the first locomotive reaches its original station, its path is unlocked.
-* This process will repeat, with one of the two locomotives being chosen to run.
-
-If you want to try this out for yourself, be sure to change the locomotive names to ones on your layout (as configured in the CS2/CS3).
-
-A few additional notes:
-* The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
-* Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  This value can be overriden by `preArrivalSpeedReduction` in the JSON (default 0.5, or 50%. Range 0.01 - 1.00, where 1.00 means no reduction).  The more S88's you have, the better!
-
-# Improving the layout
-
-How could this layout be modified to be a bit more exciting?  Suppose we wanted to allow trains to arrive at the opposite station.
-To accomplish this, we can convert "Main Track" to a valid station (second argument to `true`) and give it an S88 sensor (hypothetically at address 4):
-
-    layout.createPoint("Main Track", true, "4");
-
-With this setup, a train at "Station 1" or "Station 2" could go to "Main Track" after the other train reaches "Pre Arrival".  
-But there's a problem!  Since the path from "Station 1" to "Main Track" shares no edges with "Station 2" to "Main Track", the graph might allow two trains to proceed at the same time.
-One solution would be to add an imaginary point between the two stations and "Main Track", and then connect them with a shared edge, similar to what we already did with "Pre Arrival".
-
-Alternatively, for any edge, the graph actually allows us to explicitly specify a list of additional edges that should be locked whenever it is chosen. 
-This way, we can make the two paths to "Main Track" mutually exclusive without adding any more points or edges to the graph:
-
-    layout.getEdge("Station 1", "Main Track").addLockEdge(
-        layout.getEdge("Station 2", "Main Track")
-    );
-    layout.getEdge("Station 2", "Main Track").addLockEdge(
-        layout.getEdge("Station 1", "Main Track")
-    );
-
-This functionality is essential when your layout includes crossings, since these cannot easily be modeled with a directed graph.
-
-# Running and Visualizing via TrainControl UI
-
-To make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
-Moreover, to make it easier to create graphs, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  All locomotive settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
-
-The following example JSON corresponds to the above code/layout and edge locking.
-
-To get started, paste the JSON in TrainControl's "Autonomy" tab, then click on "Validate Graph".  Any errors (such as non-existing edges or missing points) will be shown in the log.  You can also click on "Initialize New Graph" and let the program load the sample JSON for you.
-
-If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
-Locomotives will then continue running per the specified layout until stopped via "Graceful Stop", or reset by the former button.  Graceful Stop is recommended, as this way the state will automatically be saved when you exit the program.   Chosen paths will be shown in the log.
-
-You can also manually specify where each locomotive should go through the "Locomotive Commands" tab.  The list of available paths is automatically calculated based on the graph state and S88 feedback. 
-
-Details on advanced configuration parameters can be found at the end of this document.
+The simplest arrangement that runs: two stations, one train, one piece of track between them.
 
 ```
-{
-    "minDelay" : 1,
-    "maxDelay" : 5,
-    "defaultLocSpeed" : 35,
-    "preArrivalSpeedReduction" : 0.5,
-    "turnOffFunctionsOnArrival": true,
-    "turnOnFunctionsOnDeparture": true,
-    "atomicRoutes": true,
-    "maxLocInactiveSeconds" : 120,
-    "points": [
-        {
-            "name": "Station 1",
-            "station": true,
-            "s88" : 1,
-            "loc" : 
-            {
-                "name" : "SNCF 422365",
-                "reversible" : false,
-                "arrivalFunc" : 3,
-                "departureFunc" : 2,
-                "trainLength" : 3,
-            },
-            "maxTrainLength": 4,
-            "priority": 1,
-            "x" : 1521,
-            "y" : 291
-        },
-        {
-            "name": "Station 2",
-            "station": true,
-            "s88" : 2,
-            "loc" : 
-            {
-                "name": "140 024-1 DB AG",
-                "reversible" : false,
-                "arrivalFunc" : 3,
-                "trainLength" : 4
-            },
-            "maxTrainLength": 0,
-            "x" : 1554,
-            "y" : 0
-        },
-        {
-            "name": "Pre Arrival",
-            "station": true,
-            "s88" : 3,
-            "x" : 503,
-            "y" : 1241
-        },
-        {
-            "name": "Main Track",
-            "station": false,
-            "x" : 2056,
-            "y" : 1274
-        }
-    ],
-    "edges": [
-       {
-            "start": "Station 2",
-            "end": "Main Track",
-            "length" : 0,
-            "commands" : [
-                {
-                    "acc" : "Signal 2",
-                    "state" : "green"  
-                }
-            ],
-            "lockedges" : [
-                {
-                   "start": "Station 1",
-                   "end": "Main Track"  
-                }
-            ]
-        },
-        {
-            "start": "Station 1",
-            "end": "Main Track",
-            "length" : 0,
-            "commands" : [
-                {
-                    "acc" : "Signal 1",
-                    "state" : "green"  
-                }
-            ],
-            "lockedges" : [
-                {
-                   "start": "Station 2",
-                   "end": "Main Track"  
-                }
-            ]
-        },
-        {
-            "start": "Main Track",
-            "end": "Pre Arrival",
-            "length" : 0
-        },
-        {
-            "start": "Pre Arrival",
-            "end": "Station 1",
-            "length" : 0,
-            "commands" : [
-                {
-                    "acc" : "Signal 1",
-                    "state" : "red"  
-                },
-                {
-                    "acc" : "Switch 10",
-                    "state" : "turn"  
-                }
-            ]
-        },
-        {
-            "start": "Pre Arrival",
-            "end": "Station 2",
-            "length" : 0,
-            "commands" : [
-                {
-                    "acc" : "Signal 2",
-                    "state" : "red"  
-                },
-                {
-                    "acc" : "Switch 10",
-                    "state" : "straight"  
-                }
-            ]
-        }
-    ]
-}
-
+    [ A ]=========================[ B ]
+      s88 1                        s88 2
 ```
 
-When the "Validate JSON" button is pressed, if the layout is valid, a visual representation will also be shown.  This visualization is updated in real time as the paths execute.
+**1. Open the autonomy view.** On the track diagram, use the autonomy toolbar. The diagram stays exactly as it is; what changes is that clicking a square now sets automation up rather than throwing a switch.
 
-Edge colors:
-* Red - path is executing along this edge, edges not yet reached by the incoming train
-* Green - path is executing along this edge, edges have been reached
-* Gray - edges are locked to avoid collisions, per `lockedges` definition
-* Black - edges are unoccupied / unlocked with no active path
-* Orange - shown only while editing the edge; indicates that it is within the list of lock edges
+![PLACEHOLDER: the autonomy toolbar, with the "station" tool selected](assets/automation/02-autonomy-toolbar.png)
 
-Point colors:
-* Blue - no active route.  Label indicates if locomotive is stationed.
-* Red - active route - locomotive soon to pass through
-* Green - active route - locomotive has passed through
-* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)  A route you pick yourself is treated differently at the two ends: it may start from a disabled point, and may finish on one, but may never pass through one.  So disabling a station keeps autonomy away from it without putting it beyond your own reach, while disabling a point you only ever drive across takes it out of service completely.
+**2. Mark the two station squares.** Click the square at A, then the square at B. Each becomes a station, taking its sensor address from the square itself.
 
-Point shapes:
-* Circle - regular station.  Any train can stop here.
-* Square - terminus station. Only reversable trains can stop here.  They will switch direction on arrival.
-* Cross - reversing station (large) or reversing point (small).  Any train can stop here and will switch direciton on arrival.  Useful for shunting/parking.
-* Diamond - intermediate point that is not a station (trains pass through these while operating between stations; locomotives manually placed here will not be automatically run)
+**3. Name them.** Right-click each and give it a name — `Station A` and `Station B` will do. The name is what you will see in every list and every log line, so name them the way you talk about them.
 
-![Sample layout](assets/graph2b.png?raw=true)
+**4. Put the train somewhere.** Right-click Station A and place your locomotive there. This is a statement of fact about your railway: the train really does need to be standing at A.
 
-# Prettifying the Graph Visualizaton
+![PLACEHOLDER: the right-click menu on a station square, showing the place-locomotive option](assets/automation/03-place-locomotive.png)
 
-For each point, you can specify optional, relative `x` and `y` coordinates in the JSON: these will fix the points to a specific location on the graph.  If any point is missing a coordinate, the points on the graph will assume a random layout.
+**5. Press start.** The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
 
-If you want to adjust the graph once created, maximize it, and simply use your mouse to move points around.  The coordinates will automatically be saved on exit, or you can use the "Export Current Graph" button to view the updated JSON file.
+**What just happened.** TrainControl traced your diagram, found that A connects to B, saw a train at A, and found exactly one place it could go. Nothing else was needed.
 
-# Terminus Stations
+**Try this.** Stop autonomy, and place a second locomotive at B. Start again. Now neither train can move — each wants the station the other is standing on, and a station holds one train at a time. This is the single most common reason a layout does nothing, and [it has its own section below](#when-trains-will-not-move).
 
-TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
-also specify `"terminus" : "true"`.  For the corresponding point/locomotive, set `"locReversible" : "true"`.  Only such reversible locomotives can travel to a terminus and they will automatically change direction after arrival.
-Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
+---
 
-If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
+## Example 2: an oval with a passing loop
 
-# Reversing stations and parking
+Two trains, three stations, and the first arrangement where TrainControl has a choice to make.
 
-Stations can optionally be designated as "reversing" by setting `"reversing": true` on the corresponding `Point`. These will never be chosen in autonomous operation, rather only semi-autonomous operation where you pick the route for the locomotive to follow.
+```
+              ___________[ C ]___________
+             /                           \
+    [ A ]===<                             >===[ B ]
+             \___________________________/
+```
 
-Reversing stations are intended for parking/shunting.  For example, if you want to park a train, create a reversing station ahead of the switch to the parking track, and create a reversing station at the parking track.  Then you can simply follow the route to the parking track.  The train will automatically be reversed at each reversing station it reaches.
+Set the three squares up as stations, as before. Place a train at A and a train at B.
 
-"Return home" may also send a locomotive to a reversing station, which is what makes them usable as end-of-session parking: autonomous operation will never choose one, but return home will, and so will a route you pick yourself.  This means a parking track can be left active - deactivating it would put it out of reach of return home as well.
+Press start. A train leaves A. It can reach B two ways — through the loop past C, or round the other side — and TrainControl picks one. Meanwhile the train at B can leave too, because its route does not need the track the first train is on.
 
-If you want to designate a parking space without reversing functionality, simply change a station to a non-station. Paths that start from a non-station will never automatically be chosen.  When you want the locomotive to run again, manually trigger a path to another station, or change the point back to a station.
+**What this example is really showing** is that TrainControl reserves the track a train needs, and only that track. Two trains run at once here because their routes do not overlap. If they did, the second would wait.
 
-A reversing station restricts arrivals only.  A train standing on an active reversing station will still depart under autonomous operation, just like one standing anywhere else; what autonomy will never do is send a train to one, or route a train across one on its way somewhere else.  Both matter, because a train is stopped and reversed at every reversing point it reaches - so a berth left on the through-network would turn into an unwanted shunting move mid-journey.  If you want to hold a train in place instead, deactivate the point - that keeps it from departing, at the cost of putting the station out of reach of return home as well.
+**Try this.** Right-click the link on one side of the loop and switch it off. Now every train goes past C. A switched-off link is greyed out on the diagram, so you can see at a glance what is not being used.
 
-This applies to reversing **stations** only.  A reversing point that is not a station - a reversing loop or headshunt - is still driven through by autonomous operation, since being driven through is exactly what it is for.  So mark a point "reversing" when trains should change direction there, and additionally mark it a station when trains should be able to park there.
+![PLACEHOLDER: a diagram with one link greyed out, and two trains running](assets/automation/04-two-trains.png)
 
-# Advanced layouts and settings
+**Try this too.** Right-click C and set its priority higher than the others. Trains will now favour calling there. Priority does not force it — it tips the choice.
 
-TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](cs2_sample_layout/config/)
+---
 
-Remember that everything described below can now be fully edited via TrainControl's graph UI! 
+## Example 3: a terminus, and trains that must turn round
 
-## Train lengths and non-atomic routes
+A terminus is a station where the track stops. A train arriving must leave the way it came, which means reversing.
 
-You can specify the train length for any locomotive (via the optional `trainLength` integer JSON key), and the maximum allowed train length for a station (via the `trainLength` integer JSON key), for any locomotive entry within the `points` list. 
-This will force the autonomous operation logic to account for the length of different trains.  When configured correctly, this can prevent long trains from stopping at short stations.  
-A value of 0 for `maxTrainLength` is default, and disables length restrictions.  These values can also be set programmatically via the `Locomotive` and `Point` APIs.
+```
+    [ A ]===========[ B ]===========[ T ]
+                                      terminus
+```
 
-If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
-This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
-To ensure that potential collisions are avoided, each edge must be configured with a length.  
-Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
-Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
+Mark T as a station in the usual way, and then mark it as a **reversing point** as well.
 
-## Path selection logic
+This tells TrainControl two things. First, a train that arrives here will need to change direction before it can leave — so the locomotive must actually be able to do that. Second, and less obviously: a reversing point is treated as somewhere to **park**, not somewhere to route trains through. Autonomy running on its own will not send trains there and will not drive them through it on the way somewhere else.
 
-Paths are selected at random from among the possible stations reachable by any given locomotive, with the following conditions:
-    - The shortest path is preferred unless it is occupied or locked
-    - A path with conflicting accessory commands will never be chosen 
-    - You can specify an optional integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
+That is deliberate, and it is worth understanding because it surprises people. Reversing points are usually parking tracks and shunting necks, and trains being parked at random in the shunting neck — or stopping and changing direction in the middle of a run — is not operation, it is chaos. So autonomy leaves them alone.
 
-You can optionally mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
+**You can still use it.** Send a train there yourself from the route menu, and [Return Home](#sending-everything-home) will still park trains there. What will not happen is a train ending up there because a dice roll put it there.
 
-## Pace of operation
+![PLACEHOLDER: a terminus station on the diagram, showing the reversing marker](assets/automation/05-terminus.png)
 
-`minDelay` and `maxDelay` specify the minimum and maximum delay, in seconds, between locomotive activations.  
-The actual value is randomly chosen in this range, and this replaces the need for manual definitions in callbacks. 
+---
 
-Locomotives inactive longer than `maxLocInactiveSeconds` seconds will be prioritized until they get a chance to run. Set to 0 to disable.
+## Example 4: a through station that only takes trains one way
 
-## Functions (sounds / lighting)
+Some stations only make sense to arrive at from one direction. A platform on a one-way loop; a bay that faces east; a station where arriving from the west means fouling a junction.
 
-TrainControl will enable/disable each locomotive's preferred functions, if any, before departure and upon arrival, respectively.  
+Right-click the station and open **Arrivals**. By default a station accepts trains from every direction. Switch off the directions you do not want, and TrainControl will only route trains to it from the ones you left on.
 
-These preferred functons are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
-However, if you want to avoid turning on the fuctions on departure / turning off the functions on arrival, respectively, you can set `turnOnFunctionsOnDeparture` / `turnOffFunctionsOnArrival` to `false`.  A good reason to use these settings is to is to keep operating sounds / lights on between paths in the case of the latter,
- or to skip running sound altogethr in the case of the former.
+The diagram marks this: a station that only takes trains one way shows a small arrow. That arrow is the only outward sign, so it is worth knowing what it means when you meet one on somebody else's layout.
 
-Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
-The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
-by right-clicking on any point within the graph UI.
+![PLACEHOLDER: the Arrivals view for a station, with one direction switched off, and the resulting arrow on the diagram](assets/automation/06-arrivals.png)
 
-## Timetables  (v2.1.0+)
+**Where this matters most** is a station that is really two platforms. On the diagram it is one square, but a train arriving from the east and a train arriving from the west are doing different things — different switches set, different track occupied. Arrival directions are how you say which of those you want.
 
-TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
+---
 
-To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points can be traversed in semi-autonomous mode, but not in timetable/fully autonomous mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
+## Watching it run
 
-The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.addTimetableEntry` or `Layout.setTimetable`.
+While autonomy is running the diagram shows you what is happening, and it is worth learning to read.
 
-## Locomotive exclusions (v2.1.5+)
+**A train's route is drawn along the track.** Red for the track ahead of it, green for the track it has already covered, black arrows for which way it is going. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
 
-You can prevent locomotives from stopping at a given station by adding them to the list within the 
-`excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
+**Station labels show what is standing there.** A square marked `Point:StationName` as a text label shows the name of any locomotive at that station.
 
-However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
+**A signal paired with a station** goes red while a train is standing there, and green again once it leaves. Pair one by right-clicking the station and picking the signal — either by clicking it on the diagram, or by typing its address.
 
-## Ensuring network stability (v2.4.7+)
+**The locomotive list** shows each train, where it is, and where it can go. Double-click a destination to send a train there yourself.
 
-The `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
+![PLACEHOLDER: a running layout, with a route drawn in red and green and a train's name showing at a station](assets/automation/07-running.png)
 
-If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
+**Graceful Stop** lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies.
 
-The lowest allowed nonzero threshold is 100ms.
+---
 
-## Speed adjustments (v2.4.8+)
+## Choosing how trains pick their route
 
-The `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
+When more than one route will do, TrainControl has to choose. Under **Preferences** you can say how:
 
-The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
+| Setting | What it does |
+| --- | --- |
+| At random | Picks any of them. This is the behaviour TrainControl has always had, and it stays the default |
+| Past the fewest stations | The most direct route |
+| Past the most stations | Trains call at things on the way rather than going straight there |
+| Over the shortest track | By measured length, if you have set lengths |
+| Over the longest track | The scenic route |
+| Across the fewest sensors | Fewest reporting points on the way |
+| Across the most sensors | The busiest-looking route |
 
-## Displaying locomotive locations on track diagrams (v2.4.9+)
+The "most" and "longest" settings exist for a layout that should look busy rather than efficient. On a small layout they are the difference between a train shuttling back and forth and a train that appears to be going somewhere.
 
-If you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
+This applies to every layout rather than to one configuration, and stations you have marked as higher priority are still chosen first either way.
 
-## Locomotive concurrency (v2.4.11+)
+---
 
-Use the `maxActiveTrains` preference to control the maximum number of trains that will run concurrently in full autonomy mode.  Set to 0 to allow unlimited trains.
+## Timetables: recording a sequence and playing it back
 
-## Linking routes (v2.6.1+)
+Autonomy running on its own is random by design. A timetable is the opposite: a sequence you recorded once, played back the same way each time.
 
-If you want your autonomy configuration to require certain routes, set `activateRoutes` to true, then specify the numerical route IDs in `activateRouteIDs`.  These settings are also available in the UI autonomy options tab.  Listed routes will be activated, while others will be deactivated.  
+**To record one:** press `Capture Locomotive Commands`, then either start autonomy or send trains yourself. Every completed route is recorded, along with how long it was before the next one started. Press the button again to stop recording.
 
-The chosen routes are required to have a triggering S88, as otherwise they can't fire on their own.
+**To play it back:** press `Execute Timetable`. Each entry runs in turn, waiting for the one before it to arrive rather than merely to set off.
 
-This feature can be used for emergency stop logic, playing sound effects when locomotives reach a certain location, switching safety signals, etc.
+**Two things worth knowing.** Capture **appends** — recording again adds to what is already there rather than replacing it, so clear the timetable first if that is not what you want. And a timetable is recorded from a particular arrangement of trains: play it back with the trains somewhere else and the first entry will not run, because the train it names is not where it was.
 
-## Returning locomotives home (v2.8.0+)
+It is worth recording a timetable that ends where it began. That way it can be run again and again.
 
-The `Return Home` button in the autonomy tab sends every locomotive back to the station it belongs at - by default the one it started on.  The same command is available by right-clicking either the graph or a station on the track diagram.
+![PLACEHOLDER: the timetable panel with several captured entries](assets/automation/08-timetable.png)
 
-Unless you say otherwise, a locomotive's home is simply the station it occupied when the graph was loaded.  Locomotives placed on the graph afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing at its timetable starting point.  A locomotive standing on a station it has been *assigned* to - see below - shows its location highlighted in teal, the same teal the graph outlines that station with; a home that was merely derived from where a locomotive started is not marked, since that would be every locomotive on an untouched graph.
+---
 
-You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  Right-click a station - on the graph or on the track diagram - and pick `Home locomotive`, which names that station's current locomotive and opens a chooser; on the graph, `Control+H` over a station opens the same chooser.  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.  To undo the lot, `Clear all home locomotives` on the graph's background menu drops every assignment at once and returns things to exactly the behaviour described above; it appears only once something has been assigned.
+## Sending everything home
 
-The graph says which stations are spoken for without your having to open a menu: a station with a home locomotive is outlined in teal, solid when that locomotive is standing there and dotted when it is somewhere else - the dotted ones being exactly what `Return Home` would move.  `Show Home Locomotives` under `Display Options` turns the outlines off.
+`Return Home` sends every locomotive back to the station it belongs at. By default that is the station it was standing on when the layout was loaded; you can say otherwise by right-clicking a station and picking `Home locomotive`.
 
-An assigned station is that locomotive's home whether or not it is standing there, and whether or not it is on the graph at all - an assignment for a locomotive you have not placed is simply ignored until you place it.  Each locomotive belongs at one station only, so assigning it somewhere new releases it from wherever it was assigned before.  Everything you do not assign still falls back to the rule above.
+Getting everyone home is rarely as simple as driving each train to its own station, because a station holds one train at a time — a train cannot go home while another is standing there. TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.
 
-Assignments are saved with the autonomy file.  If one names a locomotive that is no longer in the database, it is reported in the log and dropped, and the rest of the layout loads normally.  Renaming a locomotive keeps its assignment; deleting one removes it.  Assignments cannot be changed while autonomy is doing anything - running, still coming to a stop, or working out a route home - because changing one alters what a run already under way is aiming for.
+Trains must be stopped first, so press `Graceful Stop` if autonomy is running. If no arrangement can be found you are told so and nothing moves.
 
-If you pick a locomotive the station could never hold - one longer than its length limit, one it excludes, or one that cannot reverse at a terminus - you are told which locomotive and station, and where to look, and asked whether to go ahead.  The assignment is still yours to make: you may well be setting the station up afterwards.  What it avoids is finding out later from a `Return Home` that says to check the track, when the track is not the problem.
+A station with a home locomotive is outlined in teal on the diagram: solid when that locomotive is standing there, dotted when it is somewhere else. The dotted ones are exactly what `Return Home` would move.
 
-Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the graph has a home to go back to.
+---
 
-Getting everyone home is rarely as simple as driving each locomotive to its own station, because a station holds only one locomotive at a time - a train cannot go home while another is standing there.  TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.  The moves are then run one at a time, each waiting for the one before it to arrive rather than merely to set off.
+## Settings, and what each one is for
 
-Your timetable is borrowed for the duration and put back afterwards - on success, on failure, and after a graceful stop alike.  Nothing is written to disk unless you save the autonomy file.
+These live in the autonomy options. Most layouts need to change two or three of them at most.
 
-If no arrangement can be found, you are told so and nothing moves.  If a path turns out to be blocked once the run is under way - because the layout is no longer in the state the plan was built for - the run stops and says which locomotive was affected, so you can move it clear by hand and try again.
+| Setting | What it is for |
+| --- | --- |
+| Minimum and maximum delay | How long a train waits at a station before leaving again. A range rather than a number, so departures do not fall into lockstep |
+| Default speed | Used for a locomotive with no preferred speed of its own |
+| Pre-arrival speed reduction | How much a train slows on the approach. This is what the third sensor is for |
+| Maximum active trains | How many run at once. Zero means as many as the track allows |
+| Atomic routes | Whether a train reserves its whole route before setting off, or releases track behind it as it goes. Off is more capable and needs your lengths to be right |
+| Train lengths | Set a length on a station and a length on a locomotive, and a train too long for a station will not be sent there |
+| Functions on departure and arrival | Whether each locomotive's preferred functions are switched on when it leaves and off when it arrives. Turn the arrival one off to keep sound running between routes |
+| Locomotive exclusions | Trains that must not stop at a particular station. Set on a non-station instead, and those trains will not pass through it at all |
+| Maximum inactive seconds | A train that has not run for this long is prioritised, so nothing sits forgotten |
+| Maximum latency | Cuts track power if the network to the Central Station gets too slow. Off by default |
+| Linked routes | Routes to activate while autonomy runs — for emergency stops, sound effects, or safety signals |
 
-The same functionality is available programmatically via `Layout.triageReturnToHome` (is there anything to do?), `Layout.planReturnToHome` (what would it take?), and `Layout.loadReturnToHomeTimetable`, which loads the plan into the timetable ready for `Layout.executeTimetable`.  Assignments are read and written with `Layout.setHomeLocomotive`, `Layout.clearHomeLocomotives` and `Layout.hasHomeLocomotives`, and are stored per point as `home` in the autonomy JSON.
+Every one of these has a fuller description in **[the programmatic guide](AutomationAPI.md)**, which is also where to look if you want to set them from Java.
+
+---
+
+## When trains will not move
+
+This is the section to read first when nothing happens. In rough order of how often each turns out to be the answer:
+
+**Every station is occupied.** A station holds one train at a time, and a train can only go to a station that is free. On a layout with as many trains as stations, nothing can move. Take a train off, or add somewhere for one to go.
+
+**The train has nowhere to go.** Look at the locomotive list — it says so for each train in as many words. A train whose only destinations exclude it, or are the wrong direction, or are too short for it, has no route.
+
+**A link that is needed is switched off.** Switched-off links are greyed on the diagram. It is worth a glance along the route you expect the train to take.
+
+**The destination is a reversing point.** Autonomy will not send trains to one on its own — see [Example 3](#example-3-a-terminus-and-trains-that-must-turn-round). This is deliberate, and the route menu will still take you there by hand.
+
+**A locomotive was placed without a speed.** A train with no speed set will not be dispatched.
+
+**The sensor is not reporting.** If TrainControl never sees the arrival, the train stays "running" forever and the track it holds is never released. Watch the feedback in the Central Station tab while pushing a train over the contact by hand.
+
+**A switch or signal on the route is not in the database.** A route is not used if one of its accessories is missing, because the alternative is a train running over track that was never set.
+
+**A train is standing somewhere in the way.** Not necessarily on the route itself — a train occupying a crossing or a shared block can hold up a route that merely passes nearby.
+
+The log is verbose about all of this, and worth reading: it names the train, the route, and the reason.
+
+---
+
+## Screenshots this guide still needs
+
+The placeholders above want real pictures. Each is a single screen capture; the file names are the paths the guide already points at.
+
+| File | What to capture |
+| --- | --- |
+| `assets/automation/01-overview.png` | The autonomy view of a small layout, with two stations marked and the link between them visible |
+| `assets/automation/02-autonomy-toolbar.png` | The autonomy toolbar on the track diagram, with the station tool selected |
+| `assets/automation/03-place-locomotive.png` | The right-click menu on a station square, open, showing the place-locomotive item |
+| `assets/automation/04-two-trains.png` | A layout with one link greyed out and two trains running at once |
+| `assets/automation/05-terminus.png` | A terminus station showing the reversing marker |
+| `assets/automation/06-arrivals.png` | The Arrivals view with one direction switched off, and the resulting arrow on the diagram |
+| `assets/automation/07-running.png` | A running layout: a route drawn in red and green, arrows, and a train's name showing at a station |
+| `assets/automation/08-timetable.png` | The timetable panel with several captured entries in it |
+
+**The easiest way to produce a clean diagram picture** is `Layout` → `Save Diagram as a Picture...`, which writes the whole of a page to a PNG at whatever size you ask for — the whole page, not just the part scrolled into view, and with none of the window around it. Sixty pixels per square reads well in a document; twenty is about what the screen shows.

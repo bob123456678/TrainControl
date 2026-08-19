@@ -167,7 +167,12 @@ public class testMockCentralStation
     }
 
     /**
-     * And the routes.
+     * And the routes - against what the file actually holds.
+     *
+     * This used to assert only that the list was non-empty and free of duplicates, under a name that
+     * said it matched the file.  A fetch that dropped or mangled half the routes passed.  It now reads
+     * the same fixture from disk and compares the names, which is what the locomotive test beside it
+     * does and what the name promised all along.
      */
     @Test
     public void testRoutesFetchedOverHttpMatchTheFile() throws Exception
@@ -182,6 +187,20 @@ public class testMockCentralStation
 
         assertEquals(got.size(), new java.util.LinkedHashSet<>(got).size(),
             "a fetched route list should not contain duplicates");
+
+        // The same fixture read from disk, UTF-8 explicitly, the way the locomotive test above does
+        List<MarklinRoute> fromDisk = mockStation().parseRoutes(
+            CS2File.parseFile(new java.io.BufferedReader(new java.io.InputStreamReader(
+                new java.io.FileInputStream("test/fahrstrassen.cs2"),
+                java.nio.charset.StandardCharsets.UTF_8))), mockStation().getMagList(false));
+
+        List<String> expected = new LinkedList<>();
+
+        for (MarklinRoute r : fromDisk) expected.add(r.getName());
+
+        assertEquals(got, expected,
+            "the routes fetched over HTTP are not the routes the file holds - a fetch that drops or "
+            + "renames routes is a Central Station sync that quietly changes what the railway does");
     }
 
     /**

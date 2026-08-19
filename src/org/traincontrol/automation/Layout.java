@@ -115,7 +115,13 @@ public class Layout
         SHORTEST_LENGTH,
 
         /**
-         * The route crossing the fewest sensors, which is what a plain breadth-first search returns.
+         * The route crossing the fewest SENSORS.
+         *
+         * Counted by distinct sensor, not by hops of the running graph.  On a derived graph a square is
+         * several Points - one per arrival side - so a hop count is a count of the model's internal
+         * structure and not of anything on the railway: two routes crossing exactly the same physical
+         * s88s could come out with different numbers, and the one that "won" would have won for a
+         * reason nobody could see on the diagram.
          */
         FEWEST_POINTS,
 
@@ -133,6 +139,19 @@ public class Layout
         LONGEST_LENGTH,
 
         MOST_POINTS,
+
+        /**
+         * The route to whichever station has gone longest without a train.
+         *
+         * The rule an operator reaches for first, and the one that was missing: on a layout with a
+         * favourite loop, every other rule here can leave the far corner of the railway untouched all
+         * evening, because none of them knows or cares where trains have already been.  This one does.
+         *
+         * Ranked by when the destination last had an arrival, so a station never visited wins outright
+         * and the busiest loses.  Station PRIORITY still applies first, so this arranges the stations
+         * you are equally happy with rather than overriding the ones you are not.
+         */
+        LEAST_RECENTLY_VISITED,
 
         /**
          * Whatever is found first, which with the destinations shuffled is effectively at random.
@@ -176,10 +195,13 @@ public class Layout
         switch (Layout.pathPreference)
         {
             case FEWEST_POINTS:
-                return path.size();
+                return sensorsOn(path);
 
             case MOST_POINTS:
-                return -path.size();
+                return -sensorsOn(path);
+
+            case LEAST_RECENTLY_VISITED:
+                return recencyOf(path);
 
             case SHORTEST_LENGTH:
                 return lengthOf(path);
@@ -208,6 +230,88 @@ public class Layout
         for (Edge e : path) total += Math.max(0, e.getLength());
 
         return total;
+    }
+
+    /**
+     * How many distinct SENSORS a route crosses.
+     *
+     * By block where a Point has one, since that is the builder's name for "the several copies of one
+     * square", and by the Point's own identity otherwise - a hand-built graph has no blocks and its
+     * Points already are one square each.
+     *
+     * The destination is not counted, for the same reason stationsOn does not count it: it would add
+     * one to every candidate and change no ordering.
+     */
+    private int sensorsOn(List<Edge> path)
+    {
+        java.util.Set<String> crossed = new java.util.HashSet<>();
+
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            Point at = path.get(i).getEnd();
+
+            if (at == null) continue;
+
+            crossed.add(at.getBlock() != null ? at.getBlock() : at.getUniqueId());
+        }
+
+        return crossed.size();
+    }
+
+    /**
+     * How recently a route's destination last had a train, as a cost where lower is better.
+     *
+     * Seconds since the last arrival, negated - so a station that has waited longer costs less. A
+     * station with no recorded arrival at all is treated as having waited forever, which is what sends
+     * the first few runs of an evening out to the parts of the railway nobody has used yet.
+     */
+    private int recencyOf(List<Edge> path)
+    {
+        if (path == null || path.isEmpty()) return 0;
+
+        Point destination = path.get(path.size() - 1).getEnd();
+
+        if (destination == null) return 0;
+
+        Long last = this.lastArrival.get(destination.getUniqueId());
+
+        if (last == null) return Integer.MIN_VALUE;
+
+        long waited = (System.currentTimeMillis() - last) / 1000L;
+
+        // Clamped, because a long-running session can put a station's wait beyond what an int holds
+        // once negated, and an overflow here would silently reverse the ordering
+        if (waited > Integer.MAX_VALUE) waited = Integer.MAX_VALUE;
+
+        return (int) -waited;
+    }
+
+    /**
+     * When each Point last had a train arrive, for LEAST_RECENTLY_VISITED.
+     *
+     * Kept in memory rather than saved: it describes this session's running, and a layout switched on
+     * tomorrow has not been anywhere yet.
+     */
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> lastArrival =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Records an arrival at a point, for a test that needs a known visit history.
+     *
+     * The real recording happens at the end of executePath, which means driving a train - minutes of
+     * simulation to establish a fact that takes a line to state.  Exposed rather than reached for with
+     * reflection, and named so nobody mistakes it for part of the running machinery.
+     *
+     * @param pointName the point that has just had a train
+     */
+    public void noteArrivalForTest(String pointName)
+    {
+        Point at = this.getPoint(pointName);
+
+        // By unique id, which is what the real recording uses.  Keying by NAME here made the lookup
+        // miss every time, so every station looked never-visited and the preference silently did
+        // nothing - which the test caught, having been written to fail if it did nothing.
+        if (at != null) this.lastArrival.put(at.getUniqueId(), System.currentTimeMillis());
     }
 
     /**
@@ -2738,7 +2842,7 @@ public class Layout
 
                     band = end.getPriority();
 
-                    // Reversing stations are parking, not traffic: Automation.md has always said they
+                    // Reversing stations are parking, not traffic: the automation guide has always said they
                     // are chosen only in semi-autonomous operation, where the user picks the route.
                     // The exclusion belongs here and not in isPathClear, because executeTimetable sets
                     // running - so an isAutoRunning() fence would also refuse the "return home" staging
@@ -3806,6 +3910,11 @@ public class Layout
             this.updatePendingS88(loc, null);
         }
         
+        // Recorded HERE, at the point the train has actually stopped at its destination, rather than
+        // when the route was chosen - LEAST_RECENTLY_VISITED ranks by where trains have BEEN.
+        this.lastArrival.put(path.get(path.size() - 1).getEnd().getUniqueId(),
+            System.currentTimeMillis());
+
         // Reverse at terminus station
         if (path.get(path.size() - 1).getEnd().isTerminus() || path.get(path.size() - 1).getEnd().isReversing())
         {

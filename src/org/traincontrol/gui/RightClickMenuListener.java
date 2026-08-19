@@ -63,7 +63,7 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.buttonHasLocomotive(source))
             {
                 menuItem = new JMenuItem(
-                    I18n.f("loc.ui.menuCopyLocomotive", ui.getButtonLocomotive(source).getName())
+                    I18n.f("loc.ui.menuCopyLocomotiveNamed", ui.getButtonLocomotive(source).getName())
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
                 menuItem.setToolTipText("Control+C");
@@ -81,7 +81,7 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.hasCopyTarget())
             {
                 menuItem = new JMenuItem(
-                    I18n.f("loc.ui.menuPasteLocomotive", ui.getCopyTarget().getName())
+                    I18n.f("loc.ui.menuPasteLocomotiveNamed", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
                 menuItem.setToolTipText("Control+V");

@@ -129,8 +129,12 @@ public class RouteEditorFrame extends JFrame
 
         middle.add(commandSection);
 
+        // Add and Remove refuse when the expression is one rows cannot express.  They used to stay
+        // enabled: a user could open a bracketed route, add a condition, fill it in and save, and the
+        // whole lot was dropped on the way out - onSave keeps the original expression - without a word.
         JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions,
-            () -> conditions.addRow(), () -> conditions.removeSelected(), null, null);
+            () -> { if (conditionsEditable) conditions.addRow(); },
+            () -> { if (conditionsEditable) conditions.removeSelected(); }, null, null);
 
         readsAs.setFont(readsAs.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
 
@@ -928,7 +932,14 @@ public class RouteEditorFrame extends JFrame
 
             JComboBox<String> kinds = new JComboBox<>();
 
-            for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
+            // Only the kinds a condition can actually be.  The list offered all seven, but Route
+            // evaluates accessory and feedback terms and nothing else - so picking a speed or a
+            // function as a condition gave a term that is permanently false, saved without complaint,
+            // and a route that silently stopped firing.
+            for (CommandRow.Kind kind : CommandRow.Kind.values())
+            {
+                if (CommandRow.canBeACondition(kind)) kinds.addItem(kind.toString());
+            }
 
             getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
             getColumnModel().getColumn(1).setPreferredWidth(150);

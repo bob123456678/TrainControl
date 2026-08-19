@@ -108,6 +108,19 @@ public final class CommandRow
     }
 
     /**
+     * Whether this kind means anything as a CONDITION.
+     *
+     * Route.evaluate understands accessory and feedback terms and nothing else - so a condition built
+     * from any other kind is permanently false, and a route carrying one silently stops firing with
+     * no error anywhere.  The condition editor offered all seven kinds, which made that a two-click
+     * mistake.
+     */
+    public static boolean canBeACondition(Kind kind)
+    {
+        return kind == Kind.ACCESSORY || kind == Kind.FEEDBACK;
+    }
+
+    /**
      * Whether this kind can carry a decoder type, so the editor can grey the cell for the rest.
      */
     public static boolean hasProtocol(Kind kind)

@@ -361,4 +361,128 @@ public class testMessageBundles
             "these placeholders ask MessageFormat for a format, which I18n.f can no longer satisfy "
             + "for whole numbers: " + offenders);
     }
+
+    /**
+     * No message uses a printf placeholder, because nothing formats one.
+     *
+     * A specific mistake, made six times in one session and caught by a reviewer rather than by
+     * anything here.  I18n.f formats with MessageFormat, which understands {0} and passes %s through
+     * untouched - and DISCARDS the argument, silently.  So a message written with %s does not throw,
+     * does not log, and does not show what it was given: the user reads "Saved to %s", or a menu that
+     * says "Selection (%s)", or - the one that mattered - a route editor promising to write out a
+     * condition it cannot edit, and printing "%s" where the condition should be.
+     *
+     * Nothing in TrainControl calls String.format on a bundle value, so a percent-s in one is always
+     * a mistake, which makes this a rule rather than a judgement.
+     */
+    @Test
+    public void testNoMessageUsesAPrintfPlaceholder() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File file : bundles())
+        {
+            java.util.Properties properties = valuesOf(file);
+
+            for (String key : properties.stringPropertyNames())
+            {
+                String value = properties.getProperty(key);
+
+                if (value.contains("%s") || value.contains("%d"))
+                {
+                    offenders.add(file.getName() + ":" + key);
+                }
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "these messages use a printf placeholder, which MessageFormat leaves in the text and "
+            + "whose argument it throws away - so the user is shown the placeholder itself instead of "
+            + "the value.  Use {0}: " + offenders);
+    }
+
+    /**
+     * Every message handed to I18n.f actually has somewhere to put its argument.
+     *
+     * The other half of the rule above.  A key called with arguments and containing no placeholder is
+     * either a message that has lost its value, or a call that should have been I18n.t - and the two
+     * are worth telling apart, so this only looks at keys whose call site passes at least one
+     * argument.
+     */
+    @Test
+    public void testEveryFormattedMessageHasAPlaceholder() throws Exception
+    {
+        java.util.Properties english = null;
+
+        for (File file : bundles())
+        {
+            if ("messages.properties".equals(file.getName())) english = valuesOf(file);
+        }
+
+        assertNotNull(english, "the English bundle was not found");
+
+        List<String> offenders = new ArrayList<>();
+
+        for (File source : javaSources(new File("src")))
+        {
+            String text = new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
+
+            java.util.regex.Matcher m = Pattern.compile(
+                "I18n\\.f\\(\\s*\"([^\"]+)\"\\s*,").matcher(text);
+
+            while (m.find())
+            {
+                String key = m.group(1);
+                String value = english.getProperty(key);
+
+                if (value != null && !value.contains("{0}"))
+                {
+                    offenders.add(key + " (" + source.getName() + ")");
+                }
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "these keys are given arguments by their caller but have nowhere to put them, so whatever "
+            + "was passed is silently dropped: " + offenders);
+    }
+
+    /**
+     * A bundle's key/value pairs.
+     *
+     * Read as ISO-8859-1, which is what Java 8's PropertyResourceBundle does, so what this sees is
+     * what the application sees.
+     */
+    private static java.util.Properties valuesOf(File file) throws Exception
+    {
+        java.util.Properties properties = new java.util.Properties();
+
+        try (java.io.InputStreamReader in = new java.io.InputStreamReader(
+            new java.io.FileInputStream(file), "ISO-8859-1"))
+        {
+            properties.load(in);
+        }
+
+        return properties;
+    }
+
+    /**
+     * Every .java file under a directory.
+     */
+    private static List<File> javaSources(File dir)
+    {
+        List<File> found = new ArrayList<>();
+
+        File[] children = dir.listFiles();
+
+        if (children == null) return found;
+
+        for (File child : children)
+        {
+            if (child.isDirectory()) found.addAll(javaSources(child));
+            else if (child.getName().endsWith(".java")) found.add(child);
+        }
+
+        return found;
+    }
 }

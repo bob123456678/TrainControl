@@ -30,7 +30,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 3. Run it, and enter your Central Station's IP address when prompted ([details](#download-and-run-traincontrol))
 
 Under the hood, this program implements the Marklin CAN protocol and can therefore
-also be used to programmatically control the entire layout ([see API](Automation.md)).  Layout and locomotive information is automatically
+also be used to programmatically control the entire layout ([see API](AutomationAPI.md)).  Layout and locomotive information is automatically
 downloaded from the CS2/CS3 (with minor limitations on the CS3). Track diagrams can also be designed entirely in TrainControl.
 
 For easy scripting or interactive control, you can write [Python (Jython) scripts to call the TrainControl API](src/org/traincontrol/examples/traincontrol_python_example.py).
@@ -125,7 +125,7 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 **Full Autonomy**
 
-Defined via a special [JSON configuration file](Automation.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
+Set up on the track diagram ([user guide](Automation.md)), or via a [JSON configuration file](AutomationAPI.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
 ![Autonomy control panel in TrainControl, used to start fully autonomous train operation](assets/ui_autonomy.png?raw=true)
 
@@ -166,7 +166,7 @@ Monitor the usage of different locomotives.
     * Automate bulk tasks such as turning off all functions
     * Set function and speed presets for locomotives
 * Advanced automation
-    * [Graph model](Automation.md) w/ JSON configuration for location tracking and fully autonomous train operation
+    * [Graph model](AutomationAPI.md) w/ JSON configuration for location tracking and fully autonomous train operation
     * Semi-autonomously operate trains simply by clicking the destination station (when graph model is enabled)
     * Full UI for editing autonomy graph models
     * View station information and control trains via track diagrams
@@ -175,7 +175,7 @@ Monitor the usage of different locomotives.
     * Pair a station with a signal that is thrown to red while a train is standing there, and back to green when it leaves
     * Restrict which directions a station will accept trains from
     * Record and play back timetables
-* Programmatic layout control via Java API (uses CAN protocol - [see documentation](Automation.md)) 
+* Programmatic layout control via Java API (uses CAN protocol - [see documentation](AutomationAPI.md)) 
 * Monitor locomotive usage stats
 
 All of it is free.  If TrainControl has earned a place in your train room, you can [buy me a coffee](https://www.buymeacoffee.com/traincontrol) to support its continued development.
@@ -1022,7 +1022,7 @@ Tab icons provided by Freepik.
         - Paths in the timetable can be replayed sequentally, with progress saved between runs
         - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
         - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
-        - [Java API](Automation.md#timetables) for programmatically creating timetables
+        - [Java API](AutomationAPI.md#timetables) for programmatically creating timetables
     - Locomotive function icon improvements
         - Expanded support to 296 function icons when connected to a CS3. Icons will now match what is shown in the CS3.
         - Improved icon contrast and resolution
@@ -1502,7 +1502,7 @@ Tab icons provided by Freepik.
 * v1.5.7 [01/24/22]
     - Added self-contained initialization function
     - Cleaned up examples and documentation
-    - Added [API & automation readme/tutorial](Automation.md)
+    - Added [API & automation readme/tutorial](AutomationAPI.md)
 
 * v1.5.6 [01/17/22]
     - Function icons will now correctly be shown for F17-F32

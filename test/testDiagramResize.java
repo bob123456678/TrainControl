@@ -40,15 +40,17 @@ public class testDiagramResize
         int wasX = diagram.getSx();
         int wasY = diagram.getSy();
 
-        // "+": a column on the right, a row at the top, a row at the bottom
-        diagram.shiftDown(0);
+        // "+": a column on the right and a row at the bottom.  NOT a row at the top - see growEdges:
+        // everything autonomy knows about a page is keyed by square, so moving every tile down one
+        // would leave every station, signal pairing and caption naming the wrong square.
         diagram.addRowsAndColumns(1, 1);
 
         assertEquals(diagram.getSx(), wasX + 1, "one column wider");
-        assertEquals(diagram.getSy(), wasY + 2, "a row at the top and one at the bottom");
+        assertEquals(diagram.getSy(), wasY + 1, "one row taller");
 
-        assertNotNull(diagram.getComponent(2, 4),
-            "the tile should have moved DOWN one, because a row was inserted above it");
+        assertNotNull(diagram.getComponent(2, 3),
+            "growing must not MOVE anything - a tile that changed square would take every coordinate "
+            + "stored about it out of step");
 
         assertTrue(diagram.edgesAreEmpty(),
             "the three edges just added are empty, so shrinking must be allowed");
@@ -65,7 +67,7 @@ public class testDiagramResize
             + "them");
 
         assertEquals(diagram.getComponent(2, 3).getY(), 3,
-            "the tile's own stored row was not corrected on the way back");
+            "the tile's own stored row changed, which nothing about growing or shrinking should do");
     }
 
     /**
@@ -111,10 +113,16 @@ public class testDiagramResize
     }
 
     /**
-     * And the top row, which is the one a shrink has to move everything over.
+     * The TOP row does not stop it, because a shrink no longer touches the top row.
+     *
+     * Worth pinning rather than leaving implicit.  The first version of this took a row off the top as
+     * well, which moved every remaining square up by one - and everything autonomy knows about a page
+     * is keyed by square, so every station, signal pairing, arrival restriction and caption would have
+     * been left naming the square below the one it meant.  Growing and shrinking now happen only at
+     * the far edges, where nothing moves.
      */
     @Test
-    public void testTheTopRowCountsAsAnEdge() throws Exception
+    public void testTheTopRowIsNotAnEdge() throws Exception
     {
         LayoutDiagram diagram = new LayoutDiagram("test", 6, 6, null, null);
 
@@ -122,21 +130,22 @@ public class testDiagramResize
             LayoutDiagramComponent.componentType.STRAIGHT, 2, 0, 0, 0, 12, 11,
             Accessory.accessoryDecoderType.MM2), 2, 0);
 
-        assertFalse(diagram.edgesAreEmpty(),
-            "the top row is where a shrink starts, so track there must stop it");
+        assertTrue(diagram.edgesAreEmpty(),
+            "track on the TOP row must not block a shrink, because a shrink takes nothing from the "
+            + "top - if this ever fails again, check that trimEdges has not gone back to moving "
+            + "squares");
     }
 
     /**
-     * A diagram too small to have three distinct rows cannot shrink at all.
-     *
-     * Otherwise the top row and the bottom row are the same row, and removing "both" removes one row
-     * twice - which on a two-row diagram leaves nothing.
+     * A diagram with a single column or a single row cannot shrink to nothing.
      */
     @Test
     public void testATinyDiagramCannotShrink() throws Exception
     {
-        assertFalse(new LayoutDiagram("test", 1, 2, null, null).edgesAreEmpty(),
-            "a diagram whose top and bottom rows are the same row must refuse, or removing both "
-            + "removes one row twice");
+        assertFalse(new LayoutDiagram("test", 1, 4, null, null).edgesAreEmpty(),
+            "a one-column diagram must refuse, or the shrink removes the only column it has");
+
+        assertFalse(new LayoutDiagram("test", 4, 1, null, null).edgesAreEmpty(),
+            "and a one-row diagram must refuse for the same reason");
     }
 }

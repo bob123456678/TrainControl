@@ -35,12 +35,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *   2. place a random set of locomotives on ordinary stations
  *   3. run them under autonomy with capture on
  *   4. send them back to where they started
- *   5. replay what was captured, and check both that every entry finished AND that each one drove the
- *      route it was captured driving
+ *   5. replay what was captured, and check both that every entry finished AND that every locomotive
+ *      ended up standing where the timetable said it would
  *
  * Step 5 is the whole test.  "Every entry finished" alone would pass on a replay that quietly took a
  * different way round, which is exactly the failure a renamed or vanished arrival-side copy would
- * cause, so the paths are compared edge by edge.
+ * cause.  What catches it is the LAYOUT's own account of where the trains are: on a derived graph a
+ * Point is an arrival side, so "Tunnel (northbound)" and "Tunnel (southbound)" are different answers
+ * to "where did it finish".
+ *
+ * What this does NOT check, and it is worth being straight about: only each locomotive's LAST entry
+ * is verified by position, because that is the only one whose destination the train is still standing
+ * on when the run ends.  A replay that drove an earlier entry somewhere else and then recovered would
+ * pass.  Checking every leg needs the run to record what it traversed as it goes, which is a change to
+ * the timetable machinery rather than to this test.
  *
  * Simulation is mandatory and the run is skipped rather than failed if it cannot be turned on - this
  * drives locomotives for minutes at a time, and doing that to real hardware because a precondition
@@ -223,9 +231,6 @@ public class testTimetableOnDerivedGraph
 
         layout.resetTimetable();
 
-        // What the replay is about to be asked to do, against where everyone actually is.  Printed
-        // rather than asserted, because the first run of this test needs to show which of the two is
-        // wrong before anything is claimed about either.
         // ---- replay ---------------------------------------------------------------------------
         assertTrue(layout.executeTimetable(),
             "the captured timetable did not run to the end.  Entry "

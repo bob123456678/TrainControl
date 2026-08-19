@@ -253,85 +253,8 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
-
-        bindSelectionKeys();
     }
 
-    /**
-     * Escape lets a selection go; Delete erases it.
-     *
-     * On the root pane's WHEN_IN_FOCUSED_WINDOW map rather than a key listener, because the focus in
-     * this window is on whichever tile was last clicked and a listener attached to one component would
-     * work only sometimes - which is worse than not working at all.
-     */
-    private void bindSelectionKeys()
-    {
-        javax.swing.JComponent root = this.getRootPane();
-
-        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "clearSelection");
-
-        root.getActionMap().put("clearSelection", new javax.swing.AbstractAction()
-        {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                if (isAutonomyMode()) return;
-
-                clearSelection();
-            }
-        });
-
-        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "deleteSelection");
-
-        int menuKey = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-
-        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_C, menuKey), "copySelection");
-
-        root.getActionMap().put("copySelection", new javax.swing.AbstractAction()
-        {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                if (isAutonomyMode()) return;
-
-                copySelection();
-            }
-        });
-
-        root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_V, menuKey), "pasteSelection");
-
-        root.getActionMap().put("pasteSelection", new javax.swing.AbstractAction()
-        {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                // At the square under the pointer, which is the only place a paste could sensibly go -
-                // there is no caret in a track diagram
-                if (isAutonomyMode() || !hasGroupClipboard()) return;
-
-                pasteSelection(lastHoveredX, lastHoveredY);
-            }
-        });
-
-        root.getActionMap().put("deleteSelection", new javax.swing.AbstractAction()
-        {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                // Nothing picked means nothing to erase.  Deliberately NOT falling through to
-                // "delete whatever is under the cursor" - a Delete key that erases something the user
-                // did not point at is how a diagram loses track silently.
-                if (isAutonomyMode()) return;
-
-                deleteSelection();
-            }
-        });
-    }
-    
     public boolean hasToolFlag()
     {
         return this.toolFlag != null;
@@ -1376,6 +1299,12 @@ public class LayoutEditor extends PositionAwareJFrame
         this.lastY = -1;
         this.lastComponent = null;
         this.toolFlag = null;
+
+        // The group goes too.  It was never cleared anywhere, and paste prefers it - so ONE group copy
+        // hijacked every later paste for the rest of the session: a user who cut a single tile and
+        // pasted it got the old group back instead, spread over its whole bounding box, while the cut
+        // tile stayed where it was.
+        this.groupClipboard = null;
         this.clearBordersFromChildren(this.newComponents);
     }
     
@@ -1519,7 +1448,8 @@ public class LayoutEditor extends PositionAwareJFrame
             height = Math.max(height, tile.dy);
         }
 
-        if (atX + width >= this.grid.maxWidth || atY + height >= this.grid.maxHeight)
+        // Squares, not pixels - see moveSelection
+        if (atX + width >= layout.getSx() || atY + height >= layout.getSy())
         {
             javax.swing.JOptionPane.showMessageDialog(this,
                 I18n.t("layout.ui.errorPasteWouldLeaveTheDiagram"));
@@ -1605,7 +1535,11 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (this.selection.isEmpty() || (dx == 0 && dy == 0)) return false;
 
-        if (!this.selection.fitsAfterMove(dx, dy, this.grid.maxWidth, this.grid.maxHeight))
+        // The DIAGRAM's size in squares.  LayoutGrid.maxWidth and maxHeight are PIXELS - width times
+        // tile size - so passing them here compared a column number against a pixel count and the
+        // refusal never fired.  Since the move clears every source square before writing any
+        // destination, the first write past the edge threw with the group already deleted.
+        if (!this.selection.fitsAfterMove(dx, dy, layout.getSx(), layout.getSy()))
         {
             javax.swing.JOptionPane.showMessageDialog(this,
                 I18n.t("layout.ui.errorSelectionWouldLeaveTheDiagram"));
@@ -2056,12 +1990,25 @@ public class LayoutEditor extends PositionAwareJFrame
 
 
     /**
-     * Grows the diagram by one all round: a column on the right, a row at the top, a row at the
-     * bottom.
+     * Grows the diagram by one: a column on the right and a row at the bottom.
      *
-     * Top AND bottom because a diagram grows in the middle - track added at one edge usually wants
-     * room at the other - and because it makes the shrink its exact mirror.  A row at the top means
-     * everything moves down by one, which shiftDown already does correctly, captions included.
+     * NOT a row at the top, which is what was asked for and what the first version of this did.
+     *
+     * Inserting a row at the top moves every tile on the page down by one - and everything autonomy
+     * knows about that page is keyed by SQUARE. Stations, protecting signals, barred arrival sides,
+     * parking and reversing marks, home locomotives, station captions: all of them name a square, and
+     * none of them would move. A user with a set-up page who pressed "+" to make room would find
+     * every station one row above its platform, every signal pairing pointing at plain track, and
+     * every arrival restriction applied to the wrong square - silently, with the diagram still
+     * looking exactly right.
+     *
+     * Doing it properly means rewriting every key the companion store holds for that page, which is a
+     * change with its own test suite and not one to make in passing. Growing at the right and the
+     * bottom moves nothing, so it is safe today; the mirror property that made top-and-bottom
+     * attractive is kept, because shrinkEdges takes away exactly these two.
+     *
+     * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
+     * shift-the-page operation with the store rewritten to match.
      */
     public void growEdges()
     {
@@ -2076,10 +2023,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
         try
         {
-            // A row at the top, everything shifted down to make room for it
-            layout.shiftDown(0);
-
-            // Then a row at the bottom and a column at the right
             layout.addRowsAndColumns(1, 1);
 
             refreshGrid();
@@ -2092,11 +2035,11 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Shrinks the diagram by one all round, undoing exactly what growEdges adds.
+     * Shrinks the diagram by one, undoing exactly what growEdges adds.
      *
-     * Refused outright when any of those three edges holds track.  Trimming what it could would take
-     * a piece of railway off the diagram to save the user a scroll, which is not a trade anybody would
-     * accept if they were asked - so this asks, by refusing and saying why.
+     * Refused outright when either edge holds track. Trimming what it could would take a piece of
+     * railway off the diagram to save the user a scroll, which is not a trade anybody would accept if
+     * they were asked - so this asks, by refusing and saying why.
      */
     public void shrinkEdges()
     {
@@ -2767,9 +2710,24 @@ public class LayoutEditor extends PositionAwareJFrame
             // anything while setting autonomy up, and all of them would edit the diagram silently.
             if (isAutonomyMode()) return;
 
+            // The selection shortcuts live HERE, in the handler that actually runs.
+            //
+            // They were first written as key bindings on the root pane's WHEN_IN_FOCUSED_WINDOW map,
+            // which in this window is dead: every control is setFocusable(false) and tiles are JLabels
+            // that never take focus, so the FRAME is the focus owner - and for a heavyweight focus
+            // owner the focus manager walks the parent chain, which for a top-level frame is empty.
+            // The bindings never fired at all, and Delete went on deleting whatever the mouse happened
+            // to be over rather than what the user had picked.
+            //
+            // Selection first, then the single-tile behaviour, so nothing that worked before changes
+            // while nothing is picked.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
-                if (this.hasToolFlag() && getLastHoveredLabel() != null)
+                if (this.hasGroupClipboard() && getLastHoveredLabel() != null)
+                {
+                    this.pasteSelection(getX(getLastHoveredLabel()), getY(getLastHoveredLabel()));
+                }
+                else if (this.hasToolFlag() && getLastHoveredLabel() != null)
                 {
                     this.executeTool(getLastHoveredLabel(), null);
                 }
@@ -2780,20 +2738,23 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
             {
-                this.initCopy(getLastHoveredLabel(), null, false);
+                if (!this.selection.isEmpty())
+                {
+                    this.copySelection();
+                }
+                else
+                {
+                    this.initCopy(getLastHoveredLabel(), null, false);
+                }
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_R)
             {
                 this.rotate(getLastHoveredLabel());
             }
-            else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_C)
-            {          
-                this.executeTool(getLastHoveredLabel(), bulk.COL);
-            }
-            else if (evt.isShiftDown() && evt.getKeyCode() == KeyEvent.VK_R)
-            {
-                this.executeTool(getLastHoveredLabel(), bulk.ROW);
-            }
+            // Shift+C and Shift+R pasted a whole column or row from the hovered tile to the edge
+            // of the diagram.  Both went with the menu items they belonged to: they are what
+            // selecting the squares you mean and dragging them replaces, and a mis-aimed one wrote
+            // over a whole row with undo as the only way back.
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
             {
                 this.editText(getLastHoveredLabel());
@@ -2804,7 +2765,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
             {
-                this.addRowsAndColumns(1, 1);
+                // growEdges, the same thing the menu does.  This called addRowsAndColumns directly, so
+                // the keyboard and the menu grew the diagram DIFFERENTLY and only the menu one had a
+                // matching shrink.
+                this.growEdges();
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
             {
@@ -2824,10 +2788,20 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
             {
-                this.delete(getLastHoveredLabel());
+                if (!this.selection.isEmpty())
+                {
+                    this.deleteSelection();
+                }
+                else
+                {
+                    this.delete(getLastHoveredLabel());
+                }
             }
             else if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
             {
+                // Escape lets go of everything the editor is holding, which is what a user pressing it
+                // means: the picked squares, the copied group, and the armed tool alike
+                this.clearSelection();
                 this.resetClipboard();
             }
         });
