@@ -5026,9 +5026,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Asks which page, at what size, and where, and then writes it.
      *
-     * The drawing itself happens on the event thread deliberately: it builds Swing components, which
-     * may only be touched there, and it is fast - a big layout at the largest size is well under a
-     * second.  A spinner would be more machinery than the wait deserves.
+     * The drawing happens OFF the event thread, behind a spinner.  It builds Swing components, which
+     * may only be touched there - so it marshals those steps itself - but between them it WAITS for
+     * tile images to be decoded, and those are applied on the event thread.  Holding that thread
+     * would mean waiting for work that cannot happen until the wait is over.
      */
     private void exportDiagram()
     {
@@ -5205,13 +5206,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (whenDone == null) return;
 
-        if (tilesDecoding.get() == 0)
+        // Registered UNDER the same lock the drain takes, and the count re-read inside it.
+        //
+        // This was check-then-act: read the count, then add the listener.  A decode finishing between
+        // those two lines drained a list this listener had not joined yet, and nothing ever ran it -
+        // so the diagram export waited its full thirty-second failsafe before drawing, once in a
+        // while, for no reason it could report.
+        synchronized (tilesSettledListeners)
         {
-            javax.swing.SwingUtilities.invokeLater(whenDone);
-            return;
+            if (tilesDecoding.get() > 0)
+            {
+                tilesSettledListeners.add(whenDone);
+                return;
+            }
         }
 
-        tilesSettledListeners.add(whenDone);
+        javax.swing.SwingUtilities.invokeLater(whenDone);
     }
 
     @Override

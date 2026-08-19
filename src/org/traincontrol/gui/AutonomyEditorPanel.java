@@ -2717,13 +2717,22 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
 
+        // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
+        // keyed by the running graph's Points, and a square is several of those - so a derived-graph
+        // station appeared three times over, under generated names the user never chose.
+        java.util.Set<String> listed = new java.util.LinkedHashSet<>();
+
         for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
         {
             TileKey where = index.squareOf(entry.getKey());
 
+            String station = where == null ? entry.getKey() : describeTile(where);
+
             if (entry.getValue() == null)
             {
-                available.add(entry.getKey());
+                if (!listed.add("ok:" + station)) continue;
+
+                available.add(station);
 
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && session.getReducer() != null)
@@ -2733,7 +2742,11 @@ public class AutonomyEditorPanel extends JPanel
             }
             else
             {
-                blocked.append("<br>").append(escape(entry.getKey())).append(": ")
+                // One line per station.  The first reason is the one that would have stopped it; the
+                // others are the same square's other arrival sides saying the same thing.
+                if (!listed.add("no:" + station)) continue;
+
+                blocked.append("<br>").append(escape(station)).append(": ")
                        .append(escape(entry.getValue()));
             }
         }

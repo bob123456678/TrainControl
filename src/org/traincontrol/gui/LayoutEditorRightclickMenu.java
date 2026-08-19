@@ -364,9 +364,12 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
         // Bigger and smaller, as a matched pair.
         //
-        // "+" adds a column on the right and a row at the top AND the bottom; "-" takes the same three
-        // away.  Being exact mirrors is the point: a diagram grown by one press and shrunk by the next
-        // is the diagram it started as, which the old single "increase size" could not promise.
+        // "+" adds a column on the right and a row at the bottom; "-" takes the same two away.  Being
+        // exact mirrors is the point: a diagram grown by one press and shrunk by the next is the
+        // diagram it started as, with every square still where it was.
+        //
+        // NOT a row at the top, which is what was asked for.  Inserting one moves every tile down, and
+        // everything autonomy knows about a page is keyed by SQUARE - see LayoutEditor.growEdges.
         //
         // The four "shift the whole diagram" items that used to sit below have gone.  Each inserted a
         // row or column at the hovered square and pushed everything past it along - a thing users

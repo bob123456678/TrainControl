@@ -12,9 +12,11 @@ import org.traincontrol.base.LayoutDiagramComponent;
  * size, same track, in the same squares.  A "-" that took a row from a different edge than "+" added
  * one to would move every tile on the diagram by one, quietly, and every stored coordinate with it.
  *
- * The other half is the refusal.  Shrinking removes the rightmost column and the top and bottom rows,
- * and if any of those hold track then making the diagram smaller means having less railway.  That has
- * to be refused rather than done, because nothing on screen would say what was lost.
+ * The other half is the refusal.  Shrinking removes the rightmost column and the bottom row, and if
+ * either holds track then making the diagram smaller means having less railway.  That has to be
+ * refused rather than done, because nothing on screen would say what was lost.
+ *
+ * The TOP row is deliberately not touched - see testTheTopRowIsNotAnEdge, and growEdges for why.
  */
 public class testDiagramResize
 {

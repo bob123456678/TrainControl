@@ -578,8 +578,11 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A delay from what the user typed.  Rubbish and blanks leave it as it was rather than silently
-     * becoming zero, which would be a timing change nobody asked for.
+     * A delay from what the user typed.
+     *
+     * A BLANK clears it - emptying the cell is how a delay is removed, and there is no other way to
+     * say it.  Rubbish leaves it as it was, because a mistyped number is not a request to change
+     * anything and silently becoming zero would be a timing change nobody asked for.
      */
     private static int delayOf(String text, int wasBefore)
     {

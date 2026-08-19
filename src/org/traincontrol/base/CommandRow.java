@@ -110,10 +110,16 @@ public final class CommandRow
     /**
      * Whether this kind means anything as a CONDITION.
      *
-     * Route.evaluate understands accessory and feedback terms and nothing else - so a condition built
-     * from any other kind is permanently false, and a route carrying one silently stops firing with
-     * no error anywhere.  The condition editor offered all seven kinds, which made that a two-click
-     * mistake.
+     * Route.evaluate understands accessory terms, feedback terms and auto-locomotive terms ("train X
+     * is at s88 21").  A condition built from any other kind is permanently false, and a route
+     * carrying one silently stops firing with no error anywhere - the condition editor offered all
+     * seven kinds, which made that a two-click mistake.
+     *
+     * AUTO_LOCOMOTIVE is not offered here even though evaluate handles it, because CommandRow has no
+     * controls for a kind that needs a locomotive AND a sensor.  One already in a route is preserved
+     * read-only, the way every other unsupported kind is.  Worth knowing: it is the condition
+     * ConditionRows' own header uses as its example, so the editor cannot yet build the row its
+     * documentation illustrates.
      */
     public static boolean canBeACondition(Kind kind)
     {

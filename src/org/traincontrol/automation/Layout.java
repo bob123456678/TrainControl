@@ -3009,8 +3009,14 @@ public class Layout
 
         for (Point end : ends)
         {
-            // Not a station: not a candidate, and not worth a line
+            // Not a station: not a candidate, and not worth a line.
+            //
+            // And not where this train is ALREADY standing - which on a derived graph is not just the
+            // Point it is on but every copy of that square.  Comparing Points alone listed the
+            // train's own platform as "occupied by <itself>", which is true and useless.
             if (!end.isDestination() || end.equals(start)) continue;
+
+            if (start.getBlock() != null && start.getBlock().equals(end.getBlock())) continue;
 
             String reason = null;
 

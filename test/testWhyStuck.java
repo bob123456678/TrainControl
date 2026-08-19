@@ -136,6 +136,10 @@ public class testWhyStuck
 
         Map<String, String> why = layout.explainDestinations(loc);
 
+        // containsKey AND null, not null alone.  A station wrongly left OUT of the map also reads as
+        // null from get(), so the plain assertion passed either way - it could not tell "available"
+        // from "never considered", which is the one distinction it exists to make.
+        assertTrue(why.containsKey("WS4_B"), "B was not listed at all");
         assertNull(why.get("WS4_B"), "B is joined to A and free, so it must come back available");
 
         assertEquals(why.get("WS4_Island"), org.traincontrol.util.I18n.t("autolayout.why.noRoute"),
@@ -155,7 +159,12 @@ public class testWhyStuck
 
         layout.moveLocomotive(loc.getName(), "WS5_A", false);
 
-        assertNull(layout.explainDestinations(loc).get("WS5_B"),
+        java.util.Map<String, String> why = layout.explainDestinations(loc);
+
+        assertTrue(why.containsKey("WS5_B"),
+            "B was not listed at all, so the null below would have passed for the wrong reason");
+
+        assertNull(why.get("WS5_B"),
             "nothing is in the way, so B must be available - a reason here would mean the explanation "
             + "disagrees with the layout it is explaining");
 
