@@ -720,6 +720,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         buildPathPreferenceMenu();
+        buildNewRouteEditorMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -3049,6 +3050,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private javax.swing.JPanel autonomyDiagramStrip;
 
+    /** The new route editor, while one is open, so a captured accessory can reach it. */
+    private RouteEditorFrame newRouteEditor;
+
     private AutonomyOverlayToggle autonomyOverlayToggle;
 
     /**
@@ -4492,6 +4496,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.routeEditor.appendCommand(command);
                     }
 
+                    // And to the new one, which has the same feature.
+                    //
+                    // Capture is the old editor's most useful trick by some way - the user throws the
+                    // switches in the order they want them and watches the route write itself, instead
+                    // of looking up addresses.  A rebuilt editor without it would have been easy to
+                    // ship and hard to notice until somebody tried.
+                    if (this.newRouteEditor != null && this.newRouteEditor.isVisible()
+                        && this.newRouteEditor.isCapturing())
+                    {
+                        this.newRouteEditor.appendCommand(command);
+                    }
+
                     // Pass the event to the lock edge editor
                     if (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null && this.graphViewer.getGraphEdgeEditor().isCaptureCommandsSelected())
                     {
@@ -4887,6 +4903,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             () -> result[0] = this.syncWithCS2(), null);
 
         return result[0];
+    }
+
+    /**
+     * Adds the new route editor to the Routes menu, beside the one it may replace.
+     *
+     * Both are offered rather than one being swapped for the other.  The new editor refuses to touch
+     * two things - a command of a kind it has no controls for, and a condition with a bracket in it -
+     * and until it grows controls for those, the text editor is how they are edited.  Offering both
+     * also lets the same route be opened in each and compared, which is the only honest way to be sure
+     * the new one is not quietly changing anything.
+     *
+     * Built here rather than in the form, so there is no generated block to keep in step.
+     */
+    private void buildNewRouteEditorMenu()
+    {
+        if (routesMenu == null) return;
+
+        javax.swing.JMenuItem item =
+            new javax.swing.JMenuItem(I18n.t("route.ui.menuNewEditor"));
+
+        item.setToolTipText(I18n.t("route.ui.tooltipNewEditor"));
+
+        item.addActionListener(event ->
+        {
+            String chosen = (String) javax.swing.JOptionPane.showInputDialog(this,
+                I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuNewEditor"),
+                javax.swing.JOptionPane.PLAIN_MESSAGE, null,
+                withNewFirst(this.model.getRouteList()), I18n.t("route.ui.frameNewRoute"));
+
+            if (chosen == null) return;
+
+            // Held so that a captured accessory can find it.  One at a time, as the old editor is.
+            if (this.newRouteEditor != null) this.newRouteEditor.dispose();
+
+            this.newRouteEditor = new RouteEditorFrame(this,
+                I18n.t("route.ui.frameNewRoute").equals(chosen) ? null : chosen);
+
+            this.newRouteEditor.setVisible(true);
+        });
+
+        routesMenu.addSeparator();
+        routesMenu.add(item);
+    }
+
+    /**
+     * The route names with "new route" at the top, for the picker above.
+     */
+    private Object[] withNewFirst(java.util.List<String> routes)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        out.add(I18n.t("route.ui.frameNewRoute"));
+
+        if (routes != null) out.addAll(routes);
+
+        return out.toArray();
     }
 
     public ExecutorService getTileImageLoader()

@@ -1,0 +1,753 @@
+package org.traincontrol.gui;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableColumn;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.CommandRow;
+import org.traincontrol.base.ConditionRows;
+import org.traincontrol.base.NodeExpression;
+import org.traincontrol.base.RouteCommand;
+import org.traincontrol.base.Route;
+import org.traincontrol.util.I18n;
+
+/**
+ * Editing a route by picking from lists, instead of typing lines that have to be right.
+ *
+ * The existing editor is two text areas: one line per command, and a condition expression written out
+ * by hand. It works, and it is the only place left in TrainControl where the interface asks somebody to
+ * get syntax right - a mistyped address is a switch that never throws, and a mistyped condition is a
+ * route that silently never fires.
+ *
+ * This shows the same route as two tables of dropdowns. Every command is the same three questions -
+ * what kind, which one, what to do - and every condition is a term with an AND or OR joining it to what
+ * follows. The conversions live in CommandRow and ConditionRows, are tested on their own, and are what
+ * makes opening a route here safe: a route loaded and saved unchanged is unchanged.
+ *
+ * WHAT IT REFUSES TO TOUCH, which is the important part. A command of a kind with no controls yet, and
+ * a condition with a real bracket in it, are kept exactly as found and shown read-only. The alternative
+ * - rendering them as something that nearly means the same - is how an editor quietly rewrites
+ * somebody's railway the first time they press Save.
+ *
+ * Hand-written rather than built in the GUI designer, so there is no .form to keep in step and nothing
+ * generated to avoid editing.
+ */
+public class RouteEditorFrame extends JFrame
+{
+    private final TrainControlUI parent;
+
+    /** The route being edited, or empty when this is a new one. */
+    private final String originalName;
+
+    private final JTextField nameField = new JTextField(24);
+    private final JTextField s88Field = new JTextField(6);
+    private final JComboBox<String> triggerBox = new JComboBox<>();
+    private final JCheckBox enabledBox = new JCheckBox(I18n.t("route.ui.frameEnabled"));
+
+    private final CommandTable commands = new CommandTable();
+    private final ConditionTable conditions = new ConditionTable();
+
+    /**
+     * Commands the tables cannot show, kept exactly as they were and put back in place on save.
+     *
+     * Keyed by the position they held, so a route that mixes editable and non-editable commands keeps
+     * its order - the order is the route.
+     */
+    private final java.util.Map<Integer, RouteCommand> untouchable = new java.util.TreeMap<>();
+
+    /** The condition expression as loaded, kept when the rows cannot express it. */
+    private NodeExpression conditionsAsFound;
+
+    private boolean conditionsEditable = true;
+
+    /**
+     * While ticked, an accessory thrown on the layout adds itself to the command list.
+     *
+     * The old editor's most useful feature by some way: rather than looking up addresses, the user
+     * throws the switches by hand in the order they want them and watches the route write itself.  It
+     * would have been easy to leave out of a rebuild and hard to notice missing until somebody tried.
+     */
+    private final JCheckBox captureBox = new JCheckBox(I18n.t("route.ui.frameCapture"));
+
+    /** Says which way the joins nest, because that is the one thing a row list cannot show. */
+    private final JLabel readsAs = new JLabel(" ");
+
+    /**
+     * @param parent the main window, which owns the model and the route list
+     * @param routeName the route to edit, or null for a new one
+     */
+    public RouteEditorFrame(TrainControlUI parent, String routeName)
+    {
+        this.parent = parent;
+        this.originalName = routeName == null ? "" : routeName;
+
+        setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
+            : I18n.f("route.ui.frameEditRoute", routeName));
+
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        for (Route.s88Triggers trigger : Route.s88Triggers.values())
+        {
+            triggerBox.addItem(trigger.toString());
+        }
+
+        setContentPane(build());
+
+        load(routeName);
+
+        pack();
+        setLocationRelativeTo(parent);
+    }
+
+    private JPanel build()
+    {
+        JPanel content = new JPanel(new BorderLayout(8, 8));
+        content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        content.add(header(), BorderLayout.NORTH);
+
+        JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8));
+
+        JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands,
+            () -> commands.addRow(), () -> commands.removeSelected(),
+            () -> commands.move(-1), () -> commands.move(1));
+
+        captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
+
+        ((JPanel) commandSection.getComponent(1)).add(captureBox);
+
+        middle.add(commandSection);
+
+        JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions,
+            () -> conditions.addRow(), () -> conditions.removeSelected(), null, null);
+
+        readsAs.setFont(readsAs.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
+
+        ((JPanel) conditionSection.getComponent(1)).add(readsAs);
+
+        middle.add(conditionSection);
+
+        content.add(middle, BorderLayout.CENTER);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        JButton save = new JButton(I18n.t("route.ui.frameSave"));
+        save.addActionListener(e -> onSave());
+
+        JButton cancel = new JButton(I18n.t("route.ui.frameCancel"));
+        cancel.addActionListener(e -> dispose());
+
+        buttons.add(cancel);
+        buttons.add(save);
+
+        content.add(buttons, BorderLayout.SOUTH);
+
+        return content;
+    }
+
+    private JPanel header()
+    {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+
+        row.add(new JLabel(I18n.t("route.ui.frameName")));
+        row.add(nameField);
+        row.add(new JLabel(I18n.t("route.ui.frameS88")));
+        row.add(s88Field);
+        row.add(new JLabel(I18n.t("route.ui.frameTrigger")));
+        row.add(triggerBox);
+        row.add(enabledBox);
+
+        return row;
+    }
+
+    /**
+     * A titled table with the buttons that act on it.
+     */
+    private JPanel section(String title, JTable table, Runnable add, Runnable remove,
+        Runnable up, Runnable down)
+    {
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+
+        panel.setBorder(BorderFactory.createTitledBorder(title));
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setPreferredSize(new Dimension(640, 180));
+
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+
+        buttons.add(button(I18n.t("route.ui.frameAdd"), add));
+        buttons.add(button(I18n.t("route.ui.frameRemove"), remove));
+
+        if (up != null) buttons.add(button("▲", up));
+        if (down != null) buttons.add(button("▼", down));
+
+        panel.add(buttons, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JButton button(String text, Runnable action)
+    {
+        JButton button = new JButton(text);
+        button.addActionListener(e -> action.run());
+        return button;
+    }
+
+    /**
+     * Fills the frame from a route, or leaves it empty for a new one.
+     */
+    private void load(String routeName)
+    {
+        if (routeName == null)
+        {
+            enabledBox.setSelected(false);
+            s88Field.setText("0");
+            return;
+        }
+
+        Route route = parent.getModel().getRoute(routeName);
+
+        if (route == null) return;
+
+        nameField.setText(route.getName());
+        s88Field.setText(String.valueOf(route.getS88()));
+        triggerBox.setSelectedItem(route.getTriggerType().toString());
+        enabledBox.setSelected(route.isEnabled());
+
+        List<RouteCommand> stored = route.getRoute();
+
+        for (int i = 0; i < stored.size(); i++)
+        {
+            CommandRow row = CommandRow.of(stored.get(i));
+
+            if (row == null)
+            {
+                // No controls for this kind: keep it exactly as found, and remember where it sat
+                untouchable.put(i, stored.get(i));
+            }
+            else
+            {
+                commands.rows.add(row);
+            }
+        }
+
+        conditionsAsFound = route.getConditions();
+
+        List<ConditionRows.Row> rows = ConditionRows.of(conditionsAsFound);
+
+        if (rows == null)
+        {
+            // A bracket.  Shown, but not editable here - the text editor still handles it.
+            conditionsEditable = false;
+            conditions.setEnabled(false);
+        }
+        else
+        {
+            conditions.rows.addAll(rows);
+        }
+
+        commands.fireTableDataChanged();
+        conditions.fireTableDataChanged();
+        updateReadsAs();
+    }
+
+    /**
+     * How many commands the list holds, so a test can see that a capture arrived.
+     */
+    public int commandCount()
+    {
+        return commands.rows.size();
+    }
+
+    /**
+     * Whether a thrown accessory should write itself into the command list.
+     */
+    public boolean isCapturing()
+    {
+        return captureBox.isSelected();
+    }
+
+    /**
+     * Adds a command that was captured from the layout.
+     *
+     * Takes the same string the old editor is handed - the accessory's own setting line - and parses it
+     * with the same parser, so a capture means exactly what it always meant.  A line this frame has no
+     * controls for is kept rather than dropped, on the rule the rest of the editor follows.
+     *
+     * @param command the captured line
+     */
+    public void appendCommand(String command)
+    {
+        if (command == null || command.trim().isEmpty()) return;
+
+        try
+        {
+            RouteCommand parsed = RouteCommand.fromLine(command, false);
+
+            if (parsed == null) return;
+
+            CommandRow row = CommandRow.of(parsed);
+
+            if (row == null)
+            {
+                untouchable.put(commands.rows.size() + untouchable.size(), parsed);
+            }
+            else
+            {
+                commands.rows.add(row);
+                commands.fireTableDataChanged();
+            }
+        }
+        catch (Exception e)
+        {
+            // A line that will not parse is not worth interrupting a capture for
+        }
+    }
+
+    /**
+     * Writes out how the joins nest, in words.
+     *
+     * The one thing a flat list cannot show.  "a AND b OR c" is AND(a, OR(b, c)) here, not
+     * OR(AND(a, b), c) - reading it left to right like arithmetic gives a different railway, and
+     * nothing on screen would otherwise say which one is meant.
+     */
+    private void updateReadsAs()
+    {
+        List<ConditionRows.Row> rows = conditions.rows;
+
+        if (!conditionsEditable)
+        {
+            readsAs.setText(I18n.t("route.ui.frameConditionsNotShown"));
+            return;
+        }
+
+        if (rows.size() < 2)
+        {
+            readsAs.setText(" ");
+            return;
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        for (int i = 0; i < rows.size(); i++)
+        {
+            if (i > 0) out.append(rows.get(i - 1).getJoiner() == ConditionRows.Joiner.OR
+                ? " or " : " and ");
+
+            // Brackets from the right, which is how the list nests
+            if (i > 0 && i < rows.size() - 1) out.append('(');
+
+            out.append(shortly(rows.get(i).getCommand()));
+        }
+
+        for (int i = 0; i < rows.size() - 2; i++) out.append(')');
+
+        readsAs.setText(I18n.f("route.ui.frameReadsAs", out.toString()));
+    }
+
+    /**
+     * A condition in as few words as possible, for the reading above.
+     */
+    private static String shortly(RouteCommand command)
+    {
+        if (command == null) return "?";
+
+        if (command.isFeedback())
+        {
+            return "s88 " + command.getAddress() + (command.getSetting() ? " on" : " off");
+        }
+
+        return String.valueOf(command);
+    }
+
+    /**
+     * Builds the route back up and hands it to the same code the text editor uses.
+     */
+    private void onSave()
+    {
+        String name = nameField.getText().trim();
+
+        if (name.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameNeedsAName"));
+            return;
+        }
+
+        int s88;
+
+        try
+        {
+            s88 = Math.abs(Integer.parseInt(s88Field.getText().trim()));
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameS88NotANumber"));
+            return;
+        }
+
+        List<RouteCommand> built = new LinkedList<>();
+
+        try
+        {
+            for (CommandRow row : commands.rows)
+            {
+                built.add(row.toCommand(Accessory.accessoryDecoderType.MM2));
+            }
+        }
+        catch (IllegalArgumentException e)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("route.ui.frameRowIsWrong", String.valueOf(e.getMessage())));
+            return;
+        }
+
+        // The commands with no controls go back where they were
+        for (java.util.Map.Entry<Integer, RouteCommand> kept : untouchable.entrySet())
+        {
+            int at = Math.min(kept.getKey(), built.size());
+
+            built.add(at, kept.getValue());
+        }
+
+        if (built.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameNeedsACommand"));
+            return;
+        }
+
+        NodeExpression expression = conditionsEditable
+            ? ConditionRows.toExpression(conditions.rows) : conditionsAsFound;
+
+        Route.s88Triggers trigger =
+            Route.s88Triggers.valueOf(String.valueOf(triggerBox.getSelectedItem()));
+
+        try
+        {
+            if (originalName.isEmpty())
+            {
+                if (parent.getModel().getRouteList().contains(name))
+                {
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("route.ui.errorRouteAlreadyExistsPickDifferentName", name));
+                    return;
+                }
+
+                parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(),
+                    expression);
+            }
+            else if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
+                enabledBox.isSelected(), expression))
+            {
+                JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                return;
+            }
+
+            parent.refreshRouteList();
+            parent.repaintLayout();
+
+            dispose();
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
+        }
+    }
+
+    // ================================================================ the tables
+
+    /**
+     * The columns every command shares: what kind, which one, what to do.
+     */
+    private final class CommandTable extends JTable
+    {
+        private final List<CommandRow> rows = new ArrayList<>();
+
+        private final AbstractTableModel model = new AbstractTableModel()
+        {
+            @Override
+            public int getRowCount()
+            {
+                return rows.size();
+            }
+
+            @Override
+            public int getColumnCount()
+            {
+                return 3;
+            }
+
+            @Override
+            public String getColumnName(int column)
+            {
+                return I18n.t(column == 0 ? "route.ui.frameColKind"
+                    : column == 1 ? "route.ui.frameColTarget" : "route.ui.frameColSetting");
+            }
+
+            @Override
+            public Object getValueAt(int row, int column)
+            {
+                CommandRow at = rows.get(row);
+
+                return column == 0 ? at.getKind().toString()
+                    : column == 1 ? at.getTarget() : at.getSetting();
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column)
+            {
+                CommandRow at = rows.get(row);
+
+                if (column == 1) return CommandRow.hasTarget(at.getKind());
+                if (column == 2) return CommandRow.hasSetting(at.getKind());
+
+                return true;
+            }
+
+            @Override
+            public void setValueAt(Object value, int row, int column)
+            {
+                CommandRow at = rows.get(row);
+
+                String text = value == null ? "" : value.toString();
+
+                rows.set(row, column == 0
+                    ? new CommandRow(CommandRow.Kind.valueOf(text), at.getTarget(), at.getSetting())
+                    : column == 1
+                        ? new CommandRow(at.getKind(), text, at.getSetting())
+                        : new CommandRow(at.getKind(), at.getTarget(), text));
+
+                fireTableRowsUpdated(row, row);
+            }
+        };
+
+        CommandTable()
+        {
+            setModel(model);
+            setRowHeight(24);
+
+            JComboBox<String> kinds = new JComboBox<>();
+
+            for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
+
+            getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(kinds));
+
+            TableColumn kindColumn = getColumnModel().getColumn(0);
+            kindColumn.setPreferredWidth(170);
+        }
+
+        void addRow()
+        {
+            rows.add(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight"));
+            model.fireTableDataChanged();
+        }
+
+        void removeSelected()
+        {
+            int at = getSelectedRow();
+
+            if (at < 0) return;
+
+            rows.remove(at);
+            model.fireTableDataChanged();
+        }
+
+        void move(int by)
+        {
+            int at = getSelectedRow();
+            int to = at + by;
+
+            if (at < 0 || to < 0 || to >= rows.size()) return;
+
+            rows.add(to, rows.remove(at));
+            model.fireTableDataChanged();
+            setRowSelectionInterval(to, to);
+        }
+
+        void fireTableDataChanged()
+        {
+            model.fireTableDataChanged();
+        }
+    }
+
+    /**
+     * A term, and the operator joining it to what follows.
+     */
+    private final class ConditionTable extends JTable
+    {
+        private final List<ConditionRows.Row> rows = new ArrayList<>();
+
+        private final AbstractTableModel model = new AbstractTableModel()
+        {
+            @Override
+            public int getRowCount()
+            {
+                return rows.size();
+            }
+
+            @Override
+            public int getColumnCount()
+            {
+                return 4;
+            }
+
+            @Override
+            public String getColumnName(int column)
+            {
+                switch (column)
+                {
+                    case 0: return I18n.t("route.ui.frameColJoin");
+                    case 1: return I18n.t("route.ui.frameColKind");
+                    case 2: return I18n.t("route.ui.frameColTarget");
+                    default: return I18n.t("route.ui.frameColSetting");
+                }
+            }
+
+            @Override
+            public Object getValueAt(int row, int column)
+            {
+                ConditionRows.Row at = rows.get(row);
+
+                if (column == 0)
+                {
+                    // The last row joins to nothing, and says so rather than showing a box that does
+                    // nothing
+                    return row == rows.size() - 1 ? ""
+                        : at.getJoiner() == null ? "AND" : at.getJoiner().toString();
+                }
+
+                CommandRow term = CommandRow.of(at.getCommand());
+
+                // A term with no controls is shown whole and left alone, as the commands are
+                if (term == null) return column == 1 ? String.valueOf(at.getCommand()) : "";
+
+                return column == 1 ? term.getKind().toString()
+                    : column == 2 ? term.getTarget() : term.getSetting();
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column)
+            {
+                if (!conditionsEditable) return false;
+
+                if (column == 0) return row < rows.size() - 1;
+
+                CommandRow term = CommandRow.of(rows.get(row).getCommand());
+
+                if (term == null) return false;
+
+                if (column == 2) return CommandRow.hasTarget(term.getKind());
+                if (column == 3) return CommandRow.hasSetting(term.getKind());
+
+                return true;
+            }
+
+            @Override
+            public void setValueAt(Object value, int row, int column)
+            {
+                ConditionRows.Row at = rows.get(row);
+
+                String text = value == null ? "" : value.toString();
+
+                if (column == 0)
+                {
+                    rows.set(row, new ConditionRows.Row(
+                        ConditionRows.Joiner.valueOf(text), at.getCommand()));
+
+                    updateReadsAs();
+                    fireTableRowsUpdated(row, row);
+                    return;
+                }
+
+                CommandRow term = CommandRow.of(at.getCommand());
+
+                if (term == null) return;
+
+                CommandRow edited = column == 1
+                    ? new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(), term.getSetting())
+                    : column == 2
+                        ? new CommandRow(term.getKind(), text, term.getSetting())
+                        : new CommandRow(term.getKind(), term.getTarget(), text);
+
+                try
+                {
+                    rows.set(row, new ConditionRows.Row(at.getJoiner(),
+                        edited.toCommand(Accessory.accessoryDecoderType.MM2)));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    // Half-typed is not wrong yet - the cell keeps what it had until it makes sense
+                    return;
+                }
+
+                updateReadsAs();
+                fireTableRowsUpdated(row, row);
+            }
+        };
+
+        ConditionTable()
+        {
+            setModel(model);
+            setRowHeight(24);
+
+            JComboBox<String> joiners = new JComboBox<>();
+            joiners.addItem("AND");
+            joiners.addItem("OR");
+
+            getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(joiners));
+            getColumnModel().getColumn(0).setPreferredWidth(60);
+
+            JComboBox<String> kinds = new JComboBox<>();
+
+            for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
+
+            getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
+            getColumnModel().getColumn(1).setPreferredWidth(150);
+        }
+
+        void addRow()
+        {
+            // A condition is a feedback term by default, which is what nearly every one is
+            rows.add(new ConditionRows.Row(ConditionRows.Joiner.AND,
+                RouteCommand.RouteCommandFeedback(1, true)));
+
+            model.fireTableDataChanged();
+            updateReadsAs();
+        }
+
+        void removeSelected()
+        {
+            int at = getSelectedRow();
+
+            if (at < 0) return;
+
+            rows.remove(at);
+            model.fireTableDataChanged();
+            updateReadsAs();
+        }
+
+        void fireTableDataChanged()
+        {
+            model.fireTableDataChanged();
+        }
+    }
+}
