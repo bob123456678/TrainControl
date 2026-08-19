@@ -1,6 +1,7 @@
 package org.traincontrol.base;
 
 import java.util.ArrayList;
+import org.traincontrol.util.I18n;
 import java.util.List;
 
 /**
@@ -105,6 +106,29 @@ public final class CommandRow
     public int getDelay()
     {
         return delay;
+    }
+
+    /**
+     * A setting this kind will accept, for when a row changes from one kind to another.
+     *
+     * The vocabularies do not overlap: an accessory is turn or straight, a feedback is on or off, a
+     * direction is forward or backward.  So changing a row's kind has to change its setting too, or
+     * the rebuilt command is refused and the change appears not to have happened.
+     *
+     * The FIRST of each pair, which is also the un-thrown, un-triggered, forward state - the one a
+     * user is least likely to be surprised by finding there.
+     */
+    public static String defaultSettingFor(Kind kind)
+    {
+        switch (kind)
+        {
+            case ACCESSORY: return "straight";
+            case FEEDBACK: return "off";
+            case LOCOMOTIVE_DIRECTION: return "forward";
+            case LOCOMOTIVE_SPEED: return "0";
+            case FUNCTION: return "0:off";
+            default: return "";
+        }
     }
 
     /**
@@ -261,16 +285,16 @@ public final class CommandRow
                 return RouteCommand.RouteCommandFunctionsOff();
 
             case ACCESSORY:
-                return RouteCommand.RouteCommandAccessory(number(target, "address"), protocol,
+                return RouteCommand.RouteCommandAccessory(number(target, "route.wordAddress"), protocol,
                     oneOf(setting, "turn", "straight"));
 
             case FEEDBACK:
-                return RouteCommand.RouteCommandFeedback(number(target, "address"),
+                return RouteCommand.RouteCommandFeedback(number(target, "route.wordAddress"),
                     oneOf(setting, "on", "off"));
 
             case LOCOMOTIVE_SPEED:
                 requireName();
-                return RouteCommand.RouteCommandLocomotiveSpeed(target, number(setting, "speed"));
+                return RouteCommand.RouteCommandLocomotiveSpeed(target, number(setting, "route.wordSpeed"));
 
             case LOCOMOTIVE_DIRECTION:
                 requireName();
@@ -287,12 +311,12 @@ public final class CommandRow
 
                 if (colon < 0)
                 {
-                    throw new IllegalArgumentException(
-                        "a function needs a number and a setting, such as 4:on");
+                            throw new IllegalArgumentException(
+                        I18n.t("route.errorFunctionNeedsNumberAndSetting"));
                 }
 
                 return RouteCommand.RouteCommandFunction(target,
-                    number(setting.substring(0, colon), "function number"),
+                    number(setting.substring(0, colon), "route.wordFunctionNumber"),
                     oneOf(setting.substring(colon + 1), "on", "off"));
             }
 
@@ -323,17 +347,23 @@ public final class CommandRow
         if (whenFalse.equalsIgnoreCase(text)) return false;
 
         throw new IllegalArgumentException(
-            "\"" + setting + "\" is not " + whenTrue + " or " + whenFalse);
+            I18n.f("route.errorSettingNotOneOf", setting, whenTrue, whenFalse));
     }
 
     private void requireName()
     {
         if (target.trim().isEmpty())
         {
-            throw new IllegalArgumentException("this row needs a locomotive");
+            throw new IllegalArgumentException(I18n.t("route.errorRowNeedsALocomotive"));
         }
     }
 
+    /**
+     * A number from a cell, or a refusal naming what was expected.
+     *
+     * @param what a MESSAGE KEY, not a word - this text is shown to the user, in an editor whose every
+     *        other string is translated
+     */
     private static int number(String text, String what)
     {
         try
@@ -342,8 +372,7 @@ public final class CommandRow
         }
         catch (NumberFormatException e)
         {
-            throw new IllegalArgumentException(
-                "\"" + text + "\" is not a " + what);
+            throw new IllegalArgumentException(I18n.f("route.errorNotA", text, I18n.t(what)));
         }
     }
 

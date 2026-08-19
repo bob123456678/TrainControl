@@ -766,7 +766,13 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow.Kind kind = column == 0 ? CommandRow.Kind.valueOf(text) : at.getKind();
                 String target = column == 1 ? text : at.getTarget();
-                String setting = column == 2 ? text : at.getSetting();
+
+                // Changing the KIND replaces the setting with one the new kind accepts.  The
+                // vocabularies do not overlap, so carrying the old word over left a row that looks
+                // fine and is refused at Save with a message about a cell the user never touched.
+                String setting = column == 2 ? text
+                    : column == 0 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
+                    : at.getSetting();
 
                 // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
                 // accessory used to move it to MM2, because the row was rebuilt from three columns
@@ -988,8 +994,18 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == 1)
                 {
-                    edited = new CommandRow(CommandRow.Kind.valueOf(text), term.getTarget(),
-                        term.getSetting(), term.getProtocol(), term.getDelay());
+                    CommandRow.Kind became = CommandRow.Kind.valueOf(text);
+
+                    // A setting that means nothing to the new kind is REPLACED, not carried over.
+                    //
+                    // The vocabularies are disjoint - a feedback is on/off, an accessory is
+                    // turn/straight - so carrying the old word made the rebuild below throw, and the
+                    // rebuild failing silently reverted the edit.  The kind dropdown snapped back with
+                    // no message, in both directions, and since a new row is always a feedback term an
+                    // accessory condition could not be built by hand at all.  Which made the protocol
+                    // column added for exactly that case unreachable.
+                    edited = new CommandRow(became, term.getTarget(),
+                        CommandRow.defaultSettingFor(became), term.getProtocol(), term.getDelay());
                 }
                 else if (column == 2)
                 {

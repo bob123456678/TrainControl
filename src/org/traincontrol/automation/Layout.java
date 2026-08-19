@@ -2817,7 +2817,12 @@ public class Layout
                 {
                     Locomotive yieldLoc = this.checkForSlowerLoc(this.maxLocInactiveSeconds, loc);
 
-                    if (yieldLoc != null)
+                    // running re-checked HERE, not only at the top of the block.  This waits up to
+                    // YIELD_SECONDS - thirty of them - for a train to move, and after a stop no train
+                    // is going to.  The outer guard stops a yield being ENTERED after a stop; it does
+                    // nothing about one already under way, which held the whole run "still running"
+                    // for half a minute after the last train had arrived.
+                    if (yieldLoc != null && running)
                     {
                         yieldLoc.blockUntilMotion(YIELD_SECONDS);
                     }
@@ -2829,7 +2834,10 @@ public class Layout
                 // In a finally, so a thread killed by anything at all still stops being counted -
                 // otherwise one failure would leave the layout reporting itself as running for ever,
                 // and nothing could be edited again without a restart.
-                this.locomotiveThreads.decrementAndGet();
+                if (this.locomotiveThreads.decrementAndGet() == 0)
+                {
+                    announceRunFinished();
+                }
             }
         }).start();
     }
@@ -2979,8 +2987,13 @@ public class Layout
             "autolayout.infoLocomotiveNoFreePaths",
             loc.getName()
         );          
-        loc.delay(minDelay, maxDelay);
-        
+        // Throttles the retry while a run is going.  After a stop there is no retry, so waiting here
+        // delays nothing except this thread noticing it should exit - and with the delay settings up
+        // at tens of seconds, that is how long the interface stayed disabled after everything had
+        // already stopped.  A train with nowhere to go is precisely the one sitting in this sleep
+        // when the user presses Stop.
+        if (running) loc.delay(minDelay, maxDelay);
+
         return null;
     }
     
@@ -4376,6 +4389,28 @@ public class Layout
      * The start-of-path loop already guarded against this; the milestone and completion loops did not,
      * which is the drift this one door removes - there is nowhere left to fire a callback un-guarded.
      */
+    /**
+     * Tells whoever is watching that the last locomotive thread has gone.
+     *
+     * The counter alone was not enough, and this is the half that was missing. Nothing reads
+     * isRunning() on a timer: the interface re-reads it when a path ENDS, and a train that is idle
+     * when the user presses Stop produces no path end - so the last thread could exit with the buttons
+     * still greyed and the Return Home tooltip still saying trains are running, until some unrelated
+     * action happened to repaint. Worse, the exit-path capture of placements and homes is gated on
+     * isRunning() and skips silently, so closing the application in that window lost the session's
+     * changes without a word.
+     *
+     * An EMPTY edge list rather than null, because the registered callback walks it - and a null
+     * locomotive, which it already guards for.
+     */
+    private void announceRunFinished()
+    {
+        for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+        {
+            fireCallback(callback, new LinkedList<Edge>(), null, false);
+        }
+    }
+
     private void fireCallback(TriFunction<List<Edge>, Locomotive, Boolean, Void> callback,
         List<Edge> edges, Locomotive loc, boolean flag)
     {
