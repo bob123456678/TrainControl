@@ -627,6 +627,9 @@ public class RouteEditorFrame extends JFrame
      */
     private static final java.awt.Color HEADING_BLUE = new java.awt.Color(0, 0, 155);
 
+    /** For a line that says something the rest of its level does not agree with. */
+    private static final java.awt.Color WRONG = new java.awt.Color(190, 30, 30);
+
     /**
      * Says how the two halves of this window fit together.
      *
@@ -786,12 +789,26 @@ public class RouteEditorFrame extends JFrame
                 if (!conditionsEditable) return;
 
                 // Required as well as whatever is already there, which is what capturing several
-                // things in a row means - and the word is written in the row rather than implied, so
-                // it can be flipped to "or" in one click.
-                conditions.rows.add(new ConditionOutline.Row(
-                    conditions.rows.isEmpty() ? 0
-                        : conditions.rows.get(conditions.rows.size() - 1).getDepth(),
-                    ConditionOutline.Joiner.AND, parsed));
+                // things in a row means - and the word goes in as its own line, so one click makes
+                // it "or".
+                int depth = 0;
+
+                for (int at = conditions.rows.size() - 1; at >= 0; at--)
+                {
+                    if (!conditions.rows.get(at).isJoiner())
+                    {
+                        depth = conditions.rows.get(at).getDepth();
+                        break;
+                    }
+                }
+
+                if (!conditions.rows.isEmpty())
+                {
+                    conditions.rows.add(ConditionOutline.Row.joining(depth,
+                        ConditionOutline.Joiner.AND));
+                }
+
+                conditions.rows.add(ConditionOutline.Row.condition(depth, parsed));
 
                 conditions.fireTableDataChanged();
 
@@ -1302,8 +1319,15 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
-        // There is nothing to refuse: an outline is always something, because its shape is what it
-        // means rather than something written about it that might not parse.
+        // A level that disagrees with itself means two things at once, and the editor has been
+        // showing which line is the problem in red.  Saving it would be picking one of the two
+        // meanings quietly, and the route would then fire at times nobody asked for.
+        if (conditions.hasProblems())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameLogicDisagrees"));
+            return;
+        }
+
         NodeExpression expression = ConditionOutline.toExpression(conditions.rows);
 
         Route.s88Triggers trigger = triggerFor(String.valueOf(triggerBox.getSelectedItem()));
@@ -1834,13 +1858,12 @@ public class RouteEditorFrame extends JFrame
     /**
      * The conditions, as an indented list with the joining words on lines of their own.
      *
-     * A word in a column beside a condition has to be read as belonging to the row above it, which is
-     * a thing to work out rather than a thing to see. On its own line between two conditions it simply
-     * sits between them, and the list reads downwards like a sentence.
+     * One line of the table is one line of the outline - a condition, or a word - so what is on screen
+     * and what is stored are the same shape. An earlier version kept the word on the condition and
+     * interleaved the two when drawing, which worked and meant that indenting a word was impossible:
+     * it had no depth of its own to change.
      *
-     * So the table shows two kinds of line: a condition, and the word joining it to the one before.
-     * The model underneath is one row per condition carrying its own word - ConditionOutline - and
-     * this class is the interleaving.
+     * ConditionOutline holds the rule and the tests for it; this is what it looks like.
      */
     private final class ConditionTable extends JTable
     {
@@ -1849,39 +1872,15 @@ public class RouteEditorFrame extends JFrame
         /** How many pixels one level of indentation is worth. */
         private static final int STEP = 16;
 
-        /**
-         * Which condition a line of the table is about.
-         *
-         * Even lines are conditions, odd lines are the word before the condition that follows. The
-         * last line is the one that adds another.
-         */
-        private int conditionAt(int line)
-        {
-            return line % 2 == 0 ? line / 2 : (line + 1) / 2;
-        }
-
-        private boolean isJoinerLine(int line)
-        {
-            return line % 2 == 1 && conditionAt(line) < rows.size();
-        }
-
-        private boolean isConditionLine(int line)
-        {
-            return line % 2 == 0 && conditionAt(line) < rows.size();
-        }
-
-        private boolean isAddLine(int line)
-        {
-            return !isJoinerLine(line) && !isConditionLine(line);
-        }
+        /** The lines whose word disagrees with its level, refreshed whenever anything changes. */
+        private java.util.Set<Integer> flagged = new java.util.LinkedHashSet<>();
 
         private final AbstractTableModel model = new AbstractTableModel()
         {
             @Override
             public int getRowCount()
             {
-                // Two lines per condition after the first, plus the one that adds another
-                return rows.isEmpty() ? 1 : rows.size() * 2;
+                return rows.size() + 1;
             }
 
             @Override
@@ -1906,32 +1905,31 @@ public class RouteEditorFrame extends JFrame
             @Override
             public Object getValueAt(int line, int column)
             {
-                if (isAddLine(line))
+                if (line >= rows.size())
                 {
                     // On the left, where a new line begins rather than where its kind will land
                     return column == UP ? ADD_HERE : "";
                 }
 
-                int at = conditionAt(line);
+                ConditionOutline.Row row = rows.get(line);
 
-                if (isJoinerLine(line))
-                {
-                    return column == 4 ? joinerLabel(rows.get(at).getJoiner()) : "";
-                }
-
-                ConditionOutline.Row row = rows.get(at);
-
-                if (column == UP) return at > 0 ? MOVE_UP : "";
-                if (column == DOWN) return at < rows.size() - 1 ? MOVE_DOWN : "";
+                if (column == UP) return line > 0 ? MOVE_UP : "";
+                if (column == DOWN) return line < rows.size() - 1 ? MOVE_DOWN : "";
 
                 if (column == INDENT)
                 {
-                    return at > 0 && row.getDepth() <= rows.get(at - 1).getDepth() ? INDENT_ROW : "";
+                    return line > 0 && row.getDepth() <= rows.get(line - 1).getDepth()
+                        ? INDENT_ROW : "";
                 }
 
                 if (column == OUTDENT) return row.getDepth() > 0 ? OUTDENT_ROW : "";
 
                 if (column == CONDITION_DELETE) return DELETE_ROW;
+
+                if (row.isJoiner())
+                {
+                    return column == 4 ? joinerLabel(row.getJoiner()) : "";
+                }
 
                 CommandRow term = CommandRow.of(row.getCommand());
 
@@ -1955,13 +1953,15 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int line, int column)
             {
-                if (!conditionsEditable || isAddLine(line)) return false;
-
-                if (isJoinerLine(line)) return column == 4;
+                if (!conditionsEditable || line >= rows.size()) return false;
 
                 if (column <= OUTDENT || column == CONDITION_DELETE) return false;
 
-                CommandRow term = CommandRow.of(rows.get(conditionAt(line)).getCommand());
+                ConditionOutline.Row row = rows.get(line);
+
+                if (row.isJoiner()) return column == 4;
+
+                CommandRow term = CommandRow.of(row.getCommand());
 
                 if (term == null) return false;
 
@@ -1975,19 +1975,18 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void setValueAt(Object value, int line, int column)
             {
-                if (isAddLine(line)) return;
+                if (line >= rows.size()) return;
 
-                int at = conditionAt(line);
-                ConditionOutline.Row row = rows.get(at);
+                ConditionOutline.Row row = rows.get(line);
 
                 String text = value == null ? "" : value.toString();
 
-                if (isJoinerLine(line))
+                if (row.isJoiner())
                 {
-                    rows.set(at, row.joinedBy(joinerFor(text)));
+                    if (column == 4) rows.set(line, row.joinedBy(joinerFor(text)));
 
-                    updateReadsAs();
-                    fireTableRowsUpdated(line, line);
+                    settle();
+                    fireTableDataChanged();
 
                     return;
                 }
@@ -2021,17 +2020,16 @@ public class RouteEditorFrame extends JFrame
 
                 try
                 {
-                    rows.set(at, new ConditionOutline.Row(row.getDepth(), row.getJoiner(),
-                        edited.toCommand()));
+                    rows.set(line, row.about(edited.toCommand()));
                 }
                 catch (IllegalArgumentException e)
                 {
-                    // A half-typed address is not a reason to refuse the keystroke; Save reports a row
-                    // that cannot be built, and names it
+                    // A half-typed address is not a reason to refuse the keystroke; Save reports a
+                    // line that cannot be built, and names it
                     return;
                 }
 
-                updateReadsAs();
+                settle();
                 fireTableRowsUpdated(line, line);
             }
         };
@@ -2043,8 +2041,7 @@ public class RouteEditorFrame extends JFrame
             setBackground(java.awt.Color.WHITE);
 
             // No vertical rules.  The marks down either side are controls rather than data, and a
-            // grid line beside them makes them read as columns of a table somebody is expected to
-            // fill in.
+            // grid line beside them makes them read as columns of a table somebody must fill in.
             setShowVerticalLines(false);
             setGridColor(new java.awt.Color(228, 228, 228));
 
@@ -2091,20 +2088,23 @@ public class RouteEditorFrame extends JFrame
                     JLabel out = (JLabel) super.getTableCellRendererComponent(which, value, selected,
                         focused, line, column);
 
-                    int depth = isAddLine(line) ? 0 : rows.get(conditionAt(line)).getDepth();
+                    boolean joiner = line < rows.size() && rows.get(line).isJoiner();
+                    int depth = line < rows.size() ? rows.get(line).getDepth() : 0;
 
                     // The guides run down the joining words too, so a word and the conditions it
                     // joins share a level visibly rather than by inference
                     out.setBorder(RowIcons.guides(depth, STEP));
 
-                    // A joining word is not a condition, and should not read as one
-                    out.setFont(isJoinerLine(line)
+                    out.setFont(joiner
                         ? new java.awt.Font("Segoe UI", java.awt.Font.ITALIC, 13)
                         : new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
 
-                    if (isJoinerLine(line) && !selected)
+                    if (!selected)
                     {
-                        out.setForeground(new java.awt.Color(0, 0, 155));
+                        // Red where a word disagrees with the rest of its level.  Two different words
+                        // at one level is a sentence with two meanings, and this is where it is said.
+                        out.setForeground(flagged.contains(line) ? WRONG
+                            : joiner ? HEADING_BLUE : which.getForeground());
                     }
 
                     return out;
@@ -2123,13 +2123,15 @@ public class RouteEditorFrame extends JFrame
         @Override
         public javax.swing.table.TableCellEditor getCellEditor(int line, int column)
         {
-            if (isAddLine(line)) return super.getCellEditor(line, column);
+            if (line < 0 || line >= rows.size()) return super.getCellEditor(line, column);
 
-            if (column == 4) return isJoinerLine(line) ? joinerEditor : kindEditor;
+            ConditionOutline.Row row = rows.get(line);
 
-            if (isJoinerLine(line)) return super.getCellEditor(line, column);
+            if (column == 4) return row.isJoiner() ? joinerEditor : kindEditor;
 
-            CommandRow term = CommandRow.of(rows.get(conditionAt(line)).getCommand());
+            if (row.isJoiner()) return super.getCellEditor(line, column);
+
+            CommandRow term = CommandRow.of(row.getCommand());
 
             if (term == null) return super.getCellEditor(line, column);
 
@@ -2155,18 +2157,34 @@ public class RouteEditorFrame extends JFrame
             return super.getCellEditor(line, column);
         }
 
+        /**
+         * Adds a condition, with the word that joins it to what is already there.
+         *
+         * Both lines at once, because a condition with no word before it is not a thing anybody wants
+         * and would have to be typed in separately - and the word is written rather than implied, so
+         * one click makes it "or".
+         */
         void addRow()
         {
-            // A new condition sits at the level of the last one and is REQUIRED as well as it, which
-            // is what adding a condition means.  The word is written into the row rather than implied,
-            // so one click flips it to "or".
-            int depth = rows.isEmpty() ? 0 : rows.get(rows.size() - 1).getDepth();
+            int depth = 0;
 
-            rows.add(new ConditionOutline.Row(depth, ConditionOutline.Joiner.AND,
+            for (int at = rows.size() - 1; at >= 0; at--)
+            {
+                if (!rows.get(at).isJoiner())
+                {
+                    depth = rows.get(at).getDepth();
+                    break;
+                }
+            }
+
+            if (!rows.isEmpty()) rows.add(ConditionOutline.Row.joining(depth,
+                ConditionOutline.Joiner.AND));
+
+            rows.add(ConditionOutline.Row.condition(depth,
                 RouteCommand.RouteCommandFeedback(1, true)));
 
+            settle();
             model.fireTableDataChanged();
-            updateReadsAs();
         }
 
         void removeSelected()
@@ -2175,71 +2193,78 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * @param line a line of the table, which may be a joining word
+         * Removes a line, and the word that went with it.
+         *
+         * A condition taken out on its own leaves the word that joined it with nothing on one side,
+         * which is not what removing a requirement means.
          */
         void removeAt(int line)
         {
-            if (isAddLine(line)) return;
+            if (line < 0 || line >= rows.size()) return;
 
-            int at = conditionAt(line);
+            boolean joiner = rows.get(line).isJoiner();
 
-            if (at < 0 || at >= rows.size()) return;
+            rows.remove(line);
 
-            rows.remove(at);
+            if (!joiner)
+            {
+                // The word before it by preference, since "1 and 2" without 2 is "1"
+                if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);
+                else if (line < rows.size() && rows.get(line).isJoiner()) rows.remove(line);
+            }
 
-            repair();
+            tidy();
 
+            settle();
             model.fireTableDataChanged();
-            updateReadsAs();
         }
 
         void shift(int line, int by)
         {
-            int at = conditionAt(line);
-            int to = at + by;
+            int to = line + by;
 
-            if (at < 0 || at >= rows.size() || to < 0 || to >= rows.size()) return;
+            if (line < 0 || line >= rows.size() || to < 0 || to >= rows.size()) return;
 
-            rows.add(to, rows.remove(at));
+            rows.add(to, rows.remove(line));
 
-            repair();
+            tidy();
 
+            settle();
             model.fireTableDataChanged();
-            updateReadsAs();
+            setRowSelectionInterval(to, to);
         }
 
         void indent(int line, int by)
         {
-            int at = conditionAt(line);
+            if (line < 0 || line >= rows.size()) return;
 
-            if (at < 0 || at >= rows.size()) return;
-
-            int depth = rows.get(at).getDepth() + by;
+            int depth = rows.get(line).getDepth() + by;
 
             if (depth < 0) return;
 
-            // One level deeper than the row above, at most.  Two at once would be a nesting with a
+            // One level deeper than the line above, at most.  Two at once would be a nesting with a
             // hole in the middle, which the outline has no way to draw and no way to mean.
-            if (at > 0 && depth > rows.get(at - 1).getDepth() + 1) return;
+            if (line > 0 && depth > rows.get(line - 1).getDepth() + 1) return;
 
-            if (at == 0 && depth > 0) return;
+            if (line == 0 && depth > 0) return;
 
-            rows.set(at, rows.get(at).atDepth(depth));
+            rows.set(line, rows.get(line).atDepth(depth));
 
-            repair();
+            tidy();
 
+            settle();
             model.fireTableDataChanged();
-            updateReadsAs();
+            setRowSelectionInterval(line, line);
         }
 
         /**
          * Pulls the outline back into a shape it can have.
          *
-         * Moving or deleting a row can leave the one after it indented two levels below its new
-         * neighbour, which is a nesting with nothing to nest under. Rather than refuse the move -
-         * which would make reordering feel arbitrary - the outline is straightened afterwards.
+         * Moving or deleting can leave a line indented two levels past its new neighbour, or a word
+         * at either end with nothing to join. Rather than refuse the move - which would make
+         * reordering feel arbitrary - the outline is straightened afterwards.
          */
-        private void repair()
+        private void tidy()
         {
             for (int at = 0; at < rows.size(); at++)
             {
@@ -2250,10 +2275,54 @@ public class RouteEditorFrame extends JFrame
                     rows.set(at, rows.get(at).atDepth(most));
                 }
             }
+
+            // A word with nothing on one side of it, or two in a row
+            boolean again = true;
+
+            while (again)
+            {
+                again = false;
+
+                for (int at = 0; at < rows.size(); at++)
+                {
+                    if (!rows.get(at).isJoiner()) continue;
+
+                    boolean nothingBefore = at == 0;
+                    boolean nothingAfter = at == rows.size() - 1;
+                    boolean doubled = (at > 0 && rows.get(at - 1).isJoiner())
+                        || (at < rows.size() - 1 && rows.get(at + 1).isJoiner());
+
+                    if (nothingBefore || nothingAfter || doubled)
+                    {
+                        rows.remove(at);
+                        again = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Works out which lines disagree with their level, and says what the outline means.
+         */
+        private void settle()
+        {
+            flagged = ConditionOutline.problems(rows);
+
+            updateReadsAs();
+        }
+
+        /**
+         * @return whether anything is flagged, so Save can refuse
+         */
+        boolean hasProblems()
+        {
+            return !flagged.isEmpty();
         }
 
         void fireTableDataChanged()
         {
+            settle();
             model.fireTableDataChanged();
         }
     }

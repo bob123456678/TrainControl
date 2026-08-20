@@ -9,154 +9,194 @@ import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.RouteCommand;
 
 /**
- * Conditions as an indented list, and what that list means.
+ * Conditions as an indented list, where the joining words are indented too.
  *
- * This replaces writing the logic as algebra beside the table. The algebra referred to the rows by
- * letters, and a letter is a handle somebody has to hold in their head while looking away from the
- * thing it names - which is where every confusion with that design came from. An outline puts the
- * shape in the list itself: indentation is nesting, and each row is its own condition.
+ * The words being indentable is the whole of what makes this work, and it took a wrong turn to find.
+ * A first version kept the word beside its condition and decided grouping by "a run of the same word
+ * is a group" - which reads left to right and is defensible, and which nobody could see on screen. A
+ * word that can be indented says which level it joins at, and then the shape IS the meaning:
  *
- * Two rules do all the work, and these tests are mostly about the second one:
+ *   Sensor 1
+ *   and
+ *       Sensor 2
+ *       or
+ *       Sensor 3
  *
- *   - each row carries the word joining it to the row before it at its level
- *   - a run of rows joined by the same word is a group, and a change of word starts a new one
+ * is 1 and (2 or 3), because the "or" sits at the level of the two conditions it joins and the "and"
+ * sits at the level of sensor 1 and the group.
  *
- * So "A or B and C or D" is (A or B) and (C or D). That is what those words mean read left to right,
- * and it is the same thing "A and B or C" already means in every language that has both - which is
- * the point: there is no precedence rule here for anybody to learn, because there is no expression to
- * parse. The shape is on screen.
+ * From that follows the one rule: every word at a level must be the same word. "and" and "or" side by
+ * side at one level is a sentence with two meanings, and the answer is not to pick one quietly but to
+ * say so - which is what problems() reports and the editor draws in red.
  */
 public class testConditionOutline
 {
     /**
-     * The case the whole design exists for.
+     * An indented word joins the indented things, and the outer word joins what is left.
      */
     @Test
-    public void testAChangeOfWordStartsANewGroup()
+    public void testAnIndentedWordJoinsTheIndentedThings()
     {
         NodeExpression parsed = ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(0, ConditionOutline.Joiner.OR, 2),
-            row(0, ConditionOutline.Joiner.AND, 3),
-            row(0, ConditionOutline.Joiner.OR, 4)));
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3)));
 
         assertTrue(parsed instanceof NodeAnd,
-            "(1 or 2) and (3 or 4) - the AND is what joins the two groups, so it is the top of the "
-            + "tree.  An OR here would mean the words had been read as one long chain");
+            "1 and (2 or 3) - the AND is at the outer level, so it is the top of the tree.  An OR "
+            + "here would mean the indentation had been ignored");
+
+        assertTrue(((NodeAnd) parsed).getRight() instanceof org.traincontrol.base.NodeGroup,
+            "and the indented pair is one thing, not two");
     }
 
     /**
-     * One word throughout is one group, however many rows.
+     * The same conditions with the words at one level mean the other thing.
      */
     @Test
-    public void testOneWordThroughoutIsOneGroup()
+    public void testTheOuterWordIsTheTopOfTheTree()
     {
         NodeExpression parsed = ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(0, ConditionOutline.Joiner.AND, 2),
-            row(0, ConditionOutline.Joiner.AND, 3)));
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(0, 3)));
 
-        assertTrue(parsed instanceof NodeAnd, "three conditions, all required");
-
-        assertTrue(ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(0, ConditionOutline.Joiner.OR, 2))) instanceof NodeOr,
-            "and two conditions, either of which will do");
+        assertTrue(parsed instanceof NodeOr, "all three at one level, joined by one word");
     }
 
     /**
-     * Indenting nests a row and the ones indented with it.
+     * Two different words at one level is refused, and the line that disagrees is named.
+     *
+     * The case the red is for. Left to itself it is a sentence with two meanings, and choosing one
+     * quietly is how a route ends up firing at a time nobody asked for.
      */
     @Test
-    public void testIndentingNests()
+    public void testMixedWordsAtOneLevelAreFlagged()
     {
-        NodeExpression parsed = ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(1, ConditionOutline.Joiner.AND, 2),
-            row(1, ConditionOutline.Joiner.OR, 3)));
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(0, 3));
 
-        assertTrue(parsed instanceof NodeAnd,
-            "1 and (2 or 3) - the indented pair is one thing, joined to the first row by the word on "
-            + "the first indented row");
+        java.util.Set<Integer> flagged = ConditionOutline.problems(rows);
 
-        NodeAnd whole = (NodeAnd) parsed;
+        assertEquals(flagged.size(), 1, "one line disagrees with its level: " + flagged);
 
-        assertNotNull(whole.getRight(), "the indented pair is the right-hand side");
+        assertTrue(flagged.contains(3),
+            "and it is the OR, because the level was already settled as AND by the line above it - "
+            + "flagging the first word instead would move the mark as more lines were added");
     }
 
     /**
-     * A route with no conditions has no expression, which is not the same as an empty one.
+     * Indenting the part that was meant to group settles it.
+     */
+    @Test
+    public void testIndentingResolvesTheDisagreement()
+    {
+        assertTrue(ConditionOutline.problems(outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3))).isEmpty(),
+            "one AND at the outer level and one OR at the inner one - each level agrees with itself, "
+            + "which is the whole rule");
+    }
+
+    /**
+     * A level's words may repeat as often as they like, so long as they agree.
+     */
+    @Test
+    public void testOneWordManyTimesIsFine()
+    {
+        assertTrue(ConditionOutline.problems(outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 3))).isEmpty(), "three conditions, all required");
+    }
+
+    /**
+     * And the same word at different levels is not a disagreement.
+     */
+    @Test
+    public void testLevelsAreJudgedSeparately()
+    {
+        assertTrue(ConditionOutline.problems(outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.AND),
+            condition(1, 3))).isEmpty(),
+            "an OR outside and an AND inside is exactly what indenting is for - judging them together "
+            + "would make the feature useless");
+    }
+
+    /**
+     * Nothing in the list is a route with no conditions.
      */
     @Test
     public void testNothingIsNoCondition()
     {
         assertNull(ConditionOutline.toExpression(new ArrayList<ConditionOutline.Row>()),
-            "no rows is a route that fires whenever it is triggered");
+            "no lines is a route that fires whenever it is triggered");
 
         assertNull(ConditionOutline.toExpression(null), "and so is nothing at all");
     }
 
     /**
-     * A single condition is itself, with no wrapping.
-     */
-    @Test
-    public void testOneRowIsOneCondition()
-    {
-        NodeExpression parsed = ConditionOutline.toExpression(outline(row(0, null, 1)));
-
-        assertNotNull(parsed, "one row is one condition");
-
-        assertFalse(parsed instanceof NodeAnd, "and nothing is joined to it");
-        assertFalse(parsed instanceof NodeOr, "nor that");
-    }
-
-    /**
-     * An existing condition opens as an outline, and that outline means the same thing.
+     * An existing condition opens as an outline that means the same thing.
      *
-     * The half that matters for a railway that already exists. Routes were written before this and in
-     * the older text editor, and opening one has to show the condition it has - saving it unchanged
-     * must not alter when it fires.
+     * The half that matters for a railway that already exists: opening a route and saving it
+     * unchanged must not move when it fires.
      */
     @Test
     public void testAnExistingConditionSurvivesBeingShownAsAnOutline()
     {
         NodeExpression original = ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(0, ConditionOutline.Joiner.OR, 2),
-            row(0, ConditionOutline.Joiner.AND, 3),
-            row(0, ConditionOutline.Joiner.OR, 4)));
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3)));
 
         List<ConditionOutline.Row> shown = ConditionOutline.of(original);
 
-        assertEquals(shown.size(), 4, "four conditions go in and four come out");
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "a condition that came from a valid outline must not come back flagged");
 
-        NodeExpression again = ConditionOutline.toExpression(shown);
-
-        assertEquals(describe(again), describe(original),
-            "the outline has to mean what the condition meant, or opening a route and saving it "
-            + "unchanged moves when it fires");
+        assertEquals(describe(ConditionOutline.toExpression(shown)), describe(original),
+            "and it has to mean the same, or opening a route and saving it moves when it fires");
     }
 
     /**
-     * And a flat chain of ANDs round-trips too, which is what most conditions are.
+     * A flat chain of ANDs round-trips without growing an indent.
+     *
+     * An outline that indented itself a little more every time it was opened would walk off the side
+     * of the window after a few visits, and nothing else would ever say so.
      */
     @Test
-    public void testTheOrdinaryCaseRoundTrips()
+    public void testTheOrdinaryCaseDoesNotDrift()
     {
         NodeExpression original = ConditionOutline.toExpression(outline(
-            row(0, null, 1),
-            row(0, ConditionOutline.Joiner.AND, 2),
-            row(0, ConditionOutline.Joiner.AND, 3)));
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 3)));
 
         List<ConditionOutline.Row> shown = ConditionOutline.of(original);
 
-        assertEquals(shown.size(), 3, "three in, three out");
-
         for (ConditionOutline.Row row : shown)
         {
-            assertEquals(row.getDepth(), 0,
-                "nothing was bracketed, so nothing should come back indented - an outline that "
-                + "grows an indent every time it is opened would walk off the side of the window");
+            assertEquals(row.getDepth(), 0, "nothing was grouped, so nothing comes back indented");
         }
 
         assertEquals(describe(ConditionOutline.toExpression(shown)), describe(original),
@@ -186,8 +226,7 @@ public class testConditionOutline
         {
             StringBuilder out = new StringBuilder("(");
 
-            for (NodeExpression inside
-                : ((org.traincontrol.base.NodeGroup) node).getExpressions())
+            for (NodeExpression inside : ((org.traincontrol.base.NodeGroup) node).getExpressions())
             {
                 out.append(describe(inside));
             }
@@ -208,11 +247,13 @@ public class testConditionOutline
         return out;
     }
 
-    /**
-     * One row: a sensor condition, so the rows can be told apart by address.
-     */
-    private static ConditionOutline.Row row(int depth, ConditionOutline.Joiner joiner, int sensor)
+    private static ConditionOutline.Row condition(int depth, int sensor)
     {
-        return new ConditionOutline.Row(depth, joiner, RouteCommand.RouteCommandFeedback(sensor, true));
+        return ConditionOutline.Row.condition(depth, RouteCommand.RouteCommandFeedback(sensor, true));
+    }
+
+    private static ConditionOutline.Row joining(int depth, ConditionOutline.Joiner joiner)
+    {
+        return ConditionOutline.Row.joining(depth, joiner);
     }
 }
