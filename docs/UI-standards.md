@@ -8,6 +8,7 @@ Adam's, set 2026-08-19.
 | Important text and labels | Segoe UI Semibold 13 | black |
 | Buttons | Segoe UI Bold 12 | black |
 | Regular text | Segoe UI Plain 14 | black |
+| Minor headings | Segoe UI Plain 14 | `0,0,155` |
 
 **Panels:** white background, 1px `LineBorder` in `204,204,204`.
 

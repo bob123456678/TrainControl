@@ -72,6 +72,22 @@ public class RouteEditorFrame extends JFrame
     private boolean conditionsEditable = true;
 
     /**
+     * Whether this route came from the Central Station, and so may be read but not changed.
+     *
+     * The station owns those: TrainControl imports them, marks them locked, and shows them with a
+     * star in the route list. Saving one would be writing over something the station will simply send
+     * again on the next sync, so the older editor greys its controls and this one has to as well - the
+     * new editor was reachable from the same menu and knew nothing about it, which made every one of
+     * them look editable.
+     */
+    private boolean locked = false;
+
+    /**
+     * Held so that a route belonging to the Central Station can grey it.
+     */
+    private JButton saveButton;
+
+    /**
      * While ticked, an accessory thrown on the layout adds itself to the command list.
      *
      * The old editor's most useful feature by some way: rather than looking up addresses, the user
@@ -140,6 +156,9 @@ public class RouteEditorFrame extends JFrame
 
         load(routeName);
 
+        // After load(), which is what discovers whether the route is the station's
+        if (locked) becomeReadOnly();
+
         pack();
         setLocationRelativeTo(parent);
     }
@@ -153,9 +172,7 @@ public class RouteEditorFrame extends JFrame
 
         JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8));
 
-        JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands,
-            () -> commands.addRow(), () -> commands.removeSelected(),
-            () -> commands.move(-1), () -> commands.move(1));
+        JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands);
 
         captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
 
@@ -168,16 +185,14 @@ public class RouteEditorFrame extends JFrame
 
         middle.add(commandSection);
 
-        // Add and Remove refuse when the expression is one rows cannot express.  They used to stay
-        // enabled: a user could open a bracketed route, add a condition, fill it in and save, and the
-        // whole lot was dropped on the way out - onSave keeps the original expression - without a word.
-        JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions,
-            () -> { if (conditionsEditable) conditions.addRow(); },
-            () -> { if (conditionsEditable) conditions.removeSelected(); }, null, null);
+        JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions);
 
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
 
-        conditionSection.add(buildFormulaRow(), BorderLayout.EAST);
+        // Under the table rather than beside it.  The terms are read down the table and the formula
+        // is written over them, so putting it alongside asked the reader to look sideways in the
+        // middle of one thought.
+        conditionSection.add(buildFormulaRow(), BorderLayout.SOUTH);
 
         middle.add(conditionSection);
 
@@ -198,7 +213,9 @@ public class RouteEditorFrame extends JFrame
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 
-        left.add(button(I18n.t("route.ui.frameSave"), this::onSave));
+        saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
+
+        left.add(saveButton);
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
@@ -261,10 +278,17 @@ public class RouteEditorFrame extends JFrame
     /**
      * A titled table with the buttons that act on it.
      */
-    private JPanel section(String title, JTable table, Runnable add, Runnable remove,
-        Runnable up, Runnable down)
+    private JPanel section(String title, JTable table)
     {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
+
+        // A panel with a line round it, like the rest of this application - see docs/UI-standards.md.
+        // The heading sits inside the line at the same indentation as the contents, so the two read as
+        // one thing rather than as a label and a box that happen to be near each other.
+        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1),
+            BorderFactory.createEmptyBorder(6, 8, 8, 8)));
 
         // A heading rather than a box round everything.  Two framed panels stacked inside a third
         // frame is three borders deep before any content, and the rest of this application says
@@ -290,15 +314,15 @@ public class RouteEditorFrame extends JFrame
 
         panel.add(scroll, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        // No button row.  Add, remove and reorder are marks in the rows themselves now - a button
+        // under a table acts on whichever row happens to be selected, which is one more thing to get
+        // right before anything happens: select the row, find the button, press it, check it did what
+        // you meant.  The row you are pointing at is not ambiguous.
+        JPanel below = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
-        buttons.add(button(I18n.t("route.ui.frameAdd"), add));
-        buttons.add(button(I18n.t("route.ui.frameRemove"), remove));
+        below.setOpaque(false);
 
-        if (up != null) buttons.add(button("▲", up));
-        if (down != null) buttons.add(button("▼", down));
-
-        panel.add(buttons, BorderLayout.SOUTH);
+        panel.add(below, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -431,6 +455,16 @@ public class RouteEditorFrame extends JFrame
         formulaField.setFont(new java.awt.Font("Segoe UI", 0, 14));
         formulaField.setToolTipText(I18n.t("route.ui.tooltipFormula"));
 
+        // Built with the buttons, never typed.
+        //
+        // A formula is a small language, and a box somebody can type into is a box that will hold
+        // things the language does not accept - at which point the window's job becomes explaining a
+        // syntax error about a route somebody only wanted to change one term of.  Everything that CAN
+        // be written can be written with the four buttons, so the box shows the answer and the buttons
+        // are how you get there.  Still selectable, because selecting is how brackets are added.
+        formulaField.setEditable(false);
+        formulaField.setBackground(java.awt.Color.WHITE);
+
         formulaField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
         {
             @Override
@@ -500,9 +534,9 @@ public class RouteEditorFrame extends JFrame
             termPills.add(pill);
         }
 
-        // The two words, for the same reason the letters are here: they are part of the language and
-        // typing them is not the point of the exercise
-        for (final String word : new String[]{"and", "or", "(", ")"})
+        // The joining words, for the same reason the letters are here: they are part of the language
+        // and typing them is not the point of the exercise
+        for (final String word : new String[]{"and", "or"})
         {
             JButton pill = new JButton(word);
 
@@ -515,8 +549,69 @@ public class RouteEditorFrame extends JFrame
             termPills.add(pill);
         }
 
+        // Brackets go ROUND something rather than in a place.
+        //
+        // One button, and it wraps whatever is selected - which is what a bracket is for and how
+        // somebody thinks about it: "these two go together".  Two buttons that each insert half a
+        // pair leave it possible to write an opening one and never the closing one, and then the
+        // window has to explain an unbalanced formula to somebody who was only grouping two terms.
+        JButton bracket = new JButton(I18n.t("route.ui.frameGroup"));
+
+        bracket.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        bracket.setMargin(new java.awt.Insets(0, 6, 0, 6));
+        bracket.setFocusable(false);
+        bracket.setToolTipText(I18n.t("route.ui.tooltipGroup"));
+
+        bracket.addActionListener(e -> bracketSelection());
+
+        termPills.add(bracket);
+
+        JButton clear = new JButton(I18n.t("route.ui.frameClearFormula"));
+
+        clear.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        clear.setMargin(new java.awt.Insets(0, 6, 0, 6));
+        clear.setFocusable(false);
+
+        clear.addActionListener(e ->
+        {
+            formulaField.setText("");
+            updateReadsAs();
+        });
+
+        termPills.add(clear);
+
         termPills.revalidate();
         termPills.repaint();
+    }
+
+    /**
+     * Puts brackets round whatever is selected in the formula.
+     *
+     * With nothing selected there is nothing to group, and saying so beats inserting an empty pair
+     * that the reader then has to delete.
+     */
+    private void bracketSelection()
+    {
+        int from = formulaField.getSelectionStart();
+        int to = formulaField.getSelectionEnd();
+
+        if (from == to)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameSelectToGroup"));
+            return;
+        }
+
+        String text = formulaField.getText();
+
+        formulaField.setText(text.substring(0, from) + "(" + text.substring(from, to) + ")"
+            + text.substring(to));
+
+        // Kept selected, brackets and all, so a second press groups the group - which is how
+        // somebody builds a nested formula without counting characters
+        formulaField.select(from, to + 2);
+        formulaField.requestFocusInWindow();
+
+        updateReadsAs();
     }
 
     /**
@@ -620,6 +715,8 @@ public class RouteEditorFrame extends JFrame
             // screen.
             commands.rows.add(Entry.of(command));
         }
+
+        locked = route.isLocked();
 
         conditionsAsFound = route.getConditions();
 
@@ -861,6 +958,186 @@ public class RouteEditorFrame extends JFrame
         for (int i = 0; i < rows.size() - 2; i++) out.append(')');
 
         readsAs.setText(I18n.f("route.ui.frameReadsAs", out.toString()));
+    }
+
+    // Which column is which, for the three that are pressed rather than typed in.  Named because
+    // "column 8" in a click handler is a number nobody can check against the model that produced it.
+    private static final int UP = 0;
+    private static final int DOWN = 1;
+    private static final int DELETE = 8;
+
+    /** The conditions table is narrower, so its trash sits in a different column. */
+    private static final int CONDITION_DELETE = 5;
+
+    // What a cell holds when it is one of those.  Values rather than icons, so the model stays a model
+    // and the renderer decides what a mark looks like.
+    private static final String MOVE_UP = "up";
+    private static final String MOVE_DOWN = "down";
+    private static final String DELETE_ROW = "delete";
+    private static final String ADD_HERE = "add";
+
+    /**
+     * Squeezes a column down to the width of the mark in it.
+     *
+     * @param table the table
+     * @param column which column
+     */
+    private static void narrow(JTable table, int column)
+    {
+        TableColumn narrow = table.getColumnModel().getColumn(column);
+
+        narrow.setPreferredWidth(26);
+        narrow.setMaxWidth(30);
+        narrow.setMinWidth(22);
+    }
+
+    /**
+     * Draws the marks, and makes them do something when pressed.
+     *
+     * The marks are drawn by the table's own renderer rather than by putting buttons in the cells,
+     * because a table full of live components is a table that has to keep them in step with its rows -
+     * and this one reorders and deletes rows constantly. A mark is a value the renderer knows how to
+     * paint, and a click is a click on a cell.
+     *
+     * @param table the table
+     * @param delete the delete column, or -1
+     * @param up the move-up column, or -1
+     * @param down the move-down column, or -1
+     * @param addOn the column the plus sits under on the last row
+     */
+    private void actOnRowMarks(final JTable table, final int delete, final int up, final int down,
+        final int addOn)
+    {
+        final int mark = Math.max(12, table.getRowHeight() - 10);
+
+        final javax.swing.table.DefaultTableCellRenderer marks =
+            new javax.swing.table.DefaultTableCellRenderer()
+        {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                boolean selected, boolean focused, int row, int column)
+            {
+                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", selected,
+                    false, row, column);
+
+                out.setHorizontalAlignment(JLabel.CENTER);
+
+                if (MOVE_UP.equals(value)) out.setIcon(RowIcons.arrow(mark, true));
+                else if (MOVE_DOWN.equals(value)) out.setIcon(RowIcons.arrow(mark, false));
+                else if (DELETE_ROW.equals(value)) out.setIcon(RowIcons.trash(mark));
+                else if (ADD_HERE.equals(value)) out.setIcon(RowIcons.plus(mark));
+                else out.setIcon(null);
+
+                return out;
+            }
+        };
+
+        for (int column : new int[]{up, down, delete, addOn})
+        {
+            if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
+        }
+
+        table.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+
+                if (row < 0 || column < 0) return;
+
+                // Only where there is actually a mark.  An empty cell in one of these columns - the
+                // top row has no way up - has to stay empty rather than being a hidden button.
+                Object value = table.getValueAt(row, column);
+
+                if (MOVE_UP.equals(value)) moveRow(table, row, -1);
+                else if (MOVE_DOWN.equals(value)) moveRow(table, row, 1);
+                else if (DELETE_ROW.equals(value)) deleteRow(table, row);
+                else if (ADD_HERE.equals(value)) addTo(table);
+            }
+        });
+
+        // The hand says "this does something" before anything is pressed, which is the whole
+        // difference between a mark and a decoration
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
+        {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e)
+            {
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+
+                boolean live = row >= 0 && column >= 0
+                    && !"".equals(String.valueOf(table.getValueAt(row, column)))
+                    && (column == up || column == down || column == delete
+                        || (row >= rowsOf(table) && column == addOn));
+
+                table.setCursor(java.awt.Cursor.getPredefinedCursor(
+                    live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+            }
+        });
+    }
+
+    private int rowsOf(JTable table)
+    {
+        return table == commands ? commands.rows.size() : conditions.rows.size();
+    }
+
+    private void moveRow(JTable table, int row, int by)
+    {
+        if (table == commands) commands.shift(row, by);
+    }
+
+    private void deleteRow(JTable table, int row)
+    {
+        if (table == commands) commands.removeAt(row);
+        else conditions.removeAt(row);
+    }
+
+    private void addTo(JTable table)
+    {
+        if (table == commands) commands.addRow();
+        else if (conditionsEditable) conditions.addRow();
+    }
+
+    /**
+     * Turns the whole window into something to read.
+     *
+     * Everything that could change the route goes quiet: the name, the trigger, both tables, the
+     * formula, capture, and Save. Cancel stays, because closing a window you cannot change is the one
+     * thing you certainly want to do, and so does Help.
+     *
+     * The title says why. A window full of greyed controls with no explanation reads as broken
+     * software rather than as a rule, and "this one belongs to the Central Station" is a fact a user
+     * can act on - they can change it there.
+     */
+    private void becomeReadOnly()
+    {
+        setTitle(I18n.f("route.ui.frameLockedTitle", originalName));
+
+        nameField.setEditable(false);
+        s88Field.setEditable(false);
+        triggerBox.setEnabled(false);
+        enabledBox.setEnabled(false);
+
+        captureBox.setEnabled(false);
+        captureTarget.setEnabled(false);
+
+        commands.setEnabled(false);
+        conditions.setEnabled(false);
+
+        formulaField.setEnabled(false);
+
+        // The marks in the rows go with it.  A trash can that does nothing is worse than no trash can:
+        // it says the row can be deleted and then declines, which reads as a fault rather than a rule.
+        conditionsEditable = false;
+
+        for (java.awt.Component pill : termPills.getComponents()) pill.setEnabled(false);
+
+        if (saveButton != null) saveButton.setEnabled(false);
+
+        readsAs.setText(I18n.t("route.ui.frameLockedExplains"));
     }
 
     /**
@@ -1201,13 +1478,17 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getRowCount()
             {
-                return rows.size();
+                // One more than there are rows.  The last is where a new command is added, and it is
+                // part of the table rather than a button beside it so that adding happens where the
+                // adding will appear - a button in another panel is a different place from the one
+                // the row lands in.
+                return rows.size() + 1;
             }
 
             @Override
             public int getColumnCount()
             {
-                return 6;
+                return 9;
             }
 
             @Override
@@ -1215,47 +1496,64 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
+                    // Move, position, and delete all live IN the row now.  They were buttons under
+                    // the table acting on whichever row happened to be selected, which is one more
+                    // thing to get right before anything happens: select the row, find the button,
+                    // press it, check it did what you meant.
+                    case UP: return "";
+                    case DOWN: return "";
+
                     // The position, which a route needs and a list of rows does not show.  Order is
                     // the whole meaning of a route - a turnout thrown after the train has passed is a
-                    // different railway from one thrown before - and "move this row up" and "row 4
-                    // cannot be saved" both need something to point at.
-                    case 0: return "#";
-                    case 1: return I18n.t("route.ui.frameColKind");
-                    case 2: return I18n.t("route.ui.frameColTarget");
-                    case 3: return I18n.t("route.ui.frameColSetting");
-                    case 4: return I18n.t("route.ui.frameColProtocol");
-                    default: return I18n.t("route.ui.frameColDelay");
+                    // different railway from one thrown before.
+                    case 2: return "#";
+                    case 3: return I18n.t("route.ui.frameColKind");
+                    case 4: return I18n.t("route.ui.frameColTarget");
+                    case 5: return I18n.t("route.ui.frameColSetting");
+                    case 6: return I18n.t("route.ui.frameColProtocol");
+                    case 7: return I18n.t("route.ui.frameColDelay");
+                    default: return "";
                 }
             }
 
             @Override
             public Object getValueAt(int row, int column)
             {
+                // The adding row: a plus under the position column and nothing else
+                if (row >= rows.size())
+                {
+                    return column == 2 ? ADD_HERE : "";
+                }
+
                 Entry entry = rows.get(row);
 
-                if (column == 0) return String.valueOf(row + 1);
+                if (column == UP) return row > 0 ? MOVE_UP : "";
+                if (column == DOWN) return row < rows.size() - 1 ? MOVE_DOWN : "";
+                if (column == DELETE) return DELETE_ROW;
+
+                if (column == 2) return String.valueOf(row + 1);
 
                 // A kept command has no columns to fill, so it reads as its own stored line in the
                 // first one.  Better an unfamiliar line than a blank row doing something unexplained.
                 if (!entry.isEditable())
                 {
-                    return column == 1 ? entry.describe() : "";
+                    return column == 3 ? entry.describe() : "";
                 }
 
                 CommandRow at = entry.getRow();
 
                 switch (column)
                 {
-                    case 1: return at.getKind().toString();
+                    case 3: return at.getKind().toString();
 
                     // Blank where the kind has no such thing, rather than whatever the row was
                     // carrying before it became a stop.  A greyed cell with a stale address in it
                     // reads as a value that is being used and cannot be changed, which is the
                     // opposite of what it means.
-                    case 2: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
-                    case 3: return CommandRow.hasSetting(at.getKind()) ? at.getSetting() : "";
+                    case 4: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
+                    case 5: return CommandRow.hasSetting(at.getKind()) ? at.getSetting() : "";
 
-                    case 4:
+                    case 6:
                         if (!CommandRow.hasProtocol(at.getKind())) return "";
                         return (at.getProtocol() == null
                             ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : at.getProtocol()).toString();
@@ -1269,19 +1567,21 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int row, int column)
             {
-                Entry entry = rows.get(row);
+                // The adding row, and the three columns that are pressed rather than typed in
+                if (row >= rows.size()) return false;
 
-                // The position is read, not typed
-                if (column == 0) return false;
+                if (column == UP || column == DOWN || column == DELETE || column == 2) return false;
+
+                Entry entry = rows.get(row);
 
                 if (!entry.isEditable()) return false;
 
                 CommandRow at = entry.getRow();
 
-                if (column == 2) return CommandRow.hasTarget(at.getKind());
-                if (column == 3) return CommandRow.hasSetting(at.getKind());
-                if (column == 4) return CommandRow.hasProtocol(at.getKind());
-                if (column == 5) return CommandRow.hasDelay(at.getKind());
+                if (column == 4) return CommandRow.hasTarget(at.getKind());
+                if (column == 5) return CommandRow.hasSetting(at.getKind());
+                if (column == 6) return CommandRow.hasProtocol(at.getKind());
+                if (column == 7) return CommandRow.hasDelay(at.getKind());
 
                 return true;
             }
@@ -1289,6 +1589,8 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void setValueAt(Object value, int row, int column)
             {
+                if (row >= rows.size()) return;
+
                 Entry entry = rows.get(row);
 
                 if (!entry.isEditable()) return;
@@ -1297,14 +1599,14 @@ public class RouteEditorFrame extends JFrame
 
                 String text = value == null ? "" : value.toString().trim();
 
-                CommandRow.Kind kind = column == 1 ? CommandRow.Kind.valueOf(text) : at.getKind();
-                String target = column == 2 ? text : at.getTarget();
+                CommandRow.Kind kind = column == 3 ? CommandRow.Kind.valueOf(text) : at.getKind();
+                String target = column == 4 ? text : at.getTarget();
 
                 // Changing the KIND replaces the setting with one the new kind accepts.  The
                 // vocabularies do not overlap, so carrying the old word over left a row that looks
                 // fine and is refused at Save with a message about a cell the user never touched.
-                String setting = column == 3 ? text
-                    : column == 1 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
+                String setting = column == 5 ? text
+                    : column == 3 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
                     : at.getSetting();
 
                 // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
@@ -1313,8 +1615,8 @@ public class RouteEditorFrame extends JFrame
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
-                if (column == 4) protocol = protocolOf(text);
-                if (column == 5) delay = delayOf(text, at.getDelay());
+                if (column == 6) protocol = protocolOf(text);
+                if (column == 7) delay = delayOf(text, at.getDelay());
 
                 // A kind that takes no target or setting does not keep the ones it had, so the blank
                 // the table shows and the row underneath it say the same thing
@@ -1341,7 +1643,7 @@ public class RouteEditorFrame extends JFrame
 
             for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
 
-            getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
+            getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(kinds));
 
             JComboBox<String> protocols = new JComboBox<>();
 
@@ -1350,17 +1652,23 @@ public class RouteEditorFrame extends JFrame
                 protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(protocols));
+            getColumnModel().getColumn(6).setCellEditor(new DefaultCellEditor(protocols));
 
-            TableColumn positionColumn = getColumnModel().getColumn(0);
+            narrow(this, UP);
+            narrow(this, DOWN);
+            narrow(this, DELETE);
+
+            TableColumn positionColumn = getColumnModel().getColumn(2);
             positionColumn.setPreferredWidth(30);
             positionColumn.setMaxWidth(40);
 
-            TableColumn kindColumn = getColumnModel().getColumn(1);
+            TableColumn kindColumn = getColumnModel().getColumn(3);
             kindColumn.setPreferredWidth(170);
 
-            getColumnModel().getColumn(4).setPreferredWidth(70);
-            getColumnModel().getColumn(5).setPreferredWidth(70);
+            getColumnModel().getColumn(6).setPreferredWidth(70);
+            getColumnModel().getColumn(7).setPreferredWidth(70);
+
+            actOnRowMarks(this, DELETE, UP, DOWN, 2);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
@@ -1403,7 +1711,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
         {
-            if (column == 3 && row >= 0 && row < rows.size() && rows.get(row).isEditable())
+            if (column == 5 && row >= 0 && row < rows.size() && rows.get(row).isEditable())
             {
                 String[] words = settingWords(rows.get(row).getRow());
 
@@ -1441,10 +1749,18 @@ public class RouteEditorFrame extends JFrame
 
         void move(int by)
         {
-            int at = getSelectedRow();
+            shift(getSelectedRow(), by);
+        }
+
+        /**
+         * Not "move": Component has had a move(int, int) since AWT 1.0, and overriding it by accident
+         * is how a row reorder becomes a window reposition.
+         */
+        void shift(int at, int by)
+        {
             int to = at + by;
 
-            if (at < 0 || to < 0 || to >= rows.size()) return;
+            if (at < 0 || at >= rows.size() || to < 0 || to >= rows.size()) return;
 
             rows.add(to, rows.remove(at));
             model.fireTableDataChanged();
@@ -1469,13 +1785,14 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getRowCount()
             {
-                return rows.size();
+                // The extra row is where a term is added, in the table rather than beside it
+                return rows.size() + 1;
             }
 
             @Override
             public int getColumnCount()
             {
-                return 5;
+                return 6;
             }
 
             @Override
@@ -1487,13 +1804,21 @@ public class RouteEditorFrame extends JFrame
                     case 1: return I18n.t("route.ui.frameColKind");
                     case 2: return I18n.t("route.ui.frameColTarget");
                     case 3: return I18n.t("route.ui.frameColSetting");
-                    default: return I18n.t("route.ui.frameColProtocol");
+                    case 4: return I18n.t("route.ui.frameColProtocol");
+                    default: return "";
                 }
             }
 
             @Override
             public Object getValueAt(int row, int column)
             {
+                if (row >= rows.size())
+                {
+                    return column == 0 ? ADD_HERE : "";
+                }
+
+                if (column == CONDITION_DELETE) return DELETE_ROW;
+
                 ConditionRows.Row at = rows.get(row);
 
                 // The handle this term is known by in the formula underneath.  It replaced a column
@@ -1526,10 +1851,12 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int row, int column)
             {
+                if (row >= rows.size()) return false;
+
                 if (!conditionsEditable) return false;
 
-                // The letter is what the row IS, not something to set
-                if (column == 0) return false;
+                // The letter is what the row IS, and the trash is pressed rather than typed in
+                if (column == 0 || column == CONDITION_DELETE) return false;
 
                 CommandRow term = CommandRow.of(rows.get(row).getCommand());
 
@@ -1545,6 +1872,8 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void setValueAt(Object value, int row, int column)
             {
+                if (row >= rows.size()) return;
+
                 ConditionRows.Row at = rows.get(row);
 
                 String text = value == null ? "" : value.toString();
@@ -1634,6 +1963,14 @@ public class RouteEditorFrame extends JFrame
             }
 
             getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(conditionProtocols));
+
+            narrow(this, CONDITION_DELETE);
+
+            TableColumn termColumn = getColumnModel().getColumn(0);
+            termColumn.setPreferredWidth(50);
+            termColumn.setMaxWidth(70);
+
+            actOnRowMarks(this, CONDITION_DELETE, -1, -1, 0);
             getColumnModel().getColumn(4).setPreferredWidth(70);
         }
 
@@ -1655,9 +1992,12 @@ public class RouteEditorFrame extends JFrame
 
         void removeSelected()
         {
-            int at = getSelectedRow();
+            removeAt(getSelectedRow());
+        }
 
-            if (at < 0) return;
+        void removeAt(int at)
+        {
+            if (at < 0 || at >= rows.size()) return;
 
             rows.remove(at);
             model.fireTableDataChanged();
