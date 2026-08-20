@@ -111,9 +111,11 @@ public class RouteEditorFrame extends JFrame
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        // In words rather than in constants.  CLEAR_THEN_OCCUPIED is precise and says nothing to
+        // somebody who has not read the code: what it means on a railway is that a train arrived.
         for (Route.s88Triggers trigger : Route.s88Triggers.values())
         {
-            triggerBox.addItem(trigger.toString());
+            triggerBox.addItem(triggerLabel(trigger));
         }
 
         setContentPane(build());
@@ -143,8 +145,8 @@ public class RouteEditorFrame extends JFrame
         captureTarget.addItem(I18n.t("route.ui.frameCaptureIntoConditions"));
         captureTarget.setToolTipText(I18n.t("route.ui.tooltipCaptureTarget"));
 
-        ((JPanel) commandSection.getComponent(1)).add(captureBox);
-        ((JPanel) commandSection.getComponent(1)).add(captureTarget);
+        buttonsOf(commandSection).add(captureBox);
+        buttonsOf(commandSection).add(captureTarget);
 
         middle.add(commandSection);
 
@@ -157,26 +159,50 @@ public class RouteEditorFrame extends JFrame
 
         readsAs.setFont(readsAs.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
 
-        ((JPanel) conditionSection.getComponent(1)).add(readsAs);
+        buttonsOf(conditionSection).add(readsAs);
 
         middle.add(conditionSection);
 
         content.add(middle, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JButton save = new JButton(I18n.t("route.ui.frameSave"));
-        save.addActionListener(e -> onSave());
+        JButton save = button(I18n.t("route.ui.frameSave"), this::onSave);
+        JButton cancel = button(I18n.t("route.ui.frameCancel"), this::dispose);
 
-        JButton cancel = new JButton(I18n.t("route.ui.frameCancel"));
-        cancel.addActionListener(e -> dispose());
-
-        buttons.add(cancel);
         buttons.add(save);
+        buttons.add(cancel);
 
         content.add(buttons, BorderLayout.SOUTH);
 
         return content;
+    }
+
+    /**
+     * What a trigger means, in words.
+     *
+     * @param trigger the stored value
+     * @return the line to show for it
+     */
+    private static String triggerLabel(Route.s88Triggers trigger)
+    {
+        return trigger == Route.s88Triggers.OCCUPIED_THEN_CLEAR
+            ? I18n.t("route.ui.triggerLeaves") : I18n.t("route.ui.triggerArrives");
+    }
+
+    /**
+     * The trigger behind a line of words.
+     *
+     * Matched against the labels rather than parsed, so the two directions cannot disagree - and it
+     * falls back to the arrival trigger, which is the one every route made before this had.
+     *
+     * @param label what the box is showing
+     * @return the value to store
+     */
+    private static Route.s88Triggers triggerFor(String label)
+    {
+        return I18n.t("route.ui.triggerLeaves").equals(label)
+            ? Route.s88Triggers.OCCUPIED_THEN_CLEAR : Route.s88Triggers.CLEAR_THEN_OCCUPIED;
     }
 
     private JPanel header()
@@ -202,7 +228,16 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
 
-        panel.setBorder(BorderFactory.createTitledBorder(title));
+        // A heading rather than a box round everything.  Two framed panels stacked inside a third
+        // frame is three borders deep before any content, and the rest of this application says
+        // "here is a section" with a line of blue text instead.
+        JLabel heading = new JLabel(title);
+
+        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD, 11f));
+        heading.setForeground(HEADING);
+        heading.setBorder(BorderFactory.createEmptyBorder(2, 2, 4, 2));
+
+        panel.add(heading, BorderLayout.NORTH);
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setPreferredSize(new Dimension(640, 180));
@@ -222,10 +257,87 @@ public class RouteEditorFrame extends JFrame
         return panel;
     }
 
+    /**
+     * The blue this application uses for a heading.  Same value as every other one in the interface.
+     */
+    private static final java.awt.Color HEADING = new java.awt.Color(0, 0, 115);
+
+    /**
+     * The closed set of words a kind's setting may take, or null when it takes a number or a name.
+     *
+     * @param kind the row's kind
+     * @return the words, in the order they should be offered
+     */
+    private String[] settingWords(CommandRow row)
+    {
+        switch (row.getKind())
+        {
+            // Whichever pair belongs to the thing at that address.  A signal and a switch are the same
+            // device and the same two states; offering a signal "turn" and "straight" is asking
+            // somebody to translate their own layout.  An address that names nothing yet - a row just
+            // added - gets the switch words, which is what most accessories are.
+            case ACCESSORY: return isSignalAt(row)
+                ? new String[]{"green", "red"} : new String[]{"straight", "turn"};
+
+            case FEEDBACK: return new String[]{"off", "on"};
+            case LOCOMOTIVE_DIRECTION: return new String[]{"forward", "backward"};
+            default: return null;
+        }
+    }
+
+    /**
+     * Whether the accessory this row names is a signal.
+     *
+     * @param row the row
+     * @return true only when there is an accessory at that address and it is a signal
+     */
+    private boolean isSignalAt(CommandRow row)
+    {
+        try
+        {
+            Accessory accessory =
+                parent.getModel().getAccessoryByAddressIfPresent(
+                    // As typed.  getAccessoryByAddressIfPresent takes the address a user would say
+                    // and does the conversion to a UID itself, so subtracting here would look one
+                    // switch to the left - which for a signal beside a switch is a real address
+                    // holding the wrong kind of thing
+                    Integer.parseInt(row.getTarget().trim()),
+                    row.getProtocol() == null
+                        ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : row.getProtocol());
+
+            return accessory != null && accessory.isSignal();
+        }
+        catch (NumberFormatException e)
+        {
+            // A row with nothing in its address column yet, which is every row the moment it is added
+            return false;
+        }
+    }
+
+    /**
+     * The row of buttons under a section's table.
+     *
+     * Asked of the layout rather than counted off by index.  It WAS an index, and adding a heading
+     * above the table moved everything down one - so the capture controls were added to the scroll
+     * pane, which is not a panel, and the editor stopped opening at all.  A layout knows where it put
+     * things; a number written down elsewhere does not.
+     *
+     * @param section a panel built by section()
+     * @return its button row
+     */
+    private static JPanel buttonsOf(JPanel section)
+    {
+        return (JPanel) ((BorderLayout) section.getLayout())
+            .getLayoutComponent(BorderLayout.SOUTH);
+    }
+
     private JButton button(String text, Runnable action)
     {
         JButton button = new JButton(text);
+
+        button.setFont(button.getFont().deriveFont(java.awt.Font.BOLD, 11f));
         button.addActionListener(e -> action.run());
+
         return button;
     }
 
@@ -247,7 +359,7 @@ public class RouteEditorFrame extends JFrame
 
         nameField.setText(route.getName());
         s88Field.setText(String.valueOf(route.getS88()));
-        triggerBox.setSelectedItem(route.getTriggerType().toString());
+        triggerBox.setSelectedItem(triggerLabel(route.getTriggerType()));
         enabledBox.setSelected(route.isEnabled());
 
         List<RouteCommand> stored = route.getRoute();
@@ -309,7 +421,22 @@ public class RouteEditorFrame extends JFrame
     {
         List<RouteCommand> built = new LinkedList<>();
 
-        for (Entry entry : commands.rows) built.add(entry.toCommand());
+        for (int at = 0; at < commands.rows.size(); at++)
+        {
+            try
+            {
+                built.add(commands.rows.get(at).toCommand());
+            }
+            catch (IllegalArgumentException e)
+            {
+                // Which row, not just what is wrong with it.  "'' is not an address" is true of an
+                // accessory added and never filled in, and says nothing about where to look - and a
+                // route long enough to be worth building is long enough to have to hunt through.
+                throw new IllegalArgumentException(
+                    I18n.f("route.ui.frameRowNumberIsWrong", String.valueOf(at + 1),
+                        String.valueOf(e.getMessage())));
+            }
+        }
 
         return built;
     }
@@ -487,7 +614,12 @@ public class RouteEditorFrame extends JFrame
 
         try
         {
-            s88 = Math.abs(Integer.parseInt(s88Field.getText().trim()));
+            // Not abs().  A typed minus sign was silently turned into the positive address, so a
+            // route triggered off a sensor the user never named - and there is no way to tell from
+            // the saved route that it happened.  Refusing says which cell is wrong; coercing does not.
+            s88 = Integer.parseInt(s88Field.getText().trim());
+
+            if (s88 < 0) throw new NumberFormatException("negative");
         }
         catch (NumberFormatException e)
         {
@@ -503,8 +635,8 @@ public class RouteEditorFrame extends JFrame
         }
         catch (IllegalArgumentException e)
         {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("route.ui.frameRowIsWrong", String.valueOf(e.getMessage())));
+            // Already carries its row number from commandsAsSaved
+            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
             return;
         }
 
@@ -517,8 +649,7 @@ public class RouteEditorFrame extends JFrame
         NodeExpression expression = conditionsEditable
             ? ConditionRows.toExpression(conditions.rows) : conditionsAsFound;
 
-        Route.s88Triggers trigger =
-            Route.s88Triggers.valueOf(String.valueOf(triggerBox.getSelectedItem()));
+        Route.s88Triggers trigger = triggerFor(String.valueOf(triggerBox.getSelectedItem()));
 
         try
         {
@@ -689,7 +820,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 5;
+                return 6;
             }
 
             @Override
@@ -697,10 +828,15 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    case 0: return I18n.t("route.ui.frameColKind");
-                    case 1: return I18n.t("route.ui.frameColTarget");
-                    case 2: return I18n.t("route.ui.frameColSetting");
-                    case 3: return I18n.t("route.ui.frameColProtocol");
+                    // The position, which a route needs and a list of rows does not show.  Order is
+                    // the whole meaning of a route - a turnout thrown after the train has passed is a
+                    // different railway from one thrown before - and "move this row up" and "row 4
+                    // cannot be saved" both need something to point at.
+                    case 0: return "#";
+                    case 1: return I18n.t("route.ui.frameColKind");
+                    case 2: return I18n.t("route.ui.frameColTarget");
+                    case 3: return I18n.t("route.ui.frameColSetting");
+                    case 4: return I18n.t("route.ui.frameColProtocol");
                     default: return I18n.t("route.ui.frameColDelay");
                 }
             }
@@ -710,22 +846,29 @@ public class RouteEditorFrame extends JFrame
             {
                 Entry entry = rows.get(row);
 
+                if (column == 0) return String.valueOf(row + 1);
+
                 // A kept command has no columns to fill, so it reads as its own stored line in the
                 // first one.  Better an unfamiliar line than a blank row doing something unexplained.
                 if (!entry.isEditable())
                 {
-                    return column == 0 ? entry.describe() : "";
+                    return column == 1 ? entry.describe() : "";
                 }
 
                 CommandRow at = entry.getRow();
 
                 switch (column)
                 {
-                    case 0: return at.getKind().toString();
-                    case 1: return at.getTarget();
-                    case 2: return at.getSetting();
+                    case 1: return at.getKind().toString();
 
-                    case 3:
+                    // Blank where the kind has no such thing, rather than whatever the row was
+                    // carrying before it became a stop.  A greyed cell with a stale address in it
+                    // reads as a value that is being used and cannot be changed, which is the
+                    // opposite of what it means.
+                    case 2: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
+                    case 3: return CommandRow.hasSetting(at.getKind()) ? at.getSetting() : "";
+
+                    case 4:
                         if (!CommandRow.hasProtocol(at.getKind())) return "";
                         return (at.getProtocol() == null
                             ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : at.getProtocol()).toString();
@@ -741,14 +884,17 @@ public class RouteEditorFrame extends JFrame
             {
                 Entry entry = rows.get(row);
 
+                // The position is read, not typed
+                if (column == 0) return false;
+
                 if (!entry.isEditable()) return false;
 
                 CommandRow at = entry.getRow();
 
-                if (column == 1) return CommandRow.hasTarget(at.getKind());
-                if (column == 2) return CommandRow.hasSetting(at.getKind());
-                if (column == 3) return CommandRow.hasProtocol(at.getKind());
-                if (column == 4) return CommandRow.hasDelay(at.getKind());
+                if (column == 2) return CommandRow.hasTarget(at.getKind());
+                if (column == 3) return CommandRow.hasSetting(at.getKind());
+                if (column == 4) return CommandRow.hasProtocol(at.getKind());
+                if (column == 5) return CommandRow.hasDelay(at.getKind());
 
                 return true;
             }
@@ -764,14 +910,14 @@ public class RouteEditorFrame extends JFrame
 
                 String text = value == null ? "" : value.toString().trim();
 
-                CommandRow.Kind kind = column == 0 ? CommandRow.Kind.valueOf(text) : at.getKind();
-                String target = column == 1 ? text : at.getTarget();
+                CommandRow.Kind kind = column == 1 ? CommandRow.Kind.valueOf(text) : at.getKind();
+                String target = column == 2 ? text : at.getTarget();
 
                 // Changing the KIND replaces the setting with one the new kind accepts.  The
                 // vocabularies do not overlap, so carrying the old word over left a row that looks
                 // fine and is refused at Save with a message about a cell the user never touched.
-                String setting = column == 2 ? text
-                    : column == 0 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
+                String setting = column == 3 ? text
+                    : column == 1 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
                     : at.getSetting();
 
                 // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
@@ -780,8 +926,13 @@ public class RouteEditorFrame extends JFrame
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
-                if (column == 3) protocol = protocolOf(text);
-                if (column == 4) delay = delayOf(text, at.getDelay());
+                if (column == 4) protocol = protocolOf(text);
+                if (column == 5) delay = delayOf(text, at.getDelay());
+
+                // A kind that takes no target or setting does not keep the ones it had, so the blank
+                // the table shows and the row underneath it say the same thing
+                if (!CommandRow.hasTarget(kind)) target = "";
+                if (!CommandRow.hasSetting(kind)) setting = "";
 
                 // A kind that cannot hold one does not keep it, so changing an accessory into a stop
                 // and back does not smuggle a stale decoder type through
@@ -803,7 +954,7 @@ public class RouteEditorFrame extends JFrame
 
             for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
 
-            getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(kinds));
+            getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
 
             JComboBox<String> protocols = new JComboBox<>();
 
@@ -812,13 +963,17 @@ public class RouteEditorFrame extends JFrame
                 protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(protocols));
+            getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(protocols));
 
-            TableColumn kindColumn = getColumnModel().getColumn(0);
+            TableColumn positionColumn = getColumnModel().getColumn(0);
+            positionColumn.setPreferredWidth(30);
+            positionColumn.setMaxWidth(40);
+
+            TableColumn kindColumn = getColumnModel().getColumn(1);
             kindColumn.setPreferredWidth(170);
 
-            getColumnModel().getColumn(3).setPreferredWidth(70);
             getColumnModel().getColumn(4).setPreferredWidth(70);
+            getColumnModel().getColumn(5).setPreferredWidth(70);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
@@ -831,7 +986,12 @@ public class RouteEditorFrame extends JFrame
                     java.awt.Component c = super.getTableCellRendererComponent(table, value, selected,
                         focused, row, column);
 
-                    boolean editable = row < rows.size() && rows.get(row).isEditable();
+                    // Both kinds of "you cannot type here": a whole row that is a kept command, and a
+                    // single cell whose kind has no such thing - a stop has no address.  The second was
+                    // drawn in ordinary black, so an empty cell that could not be filled looked exactly
+                    // like an empty cell waiting to be.
+                    boolean editable = row < rows.size() && rows.get(row).isEditable()
+                        && model.isCellEditable(row, column);
 
                     c.setEnabled(editable);
 
@@ -844,6 +1004,33 @@ public class RouteEditorFrame extends JFrame
                     return c;
                 }
             });
+        }
+
+        /**
+         * The words this row's setting may take, or null where it is a number or a name.
+         *
+         * Turn or straight, on or off, forward or backward: three closed pairs that were typed by
+         * hand, spelled wrongly, and refused at Save with a message about a word the user had no way
+         * of knowing. A speed and a function number stay as text, because they are not a choice.
+         */
+        @Override
+        public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
+        {
+            if (column == 3 && row >= 0 && row < rows.size() && rows.get(row).isEditable())
+            {
+                String[] words = settingWords(rows.get(row).getRow());
+
+                if (words != null)
+                {
+                    JComboBox<String> box = new JComboBox<>();
+
+                    for (String word : words) box.addItem(word);
+
+                    return new DefaultCellEditor(box);
+                }
+            }
+
+            return super.getCellEditor(row, column);
         }
 
         void addRow()

@@ -160,11 +160,107 @@ public class testCommandRow
      * A kind with no controls comes back as null, so the editor keeps the original.
      */
     @Test
-    public void testAKindWithNoControlsIsRefusedRatherThanApproximated()
+    public void testEveryCommandTheModelCanExpressHasControls()
     {
-        assertNull(CommandRow.of(RouteCommand.RouteCommandAutonomyLightsOn()),
-            "a kind the editor has no controls for must be refused, so it can be kept exactly as "
-            + "found rather than turned into something that nearly means the same");
+        // This test used to say the opposite: that autonomy-lights-on had no controls and had to be
+        // refused so it could be kept exactly as found.  That was true and is no longer - Adam asked
+        // for the special commands the editor was missing, so all four of them (lights, autonomy
+        // lights, triggering another route, and an auto-locomotive condition) now build.
+        //
+        // The invariant the old test protected is still worth having and still holds: a command the
+        // editor cannot represent must come back as null so it is preserved untouched rather than
+        // approximated into something that nearly means the same.  It just has no example left to
+        // point at, because there is nothing the editor cannot represent - which is the point.
+        assertNotNull(CommandRow.of(RouteCommand.RouteCommandAutonomyLightsOn()),
+            "autonomy lights on is buildable now, so it must read back as a row");
+
+        assertNotNull(CommandRow.of(RouteCommand.RouteCommandLightsOn()),
+            "and so is lights on");
+
+        assertNotNull(CommandRow.of(RouteCommand.RouteCommandRoute("some route")),
+            "and triggering another route");
+
+        assertNotNull(CommandRow.of(RouteCommand.RouteCommandAutoLocomotive("some train", 21)),
+            "and the auto-locomotive condition, which is the one ConditionRows uses as its own "
+            + "example - the editor could not build the row its documentation illustrates");
+    }
+
+    /**
+     * A signal can be commanded in a signal's words.
+     *
+     * A signal and a switch are the same device - the type only decides which picture is drawn - so
+     * the same two states carry two pairs of names, and Accessory has understood all four for as long
+     * as it has existed. The editor understood two, so a route built against a signal in the words a
+     * signal uses was refused at Save with a message about a vocabulary the user had no reason to
+     * expect.
+     */
+    @Test
+    public void testASignalMayBeCommandedInRedAndGreen()
+    {
+        RouteCommand red = new CommandRow(CommandRow.Kind.ACCESSORY, "12", "red").toCommand();
+        RouteCommand turn = new CommandRow(CommandRow.Kind.ACCESSORY, "12", "turn").toCommand();
+
+        assertEquals(red.getSetting(), turn.getSetting(),
+            "red is a signal's word for what a switch calls turn - they are one state of one device");
+
+        RouteCommand green = new CommandRow(CommandRow.Kind.ACCESSORY, "12", "green").toCommand();
+        RouteCommand straight = new CommandRow(CommandRow.Kind.ACCESSORY, "12", "straight").toCommand();
+
+        assertEquals(green.getSetting(), straight.getSetting(),
+            "and green is straight");
+
+        assertNotEquals(red.getSetting(), green.getSetting(),
+            "and they are not the same state as each other, which would make the whole pair useless");
+    }
+
+    /**
+     * A word that is none of the four is still refused.
+     *
+     * Widening what is accepted is exactly the change that turns a strict reader into one that
+     * guesses, and a guess here throws a real switch.
+     */
+    @Test
+    public void testAnInventedSettingIsStillRefused()
+    {
+        try
+        {
+            new CommandRow(CommandRow.Kind.ACCESSORY, "12", "sideways").toCommand();
+
+            fail("a setting that is not one of the four names for the two states must be refused, "
+                + "not coerced into whichever is nearer");
+        }
+        catch (IllegalArgumentException expected)
+        {
+            // what should happen
+        }
+    }
+
+    /**
+     * And each of them survives the trip back out again.
+     *
+     * Reading a command into a row is half of it; the half that loses data is writing it back. Both
+     * of the data-loss bugs this editor has had were invisible until Save.
+     */
+    @Test
+    public void testTheNewKindsRoundTrip()
+    {
+        assertTrue(CommandRow.of(RouteCommand.RouteCommandLightsOn()).toCommand().isLightsOn(),
+            "lights on came back as something else");
+
+        assertTrue(CommandRow.of(RouteCommand.RouteCommandAutonomyLightsOn())
+            .toCommand().isAutonomyLightsOn(), "autonomy lights on came back as something else");
+
+        RouteCommand route = CommandRow.of(RouteCommand.RouteCommandRoute("some route")).toCommand();
+
+        assertTrue(route.isRoute(), "the route command came back as something else");
+        assertEquals(route.getName(), "some route", "and it forgot which route it triggers");
+
+        RouteCommand auto =
+            CommandRow.of(RouteCommand.RouteCommandAutoLocomotive("some train", 21)).toCommand();
+
+        assertTrue(auto.isAutoLocomotive(), "the auto-locomotive came back as something else");
+        assertEquals(auto.getName(), "some train", "and it forgot which train");
+        assertEquals(auto.getAddress(), 21, "and it forgot which sensor");
     }
 
     /**
@@ -241,7 +337,11 @@ public class testCommandRow
 
         assertEquals(rows.size(), 3, "a row per command, so positions still line up");
         assertNotNull(rows.get(0));
-        assertNull(rows.get(1), "the kind with no controls is a hole, not a missing entry");
+
+        // Was a null here, when autonomy-lights-on had no controls.  The positions rule is what this
+        // test is about and it is unchanged: one entry per command, in order, so that a row's index is
+        // the command's index - which is what lets a kept command be written back where it was found.
+        assertNotNull(rows.get(1), "autonomy lights on is buildable now");
         assertNotNull(rows.get(2));
     }
 

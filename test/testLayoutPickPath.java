@@ -558,10 +558,53 @@ public class testLayoutPickPath
      * exclusion from being "simplified" down into isPathClear or bfs later, which would take the manual
      * route and the staging run with it.
      */
+    /**
+     * But a train that cannot reverse is refused it, by hand as well as by autonomy.
+     *
+     * The one deliberate narrowing of the tiering the test below protects. Adam watched two
+     * non-reversible trains turned round on an ordinary platform and asked for a rule: such a train
+     * may only be turned somewhere that is out of full autonomy - a parking road, a shed, a staging
+     * siding - and never at a station where it would then run backwards in service.
+     *
+     * That is a fact about the train and the place, not about which menu the move came from, so it
+     * lives in isPathClear where every tier passes through. The escape hatch is the place itself: a
+     * point excluded from full autonomy is a parking spot, and turning a train there is allowed.
+     */
+    @Test(timeOut = 60000)
+    public void testAReversingStationIsRefusedToATrainThatCannotReverse() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+
+        loc.setReversible(false);
+
+        Layout layout = twoDestinations(loc, 1, 5);
+
+        layout.getPoint("HIGH").setReversing(true);
+
+        Set<String> offered = new TreeSet<>();
+
+        for (List<Edge> path : layout.getPossiblePaths(loc, true))
+        {
+            offered.add(destinationOf(path));
+        }
+
+        assertFalse(offered.contains("HIGH"),
+            "a train that cannot reverse was offered a station that would turn it round.  Doing that "
+            + "at an ordinary platform is a train running backwards in service, which is the whole "
+            + "of what the non-reversible mark is for - offered: " + offered);
+    }
+
     @Test(timeOut = 60000)
     public void testAReversingStationRemainsManuallySelectable() throws Exception
     {
         Locomotive loc = dummyLoc();
+
+        // Reversible, explicitly.  A train that CANNOT reverse is now refused a station that would
+        // turn it round, at every tier and on purpose - see the test below.  This one is about the
+        // tiering and has to say which kind of train it is asking about, or it is really asking two
+        // questions and answering neither.
+        loc.setReversible(true);
+
         Layout layout = twoDestinations(loc, 1, 5);
 
         layout.getPoint("HIGH").setReversing(true);

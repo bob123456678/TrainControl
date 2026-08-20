@@ -36,7 +36,16 @@ public final class CommandRow
         LOCOMOTIVE_SPEED,
         LOCOMOTIVE_DIRECTION,
         STOP,
-        FUNCTIONS_OFF
+        FUNCTIONS_OFF,
+
+        // The rest of what a route can do.  These were all readable and none of them buildable: a
+        // route that used one could be opened, and the row was kept greyed and untouched, but there
+        // was no way to add one.  AUTO_LOCOMOTIVE is the condition ConditionRows' own header uses as
+        // its example, so until now the editor could not build the row its documentation illustrates.
+        LIGHTS_ON,
+        AUTONOMY_LIGHTS_ON,
+        ROUTE,
+        AUTO_LOCOMOTIVE
     }
 
     private final Kind kind;
@@ -127,6 +136,11 @@ public final class CommandRow
             case LOCOMOTIVE_DIRECTION: return "forward";
             case LOCOMOTIVE_SPEED: return "0";
             case FUNCTION: return "0:off";
+
+            // A sensor number, which has no sensible default - the row is refused until one is typed,
+            // and refusing is better than offering sensor 1 to somebody who did not choose it
+            case AUTO_LOCOMOTIVE: return "";
+
             default: return "";
         }
     }
@@ -147,7 +161,7 @@ public final class CommandRow
      */
     public static boolean canBeACondition(Kind kind)
     {
-        return kind == Kind.ACCESSORY || kind == Kind.FEEDBACK;
+        return kind == Kind.ACCESSORY || kind == Kind.FEEDBACK || kind == Kind.AUTO_LOCOMOTIVE;
     }
 
     /**
@@ -174,7 +188,8 @@ public final class CommandRow
      */
     public static boolean hasTarget(Kind kind)
     {
-        return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF;
+        return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF
+            && kind != Kind.LIGHTS_ON && kind != Kind.AUTONOMY_LIGHTS_ON;
     }
 
     /**
@@ -182,7 +197,9 @@ public final class CommandRow
      */
     public static boolean hasSetting(Kind kind)
     {
-        return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF;
+        return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF
+            && kind != Kind.LIGHTS_ON && kind != Kind.AUTONOMY_LIGHTS_ON
+            && kind != Kind.ROUTE;
     }
 
     /**
@@ -240,8 +257,20 @@ public final class CommandRow
 
         if (command.isFunctionsOff()) return new CommandRow(Kind.FUNCTIONS_OFF, "", "");
 
-        // A route, an auto-locomotive, lights - kinds with no controls yet.  Answering null keeps the
-        // command exactly as it was found rather than losing it.
+        if (command.isLightsOn()) return new CommandRow(Kind.LIGHTS_ON, "", "");
+
+        if (command.isAutonomyLightsOn()) return new CommandRow(Kind.AUTONOMY_LIGHTS_ON, "", "");
+
+        if (command.isRoute()) return new CommandRow(Kind.ROUTE, command.getName(), "");
+
+        if (command.isAutoLocomotive())
+        {
+            return new CommandRow(Kind.AUTO_LOCOMOTIVE, command.getName(),
+                String.valueOf(command.getAddress()));
+        }
+
+        // Anything a later version adds.  Answering null keeps the command exactly as it was found
+        // rather than losing it, which is why this method has always ended this way.
         return null;
     }
 
@@ -284,9 +313,29 @@ public final class CommandRow
             case FUNCTIONS_OFF:
                 return RouteCommand.RouteCommandFunctionsOff();
 
+            case LIGHTS_ON:
+                return RouteCommand.RouteCommandLightsOn();
+
+            case AUTONOMY_LIGHTS_ON:
+                return RouteCommand.RouteCommandAutonomyLightsOn();
+
+            case ROUTE:
+                requireName();
+                return RouteCommand.RouteCommandRoute(target);
+
+            case AUTO_LOCOMOTIVE:
+                requireName();
+                return RouteCommand.RouteCommandAutoLocomotive(target,
+                    number(setting, "route.wordAddress"));
+
             case ACCESSORY:
+                // Red and green as well as turn and straight.  A signal and a switch are the same
+                // device here - the type only decides which picture is drawn - so the same two states
+                // have two pairs of names, and Accessory has always understood all four.  The editor
+                // understood two, so a route built against a signal in the words a signal uses was
+                // refused.
                 return RouteCommand.RouteCommandAccessory(number(target, "route.wordAddress"), protocol,
-                    oneOf(setting, "turn", "straight"));
+                    oneOf(setting, "turn", "straight", "red", "green"));
 
             case FEEDBACK:
                 return RouteCommand.RouteCommandFeedback(number(target, "route.wordAddress"),
@@ -339,6 +388,31 @@ public final class CommandRow
      *
      * @throws IllegalArgumentException when the text is neither
      */
+    /**
+     * The same, with a second name for each state.
+     *
+     * A signal's red is a switch's turn: one device, one pair of states, two vocabularies. Rather
+     * than pick one and make the other wrong, both are accepted and the editor offers whichever
+     * belongs to the thing at that address.
+     *
+     * @param setting what the row says
+     * @param whenTrue the first name for the true state
+     * @param whenFalse the first name for the false state
+     * @param alsoTrue another name for the true state
+     * @param alsoFalse another name for the false state
+     * @return the state, or a refusal naming what was expected
+     */
+    private static boolean oneOf(String setting, String whenTrue, String whenFalse,
+        String alsoTrue, String alsoFalse)
+    {
+        String said = setting == null ? "" : setting.trim().toLowerCase();
+
+        if (said.equals(alsoTrue.toLowerCase())) return true;
+        if (said.equals(alsoFalse.toLowerCase())) return false;
+
+        return oneOf(setting, whenTrue, whenFalse);
+    }
+
     private static boolean oneOf(String setting, String whenTrue, String whenFalse)
     {
         String text = setting == null ? "" : setting.trim();

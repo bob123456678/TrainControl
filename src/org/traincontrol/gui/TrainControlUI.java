@@ -5027,6 +5027,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         item.addActionListener(event ->
         {
+            // Not while trains are running.  A route can be triggered by a sensor at any moment, and
+            // editing one is not an atomic thing: rows are added, addresses are typed a digit at a
+            // time, and the list is only consistent again when Save is pressed.  Autonomy firing a
+            // half-built route throws real switches under a moving train.
+            //
+            // Refused rather than merely warned about, and said out loud rather than doing nothing,
+            // because "the menu item did not work" is not something a user should have to guess at.
+            if (isAutonomyBusy())
+            {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                    I18n.t("autolayout.errorCannotEditWhileRunning"));
+                return;
+            }
+
             String chosen = (String) javax.swing.JOptionPane.showInputDialog(this,
                 I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuNewEditor"),
                 javax.swing.JOptionPane.PLAIN_MESSAGE, null,
