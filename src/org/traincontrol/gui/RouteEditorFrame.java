@@ -24,6 +24,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
+import org.traincontrol.base.ConditionOutline;
 import org.traincontrol.base.ConditionRows;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
@@ -127,35 +128,10 @@ public class RouteEditorFrame extends JFrame
      */
     /**
      * The formula itself. Shown as bubbles, never as text somebody can type into.
-     */
-    private String formula = "";
 
-    /**
-     * The bubbles, one per piece of the formula.
-     */
-    private final JPanel formulaView = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 3));
 
-    /**
-     * Which pieces are picked out for grouping, by their position in the formula.
-     *
-     * Shift-click, the same gesture the track diagram uses to pick several squares - and it has to be
-     * a different gesture from plain click, because plain click is how a piece is removed.
-     */
-    private final java.util.Set<Integer> picked = new java.util.LinkedHashSet<>();
 
-    /**
-     * Whether the blocks are showing their crosses and a click removes one.
-     *
-     * A mode rather than a modifier: removing is the only thing here that cannot be undone by doing
-     * it again, and a formula is small enough that losing a piece of it is not noticed until the
-     * route stops firing.
-     */
-    private boolean deletingBlocks = false;
 
-    /**
-     * The terms as things to click, so the letters need not be remembered or typed.
-     */
-    private final JPanel termPills = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 
     /**
      * @param parent the main window, which owns the model and the route list
@@ -184,10 +160,6 @@ public class RouteEditorFrame extends JFrame
         setContentPane(build());
 
         load(routeName);
-
-        // The blocks, once the formula is known.  Everything else that changes it rebuilds them; this
-        // is the first draw.
-        refreshFormula();
 
         // After load(), which is what discovers whether the route is the station's
         if (locked) becomeReadOnly();
@@ -228,11 +200,13 @@ public class RouteEditorFrame extends JFrame
         JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions);
 
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        readsAs.setForeground(new java.awt.Color(90, 90, 90));
 
-        // Under the table rather than beside it.  The terms are read down the table and the formula
-        // is written over them, so putting it alongside asked the reader to look sideways in the
-        // middle of one thought.
-        conditionSection.add(buildFormulaRow(), BorderLayout.SOUTH);
+        // The reading goes under the table, saying in words what the outline says in shape.  It is
+        // the one place the run-of-the-same-word rule is spelled out, so it earns its line.
+        readsAs.setVerticalAlignment(JLabel.TOP);
+
+        conditionSection.add(readsAs, BorderLayout.SOUTH);
 
         middle.add(conditionSection);
 
@@ -654,286 +628,6 @@ public class RouteEditorFrame extends JFrame
     private static final java.awt.Color HEADING_BLUE = new java.awt.Color(0, 0, 155);
 
     /**
-     * The formula, with the terms above it as things to click.
-     *
-     * Clickable because the letters are POSITIONAL - A is whatever is in the first row - so asking
-     * anybody to remember which is which would be asking them to hold the table in their head while
-     * they look away from it. Each pill says its letter and what it means, and pressing one writes it
-     * where the cursor is.
-     *
-     * @return the panel
-     */
-    private JPanel buildFormulaRow()
-    {
-        JPanel row = new JPanel(new BorderLayout(4, 4));
-
-        row.setBackground(java.awt.Color.WHITE);
-        row.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 8));
-
-        // Heading and the one-line box together at the top.
-        //
-        // The box used to be the whole middle of this panel, stretched by the layout to the height of
-        // the table beside it - so a place to type one line of algebra looked like a large empty area
-        // with some buttons under it, and Adam could not tell it was a box at all.  A field that is
-        // one line tall reads as a field.
-        JPanel top = new JPanel(new BorderLayout(0, 2));
-
-        top.setBackground(java.awt.Color.WHITE);
-
-        JLabel heading = new JLabel(I18n.t("route.ui.frameFormula"));
-
-        heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
-        heading.setForeground(HEADING_BLUE);
-
-        top.add(heading, BorderLayout.NORTH);
-
-        // Blocks, not text.
-        //
-        // A formula is a small language, and a box somebody can type into is a box that will hold
-        // things the language does not accept - at which point the window's job becomes explaining a
-        // syntax error about a route somebody only wanted to change one term of.  Shown as its pieces,
-        // there is no state it can be in that the reader cannot read: each piece is a thing, clicking
-        // one takes it out, and what is left is tidied so it still means something.
-        formulaView.setBackground(java.awt.Color.WHITE);
-        formulaView.setToolTipText(I18n.t("route.ui.tooltipFormula"));
-        formulaView.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1),
-            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
-
-        top.add(formulaView, BorderLayout.SOUTH);
-
-        row.add(top, BorderLayout.NORTH);
-
-        termPills.setOpaque(false);
-
-        row.add(termPills, BorderLayout.CENTER);
-
-        // What the formula means, in words, directly under the thing it is about.  It used to sit in
-        // the row of Add and Remove buttons on the far side of the window, where it read as a caption
-        // for those.
-        readsAs.setVerticalAlignment(JLabel.TOP);
-
-        row.add(readsAs, BorderLayout.SOUTH);
-
-        return row;
-    }
-
-    /**
-     * Rebuilds the row of clickable terms from the table.
-     *
-     * Called whenever the rows change, because a letter names a POSITION - delete the first row and
-     * every letter after it means something else.
-     */
-    private void refreshTermPills()
-    {
-        termPills.removeAll();
-
-        for (int at = 0; at < conditions.rows.size(); at++)
-        {
-            final String letter = org.traincontrol.base.ConditionFormula.letterFor(at);
-
-            // The letter AND what it stands for.  A row of bare letters is a row of things nobody
-            // can choose between: the whole point of a handle is that it is short, and the whole
-            // problem with a short handle is that it says nothing.
-            JButton pill = new JButton(letter + " - "
-                + shortly(conditions.rows.get(at).getCommand()));
-
-            pill.setFont(new java.awt.Font("Segoe UI", 1, 12));
-            pill.setMargin(new java.awt.Insets(0, 6, 0, 6));
-            pill.setFocusable(false);
-            pill.setToolTipText(I18n.f("route.ui.tooltipTermPill", letter));
-
-            pill.addActionListener(e -> insertIntoFormula(letter));
-
-            termPills.add(pill);
-        }
-
-        // The joining words, for the same reason the letters are here: they are part of the language
-        // and typing them is not the point of the exercise
-        for (final String word : new String[]{"and", "or"})
-        {
-            JButton pill = new JButton(word);
-
-            pill.setFont(new java.awt.Font("Segoe UI", 0, 12));
-            pill.setMargin(new java.awt.Insets(0, 6, 0, 6));
-            pill.setFocusable(false);
-
-            pill.addActionListener(e -> insertIntoFormula(word));
-
-            termPills.add(pill);
-        }
-
-        // Brackets go ROUND something rather than in a place.
-        //
-        // One button, and it wraps whatever is selected - which is what a bracket is for and how
-        // somebody thinks about it: "these two go together".  Two buttons that each insert half a
-        // pair leave it possible to write an opening one and never the closing one, and then the
-        // window has to explain an unbalanced formula to somebody who was only grouping two terms.
-        JButton bracket = new JButton(I18n.t("route.ui.frameGroup"));
-
-        bracket.setFont(new java.awt.Font("Segoe UI", 0, 12));
-        bracket.setMargin(new java.awt.Insets(0, 6, 0, 6));
-        bracket.setFocusable(false);
-        bracket.setToolTipText(I18n.t("route.ui.tooltipGroup"));
-
-        bracket.addActionListener(e -> bracketSelection());
-
-        termPills.add(bracket);
-
-        // The deleting mode, beside the grouping it is the counterpart of
-        final javax.swing.JToggleButton removing =
-            new javax.swing.JToggleButton(I18n.t("route.ui.frameRemoveBlocks"));
-
-        removing.setFont(new java.awt.Font("Segoe UI", 0, 12));
-        removing.setMargin(new java.awt.Insets(0, 6, 0, 6));
-        removing.setFocusable(false);
-        removing.setSelected(deletingBlocks);
-        removing.setToolTipText(I18n.t("route.ui.tooltipRemoveBlocks"));
-
-        removing.addActionListener(e ->
-        {
-            deletingBlocks = removing.isSelected();
-
-            // Nothing stays picked across the change: picking is for grouping and has no meaning in
-            // a mode whose only action is removal
-            picked.clear();
-
-            refreshFormula();
-        });
-
-        termPills.add(removing);
-
-        termPills.revalidate();
-        termPills.repaint();
-    }
-
-    /**
-     * Puts brackets round whatever is selected in the formula.
-     *
-     * With nothing selected there is nothing to group, and saying so beats inserting an empty pair
-     * that the reader then has to delete.
-     */
-    private void bracketSelection()
-    {
-        if (picked.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameSelectToGroup"));
-            return;
-        }
-
-        java.util.List<String> pieces =
-            org.traincontrol.base.ConditionFormula.tokens(formula);
-
-        int from = java.util.Collections.min(picked);
-        int to = java.util.Collections.max(picked);
-
-        if (from < 0 || to >= pieces.size()) return;
-
-        // A run, not a scattering.  Brackets go round something continuous, and picking the first and
-        // third pieces of a formula does not describe anything you could write down.
-        pieces.add(to + 1, ")");
-        pieces.add(from, "(");
-
-        StringBuilder out = new StringBuilder();
-
-        for (String piece : pieces)
-        {
-            boolean space = out.length() > 0 && !")".equals(piece)
-                && out.charAt(out.length() - 1) != '(';
-
-            if (space) out.append(' ');
-
-            out.append(piece);
-        }
-
-        formula = out.toString().trim();
-
-        picked.clear();
-
-        refreshFormula();
-    }
-
-    /**
-     * Draws the formula as blocks, and keeps everything that depends on it in step.
-     *
-     * Rebuilt whole rather than patched, because the pieces are positional: taking one out renumbers
-     * every one after it, and a half-updated row of blocks would answer clicks about pieces that have
-     * moved.
-     */
-    private void refreshFormula()
-    {
-        formulaView.removeAll();
-
-        java.util.List<String> pieces = org.traincontrol.base.ConditionFormula.tokens(formula);
-
-        if (pieces.isEmpty())
-        {
-            JLabel empty = new JLabel(I18n.t("route.ui.frameFormulaEmpty"));
-
-            empty.setFont(new java.awt.Font("Segoe UI", 2, 13));
-            empty.setForeground(new java.awt.Color(130, 130, 130));
-
-            formulaView.add(empty);
-        }
-
-        for (int at = 0; at < pieces.size(); at++)
-        {
-            final int which = at;
-            final String piece = pieces.get(at);
-
-            Bubble block = new Bubble(piece);
-
-            block.setPicked(picked.contains(at));
-            block.setDeleting(deletingBlocks);
-            block.setToolTipText(I18n.t(deletingBlocks
-                ? "route.ui.tooltipBlockDeleting" : "route.ui.tooltipBlock"));
-
-            block.addActionListener(e ->
-            {
-                if (deletingBlocks)
-                {
-                    formula = org.traincontrol.base.ConditionFormula.without(formula, which);
-
-                    picked.clear();
-                }
-                else
-                {
-                    // Click picks.  Removing is its own mode with its own button, because a click
-                    // that deletes is a click somebody makes by accident - and a formula is small
-                    // enough that losing a piece of it is not obvious until the route stops firing.
-                    if (!picked.remove(which)) picked.add(which);
-                }
-
-                refreshFormula();
-            });
-
-            formulaView.add(block);
-        }
-
-        formulaView.revalidate();
-        formulaView.repaint();
-
-        updateReadsAs();
-    }
-
-    /**
-     * Adds a term to the end of the formula, joined by AND.
-     *
-     * One call, so that everything that has to move when the terms change moves together: the formula
-     * itself, the buttons that name the terms, and the reading underneath. They came apart once
-     * already - the letters are positional, so a term added or removed renames every one after it.
-     *
-     * @param letter the handle to add
-     */
-    private void appendToFormula(String letter)
-    {
-        formula = formula.trim().isEmpty() ? letter : formula.trim() + " and " + letter;
-
-        refreshTermPills();
-        refreshFormula();
-    }
-
-    /**
      * Says how the two halves of this window fit together.
      *
      * Worth a dialog rather than a tooltip: Adam built a route, looked at the conditions, and said he
@@ -945,23 +639,6 @@ public class RouteEditorFrame extends JFrame
     {
         JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameHelp"),
             I18n.t("ui.help"), JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    /**
-     * Writes a letter or a word into the formula where the cursor is.
-     *
-     * With a space either side where one is wanted, because "AandB" is not a formula and making the
-     * user tidy up after a button they pressed is worse than not having the button.
-     *
-     * @param what the text to insert
-     */
-    private void insertIntoFormula(String what)
-    {
-        // Always at the end.  There is no cursor in a row of blocks, and inventing one - a gap that
-        // moves as you click - would be a text box wearing a costume.
-        formula = (formula.trim() + " " + what).trim();
-
-        refreshFormula();
     }
 
     private JButton button(String text, Runnable action)
@@ -1012,25 +689,13 @@ public class RouteEditorFrame extends JFrame
 
         conditionsAsFound = route.getConditions();
 
-        // Every term the condition is built from, in the order somebody reading it would meet them -
-        // and then the formula that combines them, written over those same terms.
+        // The condition as an outline: one row per term, indented where it was bracketed.
         //
-        // A bracketed condition used to arrive here as "rows cannot say this": the table was disabled,
-        // the expression was printed underneath, capture was refused, and the whole thing was written
-        // back untouched on save.  A formula can say it, so it is editable for the first time.
-        java.util.List<RouteCommand> terms =
-            org.traincontrol.base.ConditionFormula.termsOf(conditionsAsFound);
-
-        formula = org.traincontrol.base.ConditionFormula.formulaFor(conditionsAsFound, terms);
-
-        List<ConditionRows.Row> rows = new ArrayList<>();
-
-        for (RouteCommand term : terms) rows.add(new ConditionRows.Row(null, term));
-
+        // A bracketed condition used to arrive here as "rows cannot say this" - the table was
+        // disabled, the expression printed underneath, capture refused, and the whole thing written
+        // back untouched on save.  An outline can say it, so it is editable for the first time.
         {
-            conditions.rows.addAll(rows);
-
-            refreshTermPills();
+            conditions.rows.addAll(ConditionOutline.of(conditionsAsFound));
         }
 
         commands.fireTableDataChanged();
@@ -1120,20 +785,15 @@ public class RouteEditorFrame extends JFrame
                 // that Save is going to throw away.
                 if (!conditionsEditable) return;
 
-                conditions.rows.add(new ConditionRows.Row(null, parsed));
+                // Required as well as whatever is already there, which is what capturing several
+                // things in a row means - and the word is written in the row rather than implied, so
+                // it can be flipped to "or" in one click.
+                conditions.rows.add(new ConditionOutline.Row(
+                    conditions.rows.isEmpty() ? 0
+                        : conditions.rows.get(conditions.rows.size() - 1).getDepth(),
+                    ConditionOutline.Joiner.AND, parsed));
+
                 conditions.fireTableDataChanged();
-
-                // Into the formula as well as into the table.  A term nothing refers to is a fact
-                // nobody asked about: it would sit in the list looking captured and take no part in
-                // whether the route fires, which is the quietest possible way to waste somebody's
-                // afternoon.  ANDed on, because that is what capturing several things in a row means.
-                String letter = org.traincontrol.base.ConditionFormula.letterFor(
-                    conditions.rows.size() - 1);
-
-                formula = formula.trim().isEmpty() ? letter : formula.trim() + " and " + letter;
-
-                refreshTermPills();
-                refreshFormula();
 
                 updateReadsAs();
 
@@ -1182,41 +842,8 @@ public class RouteEditorFrame extends JFrame
      */
     private void updateReadsAs()
     {
-        List<ConditionRows.Row> rows = conditions.rows;
-
-        // The formula, with each letter replaced by what it stands for.
-        //
-        // Worth showing for two reasons.  The obvious one is that a letter says nothing about the
-        // railway.  The other is precedence: "A or B and C" is "A or (B and C)", as it is in every
-        // language that has both words, and that is the one rule here somebody might expect to work
-        // the other way round.  Reading it back in words settles the question without anybody having
-        // to know the rule.
-        if (conditionsEditable)
-        {
-            if (formula.trim().isEmpty())
-            {
-                readsAs.setText(" ");
-                return;
-            }
-
-            String problem = org.traincontrol.base.ConditionFormula.problemWith(
-                formula, rows.size());
-
-            if (problem != null)
-            {
-                readsAs.setText(I18n.f("route.ui.frameFormulaIsWrong", problem));
-                return;
-            }
-
-            readsAs.setText(I18n.f("route.ui.frameReadsAs", inWords(formula, rows)));
-            return;
-        }
-
         if (!conditionsEditable)
         {
-            // Actually show them.  The message said the conditions were "shown but not edited here"
-            // beneath an EMPTY table, which reads as having lost them.  A bracket cannot be a row list,
-            // but it can certainly be written out.
             String text = conditionsAsFound == null ? ""
                 : NodeExpression.toTextRepresentation(conditionsAsFound,
                     parent == null ? null : parent.getModel());
@@ -1225,28 +852,65 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
-        if (rows.size() < 2)
+        if (conditions.rows.size() < 2)
         {
             readsAs.setText(" ");
             return;
         }
 
-        StringBuilder out = new StringBuilder();
+        // What the outline means, in words and brackets.
+        //
+        // The shape is on screen, so this is not there to explain the nesting - it is there for the
+        // one rule the shape alone does not state: a run of rows joined by the same word is a group,
+        // and a change of word starts a new one.  Reading it back settles that without anybody having
+        // to be told.
+        readsAs.setText(I18n.f("route.ui.frameReadsAs",
+            describe(ConditionOutline.toExpression(conditions.rows))));
+    }
 
-        for (int i = 0; i < rows.size(); i++)
+    /**
+     * An expression in words, for the reading under the conditions.
+     *
+     * @param node the expression
+     * @return what it says
+     */
+    private String describe(NodeExpression node)
+    {
+        if (node == null) return "";
+
+        if (node instanceof org.traincontrol.base.NodeRouteCommand)
         {
-            if (i > 0) out.append(rows.get(i - 1).getJoiner() == ConditionRows.Joiner.OR
-                ? " or " : " and ");
-
-            // Brackets from the right, which is how the list nests
-            if (i > 0 && i < rows.size() - 1) out.append('(');
-
-            out.append(shortly(rows.get(i).getCommand()));
+            return shortly(((org.traincontrol.base.NodeRouteCommand) node).getRouteCommand());
         }
 
-        for (int i = 0; i < rows.size() - 2; i++) out.append(')');
+        if (node instanceof org.traincontrol.base.NodeAnd)
+        {
+            return describe(((org.traincontrol.base.NodeAnd) node).getLeft())
+                + " " + I18n.t("route.ui.joinAnd") + " "
+                + describe(((org.traincontrol.base.NodeAnd) node).getRight());
+        }
 
-        readsAs.setText(I18n.f("route.ui.frameReadsAs", out.toString()));
+        if (node instanceof org.traincontrol.base.NodeOr)
+        {
+            return describe(((org.traincontrol.base.NodeOr) node).getLeft())
+                + " " + I18n.t("route.ui.joinOr") + " "
+                + describe(((org.traincontrol.base.NodeOr) node).getRight());
+        }
+
+        if (node instanceof org.traincontrol.base.NodeGroup)
+        {
+            StringBuilder out = new StringBuilder("(");
+
+            for (NodeExpression inside
+                : ((org.traincontrol.base.NodeGroup) node).getExpressions())
+            {
+                out.append(describe(inside));
+            }
+
+            return out.append(")").toString();
+        }
+
+        return "";
     }
 
     // Which column is which, for the three that are pressed rather than typed in.  Named because
@@ -1256,7 +920,14 @@ public class RouteEditorFrame extends JFrame
     private static final int DELETE = 9;
 
     /** The conditions table is narrower, so its trash sits in a different column. */
-    private static final int CONDITION_DELETE = 5;
+    private static final int CONDITION_DELETE = 9;
+
+    /** Indenting a condition nests it; outdenting brings it back out. */
+    private static final int INDENT = 2;
+    private static final int OUTDENT = 3;
+
+    private static final String INDENT_ROW = "indent";
+    private static final String OUTDENT_ROW = "outdent";
 
     // What a cell holds when it is one of those.  Values rather than icons, so the model stays a model
     // and the renderer decides what a mark looks like.
@@ -1375,6 +1046,77 @@ public class RouteEditorFrame extends JFrame
         });
     }
 
+    /**
+     * Draws the two indent marks and makes them move a row in or out.
+     *
+     * Separate from actOnRowMarks because only the conditions have depth - a command list is a
+     * sequence rather than a shape.
+     *
+     * @param table the conditions
+     */
+    private void actOnIndentMarks(final ConditionTable table)
+    {
+        final int mark = Math.max(12, table.getRowHeight() - 12);
+
+        javax.swing.table.DefaultTableCellRenderer marks =
+            new javax.swing.table.DefaultTableCellRenderer()
+        {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                boolean selected, boolean focused, int row, int column)
+            {
+                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", selected,
+                    false, row, column);
+
+                out.setHorizontalAlignment(JLabel.CENTER);
+
+                if (INDENT_ROW.equals(value)) out.setIcon(RowIcons.indent(mark, true));
+                else if (OUTDENT_ROW.equals(value)) out.setIcon(RowIcons.indent(mark, false));
+                else out.setIcon(null);
+
+                return out;
+            }
+        };
+
+        table.getColumnModel().getColumn(INDENT).setCellRenderer(marks);
+        table.getColumnModel().getColumn(OUTDENT).setCellRenderer(marks);
+
+        table.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+
+                if (row < 0 || column < 0) return;
+
+                Object value = table.getValueAt(row, column);
+
+                if (INDENT_ROW.equals(value)) table.indent(row, 1);
+                else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
+            }
+        });
+    }
+
+    /**
+     * A joining word as it is shown.
+     */
+    private static String joinerLabel(ConditionOutline.Joiner joiner)
+    {
+        return I18n.t(joiner == ConditionOutline.Joiner.OR ? "route.ui.joinOr" : "route.ui.joinAnd");
+    }
+
+    /**
+     * The joining word a label names, defaulting to AND - which is what a condition list has always
+     * meant when nobody said otherwise.
+     */
+    private static ConditionOutline.Joiner joinerFor(String label)
+    {
+        return I18n.t("route.ui.joinOr").equals(label)
+            ? ConditionOutline.Joiner.OR : ConditionOutline.Joiner.AND;
+    }
+
     private int rowsOf(JTable table)
     {
         return table == commands ? commands.rows.size() : conditions.rows.size();
@@ -1383,6 +1125,7 @@ public class RouteEditorFrame extends JFrame
     private void moveRow(JTable table, int row, int by)
     {
         if (table == commands) commands.shift(row, by);
+        else conditions.shift(row, by);
     }
 
     private void deleteRow(JTable table, int row)
@@ -1423,102 +1166,13 @@ public class RouteEditorFrame extends JFrame
         commands.setEnabled(false);
         conditions.setEnabled(false);
 
-        formulaView.setEnabled(false);
-
-        for (java.awt.Component block : formulaView.getComponents()) block.setEnabled(false);
-
         // The marks in the rows go with it.  A trash can that does nothing is worse than no trash can:
         // it says the row can be deleted and then declines, which reads as a fault rather than a rule.
         conditionsEditable = false;
 
-        for (java.awt.Component pill : termPills.getComponents()) pill.setEnabled(false);
-
         if (saveButton != null) saveButton.setEnabled(false);
 
         readsAs.setText(I18n.t("route.ui.frameLockedExplains"));
-    }
-
-    /**
-     * The terms the formula is written over, in the order their letters follow.
-     *
-     * @return the commands, by row
-     */
-    private java.util.List<RouteCommand> termsFromRows()
-    {
-        java.util.List<RouteCommand> out = new ArrayList<>();
-
-        for (ConditionRows.Row row : conditions.rows) out.add(row.getCommand());
-
-        return out;
-    }
-
-    /**
-     * A formula with each letter swapped for what it stands for.
-     *
-     * The letters are taken whole - a run of them is one handle - so this cannot turn the "a" of a
-     * term's description into a term of its own.
-     *
-     * @param formula what was typed
-     * @param rows the terms
-     * @return the same shape, in words
-     */
-    private String inWords(String formula, List<ConditionRows.Row> rows)
-    {
-        StringBuilder out = new StringBuilder();
-
-        int at = 0;
-
-        while (at < formula.length())
-        {
-            char one = formula.charAt(at);
-
-            if (!Character.isLetter(one))
-            {
-                out.append(one);
-                at++;
-
-                continue;
-            }
-
-            int start = at;
-
-            while (at < formula.length() && Character.isLetter(formula.charAt(at))) at++;
-
-            String word = formula.substring(start, at);
-
-            if ("and".equalsIgnoreCase(word) || "or".equalsIgnoreCase(word))
-            {
-                out.append(word.toLowerCase());
-
-                continue;
-            }
-
-            int index = indexOfLetter(word);
-
-            out.append(index >= 0 && index < rows.size()
-                ? shortly(rows.get(index).getCommand()) : word);
-        }
-
-        return out.toString().trim();
-    }
-
-    /**
-     * The position a handle names, or -1 when it is not one.
-     */
-    private static int indexOfLetter(String letter)
-    {
-        int out = 0;
-
-        for (int c = 0; c < letter.length(); c++)
-        {
-            char one = Character.toUpperCase(letter.charAt(c));
-
-            if (one < 'A' || one > 'Z') return -1;
-
-            out = out * 26 + (one - 'A' + 1);
-        }
-
-        return out - 1;
     }
 
     /**
@@ -1594,31 +1248,9 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
-        NodeExpression expression;
-
-        try
-        {
-            expression = org.traincontrol.base.ConditionFormula.parse(
-                formula, termsFromRows());
-        }
-        catch (IllegalArgumentException e)
-        {
-            // Refused rather than saved as something else.  A condition that does not read is a route
-            // that exists, looks right in the list, and never fires - which is the failure this whole
-            // editor was built to stop, and the one nobody ever debugs because nothing is wrong on
-            // screen.
-            JOptionPane.showMessageDialog(this,
-                I18n.f("route.ui.frameFormulaIsWrong", String.valueOf(e.getMessage())));
-            return;
-        }
-
-        // Terms with nothing to combine them are no condition at all, and saying so beats saving a
-        // route whose conditions are listed and never consulted
-        if (expression == null && !conditions.rows.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameFormulaNeeded"));
-            return;
-        }
+        // There is nothing to refuse: an outline is always something, because its shape is what it
+        // means rather than something written about it that might not parse.
+        NodeExpression expression = ConditionOutline.toExpression(conditions.rows);
 
         Route.s88Triggers trigger = triggerFor(String.valueOf(triggerBox.getSelectedItem()));
 
@@ -2141,25 +1773,32 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A term, and the operator joining it to what follows.
+     * The conditions, as an indented list.
+     *
+     * Each row is a condition and carries the word joining it to the row before it at its level. A run
+     * of rows joined by the same word is a group; a change of word starts a new one. Indenting nests a
+     * row and its indented neighbours under what came before. ConditionOutline holds the rule and the
+     * tests for it - this class is only what it looks like.
      */
     private final class ConditionTable extends JTable
     {
-        private final List<ConditionRows.Row> rows = new ArrayList<>();
+        private final List<ConditionOutline.Row> rows = new ArrayList<>();
+
+        /** How many pixels one level of indentation is worth. */
+        private static final int STEP = 18;
 
         private final AbstractTableModel model = new AbstractTableModel()
         {
             @Override
             public int getRowCount()
             {
-                // The extra row is where a term is added, in the table rather than beside it
                 return rows.size() + 1;
             }
 
             @Override
             public int getColumnCount()
             {
-                return 6;
+                return 10;
             }
 
             @Override
@@ -2167,11 +1806,11 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    case 0: return I18n.t("route.ui.frameColTerm");
-                    case 1: return I18n.t("route.ui.frameColKind");
-                    case 2: return I18n.t("route.ui.frameColTarget");
-                    case 3: return I18n.t("route.ui.frameColSetting");
-                    case 4: return I18n.t("route.ui.frameColProtocol");
+                    case 4: return I18n.t("route.ui.frameColJoin");
+                    case 5: return I18n.t("route.ui.frameColKind");
+                    case 6: return I18n.t("route.ui.frameColTarget");
+                    case 7: return I18n.t("route.ui.frameColSetting");
+                    case 8: return I18n.t("route.ui.frameColProtocol");
                     default: return "";
                 }
             }
@@ -2181,57 +1820,68 @@ public class RouteEditorFrame extends JFrame
             {
                 if (row >= rows.size())
                 {
-                    return column == 0 ? ADD_HERE : "";
+                    return column == 5 ? ADD_HERE : "";
                 }
+
+                ConditionOutline.Row at = rows.get(row);
+
+                if (column == UP) return row > 0 ? MOVE_UP : "";
+                if (column == DOWN) return row < rows.size() - 1 ? MOVE_DOWN : "";
+
+                // Indenting the first row would nest it under nothing, and a row can only go one
+                // level deeper than the one above it - two levels at once is a nesting with a hole
+                // in the middle
+                if (column == INDENT)
+                {
+                    return row > 0 && at.getDepth() <= rows.get(row - 1).getDepth()
+                        ? INDENT_ROW : "";
+                }
+
+                if (column == OUTDENT) return at.getDepth() > 0 ? OUTDENT_ROW : "";
 
                 if (column == CONDITION_DELETE) return DELETE_ROW;
 
-                ConditionRows.Row at = rows.get(row);
-
-                // The handle this term is known by in the formula underneath.  It replaced a column
-                // holding the operator that joined this row to the next, which is how conditions used
-                // to combine: left to right, one chain, no brackets possible.  The operators live in
-                // the formula now, where brackets can be written.
-                if (column == 0) return org.traincontrol.base.ConditionFormula.letterFor(row);
+                // Nothing joins the first row to anything, so it says nothing
+                if (column == 4)
+                {
+                    return row == 0 ? "" : joinerLabel(at.getJoiner());
+                }
 
                 CommandRow term = CommandRow.of(at.getCommand());
 
-                // A term with no controls is shown whole and left alone, as the commands are
-                if (term == null) return column == 1 ? String.valueOf(at.getCommand()) : "";
+                if (term == null) return column == 5 ? String.valueOf(at.getCommand()) : "";
 
-                if (column == 1) return CommandRow.labelFor(term.getKind());
-                if (column == 2) return term.getTarget();
-                if (column == 3) return term.getSetting();
+                if (column == 5) return CommandRow.labelFor(term.getKind());
+                if (column == 6) return term.getTarget();
+                if (column == 7) return term.getSetting();
 
-                // The decoder type, for the kinds that have one.  A condition is evaluated by address
-                // AND protocol, and MM2 and DCC are separate address spaces - so without this column a
-                // hand-added accessory condition always meant the MM2 one, which on a DCC layout is a
-                // different physical accessory and a route that never fires.  Conditions LOADED from a
-                // route were always safe: CommandRow.of carries their protocol.  It was only the ones
-                // built here that could not say it.
-                if (!CommandRow.hasProtocol(term.getKind())) return "";
+                if (column == 8)
+                {
+                    if (!CommandRow.hasProtocol(term.getKind())) return "";
 
-                return (term.getProtocol() == null
-                    ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : term.getProtocol()).toString();
+                    return (term.getProtocol() == null
+                        ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : term.getProtocol()).toString();
+                }
+
+                return "";
             }
 
             @Override
             public boolean isCellEditable(int row, int column)
             {
-                if (row >= rows.size()) return false;
+                if (row >= rows.size() || !conditionsEditable) return false;
 
-                if (!conditionsEditable) return false;
+                if (column <= OUTDENT || column == CONDITION_DELETE) return false;
 
-                // The letter is what the row IS, and the trash is pressed rather than typed in
-                if (column == 0 || column == CONDITION_DELETE) return false;
+                if (column == 4) return row > 0;
 
                 CommandRow term = CommandRow.of(rows.get(row).getCommand());
 
                 if (term == null) return false;
 
-                if (column == 2) return CommandRow.hasTarget(term.getKind());
-                if (column == 3) return CommandRow.hasSetting(term.getKind());
-                if (column == 4) return CommandRow.hasProtocol(term.getKind());
+                if (column == 6) return CommandRow.hasTarget(term.getKind());
+                if (column == 7) return CommandRow.hasSetting(term.getKind());
+                if (column == 8) return CommandRow.hasProtocol(term.getKind());
 
                 return true;
             }
@@ -2241,11 +1891,19 @@ public class RouteEditorFrame extends JFrame
             {
                 if (row >= rows.size()) return;
 
-                ConditionRows.Row at = rows.get(row);
+                ConditionOutline.Row at = rows.get(row);
 
                 String text = value == null ? "" : value.toString();
 
-                if (column == 0) return;
+                if (column == 4)
+                {
+                    rows.set(row, at.joinedBy(joinerFor(text)));
+
+                    updateReadsAs();
+                    fireTableRowsUpdated(row, row);
+
+                    return;
+                }
 
                 CommandRow term = CommandRow.of(at.getCommand());
 
@@ -2253,45 +1911,36 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow edited;
 
-                if (column == 1)
+                if (column == 5)
                 {
                     CommandRow.Kind became = CommandRow.kindFor(text);
 
-                    // A setting that means nothing to the new kind is REPLACED, not carried over.
-                    //
-                    // The vocabularies are disjoint - a feedback is on/off, an accessory is
-                    // turn/straight - so carrying the old word made the rebuild below throw, and the
-                    // rebuild failing silently reverted the edit.  The kind dropdown snapped back with
-                    // no message, in both directions, and since a new row is always a feedback term an
-                    // accessory condition could not be built by hand at all.  Which made the protocol
-                    // column added for exactly that case unreachable.
+                    if (became == null) return;
+
+                    // A setting that means nothing to the new kind is replaced rather than carried
+                    // over: the vocabularies are disjoint, so keeping the old word makes the rebuild
+                    // below throw and the edit silently revert
                     edited = new CommandRow(became, term.getTarget(),
                         CommandRow.defaultSettingFor(became), term.getProtocol(), term.getDelay());
                 }
-                else if (column == 2)
-                {
-                    edited = new CommandRow(term.getKind(), text, term.getSetting(),
-                        term.getProtocol(), term.getDelay());
-                }
-                else if (column == 4)
-                {
-                    edited = new CommandRow(term.getKind(), term.getTarget(), term.getSetting(),
-                        protocolOf(text), term.getDelay());
-                }
                 else
                 {
-                    edited = new CommandRow(term.getKind(), term.getTarget(), text,
-                        term.getProtocol(), term.getDelay());
+                    edited = new CommandRow(term.getKind(),
+                        column == 6 ? text : term.getTarget(),
+                        column == 7 ? text : term.getSetting(),
+                        column == 8 ? protocolOf(text) : term.getProtocol(),
+                        term.getDelay());
                 }
 
                 try
                 {
-                    rows.set(row, new ConditionRows.Row(at.getJoiner(),
+                    rows.set(row, new ConditionOutline.Row(at.getDepth(), at.getJoiner(),
                         edited.toCommand()));
                 }
                 catch (IllegalArgumentException e)
                 {
-                    // Half-typed is not wrong yet - the cell keeps what it had until it makes sense
+                    // A half-typed address is not a reason to refuse the keystroke; Save is where a
+                    // row that cannot be built gets reported, and it names the row
                     return;
                 }
 
@@ -2304,45 +1953,79 @@ public class RouteEditorFrame extends JFrame
         {
             setModel(model);
             setRowHeight(24);
+            setBackground(java.awt.Color.WHITE);
 
-            getColumnModel().getColumn(0).setPreferredWidth(60);
+            JComboBox<String> joiners = new JComboBox<>();
+
+            joiners.addItem(joinerLabel(ConditionOutline.Joiner.AND));
+            joiners.addItem(joinerLabel(ConditionOutline.Joiner.OR));
+
+            getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(joiners));
 
             JComboBox<String> kinds = new JComboBox<>();
 
-            // Only the kinds a condition can actually be.  The list offered all seven, but Route
-            // evaluates accessory and feedback terms and nothing else - so picking a speed or a
-            // function as a condition gave a term that is permanently false, saved without complaint,
-            // and a route that silently stopped firing.
             for (CommandRow.Kind kind : CommandRow.Kind.values())
             {
                 if (CommandRow.canBeACondition(kind)) kinds.addItem(CommandRow.labelFor(kind));
             }
 
-            getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));
-            getColumnModel().getColumn(1).setPreferredWidth(150);
+            getColumnModel().getColumn(5).setCellEditor(new DefaultCellEditor(kinds));
 
-            // The decoder type, chosen rather than typed - the same control the command table uses
-            JComboBox<String> conditionProtocols = new JComboBox<>();
+            JComboBox<String> protocols = new JComboBox<>();
 
             for (Accessory.accessoryDecoderType type : Accessory.accessoryDecoderType.values())
             {
-                conditionProtocols.addItem(type.toString());
+                protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(conditionProtocols));
+            getColumnModel().getColumn(8).setCellEditor(new DefaultCellEditor(protocols));
 
-            // The same rules as the commands table: a closed set is chosen, a number is digits, and a
-            // locomotive is picked from the ones this layout has
-            setDefaultEditor(Object.class, null);
-
+            narrow(this, UP);
+            narrow(this, DOWN);
+            narrow(this, INDENT);
+            narrow(this, OUTDENT);
             narrow(this, CONDITION_DELETE);
 
-            TableColumn termColumn = getColumnModel().getColumn(0);
-            termColumn.setPreferredWidth(50);
-            termColumn.setMaxWidth(70);
+            TableColumn joinColumn = getColumnModel().getColumn(4);
+            joinColumn.setPreferredWidth(60);
+            joinColumn.setMaxWidth(80);
 
-            actOnRowMarks(this, CONDITION_DELETE, -1, -1, 0);
-            getColumnModel().getColumn(4).setPreferredWidth(70);
+            getColumnModel().getColumn(5).setPreferredWidth(150);
+
+            // The indentation itself, drawn as space in front of the kind.  A tree shown in a table
+            // has to put its shape somewhere, and every list application there has ever been puts it
+            // here.
+            getColumnModel().getColumn(5).setCellRenderer(
+                new javax.swing.table.DefaultTableCellRenderer()
+            {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                    boolean selected, boolean focused, int row, int column)
+                {
+                    JLabel out = (JLabel) super.getTableCellRendererComponent(which, value, selected,
+                        focused, row, column);
+
+                    int depth = row < rows.size() ? rows.get(row).getDepth() : 0;
+
+                    out.setBorder(BorderFactory.createEmptyBorder(0, 4 + depth * STEP, 0, 0));
+
+                    if (ADD_HERE.equals(value))
+                    {
+                        out.setText("");
+                        out.setIcon(RowIcons.plus(14));
+                        out.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0));
+                    }
+                    else
+                    {
+                        out.setIcon(null);
+                    }
+
+                    return out;
+                }
+            });
+
+            actOnRowMarks(this, CONDITION_DELETE, UP, DOWN, 5);
+            actOnIndentMarks(this);
         }
 
         @Override
@@ -2354,17 +2037,16 @@ public class RouteEditorFrame extends JFrame
 
             if (term == null) return super.getCellEditor(row, column);
 
-            if (column == 3)
+            if (column == 7)
             {
                 String[] words = settingWords(term);
 
                 if (words != null) return chooseFrom(words);
 
-                // An auto-locomotive's setting is the sensor it is standing at, which is a number
                 if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE) return digitsOnly();
             }
 
-            if (column == 2)
+            if (column == 6)
             {
                 if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE)
                 {
@@ -2379,18 +2061,16 @@ public class RouteEditorFrame extends JFrame
 
         void addRow()
         {
-            // A condition is a feedback term by default, which is what nearly every one is
-            rows.add(new ConditionRows.Row(ConditionRows.Joiner.AND,
+            // A new condition sits where the last one did and is REQUIRED as well as it, which is
+            // what adding a condition means.  Adam asked for the word to be there explicitly rather
+            // than implied, so it is written in the row and can be flipped to "or" in one click.
+            int depth = rows.isEmpty() ? 0 : rows.get(rows.size() - 1).getDepth();
+
+            rows.add(new ConditionOutline.Row(depth, ConditionOutline.Joiner.AND,
                 RouteCommand.RouteCommandFeedback(1, true)));
 
             model.fireTableDataChanged();
             updateReadsAs();
-
-            // Into the formula too.  A term nothing refers to takes no part in whether the route
-            // fires, so a table of terms with an empty formula is a condition that looks written and
-            // does nothing - which is exactly what Adam met: an empty box and no way to tell what it
-            // wanted.  ANDed on, because adding a second requirement is what adding a row means.
-            appendToFormula(org.traincontrol.base.ConditionFormula.letterFor(rows.size() - 1));
         }
 
         void removeSelected()
@@ -2403,13 +2083,69 @@ public class RouteEditorFrame extends JFrame
             if (at < 0 || at >= rows.size()) return;
 
             rows.remove(at);
-            model.fireTableDataChanged();
 
-            // The letters are positional, so removing a row renames every term after it.  The pills
-            // and the reading have to be rebuilt or they name rows that have moved.
-            refreshTermPills();
+            repair();
+
+            model.fireTableDataChanged();
             updateReadsAs();
+        }
+
+        void shift(int at, int by)
+        {
+            int to = at + by;
+
+            if (at < 0 || at >= rows.size() || to < 0 || to >= rows.size()) return;
+
+            rows.add(to, rows.remove(at));
+
+            repair();
+
+            model.fireTableDataChanged();
+            setRowSelectionInterval(to, to);
             updateReadsAs();
+        }
+
+        void indent(int at, int by)
+        {
+            if (at < 0 || at >= rows.size()) return;
+
+            int depth = rows.get(at).getDepth() + by;
+
+            if (depth < 0) return;
+
+            // One level deeper than the row above, at most.  Two at once would be a nesting with a
+            // hole in the middle, which the outline has no way to draw and no way to mean.
+            if (at > 0 && depth > rows.get(at - 1).getDepth() + 1) return;
+
+            if (at == 0 && depth > 0) return;
+
+            rows.set(at, rows.get(at).atDepth(depth));
+
+            repair();
+
+            model.fireTableDataChanged();
+            setRowSelectionInterval(at, at);
+            updateReadsAs();
+        }
+
+        /**
+         * Pulls the outline back into a shape it can have.
+         *
+         * Moving or deleting a row can leave the one after it indented two levels below its new
+         * neighbour, which is a nesting with nothing to nest under. Rather than refuse the move -
+         * which would make reordering feel arbitrary - the outline is straightened afterwards.
+         */
+        private void repair()
+        {
+            for (int at = 0; at < rows.size(); at++)
+            {
+                int most = at == 0 ? 0 : rows.get(at - 1).getDepth() + 1;
+
+                if (rows.get(at).getDepth() > most)
+                {
+                    rows.set(at, rows.get(at).atDepth(most));
+                }
+            }
         }
 
         void fireTableDataChanged()

@@ -124,6 +124,42 @@ public final class RowIcons
     }
 
     /**
+     * An arrow into or out of an indent, drawn as a bar and a chevron pointing at it.
+     *
+     * @param size how many pixels square
+     * @param inward true to indent, false to bring back out
+     * @return the icon
+     */
+    public static Icon indent(final int size, final boolean inward)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(QUIET);
+                g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int pad = width / 5;
+                int middle = height / 2;
+
+                // The bar the row moves towards
+                int bar = inward ? width - pad : pad;
+
+                g.drawLine(bar, pad, bar, height - pad);
+
+                // And the chevron pointing at it
+                int tip = inward ? bar - pad : bar + pad;
+                int tail = inward ? pad : width - pad;
+
+                g.drawLine(tail, middle, tip, middle);
+                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle - pad);
+                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle + pad);
+            }
+        };
+    }
+
+    /**
      * An icon that paints itself, antialiased, on a graphics it is handed.
      */
     private abstract static class Painted implements Icon
