@@ -183,7 +183,50 @@ public final class StationIndex
 
         String base = baseByPoint.get(point.getName());
 
-        return base == null || base.trim().isEmpty() ? point.getName() : base;
+        if (base != null && !base.trim().isEmpty()) return base;
+
+        return withoutArrivalSuffix(point.getName());
+    }
+
+    /**
+     * A copy's name with the arrival side taken off, for when the index cannot answer.
+     *
+     * The index maps every emitted Point back to the name of its square, and that is the answer
+     * whenever it has one. It does not always: a Point whose configuration was built by a different
+     * run of the builder - a setup reloaded, a layout edited underneath a running graph - is not in
+     * the map, and the fallback was to show the internal name. "BottomMainA (northbound)" is not a
+     * place on anybody's railway. It is how the model spells one platform's several arrival sides,
+     * and a user who did not create an eastbound one and a westbound one should not meet them.
+     *
+     * Only the suffixes the builder itself emits are removed, and only from the end. A station somebody
+     * has genuinely called "Yard (upper)" keeps its name, because "upper" is not a heading.
+     *
+     * @param name an emitted Point name
+     * @return the square's name, as far as it can be recovered
+     */
+    private static String withoutArrivalSuffix(String name)
+    {
+        if (name == null) return "";
+
+        if (!name.endsWith(")")) return name;
+
+        int open = name.lastIndexOf(" (");
+
+        if (open <= 0) return name;
+
+        String inside = name.substring(open + 2, name.length() - 1);
+
+        // "northbound", or "northbound, reverse" - see AutonomyBuilder.nodeName
+        int comma = inside.indexOf(',');
+
+        String heading = comma < 0 ? inside : inside.substring(0, comma);
+
+        for (String known : new String[]{"northbound", "southbound", "eastbound", "westbound"})
+        {
+            if (known.equals(heading)) return name.substring(0, open);
+        }
+
+        return name;
     }
 
     /**

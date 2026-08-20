@@ -329,7 +329,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 }
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {                    
-                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
+                    // With the info mark, because a tooltip nobody knows about explains nothing.
+                    // This label has said "No available paths" for years and the reasons behind it
+                    // are new - there is no way to guess that resting the pointer here now answers
+                    // the question the text raises.
+                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths") + " \u24d8");
 
                     // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
                     // stops on the label - see the mouse listener in the constructor.
@@ -517,6 +521,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             public void mouseEntered(java.awt.event.MouseEvent e)
             {
                 locDest.setToolTipText(noPathsNow ? whyNotToolTip() : null);
+
+                // A pointer that says "there is something to read here", matching the mark on the text
+                locDest.setCursor(java.awt.Cursor.getPredefinedCursor(
+                    noPathsNow ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
             }
         });
     }

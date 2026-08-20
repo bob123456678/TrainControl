@@ -3,6 +3,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -252,5 +253,39 @@ public class testWhyStuck
         layout.createEdge(prefix + "_B", prefix + "_A");
 
         return layout;
+    }
+
+    /**
+     * A platform's several arrival sides are described by the platform, not by the model's spelling.
+     *
+     * The index maps every emitted Point back to its square and that is the answer whenever it has
+     * one - but it does not always: a configuration built by a different run of the builder is not in
+     * the map, and the fallback used to be the internal name. "BottomMainA (northbound)" is not a place
+     * on anybody's railway. Adam met it in the hover that explains why a train is not moving, which is
+     * the worst place for it: somebody reading that is already confused.
+     *
+     * Only the suffixes the builder itself emits come off, which is the half worth testing - a station
+     * genuinely called "Yard (upper)" has to keep its name, or this fix quietly renames real places.
+     */
+    @Test
+    public void testAnArrivalSideIsDescribedByItsStation() throws Exception
+    {
+        // EMPTY is the index with no builder behind it, which is exactly the degraded case the
+        // fallback exists for: nothing maps, so every answer comes from the name itself.
+        org.traincontrol.automationui.StationIndex index =
+            org.traincontrol.automationui.StationIndex.EMPTY;
+
+        assertEquals(index.describe(new Point("BottomMainA (northbound)", false, null)),
+            "BottomMainA",
+            "the compass bearing is how the model spells one platform's arrival sides, and is not "
+            + "something the user created or should be shown");
+
+        assertEquals(index.describe(new Point("BottomMainA (northbound, reverse)", false, null)),
+            "BottomMainA",
+            "the reversing copies are spelled the same way and are no more real");
+
+        assertEquals(index.describe(new Point("Yard (upper)", false, null)), "Yard (upper)",
+            "a station somebody has genuinely called this keeps its name - taking brackets off "
+            + "anything that has them would rename real places to make an internal one read better");
     }
 }

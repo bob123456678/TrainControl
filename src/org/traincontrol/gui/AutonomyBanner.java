@@ -28,7 +28,28 @@ public class AutonomyBanner extends JPanel
      */
     private static final int LINGER_MS = 6000;
 
-    private static final Color INFO_BACKGROUND = new Color(232, 240, 254);
+    /**
+     * The longest an ordinary message will stay, however much of it there is.
+     *
+     * Six seconds is right for a sentence and wrong for a list of a dozen stations and the reason each
+     * one was refused - which is the same banner, and is an answer somebody asked for rather than a
+     * notice they happened to be near. The time now grows with the reading, up to this.
+     */
+    private static final int LINGER_MAX_MS = 30000;
+
+    /**
+     * Roughly the time to read one character, in milliseconds.
+     *
+     * Two hundred words a minute is about a thousand characters, which is sixty milliseconds each;
+     * this is deliberately slower, because banner text is read once, in passing, by somebody who was
+     * looking at their railway a moment ago.
+     */
+    private static final int MS_PER_CHARACTER = 90;
+
+    private static final Color PANEL_BACKGROUND = Color.WHITE;
+    private static final Color PANEL_LINE = new Color(204, 204, 204);
+
+    private static final Color INFO_BACKGROUND = PANEL_BACKGROUND;
     private static final Color INFO_TEXT = new Color(0, 0, 155);
 
     private static final Color WARNING_BACKGROUND = new Color(255, 244, 214);
@@ -62,7 +83,15 @@ public class AutonomyBanner extends JPanel
     public AutonomyBanner()
     {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+
+        // A panel, the way every other panel in this application is one: white, with a single line
+        // round it.  It was a pale blue bar with no edge running the width of the window, which reads
+        // as something that has been stuck on top of the interface rather than as part of it.  The
+        // blue stays where it belongs - on the text, in the colour headings use.
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PANEL_LINE, 1),
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+
         setBackground(INFO_BACKGROUND);
 
         message.setFont(MESSAGE_FONT);
@@ -109,7 +138,39 @@ public class AutonomyBanner extends JPanel
     {
         hold(text, warning);
 
+        // Long enough to read what is actually there.  A stale sentence on screen at the next click is
+        // a nuisance; an answer taken away before it has been read is a question that has to be asked
+        // again, and the second is the worse of the two.
+        clear.setInitialDelay(lingerFor(text));
         clear.restart();
+    }
+
+    /**
+     * How long to leave a message up, from how much of it there is.
+     *
+     * HTML markup is not counted - it is not read - so a list built as a table does not win time for
+     * its own tags.
+     *
+     * @param text the message, possibly HTML
+     * @return milliseconds, between the ordinary linger and the cap
+     */
+    private static int lingerFor(String text)
+    {
+        if (text == null) return LINGER_MS;
+
+        int readable = 0;
+        boolean inTag = false;
+
+        for (int at = 0; at < text.length(); at++)
+        {
+            char c = text.charAt(at);
+
+            if (c == '<') inTag = true;
+            else if (c == '>') inTag = false;
+            else if (!inTag) readable++;
+        }
+
+        return Math.max(LINGER_MS, Math.min(LINGER_MAX_MS, readable * MS_PER_CHARACTER));
     }
 
     /**
