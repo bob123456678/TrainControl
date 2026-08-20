@@ -118,6 +118,64 @@ public final class CommandRow
     }
 
     /**
+     * What a kind is called in the interface.
+     *
+     * The enum names are how the code spells these - LOCOMOTIVE_DIRECTION, AUTONOMY_LIGHTS_ON - and
+     * they were being shown to the user as they are. A route editor is used by somebody who knows
+     * their railway and has no reason to know how a Java enum is written.
+     *
+     * @param kind the kind
+     * @return its name, in the user's language
+     */
+    public static String labelFor(Kind kind)
+    {
+        if (kind == null) return "";
+
+        return I18n.t("route.kind." + kind.name());
+    }
+
+    /**
+     * The kind a label names, or null when nothing matches.
+     *
+     * By comparing against the labels rather than by parsing them, so the two directions cannot
+     * disagree - and so a translation can say anything it likes without breaking the editor.
+     *
+     * @param label what the dropdown is showing
+     * @return the kind
+     */
+    public static Kind kindFor(String label)
+    {
+        for (Kind kind : Kind.values())
+        {
+            if (labelFor(kind).equals(label)) return kind;
+        }
+
+        // The enum name too, so a value stored or logged in the old form still resolves
+        for (Kind kind : Kind.values())
+        {
+            if (kind.name().equals(label)) return kind;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether this kind is something a route can DO, as against something it can ask about.
+     *
+     * AUTO_LOCOMOTIVE is "train X is standing at sensor 21", which is a fact rather than an
+     * instruction: there is nothing for a route to carry out. It was offered in the command list
+     * because the list offered every kind there is, and a route built with one would have been a
+     * route with a sentence in it that cannot be obeyed.
+     *
+     * @param kind the kind
+     * @return true if a route may contain it as a command
+     */
+    public static boolean canBeACommand(Kind kind)
+    {
+        return kind != Kind.AUTO_LOCOMOTIVE;
+    }
+
+    /**
      * A setting this kind will accept, for when a row changes from one kind to another.
      *
      * The vocabularies do not overlap: an accessory is turn or straight, a feedback is on or off, a

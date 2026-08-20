@@ -435,7 +435,7 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel row = new JPanel(new BorderLayout(4, 4));
 
-        row.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        row.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 8));
 
         // Heading and the one-line box together at the top.
         //
@@ -1017,8 +1017,15 @@ public class RouteEditorFrame extends JFrame
             public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
-                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", selected,
-                    false, row, column);
+                boolean isMark = MOVE_UP.equals(value) || MOVE_DOWN.equals(value)
+                    || DELETE_ROW.equals(value) || ADD_HERE.equals(value);
+
+                // Only a MARK is drawn as one.  This renderer also covers the column the plus sits
+                // under - which is the position column - and blanking every cell in it took the row
+                // numbers with it: a table numbered one to four showed four empty cells, and the
+                // numbers are the thing that makes "row 4 cannot be saved" mean anything.
+                JLabel out = (JLabel) super.getTableCellRendererComponent(which,
+                    isMark ? "" : value, selected, false, row, column);
 
                 out.setHorizontalAlignment(JLabel.CENTER);
 
@@ -1544,7 +1551,7 @@ public class RouteEditorFrame extends JFrame
 
                 switch (column)
                 {
-                    case 3: return at.getKind().toString();
+                    case 3: return CommandRow.labelFor(at.getKind());
 
                     // Blank where the kind has no such thing, rather than whatever the row was
                     // carrying before it became a stop.  A greyed cell with a stale address in it
@@ -1599,7 +1606,7 @@ public class RouteEditorFrame extends JFrame
 
                 String text = value == null ? "" : value.toString().trim();
 
-                CommandRow.Kind kind = column == 3 ? CommandRow.Kind.valueOf(text) : at.getKind();
+                CommandRow.Kind kind = column == 3 ? CommandRow.kindFor(text) : at.getKind();
                 String target = column == 4 ? text : at.getTarget();
 
                 // Changing the KIND replaces the setting with one the new kind accepts.  The
@@ -1641,7 +1648,13 @@ public class RouteEditorFrame extends JFrame
 
             JComboBox<String> kinds = new JComboBox<>();
 
-            for (CommandRow.Kind kind : CommandRow.Kind.values()) kinds.addItem(kind.toString());
+            // Only what a route can DO.  "Train at a sensor" is a fact rather than an instruction,
+            // so it belongs in the conditions and nowhere else - it was offered here because this
+            // list offered every kind there is.
+            for (CommandRow.Kind kind : CommandRow.Kind.values())
+            {
+                if (CommandRow.canBeACommand(kind)) kinds.addItem(CommandRow.labelFor(kind));
+            }
 
             getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(kinds));
 
@@ -1832,7 +1845,7 @@ public class RouteEditorFrame extends JFrame
                 // A term with no controls is shown whole and left alone, as the commands are
                 if (term == null) return column == 1 ? String.valueOf(at.getCommand()) : "";
 
-                if (column == 1) return term.getKind().toString();
+                if (column == 1) return CommandRow.labelFor(term.getKind());
                 if (column == 2) return term.getTarget();
                 if (column == 3) return term.getSetting();
 
@@ -1888,7 +1901,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == 1)
                 {
-                    CommandRow.Kind became = CommandRow.Kind.valueOf(text);
+                    CommandRow.Kind became = CommandRow.kindFor(text);
 
                     // A setting that means nothing to the new kind is REPLACED, not carried over.
                     //
@@ -1948,7 +1961,7 @@ public class RouteEditorFrame extends JFrame
             // and a route that silently stopped firing.
             for (CommandRow.Kind kind : CommandRow.Kind.values())
             {
-                if (CommandRow.canBeACondition(kind)) kinds.addItem(kind.toString());
+                if (CommandRow.canBeACondition(kind)) kinds.addItem(CommandRow.labelFor(kind));
             }
 
             getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(kinds));

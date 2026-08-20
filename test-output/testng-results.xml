@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results skipped="0" failed="0" ignored="0" total="10" passed="10">
+  <reporter-output>
+  </reporter-output>
+  <suite name="Command line suite" duration-ms="26" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+    <groups>
+    </groups>
+    <test name="Command line test" duration-ms="26" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+      <class name="testParseCS2Routes">
+        <test-method status="PASS" signature="setUpClass()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpClass" is-config="true" duration-ms="10" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpClass -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="testAFractionalPauseKeepsItsFraction()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testAFractionalPauseKeepsItsFraction" duration-ms="2" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testAFractionalPauseKeepsItsFraction -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="testAPauseLandsOnItsOwnItemNotAnEarlierOne()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testAPauseLandsOnItsOwnItemNotAnEarlierOne" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testAPauseLandsOnItsOwnItemNotAnEarlierOne -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="testASubSecondPauseIsNotLostEntirely()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testASubSecondPauseIsNotLostEntirely" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testASubSecondPauseIsNotLostEntirely -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="testConditionIsNotDuplicated()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testConditionIsNotDuplicated" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testConditionIsNotDuplicated -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="1" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="testConditionsOnTheRealRouteFile()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testConditionsOnTheRealRouteFile" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testConditionsOnTheRealRouteFile -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="testConditionIsStoredOnceWithTheRequestedState()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testConditionIsStoredOnceWithTheRequestedState" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testConditionIsStoredOnceWithTheRequestedState -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="testDCCRoute()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testDCCRoute" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testDCCRoute -->
+        <test-method status="PASS" signature="tearDownClass()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownClass" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownClass -->
+        <test-method status="PASS" signature="testNumRoutes()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testNumRoutes" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testNumRoutes -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="testNumAccs()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testNumAccs" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testNumAccs -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="testTrailingKontIsParsedCorrectly()[pri:0, instance:testParseCS2Routes@7ca48474]" name="testTrailingKontIsParsedCorrectly" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testTrailingKontIsParsedCorrectly -->
+        <test-method status="PASS" signature="tearDownMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="tearDownMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- tearDownMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+        <test-method status="PASS" signature="setUpMethod()[pri:0, instance:testParseCS2Routes@7ca48474]" name="setUpMethod" is-config="true" duration-ms="0" started-at="2026-08-20T17:01:33Z" finished-at="2026-08-20T17:01:33Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpMethod -->
+      </class> <!-- testParseCS2Routes -->
+    </test> <!-- Command line test -->
+  </suite> <!-- Command line suite -->
+</testng-results>
