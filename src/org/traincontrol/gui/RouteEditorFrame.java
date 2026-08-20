@@ -63,6 +63,10 @@ public class RouteEditorFrame extends JFrame
     private final JComboBox<String> triggerBox = new JComboBox<>();
     private final JCheckBox enabledBox = new JCheckBox(I18n.t("route.ui.frameEnabled"));
 
+    // Held so they can be raised and lowered with the tick beside them
+    private final JLabel sensorLabel = label(I18n.t("route.ui.frameS88"));
+    private final JLabel triggerLabelText = label(I18n.t("route.ui.frameTrigger"));
+
     private final CommandTable commands = new CommandTable();
     private final ConditionTable conditions = new ConditionTable();
 
@@ -254,6 +258,19 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * Shows the sensor and the trigger only when the route fires by itself.
+     */
+    private void showSensorIfAutomatic()
+    {
+        boolean automatic = enabledBox.isSelected();
+
+        sensorLabel.setVisible(automatic);
+        s88Field.setVisible(automatic);
+        triggerLabelText.setVisible(automatic);
+        triggerBox.setVisible(automatic);
+    }
+
+    /**
      * What a trigger means, in words.
      *
      * @param trigger the stored value
@@ -286,11 +303,22 @@ public class RouteEditorFrame extends JFrame
 
         row.add(label(I18n.t("route.ui.frameName")));
         row.add(nameField);
-        row.add(label(I18n.t("route.ui.frameS88")));
-        row.add(s88Field);
-        row.add(label(I18n.t("route.ui.frameTrigger")));
-        row.add(triggerBox);
+
+        // The tick first, and the sensor only when it is ticked.
+        //
+        // A route fires automatically FROM a sensor - that is the whole of what automatic means here -
+        // so a sensor box standing next to an unticked box is asking a question that has no bearing on
+        // anything yet.  Ticking is what raises it.
         row.add(enabledBox);
+
+        row.add(sensorLabel);
+        row.add(s88Field);
+        row.add(triggerLabelText);
+        row.add(triggerBox);
+
+        enabledBox.addActionListener(e -> showSensorIfAutomatic());
+
+        showSensorIfAutomatic();
 
         return row;
     }
@@ -348,6 +376,65 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * A cell editor offering exactly these values.
+     *
+     * @param values what to offer
+     * @return the editor
+     */
+    private static javax.swing.table.TableCellEditor chooseFrom(String[] values)
+    {
+        JComboBox<String> box = new JComboBox<>();
+
+        for (String value : values) box.addItem(value);
+
+        return new DefaultCellEditor(box);
+    }
+
+    /**
+     * A list of names as an array, empty rather than null when there are none.
+     */
+    private static String[] namesOf(java.util.List<String> names)
+    {
+        return names == null ? new String[0] : names.toArray(new String[0]);
+    }
+
+    /**
+     * The number half of a function's setting, which is stored as "3:on".
+     *
+     * @param setting the stored value
+     * @return the function number, or empty
+     */
+    private static String functionNumberOf(String setting)
+    {
+        if (setting == null) return "";
+
+        int colon = setting.indexOf(':');
+
+        return colon < 0 ? setting : setting.substring(0, colon);
+    }
+
+    /**
+     * The on-or-off half.
+     *
+     * Defaults to off rather than to nothing, because a function command with no state is not a
+     * command - and a row that cannot be saved until a cell nobody pointed at is filled in is a row
+     * that looks finished and is not.
+     *
+     * @param setting the stored value
+     * @return "on" or "off"
+     */
+    private static String functionStateOf(String setting)
+    {
+        if (setting == null) return "off";
+
+        int colon = setting.indexOf(':');
+
+        if (colon < 0 || colon + 1 >= setting.length()) return "off";
+
+        return setting.substring(colon + 1).trim();
+    }
+
+    /**
      * The closed set of words a kind's setting may take, or null when it takes a number or a name.
      *
      * @param kind the row's kind
@@ -366,6 +453,10 @@ public class RouteEditorFrame extends JFrame
 
             case FEEDBACK: return new String[]{"off", "on"};
             case LOCOMOTIVE_DIRECTION: return new String[]{"forward", "backward"};
+
+            // Now that the number has a column of its own, what is left of a function's setting is
+            // one of two words - which is a choice, and a choice is a dropdown
+            case FUNCTION: return new String[]{"off", "on"};
             default: return null;
         }
     }
@@ -1025,7 +1116,7 @@ public class RouteEditorFrame extends JFrame
     // "column 8" in a click handler is a number nobody can check against the model that produced it.
     private static final int UP = 0;
     private static final int DOWN = 1;
-    private static final int DELETE = 8;
+    private static final int DELETE = 9;
 
     /** The conditions table is narrower, so its trash sits in a different column. */
     private static final int CONDITION_DELETE = 5;
@@ -1338,6 +1429,15 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
+        // Automatic with no sensor is a route that can never fire by itself: the sensor IS the thing
+        // that fires it.  Saved, it would sit in the list marked automatic and do nothing, which is
+        // the quietest way for a route to be wrong.
+        if (enabledBox.isSelected() && s88 == 0)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameAutomaticNeedsSensor"));
+            return;
+        }
+
         List<RouteCommand> built;
 
         try
@@ -1558,7 +1658,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 9;
+                return 10;
             }
 
             @Override
@@ -1579,9 +1679,17 @@ public class RouteEditorFrame extends JFrame
                     case 2: return "#";
                     case 3: return I18n.t("route.ui.frameColKind");
                     case 4: return I18n.t("route.ui.frameColTarget");
-                    case 5: return I18n.t("route.ui.frameColSetting");
-                    case 6: return I18n.t("route.ui.frameColProtocol");
-                    case 7: return I18n.t("route.ui.frameColDelay");
+
+                    // The function NUMBER, which only one kind has.  A function command names three
+                    // things - which locomotive, which function, and whether it goes on or off - and
+                    // the middle one used to be packed into the same cell as the last, written
+                    // "3:on".  That is a format to be learned rather than a thing to be chosen, and
+                    // it is why the on/off could not be a dropdown.
+                    case 5: return I18n.t("route.ui.frameColNumber");
+
+                    case 6: return I18n.t("route.ui.frameColSetting");
+                    case 7: return I18n.t("route.ui.frameColProtocol");
+                    case 8: return I18n.t("route.ui.frameColDelay");
                     default: return "";
                 }
             }
@@ -1621,9 +1729,17 @@ public class RouteEditorFrame extends JFrame
                     // reads as a value that is being used and cannot be changed, which is the
                     // opposite of what it means.
                     case 4: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
-                    case 5: return CommandRow.hasSetting(at.getKind()) ? at.getSetting() : "";
+
+                    case 5: return CommandRow.isFunction(at.getKind())
+                        ? functionNumberOf(at.getSetting()) : "";
 
                     case 6:
+                        if (!CommandRow.hasSetting(at.getKind())) return "";
+
+                        return CommandRow.isFunction(at.getKind())
+                            ? functionStateOf(at.getSetting()) : at.getSetting();
+
+                    case 7:
                         if (!CommandRow.hasProtocol(at.getKind())) return "";
                         return (at.getProtocol() == null
                             ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : at.getProtocol()).toString();
@@ -1649,9 +1765,10 @@ public class RouteEditorFrame extends JFrame
                 CommandRow at = entry.getRow();
 
                 if (column == 4) return CommandRow.hasTarget(at.getKind());
-                if (column == 5) return CommandRow.hasSetting(at.getKind());
-                if (column == 6) return CommandRow.hasProtocol(at.getKind());
-                if (column == 7) return CommandRow.hasDelay(at.getKind());
+                if (column == 5) return CommandRow.isFunction(at.getKind());
+                if (column == 6) return CommandRow.hasSetting(at.getKind());
+                if (column == 7) return CommandRow.hasProtocol(at.getKind());
+                if (column == 8) return CommandRow.hasDelay(at.getKind());
 
                 return true;
             }
@@ -1675,9 +1792,14 @@ public class RouteEditorFrame extends JFrame
                 // Changing the KIND replaces the setting with one the new kind accepts.  The
                 // vocabularies do not overlap, so carrying the old word over left a row that looks
                 // fine and is refused at Save with a message about a cell the user never touched.
-                String setting = column == 5 ? text
-                    : column == 3 && kind != at.getKind() ? CommandRow.defaultSettingFor(kind)
-                    : at.getSetting();
+                // A function's two halves are edited in two columns and stored as one value, which
+                // is the model's business rather than the user's
+                String setting = at.getSetting();
+
+                if (column == 3 && kind != at.getKind()) setting = CommandRow.defaultSettingFor(kind);
+                else if (column == 5) setting = text + ":" + functionStateOf(at.getSetting());
+                else if (column == 6) setting = CommandRow.isFunction(kind)
+                    ? functionNumberOf(at.getSetting()) + ":" + text : text;
 
                 // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
                 // accessory used to move it to MM2, because the row was rebuilt from three columns
@@ -1685,8 +1807,8 @@ public class RouteEditorFrame extends JFrame
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
-                if (column == 6) protocol = protocolOf(text);
-                if (column == 7) delay = delayOf(text, at.getDelay());
+                if (column == 7) protocol = protocolOf(text);
+                if (column == 8) delay = delayOf(text, at.getDelay());
 
                 // A kind that takes no target or setting does not keep the ones it had, so the blank
                 // the table shows and the row underneath it say the same thing
@@ -1728,7 +1850,7 @@ public class RouteEditorFrame extends JFrame
                 protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(6).setCellEditor(new DefaultCellEditor(protocols));
+            getColumnModel().getColumn(7).setCellEditor(new DefaultCellEditor(protocols));
 
             narrow(this, UP);
             narrow(this, DOWN);
@@ -1741,8 +1863,9 @@ public class RouteEditorFrame extends JFrame
             TableColumn kindColumn = getColumnModel().getColumn(3);
             kindColumn.setPreferredWidth(170);
 
-            getColumnModel().getColumn(6).setPreferredWidth(70);
+            getColumnModel().getColumn(5).setPreferredWidth(60);
             getColumnModel().getColumn(7).setPreferredWidth(70);
+            getColumnModel().getColumn(8).setPreferredWidth(70);
 
             actOnRowMarks(this, DELETE, UP, DOWN, 2);
 
@@ -1787,17 +1910,38 @@ public class RouteEditorFrame extends JFrame
         @Override
         public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
         {
-            if (column == 5 && row >= 0 && row < rows.size() && rows.get(row).isEditable())
+            if (row < 0 || row >= rows.size() || !rows.get(row).isEditable())
+            {
+                return super.getCellEditor(row, column);
+            }
+
+            if (column == 6)
             {
                 String[] words = settingWords(rows.get(row).getRow());
 
-                if (words != null)
+                if (words != null) return chooseFrom(words);
+            }
+
+            // And the target, wherever the answer comes from a list this application already has.
+            //
+            // A locomotive is named exactly, or the command names nothing; a route likewise.  Typing
+            // either by hand is an invitation to a typo that is only discovered when the route does
+            // not do what it says - so where the set of right answers is known, it is offered.
+            if (column == 4)
+            {
+                CommandRow.Kind kind = rows.get(row).getRow().getKind();
+
+                if (kind == CommandRow.Kind.ROUTE)
                 {
-                    JComboBox<String> box = new JComboBox<>();
+                    return chooseFrom(namesOf(parent.getModel().getRouteList()));
+                }
 
-                    for (String word : words) box.addItem(word);
-
-                    return new DefaultCellEditor(box);
+                if (kind == CommandRow.Kind.LOCOMOTIVE_SPEED
+                    || kind == CommandRow.Kind.LOCOMOTIVE_DIRECTION
+                    || kind == CommandRow.Kind.FUNCTION
+                    || kind == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                {
+                    return chooseFrom(namesOf(parent.getModel().getLocList()));
                 }
             }
 
