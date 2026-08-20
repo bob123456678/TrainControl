@@ -126,6 +126,9 @@ public class RouteEditorFrame extends JFrame
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(
+            TrainControlUI.class.getResource("resources/locicon.png")));
+
         // In words rather than in constants.  CLEAR_THEN_OCCUPIED is precise and says nothing to
         // somebody who has not read the code: what it means on a railway is that a train arrived.
         for (Route.s88Triggers trigger : Route.s88Triggers.values())
@@ -176,8 +179,6 @@ public class RouteEditorFrame extends JFrame
 
         conditionSection.add(buildFormulaRow(), BorderLayout.EAST);
 
-        buttonsOf(conditionSection).add(readsAs);
-
         middle.add(conditionSection);
 
         content.add(middle, BorderLayout.CENTER);
@@ -189,6 +190,11 @@ public class RouteEditorFrame extends JFrame
 
         buttons.add(save);
         buttons.add(cancel);
+
+        // The same offer the old editor makes, and this window needs it more: the formula underneath
+        // the conditions is a small language, and a small language with nothing explaining it is a
+        // box people leave empty.
+        buttons.add(button(I18n.t("ui.help"), this::showHelp));
 
         content.add(buttons, BorderLayout.SOUTH);
 
@@ -254,13 +260,18 @@ public class RouteEditorFrame extends JFrame
         JLabel heading = new JLabel(title);
 
         heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
-        heading.setForeground(new java.awt.Color(0, 0, 155));
+        heading.setForeground(HEADING_BLUE);
         heading.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 
         panel.add(heading, BorderLayout.NORTH);
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setPreferredSize(new Dimension(640, 180));
+
+        // White, with a single line round it, like every other panel here - the standard in
+        // docs/UI-standards.md, and what the old route editor's boxes look like
+        table.setBackground(java.awt.Color.WHITE);
+        scroll.setBorder(BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1));
 
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -356,10 +367,20 @@ public class RouteEditorFrame extends JFrame
     {
         JLabel out = new JLabel(text);
 
-        out.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+        // The small labels beside a field - Name, S88, Trigger - are set the way the old route editor
+        // sets its own: plain 14 in the heading blue.  They name the box next to them rather than
+        // announcing a section, and semibold black made every one of them compete with the section
+        // headings above.
+        out.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        out.setForeground(HEADING_BLUE);
 
         return out;
     }
+
+    /**
+     * The blue this application uses for headings and for the labels beside fields.
+     */
+    private static final java.awt.Color HEADING_BLUE = new java.awt.Color(0, 0, 155);
 
     /**
      * The formula, with the terms above it as things to click.
@@ -373,13 +394,24 @@ public class RouteEditorFrame extends JFrame
      */
     private JPanel buildFormulaRow()
     {
-        JPanel row = new JPanel(new BorderLayout(4, 2));
+        JPanel row = new JPanel(new BorderLayout(4, 4));
+
+        row.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+
+        // Heading and the one-line box together at the top.
+        //
+        // The box used to be the whole middle of this panel, stretched by the layout to the height of
+        // the table beside it - so a place to type one line of algebra looked like a large empty area
+        // with some buttons under it, and Adam could not tell it was a box at all.  A field that is
+        // one line tall reads as a field.
+        JPanel top = new JPanel(new BorderLayout(0, 2));
 
         JLabel heading = new JLabel(I18n.t("route.ui.frameFormula"));
 
         heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+        heading.setForeground(HEADING_BLUE);
 
-        row.add(heading, BorderLayout.NORTH);
+        top.add(heading, BorderLayout.NORTH);
 
         formulaField.setFont(new java.awt.Font("Segoe UI", 0, 14));
         formulaField.setToolTipText(I18n.t("route.ui.tooltipFormula"));
@@ -405,11 +437,20 @@ public class RouteEditorFrame extends JFrame
             }
         });
 
-        row.add(formulaField, BorderLayout.CENTER);
+        top.add(formulaField, BorderLayout.SOUTH);
+
+        row.add(top, BorderLayout.NORTH);
 
         termPills.setOpaque(false);
 
-        row.add(termPills, BorderLayout.SOUTH);
+        row.add(termPills, BorderLayout.CENTER);
+
+        // What the formula means, in words, directly under the thing it is about.  It used to sit in
+        // the row of Add and Remove buttons on the far side of the window, where it read as a caption
+        // for those.
+        readsAs.setVerticalAlignment(JLabel.TOP);
+
+        row.add(readsAs, BorderLayout.SOUTH);
 
         return row;
     }
@@ -428,12 +469,16 @@ public class RouteEditorFrame extends JFrame
         {
             final String letter = org.traincontrol.base.ConditionFormula.letterFor(at);
 
-            JButton pill = new JButton(letter);
+            // The letter AND what it stands for.  A row of bare letters is a row of things nobody
+            // can choose between: the whole point of a handle is that it is short, and the whole
+            // problem with a short handle is that it says nothing.
+            JButton pill = new JButton(letter + " - "
+                + shortly(conditions.rows.get(at).getCommand()));
 
             pill.setFont(new java.awt.Font("Segoe UI", 1, 12));
             pill.setMargin(new java.awt.Insets(0, 6, 0, 6));
             pill.setFocusable(false);
-            pill.setToolTipText(shortly(conditions.rows.get(at).getCommand()));
+            pill.setToolTipText(I18n.f("route.ui.tooltipTermPill", letter));
 
             pill.addActionListener(e -> insertIntoFormula(letter));
 
@@ -457,6 +502,39 @@ public class RouteEditorFrame extends JFrame
 
         termPills.revalidate();
         termPills.repaint();
+    }
+
+    /**
+     * Adds a term to the end of the formula, joined by AND.
+     *
+     * One call, so that everything that has to move when the terms change moves together: the formula
+     * itself, the buttons that name the terms, and the reading underneath. They came apart once
+     * already - the letters are positional, so a term added or removed renames every one after it.
+     *
+     * @param letter the handle to add
+     */
+    private void appendToFormula(String letter)
+    {
+        String had = formulaField.getText().trim();
+
+        formulaField.setText(had.isEmpty() ? letter : had + " and " + letter);
+
+        refreshTermPills();
+        updateReadsAs();
+    }
+
+    /**
+     * Says how the two halves of this window fit together.
+     *
+     * Worth a dialog rather than a tooltip: Adam built a route, looked at the conditions, and said he
+     * did not understand how the logic worked and could see no objects in it. That is not a wording
+     * problem with one control - it is somebody meeting a small language with nothing to say what it
+     * is for.
+     */
+    private void showHelp()
+    {
+        JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameHelp"),
+            I18n.t("ui.help"), JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -1552,6 +1630,12 @@ public class RouteEditorFrame extends JFrame
 
             model.fireTableDataChanged();
             updateReadsAs();
+
+            // Into the formula too.  A term nothing refers to takes no part in whether the route
+            // fires, so a table of terms with an empty formula is a condition that looks written and
+            // does nothing - which is exactly what Adam met: an empty box and no way to tell what it
+            // wanted.  ANDed on, because adding a second requirement is what adding a row means.
+            appendToFormula(org.traincontrol.base.ConditionFormula.letterFor(rows.size() - 1));
         }
 
         void removeSelected()
