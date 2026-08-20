@@ -389,6 +389,25 @@ public class Layout
     // List of all / active locomotives
     private final Set<Locomotive> locomotivesToRun;
     private final Map<Locomotive, List<Edge>> activeLocomotives;
+
+    /**
+     * Locomotives that have locked a path but are not yet running it.
+     *
+     * The cap on how many trains may be out at once was counted from activeLocomotives, and a
+     * locomotive does not appear there until executePath registers it - which is AFTER the path has
+     * been locked, the accessories thrown, and validatePathActuation has waited for them to confirm.
+     * That wait deliberately holds no lock and takes up to a second per accessory, so the gap between
+     * "this train has claimed its route" and "this train is counted" is seconds wide.
+     *
+     * Two trains taking disjoint routes could both cross it: each checked the cap, each saw the other
+     * uncounted, and both went. The track was never at risk - the edges are exclusively locked either
+     * way - but a cap is usually set for something the model cannot see, like what a booster will
+     * carry, and quietly running more trains than asked is not a small thing to get wrong.
+     *
+     * Claimed inside the same monitor that locks the path, so the check and the claim cannot be
+     * separated, and given up when the locomotive is registered or the path is released.
+     */
+    private final Set<Locomotive> takingPath;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
     private final Map<Locomotive, String> locomotivePendingS88;
     
@@ -529,6 +548,7 @@ public class Layout
         // executePath iterates callbacks.values() on loco threads - a plain HashMap would CME.
         this.callbacks = new ConcurrentHashMap<>();
         this.activeLocomotives = new ConcurrentHashMap<>();
+        this.takingPath = Collections.newSetFromMap(new ConcurrentHashMap<Locomotive, Boolean>());
         this.locomotiveMilestones = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();
         this.homeStations = new LinkedHashMap<>();
@@ -1653,12 +1673,31 @@ public class Layout
     }
 
     /**
+     * How many trains are out, counting the ones that have claimed a route but not yet set off.
+     *
+     * A union rather than a sum, so that a locomotive which is both claiming and registered - the
+     * moment between the two, however it is ordered - is one train and not two.
+     *
+     * @return the number of distinct locomotives underway
+     */
+    private int trainsUnderway()
+    {
+        Set<Locomotive> both = Collections.newSetFromMap(
+            new java.util.IdentityHashMap<Locomotive, Boolean>());
+
+        both.addAll(this.activeLocomotives.keySet());
+        both.addAll(this.takingPath);
+
+        return both.size();
+    }
+
+    /**
      * @param logFailures false when enumerating candidate paths, where a refusal is the ordinary
      *                    answer rather than something worth a log line.  lastError is still set.
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
     {
-        if (this.maxActiveTrains > 0 && this.isAutoRunning() && this.activeLocomotives.size() >= this.maxActiveTrains)
+        if (this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
         {
             logPathError(
                 loc,
@@ -2214,6 +2253,11 @@ public class Layout
                 return false;
             }
 
+            // Claimed HERE, in the same monitor that just did the counting.  Anywhere later and the
+            // check and the claim can be pulled apart by another thread doing its own check in between
+            // - which is exactly what let two trains past a cap of one.
+            this.takingPath.add(loc);
+
             for (Edge e : path)
             {
                 e.setOccupied();
@@ -2246,6 +2290,7 @@ public class Layout
             // never locked, and that also clears their lock edges - which, precisely because we never
             // held them, may belong to another locomotive by now.
             this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            this.takingPath.remove(loc);
             return false;
         }
 
@@ -2264,6 +2309,7 @@ public class Layout
         if (!this.validatePathActuation(path))
         {
             this.handleMisconfiguredPath(path, loc);
+            this.takingPath.remove(loc);
             return false;
         }
 
@@ -2480,6 +2526,11 @@ public class Layout
      */
     synchronized public List<Edge> unlockPath(List<Edge> path, Locomotive loc)
     {
+        // Releasing the path releases the claim on a slot with it.  The claim is taken when a path is
+        // locked, so this is its other natural end - and without it, anything that locks and unlocks
+        // without ever running the train would lower the cap for the rest of the session.
+        this.takingPath.remove(loc);
+
         List<Edge> output = new LinkedList<>();
         
         for (int i = 0; i < path.size(); i++)
@@ -3784,6 +3835,10 @@ public class Layout
                 this.locomotiveMilestones.remove(loc);
             }
 
+            // And any unfinished claim on a slot, for the same reason the registration is cleared:
+            // one left behind lowers the cap for good.
+            this.takingPath.remove(loc);
+
             // And the sensor this locomotive was said to be heading for.  A route condition asking
             // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
             // failure is one nothing will ever clear: the thread evaluating that route parks until
@@ -3892,6 +3947,11 @@ public class Layout
         {
             // configureAndLockPath has already logged the reason (path occupied, or a validation failure
             // that stopped the loco and released its locks) - do not run the locomotive.
+            //
+            // The claim is dropped here as well as on the paths that set this, because a claim that
+            // outlives its path lowers the cap for the rest of the session - a leak that makes the
+            // railway quieter and quieter with nothing to say why.
+            this.takingPath.remove(loc);
             return false;
         }
         else
@@ -3904,6 +3964,10 @@ public class Layout
                 this.locomotiveMilestones.put(loc, new CopyOnWriteArrayList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.activeLocomotives.put(loc, path);
+
+                // Counted for real now, so the claim is given up.  Kept as a union rather than a sum
+                // above, so the order of these two lines cannot make one train read as two.
+                this.takingPath.remove(loc);
             
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
