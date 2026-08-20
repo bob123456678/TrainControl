@@ -157,7 +157,7 @@ public class RouteEditorFrame extends JFrame
             () -> { if (conditionsEditable) conditions.addRow(); },
             () -> { if (conditionsEditable) conditions.removeSelected(); }, null, null);
 
-        readsAs.setFont(readsAs.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
+        readsAs.setFont(UIStandards.TEXT_FONT);
 
         buttonsOf(conditionSection).add(readsAs);
 
@@ -209,11 +209,11 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
 
-        row.add(new JLabel(I18n.t("route.ui.frameName")));
+        row.add(UIStandards.label(I18n.t("route.ui.frameName")));
         row.add(nameField);
-        row.add(new JLabel(I18n.t("route.ui.frameS88")));
+        row.add(UIStandards.label(I18n.t("route.ui.frameS88")));
         row.add(s88Field);
-        row.add(new JLabel(I18n.t("route.ui.frameTrigger")));
+        row.add(UIStandards.label(I18n.t("route.ui.frameTrigger")));
         row.add(triggerBox);
         row.add(enabledBox);
 
@@ -231,11 +231,10 @@ public class RouteEditorFrame extends JFrame
         // A heading rather than a box round everything.  Two framed panels stacked inside a third
         // frame is three borders deep before any content, and the rest of this application says
         // "here is a section" with a line of blue text instead.
-        JLabel heading = new JLabel(title);
+        JLabel heading = UIStandards.heading(title);
 
-        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD, 11f));
-        heading.setForeground(HEADING);
-        heading.setBorder(BorderFactory.createEmptyBorder(2, 2, 4, 2));
+        // The same indentation as the panel itself, so a heading and the thing it names line up
+        heading.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 
         panel.add(heading, BorderLayout.NORTH);
 
@@ -256,11 +255,6 @@ public class RouteEditorFrame extends JFrame
 
         return panel;
     }
-
-    /**
-     * The blue this application uses for a heading.  Same value as every other one in the interface.
-     */
-    private static final java.awt.Color HEADING = new java.awt.Color(0, 0, 115);
 
     /**
      * The closed set of words a kind's setting may take, or null when it takes a number or a name.
@@ -333,9 +327,8 @@ public class RouteEditorFrame extends JFrame
 
     private JButton button(String text, Runnable action)
     {
-        JButton button = new JButton(text);
+        JButton button = UIStandards.style(new JButton(text));
 
-        button.setFont(button.getFont().deriveFont(java.awt.Font.BOLD, 11f));
         button.addActionListener(e -> action.run());
 
         return button;

@@ -1839,28 +1839,14 @@ public class Layout
             return false;
         }
 
-        // A locomotive that cannot reverse is only sent somewhere that will reverse it if that place
-        // is out of full autonomy - a parking spot.
+        // Only reversible locomotives can go to a terminus.
         //
-        // Two rules used to be one and a half.  A terminus asked whether the locomotive was reversible;
-        // a REVERSING point asked nothing at all, even though arriving at one turns the train round
-        // just the same - see the reversal at the end of executePathInternal, which fires on either.
-        // So a train with a locomotive at one end only was routed to an ordinary platform through a
-        // reversing point and turned round there, which is a train running backwards in service: the
-        // thing marking it non-reversible exists to prevent.
-        //
-        // The permission is autoDestination, which already means "autonomy may choose this as a
-        // destination".  A spot excluded from that is where a train is PUT rather than where it calls -
-        // a parking road, a shed, a staging siding - and turning one round there is unremarkable.  So
-        // full autonomy will not turn such a train anywhere, while the staging planner, the timetable
-        // and a hand-driven move can still park it, which is exactly what they are for.
-        //
-        // Stated over "will this reverse the train" rather than over the terminus flag, so the two
-        // ways a layout can say "turn round here" cannot drift apart again.
-        Point arriving = path.get(path.size() - 1).getEnd();
-
-        if ((arriving.isTerminus() || arriving.isReversing()) && !loc.isReversible()
-            && arriving.isAutoDestination())
+        // Deliberately still the only reversal rule at THIS tier.  A first attempt put the reversing
+        // points here too, which is the wrong height: isPathClear is what every tier passes through,
+        // so it took the manual route menu and the staging planner with it - and a test guarding
+        // exactly that had been written years before, with a javadoc warning against this change.
+        // Full autonomy's own rule lives where full autonomy chooses, in reversesAlongTheWay.
+        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
         {
             logPathError(
                 loc,
@@ -2697,26 +2683,36 @@ public class Layout
     }
     
     /**
-     * Whether a path drives through a reversing STATION on its way somewhere else.
+     * Whether a path would turn the train round on its way somewhere else.
      *
-     * A reversing station is a parking berth, and executePathInternal stops and reverses the train at
-     * every reversing point it reaches - so routing through one mid-journey turns a berth into a
-     * shunting move nobody asked for, with a train halting and changing direction inside the parking
-     * area en route to somewhere unrelated.  Barring them as destinations was not enough; a berth has
-     * to be off the through-network as well.
+     * executePathInternal stops and reverses at EVERY reversing point a train reaches, not only at the
+     * end of a path - so a route through one is a shunting move in the middle of a journey: the train
+     * halts somewhere it was not going, changes direction, and carries on.
      *
-     * Reversing NON-stations are deliberately still allowed.  Those are the reversing loops and
-     * headshunts that exist precisely to be driven through, and the mid-path flip is their purpose.
+     * This used to bar only reversing STATIONS, on the reasoning that a berth has to be off the
+     * through-network as well as barred as a destination, and to leave the reversing loops and
+     * headshunts alone because being driven through is their purpose. That exemption is what let a
+     * train with a locomotive at one end only be turned round mid-journey and sent on running
+     * backwards in service.
      *
-     * The origin is exempt - a train standing on a berth is free to leave it - so only the END of each
-     * edge is tested.  The last of those is the destination, which pickPath's own filter has already
-     * refused for the same reason, so testing every end costs nothing and keeps the rule one shape.
+     * The rule Adam settled on is simpler than picking that apart, and it is a rule about the railway
+     * rather than about which flag a point carries: IN FULL AUTONOMY A TRAIN IS ONLY EVER REVERSED AT
+     * A TERMINUS. Everything else that would turn it round is off the through-network, berth and
+     * headshunt alike.
+     *
+     * The tier matters as much as the rule. This is asked by pickPath, by the probe that mirrors it,
+     * and by the "why is it not moving" explanation - the three places full autonomy chooses. It is
+     * NOT asked by isPathClear, so a hand-driven move and the staging planner bringing a train home
+     * can still use a headshunt, which is what they are for and where somebody is watching.
+     *
+     * The origin is exempt - a train standing on one is free to leave it - so only the END of each
+     * edge is tested.
      */
-    private boolean passesThroughReversingStation(List<Edge> path)
+    private boolean reversesAlongTheWay(List<Edge> path)
     {
         for (Edge e : path)
         {
-            if (e.getEnd().isReversing() && e.getEnd().isDestination())
+            if (e.getEnd().isReversing())
             {
                 return true;
             }
@@ -2758,7 +2754,7 @@ public class Layout
 
             if (!end.isReversing() && end.isAutoDestination()
                     && !end.getExcludedLocs().contains(loc)
-                    && !this.passesThroughReversingStation(path))
+                    && !this.reversesAlongTheWay(path))
             {
                 return true;
             }
@@ -2989,7 +2985,7 @@ public class Layout
                             {
                                 path = this.bfs(start, end, seenPaths);
 
-                                if (path != null && !this.passesThroughReversingStation(path)
+                                if (path != null && !this.reversesAlongTheWay(path)
                                         && this.isPathClear(path, loc, false))
                                 {
                                     // Whatever works, at once.  This is the behaviour every version
@@ -3190,7 +3186,7 @@ public class Layout
 
                 seenPaths.add(path);
 
-                if (this.passesThroughReversingStation(path))
+                if (this.reversesAlongTheWay(path))
                 {
                     why = I18n.t("autolayout.why.throughReversing");
                     continue;

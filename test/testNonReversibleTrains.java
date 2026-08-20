@@ -39,20 +39,18 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A locomotive that cannot reverse is refused a path that ends where it would be turned round.
+     * A locomotive that cannot reverse is still refused a terminus.
      *
-     * What Adam saw: two trains with a locomotive at one end only, sent to an ordinary platform and
-     * reversed there because the route used a reversing point. That is a train running backwards in
-     * service, which is the whole of what marking it non-reversible is meant to prevent.
-     *
-     * The rule already existed for a terminus and simply had not been written about a reversing point,
-     * even though arriving at either turns the train round - the reversal at the end of a path fires
-     * on both.
+     * The long-standing rule, kept here because the round that changed everything around it is
+     * exactly when a rule like this gets lost. A terminus is a place a train can only leave by
+     * reversing, so sending one there that cannot is sending it somewhere it cannot leave.
      */
     @Test
-    public void testAReversingStationIsRefusedToANonReversibleTrain() throws Exception
+    public void testATerminusIsRefusedToATrainThatCannotReverse() throws Exception
     {
-        Layout layout = twoPointLayout(true, true);
+        Layout layout = twoPointLayout(false, true);
+
+        layout.getPoint("REV_end").setTerminus(true);
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -63,75 +61,37 @@ public class testNonReversibleTrains
             loc.setReversible(false);
 
             assertFalse(layout.isPathClear(pathAcross(layout), loc, false),
-                "a train that cannot reverse was allowed to finish at a station that turns it round.  "
-                + "It is not the reversing that is wrong - it is doing it at a platform, in service, "
-                + "to a train with a locomotive at one end only");
-        }
-        finally
-        {
-            loc.setReversible(was);
-        }
-    }
+                "a train that cannot reverse was sent to a terminus, which is a place it cannot "
+                + "leave");
 
-    /**
-     * The same station, out of full autonomy, is allowed: that is a parking spot.
-     *
-     * The distinction Adam asked for. A place autonomy may not choose as a destination is somewhere a
-     * train is PUT rather than somewhere it calls - a parking road, a shed, a staging siding - and
-     * turning one round there is unremarkable. Without this the staging planner could no longer bring
-     * such a train home, which would trade one bug for another.
-     */
-    @Test
-    public void testAParkingSpotIsAllowed() throws Exception
-    {
-        Layout layout = twoPointLayout(true, false);
-
-        Locomotive loc = model.getLocByName(model.getLocList().get(0));
-
-        boolean was = loc.isReversible();
-
-        try
-        {
-            loc.setReversible(false);
-
-            assertTrue(layout.isPathClear(pathAcross(layout), loc, false),
-                "a train that cannot reverse was refused a PARKING spot.  Somewhere out of full "
-                + "autonomy is exactly where it is supposed to be turned, and refusing it leaves the "
-                + "staging planner no way to bring such a train home");
-        }
-        finally
-        {
-            loc.setReversible(was);
-        }
-    }
-
-    /**
-     * And a train that can reverse is still allowed the ordinary platform.
-     *
-     * A rule that refused everybody would pass the first test and stop the railway, which is the same
-     * bug wearing the other hat.
-     */
-    @Test
-    public void testAReversibleTrainIsStillAllowed() throws Exception
-    {
-        Layout layout = twoPointLayout(true, true);
-
-        Locomotive loc = model.getLocByName(model.getLocList().get(0));
-
-        boolean was = loc.isReversible();
-
-        try
-        {
             loc.setReversible(true);
 
             assertTrue(layout.isPathClear(pathAcross(layout), loc, false),
-                "a reversible train must still be able to use a reversing station - that is what they "
-                + "are for");
+                "and one that can reverse must still be allowed there - a rule that refused "
+                + "everybody would pass the line above and close the terminus");
         }
         finally
         {
             loc.setReversible(was);
         }
+    }
+
+    /**
+     * Where the reversing-point rule actually lives, so nobody looks for it here.
+     *
+     * "In full autonomy a train is only ever reversed at a terminus" is a rule about which routes
+     * autonomy CHOOSES, not about which routes are legal - a hand-driven move and the staging planner
+     * may both use a headshunt. It is therefore tested in testLayoutPickPath, beside the other
+     * choosing rules, and a first attempt to put it here took the manual route and the staging run
+     * out with it.
+     */
+    @Test
+    public void testTheReversingRuleIsTestedWhereItLives()
+    {
+        // Nothing to assert: this is a signpost, and the compiler is what keeps it from rotting into
+        // a reference to a class that no longer exists.
+        assertNotNull(testLayoutPickPath.class,
+            "the reversing-point rule is tested in testLayoutPickPath");
     }
 
     /**

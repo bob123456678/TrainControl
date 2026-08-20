@@ -446,14 +446,24 @@ public class testLayoutPickPath
     }
 
     /**
-     * A reversing NON-station stays usable as an intermediate - that is what it is for.
+     * Full autonomy does not drive through a reversing point, loop and headshunt included.
      *
-     * Reversing loops and headshunts are non-stations carrying the reversing flag, and the mid-path
-     * direction change is their entire purpose.  Only berths - reversing points that are also
-     * stations - are barred, so this guards the distinction the rule rests on.
+     * This test used to assert the opposite, and the reasoning it carried was sound as far as it went:
+     * a reversing loop or headshunt is a non-station carrying the reversing flag, and being driven
+     * through is its entire purpose, so only berths were barred.
+     *
+     * What that exemption did in practice was turn a train round in the middle of a journey. For a
+     * train with a locomotive at one end only, the rest of that journey is then run backwards in
+     * service - which is what Adam watched happen, and how this was found. Rather than pick apart
+     * which reversing points are safe for which trains, he set a rule about the railway: IN FULL
+     * AUTONOMY A TRAIN IS ONLY EVER REVERSED AT A TERMINUS.
+     *
+     * The tier is the other half of it, and the test below is the half that keeps this one honest: a
+     * hand-driven move and the staging planner bringing a train home can still use a headshunt. It is
+     * only the unattended case that will not choose one.
      */
     @Test(timeOut = 60000)
-    public void testAPathThroughAReversingPointIsStillChosen() throws Exception
+    public void testFullAutonomyDoesNotDriveThroughAReversingPoint() throws Exception
     {
         Locomotive loc = dummyLoc();
 
@@ -472,8 +482,10 @@ public class testLayoutPickPath
         assertTrue(layout.getPoint("LOOP").isReversing() && !layout.getPoint("LOOP").isDestination(),
             "precondition: LOOP must be a reversing point rather than a reversing station");
 
-        assertEquals(destinationOf(layout.pickPath(loc)), "FAR",
-            "a reversing loop is meant to be driven through - only berths are barred");
+        assertNull(layout.pickPath(loc),
+            "full autonomy chose a route that turns the train round on the way past.  That is a "
+            + "shunting move nobody asked for in the middle of a journey, and for a train that cannot "
+            + "reverse it is the rest of the journey run backwards in service");
     }
 
     /**
@@ -551,35 +563,29 @@ public class testLayoutPickPath
     }
 
     /**
-     * The manual route menu is a different tier from full autonomy, and keeps offering the station.
+     * And the manual tier still offers it, which is what makes the rule above a tier and not a ban.
      *
-     * getPossiblePaths is what the right-click menu and the locomotive status panel enumerate, and the
-     * user may still send a train to a reversing station by hand.  This guard is what stops the
-     * exclusion from being "simplified" down into isPathClear or bfs later, which would take the manual
-     * route and the staging run with it.
-     */
-    /**
-     * But a train that cannot reverse is refused it, by hand as well as by autonomy.
-     *
-     * The one deliberate narrowing of the tiering the test below protects. Adam watched two
-     * non-reversible trains turned round on an ordinary platform and asked for a rule: such a train
-     * may only be turned somewhere that is out of full autonomy - a parking road, a shed, a staging
-     * siding - and never at a station where it would then run backwards in service.
-     *
-     * That is a fact about the train and the place, not about which menu the move came from, so it
-     * lives in isPathClear where every tier passes through. The escape hatch is the place itself: a
-     * point excluded from full autonomy is a parking spot, and turning a train there is allowed.
+     * A headshunt exists to be driven through. Somebody choosing that move by hand is watching it
+     * happen, and the staging planner uses the same enumeration to bring a train home - so the rule
+     * belongs where autonomy chooses, not where every tier passes through. A first attempt put it in
+     * isPathClear and took both of them out.
      */
     @Test(timeOut = 60000)
-    public void testAReversingStationIsRefusedToATrainThatCannotReverse() throws Exception
+    public void testAReversingPointIsStillOfferedByHand() throws Exception
     {
         Locomotive loc = dummyLoc();
 
-        loc.setReversible(false);
+        Layout layout = new Layout(model);
 
-        Layout layout = twoDestinations(loc, 1, 5);
+        layout.createPoint("START", true, destinationS88);
+        layout.createPoint("LOOP", false, null);
+        layout.createPoint("FAR", true, destinationS88);
 
-        layout.getPoint("HIGH").setReversing(true);
+        layout.createEdge("START", "LOOP");
+        layout.createEdge("LOOP", "FAR");
+
+        layout.getPoint("LOOP").setReversing(true);
+        layout.getPoint("START").setLocomotive(loc);
 
         Set<String> offered = new TreeSet<>();
 
@@ -588,23 +594,23 @@ public class testLayoutPickPath
             offered.add(destinationOf(path));
         }
 
-        assertFalse(offered.contains("HIGH"),
-            "a train that cannot reverse was offered a station that would turn it round.  Doing that "
-            + "at an ordinary platform is a train running backwards in service, which is the whole "
-            + "of what the non-reversible mark is for - offered: " + offered);
+        assertTrue(offered.contains("FAR"),
+            "the only way to FAR is through the headshunt, and by hand that is allowed - offered: "
+            + offered);
     }
 
+    /**
+     * The manual route menu is a different tier from full autonomy, and keeps offering the station.
+     *
+     * getPossiblePaths is what the right-click menu and the locomotive status panel enumerate, and the
+     * user may still send a train to a reversing station by hand.  This guard is what stops the
+     * exclusion from being "simplified" down into isPathClear or bfs later, which would take the manual
+     * route and the staging run with it.
+     */
     @Test(timeOut = 60000)
     public void testAReversingStationRemainsManuallySelectable() throws Exception
     {
         Locomotive loc = dummyLoc();
-
-        // Reversible, explicitly.  A train that CANNOT reverse is now refused a station that would
-        // turn it round, at every tier and on purpose - see the test below.  This one is about the
-        // tiering and has to say which kind of train it is asking about, or it is really asking two
-        // questions and answering neither.
-        loc.setReversible(true);
-
         Layout layout = twoDestinations(loc, 1, 5);
 
         layout.getPoint("HIGH").setReversing(true);
