@@ -104,12 +104,29 @@ public final class RowIcons
      */
     public static Icon arrow(final int size, final boolean up)
     {
+        return arrow(size, up, QUIET);
+    }
+
+    /**
+     * The same, in a given colour.
+     *
+     * A selected row is painted in the table's selection colours, and a mark drawn in a fixed grey
+     * disappears into it - which is exactly when somebody is most likely to be reaching for it, since
+     * selecting a row is how you decide which one to move.
+     *
+     * @param size how many pixels square
+     * @param up true for up
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon arrow(final int size, final boolean up, final Color colour)
+    {
         return new Painted(size)
         {
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                g.setColor(QUIET);
+                g.setColor(colour);
 
                 int pad = width / 4;
 
@@ -132,12 +149,25 @@ public final class RowIcons
      */
     public static Icon indent(final int size, final boolean inward)
     {
+        return indent(size, inward, QUIET);
+    }
+
+    /**
+     * The same, in a given colour.
+     *
+     * @param size how many pixels square
+     * @param inward true to indent
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon indent(final int size, final boolean inward, final Color colour)
+    {
         return new Painted(size)
         {
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                g.setColor(QUIET);
+                g.setColor(colour);
                 g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
                 int pad = width / 5;
@@ -155,6 +185,58 @@ public final class RowIcons
                 g.drawLine(tail, middle, tip, middle);
                 g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle - pad);
                 g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle + pad);
+            }
+        };
+    }
+
+    /**
+     * The faint vertical lines that show how deep a row sits.
+     *
+     * Indentation on its own is a distance, and a distance is hard to count - two levels and three
+     * look much the same at a glance, and there is nothing to say which rows share a level. A line
+     * per level turns it into something countable, which is what every outliner and every code editor
+     * draws for the same reason.
+     *
+     * @param depth how many levels in
+     * @param step how many pixels one level is worth
+     * @return a border that draws them and leaves room for the text
+     */
+    public static javax.swing.border.Border guides(final int depth, final int step)
+    {
+        return new javax.swing.border.Border()
+        {
+            @Override
+            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height)
+            {
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                try
+                {
+                    g2.setColor(new Color(200, 200, 200));
+
+                    for (int at = 0; at < depth; at++)
+                    {
+                        int line = x + 6 + at * step;
+
+                        g2.drawLine(line, y, line, y + height - 1);
+                    }
+                }
+                finally
+                {
+                    g2.dispose();
+                }
+            }
+
+            @Override
+            public java.awt.Insets getBorderInsets(Component c)
+            {
+                return new java.awt.Insets(0, 6 + depth * step + 4, 0, 0);
+            }
+
+            @Override
+            public boolean isBorderOpaque()
+            {
+                return false;
             }
         };
     }
