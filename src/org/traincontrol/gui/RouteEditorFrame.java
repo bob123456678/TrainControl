@@ -98,6 +98,21 @@ public class RouteEditorFrame extends JFrame
     private final JLabel readsAs = new JLabel(" ");
 
     /**
+     * How the terms combine: "(A or B) and (C or D)".
+     *
+     * The second of the two steps. The table above says what the facts are; this says what has to be
+     * true of them. They are separate because a bracket cannot be drawn in a list of rows without the
+     * list pretending to be a tree - which is what the operator-per-row column was, and why it could
+     * only ever express one chain read left to right.
+     */
+    private final JTextField formulaField = new JTextField(28);
+
+    /**
+     * The terms as things to click, so the letters need not be remembered or typed.
+     */
+    private final JPanel termPills = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+
+    /**
      * @param parent the main window, which owns the model and the route list
      * @param routeName the route to edit, or null for a new one
      */
@@ -158,6 +173,8 @@ public class RouteEditorFrame extends JFrame
             () -> { if (conditionsEditable) conditions.removeSelected(); }, null, null);
 
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
+
+        conditionSection.add(buildFormulaRow(), BorderLayout.EAST);
 
         buttonsOf(conditionSection).add(readsAs);
 
@@ -344,6 +361,129 @@ public class RouteEditorFrame extends JFrame
         return out;
     }
 
+    /**
+     * The formula, with the terms above it as things to click.
+     *
+     * Clickable because the letters are POSITIONAL - A is whatever is in the first row - so asking
+     * anybody to remember which is which would be asking them to hold the table in their head while
+     * they look away from it. Each pill says its letter and what it means, and pressing one writes it
+     * where the cursor is.
+     *
+     * @return the panel
+     */
+    private JPanel buildFormulaRow()
+    {
+        JPanel row = new JPanel(new BorderLayout(4, 2));
+
+        JLabel heading = new JLabel(I18n.t("route.ui.frameFormula"));
+
+        heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+
+        row.add(heading, BorderLayout.NORTH);
+
+        formulaField.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        formulaField.setToolTipText(I18n.t("route.ui.tooltipFormula"));
+
+        formulaField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
+        {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e)
+            {
+                updateReadsAs();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e)
+            {
+                updateReadsAs();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e)
+            {
+                updateReadsAs();
+            }
+        });
+
+        row.add(formulaField, BorderLayout.CENTER);
+
+        termPills.setOpaque(false);
+
+        row.add(termPills, BorderLayout.SOUTH);
+
+        return row;
+    }
+
+    /**
+     * Rebuilds the row of clickable terms from the table.
+     *
+     * Called whenever the rows change, because a letter names a POSITION - delete the first row and
+     * every letter after it means something else.
+     */
+    private void refreshTermPills()
+    {
+        termPills.removeAll();
+
+        for (int at = 0; at < conditions.rows.size(); at++)
+        {
+            final String letter = org.traincontrol.base.ConditionFormula.letterFor(at);
+
+            JButton pill = new JButton(letter);
+
+            pill.setFont(new java.awt.Font("Segoe UI", 1, 12));
+            pill.setMargin(new java.awt.Insets(0, 6, 0, 6));
+            pill.setFocusable(false);
+            pill.setToolTipText(shortly(conditions.rows.get(at).getCommand()));
+
+            pill.addActionListener(e -> insertIntoFormula(letter));
+
+            termPills.add(pill);
+        }
+
+        // The two words, for the same reason the letters are here: they are part of the language and
+        // typing them is not the point of the exercise
+        for (final String word : new String[]{"and", "or", "(", ")"})
+        {
+            JButton pill = new JButton(word);
+
+            pill.setFont(new java.awt.Font("Segoe UI", 0, 12));
+            pill.setMargin(new java.awt.Insets(0, 6, 0, 6));
+            pill.setFocusable(false);
+
+            pill.addActionListener(e -> insertIntoFormula(word));
+
+            termPills.add(pill);
+        }
+
+        termPills.revalidate();
+        termPills.repaint();
+    }
+
+    /**
+     * Writes a letter or a word into the formula where the cursor is.
+     *
+     * With a space either side where one is wanted, because "AandB" is not a formula and making the
+     * user tidy up after a button they pressed is worse than not having the button.
+     *
+     * @param what the text to insert
+     */
+    private void insertIntoFormula(String what)
+    {
+        String text = formulaField.getText();
+        int at = Math.max(0, Math.min(formulaField.getCaretPosition(), text.length()));
+
+        boolean spaceBefore = at > 0 && !Character.isWhitespace(text.charAt(at - 1))
+            && !"(".equals(what) && text.charAt(at - 1) != '(';
+
+        boolean spaceAfter = !")".equals(what);
+
+        String inserted = (spaceBefore ? " " : "") + what + (spaceAfter ? " " : "");
+
+        formulaField.setText(text.substring(0, at) + inserted + text.substring(at));
+        formulaField.setCaretPosition(at + inserted.length());
+        formulaField.requestFocusInWindow();
+    }
+
     private JButton button(String text, Runnable action)
     {
         JButton button = new JButton(text);
@@ -390,24 +530,26 @@ public class RouteEditorFrame extends JFrame
 
         conditionsAsFound = route.getConditions();
 
-        List<ConditionRows.Row> rows = ConditionRows.of(conditionsAsFound);
+        // Every term the condition is built from, in the order somebody reading it would meet them -
+        // and then the formula that combines them, written over those same terms.
+        //
+        // A bracketed condition used to arrive here as "rows cannot say this": the table was disabled,
+        // the expression was printed underneath, capture was refused, and the whole thing was written
+        // back untouched on save.  A formula can say it, so it is editable for the first time.
+        java.util.List<RouteCommand> terms =
+            org.traincontrol.base.ConditionFormula.termsOf(conditionsAsFound);
 
-        if (rows == null)
-        {
-            // A bracket: rows cannot say it, so the expression is written out beneath the table and
-            // kept exactly as found when the route is saved
-            conditionsEditable = false;
-            conditions.setEnabled(false);
+        formulaField.setText(
+            org.traincontrol.base.ConditionFormula.formulaFor(conditionsAsFound, terms));
 
-            // And capture cannot be pointed at it either.  Left enabled, the user could tick capture,
-            // choose Conditions, throw switches, and have every one of them silently dropped - a
-            // control that offers a destination nothing can reach.
-            captureTarget.setSelectedIndex(0);
-            captureTarget.setEnabled(false);
-        }
-        else
+        List<ConditionRows.Row> rows = new ArrayList<>();
+
+        for (RouteCommand term : terms) rows.add(new ConditionRows.Row(null, term));
+
         {
             conditions.rows.addAll(rows);
+
+            refreshTermPills();
         }
 
         commands.fireTableDataChanged();
@@ -497,18 +639,20 @@ public class RouteEditorFrame extends JFrame
                 // that Save is going to throw away.
                 if (!conditionsEditable) return;
 
-                // The row before this one has to join to it, and AND is what a list of conditions
-                // means when nobody has said otherwise
-                if (!conditions.rows.isEmpty())
-                {
-                    int last = conditions.rows.size() - 1;
-
-                    conditions.rows.set(last, new ConditionRows.Row(ConditionRows.Joiner.AND,
-                        conditions.rows.get(last).getCommand()));
-                }
-
                 conditions.rows.add(new ConditionRows.Row(null, parsed));
                 conditions.fireTableDataChanged();
+
+                // Into the formula as well as into the table.  A term nothing refers to is a fact
+                // nobody asked about: it would sit in the list looking captured and take no part in
+                // whether the route fires, which is the quietest possible way to waste somebody's
+                // afternoon.  ANDed on, because that is what capturing several things in a row means.
+                String letter = org.traincontrol.base.ConditionFormula.letterFor(
+                    conditions.rows.size() - 1);
+
+                formulaField.setText(formulaField.getText().trim().isEmpty()
+                    ? letter : formulaField.getText().trim() + " and " + letter);
+
+                refreshTermPills();
 
                 updateReadsAs();
 
@@ -559,6 +703,36 @@ public class RouteEditorFrame extends JFrame
     {
         List<ConditionRows.Row> rows = conditions.rows;
 
+        // The formula, with each letter replaced by what it stands for.
+        //
+        // Worth showing for two reasons.  The obvious one is that a letter says nothing about the
+        // railway.  The other is precedence: "A or B and C" is "A or (B and C)", as it is in every
+        // language that has both words, and that is the one rule here somebody might expect to work
+        // the other way round.  Reading it back in words settles the question without anybody having
+        // to know the rule.
+        if (conditionsEditable)
+        {
+            String formula = formulaField.getText();
+
+            if (formula.trim().isEmpty())
+            {
+                readsAs.setText(" ");
+                return;
+            }
+
+            String problem = org.traincontrol.base.ConditionFormula.problemWith(
+                formula, rows.size());
+
+            if (problem != null)
+            {
+                readsAs.setText(I18n.f("route.ui.frameFormulaIsWrong", problem));
+                return;
+            }
+
+            readsAs.setText(I18n.f("route.ui.frameReadsAs", inWords(formula, rows)));
+            return;
+        }
+
         if (!conditionsEditable)
         {
             // Actually show them.  The message said the conditions were "shown but not edited here"
@@ -594,6 +768,89 @@ public class RouteEditorFrame extends JFrame
         for (int i = 0; i < rows.size() - 2; i++) out.append(')');
 
         readsAs.setText(I18n.f("route.ui.frameReadsAs", out.toString()));
+    }
+
+    /**
+     * The terms the formula is written over, in the order their letters follow.
+     *
+     * @return the commands, by row
+     */
+    private java.util.List<RouteCommand> termsFromRows()
+    {
+        java.util.List<RouteCommand> out = new ArrayList<>();
+
+        for (ConditionRows.Row row : conditions.rows) out.add(row.getCommand());
+
+        return out;
+    }
+
+    /**
+     * A formula with each letter swapped for what it stands for.
+     *
+     * The letters are taken whole - a run of them is one handle - so this cannot turn the "a" of a
+     * term's description into a term of its own.
+     *
+     * @param formula what was typed
+     * @param rows the terms
+     * @return the same shape, in words
+     */
+    private String inWords(String formula, List<ConditionRows.Row> rows)
+    {
+        StringBuilder out = new StringBuilder();
+
+        int at = 0;
+
+        while (at < formula.length())
+        {
+            char one = formula.charAt(at);
+
+            if (!Character.isLetter(one))
+            {
+                out.append(one);
+                at++;
+
+                continue;
+            }
+
+            int start = at;
+
+            while (at < formula.length() && Character.isLetter(formula.charAt(at))) at++;
+
+            String word = formula.substring(start, at);
+
+            if ("and".equalsIgnoreCase(word) || "or".equalsIgnoreCase(word))
+            {
+                out.append(word.toLowerCase());
+
+                continue;
+            }
+
+            int index = indexOfLetter(word);
+
+            out.append(index >= 0 && index < rows.size()
+                ? shortly(rows.get(index).getCommand()) : word);
+        }
+
+        return out.toString().trim();
+    }
+
+    /**
+     * The position a handle names, or -1 when it is not one.
+     */
+    private static int indexOfLetter(String letter)
+    {
+        int out = 0;
+
+        for (int c = 0; c < letter.length(); c++)
+        {
+            char one = Character.toUpperCase(letter.charAt(c));
+
+            if (one < 'A' || one > 'Z') return -1;
+
+            out = out * 26 + (one - 'A' + 1);
+        }
+
+        return out - 1;
     }
 
     /**
@@ -660,8 +917,31 @@ public class RouteEditorFrame extends JFrame
             return;
         }
 
-        NodeExpression expression = conditionsEditable
-            ? ConditionRows.toExpression(conditions.rows) : conditionsAsFound;
+        NodeExpression expression;
+
+        try
+        {
+            expression = org.traincontrol.base.ConditionFormula.parse(
+                formulaField.getText(), termsFromRows());
+        }
+        catch (IllegalArgumentException e)
+        {
+            // Refused rather than saved as something else.  A condition that does not read is a route
+            // that exists, looks right in the list, and never fires - which is the failure this whole
+            // editor was built to stop, and the one nobody ever debugs because nothing is wrong on
+            // screen.
+            JOptionPane.showMessageDialog(this,
+                I18n.f("route.ui.frameFormulaIsWrong", String.valueOf(e.getMessage())));
+            return;
+        }
+
+        // Terms with nothing to combine them are no condition at all, and saying so beats saving a
+        // route whose conditions are listed and never consulted
+        if (expression == null && !conditions.rows.isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameFormulaNeeded"));
+            return;
+        }
 
         Route.s88Triggers trigger = triggerFor(String.valueOf(triggerBox.getSelectedItem()));
 
@@ -1110,7 +1390,7 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    case 0: return I18n.t("route.ui.frameColJoin");
+                    case 0: return I18n.t("route.ui.frameColTerm");
                     case 1: return I18n.t("route.ui.frameColKind");
                     case 2: return I18n.t("route.ui.frameColTarget");
                     case 3: return I18n.t("route.ui.frameColSetting");
@@ -1123,13 +1403,11 @@ public class RouteEditorFrame extends JFrame
             {
                 ConditionRows.Row at = rows.get(row);
 
-                if (column == 0)
-                {
-                    // The last row joins to nothing, and says so rather than showing a box that does
-                    // nothing
-                    return row == rows.size() - 1 ? ""
-                        : at.getJoiner() == null ? "AND" : at.getJoiner().toString();
-                }
+                // The handle this term is known by in the formula underneath.  It replaced a column
+                // holding the operator that joined this row to the next, which is how conditions used
+                // to combine: left to right, one chain, no brackets possible.  The operators live in
+                // the formula now, where brackets can be written.
+                if (column == 0) return org.traincontrol.base.ConditionFormula.letterFor(row);
 
                 CommandRow term = CommandRow.of(at.getCommand());
 
@@ -1157,7 +1435,8 @@ public class RouteEditorFrame extends JFrame
             {
                 if (!conditionsEditable) return false;
 
-                if (column == 0) return row < rows.size() - 1;
+                // The letter is what the row IS, not something to set
+                if (column == 0) return false;
 
                 CommandRow term = CommandRow.of(rows.get(row).getCommand());
 
@@ -1177,15 +1456,7 @@ public class RouteEditorFrame extends JFrame
 
                 String text = value == null ? "" : value.toString();
 
-                if (column == 0)
-                {
-                    rows.set(row, new ConditionRows.Row(
-                        ConditionRows.Joiner.valueOf(text), at.getCommand()));
-
-                    updateReadsAs();
-                    fireTableRowsUpdated(row, row);
-                    return;
-                }
+                if (column == 0) return;
 
                 CommandRow term = CommandRow.of(at.getCommand());
 
@@ -1245,11 +1516,6 @@ public class RouteEditorFrame extends JFrame
             setModel(model);
             setRowHeight(24);
 
-            JComboBox<String> joiners = new JComboBox<>();
-            joiners.addItem("AND");
-            joiners.addItem("OR");
-
-            getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(joiners));
             getColumnModel().getColumn(0).setPreferredWidth(60);
 
             JComboBox<String> kinds = new JComboBox<>();
@@ -1296,6 +1562,11 @@ public class RouteEditorFrame extends JFrame
 
             rows.remove(at);
             model.fireTableDataChanged();
+
+            // The letters are positional, so removing a row renames every term after it.  The pills
+            // and the reading have to be rebuilt or they name rows that have moved.
+            refreshTermPills();
+            updateReadsAs();
             updateReadsAs();
         }
 
