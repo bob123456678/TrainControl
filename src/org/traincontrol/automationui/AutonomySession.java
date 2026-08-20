@@ -2248,6 +2248,29 @@ public class AutonomySession
      * cannot emit an accessory that is not there - but skipping in silence is what leaves an operator
      * believing a platform is protected when it is not.
      */
+    /**
+     * The stations carrying no protecting signal at all.
+     *
+     * Distinct from signalsThatAreGone, which is a pairing that no longer resolves. This one is
+     * "nothing was ever set", which is ordinary and worth listing rather than worth warning about -
+     * a signal pairing can otherwise only be checked one station at a time.
+     */
+    private java.util.Set<TileKey> stationsWithNoSignal()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        if (graph == null) return out;
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            if (!store.isStation(tile)) continue;
+
+            if (store.getProtectingSignal(tile) == null) out.add(tile);
+        }
+
+        return out;
+    }
+
     private java.util.Set<TileKey> signalsThatAreGone()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
@@ -2413,7 +2436,8 @@ public class AutonomySession
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
-            mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone());
+            mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
+            stationsWithNoSignal());
     }
 
     /**

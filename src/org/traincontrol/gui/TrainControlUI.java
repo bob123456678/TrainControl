@@ -15955,6 +15955,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * page out, most of all, which otherwise leaves the interface saying a page is out of autonomy
      * while the railway carries on routing trains to the stations on it.
      */
+    /**
+     * The locomotives that are actually moving.
+     *
+     * Not the same question as isAutonomyBusy(), which is about whether the layout is driving itself.
+     * A train somebody is driving by hand is moving and autonomy is not busy, and anything about to
+     * stop everything needs to know about that train rather than about autonomy.
+     *
+     * @return the names of every locomotive with a speed above zero
+     */
+    public java.util.List<String> locomotivesMoving()
+    {
+        java.util.List<String> moving = new java.util.ArrayList<>();
+
+        if (this.model == null) return moving;
+
+        for (String name : this.model.getLocList())
+        {
+            org.traincontrol.base.Locomotive loc = this.model.getLocByName(name);
+
+            if (loc != null && loc.getSpeed() > 0) moving.add(name);
+        }
+
+        return moving;
+    }
+
     public void reloadActiveDiagramConfiguration()
     {
         if (this.activeDiagramConfiguration != null && !isAutonomyBusy()

@@ -107,6 +107,44 @@ public class testDiscardedEditsDoNotDeleteSetup
     }
 
     /**
+     * A station with no signal paired to it is listed, and one that has a signal is not.
+     *
+     * Adam accepted that signal pairings can only be audited one station at a time, and asked for this
+     * as the half of the audit a check can do on its own: it cannot know which platforms are SUPPOSED
+     * to be protected, but it can list the ones that are not.
+     *
+     * A notice rather than a warning. Running a station without a signal is an ordinary way to build a
+     * railway; what is not ordinary is a pairing that was set and then lost, and that already has its
+     * own warning. From the outside those two looked identical - both silent.
+     */
+    @Test
+    public void testAStationWithNoSignalIsNoticed() throws Exception
+    {
+        List<LayoutDiagram> pages = freshPages();
+
+        AutonomySession session = openOn(pages);
+
+        int noticed = 0;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.NO_SIGNAL_PAIRED
+                .equals(finding.getMessageKey()))
+            {
+                noticed++;
+
+                assertNull(session.getStore().getProtectingSignal(finding.getTile()),
+                    "a station WITH a signal was listed as having none, which would make the list "
+                    + "worse than not having it: every entry has to be worth looking at");
+            }
+        }
+
+        assertTrue(noticed > 0,
+            "the sample layout has stations without signals and none of them was listed - the check "
+            + "is not running, or is not reaching the stations");
+    }
+
+    /**
      * Takes every component off a page, in memory only, the way a select-all and delete would.
      */
     private static void emptyInMemory(LayoutDiagram page) throws Exception

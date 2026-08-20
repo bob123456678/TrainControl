@@ -132,6 +132,8 @@ public class AutonomyChecks
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
 
+    public static final String NO_SIGNAL_PAIRED = "autosetup.ui.checkNoProtectingSignal";
+
     /**
      * A station no train can arrive at any more.
      *
@@ -278,7 +280,7 @@ public class AutonomyChecks
     {
         return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
             coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes,
-            Collections.<TileKey>emptySet());
+            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet());
     }
 
     /**
@@ -288,7 +290,7 @@ public class AutonomyChecks
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        Set<TileKey> homes, Set<TileKey> signalsGone)
+        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -321,6 +323,8 @@ public class AutonomyChecks
         findings.addAll(checkClosedRuns(graph, reducer));
         findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
         findings.addAll(checkProtectingSignals(reducer, signalsGone));
+
+        findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
 
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {
@@ -415,6 +419,39 @@ public class AutonomyChecks
      *
      * @param signalsGone the station squares whose pairing no longer resolves
      */
+    /**
+     * A station with no signal paired to it at all.
+     *
+     * A NOTICE rather than a warning, because it is a perfectly ordinary way to run a railway - most
+     * layouts protect some platforms and not others, and a station without a signal simply has no
+     * signal. What it is not is a station whose pairing was lost, and there was no way to tell those
+     * two apart from the outside: both are silent.
+     *
+     * Adam asked for it after accepting that pairings can only be audited one station at a time. This
+     * does not fix that - it is a list of the ones that have none, which is the half of the audit a
+     * check can do without being told what the layout is supposed to look like.
+     *
+     * @param reducer for the station's own name
+     * @param stationsWithoutSignal the station squares carrying no pairing
+     */
+    private static List<Finding> checkStationsWithoutSignals(GraphReducer reducer,
+        Set<TileKey> stationsWithoutSignal)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (stationsWithoutSignal == null) return findings;
+
+        for (TileKey tile : stationsWithoutSignal)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.NOTICE, NO_SIGNAL_PAIRED,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
     private static List<Finding> checkProtectingSignals(GraphReducer reducer, Set<TileKey> signalsGone)
     {
         List<Finding> findings = new ArrayList<>();

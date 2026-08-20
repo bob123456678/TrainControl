@@ -572,6 +572,27 @@ public class AutonomyMenu extends JMenu
                     return;
                 }
 
+                // Applying this rebuilds the layout, and every configuration load stops everything -
+                // including a train somebody is driving by hand, which isAutonomyBusy() above does not
+                // cover.  Stopping a moving train is not something to do as a side effect of a
+                // checkbox without saying so first.
+                if (ui.getActiveDiagramConfiguration() != null)
+                {
+                    java.util.List<String> moving = ui.locomotivesMoving();
+
+                    if (!moving.isEmpty()
+                        && JOptionPane.showOptionDialog(ui,
+                            I18n.f("autosetup.ui.confirmExcludeStopsTrains",
+                                String.valueOf(moving.size())),
+                            I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE, null,
+                            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
+                    {
+                        box.setSelected(!box.isSelected());
+                        return;
+                    }
+                }
+
                 session.setPageExcluded(name, !box.isSelected());
 
                 try
