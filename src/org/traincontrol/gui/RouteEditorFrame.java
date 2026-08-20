@@ -946,6 +946,16 @@ public class RouteEditorFrame extends JFrame
     private static final String INDENT_ROW = "indent";
     private static final String OUTDENT_ROW = "outdent";
 
+    // The same two marks, drawn pale and doing nothing.
+    //
+    // They used to disappear when a line was as deep as the line above allowed, and a control that
+    // vanishes reads as a feature that stops - which is exactly what Adam concluded, that only two
+    // levels were possible.  Nesting goes as deep as anybody wants; a line simply cannot jump two
+    // levels past its neighbour, and a pale mark says "not from here" where an absent one says
+    // nothing at all.
+    private static final String INDENT_LIMIT = "indent-limit";
+    private static final String OUTDENT_LIMIT = "outdent-limit";
+
     // What a cell holds when it is one of those.  Values rather than icons, so the model stays a model
     // and the renderer decides what a mark looks like.
     private static final String MOVE_UP = "up";
@@ -1133,6 +1143,8 @@ public class RouteEditorFrame extends JFrame
 
                 java.awt.Color ink = selected ? which.getSelectionForeground() : null;
 
+                java.awt.Color pale = new java.awt.Color(215, 215, 215);
+
                 if (INDENT_ROW.equals(value))
                 {
                     out.setIcon(ink == null ? RowIcons.indent(mark, true)
@@ -1143,6 +1155,8 @@ public class RouteEditorFrame extends JFrame
                     out.setIcon(ink == null ? RowIcons.indent(mark, false)
                         : RowIcons.indent(mark, false, ink));
                 }
+                else if (INDENT_LIMIT.equals(value)) out.setIcon(RowIcons.indent(mark, true, pale));
+                else if (OUTDENT_LIMIT.equals(value)) out.setIcon(RowIcons.indent(mark, false, pale));
                 else out.setIcon(null);
 
                 return out;
@@ -1918,11 +1932,13 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == INDENT)
                 {
-                    return line > 0 && row.getDepth() <= rows.get(line - 1).getDepth()
-                        ? INDENT_ROW : "";
+                    if (line == 0) return "";
+
+                    return row.getDepth() <= rows.get(line - 1).getDepth()
+                        ? INDENT_ROW : INDENT_LIMIT;
                 }
 
-                if (column == OUTDENT) return row.getDepth() > 0 ? OUTDENT_ROW : "";
+                if (column == OUTDENT) return row.getDepth() > 0 ? OUTDENT_ROW : OUTDENT_LIMIT;
 
                 if (column == CONDITION_DELETE) return DELETE_ROW;
 
@@ -2238,7 +2254,8 @@ public class RouteEditorFrame extends JFrame
         {
             if (line < 0 || line >= rows.size()) return;
 
-            int depth = rows.get(line).getDepth() + by;
+            int was = rows.get(line).getDepth();
+            int depth = was + by;
 
             if (depth < 0) return;
 
@@ -2248,7 +2265,22 @@ public class RouteEditorFrame extends JFrame
 
             if (line == 0 && depth > 0) return;
 
-            rows.set(line, rows.get(line).atDepth(depth));
+            // Everything nested UNDER this line comes with it.
+            //
+            // A line and the lines indented beneath it are one thing - that is what indenting them
+            // said - so moving the top of it and leaving the rest behind would take a group apart
+            // rather than move it.  Outdenting is the same in reverse, and stops at the outermost
+            // level rather than pulling anything past it.
+            int last = line;
+
+            while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > was) last++;
+
+            for (int at = line; at <= last; at++)
+            {
+                int moved = rows.get(at).getDepth() + by;
+
+                rows.set(at, rows.get(at).atDepth(Math.max(0, moved)));
+            }
 
             tidy();
 

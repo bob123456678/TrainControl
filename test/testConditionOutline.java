@@ -204,6 +204,51 @@ public class testConditionOutline
     }
 
     /**
+     * Nesting goes as deep as anybody wants, and comes back out the same.
+     *
+     * Adam asked whether three levels were possible, having found that the editor seemed to stop at
+     * two. The model never had a limit - the interface did, by hiding the indent mark once a line was
+     * as deep as the line above allowed, which reads as the feature ending rather than as that line
+     * being at its limit.
+     *
+     * Four levels here rather than three, because a limit at three would pass a test for three.
+     */
+    @Test
+    public void testNestingGoesAsDeepAsItIsAsked()
+    {
+        List<ConditionOutline.Row> deep = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(2, 3),
+            joining(2, ConditionOutline.Joiner.AND),
+            condition(3, 4),
+            joining(3, ConditionOutline.Joiner.OR),
+            condition(3, 5));
+
+        assertTrue(ConditionOutline.problems(deep).isEmpty(),
+            "every level agrees with itself, so nothing should be flagged");
+
+        NodeExpression parsed = ConditionOutline.toExpression(deep);
+
+        assertNotNull(parsed, "four levels deep is still a condition");
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(parsed);
+
+        int deepest = 0;
+
+        for (ConditionOutline.Row row : shown) deepest = Math.max(deepest, row.getDepth());
+
+        assertTrue(deepest >= 3,
+            "the nesting has to survive being written back out - a round trip that flattened it would "
+            + "quietly rewrite somebody's condition into a different one.  Deepest was " + deepest);
+
+        assertEquals(describe(ConditionOutline.toExpression(shown)), describe(parsed),
+            "and mean the same thing after the trip");
+    }
+
+    /**
      * The shape of an expression, for comparing two of them.
      */
     private static String describe(NodeExpression node)
