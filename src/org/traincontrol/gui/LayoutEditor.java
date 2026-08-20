@@ -27,6 +27,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JWindow;
@@ -115,6 +116,27 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private int boxAnchorX = -1;
     private int boxAnchorY = -1;
+
+    /**
+     * Whether dragging picks squares rather than moving them.
+     *
+     * Shift-drag has always done this and nothing said so. A feature reached only by holding a key
+     * nobody mentioned is a feature most people do not have - Adam's words were that it is not
+     * intuitive the thing exists - so there is a button, and the key still works for anybody who
+     * already knows it.
+     */
+    private boolean selectMode = false;
+
+    /**
+     * The rectangle being dragged out right now, or empty between drags.
+     *
+     * Kept apart from the real selection so that letting go somewhere unintended changes nothing, and
+     * so the borders can show what WOULD be picked while the button is still down. Without it a box
+     * drag was invisible until it finished, which is the wrong way round: the moment you need to see
+     * the rectangle is while you are still deciding where to stop.
+     */
+    private final org.traincontrol.base.TileSelection previewSelection =
+        new org.traincontrol.base.TileSelection();
 
     /**
      * What a group copy took: one entry per square of the BOUNDING BOX, holes included.
@@ -253,6 +275,18 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
+        // The tools that are not tiles, under the palette and above the filler.
+        //
+        // All three were reachable only from the right-click menu, and Adam could not find any of
+        // them - the size controls he did not know were there at all, and picking several squares is
+        // a feature you have to be told about before you can use it.  A sidebar is where somebody
+        // looks for a tool.
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = cols;
+
+        this.newComponents.add(buildToolStrip(), gbc);
+
         // Add a filler at the bottom to push everything up
         gbc.gridx = 0;
         gbc.gridy++;
@@ -264,6 +298,49 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
+    }
+
+    /**
+     * The row of tools under the tile palette: pick-several, and the two size controls.
+     *
+     * Hand-built rather than drawn in the form editor, which is how everything added to this window
+     * since the diagram work has been done - the generated blocks cannot be edited by hand, so a new
+     * control either goes in here or goes nowhere.
+     *
+     * @return the strip
+     */
+    private JPanel buildToolStrip()
+    {
+        JPanel strip = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
+
+        strip.setOpaque(false);
+
+        javax.swing.JToggleButton pick =
+            new javax.swing.JToggleButton(I18n.t("layout.ui.toolPickSeveral"));
+
+        pick.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        pick.setToolTipText(I18n.t("layout.ui.tooltipPickSeveral"));
+        pick.addActionListener(e -> setSelectMode(pick.isSelected()));
+
+        strip.add(pick);
+
+        JButton grow = new JButton("+");
+
+        grow.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        grow.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
+        grow.addActionListener(e -> growEdges());
+
+        strip.add(grow);
+
+        JButton shrink = new JButton("−");
+
+        shrink.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        shrink.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
+        shrink.addActionListener(e -> shrinkEdges());
+
+        strip.add(shrink);
+
+        return strip;
     }
 
     public boolean hasToolFlag()
@@ -488,7 +565,8 @@ public class LayoutEditor extends PositionAwareJFrame
         // Shift held: this is a box, not a move.  Recorded and otherwise ignored - nothing is picked
         // until the button comes up, so a shift-drag that changes its mind can simply be released
         // back where it started.
-        if (label != null && e.isShiftDown() && getX(label) >= 0 && getY(label) >= 0)
+        if (label != null && (e.isShiftDown() || this.selectMode)
+            && getX(label) >= 0 && getY(label) >= 0)
         {
             this.boxAnchorX = getX(label);
             this.boxAnchorY = getY(label);
@@ -566,6 +644,23 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (isAutonomyMode()) return;
 
+        // A box being dragged out, shown while it is still being decided
+        if (this.boxAnchorX >= 0 && this.boxAnchorY >= 0)
+        {
+            LayoutLabel over = getLastHoveredLabel();
+
+            if (over != null && getX(over) >= 0 && getY(over) >= 0)
+            {
+                this.previewSelection.clear();
+                this.previewSelection.addRectangle(this.boxAnchorX, this.boxAnchorY,
+                    getX(over), getY(over));
+
+                this.refreshSelectionBorders();
+            }
+
+            return;
+        }
+
         if (dragWindow != null)
         {
             java.awt.Point screenPoint = e.getLocationOnScreen();
@@ -591,9 +686,16 @@ public class LayoutEditor extends PositionAwareJFrame
             this.boxAnchorY = -1;
             this.dragSource = null;
 
+            this.previewSelection.clear();
+
             // Released on the square it started on is a shift-CLICK, and receiveClickEvent toggles
             // that one.  Handling it here as well would toggle it twice, which is to say not at all.
-            if (to == null || (getX(to) == anchorX && getY(to) == anchorY)) return;
+            if (to == null || (getX(to) == anchorX && getY(to) == anchorY))
+            {
+                this.refreshSelectionBorders();
+
+                return;
+            }
 
             this.selection.addRectangle(anchorX, anchorY, getX(to), getY(to));
 
@@ -1443,6 +1545,34 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (label != null) this.highlightLabel(label, COMPONENT_BORDER_SELECTED_COLOR);
         }
+
+        // The rectangle currently being dragged out, in the same colour as the rest.  Drawn after,
+        // so a square that is both already picked and inside the new box looks picked either way -
+        // which is what it will be.
+        for (org.traincontrol.base.TileSelection.At at : this.previewSelection.all())
+        {
+            LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
+
+            if (label != null) this.highlightLabel(label, COMPONENT_BORDER_SELECTED_COLOR);
+        }
+    }
+
+    /**
+     * Turns picking-by-drag on or off.
+     *
+     * @param on true to make a drag pick squares rather than move them
+     */
+    public void setSelectMode(boolean on)
+    {
+        this.selectMode = on;
+    }
+
+    /**
+     * @return whether a drag currently picks squares
+     */
+    public boolean isSelectMode()
+    {
+        return this.selectMode;
     }
 
     /**
