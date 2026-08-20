@@ -3678,6 +3678,8 @@ public class Layout
     {
         if (l == null) return;
 
+        boolean interrupted = false;
+
         while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
         {
             synchronized (this)
@@ -3690,11 +3692,17 @@ public class Layout
                     }
                     catch (InterruptedException ex)
                     {
-                        Thread.currentThread().interrupt();
+                        // Remembered rather than re-armed, for the reason spelled out on the same
+                        // pattern in Locomotive: re-arming here makes the next wait() throw at once and
+                        // turns a blocked thread into a spinning one.
+                        interrupted = true;
                     }
                 }
             }
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
     }
     
     /**

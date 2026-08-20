@@ -1283,7 +1283,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // by name: store-active can point elsewhere after a refused load
                     session.captureFromLayout(this.model.getAutoLayout().toJSON(),
                         this.activeDiagramConfiguration);
-                    session.save();
+
+                    // WITHOUT reconciling.  This is the save on the way out, and the session holds the
+                    // LIVE diagram objects the track editor works on - so if an editor was open, or
+                    // had been open and was cancelled, the pages here are the half-finished ones.
+                    // Cancel makes that worse rather than better: it reverts by re-reading the pages
+                    // into NEW objects and leaves the session holding the discarded version.
+                    //
+                    // Reconciling deletes the settings of every square that is no longer on the page,
+                    // which is right when a diagram has really changed and catastrophic here: closing
+                    // the application after experimenting with the editor and saving nothing deleted
+                    // every station, placement, facing and reversing flag on the squares that had been
+                    // touched - permanently, with the track itself coming back on the next start, so
+                    // it reads as a setup that was never made rather than one that was destroyed.
+                    //
+                    // Nothing is lost by waiting.  Tidying is what the next explicit Save is for, and
+                    // that one runs against pages that are current and can show its report to somebody.
+                    session.saveWithoutReconciling();
                 }
             }
             catch (Exception e)

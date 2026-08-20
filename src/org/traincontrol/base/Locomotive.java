@@ -575,6 +575,8 @@ public abstract class Locomotive
      */
     public Locomotive waitForAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state)
     {        
+        boolean interrupted = false;
+
         synchronized(accessoryMonitor)
         {
             while (this.getAccessoryState(id, type) != state)
@@ -585,10 +587,18 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
+                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
+                    // next wait() throw at once, so an interrupted thread span at full CPU until the
+                    // condition it was waiting for happened to come true - and these are the waits a
+                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
+                    // where it can be seen without being stepped on.
+                    interrupted = true;
                 }
             }   
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
         
         return this;
     }
@@ -616,6 +626,8 @@ public abstract class Locomotive
      */
     public Locomotive waitForSpeedAtOrAbove(int threshold)
     {
+        boolean interrupted = false;
+
         synchronized(speedMonitor)
         {        
             while (this.getSpeed() < threshold)
@@ -626,10 +638,18 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
+                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
+                    // next wait() throw at once, so an interrupted thread span at full CPU until the
+                    // condition it was waiting for happened to come true - and these are the waits a
+                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
+                    // where it can be seen without being stepped on.
+                    interrupted = true;
                 }
             }
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
         
         return this;
     }
@@ -641,6 +661,8 @@ public abstract class Locomotive
      */
     public Locomotive waitForSpeedBelow(int threshold)
     {
+        boolean interrupted = false;
+
         synchronized(speedMonitor)
         {        
             while (this.getSpeed() >= threshold)
@@ -651,10 +673,18 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
+                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
+                    // next wait() throw at once, so an interrupted thread span at full CPU until the
+                    // condition it was waiting for happened to come true - and these are the waits a
+                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
+                    // where it can be seen without being stepped on.
+                    interrupted = true;
                 }
             }
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
         
         return this;
     }
@@ -668,6 +698,8 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration)
     {       
+        boolean interrupted = false;
+
         synchronized(monitor)
         {
             while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
@@ -678,10 +710,18 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
+                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
+                    // next wait() throw at once, so an interrupted thread span at full CPU until the
+                    // condition it was waiting for happened to come true - and these are the waits a
+                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
+                    // where it can be seen without being stepped on.
+                    interrupted = true;
                 }
             }  
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
         
         if (minDuration > 0)
         {
@@ -706,6 +746,8 @@ public abstract class Locomotive
      */
     public Locomotive waitForClearFeedback(String name, int minDuration)
     {        
+        boolean interrupted = false;
+
         synchronized (monitor)
         {
             while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
@@ -716,10 +758,18 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
+                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
+                    // next wait() throw at once, so an interrupted thread span at full CPU until the
+                    // condition it was waiting for happened to come true - and these are the waits a
+                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
+                    // where it can be seen without being stepped on.
+                    interrupted = true;
                 }
             }  
         }
+
+        // Put back so that whoever interrupted this thread still gets their answer
+        if (interrupted) Thread.currentThread().interrupt();
         
         if (minDuration > 0)
         {
