@@ -615,6 +615,27 @@ public class TileAnnotation
                     g.drawLine(at, 0, at + height, height);
                 }
 
+                // Except the route being tested, which is drawn on top of the greying.
+                //
+                // "Ignored" means there is nothing here for the user to SET - a route button carries no
+                // track meaning of its own, so offering a length or a direction on it would invite a
+                // click that does nothing.  It never meant "no route runs over this square", and a
+                // route button threaded through a running line is exactly a square a route runs over:
+                // this layout has forty-three of them.
+                //
+                // Suppressing the line here broke it into pieces wherever it crossed one, and only in
+                // the editor - the running diagram draws the same route through a different painter
+                // that has no notion of ignored, which is why one worked and the other did not.  A
+                // drawn route is not something the user is being invited to change; it is an answer
+                // being shown to a question they asked.
+                if (!traces.isEmpty())
+                {
+                    g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, 1f));
+
+                    paintTraces(g, width, height);
+                }
+
                 return;
             }
 

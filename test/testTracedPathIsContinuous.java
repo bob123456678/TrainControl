@@ -145,6 +145,107 @@ public class testTracedPathIsContinuous
     }
 
     /**
+     * A square autonomy takes no notice of still shows the route that runs over it.
+     *
+     * This is the fault, and Adam found it from the picture: "it is just the route tiles with no
+     * connecting edge, could it be the greyout?" It was.
+     *
+     * A route button carries no track meaning of its own, so the editor greys it - there is nothing on
+     * it for the user to set, and offering a length or a direction would invite a click that does
+     * nothing. But the greying returned before drawing anything else, and that swallowed the tested
+     * route as well. "Nothing here to configure" had quietly come to mean "nothing here to draw",
+     * which are different things: a drawn route is not an invitation to change something, it is an
+     * answer to a question that was asked.
+     *
+     * It broke only in the editor because the running diagram draws routes through a different painter
+     * that has no notion of ignored at all - which is exactly the asymmetry Adam reported.
+     *
+     * Painted for real and read back off the image, because the whole bug was that a value was correct
+     * and never reached the screen. Anything short of looking at the pixels would have passed while it
+     * was broken.
+     */
+    @Test
+    public void testAGreyedSquareStillShowsTheRouteThroughIt()
+    {
+        java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> through =
+            java.util.Arrays.asList(new org.traincontrol.automationui.TileAnnotation.Trace(
+                org.traincontrol.automationui.TilePorts.Side.W,
+                org.traincontrol.automationui.TilePorts.Side.E, true));
+
+        assertTrue(drawsSomethingOtherThanGrey(annotation(true, through)),
+            "a route tested through a route button drew nothing but the greying, so the line came "
+            + "apart wherever it crossed one - which on a layout that threads them through its "
+            + "running track is most of the way along");
+
+        assertTrue(drawsSomethingOtherThanGrey(annotation(false, through)),
+            "and a square that is NOT greyed must still draw it, or this test proves nothing");
+
+        assertFalse(drawsSomethingOtherThanGrey(annotation(true,
+            java.util.Collections.<org.traincontrol.automationui.TileAnnotation.Trace>emptyList())),
+            "a greyed square with no route through it draws only the greying - the fix must not turn "
+            + "into 'draw everything on ignored squares', which is what the greying is there to stop");
+    }
+
+    /**
+     * One annotation, greyed or not, carrying the given traces.
+     */
+    private static org.traincontrol.automationui.TileAnnotation annotation(boolean ignored,
+        java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> traces)
+    {
+        return new org.traincontrol.automationui.TileAnnotation(null, -1, false, null, ignored,
+            false, false, traces);
+    }
+
+    /**
+     * Paints one tile and says whether anything strongly coloured landed on it.
+     *
+     * The greying is white and a mid grey hatch, so anything with real colour in it came from
+     * something else - which is all this needs to know, and it does not tie the test to the exact
+     * shade the route happens to be drawn in today.
+     */
+    private static boolean drawsSomethingOtherThanGrey(
+        org.traincontrol.automationui.TileAnnotation annotation)
+    {
+        int size = 60;
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int argb = image.getRGB(x, y);
+
+                if (((argb >> 24) & 0xFF) < 40) continue;
+
+                int r = (argb >> 16) & 0xFF;
+                int green = (argb >> 8) & 0xFF;
+                int b = argb & 0xFF;
+
+                // Grey is where the three channels agree.  A coloured line is where they do not.
+                if (Math.max(r, Math.max(green, b)) - Math.min(r, Math.min(green, b)) > 60)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * What is at a square, for a failure message somebody can act on.
      */
     private static String describe(TileGraph.TileKey tile)
