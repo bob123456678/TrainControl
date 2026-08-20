@@ -59,7 +59,7 @@ public class RouteEditorFrame extends JFrame
     private final String originalName;
 
     private final JTextField nameField = new JTextField(24);
-    private final JTextField s88Field = new JTextField(6);
+    private final JTextField s88Field = digitsOnlyField(6);
     private final JComboBox<String> triggerBox = new JComboBox<>();
     private final JCheckBox enabledBox = new JCheckBox(I18n.t("route.ui.frameEnabled"));
 
@@ -144,6 +144,15 @@ public class RouteEditorFrame extends JFrame
     private final java.util.Set<Integer> picked = new java.util.LinkedHashSet<>();
 
     /**
+     * Whether the blocks are showing their crosses and a click removes one.
+     *
+     * A mode rather than a modifier: removing is the only thing here that cannot be undone by doing
+     * it again, and a formula is small enough that losing a piece of it is not noticed until the
+     * route stops firing.
+     */
+    private boolean deletingBlocks = false;
+
+    /**
      * The terms as things to click, so the letters need not be remembered or typed.
      */
     private final JPanel termPills = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -190,11 +199,18 @@ public class RouteEditorFrame extends JFrame
     private JPanel build()
     {
         JPanel content = new JPanel(new BorderLayout(8, 8));
+
+        // White, all the way out to the edges.  The panels inside are white with a line round them,
+        // and a grey window behind them made each one look like a card floating on something rather
+        // than like part of one window.
+        content.setBackground(java.awt.Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         content.add(header(), BorderLayout.NORTH);
 
         JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8));
+
+        middle.setBackground(java.awt.Color.WHITE);
 
         JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands);
 
@@ -231,17 +247,23 @@ public class RouteEditorFrame extends JFrame
         // Cancel is bottom right, with the width of the window between them.
         JPanel buttons = new JPanel(new BorderLayout());
 
+        buttons.setBackground(java.awt.Color.WHITE);
+
         buttons.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(204, 204, 204)),
             BorderFactory.createEmptyBorder(6, 0, 0, 0)));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 
+        left.setBackground(java.awt.Color.WHITE);
+
         saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
 
         left.add(saveButton);
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+
+        right.setBackground(java.awt.Color.WHITE);
 
         // Help beside Cancel rather than at the top: it is the same offer the old editor makes, and
         // this window needs it more - the formula under the conditions is a small language, and a
@@ -264,10 +286,17 @@ public class RouteEditorFrame extends JFrame
     {
         boolean automatic = enabledBox.isSelected();
 
-        sensorLabel.setVisible(automatic);
-        s88Field.setVisible(automatic);
-        triggerLabelText.setVisible(automatic);
-        triggerBox.setVisible(automatic);
+        // Greyed rather than hidden.  Hiding them made the window rearrange itself as the tick was
+        // pressed, and worse, it took the trigger dropdown off the screen entirely for every route
+        // that does not fire by itself - so a control somebody was looking for simply was not there,
+        // with nothing to say it existed.  Greyed says "this belongs to the tick" and stays put.
+        sensorLabel.setEnabled(automatic);
+        s88Field.setEnabled(automatic);
+        triggerLabelText.setEnabled(automatic);
+        triggerBox.setEnabled(automatic);
+
+        sensorLabel.setForeground(automatic ? HEADING_BLUE : java.awt.Color.GRAY);
+        triggerLabelText.setForeground(automatic ? HEADING_BLUE : java.awt.Color.GRAY);
     }
 
     /**
@@ -300,6 +329,8 @@ public class RouteEditorFrame extends JFrame
     private JPanel header()
     {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+
+        row.setBackground(java.awt.Color.WHITE);
 
         row.add(label(I18n.t("route.ui.frameName")));
         row.add(nameField);
@@ -369,10 +400,100 @@ public class RouteEditorFrame extends JFrame
         JPanel below = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
         below.setOpaque(false);
+        below.setBackground(java.awt.Color.WHITE);
 
         panel.add(below, BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    /**
+     * A text field that will only accept digits.
+     *
+     * @param columns how wide
+     * @return the field
+     */
+    private static JTextField digitsOnlyField(int columns)
+    {
+        JTextField field = new JTextField(columns);
+
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+            new javax.swing.text.DocumentFilter()
+        {
+            @Override
+            public void insertString(FilterBypass bypass, int offset, String text,
+                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
+            {
+                if (digits(text)) super.insertString(bypass, offset, text, attributes);
+            }
+
+            @Override
+            public void replace(FilterBypass bypass, int offset, int length, String text,
+                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
+            {
+                if (digits(text)) super.replace(bypass, offset, length, text, attributes);
+            }
+
+            private boolean digits(String text)
+            {
+                if (text == null) return true;
+
+                for (int at = 0; at < text.length(); at++)
+                {
+                    if (!Character.isDigit(text.charAt(at))) return false;
+                }
+
+                return true;
+            }
+        });
+
+        return field;
+    }
+
+    /**
+     * A cell editor that will only accept digits.
+     *
+     * Refused as it is typed rather than at Save. A cell that takes "twelve" and complains later is a
+     * cell that produces a message about something the user did several minutes and several rows ago,
+     * and by then they are being asked to remember rather than to look.
+     *
+     * @return the editor
+     */
+    private static javax.swing.table.TableCellEditor digitsOnly()
+    {
+        JTextField box = new JTextField();
+
+        ((javax.swing.text.AbstractDocument) box.getDocument()).setDocumentFilter(
+            new javax.swing.text.DocumentFilter()
+        {
+            @Override
+            public void insertString(FilterBypass bypass, int offset, String text,
+                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
+            {
+                if (isDigits(text)) super.insertString(bypass, offset, text, attributes);
+            }
+
+            @Override
+            public void replace(FilterBypass bypass, int offset, int length, String text,
+                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
+            {
+                if (isDigits(text)) super.replace(bypass, offset, length, text, attributes);
+            }
+
+            private boolean isDigits(String text)
+            {
+                if (text == null) return true;
+
+                for (int at = 0; at < text.length(); at++)
+                {
+                    if (!Character.isDigit(text.charAt(at))) return false;
+                }
+
+                return true;
+            }
+        });
+
+        return new DefaultCellEditor(box);
     }
 
     /**
@@ -546,6 +667,7 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel row = new JPanel(new BorderLayout(4, 4));
 
+        row.setBackground(java.awt.Color.WHITE);
         row.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 8));
 
         // Heading and the one-line box together at the top.
@@ -555,6 +677,8 @@ public class RouteEditorFrame extends JFrame
         // with some buttons under it, and Adam could not tell it was a box at all.  A field that is
         // one line tall reads as a field.
         JPanel top = new JPanel(new BorderLayout(0, 2));
+
+        top.setBackground(java.awt.Color.WHITE);
 
         JLabel heading = new JLabel(I18n.t("route.ui.frameFormula"));
 
@@ -656,8 +780,28 @@ public class RouteEditorFrame extends JFrame
 
         termPills.add(bracket);
 
-        // No "clear".  Every piece can be taken out by clicking it, so a button that removes all of
-        // them at once is a second way of doing the same thing with more to regret.
+        // The deleting mode, beside the grouping it is the counterpart of
+        final javax.swing.JToggleButton removing =
+            new javax.swing.JToggleButton(I18n.t("route.ui.frameRemoveBlocks"));
+
+        removing.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        removing.setMargin(new java.awt.Insets(0, 6, 0, 6));
+        removing.setFocusable(false);
+        removing.setSelected(deletingBlocks);
+        removing.setToolTipText(I18n.t("route.ui.tooltipRemoveBlocks"));
+
+        removing.addActionListener(e ->
+        {
+            deletingBlocks = removing.isSelected();
+
+            // Nothing stays picked across the change: picking is for grouping and has no meaning in
+            // a mode whose only action is removal
+            picked.clear();
+
+            refreshFormula();
+        });
+
+        termPills.add(removing);
 
         termPills.revalidate();
         termPills.repaint();
@@ -737,34 +881,27 @@ public class RouteEditorFrame extends JFrame
             final int which = at;
             final String piece = pieces.get(at);
 
-            JButton block = new JButton(piece);
+            Bubble block = new Bubble(piece);
 
-            block.setFont(new java.awt.Font("Segoe UI", 1, 12));
-            block.setMargin(new java.awt.Insets(1, 7, 1, 7));
-            block.setFocusable(false);
-            block.setToolTipText(I18n.t("route.ui.tooltipBlock"));
-
-            // Picked blocks show it, because grouping needs to say what it is about to group
-            if (picked.contains(at))
-            {
-                block.setBorder(BorderFactory.createLineBorder(new java.awt.Color(0, 0, 155), 2));
-            }
+            block.setPicked(picked.contains(at));
+            block.setDeleting(deletingBlocks);
+            block.setToolTipText(I18n.t(deletingBlocks
+                ? "route.ui.tooltipBlockDeleting" : "route.ui.tooltipBlock"));
 
             block.addActionListener(e ->
             {
-                boolean picking = (e.getModifiers() & java.awt.event.ActionEvent.SHIFT_MASK) != 0;
-
-                if (picking)
-                {
-                    // Shift to pick, the same gesture the track diagram uses to pick several squares -
-                    // and it has to differ from a plain click, because that is how a block is removed
-                    if (!picked.remove(which)) picked.add(which);
-                }
-                else
+                if (deletingBlocks)
                 {
                     formula = org.traincontrol.base.ConditionFormula.without(formula, which);
 
                     picked.clear();
+                }
+                else
+                {
+                    // Click picks.  Removing is its own mode with its own button, because a click
+                    // that deletes is a click somebody makes by accident - and a formula is small
+                    // enough that losing a piece of it is not obvious until the route stops firing.
+                    if (!picked.remove(which)) picked.add(which);
                 }
 
                 refreshFormula();
@@ -1927,9 +2064,19 @@ public class RouteEditorFrame extends JFrame
             // A locomotive is named exactly, or the command names nothing; a route likewise.  Typing
             // either by hand is an invitation to a typo that is only discovered when the route does
             // not do what it says - so where the set of right answers is known, it is offered.
+            // A number where a number is meant.  An address is a number and a delay is a number, and
+            // a cell that will take "twelve" or "12a" is a cell that produces a route refused at Save
+            // for something typed several minutes earlier.
+            if (column == 5 || column == 8) return digitsOnly();
+
             if (column == 4)
             {
                 CommandRow.Kind kind = rows.get(row).getRow().getKind();
+
+                if (kind == CommandRow.Kind.ACCESSORY || kind == CommandRow.Kind.FEEDBACK)
+                {
+                    return digitsOnly();
+                }
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
@@ -2184,6 +2331,10 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(conditionProtocols));
 
+            // The same rules as the commands table: a closed set is chosen, a number is digits, and a
+            // locomotive is picked from the ones this layout has
+            setDefaultEditor(Object.class, null);
+
             narrow(this, CONDITION_DELETE);
 
             TableColumn termColumn = getColumnModel().getColumn(0);
@@ -2192,6 +2343,38 @@ public class RouteEditorFrame extends JFrame
 
             actOnRowMarks(this, CONDITION_DELETE, -1, -1, 0);
             getColumnModel().getColumn(4).setPreferredWidth(70);
+        }
+
+        @Override
+        public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
+        {
+            if (row < 0 || row >= rows.size()) return super.getCellEditor(row, column);
+
+            CommandRow term = CommandRow.of(rows.get(row).getCommand());
+
+            if (term == null) return super.getCellEditor(row, column);
+
+            if (column == 3)
+            {
+                String[] words = settingWords(term);
+
+                if (words != null) return chooseFrom(words);
+
+                // An auto-locomotive's setting is the sensor it is standing at, which is a number
+                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE) return digitsOnly();
+            }
+
+            if (column == 2)
+            {
+                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                {
+                    return chooseFrom(namesOf(parent.getModel().getLocList()));
+                }
+
+                return digitsOnly();
+            }
+
+            return super.getCellEditor(row, column);
         }
 
         void addRow()
