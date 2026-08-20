@@ -183,18 +183,33 @@ public class RouteEditorFrame extends JFrame
 
         content.add(middle, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Save on the left, Cancel on the right, and a line above the pair.
+        //
+        // They were together at the bottom left, which put them directly under the Add and Remove
+        // buttons of the table above and made them read as two more of those.  The buttons that act
+        // on a row and the buttons that finish with the window are different kinds of thing, and the
+        // old route editor keeps them apart the same way: its Save Changes is bottom left and its
+        // Cancel is bottom right, with the width of the window between them.
+        JPanel buttons = new JPanel(new BorderLayout());
 
-        JButton save = button(I18n.t("route.ui.frameSave"), this::onSave);
-        JButton cancel = button(I18n.t("route.ui.frameCancel"), this::dispose);
+        buttons.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(204, 204, 204)),
+            BorderFactory.createEmptyBorder(6, 0, 0, 0)));
 
-        buttons.add(save);
-        buttons.add(cancel);
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 
-        // The same offer the old editor makes, and this window needs it more: the formula underneath
-        // the conditions is a small language, and a small language with nothing explaining it is a
-        // box people leave empty.
-        buttons.add(button(I18n.t("ui.help"), this::showHelp));
+        left.add(button(I18n.t("route.ui.frameSave"), this::onSave));
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+
+        // Help beside Cancel rather than at the top: it is the same offer the old editor makes, and
+        // this window needs it more - the formula under the conditions is a small language, and a
+        // small language with nothing explaining it is a box people leave empty.
+        right.add(button(I18n.t("ui.help"), this::showHelp));
+        right.add(button(I18n.t("route.ui.frameCancel"), this::dispose));
+
+        buttons.add(left, BorderLayout.WEST);
+        buttons.add(right, BorderLayout.EAST);
 
         content.add(buttons, BorderLayout.SOUTH);
 
