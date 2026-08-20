@@ -1800,8 +1800,28 @@ public class Layout
             return false;
         }
 
-        // Only reversible locomotives can go to a terminus
-        if (path.get(path.size() - 1).getEnd().isTerminus() && !loc.isReversible())
+        // A locomotive that cannot reverse is only sent somewhere that will reverse it if that place
+        // is out of full autonomy - a parking spot.
+        //
+        // Two rules used to be one and a half.  A terminus asked whether the locomotive was reversible;
+        // a REVERSING point asked nothing at all, even though arriving at one turns the train round
+        // just the same - see the reversal at the end of executePathInternal, which fires on either.
+        // So a train with a locomotive at one end only was routed to an ordinary platform through a
+        // reversing point and turned round there, which is a train running backwards in service: the
+        // thing marking it non-reversible exists to prevent.
+        //
+        // The permission is autoDestination, which already means "autonomy may choose this as a
+        // destination".  A spot excluded from that is where a train is PUT rather than where it calls -
+        // a parking road, a shed, a staging siding - and turning one round there is unremarkable.  So
+        // full autonomy will not turn such a train anywhere, while the staging planner, the timetable
+        // and a hand-driven move can still park it, which is exactly what they are for.
+        //
+        // Stated over "will this reverse the train" rather than over the terminus flag, so the two
+        // ways a layout can say "turn round here" cannot drift apart again.
+        Point arriving = path.get(path.size() - 1).getEnd();
+
+        if ((arriving.isTerminus() || arriving.isReversing()) && !loc.isReversible()
+            && arriving.isAutoDestination())
         {
             logPathError(
                 loc,

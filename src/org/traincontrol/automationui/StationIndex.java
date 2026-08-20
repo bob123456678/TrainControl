@@ -319,6 +319,46 @@ public final class StationIndex
             if (point.getCurrentLocomotive() != null) out.add(point);
         }
 
+        return oneEntryPerLocomotive(out);
+    }
+
+    /**
+     * The same list with each locomotive appearing once.
+     *
+     * A square is several Points, and a locomotive can legitimately be on more than one of them at
+     * once: locking a path RESERVES every point along it for that train, deliberately without taking
+     * it off anywhere else, because that is how a junction is held against a second train. Where a
+     * path runs through two copies of one square, the train is on both.
+     *
+     * That is right for the model and wrong for a caption. It put one train on the platform twice -
+     * "[BR &lt; |BR &gt;]" - each entry carrying the arrow of its own copy, so the same locomotive appeared
+     * to be facing both ways at once. Two trains on one platform is a real thing this has to show; one
+     * train shown as two is never anything but a mistake.
+     *
+     * The first copy is the one kept. For a train standing still there is only one; for a train part
+     * way along a locked path the rest are the ones it is about to be on, and any of them says the
+     * same thing about whether that platform is spoken for.
+     *
+     * @param points occupied Points, in emission order
+     * @return the same, with duplicates of one locomotive removed
+     */
+    public static List<Point> oneEntryPerLocomotive(List<Point> points)
+    {
+        List<Point> out = new ArrayList<>();
+
+        java.util.Set<org.traincontrol.base.Locomotive> seen =
+            java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<org.traincontrol.base.Locomotive, Boolean>());
+
+        for (Point point : points)
+        {
+            if (point == null || point.getCurrentLocomotive() == null) continue;
+
+            // By identity, because that is how a locomotive is compared everywhere else here - two
+            // locomotives can share a name in this application, and they are not the same train
+            if (seen.add(point.getCurrentLocomotive())) out.add(point);
+        }
+
         return out;
     }
 
