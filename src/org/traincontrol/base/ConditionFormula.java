@@ -224,6 +224,182 @@ public final class ConditionFormula
     }
 
     /**
+     * A formula broken into the pieces it is built from: letters, "and", "or", and brackets.
+     *
+     * So the editor can show it as things rather than as text. A formula nobody may type is a formula
+     * made of blocks, and a block has to be something you can point at.
+     *
+     * @param formula the formula
+     * @return its pieces, in order
+     */
+    public static List<String> tokens(String formula)
+    {
+        List<String> out = new ArrayList<>();
+
+        if (formula == null) return out;
+
+        int at = 0;
+
+        while (at < formula.length())
+        {
+            char one = formula.charAt(at);
+
+            if (Character.isWhitespace(one))
+            {
+                at++;
+            }
+            else if (one == '(' || one == ')')
+            {
+                out.add(String.valueOf(one));
+                at++;
+            }
+            else if (Character.isLetter(one))
+            {
+                int start = at;
+
+                while (at < formula.length() && Character.isLetter(formula.charAt(at))) at++;
+
+                out.add(formula.substring(start, at));
+            }
+            else
+            {
+                // Anything else is not part of the language.  Kept as its own piece rather than
+                // dropped, so a formula that somehow contains one can still be seen and taken apart.
+                out.add(String.valueOf(one));
+                at++;
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The formula with one piece taken out of it, and tidied so what is left still reads.
+     *
+     * Removing a term leaves the word that joined it to its neighbour with nothing on one side, and a
+     * formula that says "A and" is not one somebody meant to write - they meant to remove the term and
+     * its joining word together, because that is what removing a requirement is. Removing a bracket
+     * takes its partner with it, for the same reason: half a pair is not a thing anybody wants.
+     *
+     * @param formula the formula
+     * @param index which piece, counting from zero
+     * @return the formula without it
+     */
+    public static String without(String formula, int index)
+    {
+        List<String> pieces = tokens(formula);
+
+        if (index < 0 || index >= pieces.size()) return formula;
+
+        String going = pieces.get(index);
+
+        if ("(".equals(going) || ")".equals(going))
+        {
+            int partner = partnerOf(pieces, index);
+
+            pieces.remove(index);
+
+            if (partner >= 0) pieces.remove(partner > index ? partner - 1 : partner);
+        }
+        else if (isJoiner(going))
+        {
+            pieces.remove(index);
+        }
+        else
+        {
+            pieces.remove(index);
+
+            // The word that joined it: the one before by preference, since "A and B" without B is "A"
+            // rather than "and A"
+            if (index - 1 >= 0 && isJoiner(pieces.get(index - 1))) pieces.remove(index - 1);
+            else if (index < pieces.size() && isJoiner(pieces.get(index))) pieces.remove(index);
+        }
+
+        return tidy(pieces);
+    }
+
+    private static boolean isJoiner(String piece)
+    {
+        return "and".equalsIgnoreCase(piece) || "or".equalsIgnoreCase(piece);
+    }
+
+    /**
+     * The bracket matching the one at an index, or -1 when it has none.
+     */
+    private static int partnerOf(List<String> pieces, int index)
+    {
+        boolean forward = "(".equals(pieces.get(index));
+
+        int depth = 0;
+
+        for (int at = index; at >= 0 && at < pieces.size(); at += forward ? 1 : -1)
+        {
+            String one = pieces.get(at);
+
+            if ("(".equals(one)) depth += forward ? 1 : -1;
+            else if (")".equals(one)) depth += forward ? -1 : 1;
+
+            if (depth == 0) return at;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Puts the pieces back together, dropping anything left dangling.
+     *
+     * A joining word at either end, a doubled one, and a bracket pair with nothing in it are all
+     * things a removal can leave behind, and none of them is something a person would write.
+     */
+    private static String tidy(List<String> pieces)
+    {
+        boolean changed = true;
+
+        while (changed)
+        {
+            changed = false;
+
+            for (int at = 0; at < pieces.size(); at++)
+            {
+                boolean atStart = at == 0 || "(".equals(pieces.get(at - 1));
+                boolean atEnd = at == pieces.size() - 1 || ")".equals(pieces.get(at + 1));
+
+                if (isJoiner(pieces.get(at)) && (atStart || atEnd))
+                {
+                    pieces.remove(at);
+                    changed = true;
+                    break;
+                }
+
+                if ("(".equals(pieces.get(at)) && at + 1 < pieces.size()
+                    && ")".equals(pieces.get(at + 1)))
+                {
+                    pieces.remove(at + 1);
+                    pieces.remove(at);
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        for (int at = 0; at < pieces.size(); at++)
+        {
+            String one = pieces.get(at);
+
+            boolean space = out.length() > 0 && !")".equals(one)
+                && !"(".equals(out.charAt(out.length() - 1) + "");
+
+            if (space) out.append(' ');
+
+            out.append(one);
+        }
+
+        return out.toString().trim();
+    }
+
+    /**
      * Reads a formula and builds the expression it describes.
      *
      * @param formula what the user typed

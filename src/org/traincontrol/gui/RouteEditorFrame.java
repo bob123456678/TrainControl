@@ -121,7 +121,23 @@ public class RouteEditorFrame extends JFrame
      * list pretending to be a tree - which is what the operator-per-row column was, and why it could
      * only ever express one chain read left to right.
      */
-    private final JTextField formulaField = new JTextField(28);
+    /**
+     * The formula itself. Shown as bubbles, never as text somebody can type into.
+     */
+    private String formula = "";
+
+    /**
+     * The bubbles, one per piece of the formula.
+     */
+    private final JPanel formulaView = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 3));
+
+    /**
+     * Which pieces are picked out for grouping, by their position in the formula.
+     *
+     * Shift-click, the same gesture the track diagram uses to pick several squares - and it has to be
+     * a different gesture from plain click, because plain click is how a piece is removed.
+     */
+    private final java.util.Set<Integer> picked = new java.util.LinkedHashSet<>();
 
     /**
      * The terms as things to click, so the letters need not be remembered or typed.
@@ -155,6 +171,10 @@ public class RouteEditorFrame extends JFrame
         setContentPane(build());
 
         load(routeName);
+
+        // The blocks, once the formula is known.  Everything else that changes it rebuilds them; this
+        // is the first draw.
+        refreshFormula();
 
         // After load(), which is what discovers whether the route is the station's
         if (locked) becomeReadOnly();
@@ -452,41 +472,20 @@ public class RouteEditorFrame extends JFrame
 
         top.add(heading, BorderLayout.NORTH);
 
-        formulaField.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        formulaField.setToolTipText(I18n.t("route.ui.tooltipFormula"));
-
-        // Built with the buttons, never typed.
+        // Blocks, not text.
         //
         // A formula is a small language, and a box somebody can type into is a box that will hold
         // things the language does not accept - at which point the window's job becomes explaining a
-        // syntax error about a route somebody only wanted to change one term of.  Everything that CAN
-        // be written can be written with the four buttons, so the box shows the answer and the buttons
-        // are how you get there.  Still selectable, because selecting is how brackets are added.
-        formulaField.setEditable(false);
-        formulaField.setBackground(java.awt.Color.WHITE);
+        // syntax error about a route somebody only wanted to change one term of.  Shown as its pieces,
+        // there is no state it can be in that the reader cannot read: each piece is a thing, clicking
+        // one takes it out, and what is left is tidied so it still means something.
+        formulaView.setBackground(java.awt.Color.WHITE);
+        formulaView.setToolTipText(I18n.t("route.ui.tooltipFormula"));
+        formulaView.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1),
+            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
 
-        formulaField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
-        {
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e)
-            {
-                updateReadsAs();
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e)
-            {
-                updateReadsAs();
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e)
-            {
-                updateReadsAs();
-            }
-        });
-
-        top.add(formulaField, BorderLayout.SOUTH);
+        top.add(formulaView, BorderLayout.SOUTH);
 
         row.add(top, BorderLayout.NORTH);
 
@@ -566,19 +565,8 @@ public class RouteEditorFrame extends JFrame
 
         termPills.add(bracket);
 
-        JButton clear = new JButton(I18n.t("route.ui.frameClearFormula"));
-
-        clear.setFont(new java.awt.Font("Segoe UI", 0, 12));
-        clear.setMargin(new java.awt.Insets(0, 6, 0, 6));
-        clear.setFocusable(false);
-
-        clear.addActionListener(e ->
-        {
-            formulaField.setText("");
-            updateReadsAs();
-        });
-
-        termPills.add(clear);
+        // No "clear".  Every piece can be taken out by clicking it, so a button that removes all of
+        // them at once is a second way of doing the same thing with more to regret.
 
         termPills.revalidate();
         termPills.repaint();
@@ -592,24 +580,110 @@ public class RouteEditorFrame extends JFrame
      */
     private void bracketSelection()
     {
-        int from = formulaField.getSelectionStart();
-        int to = formulaField.getSelectionEnd();
-
-        if (from == to)
+        if (picked.isEmpty())
         {
             JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameSelectToGroup"));
             return;
         }
 
-        String text = formulaField.getText();
+        java.util.List<String> pieces =
+            org.traincontrol.base.ConditionFormula.tokens(formula);
 
-        formulaField.setText(text.substring(0, from) + "(" + text.substring(from, to) + ")"
-            + text.substring(to));
+        int from = java.util.Collections.min(picked);
+        int to = java.util.Collections.max(picked);
 
-        // Kept selected, brackets and all, so a second press groups the group - which is how
-        // somebody builds a nested formula without counting characters
-        formulaField.select(from, to + 2);
-        formulaField.requestFocusInWindow();
+        if (from < 0 || to >= pieces.size()) return;
+
+        // A run, not a scattering.  Brackets go round something continuous, and picking the first and
+        // third pieces of a formula does not describe anything you could write down.
+        pieces.add(to + 1, ")");
+        pieces.add(from, "(");
+
+        StringBuilder out = new StringBuilder();
+
+        for (String piece : pieces)
+        {
+            boolean space = out.length() > 0 && !")".equals(piece)
+                && out.charAt(out.length() - 1) != '(';
+
+            if (space) out.append(' ');
+
+            out.append(piece);
+        }
+
+        formula = out.toString().trim();
+
+        picked.clear();
+
+        refreshFormula();
+    }
+
+    /**
+     * Draws the formula as blocks, and keeps everything that depends on it in step.
+     *
+     * Rebuilt whole rather than patched, because the pieces are positional: taking one out renumbers
+     * every one after it, and a half-updated row of blocks would answer clicks about pieces that have
+     * moved.
+     */
+    private void refreshFormula()
+    {
+        formulaView.removeAll();
+
+        java.util.List<String> pieces = org.traincontrol.base.ConditionFormula.tokens(formula);
+
+        if (pieces.isEmpty())
+        {
+            JLabel empty = new JLabel(I18n.t("route.ui.frameFormulaEmpty"));
+
+            empty.setFont(new java.awt.Font("Segoe UI", 2, 13));
+            empty.setForeground(new java.awt.Color(130, 130, 130));
+
+            formulaView.add(empty);
+        }
+
+        for (int at = 0; at < pieces.size(); at++)
+        {
+            final int which = at;
+            final String piece = pieces.get(at);
+
+            JButton block = new JButton(piece);
+
+            block.setFont(new java.awt.Font("Segoe UI", 1, 12));
+            block.setMargin(new java.awt.Insets(1, 7, 1, 7));
+            block.setFocusable(false);
+            block.setToolTipText(I18n.t("route.ui.tooltipBlock"));
+
+            // Picked blocks show it, because grouping needs to say what it is about to group
+            if (picked.contains(at))
+            {
+                block.setBorder(BorderFactory.createLineBorder(new java.awt.Color(0, 0, 155), 2));
+            }
+
+            block.addActionListener(e ->
+            {
+                boolean picking = (e.getModifiers() & java.awt.event.ActionEvent.SHIFT_MASK) != 0;
+
+                if (picking)
+                {
+                    // Shift to pick, the same gesture the track diagram uses to pick several squares -
+                    // and it has to differ from a plain click, because that is how a block is removed
+                    if (!picked.remove(which)) picked.add(which);
+                }
+                else
+                {
+                    formula = org.traincontrol.base.ConditionFormula.without(formula, which);
+
+                    picked.clear();
+                }
+
+                refreshFormula();
+            });
+
+            formulaView.add(block);
+        }
+
+        formulaView.revalidate();
+        formulaView.repaint();
 
         updateReadsAs();
     }
@@ -625,12 +699,10 @@ public class RouteEditorFrame extends JFrame
      */
     private void appendToFormula(String letter)
     {
-        String had = formulaField.getText().trim();
-
-        formulaField.setText(had.isEmpty() ? letter : had + " and " + letter);
+        formula = formula.trim().isEmpty() ? letter : formula.trim() + " and " + letter;
 
         refreshTermPills();
-        updateReadsAs();
+        refreshFormula();
     }
 
     /**
@@ -657,19 +729,11 @@ public class RouteEditorFrame extends JFrame
      */
     private void insertIntoFormula(String what)
     {
-        String text = formulaField.getText();
-        int at = Math.max(0, Math.min(formulaField.getCaretPosition(), text.length()));
+        // Always at the end.  There is no cursor in a row of blocks, and inventing one - a gap that
+        // moves as you click - would be a text box wearing a costume.
+        formula = (formula.trim() + " " + what).trim();
 
-        boolean spaceBefore = at > 0 && !Character.isWhitespace(text.charAt(at - 1))
-            && !"(".equals(what) && text.charAt(at - 1) != '(';
-
-        boolean spaceAfter = !")".equals(what);
-
-        String inserted = (spaceBefore ? " " : "") + what + (spaceAfter ? " " : "");
-
-        formulaField.setText(text.substring(0, at) + inserted + text.substring(at));
-        formulaField.setCaretPosition(at + inserted.length());
-        formulaField.requestFocusInWindow();
+        refreshFormula();
     }
 
     private JButton button(String text, Runnable action)
@@ -729,8 +793,7 @@ public class RouteEditorFrame extends JFrame
         java.util.List<RouteCommand> terms =
             org.traincontrol.base.ConditionFormula.termsOf(conditionsAsFound);
 
-        formulaField.setText(
-            org.traincontrol.base.ConditionFormula.formulaFor(conditionsAsFound, terms));
+        formula = org.traincontrol.base.ConditionFormula.formulaFor(conditionsAsFound, terms);
 
         List<ConditionRows.Row> rows = new ArrayList<>();
 
@@ -839,10 +902,10 @@ public class RouteEditorFrame extends JFrame
                 String letter = org.traincontrol.base.ConditionFormula.letterFor(
                     conditions.rows.size() - 1);
 
-                formulaField.setText(formulaField.getText().trim().isEmpty()
-                    ? letter : formulaField.getText().trim() + " and " + letter);
+                formula = formula.trim().isEmpty() ? letter : formula.trim() + " and " + letter;
 
                 refreshTermPills();
+                refreshFormula();
 
                 updateReadsAs();
 
@@ -902,8 +965,6 @@ public class RouteEditorFrame extends JFrame
         // to know the rule.
         if (conditionsEditable)
         {
-            String formula = formulaField.getText();
-
             if (formula.trim().isEmpty())
             {
                 readsAs.setText(" ");
@@ -1134,7 +1195,9 @@ public class RouteEditorFrame extends JFrame
         commands.setEnabled(false);
         conditions.setEnabled(false);
 
-        formulaField.setEnabled(false);
+        formulaView.setEnabled(false);
+
+        for (java.awt.Component block : formulaView.getComponents()) block.setEnabled(false);
 
         // The marks in the rows go with it.  A trash can that does nothing is worse than no trash can:
         // it says the row can be deleted and then declines, which reads as a fault rather than a rule.
@@ -1299,7 +1362,7 @@ public class RouteEditorFrame extends JFrame
         try
         {
             expression = org.traincontrol.base.ConditionFormula.parse(
-                formulaField.getText(), termsFromRows());
+                formula, termsFromRows());
         }
         catch (IllegalArgumentException e)
         {

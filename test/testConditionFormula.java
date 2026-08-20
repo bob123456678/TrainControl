@@ -205,6 +205,46 @@ public class testConditionFormula
             "two facts are used, one of them twice");
     }
 
+    /**
+     * A formula comes apart one piece at a time, and what is left still reads.
+     *
+     * The editor shows a formula as blocks rather than as text - nobody types one - so removing a
+     * block has to leave something valid behind. Removing a term without the word that joined it
+     * leaves "A and", which is not what anybody meant by taking a requirement out.
+     */
+    @Test
+    public void testRemovingAPieceTidiesAfterItself()
+    {
+        assertEquals(ConditionFormula.tokens("(A or B) and C").size(), 7,
+            "five pieces and two brackets");
+
+        // "(A or B) and C" without C is "(A or B)" - and the "and" goes with it
+        assertEquals(ConditionFormula.without("(A or B) and C", 6), "(A or B)");
+
+        // without B: "(A) and C", and a bracket round one term is still a bracket the user wrote
+        assertEquals(ConditionFormula.without("(A or B) and C", 3), "(A) and C");
+
+        // taking a bracket takes its partner, because half a pair is not a thing anybody wants
+        assertEquals(ConditionFormula.without("(A or B) and C", 0), "A or B and C");
+    }
+
+    /**
+     * And a removal that empties something does not leave the shell behind.
+     */
+    @Test
+    public void testNothingIsLeftDangling()
+    {
+        assertEquals(ConditionFormula.without("A and B", 0), "B",
+            "the first term goes, and the word that joined it goes with it");
+
+        assertEquals(ConditionFormula.without("A", 0), "",
+            "the only term goes and nothing is left - which is a route with no conditions");
+
+        assertNull(ConditionFormula.problemWith(ConditionFormula.without("(A or B) and C", 3), 3),
+            "whatever is left after a removal has to be something the reader accepts, or the editor "
+            + "puts the user in a state they cannot get out of without starting again");
+    }
+
     private static void refused(String formula, int terms, String why)
     {
         try
