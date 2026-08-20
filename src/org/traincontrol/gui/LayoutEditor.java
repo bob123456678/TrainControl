@@ -92,6 +92,17 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(0, 150, 60);
 
     /**
+     * Where a group being dragged would land, in a paler shade of the picking colour.
+     *
+     * Paler on purpose: the squares a group currently occupies and the squares it would move to are
+     * both worth seeing at once, and drawing them the same would make a drag look like it had already
+     * happened. This is the answer to "where will this end up", which is the question a group drag
+     * raises and a single-tile drag does not - one tile follows the cursor and can be seen, twenty
+     * cannot.
+     */
+    private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(120, 205, 155);
+
+    /**
      * The squares picked out for a group operation.
      *
      * Selection is a STATE rather than a key held down, which is the whole point of it: dragging a
@@ -136,6 +147,17 @@ public class LayoutEditor extends PositionAwareJFrame
      * the rectangle is while you are still deciding where to stop.
      */
     private final org.traincontrol.base.TileSelection previewSelection =
+        new org.traincontrol.base.TileSelection();
+
+    /**
+     * Where the group currently being dragged would land, or empty when nothing is being dragged.
+     *
+     * A single tile being dragged carries a ghost of itself under the cursor, which answers "where is
+     * this going" by being there. A group cannot: the cursor is on one square of twenty, and the ghost
+     * would have to be the whole shape. So the destination squares are outlined instead, which says
+     * the same thing about all of them at once.
+     */
+    private final org.traincontrol.base.TileSelection landingSelection =
         new org.traincontrol.base.TileSelection();
 
     /**
@@ -644,6 +666,26 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (isAutonomyMode()) return;
 
+        // A group being dragged, shown where it would land
+        if (this.groupDragging && this.dragSource != null)
+        {
+            LayoutLabel over = getLastHoveredLabel();
+
+            if (over != null && getX(over) >= 0 && getY(over) >= 0)
+            {
+                this.landingSelection.clear();
+
+                for (org.traincontrol.base.TileSelection.At at
+                    : this.selection.movedBy(getX(over) - getX(this.dragSource),
+                        getY(over) - getY(this.dragSource)))
+                {
+                    this.landingSelection.add(at.getX(), at.getY());
+                }
+
+                this.refreshSelectionBorders();
+            }
+        }
+
         // A box being dragged out, shown while it is still being decided
         if (this.boxAnchorX >= 0 && this.boxAnchorY >= 0)
         {
@@ -718,6 +760,8 @@ public class LayoutEditor extends PositionAwareJFrame
             if (this.groupDragging)
             {
                 this.groupDragging = false;
+
+                this.landingSelection.clear();
 
                 if (target != null && source != null)
                 {
@@ -1554,6 +1598,15 @@ public class LayoutEditor extends PositionAwareJFrame
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
             if (label != null) this.highlightLabel(label, COMPONENT_BORDER_SELECTED_COLOR);
+        }
+
+        // And where a group being dragged would land, in the paler shade.  Last, so a square that is
+        // both picked and a landing square shows the landing - during a drag that is the live answer.
+        for (org.traincontrol.base.TileSelection.At at : this.landingSelection.all())
+        {
+            LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
+
+            if (label != null) this.highlightLabel(label, COMPONENT_BORDER_LANDING_COLOR);
         }
     }
 
