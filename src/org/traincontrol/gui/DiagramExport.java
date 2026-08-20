@@ -41,6 +41,14 @@ public final class DiagramExport
     /** The largest tile size offered, so that a big layout cannot ask for an image nothing can open. */
     public static final int MAX_TILE_SIZE = 200;
 
+    /**
+     * About what the diagram looks like on screen.
+     *
+     * The small of the two sizes offered.  Sixty reads well in a document and is the default; this is
+     * for a picture meant to look like the thing the user is looking at.
+     */
+    public static final int SCREEN_TILE_SIZE = 30;
+
     /** How long to wait for tile images before drawing anyway. */
     private static final int TILE_WAIT_SECONDS = 30;
 

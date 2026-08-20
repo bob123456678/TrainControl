@@ -5074,9 +5074,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (layoutMenu == null) return;
 
-        // The page already on screen, which is what somebody looking at a diagram and wanting a
-        // picture of it means.  First, because it is the common case: asking which page when the
-        // answer is "this one" is a question with a visible answer.
+        // One item, for the page on screen.  There were two - this one and another that asked which
+        // page - and the second earned its place only when the answer was not the page you are
+        // looking at, which is rare enough not to be worth a permanent line in a menu.  Switch pages
+        // and export again.
         javax.swing.JMenuItem active =
             new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
 
@@ -5084,16 +5085,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         active.addActionListener(event -> exportDiagram(activeLayoutPage()));
 
-        javax.swing.JMenuItem item =
-            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportDiagram"));
-
-        item.setToolTipText(I18n.t("layout.ui.tooltipExportDiagram"));
-
-        item.addActionListener(event -> exportDiagram(null));
-
         layoutMenu.addSeparator();
         layoutMenu.add(active);
-        layoutMenu.add(item);
     }
 
     /**
@@ -5148,24 +5141,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (page == null) return;
 
-        String sizeText = JOptionPane.showInputDialog(this,
-            I18n.f("layout.ui.promptDiagramSize", DiagramExport.MAX_TILE_SIZE),
-            String.valueOf(DiagramExport.DEFAULT_TILE_SIZE));
+        // Large or small, rather than a number to invent.  There are two answers anybody wants -
+        // what the screen shows, and something that reads well in a document - and a free box asked
+        // the user to pick a pixel size for a tile, which is not a question about their railway.
+        Object[] sizes = {
+            I18n.f("layout.ui.diagramSizeLarge", DiagramExport.DEFAULT_TILE_SIZE),
+            I18n.f("layout.ui.diagramSizeSmall", DiagramExport.SCREEN_TILE_SIZE)
+        };
 
-        if (sizeText == null) return;
+        Object size = JOptionPane.showInputDialog(this, I18n.t("layout.ui.promptDiagramSizeChoice"),
+            I18n.t("layout.ui.menuExportActiveDiagram"), JOptionPane.PLAIN_MESSAGE, null,
+            sizes, sizes[0]);
 
-        int tileSize;
+        if (size == null) return;
 
-        try
-        {
-            tileSize = Integer.parseInt(sizeText.trim());
-        }
-        catch (NumberFormatException e)
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorDiagramSizeNotANumber"));
-
-            return;
-        }
+        int tileSize = sizes[1].equals(size)
+            ? DiagramExport.SCREEN_TILE_SIZE : DiagramExport.DEFAULT_TILE_SIZE;
 
         javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
 
@@ -5219,8 +5210,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.log(I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
 
-                JOptionPane.showMessageDialog(this,
-                    I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
+                // The folder, not a dialog reciting the path.  Somebody who has just written a
+                // picture wants the picture; being told where it is and having to go there is the
+                // long way round, and every other file this application writes opens its folder.
+                showFileExplorer(writeTo.getParentFile());
             });
     }
 

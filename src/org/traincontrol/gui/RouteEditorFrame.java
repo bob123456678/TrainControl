@@ -157,7 +157,7 @@ public class RouteEditorFrame extends JFrame
             () -> { if (conditionsEditable) conditions.addRow(); },
             () -> { if (conditionsEditable) conditions.removeSelected(); }, null, null);
 
-        readsAs.setFont(UIStandards.TEXT_FONT);
+        readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
 
         buttonsOf(conditionSection).add(readsAs);
 
@@ -209,11 +209,11 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
 
-        row.add(UIStandards.label(I18n.t("route.ui.frameName")));
+        row.add(label(I18n.t("route.ui.frameName")));
         row.add(nameField);
-        row.add(UIStandards.label(I18n.t("route.ui.frameS88")));
+        row.add(label(I18n.t("route.ui.frameS88")));
         row.add(s88Field);
-        row.add(UIStandards.label(I18n.t("route.ui.frameTrigger")));
+        row.add(label(I18n.t("route.ui.frameTrigger")));
         row.add(triggerBox);
         row.add(enabledBox);
 
@@ -231,9 +231,13 @@ public class RouteEditorFrame extends JFrame
         // A heading rather than a box round everything.  Two framed panels stacked inside a third
         // frame is three borders deep before any content, and the rest of this application says
         // "here is a section" with a line of blue text instead.
-        JLabel heading = UIStandards.heading(title);
+        // Styled the way GraphEdgeEdit is - see docs/UI-standards.md.  Section headings are Segoe UI
+        // Semibold 13 in 0,0,155, and take the same indentation as the panel they name so the heading
+        // and its contents line up down the left edge.
+        JLabel heading = new JLabel(title);
 
-        // The same indentation as the panel itself, so a heading and the thing it names line up
+        heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+        heading.setForeground(new java.awt.Color(0, 0, 155));
         heading.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 
         panel.add(heading, BorderLayout.NORTH);
@@ -325,10 +329,27 @@ public class RouteEditorFrame extends JFrame
             .getLayoutComponent(BorderLayout.SOUTH);
     }
 
+    /**
+     * A label naming something the reader has to fill in: Segoe UI Semibold 13, black.
+     *
+     * @param text the label
+     * @return the label
+     */
+    private static JLabel label(String text)
+    {
+        JLabel out = new JLabel(text);
+
+        out.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+
+        return out;
+    }
+
     private JButton button(String text, Runnable action)
     {
-        JButton button = UIStandards.style(new JButton(text));
+        JButton button = new JButton(text);
 
+        // Segoe UI Bold 12, as every other button in this application is
+        button.setFont(new java.awt.Font("Segoe UI", 1, 12));
         button.addActionListener(e -> action.run());
 
         return button;

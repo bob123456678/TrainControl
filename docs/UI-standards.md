@@ -1,6 +1,6 @@
 # Interface standards
 
-Adam's, set 2026-08-19. These apply to everything hand-built from here on.
+Adam's, set 2026-08-19.
 
 | What | Font | Colour |
 | --- | --- | --- |
@@ -14,32 +14,28 @@ Adam's, set 2026-08-19. These apply to everything hand-built from here on.
 **Section headings take the same indentation as the panel they name**, so a heading and its contents
 line up down the left edge rather than the heading sitting proud of them.
 
----
+## The reference screen
 
-## Use the code, not this table
-
-`org.traincontrol.gui.UIStandards` holds all of the above as constants, with `heading()`, `label()`,
-`text()` and `style()` for the common cases. Go through it rather than writing the numbers out again:
-a table in a document does not stop the next panel being built in whatever the platform default
-happens to be, and this one has already been out of step once - the route editor was built to
-`Font.BOLD, 11f` and a blue of `0,0,115`, both close enough to look deliberate and neither of them
-right.
+**`GraphEdgeEdit`** already does all of this, and is the thing to copy rather than this table:
 
 ```java
-panel.add(UIStandards.heading(I18n.t("route.ui.frameCommands")), BorderLayout.NORTH);
-
-JButton save = UIStandards.style(new JButton(I18n.t("route.ui.frameSave")));
+label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));   // labels
+field.setFont(new java.awt.Font("Segoe UI", 0, 14));            // regular text
+button.setFont(new java.awt.Font("Segoe UI", 1, 12));           // buttons
 ```
 
-## What this does not cover
+The second argument is the style - `0` plain, `1` bold - so Semibold is the plain style of its own
+family, and bold is the ordinary family made bold. Windows treats "Segoe UI Semibold" as a separate
+family, which is why it is asked for by name.
 
-**The NetBeans form screens.** Most of the older interface is generated from `.form` files, and its
-styling lives inside `GEN-BEGIN` blocks that must not be hand-edited - so those screens keep whatever
-they were drawn with until they are rebuilt by hand. New work is hand-written panels, which is why
-this standard is worth having now.
+`RouteEditorFrame` is the hand-written screen built to this, if a non-form example is more use.
 
-**Fonts on machines without Segoe UI.** "Segoe UI Semibold" is its own family on Windows rather than
-a weight of "Segoe UI", so it is asked for by that name; bold is the ordinary family with the bold
-style. Where the family is missing Java substitutes a default silently - the sizes and weights still
-hold, only the letter shapes differ. TrainControl targets Windows, so this affects development
-machines rather than users.
+## Where this does and does not reach
+
+Most of the older interface is generated from `.form` files and carries its styling inside `GEN-BEGIN`
+blocks, which must not be hand-edited - those screens keep what they were drawn with until they are
+rebuilt. New work is hand-written panels, which is what this is for.
+
+Worth knowing, since it is the reason this document exists: the route editor was built to `Font.BOLD,
+11f` and a blue of `0,0,115` before these were written down. Both were close enough to look
+deliberate, and neither was right.
