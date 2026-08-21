@@ -1119,12 +1119,22 @@ public class TileAnnotation
         // Filled against hollow still carries the difference without colour, so it survives being
         // printed, a poor screen, and a reader who cannot tell red from green - only now the sense is
         // the other way up.  Same size for both, so neither shouts over the other.
-        double size = Math.max(4.0, span / 3.2);
+        // A pixel smaller where the direction is SHUT, and a pixel further back.
+        //
+        // Nominally the same size, the red one still read as the heavier of the two: it is drawn as
+        // an outline, and an outline carries a line's worth of ink beyond the shape a filled one
+        // stops at.  So the two were the same size and did not look it, and on a diagram that is
+        // mostly open track the handful of red arrows were shouting.
+        double size = Math.max(4.0, span / 3.2) - (allowed ? 0 : 1);
 
-        // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
-        // a hairline between them rather than touching and reading as one shape.
-        double tipX = target[0] - dx * EDGE_GAP;
-        double tipY = target[1] - dy * EDGE_GAP;
+        // The tip stops short of the edge, so two arrows meeting across a tile boundary have a
+        // hairline between them rather than touching and reading as one shape.  The shut one stops a
+        // pixel further back again, which settles it into its own square rather than looking like
+        // something arriving from the next.
+        double gap = EDGE_GAP + (allowed ? 0 : 1);
+
+        double tipX = target[0] - dx * gap;
+        double tipY = target[1] - dy * gap;
 
         // A blocked direction is the SAME arrow in red, not a cross.  A cross says "something is wrong
         // here" and leaves the reader to work out which way; an arrow says which way, and the colour
