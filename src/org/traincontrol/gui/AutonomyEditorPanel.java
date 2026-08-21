@@ -795,6 +795,8 @@ public class AutonomyEditorPanel extends JPanel
                     () -> session.placeLocomotive(target, null)));
             }
 
+            addLocomotiveSettings(menu, target);
+
             if (isStation)
             {
                 menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
@@ -2001,6 +2003,96 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Which locomotive is standing on a point, or null.
      */
+    /**
+     * The locomotive's own settings - its functions, its speed, its length - on this square's menu.
+     *
+     * The same dialog the track diagram's menu opens, and the only place in the application where a
+     * locomotive's ARRIVAL and DEPARTURE functions can be set: the horn on leaving, the lights on
+     * arriving.  Autonomy applies them from Layout.applyDefaultLocCallbacks every time a
+     * configuration loads, so they go on firing whether or not anybody can reach this - which is
+     * exactly why it was worth noticing that only one window could.
+     *
+     * It needs the RUNNING layout, because those settings belong to a Point rather than to a square:
+     * the dialog reads and writes a Locomotive through it.  So the item appears only when there is
+     * one and it knows this square, and says nothing at all otherwise rather than opening a dialog
+     * with nothing behind it.
+     *
+     * The placement is written back into the SETUP afterwards.  The dialog moves the locomotive in
+     * the layout, which is the diagram menu's whole job and only half of this one's: a train moved
+     * in the layout and not in the setup is a train that goes back where it was the next time the
+     * configuration is built.  The diagram's own menu learned this the hard way - see
+     * LayoutRightclickAutonomyMenu.placeFacing.
+     */
+    private void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)
+    {
+        org.traincontrol.automation.Layout layout =
+            layoutSource == null ? null : layoutSource.get();
+
+        if (layout == null || layout.getLocomotivesToRun().isEmpty()) return;
+
+        final org.traincontrol.automation.Point point = pointOnTheLayout(layout, target);
+
+        if (point == null) return;
+
+        menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
+        {
+            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, false);
+
+            int answer = JOptionPane.showOptionDialog(owner(), edit,
+                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", describeTile(target)),
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                TrainControlUI.OK_CANCEL_OPTS, TrainControlUI.OK_CANCEL_OPTS[0]);
+
+            if (answer != JOptionPane.OK_OPTION) return;
+
+            edit.commitChanges();
+
+            // And into the setup, so the next build puts the train where it now is
+            session.placeLocomotive(target,
+                point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
+        }));
+    }
+
+    /**
+     * The running layout's Point for a square, preferring one with a train on it.
+     *
+     * A square is several Points once its arrivals have been split, and they are not
+     * interchangeable here: the one holding a locomotive is the one whose settings somebody means.
+     */
+    private org.traincontrol.automation.Point pointOnTheLayout(
+        org.traincontrol.automation.Layout layout, TileKey tile)
+    {
+        org.traincontrol.automation.Point first = null;
+
+        for (String name : session.getStationIndex().pointNamesAt(tile))
+        {
+            org.traincontrol.automation.Point one = layout.getPoint(name);
+
+            if (one == null) continue;
+
+            if (one.getCurrentLocomotive() != null) return one;
+
+            if (first == null) first = one;
+        }
+
+        return first;
+    }
+
+    /**
+     * The main window, which this dialog needs as its parent rather than merely as a component.
+     */
+    private TrainControlUI parentWindow()
+    {
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+        while (window != null && !(window instanceof TrainControlUI))
+        {
+            window = window.getOwner();
+        }
+
+        return window instanceof TrainControlUI ? (TrainControlUI) window : null;
+    }
+
     private String locomotiveAt(TileKey tile)
     {
         Object placed = session.getPointProperty(tile, "loc");
