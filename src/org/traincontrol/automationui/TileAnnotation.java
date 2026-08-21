@@ -520,6 +520,27 @@ public class TileAnnotation
         this.ignored = ignored;
     }
 
+    /**
+     * Whether this is being drawn in the autonomy EDITOR rather than on a diagram.
+     *
+     * One thing turns on it: where a badge sits on a square whose track bends.  In the editor the
+     * badge moves out to the corner, because there it shares the tile with two direction arrows and
+     * an arrival chevron and the four of them were fighting over the same few pixels.  Everywhere
+     * else - the main window, a popup, an exported image - none of that is drawn, so the badge goes
+     * back onto the track it is about, which is where it belongs when it has the room.
+     *
+     * Set rather than passed: the constructor already takes ten arguments and this is a property of
+     * the SURFACE doing the drawing rather than of the square being drawn.
+     */
+    public TileAnnotation inTheEditor()
+    {
+        this.editing = true;
+
+        return this;
+    }
+
+    private boolean editing = false;
+
     public boolean isIgnored()
     {
         return ignored;
@@ -1247,12 +1268,11 @@ public class TileAnnotation
         // entirely, the fourth clips only its corner, and it is clear of the length, which is written
         // top right.  Being off the track costs nothing - a badge is one square's worth of mark on
         // one square, and nobody has to trace which rail it sits on to know which square it means.
-        if (trackBends())
+        if (editing && trackBends())
         {
-            // Three pixels in from the very corner, at the author's eye.  Hard against the edge the
-            // badge read as something that had slipped off the tile rather than as a mark placed on
-            // it, and it was tight against the arrival chevron that sits at the middle of the west
-            // side.
+            // In from the very corner, at the author's eye.  Hard against the edges the badge read as
+            // something that had slipped off the tile rather than as a mark placed on it, and it was
+            // tight against the arrival chevron at the middle of the west side.
             x = CORNER_INSET;
             y = height - size - CORNER_INSET;
         }
@@ -1312,12 +1332,12 @@ public class TileAnnotation
      * crossing, and the corner the rails actually bend around for a curve.
      */
     /**
-     * How far in from the bottom left corner a badge on a bend sits.
+     * How far in from the bottom left corner a badge on a bend sits, in the editor.
      *
-     * One pixel put it hard against both edges; three lifts it clear without moving it back under the
+     * One pixel put it hard against both edges; this lifts it clear without moving it back under the
      * track it was moved out of.
      */
-    private static final int CORNER_INSET = 4;
+    private static final int CORNER_INSET = 7;
 
     /**
      * Whether the track through this square turns a corner.

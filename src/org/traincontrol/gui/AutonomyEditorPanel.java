@@ -3339,7 +3339,12 @@ public class AutonomyEditorPanel extends JPanel
             badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directions.getSelectedIndex() == 1,
             ignored ? null
-                : session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS));
+                : session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS))
+            // Which moves a badge on a bend out to the corner - see TileAnnotation.inTheEditor.
+            // Here and nowhere else: this is the only surface that draws direction arrows and
+            // arrival chevrons on the same square, and so the only one where the badge has to give
+            // way.  On a diagram it goes back onto the track it is about.
+            .inTheEditor();
     }
 
     /**
