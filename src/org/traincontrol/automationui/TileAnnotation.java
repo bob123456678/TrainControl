@@ -1278,11 +1278,19 @@ public class TileAnnotation
         // entirely, the fourth clips only its corner, and it is clear of the length, which is written
         // top right.  Being off the track costs nothing - a badge is one square's worth of mark on
         // one square, and nobody has to trace which rail it sits on to know which square it means.
-        if (editing && trackBends())
+        if (editing && badge.isStation() && trackBends())
         {
             // In from the very corner, at the author's eye.  Hard against the edges the badge read as
             // something that had slipped off the tile rather than as a mark placed on it, and it was
             // tight against the arrival chevron at the middle of the west side.
+            //
+            // STATIONS only.  A station's badge is the big one - half the tile across, and bigger
+            // again where it is a diamond - which is why it collided with the arrows in the first
+            // place.  A passing point's is a third of the tile and sits on the track without
+            // crowding anything, so moving it out to the corner would take a mark off the rails it
+            // is about in exchange for solving a problem it does not have.  It would also break the
+            // one thing the badges do best: a page of small circles sitting on the track, with the
+            // few that are stations standing out from it.
             x = CORNER_INSET;
             y = height - size - CORNER_INSET;
         }
