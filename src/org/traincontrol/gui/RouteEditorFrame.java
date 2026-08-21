@@ -847,7 +847,17 @@ public class RouteEditorFrame extends JFrame
      */
     public int conditionCount()
     {
-        return conditions.rows.size();
+        // Conditions, not lines.  The outline holds the joining words as lines of their own, so the
+        // list is longer than the number of things it is asking about - and "how many conditions does
+        // this route have" is a question about the conditions.
+        int out = 0;
+
+        for (ConditionOutline.Row row : conditions.rows)
+        {
+            if (!row.isJoiner()) out++;
+        }
+
+        return out;
     }
 
     /**
