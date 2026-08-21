@@ -6,7 +6,9 @@ source before it was acted on. Two of the second reviewer's own candidates did n
 verification and were never reported (`CS2File.sanitizeFilename` does handle path separators;
 `MarklinAccessory.parseMessage` applies state before `updateTiles`).
 
-Findings are grouped by what happened to them, not by which reviewer found them.
+Findings are grouped here by what happened to them.  The findings THEMSELVES - labelled, with a
+severity, the reviewer they came from and how confident that reviewer was - are the register in
+`2026-08-21-review-findings.md`, which is the file to read first.  The two are cross-referenced by id.
 
 ---
 
@@ -181,11 +183,15 @@ what the application does when the Central Station is slow rather than absent, a
 that timeout against your hardware. **Recommendation:** bounded wait first (smallest, safest), then the
 boolean.
 
+Validate this issue before making any changes, and trace the failure path in detail for me.
+
 **Every wait on a level is untimed.** `waitForPowerState`, `waitForOccupiedFeedback`,
 `waitForClearFeedback`, `waitForAccessoryState` and `waitForS88Reached` all wait without a deadline on
 a state a single dropped UDP datagram can leave un-set. `validatePathActuation` already does this
 properly — deadline, bounded wait, act on the timeout — and is the model the others should follow. Same
 reason for leaving it: the timeouts are a railway judgement.
+
+This is probably OK- we can't act if the feedback hasn't happened, and the solution is to resend the feedback from the station.  Validate.
 
 **The Layout monitor is held across per-command sleeps while a running train needs it.**
 `configureAndLockPath` holds `synchronized (this)` across a lock loop containing a 150 ms sleep per
