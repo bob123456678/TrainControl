@@ -38,12 +38,20 @@ public final class RowIcons
      */
     public static Icon trash(final int size)
     {
+        return trash(size, WARN);
+    }
+
+    /**
+     * The same, in a colour of the caller's choosing - see plus(int, Color).
+     */
+    public static Icon trash(final int size, final Color colour)
+    {
         return new Painted(size)
         {
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                g.setColor(WARN);
+                g.setColor(colour);
                 g.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
                 int left = width / 5;
@@ -82,6 +90,14 @@ public final class RowIcons
      */
     public static Icon copy(final int size)
     {
+        return copy(size, QUIET);
+    }
+
+    /**
+     * The same, in a colour of the caller's choosing - see plus(int, Color).
+     */
+    public static Icon copy(final int size, final Color colour)
+    {
         return new Painted(size)
         {
             @Override
@@ -95,13 +111,13 @@ public final class RowIcons
 
                 // The sheet behind, then the one in front FILLED over it, so the front one hides the
                 // corner of the back and the two read as two sheets rather than as a little grid
-                g.setColor(QUIET);
+                g.setColor(colour);
                 g.drawRect(1, 1, w, h);
 
                 g.setColor(Color.WHITE);
                 g.fillRect(1 + gap, 1 + gap, w, h);
 
-                g.setColor(QUIET);
+                g.setColor(colour);
                 g.drawRect(1 + gap, 1 + gap, w, h);
             }
         };
@@ -115,12 +131,29 @@ public final class RowIcons
      */
     public static Icon plus(final int size)
     {
+        return plus(size, new Color(0, 120, 40));
+    }
+
+    /**
+     * The same, in a colour of the caller's choosing.
+     *
+     * For a row that is SELECTED.  These marks are drawn in their own colours - green for add, red
+     * for delete, grey for copy - and a selected row is painted in the look-and-feel's selection
+     * blue, against which a mid-green plus is very nearly invisible.  It is the row somebody has just
+     * clicked, so it is the one mark they are most likely to be reaching for.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon plus(final int size, final Color colour)
+    {
         return new Painted(size)
         {
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                g.setColor(new Color(0, 120, 40));
+                g.setColor(colour);
                 g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
                 int pad = width / 5;

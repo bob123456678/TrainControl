@@ -1263,11 +1263,18 @@ public class TileAnnotation
         }
         else if (badge.isTerminus() && badge.isOptional())
         {
-            // A cross for a station a train MAY turn at.  It is the one designation that is not a
-            // property of the place but a choice offered at it, and a shape of its own says so - a
-            // square that sometimes means "everything turns here" and sometimes "some things do" is a
-            // square that has to be clicked to be read.
-            cross(g, x, y, size, fill, line);
+            // A station a train MAY turn at: the station diamond, with the cross inside it.
+            //
+            // It was a bare cross, which said the "may" clearly enough and stopped saying "station"
+            // at all - so on a diagram where the station mark is a diamond, the one designation that
+            // is a choice offered AT a station did not look like a station.  Both marks, one inside
+            // the other, say both things: the diamond that this is a place trains stop, and the
+            // cross that turning here is offered rather than required.
+            diamond(g, x, y, size, fill, line);
+
+            // Drawn in the badge's own colour rather than the diamond's outline colour, so it shows
+            // against the fill whichever way round the named/unnamed pair has put them
+            crossInside(g, x, y, size, badge.isNamed() ? Color.WHITE : colour);
         }
         else if (badge.isTerminus())
         {
@@ -1335,6 +1342,26 @@ public class TileAnnotation
         g.fillPolygon(xs, ys, xs.length);
         g.setColor(line);
         g.drawPolygon(xs, ys, xs.length);
+    }
+
+    /**
+     * The cross, drawn small and centred inside another mark rather than being the mark itself.
+     *
+     * Half the size, so its arms stay within the diamond's slopes: a cross drawn at full width in a
+     * diamond has its four tips outside the shape, which reads as damage rather than as a symbol.
+     */
+    private void crossInside(Graphics2D g, int x, int y, int size, Color ink)
+    {
+        int arm = Math.max(2, size / 4);
+        int middleX = x + size / 2;
+        int middleY = y + size / 2;
+
+        g.setColor(ink);
+        g.setStroke(new BasicStroke(Math.max(1.5f, size / 7f), BasicStroke.CAP_ROUND,
+            BasicStroke.JOIN_ROUND));
+
+        g.drawLine(middleX - arm, middleY, middleX + arm, middleY);
+        g.drawLine(middleX, middleY - arm, middleX, middleY + arm);
     }
 
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)

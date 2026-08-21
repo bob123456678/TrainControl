@@ -1176,6 +1176,12 @@ public class RouteEditorFrame extends JFrame
     // "column 8" in a click handler is a number nobody can check against the model that produced it.
     private static final int UP = 0;
     private static final int DOWN = 1;
+    /** The row's number, which is read rather than filled in. */
+    private static final int POSITION = 2;
+
+    /** The shade a cell takes when its kind has no use for it. */
+    private static final java.awt.Color UNUSABLE = new java.awt.Color(242, 242, 242);
+
     private static final int DELETE = 9;
 
     /**
@@ -1283,9 +1289,25 @@ public class RouteEditorFrame extends JFrame
                     out.setIcon(ink == null ? RowIcons.arrow(mark, false)
                         : RowIcons.arrow(mark, false, ink));
                 }
-                else if (DELETE_ROW.equals(value)) out.setIcon(RowIcons.trash(mark));
-                else if (COPY_ROW.equals(value)) out.setIcon(RowIcons.copy(mark));
-                else if (ADD_HERE.equals(value)) out.setIcon(RowIcons.plus(mark));
+                // In the selection's own ink when the row is picked.
+                //
+                // These three are drawn in their own colours - green to add, red to delete, grey to
+                // copy - and a selected row is painted in the look-and-feel's selection blue, against
+                // which a mid-green plus is very nearly invisible.  It is the row somebody has just
+                // clicked, so it is the mark they are most likely to be reaching for.  The arrows
+                // above already did this; these three were written before that was noticed.
+                else if (DELETE_ROW.equals(value))
+                {
+                    out.setIcon(ink == null ? RowIcons.trash(mark) : RowIcons.trash(mark, ink));
+                }
+                else if (COPY_ROW.equals(value))
+                {
+                    out.setIcon(ink == null ? RowIcons.copy(mark) : RowIcons.copy(mark, ink));
+                }
+                else if (ADD_HERE.equals(value))
+                {
+                    out.setIcon(ink == null ? RowIcons.plus(mark) : RowIcons.plus(mark, ink));
+                }
                 else out.setIcon(null);
 
                 return out;
@@ -1367,6 +1389,27 @@ public class RouteEditorFrame extends JFrame
                 if (!selected)
                 {
                     out.setForeground(editable ? which.getForeground() : java.awt.Color.GRAY);
+
+                    // And a background, not only grey text.
+                    //
+                    // Most of these cells are EMPTY - a function number on a row that is not a
+                    // function, a protocol on a locomotive command - and grey text in an empty cell
+                    // is exactly as visible as black text in an empty cell.  So a column that could
+                    // not be used looked no different from one that was simply not filled in yet,
+                    // and the way to find out was to click it and watch nothing happen.
+                    //
+                    // Not the position column, which is not a field somebody might try to fill in -
+                    // it is the row's number, and shading it would say it was disabled rather than
+                    // that it is not for typing in.
+                    if (!editable && column != POSITION && out instanceof javax.swing.JComponent)
+                    {
+                        ((javax.swing.JComponent) out).setOpaque(true);
+                        out.setBackground(UNUSABLE);
+                    }
+                    else if (out instanceof javax.swing.JComponent)
+                    {
+                        out.setBackground(which.getBackground());
+                    }
                 }
 
                 return out;
