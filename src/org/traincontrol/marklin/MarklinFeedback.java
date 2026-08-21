@@ -48,6 +48,10 @@ public class MarklinFeedback extends Feedback
     @Override
     public void addTile(LayoutLabel l)
     {   
+        // The labels this one replaces go now.  See LayoutLabel.forgetReplaced: nothing else can drop
+        // them on the main window, so without this every rebuilt page stayed registered for ever.
+        LayoutLabel.forgetReplaced(this.tiles, l);
+
         this.tiles.add(l);
     }
     

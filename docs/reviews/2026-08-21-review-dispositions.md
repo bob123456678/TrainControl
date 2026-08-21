@@ -184,7 +184,54 @@ what the application does when the Central Station is slow rather than absent, a
 that timeout against your hardware. **Recommendation:** bounded wait first (smallest, safest), then the
 boolean.
 
-Validate this issue before making any changes, and trace the failure path in detail for me.
+### TR-A11 validated 2026-08-21 - confirmed, with one correction that changes the fix
+
+Traced line by line; every link holds.
+
+1. `LayoutLabel:53` - `SWITCHING = Executors.newFixedThreadPool(1, ...)`, and it is **static**. One
+   thread for every tile in the whole application.
+2. `LayoutLabel:382` - a click on a tile that needs power submits to it: `go()`, then
+   `if (getNetworkCommState()) waitForPowerState(true)`, then `Thread.sleep(1000)`, then
+   `execSwitching()`.
+3. `go()` - `exec(CMD_SYSSUB_GO)`.
+4. `exec:2275` - `if (on) NetworkInterface.sendMessage(m);`.  The returned boolean is dropped on the
+   floor, `exec` is `void`, and it is `sendMessage`'s only caller in the tree - so the boolean is dead
+   everywhere, exactly as reported.
+5. `waitForPowerState:646` - `synchronized(this) { while (getPowerState() != state) wait(); }`.  No
+   deadline, no interrupt path that gives up.
+6. `powerState` is written in exactly ONE place: `setPowerState`, called only from `receiveMessage`'s
+   SYS GO/STOP branch (`:2198`, `:2211`).  **Nothing local ever sets it.**  The only thing on earth
+   that can release that wait is a GO echo arriving from the Central Station.
+
+**Preconditions, which the review did not state.**  `powerState` defaults to `true` (`:178`), so the
+`while` only runs when the application currently believes power is OFF - after a STOP echo, i.e. the
+user pressed Stop or the station emergency-stopped.  And `on` must be true, or `exec` never sends and
+`getNetworkCommState()` skips the wait entirely.  So it is: power believed off, GO sent, no echo.
+
+**The correction, and it matters.**  `NetworkProxy.sendMessage` uses an UNCONNECTED `DatagramSocket`
+(`:99`).  A datagram sent to a Central Station that has been switched off, unplugged, or dropped off
+the Wi-Fi **succeeds** - the packet simply disappears, and no exception is raised.  `send()` throws
+only on a local failure: a closed socket that could not be reopened, or a dead interface.
+
+So the likely trigger - the station going away while TrainControl stays open - produces a
+**successful** send and no echo.  Making `exec` return its boolean would report success in exactly
+that case and change nothing.  The bounded wait is therefore not "the smaller first step": it is the
+only one of the two that addresses the case that will actually happen.  The boolean is still worth
+doing, for the narrower local failure, but it is the second fix and not the first.
+
+**Consequence, confirmed:** the parked worker holds the only thread in `SWITCHING`, so every later
+click on any tile on any page queues behind it and never runs.  Nothing logs and nothing times out.
+
+**And a correction to the review on `stopAllLocs`/`stop`:** it was reported as zeroing the *local*
+speed while the trains keep running.  Half right.  `stopAllLocs` sends the HALT and then calls
+`l.stop().setSpeed(0)` per moving locomotive, and `MarklinLocomotive.setSpeed` **does transmit** a
+velocity command (`:759`).  Real stop commands do go out.  They are simply also unreported if they do
+not arrive, so the end state is the same - the UI says stopped and the railway may not be - but the
+cause is "no delivery confirmation anywhere", not "no command sent".  A fix has to report, not send.
+
+**Still open.**  The timeout is a number about your railway: how long a Central Station may reasonably
+take to answer GO before TrainControl gives up and lets the click proceed.  Say the number and it is a
+ten-line change.
 
 **Every wait on a level is untimed.** `waitForPowerState`, `waitForOccupiedFeedback`,
 `waitForClearFeedback`, `waitForAccessoryState` and `waitForS88Reached` all wait without a deadline on
@@ -192,7 +239,30 @@ a state a single dropped UDP datagram can leave un-set. `validatePathActuation` 
 properly — deadline, bounded wait, act on the timeout — and is the model the others should follow. Same
 reason for leaving it: the timeouts are a railway judgement.
 
-This is probably OK- we can't act if the feedback hasn't happened, and the solution is to resend the feedback from the station.  Validate.
+### TR-A21 validated 2026-08-21 - your reading is right; downgraded to D
+
+Both halves of it check out, and the finding is withdrawn as a defect.
+
+**"We can't act if the feedback hasn't happened"** - correct, and it is the stronger half.
+`waitForOccupiedFeedback` waits for a level that means "a train is on this sensor".  If it has not
+happened there is nothing safe for a timeout to DO: proceeding blind runs a train into a block whose
+state is unknown, and stopping mid-block on a guess is a decision the operator has not asked for.  A
+bare deadline here would convert a wait into a wrong action, which is worse.
+
+**"The solution is to resend the feedback from the station"** - the mechanism is already there, and the
+code says so: `Locomotive.FEEDBACK_DURATION_THRESHOLD` is documented as needing to exceed "the CS2
+polling interval".  The station POLLS the s88 bus and re-reports, so the level is a repeating source
+rather than a one-shot event, and a single dropped datagram heals itself on the next poll while the
+train is still standing on the sensor.  That is what makes the untimed wait sound rather than lucky.
+
+Two notes from the trace:
+
+- `waitForAccessoryState` has **no production caller at all** - `testLocomotive` is the only one - so
+  it cannot wedge anything today whatever it does.
+- `waitForPowerState` is the one that does not belong in this group and is the reason it was raised
+  with the others.  It is not waiting for a train; it is waiting for an acknowledgement of a command
+  TrainControl itself just sent, on a shared single thread, with a caller that has a perfectly good
+  fallback.  That is TR-A11, and it stays open.
 
 **The Layout monitor is held across per-command sleeps while a running train needs it.**
 `configureAndLockPath` holds `synchronized (this)` across a lock loop containing a 150 ms sleep per
@@ -203,25 +273,58 @@ again. The fix is to give `locomotivePendingS88` its own monitor; it is already 
 the Layout monitor buys nothing. Left alone because it is a concurrency change to the driving path and
 wants a running railway to trust it.
 
-We can test this in simulation mode.  Validate and fix.
+### TR-A22 validated and fixed 2026-08-21
 
-**Main-window diagram tiles are registered with the model forever.** Removal is opportunistic and keyed
-on `isParentVisible()`, and for a main-window tile the parent is a tab that is visible for the life of
-the application — so nothing is ever removed, and every rebuild adds a generation. Each accessory ends
-up walking hundreds of dead labels per CS echo, decoding icons and posting repaints for them.
-`DiagramTileRegistry.register` documents this exact bug and fixes it for its own map by judging
-`isDisplayable()`; the same idea has to be carried to the three model-side sets. Not a one-liner —
-visibility is the wrong discriminator, because cached pages are legitimately detached but alive — so it
-wants a deliberate pass rather than being tacked onto this batch.
+Confirmed in every link: `configureAndLockPath` wraps its whole lock loop in `synchronized (this)`
+(`:2239`), the loop calls `loc.delay(CONFIGURE_SLEEP)` per edge (`:2275`) and `configureEdge` sleeps
+`CONFIGURE_SLEEP` again per accessory (`:2011`), at 150 ms each; `updatePendingS88` was
+`private synchronized` on the same Layout; and `executePathInternal` calls it immediately before
+`waitForOccupiedFeedback` at every milestone (`:4044`).
 
-Fix this.
+`locomotivePendingS88` now has its own monitor.  That was clean to do because `updatePendingS88` and
+`waitForS88Reached` are the ONLY pair using `wait()`/`notifyAll()` on the layout monitor - the whole
+file has one of each - so nothing else had to move.  The layout monitor keeps its real job, which is
+making a path check and its claim atomic.
 
-**Executors and sockets are never shut down.** Three single-thread pools with non-daemon threads, a
-`DatagramSocket` nothing closes, a non-daemon reader thread, and a discarded `Timer` in the UI. The GUI
-masks all of it with `System.exit(0)`; the programmatic entry point in `examples/` hangs on return, and
-a second `init()` in one JVM leaks the port. Worth a tidy-up, no user-visible symptom today.
+Tested as you suggested, in `testAutoLayoutRace`: hold the layout monitor for as long as a six-edge
+path would (900 ms) and ask whether a locomotive already under way can still record which sensor it is
+waiting for.  With the old monitor it took **911 ms**; with its own, effectively nothing.  Seen failing
+first.
 
-Clean it up.
+### TR-A23 fixed 2026-08-21
+
+The rule `DiagramTileRegistry.register` had worked out for its own map is now in one place -
+`LayoutLabel.forgetReplaced` - and all three device classes call it from `addTile`.  Registering a
+label for a device is the moment the old labels for it became rubbish, so it is the moment to drop
+them.
+
+The two things that make it correct rather than merely plausible, both taken from the registry's own
+reasoning and its comment:
+
+- judged by `isDisplayable()` rather than by visibility, because a label whose grid has been replaced
+  has been removed from a realised window and has no peer, which is what "nobody can see this" means;
+- and only against labels of the SAME window, because the main window caches a page's grid and
+  re-attaches it when the user returns to that page.  Those labels are detached and perfectly alive,
+  and judging them from a popup rebuilding the same page would throw them out while they were merely
+  put away - after which that page would come back registered nowhere and never light up again.
+
+The arriving label is never judged; it may legitimately not be attached yet.
+
+### TR-B13 cleaned up 2026-08-21
+
+Everything that outlived its caller is now a daemon, and there is a way to give the port back.
+
+- the three message processors are built by one `messageProcessor(name)` factory that sets
+  `setDaemon(true)` and gives each thread a name, so they show up as something in a thread dump;
+- the CAN listener is a named daemon too;
+- the update-check timer is `new Timer(true)`;
+- `MarklinControlStation.shutdown()` closes the socket through `NetworkProxy.stopListening()` and
+  shuts the three pools down.
+
+Nothing needs `shutdown()` to close the application - the daemons go with the JVM, which is what fixes
+the example in `org.traincontrol.examples` hanging on return.  It is there for the case the daemons
+cannot fix: a caller that finishes with one control station and builds another in the same JVM, which
+used to find UDP 15730 still held by the first.
 
 ### Deliberate, or not worth it
 
@@ -281,3 +384,17 @@ moved; duplicate makes one copy.
 anything, and save. The signal must still be at danger.
 
 **31. Export a diagram as a picture, then throw a switch on that page.** The tile has to keep updating.
+
+## Added 2026-08-21, second round
+
+**32. Two trains running, one dispatched onto a long path.** TR-A22 in the flesh: while one locomotive
+is being sent off over several edges, a train already under way has to reach and stop at its next
+sensor normally. What it must NOT do is run past it. Worth doing in simulation first, then for real.
+
+**33. Switch pages, change tile size, and toggle addresses a dozen times, then throw a switch on the
+first page.** TR-A23: the tile still has to respond. If it does, the pruning is not throwing away
+labels it should have kept - which is the risk of that change, not the leak it fixes.
+
+**34. Open a popup diagram window on the page the main window is showing, close it, then throw a
+switch on that page.** The same risk from the other side: a popup rebuilding a page must not evict the
+main window's labels for it.

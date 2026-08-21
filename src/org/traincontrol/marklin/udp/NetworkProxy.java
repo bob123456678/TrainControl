@@ -58,6 +58,21 @@ public class NetworkProxy
         return this.transmitIP.getHostAddress();
     }
 
+    // The listener thread, kept so that stopListening can end it
+    private ReadMessages reader;
+
+    /**
+     * Closes the socket, which is what ends the listener.
+     *
+     * Nothing needs this while the application is running - the thread is a daemon and goes with the
+     * JVM.  It is here so that a caller who creates a control station and finishes with it can give
+     * the port back: a second init() in the same JVM otherwise found 15730 still held by the first.
+     */
+    public void stopListening()
+    {
+        if (this.socket != null && !this.socket.isClosed()) this.socket.close();
+    }
+
     /**
      * Sets the model field
      * 
@@ -73,8 +88,17 @@ public class NetworkProxy
             this.getIP()
         );
         
-        // Start reader
-        new ReadMessages().start();
+        // Start reader.
+        //
+        // A DAEMON, because it exists only to serve a running application: its only exit condition is
+        // the socket closing, so as an ordinary thread it kept the JVM alive for ever after the caller
+        // was done.  The GUI hid that behind System.exit(0); anything embedding TrainControl - the
+        // example in org.traincontrol.examples, or a test - simply hung on return.
+        this.reader = new ReadMessages();
+
+        this.reader.setName("cs2-can-listener");
+        this.reader.setDaemon(true);
+        this.reader.start();
     }
     
     /**

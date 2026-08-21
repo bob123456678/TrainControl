@@ -240,9 +240,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private long lastPacketAt;
 
     private static final long DUPLICATE_WINDOW_NS = 250L * 1000000L;
-    private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
-    private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
-    private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
+    // DAEMONS.  These serve inbound CAN messages and have no meaning without the application they
+    // serve, but the default factory makes ordinary threads - so all three outlived every caller and
+    // kept the JVM up.  The GUI hid it behind System.exit(0) and nothing else could.
+    private static ExecutorService messageProcessor(final String name)
+    {
+        return Executors.newFixedThreadPool(1, runnable ->
+        {
+            Thread thread = new Thread(runnable, name);
+
+            thread.setDaemon(true);
+
+            return thread;
+        });
+    }
+
+    private final ExecutorService locMessageProcessor = messageProcessor("cs2-loc-messages");
+    private final ExecutorService feedbackMessageProcessor = messageProcessor("cs2-feedback-messages");
+    private final ExecutorService systemMessageProcessor = messageProcessor("cs2-system-messages");
     
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
@@ -3137,6 +3152,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }        
     }
     
+    /**
+     * Gives back everything this control station holds: the listener, its port, and the three threads
+     * that serve inbound messages.
+     *
+     * Not needed to close the application - every one of those is a daemon now, so they go with the
+     * JVM - but a caller that creates a control station and finishes with it has no other way to
+     * release UDP 15730, and a second init() in the same JVM then failed on a port the first still
+     * held.
+     */
+    public void shutdown()
+    {
+        if (this.NetworkInterface != null) this.NetworkInterface.stopListening();
+
+        this.locMessageProcessor.shutdownNow();
+        this.feedbackMessageProcessor.shutdownNow();
+        this.systemMessageProcessor.shutdownNow();
+    }
+
     /**
      * Returns if the power is on
      * @return 

@@ -4177,7 +4177,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {            
             model.sendPing(true);
             
-            (new Timer()).scheduleAtFixedRate(new TimerTask()
+            // A DAEMON timer.  The handle is discarded - nothing ever cancels this - so as an
+            // ordinary Timer its thread kept the JVM alive after the window closed, which
+            // System.exit(0) was quietly covering for.
+            (new Timer(true)).scheduleAtFixedRate(new TimerTask()
             {
                 @Override
                 public void run()

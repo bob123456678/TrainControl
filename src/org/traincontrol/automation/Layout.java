@@ -410,6 +410,26 @@ public class Layout
     private final Set<Locomotive> takingPath;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
     private final Map<Locomotive, String> locomotivePendingS88;
+
+    /**
+     * The monitor for the pending-s88 bookkeeping, which is NOT the layout monitor.
+     *
+     * It used to be, and that put a RUNNING train behind a train that was still being dispatched.
+     * configureAndLockPath holds the layout monitor across its whole lock loop - deliberately, because
+     * claiming a path has to be atomic - and that loop sleeps CONFIGURE_SLEEP per edge and again per
+     * accessory inside configureEdge, so it is held for seconds on a long path.  Meanwhile every
+     * locomotive already under way calls updatePendingS88 immediately before waiting for its next
+     * sensor, and that needed the same monitor.
+     *
+     * So a second train could be blocked here while its own train crossed the sensor it was about to
+     * start waiting for AND cleared it again.  waitForOccupiedFeedback tests a LEVEL, so by the time
+     * it ran the sensor read clear: it then waited for the next occupancy of a sensor the train had
+     * already passed, and drove on without slowing or stopping.
+     *
+     * Nothing else waits on or notifies the layout monitor - waitForS88Reached and updatePendingS88
+     * are the only pair - so moving them here costs nothing and unpicks the two jobs.
+     */
+    private final Object pendingS88Monitor = new Object();
     
     // Execution history
     private final List<TimetablePath> timetable;
@@ -3755,13 +3775,13 @@ public class Layout
 
         while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
         {
-            synchronized (this)
+            synchronized (pendingS88Monitor)
             {
                 while (this.locomotivePendingS88.get(l) != null && this.locomotivePendingS88.get(l).equals(targetS88))
                 {
                     try
                     {
-                        wait();
+                        pendingS88Monitor.wait();
                     }
                     catch (InterruptedException ex)
                     {
@@ -3783,18 +3803,22 @@ public class Layout
      * @param loc
      * @param s88 
      */
-    private synchronized void updatePendingS88(Locomotive loc, String s88)
+    private void updatePendingS88(Locomotive loc, String s88)
     {
-        if (s88 == null)
+        // On pendingS88Monitor rather than on the layout - see the field
+        synchronized (pendingS88Monitor)
         {
-            this.locomotivePendingS88.remove(loc);
-        }
-        else
-        {
-            this.locomotivePendingS88.put(loc, s88);
-        }
+            if (s88 == null)
+            {
+                this.locomotivePendingS88.remove(loc);
+            }
+            else
+            {
+                this.locomotivePendingS88.put(loc, s88);
+            }
 
-        notifyAll();
+            pendingS88Monitor.notifyAll();
+        }
     }
     
     /**

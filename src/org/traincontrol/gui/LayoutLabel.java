@@ -457,6 +457,48 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * Drops the labels that a newly registered one replaces.
+     *
+     * Registering a label for a device is the moment the old labels for it became rubbish, so it is the
+     * moment to drop them.  Nothing else can: the prune inside updateTiles asks whether a label's
+     * parent is VISIBLE, and the main window's parent is the tab strip, which is visible for the life
+     * of the application - so on the main window that test can never be false and nothing was ever
+     * removed.  Every repaint of the diagram that rebuilt the grid - a size change, an address toggle,
+     * closing the editor, switching pages with the cache cold - left a whole page of dead labels
+     * registered, and each accessory then walked an ever-longer list on every message from the
+     * Central Station, decoding icons and posting repaints for components attached to nothing.
+     *
+     * Judged by isDisplayable rather than by visibility: a label whose grid has been replaced has been
+     * removed from a realised window and has no peer, which is what "nobody can see this any more"
+     * actually means.  The arriving label is never judged - it may legitimately not be attached yet.
+     *
+     * And only labels of the SAME window.  The main window caches a page's grid and re-attaches it when
+     * the user comes back to that page, so its labels are detached - and perfectly alive - whenever
+     * another page is showing.  Judging them from a popup rebuilding the same page would throw them out
+     * while they were merely put away, and the page would come back registered nowhere.
+     *
+     * The same rule DiagramTileRegistry.register applies to its own map, and for the same reasons; it
+     * lives here so that the three device classes share one copy of it rather than three.
+     *
+     * @param registered the labels already registered with the device
+     * @param arriving the label being registered now
+     */
+    public static void forgetReplaced(java.util.Collection<LayoutLabel> registered, LayoutLabel arriving)
+    {
+        if (registered == null || arriving == null) return;
+
+        for (java.util.Iterator<LayoutLabel> i = registered.iterator(); i.hasNext();)
+        {
+            LayoutLabel existing = i.next();
+
+            if (existing != arriving && existing.sharesWindowWith(arriving) && !existing.isDisplayable())
+            {
+                i.remove();
+            }
+        }
+    }
+
+    /**
      * Which page of the diagram this square is on.
      *
      * A label is otherwise told neither its page nor its coordinates, and asking the main window which

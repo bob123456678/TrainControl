@@ -148,6 +148,88 @@ public class testAutoLayoutRace
             "Concurrent unsynchronized read of activeLocomotives threw: " + race.get());
     }
 
+    /**
+     * A train already under way does not queue behind one that is still being dispatched.
+     *
+     * `configureAndLockPath` holds the layout monitor across its whole lock loop, deliberately -
+     * claiming a path has to be atomic - and that loop sleeps CONFIGURE_SLEEP per edge and again per
+     * accessory, so on a long path it is held for seconds.  `updatePendingS88` used to want the same
+     * monitor, and every running locomotive calls it immediately before waiting for its next sensor.
+     *
+     * So a second train could be held here while its own train crossed that sensor AND cleared it
+     * again.  `waitForOccupiedFeedback` tests a LEVEL, so it would then find the sensor clear and wait
+     * for the next occupancy of a sensor the train had already passed - no slowing, no stopping.
+     *
+     * This holds the layout monitor for as long as a six-edge path would and asks whether the
+     * bookkeeping still runs.  Driven directly rather than through autonomy, because what is being
+     * tested is which monitor guards what, and a full simulated run would make the timing the subject.
+     */
+    @Test
+    public void testARunningTrainIsNotBlockedByOneBeingDispatched() throws Exception
+    {
+        final Layout layout = model.getAutoLayout();
+        final Locomotive loc = model.getLocByName("Race loc A");
+
+        // What configureAndLockPath does: the layout monitor, held across the per-command sleeps
+        final long held = 6 * 150L;
+
+        final AtomicBoolean holding = new AtomicBoolean(false);
+
+        Thread dispatcher = new Thread(() ->
+        {
+            synchronized (layout)
+            {
+                holding.set(true);
+
+                try
+                {
+                    Thread.sleep(held);
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, "dispatching-a-path");
+
+        dispatcher.start();
+
+        while (!holding.get())
+        {
+            Thread.sleep(1);
+        }
+
+        // And what a locomotive already under way does immediately before waiting for its next sensor
+        long began = System.currentTimeMillis();
+
+        pendingS88(layout, loc, "Race sensor");
+
+        long took = System.currentTimeMillis() - began;
+
+        dispatcher.join(held + 2000);
+
+        System.out.println("bookkeeping under a held layout monitor took " + took + "ms");
+
+        assertTrue(took < held / 2,
+            "a locomotive already under way waited " + took + "ms to record which sensor it is "
+            + "waiting for, because a path being dispatched held the layout monitor.  Its train can "
+            + "cross and clear that sensor in the meantime, and it then waits for a trigger that has "
+            + "already happened");
+    }
+
+    /**
+     * updatePendingS88 is private - it is bookkeeping, and nothing outside the driving loop has any
+     * business calling it.  Reached here the way testImportRename reaches its internals.
+     */
+    private static void pendingS88(Layout layout, Locomotive loc, String s88) throws Exception
+    {
+        java.lang.reflect.Method method = Layout.class.getDeclaredMethod(
+            "updatePendingS88", Locomotive.class, String.class);
+
+        method.setAccessible(true);
+        method.invoke(layout, loc, s88);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
