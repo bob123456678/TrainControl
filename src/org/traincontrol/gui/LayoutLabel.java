@@ -166,6 +166,38 @@ public final class LayoutLabel extends JLabel
             this.setBorder(blackBorder);
         }
         
+        // Every square on the MAIN window reports when the pointer is over it.
+        //
+        // The keyboard shortcuts that move a locomotive from square to square need to know which
+        // square is meant, and a diagram has no cursor and no selection - the pointer is the only
+        // thing saying where the user is looking.  The graph window did the same with its hovered
+        // node; this is that, on the surface that replaced it.
+        //
+        // On every square rather than only on sensors: a shortcut aimed at plain track has to be
+        // ignored rather than acted on at whichever station was hovered last, which is what leaving
+        // the old square set would do.
+        if (!edit && tcUI != null)
+        {
+            LayoutLabel hovering = this;
+
+            this.addMouseListener(new MouseAdapter()
+            {
+                @Override
+                public void mouseEntered(MouseEvent e)
+                {
+                    tcUI.setHoveredDiagramTile(hovering.autonomyPage,
+                        hovering.component == null ? -1 : hovering.component.getX(),
+                        hovering.component == null ? -1 : hovering.component.getY());
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e)
+                {
+                    tcUI.setHoveredDiagramTile(null, -1, -1);
+                }
+            });
+        }
+
         if (this.component != null)
         {
             // Every square answers a right-click, whatever is drawn on it.

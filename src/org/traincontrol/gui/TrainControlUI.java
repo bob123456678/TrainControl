@@ -1700,6 +1700,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Puts "Combine linked pages" on the Layouts menu, where the other page operations are.
+     *
+     * Added in code rather than in the form, which is generated - the same way everything else added
+     * to this window since the diagram work has been mounted.
+     */
+    private void addCombinePagesItem()
+    {
+        if (modifyLocalLayoutMenu == null) return;
+
+        javax.swing.JMenuItem item =
+            new javax.swing.JMenuItem(I18n.t("layout.ui.menuCombineLinkedPages"));
+
+        item.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
+
+        item.addActionListener(event -> combineLinkedPages());
+
+        modifyLocalLayoutMenu.add(item);
+    }
+
+    /**
      * Takes the legacy track diagram editor off the Layouts menu.
      *
      * Removed here rather than in the form, which is generated and cannot be hand-edited - so the
@@ -1879,6 +1899,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         mountAutonomyMenu();
 
         removeLegacyEditorItem();
+
+        addCombinePagesItem();
 
         // And the tab it used to fill goes.  Removed here rather than left out of the form, because
         // the form is generated - and it comes BACK below when there is no local layout, where the
@@ -2835,6 +2857,127 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param y
      * @return the key, or null when there is no page to name it on
      */
+    /**
+     * The diagram square the pointer is over, or null.
+     *
+     * Written by every LayoutLabel on this window as the pointer crosses it.  A diagram has no
+     * cursor and no selection, so the pointer is the only thing that says which square a keyboard
+     * shortcut is about - which is how the graph window worked too, with its hovered node.
+     */
+    private volatile org.traincontrol.automationui.TileGraph.TileKey hoveredDiagramTile;
+
+    /**
+     * @param page which page the square is on, or null when the pointer has left the diagram
+     * @param x
+     * @param y
+     */
+    public void setHoveredDiagramTile(String page, int x, int y)
+    {
+        hoveredDiagramTile = page == null || x < 0 || y < 0
+            ? null : new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
+    }
+
+    /**
+     * Moves a locomotive between squares from the keyboard, the way the graph window did.
+     *
+     * Control+X takes the locomotive off the hovered square and remembers it, Control+V puts one
+     * down, and Delete takes one off without remembering.  What Control+V puts down is whatever
+     * Control+X last took, or failing that the locomotive selected on the keyboard - so a train can
+     * be placed without cutting one first, which is the commonest case when a layout is being set up.
+     *
+     * THE SAME KEYS the locomotive buttons use, told apart by what the pointer is over.  Control+X
+     * on a button cuts the button; over a station square it cuts the train standing there.  A user
+     * pointing at a station and pressing Control+X means the station - there is nothing else it
+     * could mean - and giving the diagram keys of its own would mean two cut shortcuts to remember
+     * for one idea.  When the pointer is not over a square this does nothing at all and the button
+     * behaviour runs unchanged.
+     *
+     * Refused while autonomy is busy: every one of these moves a train the planner is reading.
+     *
+     * @param keyCode which key
+     * @param controlPressed whether Control was held
+     * @return true when this handled the key, so the caller must not also act on it
+     */
+    private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
+    {
+        org.traincontrol.automationui.TileGraph.TileKey over = hoveredDiagramTile;
+
+        if (over == null || !this.model.hasAutoLayout() || this.isAutonomyBusy()) return false;
+
+        boolean cut = controlPressed && keyCode == KeyEvent.VK_X;
+        boolean paste = controlPressed && keyCode == KeyEvent.VK_V;
+        boolean clear = !controlPressed
+            && (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE);
+
+        if (!cut && !paste && !clear) return false;
+
+        org.traincontrol.automation.Point point = getAutonomyPointForTile(over);
+
+        if (point == null) return false;
+
+        if (paste)
+        {
+            Locomotive placing = this.cutLocomotive != null ? this.cutLocomotive : this.getActiveLoc();
+
+            // Nothing to put down is not a reason to fall through to the button shortcut: the user is
+            // pointing at the diagram, and a paste onto a locomotive button while they are looking at
+            // a station is the one outcome they cannot have meant.
+            if (placing == null) return true;
+
+            this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
+
+            this.cutLocomotive = null;
+        }
+        else
+        {
+            // Remembered BEFORE the move, because moveLocomotive is what clears the square
+            this.cutLocomotive = cut ? point.getCurrentLocomotive() : null;
+
+            this.model.getAutoLayout().moveLocomotive(null, point.getName(), true);
+        }
+
+        // And into the SETUP, so the next build puts the train where it now is.  A placement made
+        // only in the running layout goes back where it was the next time a configuration is loaded.
+        rememberPlacement(point, over);
+
+        this.updateVisiblePoints();
+        this.repaintAutoLocList(false);
+
+        return true;
+    }
+
+    /**
+     * Writes a square's occupant into the autonomy setup, after the layout has been changed.
+     */
+    private void rememberPlacement(org.traincontrol.automation.Point point,
+        org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return;
+
+        session.placeLocomotive(tile,
+            point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
+
+        try
+        {
+            session.save();
+        }
+        catch (java.io.IOException e)
+        {
+            // The placement stands either way; only the memory of it is at risk
+            this.model.log(e);
+        }
+    }
+
+    /**
+     * What Control+X took off a square, waiting for a Control+V.
+     *
+     * Kept apart from the locomotive-button clipboard, which holds a BUTTON rather than a train and
+     * would put one back on the keyboard rather than on the railway.
+     */
+    private Locomotive cutLocomotive;
+
     public org.traincontrol.automationui.TileGraph.TileKey autonomyTileAt(
         String onPage, int x, int y)
     {
@@ -11726,7 +11869,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int keyCode = evt.getKeyCode();
         boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
         boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
-        
+
+        // The diagram gets first refusal on cut, paste and delete - but only while the pointer is
+        // over one of its squares.  See locomotiveGestureOnDiagram; everywhere else the shortcuts
+        // below are untouched.
+        if (locomotiveGestureOnDiagram(keyCode, controlPressed)) return;
+
         if (altPressed && keyCode == KeyEvent.VK_G)
         {
             go();
@@ -16709,6 +16857,205 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param duplicate - true if duplicating
      * @param blank - true to clear
      */
+    /**
+     * Builds one page showing this page and every page it links to.
+     *
+     * A link is a hole in the diagram that comes out somewhere else, and following one means changing
+     * pages and losing sight of where you were.  For a layout drawn across four pages that is most of
+     * the work of reading it.  This lays the pages the current one reaches out one under another so
+     * the whole of that neighbourhood can be seen at once.
+     *
+     * ONE LEVEL, deliberately.  Following links recursively on a layout whose pages all reach each
+     * other produces every page, in an order nobody chose, and the result is not a view of anywhere -
+     * it is the whole railway with the pages shuffled.  A link from a page the current one reached is
+     * a step further away than this is meant to show.
+     *
+     * The result is EXCLUDED FROM AUTONOMY as it is written, and this is not optional.  Every square
+     * on it is a redrawing of a square that exists elsewhere, so left included it would mint a second
+     * Point for every sensor and a parallel set of edges - which is the exact failure the exclusion
+     * flag was invented for.  See the diagram-autonomy plan, which called this the "Combined page
+     * problem" before there was a way to make one.
+     *
+     * Pages are stacked with a blank row between them, in the order the links appear when the page is
+     * read left to right and top to bottom, so two runs over the same diagram produce the same page.
+     */
+    private void combineLinkedPages()
+    {
+        if (refuseWhileEditorOpen()) return;
+
+        if (!this.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
+            return;
+        }
+
+        final String from = this.LayoutList.getSelectedItem().toString();
+
+        final List<String> pages = pagesLinkedFrom(from);
+
+        if (pages.size() < 2)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoNothingLinkedFromHere"));
+            return;
+        }
+
+        String name = JOptionPane.showInputDialog(this,
+            I18n.t("layout.ui.promptCombinedPageName"),
+            I18n.f("layout.ui.combinedPageName", from));
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        final String combined = name.trim();
+
+        if (this.model.getLayoutList().contains(combined))
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", combined));
+            return;
+        }
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                writeCombinedPage(combined, pages);
+
+                List<String> layoutList = this.model.getLayoutList();
+
+                layoutList.add(combined);
+
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+
+                // Excluded BEFORE the pages are re-read, so that the rebuild which follows never sees
+                // it as a page to walk.  Included for even one build, every sensor on it becomes a
+                // second Point for a sensor that already has one.
+                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+                if (session != null)
+                {
+                    session.setPageExcluded(combined, true);
+                    session.saveQuietly();
+                }
+
+                this.layoutEditingComplete(() ->
+                {
+                    this.LayoutList.setSelectedItem(combined);
+                    this.repaintLayout();
+                });
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(this,
+                    I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage()));
+
+                this.model.log(ex);
+            }
+        });
+    }
+
+    /**
+     * The page itself, then every page its links lead to, without repeats.
+     *
+     * A link carries the INDEX of the page it jumps to - the same number goToLayoutPage takes - so
+     * the answer is read off the tiles rather than out of the autonomy setup, and works whether or
+     * not autonomy has ever been set up on this layout.
+     *
+     * @param from the page to start at
+     * @return that page first, then the pages it reaches
+     */
+    private List<String> pagesLinkedFrom(String from)
+    {
+        List<String> out = new java.util.ArrayList<>();
+
+        out.add(from);
+
+        LayoutDiagram page = this.model.getLayout(from);
+
+        if (page == null) return out;
+
+        List<String> all = this.model.getLayoutList();
+
+        // Left to right, top to bottom, so the same diagram always produces the same page
+        for (int y = 0; y < page.getSy(); y++)
+        {
+            for (int x = 0; x < page.getSx(); x++)
+            {
+                org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+
+                if (tile == null || !tile.isLink()) continue;
+
+                int index = tile.getRawAddress();
+
+                if (index < 0 || index >= all.size()) continue;
+
+                String target = all.get(index);
+
+                if (!out.contains(target)) out.add(target);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Writes the combined page: each source page's squares, stacked with a blank row between.
+     *
+     * Copied square by square rather than by reference, because a LayoutDiagramComponent carries its
+     * own coordinates and the copies sit at different ones.  A link on a combined page keeps pointing
+     * at the page it always pointed at - it is a redrawing, and following it should still go where
+     * the original does.
+     */
+    private void writeCombinedPage(String name, List<String> pages) throws Exception
+    {
+        int width = 0;
+        int height = 0;
+
+        for (String each : pages)
+        {
+            LayoutDiagram page = this.model.getLayout(each);
+
+            if (page == null) continue;
+
+            width = Math.max(width, page.getSx());
+            height += page.getSy() + 1;
+        }
+
+        LayoutDiagram made = new LayoutDiagram(name, Math.max(1, width), Math.max(1, height),
+            this.getLocalLayoutPath(), this.model);
+
+        int top = 0;
+
+        for (String each : pages)
+        {
+            LayoutDiagram page = this.model.getLayout(each);
+
+            if (page == null) continue;
+
+            for (int y = 0; y < page.getSy(); y++)
+            {
+                for (int x = 0; x < page.getSx(); x++)
+                {
+                    org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+
+                    if (tile == null) continue;
+
+                    org.traincontrol.base.LayoutDiagramComponent copy =
+                        new org.traincontrol.base.LayoutDiagramComponent(tile);
+
+                    copy.setX(x);
+                    copy.setY(y + top);
+
+                    made.addComponent(copy, x, y + top);
+                }
+            }
+
+            top += page.getSy() + 1;
+        }
+
+        made.saveChanges(name, true);
+    }
+
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
         // Not while an editor holds the diagram.
