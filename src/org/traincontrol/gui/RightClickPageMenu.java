@@ -91,8 +91,15 @@ public class RightClickPageMenu extends MouseAdapter
 
             addSeparator();
 
+            // No number on this one, though there is one on Delete below.
+            //
+            // The two sat side by side reading "Add Page 11" and "Delete Page 4", and two different
+            // numbers next to each other invite the reader to work out how they relate - which is
+            // nothing: one is where a new page would land and the other is the page being looked at.
+            // Delete keeps its number because it names something that already exists and getting the
+            // wrong one matters.
             menuItem = new JMenuItem(
-                I18n.f("page.ui.menuAddPage", ui.getNumLocMappings() + 1)
+                I18n.t("page.ui.menuAddPage")
             );
             menuItem.addActionListener(event -> ui.addLocMappingPage());
             menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
