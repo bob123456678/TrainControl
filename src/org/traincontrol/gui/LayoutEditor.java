@@ -349,8 +349,6 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
-
-        mountToolStrip();
     }
 
     /**
@@ -368,22 +366,52 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void mountToolStrip()
     {
-        if (!(getContentPane().getLayout() instanceof javax.swing.GroupLayout)) return;
+        if (toolStrip != null) return;
 
         toolStrip = buildToolStrip();
 
-        JPanel column = new JPanel();
+        // Called from render() rather than from the constructor.
+        //
+        // GroupLayout.replace refuses a component it has not registered, and it registers them when
+        // it first lays the window out - which has not happened while the constructor is still
+        // running, whatever pack() looks like it is doing.  From the constructor this threw
+        // "Component must already exist" and the editor would not open at all.  The autonomy panel
+        // mounts itself the same way and never hit this, because it mounts on a window the user has
+        // already been looking at.
+        try
+        {
+            if (!(getContentPane().getLayout() instanceof javax.swing.GroupLayout))
+            {
+                throw new IllegalStateException("not a GroupLayout");
+            }
 
-        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
-        column.setOpaque(false);
+            JPanel column = new JPanel();
 
-        toolStrip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        this.jLabel2.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+            column.setOpaque(false);
 
-        column.add(toolStrip);
-        column.add(this.jLabel2);
+            toolStrip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            this.jLabel2.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-        ((javax.swing.GroupLayout) getContentPane().getLayout()).replace(this.jLabel2, column);
+            column.add(toolStrip);
+            column.add(this.jLabel2);
+
+            ((javax.swing.GroupLayout) getContentPane().getLayout()).replace(this.jLabel2, column);
+        }
+        catch (RuntimeException e)
+        {
+            // Back inside the palette, which is where these lived before and is not where they
+            // belong - but a toolbar in the wrong place is a far smaller fault than an editor that
+            // will not open, and swapping a component in a generated layout is exactly the sort of
+            // thing a later change to the form can quietly break.
+            if (parent != null && parent.getModel() != null) parent.getModel().log(e);
+
+            this.newComponents.add(toolStrip);
+        }
+
+        this.newComponents.revalidate();
+        getContentPane().revalidate();
+        getContentPane().repaint();
     }
 
     /**
@@ -2144,13 +2172,6 @@ public class LayoutEditor extends PositionAwareJFrame
                         layout.getName(), at.getX() + dx, at.getY() + dy));
             }
 
-            if (autonomy != null)
-            {
-                autonomy.moveTiles(moving);
-
-                rememberAutonomy(autonomy);
-            }
-
             // Clear
             for (org.traincontrol.base.TileSelection.At at : from)
             {
@@ -2174,6 +2195,24 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
 
                 layout.addComponent(carrying, toX, toY);
+            }
+
+            // The setup follows the track, and only once the track has actually moved.
+            //
+            // This ran BEFORE the two loops above, which was wrong in a way that took a corrupted
+            // layout to notice: moveTiles rebuilds the graph from the pages, and at that moment the
+            // pages still had every tile at its old square while the store had already been told the
+            // stations were at their new ones.  The graph was therefore built from a diagram and a
+            // setup that disagreed about every square in the selection - and the result of that was
+            // saved.
+            //
+            // Written out here too, for the same reason: nothing else saves this session, and the
+            // reset that follows an edit to a diagram throws it away.
+            if (autonomy != null)
+            {
+                autonomy.moveTiles(moving);
+
+                rememberAutonomy(autonomy);
             }
 
             // The selection travels with the tiles, so a group can be nudged twice
@@ -2757,7 +2796,29 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (lastHoveredY > -1)
             {
+                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
+                // right grows the page, so afterwards the numbers describe a diagram this map is not
+                // about.
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                    setupShift(false, lastHoveredY + 1, layout.getSy() - 1, 0, -1);
+
                 layout.shiftUp(lastHoveredY);
+
+                // And applied after, so the graph is rebuilt from a diagram that has already moved.
+                //
+                // These four move every tile past one square and told the setup nothing at all, which
+                // is the same fault a dragged tile had - every station, name, facing and restriction
+                // left behind on coordinates the track had walked away from, and the next reconcile
+                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
+                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.moveTiles(moving);
+
+                    rememberAutonomy(autonomy);
+                }
 
                 refreshGrid();
             }
@@ -2777,7 +2838,29 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (lastHoveredY > -1)
             {
+                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
+                // right grows the page, so afterwards the numbers describe a diagram this map is not
+                // about.
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                    setupShift(false, lastHoveredY, layout.getSy() - 1, 0, 1);
+
                 layout.shiftDown(lastHoveredY);
+
+                // And applied after, so the graph is rebuilt from a diagram that has already moved.
+                //
+                // These four move every tile past one square and told the setup nothing at all, which
+                // is the same fault a dragged tile had - every station, name, facing and restriction
+                // left behind on coordinates the track had walked away from, and the next reconcile
+                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
+                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.moveTiles(moving);
+
+                    rememberAutonomy(autonomy);
+                }
 
                 refreshGrid();
             }
@@ -2797,7 +2880,29 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (lastHoveredX > -1)
             {
+                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
+                // right grows the page, so afterwards the numbers describe a diagram this map is not
+                // about.
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                    setupShift(true, lastHoveredX + 1, layout.getSx() - 1, -1, 0);
+
                 layout.shiftLeft(lastHoveredX);
+
+                // And applied after, so the graph is rebuilt from a diagram that has already moved.
+                //
+                // These four move every tile past one square and told the setup nothing at all, which
+                // is the same fault a dragged tile had - every station, name, facing and restriction
+                // left behind on coordinates the track had walked away from, and the next reconcile
+                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
+                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.moveTiles(moving);
+
+                    rememberAutonomy(autonomy);
+                }
 
                 refreshGrid();
             }
@@ -2817,7 +2922,29 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (lastHoveredX > -1)
             {
+                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
+                // right grows the page, so afterwards the numbers describe a diagram this map is not
+                // about.
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                    setupShift(true, lastHoveredX, layout.getSx() - 1, 1, 0);
+
                 layout.shiftRight(lastHoveredX);
+
+                // And applied after, so the graph is rebuilt from a diagram that has already moved.
+                //
+                // These four move every tile past one square and told the setup nothing at all, which
+                // is the same fault a dragged tile had - every station, name, facing and restriction
+                // left behind on coordinates the track had walked away from, and the next reconcile
+                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
+                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+                if (autonomy != null)
+                {
+                    autonomy.moveTiles(moving);
+
+                    rememberAutonomy(autonomy);
+                }
 
                 refreshGrid();
             }
@@ -2827,6 +2954,46 @@ public class LayoutEditor extends PositionAwareJFrame
             this.parent.getModel().log(e.getMessage());
             this.parent.getModel().log(e);
         }
+    }
+
+    /**
+     * Which squares a shift moves, and where to.
+     *
+     * The whole page from one row or column onwards, moved by one.  A square that is not in the
+     * range is left out entirely rather than mapped to itself, so moveTiles can tell the difference
+     * between a square that moved and a square something arrived on.
+     *
+     * @param across true to shift columns, false to shift rows
+     * @param from the first row or column that moves
+     * @param to the last one
+     * @param dx how far each moves horizontally
+     * @param dy and vertically
+     * @return the moves
+     */
+    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> setupShift(boolean across, int from, int to,
+        int dx, int dy)
+    {
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            org.traincontrol.automationui.TileGraph.TileKey> moving = new java.util.LinkedHashMap<>();
+
+        int otherEnd = across ? layout.getSy() - 1 : layout.getSx() - 1;
+
+        for (int line = from; line <= to; line++)
+        {
+            for (int other = 0; other <= otherEnd; other++)
+            {
+                int x = across ? line : other;
+                int y = across ? other : line;
+
+                moving.put(
+                    new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y),
+                    new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), x + dx, y + dy));
+            }
+        }
+
+        return moving;
     }
 
     public void growEdges()
@@ -3255,6 +3422,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {        
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            mountToolStrip();
+
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
             drawGrid();
