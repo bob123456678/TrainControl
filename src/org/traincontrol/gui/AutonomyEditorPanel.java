@@ -1147,9 +1147,16 @@ public class AutonomyEditorPanel extends JPanel
             // A link's own settings, one level down.  Loose in Connections they sat beside "make a
             // one-way run from here", which is about track and means nothing on a link - two unrelated
             // subjects at the same level, one of which does not apply.
+            // Naming it stays out here, one level up from the rest.
+            //
+            // A link is found by its name - the pairing list offers every other link on the railway
+            // by name, and an unnamed one shows as a coordinate pair nobody recognises - so naming is
+            // the first thing done to a new link and the thing done most often.  Buried a level down
+            // beside pairing and unpairing it was three clicks from the square it is about.
+            connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+
             javax.swing.JMenu link = new javax.swing.JMenu(I18n.t("autosetup.ui.menuLinkGroup"));
 
-            link.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
             link.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)

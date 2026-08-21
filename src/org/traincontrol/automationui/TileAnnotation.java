@@ -656,11 +656,20 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
+            // The badge first, and the arrows over it.
+            //
+            // A station's badge is the largest mark on a square, and on a CURVE the track - and so
+            // the badge, which is centred on the track rather than on the tile - swings out towards
+            // the corner the rails bend around, which is exactly where the arrow for one of the two
+            // sides sits.  Drawn last, the badge covered it, and the direction of a curved station
+            // was the thing hardest to read on the whole diagram.
+            //
+            // Which way a train may run is worth more than an unbroken outline on a badge.
+            if (badge != null) paintBadge(g, width, height);
+
             paintArrows(g, width, height);
 
             paintArrivals(g, width, height);
-
-            if (badge != null) paintBadge(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
@@ -1082,14 +1091,19 @@ public class TileAnnotation
         dx /= len;
         dy /= len;
 
-        // The SHUT direction is the filled one, and the larger.  It was the other way round, which
-        // gave the most ink on the diagram to the state that says nothing needs attention - and a
-        // reader scanning for what is restricted was scanning for the faint shapes.
+        // The OPEN direction is the filled one, and the two are the same size.
         //
-        // Filled against hollow carries the difference without colour, so it survives being printed,
-        // a poor screen, and a reader who cannot tell red from green.  Colour is never the only thing
-        // saying it.
-        double size = Math.max(4.0, span / 3.2) * (allowed ? 0.82 : 1.0);
+        // It was the other way round twice over - shut arrows filled, and bigger - on the reasoning
+        // that a reader scanning for what is restricted should be scanning for the boldest shapes.
+        // On a real layout that is backwards: most squares are open, so most arrows were the faint
+        // ones, and the diagram read as track something had gone wrong with rather than as track that
+        // had been decided.  The way a line RUNS is the thing being looked at, and it should be the
+        // thing that is solid.
+        //
+        // Filled against hollow still carries the difference without colour, so it survives being
+        // printed, a poor screen, and a reader who cannot tell red from green - only now the sense is
+        // the other way up.  Same size for both, so neither shouts over the other.
+        double size = Math.max(4.0, span / 3.2);
 
         // The tip stops EDGE_GAP short of the edge, so two arrows meeting across a tile boundary have
         // a hairline between them rather than touching and reading as one shape.
@@ -1117,18 +1131,19 @@ public class TileAnnotation
 
         if (allowed)
         {
-            // hollow, so it reads as an outline even where the colour does not come through
-            g.setColor(Color.WHITE);
-            g.fillPolygon(xs, ys, 3);
-
             g.setColor(ONE_WAY);
-            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawPolygon(xs, ys, 3);
+            g.fillPolygon(xs, ys, 3);
         }
         else
         {
-            g.setColor(CLOSED);
+            // Hollow, and outlined in the same weight the open ones are drawn at, so the pair are
+            // plainly the same mark in two states rather than two different marks
+            g.setColor(Color.WHITE);
             g.fillPolygon(xs, ys, 3);
+
+            g.setColor(CLOSED);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawPolygon(xs, ys, 3);
         }
     }
 
@@ -1263,14 +1278,22 @@ public class TileAnnotation
         }
         else if (badge.isStation())
         {
+            // A diamond, and the big one.  The two were the other way round - a large circle for a
+            // station and a small diamond for a passing point - and the circle is the shape that
+            // loses: on a curve the tile art is itself a circular sweep, so a round badge sitting on
+            // it reads as part of the track rather than as a mark on top of it.  A diamond has
+            // corners nothing else on a diagram has, which is what makes it findable at a glance.
+            diamond(g, x, y, size, fill, line);
+        }
+        else
+        {
+            // And a plain sensor is a small circle: the quietest shape there is, which is right for
+            // the thing there is most of.  A diamond for every sensor on the layout made the
+            // designations that matter compete with the ones that are simply track.
             g.setColor(fill);
             g.fillOval(x, y, size, size);
             g.setColor(line);
             g.drawOval(x, y, size, size);
-        }
-        else
-        {
-            diamond(g, x, y, size, fill, line);
         }
     }
 
