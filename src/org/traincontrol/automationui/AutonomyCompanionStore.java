@@ -1231,6 +1231,173 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Everything this store holds about one page, as something that can be put back.
+     *
+     * For the diagram editor's undo.  It used to snapshot the CAPTIONS of a page and nothing else,
+     * which was enough while a caption was the only thing the editor moved - and stopped being
+     * enough the moment a tile started carrying its whole setup with it.  Undo then put the track
+     * back and left the station, the name, the facings and the restrictions wherever the move had
+     * taken them.
+     *
+     * By page, not by square, because that is the unit the editor works in and because a move can
+     * put a square somewhere the caller has no reason to have thought of.
+     *
+     * The shape of what comes back is this class's own business - it goes straight back into
+     * restorePage and nowhere else.
+     *
+     * @param page the page name
+     * @return everything keyed to that page
+     */
+    public Map<String, Object> snapshotPage(String page)
+    {
+        Map<String, Object> out = new LinkedHashMap<>();
+
+        if (page == null) return out;
+
+        out.put("pointNames", onPage(pointNames, page));
+        out.put("tileLengths", onPage(tileLengths, page));
+        out.put("tileDirections", onPage(tileDirections, page));
+        out.put("barredArrivals", onPage(barredArrivals, page));
+        out.put("linkNames", onPage(linkNames, page));
+        out.put("stationSignals", onPage(stationSignals, page));
+        out.put("portals", onPage(portals, page));
+        out.put("captions", onPage(captions, page));
+
+        out.put("stations", membersOnPage(stations, page));
+        out.put("disabledPortals", membersOnPage(disabledPortals, page));
+
+        // The configurations key by tile too, and that is where the facings, the placements, the
+        // homes and the maximum lengths live - the half of a station's setup that is not in the
+        // shared file.  A snapshot without them restores half a station.
+        Map<String, JSONObject> points = new LinkedHashMap<>();
+
+        for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
+        {
+            if (!entry.getValue().has("points")) continue;
+
+            JSONObject from = entry.getValue().getJSONObject("points");
+            JSONObject kept = new JSONObject();
+
+            for (String key : from.keySet())
+            {
+                if (isOnPage(key, page)) kept.put(key, from.get(key));
+            }
+
+            points.put(entry.getKey(), kept);
+        }
+
+        out.put("configurations", points);
+
+        return out;
+    }
+
+    /**
+     * Puts a page back as snapshotPage found it.
+     *
+     * Everything currently keyed to that page is dropped first, so a square that has GAINED something
+     * since the snapshot loses it again - which is what undo means.  Other pages are not touched.
+     *
+     * @param page the page name
+     * @param snapshot what snapshotPage returned, or null to do nothing
+     */
+    @SuppressWarnings("unchecked")
+    public void restorePage(String page, Map<String, Object> snapshot)
+    {
+        if (page == null || snapshot == null) return;
+
+        putBack(pointNames, page, (Map<String, String>) snapshot.get("pointNames"));
+        putBack(tileLengths, page, (Map<String, Integer>) snapshot.get("tileLengths"));
+        putBack(tileDirections, page, (Map<String, String>) snapshot.get("tileDirections"));
+        putBack(barredArrivals, page, (Map<String, String>) snapshot.get("barredArrivals"));
+        putBack(linkNames, page, (Map<String, String>) snapshot.get("linkNames"));
+        putBack(stationSignals, page, (Map<String, String>) snapshot.get("stationSignals"));
+        putBack(portals, page, (Map<String, String>) snapshot.get("portals"));
+        putBack(captions, page, (Map<String, String>) snapshot.get("captions"));
+
+        putMembersBack(stations, page, (Set<String>) snapshot.get("stations"));
+        putMembersBack(disabledPortals, page, (Set<String>) snapshot.get("disabledPortals"));
+
+        Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
+
+        if (points == null) return;
+
+        for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
+        {
+            if (!entry.getValue().has("points")) continue;
+
+            JSONObject live = entry.getValue().getJSONObject("points");
+            JSONObject rebuilt = new JSONObject();
+
+            for (String key : live.keySet())
+            {
+                if (!isOnPage(key, page)) rebuilt.put(key, live.get(key));
+            }
+
+            JSONObject was = points.get(entry.getKey());
+
+            if (was != null)
+            {
+                for (String key : was.keySet()) rebuilt.put(key, was.get(key));
+            }
+
+            entry.getValue().put("points", rebuilt);
+        }
+    }
+
+    /**
+     * Whether a stored key names a square on a page.  The key is "page:x,y", and a page name may
+     * itself contain a colon - so the comparison is on the prefix rather than on a split.
+     */
+    private static boolean isOnPage(String key, String page)
+    {
+        return key != null && key.startsWith(page + ":");
+    }
+
+    private static <T> Map<String, T> onPage(Map<String, T> from, String page)
+    {
+        Map<String, T> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, T> entry : from.entrySet())
+        {
+            if (isOnPage(entry.getKey(), page)) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
+    private static Set<String> membersOnPage(Set<String> from, String page)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String key : from)
+        {
+            if (isOnPage(key, page)) out.add(key);
+        }
+
+        return out;
+    }
+
+    private static <T> void putBack(Map<String, T> into, String page, Map<String, T> was)
+    {
+        for (java.util.Iterator<String> keys = into.keySet().iterator(); keys.hasNext();)
+        {
+            if (isOnPage(keys.next(), page)) keys.remove();
+        }
+
+        if (was != null) into.putAll(was);
+    }
+
+    private static void putMembersBack(Set<String> into, String page, Set<String> was)
+    {
+        for (java.util.Iterator<String> keys = into.iterator(); keys.hasNext();)
+        {
+            if (isOnPage(keys.next(), page)) keys.remove();
+        }
+
+        if (was != null) into.addAll(was);
+    }
+
+    /**
      * Rewrites the keys of a map, moved keys winning over ones that merely stayed.
      */
     private static <T> void moveKeys(Map<String, T> map, Map<String, String> moves)

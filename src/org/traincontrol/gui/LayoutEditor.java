@@ -86,10 +86,12 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The colour a picked square is outlined in.
      *
-     * Distinct from the red of a copied tile and the blue of a hovered one, because all three can be
-     * on screen at once and they mean different things.
+     * Red, and the strongest line on the diagram.  It was a mid green, which is a quiet colour on a
+     * page of track already drawn in greens and greys - so on a busy diagram the edge of a selection
+     * had to be looked for, and the whole point of a selection is knowing at a glance what the next
+     * key press is about to happen to.
      */
-    private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(0, 150, 60);
+    private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(210, 0, 0);
 
     /**
      * Where a group being dragged would land, in a paler shade of the picking colour.
@@ -100,16 +102,16 @@ public class LayoutEditor extends PositionAwareJFrame
      * raises and a single-tile drag does not - one tile follows the cursor and can be seen, twenty
      * cannot.
      */
-    private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(120, 205, 155);
+    private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(245, 150, 150);
 
     /**
-     * The grip at the top right of a selection.  Orange against the green of the selection itself,
+     * The grip at the top right of a selection.  Orange against the red of the selection itself,
      * because it is a different thing to do rather than more of the same thing.
      */
     private static final Color COMPONENT_BORDER_HANDLE_COLOR = new Color(230, 120, 0);
 
-    /** Thicker than the selection outline, so the grip reads as a grip and not as a stray tile. */
-    private static final int SELECTION_HANDLE_BORDER_WIDTH = 4;
+    /** The wash behind the grip, which is what makes it findable without taking any space. */
+    private static final Color HANDLE_FILL = new Color(255, 232, 200);
 
     /**
      * The squares picked out for a group operation.
@@ -212,24 +214,22 @@ public class LayoutEditor extends PositionAwareJFrame
      * Only this page's captions.  Restoring the others would undo edits made somewhere this editor was
      * never looking.
      */
-    Deque<java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>> previousCaptions =
-        new ConcurrentLinkedDeque<>();
+    Deque<java.util.Map<String, Object>> previousCaptions = new ConcurrentLinkedDeque<>();
 
-    Deque<java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>> previousCaptionsRedo =
-        new ConcurrentLinkedDeque<>();
+    Deque<java.util.Map<String, Object>> previousCaptionsRedo = new ConcurrentLinkedDeque<>();
 
     /**
      * What the setup currently says about this page's captions.
      *
      * @return caption square to station square, or an empty map when there is no setup to ask
      */
-    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captionSnapshot()
+    private java.util.Map<String, Object> captionSnapshot()
     {
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
         return autonomy == null
-            ? new java.util.LinkedHashMap<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>()
-            : autonomy.captionsOnPage(layout.getName());
+            ? new java.util.LinkedHashMap<String, Object>()
+            : autonomy.snapshotPage(layout.getName());
     }
 
     /**
@@ -238,13 +238,45 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param captions a snapshot, or null to do nothing - a null means the stacks disagreed, and
      *        leaving the captions alone is a better answer than clearing them
      */
-    private void restoreCaptions(java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captions)
+    private void restoreCaptions(java.util.Map<String, Object> captions)
     {
         if (captions == null) return;
 
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
-        if (autonomy != null) autonomy.restoreCaptionsOnPage(layout.getName(), captions);
+        if (autonomy == null) return;
+
+        autonomy.restorePage(layout.getName(), captions);
+
+        // Straight to disk, for the same reason the move itself goes straight to disk - see
+        // rememberAutonomy.  An undo that only reached memory would be forgotten by the reset that
+        // follows the next edit, and the thing it undid would come back.
+        autonomy.saveQuietly();
+    }
+
+    /**
+     * Writes the setup out, now, after this window has changed it.
+     *
+     * Nothing else does.  The session lives on the main window and is thrown away and rebuilt after
+     * every edit to a diagram - so a move that only reached memory was forgotten the moment the
+     * editor closed, which is why a station's name and label still did not travel with it however
+     * carefully the move itself carried them.
+     *
+     * Without reconciling: this window is in the middle of rearranging the diagram, so at any moment
+     * half of it disagrees with the setup, and a reconcile would delete everything on the half that
+     * has not caught up yet.
+     *
+     * Failure is logged rather than shown.  A dialog per dragged tile would be unusable, and the move
+     * itself stands either way - it is only the memory of it that is at risk.
+     */
+    private void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
+    {
+        if (autonomy == null) return;
+
+        if (!autonomy.saveQuietly() && parent.getModel() != null)
+        {
+            parent.getModel().log("Could not save the autonomy setup after a diagram edit");
+        }
     }
 
     public static final int MAX_UNDO_HISTORY = 100;
@@ -306,18 +338,6 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
-        // The tools that are not tiles, under the palette and above the filler.
-        //
-        // All three were reachable only from the right-click menu, and Adam could not find any of
-        // them - the size controls he did not know were there at all, and picking several squares is
-        // a feature you have to be told about before you can use it.  A sidebar is where somebody
-        // looks for a tool.
-        gbc.gridx = 0;
-        gbc.gridy++;
-        gbc.gridwidth = cols;
-
-        this.newComponents.add(buildToolStrip(), gbc);
-
         // Add a filler at the bottom to push everything up
         gbc.gridx = 0;
         gbc.gridy++;
@@ -329,7 +349,52 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
+
+        mountToolStrip();
     }
+
+    /**
+     * Puts the tools in the sidebar, BESIDE the palette rather than inside it.
+     *
+     * They were inside newComponents, which is the white bordered panel the tiles are laid out in -
+     * so picking several squares and resizing the page read as two more things to place on the
+     * diagram, which is what everything else in that panel is.  They are not; they are tools, and
+     * they now sit under headings of their own on the window's own background.
+     *
+     * Mounted by REPLACING the Toggle Visibility heading with a column holding the tools and then
+     * that heading, which is how everything added to this window since the diagram work has been
+     * mounted: the layout is generated and cannot be edited by hand, but GroupLayout will swap one
+     * component for another.
+     */
+    private void mountToolStrip()
+    {
+        if (!(getContentPane().getLayout() instanceof javax.swing.GroupLayout)) return;
+
+        toolStrip = buildToolStrip();
+
+        JPanel column = new JPanel();
+
+        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+        column.setOpaque(false);
+
+        toolStrip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        this.jLabel2.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        column.add(toolStrip);
+        column.add(this.jLabel2);
+
+        ((javax.swing.GroupLayout) getContentPane().getLayout()).replace(this.jLabel2, column);
+    }
+
+    /**
+     * The tools, held so that autonomy mode can put them away.
+     *
+     * Picking several squares and resizing the page are both about EDITING the diagram, and autonomy
+     * mode is not editing the diagram - it is deciding which way trains may run over one.  They used
+     * to live inside the palette, which that mode empties wholesale, so they went away by accident;
+     * out here they have to be told.
+     */
+    private JPanel toolStrip;
 
     /**
      * The row of tools under the tile palette: pick-several, and the two size controls.
@@ -994,6 +1059,9 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
+        // See the field: these are diagram-editing tools and this mode does not edit the diagram.
+        if (toolStrip != null) toolStrip.setVisible(session == null);
+
         if (session == null)
         {
             if (autonomyPanel != null)
@@ -1640,6 +1708,8 @@ public class LayoutEditor extends PositionAwareJFrame
                             layout.getName(), lastX, lastY),
                         new org.traincontrol.automationui.TileGraph.TileKey(
                             layout.getName(), getX(destLabel), getY(destLabel)));
+
+                    rememberAutonomy(autonomy);
                 }
             }
             
@@ -1800,14 +1870,30 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.handleLabel != null && this.handleLabel != grip)
         {
             this.handleLabel.setToolTipText(null);
+
+            // And stops being painted as one.  A square left washed orange after the corner moved is
+            // a grip that is not there.
+            this.handleLabel.setOpaque(false);
+            this.handleLabel.setBackground(null);
         }
 
         this.handleLabel = grip;
 
         if (grip != null)
         {
+            // The SAME width as every other border on the diagram.
+            //
+            // It was drawn four pixels thick to stand out, and a border is drawn INSIDE the label -
+            // so the tile art was squeezed into what was left and the square gained a visible gap
+            // around it.  A mark that moves the thing it is marking is not a mark.
+            //
+            // What makes it findable instead is the fill behind it: a pale orange wash on the one
+            // square, which costs no space at all because the label was already that size.
             grip.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_HANDLE_COLOR,
-                SELECTION_HANDLE_BORDER_WIDTH));
+                COMPONENT_BORDER_WIDTH));
+
+            grip.setOpaque(true);
+            grip.setBackground(HANDLE_FILL);
 
             grip.setToolTipText(I18n.t("layout.ui.tooltipSelectionHandle"));
         }
@@ -2058,7 +2144,12 @@ public class LayoutEditor extends PositionAwareJFrame
                         layout.getName(), at.getX() + dx, at.getY() + dy));
             }
 
-            if (autonomy != null) autonomy.moveTiles(moving);
+            if (autonomy != null)
+            {
+                autonomy.moveTiles(moving);
+
+                rememberAutonomy(autonomy);
+            }
 
             // Clear
             for (org.traincontrol.base.TileSelection.At at : from)
@@ -3081,8 +3172,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // moves and deletes captions as it moves and deletes tiles, so without this Ctrl+Z
                 // brought a deleted platform back with no name on it, or moved a tile back and left
                 // its name at the square it had been dragged to.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> captionsBefore = captionSnapshot();
+                java.util.Map<String, Object> captionsBefore = captionSnapshot();
 
                 restoreCaptions(this.previousCaptions.isEmpty() ? null : this.previousCaptions.pop());
 
@@ -3122,7 +3212,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.previousLayoutComponents.push(deepCopyLayout());
 
                 // The captions go forward with it, exactly as they came back
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> captionsBefore = captionSnapshot();
+                java.util.Map<String, Object> captionsBefore = captionSnapshot();
 
                 restoreCaptions(this.previousCaptionsRedo.isEmpty()
                     ? null : this.previousCaptionsRedo.pop());

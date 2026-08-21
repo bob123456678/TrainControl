@@ -166,6 +166,72 @@ public class testAutonomyTileMove
         assertTrue(store.getBarredArrivals(was).isEmpty(), "and the old square keeps none");
     }
 
+    /**
+     * A page can be put back as it was, which is what the editor's undo rests on.
+     *
+     * The snapshot used to cover the CAPTIONS of a page and nothing else - enough while a caption was
+     * the only thing the editor moved, and not enough the moment a tile started carrying its whole
+     * setup with it.  Undo then put the track back and left the station wherever the move had taken
+     * it, which is a worse state than either: the diagram says one thing and the setup another.
+     */
+    @Test
+    public void testAPageGoesBackAsItWas()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey was = new TileKey("1 - Main", 14, 3);
+        TileKey now = new TileKey("1 - Main", 15, 3);
+
+        store.setStation(was, true);
+        store.setPointName(was, "BottomInnerOtherside");
+        store.setTileLength(was, 42);
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        store.moveTiles(moving(was, now));
+
+        assertTrue(store.isStation(now), "the move did not happen, so the undo proves nothing");
+
+        store.restorePage("1 - Main", before);
+
+        assertTrue(store.isStation(was), "the station did not come back to the square it left");
+
+        assertFalse(store.isStation(now),
+            "and it is still ALSO at the square it was moved to - undo that only adds is how one "
+            + "station becomes two");
+
+        assertEquals(store.getPointName(was), "BottomInnerOtherside");
+
+        assertEquals(store.getTileLength(was), 42);
+    }
+
+    /**
+     * And putting one page back leaves the others alone.
+     */
+    @Test
+    public void testRestoringOnePageDoesNotTouchAnother()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey here = new TileKey("1 - Main", 1, 1);
+        TileKey elsewhere = new TileKey("2 - Bottom", 1, 1);
+
+        store.setPointName(here, "OnPageOne");
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        store.setPointName(elsewhere, "OnPageTwo");
+        store.setPointName(here, "Renamed");
+
+        store.restorePage("1 - Main", before);
+
+        assertEquals(store.getPointName(here), "OnPageOne", "the page did not go back");
+
+        assertEquals(store.getPointName(elsewhere), "OnPageTwo",
+            "restoring one page reached into another, which would undo edits made somewhere the "
+            + "editor was never looking");
+    }
+
     private static Map<TileKey, TileKey> moving(TileKey from, TileKey to)
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();

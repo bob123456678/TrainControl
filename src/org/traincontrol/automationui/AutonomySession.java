@@ -1064,6 +1064,56 @@ public class AutonomySession
     }
 
     /**
+     * Everything the setup holds about one page, for the diagram editor's undo.
+     *
+     * @param page the page name
+     * @return a snapshot to hand back to restorePage
+     */
+    public java.util.Map<String, Object> snapshotPage(String page)
+    {
+        return store.snapshotPage(page);
+    }
+
+    /**
+     * Puts a page's setup back as it was, and rebuilds the graph from it.
+     */
+    public void restorePage(String page, java.util.Map<String, Object> snapshot)
+    {
+        if (snapshot == null) return;
+
+        store.restorePage(page, snapshot);
+
+        touched();
+
+        rebuild();
+    }
+
+    /**
+     * Writes the setup out without reconciling it against the diagram.
+     *
+     * For the diagram editor, which changes the setup a square at a time as tiles are moved.  Its
+     * edits have to reach disk as they happen: nothing else saves this session, and the reset that
+     * follows an edit to the diagram throws it away.  Reconciling is what must NOT happen here - the
+     * diagram is being edited, so half of it disagrees with the setup at any given moment, and a
+     * reconcile would delete everything on the half not yet caught up.
+     *
+     * @return whether it was written
+     */
+    public boolean saveQuietly()
+    {
+        try
+        {
+            saveWithoutReconciling();
+
+            return true;
+        }
+        catch (java.io.IOException e)
+        {
+            return false;
+        }
+    }
+
+    /**
      * Follows tiles being moved on the diagram, with everything written about them.
      *
      * The diagram editor calls this when it moves track.  Only the CAPTION used to follow, so a
