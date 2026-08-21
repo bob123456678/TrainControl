@@ -1250,6 +1250,13 @@ public class TileAnnotation
         if ((badge.isTerminus() || badge.isReversing()) && badge.isOptional())
         {
             size = Math.round(size * 1.35f);
+
+            // Two back off the big one.  The third-again applies to both diamonds and is about the
+            // shape rather than the size - a diamond covers half the box it sits in - but a station's
+            // box is already half the tile, so a third on top of that made it the loudest mark on
+            // the page rather than an equal of the circle beside it.  The small diamond keeps the
+            // full enlargement: at a third of a tile it has none to spare.
+            if (badge.isStation()) size -= 2;
         }
 
         // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
