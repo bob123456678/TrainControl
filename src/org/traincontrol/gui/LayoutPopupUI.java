@@ -37,9 +37,21 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.layout = l;
         this.pageIndex = pageIndex;
     }
+
+    // The grid on screen now, so that the next one can tell it to stop
+    private LayoutGrid grid;
     
     private void drawGrid()
     {
+        // The grid being replaced is told to stop first.
+        //
+        // A LayoutGrid keeps two Swing timers - one that shows the diagram when its tiles have
+        // decoded, one that puts a spinner up if they are slow - and both go on firing into the panel
+        // after the panel has been emptied.  The outgoing grid then drops a spinner into the page the
+        // NEW grid has just drawn.  Both other places that build a grid over an existing panel call
+        // this; this one did not.
+        if (this.grid != null) this.grid.discard();
+
         this.ExtLayoutPanel.removeAll();
 
         LayoutGrid grid = new LayoutGrid(this.layout, size,
@@ -47,6 +59,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
             this,
             true, parent);
         
+        this.grid = grid;
+
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout

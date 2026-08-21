@@ -3052,8 +3052,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         boolean cut = controlPressed && keyCode == KeyEvent.VK_X;
         boolean paste = controlPressed && keyCode == KeyEvent.VK_V;
-        boolean clear = !controlPressed
-            && (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE);
+        // Delete only.  Backspace cycles the tabs, and this method is asked first whenever the
+        // pointer is resting on the diagram - so pressing Backspace to leave the Track Diagram tab
+        // took the locomotive off the square under the pointer instead, and saved it.  A key that
+        // navigates cannot also be a key that changes the railway.
+        boolean clear = !controlPressed && keyCode == KeyEvent.VK_DELETE;
 
         if (!cut && !paste && !clear) return false;
 
@@ -3886,10 +3889,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The count used to be fixed, so a state could never hold more than it - now it can, and the
         // alternative to growing is silently dropping every mapping past the tenth.  The last entry
         // is the page names rather than a page, hence the -1.
+        boolean grew = false;
+
         while (saveStates.size() - 1 > this.numLocMappings)
         {
             this.numLocMappings++;
             this.locMapping.add(new HashMap<>());
+
+            // The TAB as well as the page.  The tab strip is built in the constructor, from the count
+            // as the preference had it - so growing the count here and not the strip left the extra
+            // pages with nothing to click, and switchLocMapping, which selects a tab by number, threw
+            // out of the tab pane instead of saying anything.
+            this.locKeyTabs.add(getLocMappingPageTabTitle(this.numLocMappings), new JPanel());
+
+            grew = true;
+        }
+
+        if (grew)
+        {
+            // And written down, so the next start does not have to work it out again - and does not
+            // go back to disagreeing with the saved state.
+            prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
+
+            adjustTabbedPaneHeight(locKeyTabs);
         }
 
         for (int j = 0; j < saveStates.size() && j < this.numLocMappings; j++)
@@ -4927,16 +4949,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void updatePowerState()
     {
-        if (this.model.getPowerState())
+        // On the EDT, like every other callback in this class.
+        //
+        // This one is called from the message thread, and setEnabled from off the EDT is the kind of
+        // fault that shows up as a button that is occasionally the wrong way round rather than as an
+        // exception.  Every sibling here already marshals; this was the one that did not.
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
-            this.PowerOff.setEnabled(true);
-            this.OnButton.setEnabled(false);
-        }
-        else
-        {
-            this.PowerOff.setEnabled(false);
-            this.OnButton.setEnabled(true);
-        }
+            if (this.model.getPowerState())
+            {
+                this.PowerOff.setEnabled(true);
+                this.OnButton.setEnabled(false);
+            }
+            else
+            {
+                this.PowerOff.setEnabled(false);
+                this.OnButton.setEnabled(true);
+            }
+        });
     }
         
     /**
@@ -13921,7 +13951,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // testable without a control station on the network.
                         routeEditor = new RouteEditorFrame(this, routeName, currentRoute);
 
-                        routeEditor.setTitle(title);
+                        // Not over a locked route's own title.  A route from the Central Station
+                        // opens with every control greyed and its title is the only thing that says
+                        // why; overwriting it with the ordinary edit-route title left a window full
+                        // of dead controls and no explanation.
+                        if (!routeEditor.isLocked()) routeEditor.setTitle(title);
                         routeEditor.setVisible(true);
                     });
                 }
@@ -19346,6 +19380,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public synchronized void repaintLayout(boolean showTab, boolean useCache)
     {    
+        // Whatever the pointer was resting on is about to be taken apart.
+        //
+        // The hovered square is set by the labels themselves and cleared only when the pointer leaves
+        // one - so replacing the grid under a still pointer left the last square of the OLD page
+        // remembered.  Control+X then cut the locomotive from a platform on a page nobody was looking
+        // at, and saved it.
+        setHoveredDiagramTile(null, -1, -1);
+
         this.LayoutGridRenderer.submit(() -> 
         { 
             javax.swing.SwingUtilities.invokeLater(() ->

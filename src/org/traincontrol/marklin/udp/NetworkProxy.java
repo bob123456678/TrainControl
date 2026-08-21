@@ -116,10 +116,17 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            this.model.logf(
-                "network.errorFailedToSendPacket"
-            );            
-            this.model.log(e.getMessage());
+            // The model is set AFTER this class is constructed, and the constructor of the control
+            // station transmits - a ping and a power command - before it gets there.  A send that
+            // failed in that window threw a NullPointerException out of this catch block, out of the
+            // constructor, and out of main, which printed "Error occurred: null" and stopped.
+            if (this.model != null)
+            {
+                this.model.logf(
+                    "network.errorFailedToSendPacket"
+                );            
+                this.model.log(e.getMessage());
+            }
             
             return false;
         }
@@ -171,8 +178,20 @@ public class NetworkProxy
                         // Wait to receive a datagram
                         socket.receive(packet);
 
-                        // Send message to listener
-                        model.receiveMessage(model.createMessage(buffer));
+                        // Only a datagram of the right LENGTH is parsed.
+                        //
+                        // One buffer is reused for every receive, and the message is read out of the
+                        // buffer rather than out of the packet - so a short datagram (a probe, a
+                        // truncated frame, a device of another generation) was parsed as its own
+                        // header followed by whatever the last message left behind in the tail.  That
+                        // is a stale locomotive or accessory command re-applied under an unrelated
+                        // command byte, and the duplicate-suppression window cannot catch it because
+                        // the bytes are not identical to the last packet.
+                        if (packet.getLength() == buffer.length)
+                        {
+                            // Send message to listener
+                            model.receiveMessage(model.createMessage(buffer));
+                        }
 
                         // Reset the length of the packet just in case
                         packet.setLength(buffer.length);

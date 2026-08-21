@@ -810,29 +810,40 @@ public class LayoutDiagram
         // Construct the file path
         String filePath = Paths.get(path, "config", "gleisbild.cs2").toString();
         
-        // Files.newBufferedWriter for UTF-8, matching saveChanges above and the encoding
-        // CS2File.fetchURL reads these files back in.  FileWriter used the platform default charset,
-        // so a page name with a non-ASCII character did not survive the round trip.
-        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(filePath)))
+        // Built in memory and then written ATOMICALLY, through the same door saveChanges uses.
+        //
+        // This is the index of every page there is, and it was the one file in the project still
+        // truncated in place: a write that failed part way through - the folder held by a sync client,
+        // a full disk, the process dying - left a header naming no pages at all.  Every page file
+        // would still be on disk, unreferenced, and the next start would show an empty layout, which
+        // the autonomy setup would then be reconciled away against.
+        //
+        // UTF-8, matching saveChanges above and the encoding CS2File.fetchURL reads these files back
+        // in.  FileWriter used the platform default charset, so a page name with a non-ASCII character
+        // did not survive the round trip.
+        StringBuilder contents = new StringBuilder();
+
+        // Write header and static content
+        contents.append("[gleisbild]\n");
+        contents.append("version\n");
+        contents.append(" .major=1\n");
+        contents.append("groesse\n");
+
+        // Write layout details
+        int id = 1;
+        for (String layout : layoutList)
         {
-            // Write header and static content
-            writer.write("[gleisbild]\n");
-            writer.write("version\n");
-            writer.write(" .major=1\n");
-            writer.write("groesse\n");
-            
-            // Write layout details
-            int id = 1;
-            for (String layout : layoutList)
-            {
-                writer.write("seite\n");
-                if (id != 1) { // Skip ID for the first layout
-                    writer.write(" .id=" + id + "\n");
-                }
-                
-                writer.write(" .name=" + layout + "\n");
-                id++;
+            contents.append("seite\n");
+            if (id != 1) { // Skip ID for the first layout
+                contents.append(" .id=").append(id).append("\n");
             }
+
+            contents.append(" .name=").append(layout).append("\n");
+            id++;
         }
+
+        final byte[] bytes = contents.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        org.traincontrol.util.Util.writeAtomically(new File(filePath), out -> out.write(bytes));
     }
 }

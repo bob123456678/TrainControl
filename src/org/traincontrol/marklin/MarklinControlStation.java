@@ -2089,13 +2089,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 int id = message.extractShortUID();
 
-                if (this.feedbackDB.hasId(id))
+                // Resolved once into a local, as the locomotive and accessory branches below do.  This
+                // was hasId followed by getById, two separate acquisitions of the collection's lock -
+                // and syncLayouts prunes feedbacks the freshly loaded diagram does not refer to, on
+                // another thread, which is exactly what a feedback auto-created here for an unknown
+                // s88 is.  The resulting NPE would be swallowed by the executor's Future.
+                //
+                // A dropped feedback event is not a cosmetic loss: the state is a LEVEL, and a driving
+                // thread waiting on that sensor waits without a timeout.  A train whose arrival was
+                // dropped never slows and never stops.
+                MarklinFeedback feedback = this.feedbackDB.getById(id);
+
+                if (feedback != null)
                 {
-                    this.feedbackDB.getById(id).parseMessage(message);
+                    feedback.parseMessage(message);
                 }
                 else
                 {
-                    newFeedback(id, message);   
+                    newFeedback(id, message);
                 }
             });
         }

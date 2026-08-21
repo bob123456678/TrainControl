@@ -267,6 +267,155 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * Discarding an edit takes a signal pairing with it.
+     *
+     * load() empties the store and reads the file over it, and the emptying missed the station
+     * signals - while readShared only PUTS what the file holds, so an entry the file says nothing
+     * about was never overwritten.  A pairing made and then thrown away therefore survived the
+     * discard, and the next save wrote it to disk.  From then on a real signal was thrown to red on
+     * real hardware for a pairing the user had cancelled.
+     *
+     * The file has to hold NO signal for that station, which is what makes this different from an
+     * edit that changes one: a changed entry was overwritten by the read and looked fine.
+     */
+    @Test
+    public void testDiscardingAnEditForgetsASignalPairedSinceTheLoad() throws IOException
+    {
+        TileKey station = new TileKey("1 - Main", 4, 7);
+        TileKey signal = new TileKey("1 - Main", 5, 7);
+
+        store.setPageIds(onePage());
+        store.setStation(station, true);
+        store.save();
+
+        // paired, and never saved
+        store.setProtectingSignal(station, signal);
+
+        // which is what discarding does
+        store.load();
+
+        assertTrue(store.getProtectingSignals(station).isEmpty(),
+            "a signal paired after the load survived the discard, and the next save would write it "
+            + "to disk - the railway would then hold trains at a platform on a pairing the user had "
+            + "thrown away");
+    }
+
+    /**
+     * A rename whose save then fails leaves the configuration somewhere.
+     *
+     * The old file used to be deleted the moment the name changed, and the new one is only written by
+     * the save that follows - so anything that stopped that save (a sync client on the folder, a full
+     * disk, the process dying) destroyed the configuration outright.  load() rebuilds the list by
+     * scanning the folder, so there was nothing left to find.
+     *
+     * Simulated here by simply not saving, which is the same state a failed save leaves behind.
+     */
+    @Test
+    public void testARenameThatIsNeverSavedStillLeavesTheConfigurationOnDisk() throws IOException
+    {
+        store.createConfiguration("Morning", null);
+        store.setActiveConfiguration("Morning");
+        store.save();
+
+        store.renameConfiguration("Morning", "Evening");
+
+        // no save: this is the window a failing save leaves open
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(reloaded.getConfigurationNames().size(), 1,
+            "the configuration is on disk under neither name, so a rename followed by a failed save "
+            + "destroyed it");
+
+        assertEquals(reloaded.getConfigurationNames().get(0), "Evening",
+            "the file did not travel with the name");
+    }
+
+    /**
+     * Two names that would be written to one file are refused.
+     *
+     * A configuration's file is named after it, and the sanitising is many to one - every character a
+     * filename may not hold becomes an underscore.  So two differently-named configurations could share
+     * one file: saving wrote both to it, one over the other, and the next load - which rebuilds the
+     * list from the folder - came back with one of them simply gone.
+     */
+    @Test
+    public void testTwoNamesCannotShareOneFile() throws IOException
+    {
+        store.createConfiguration("Night: Yard", null);
+
+        try
+        {
+            store.createConfiguration("Night_ Yard", null);
+
+            fail("a second configuration was created over the first one's file, which destroys it on "
+                + "the next save with nothing said");
+        }
+        catch (IOException expected)
+        {
+            // right
+        }
+
+        // and the same door, reached by renaming
+        store.createConfiguration("Depot", null);
+
+        try
+        {
+            store.renameConfiguration("Depot", "Night_ Yard");
+
+            fail("a rename put two configurations in one file");
+        }
+        catch (IOException expected)
+        {
+            // right
+        }
+
+        assertEquals(store.getConfigurationNames().size(), 2,
+            "a refused rename changed the store anyway");
+    }
+
+    /**
+     * An import that cannot be read leaves the setup exactly as it was.
+     *
+     * The shared half used to be emptied BEFORE the merged object was parsed, and the parse uses the
+     * type-strict accessors - so a bundle with the wrong type in it wiped every name, station, length
+     * and pairing on the way to reporting that the import had failed.  The user was told nothing had
+     * happened while the store stood blank, ready for the next save to write that over setup.json.
+     */
+    @Test
+    public void testAnUnreadableImportChangesNothing() throws Exception
+    {
+        TileKey station = new TileKey("1 - Main", 4, 7);
+
+        store.setPageIds(onePage());
+        store.setStation(station, true);
+        store.setPointName(station, "Bottom Main");
+        store.createConfiguration("Mine", null);
+
+        org.json.JSONObject bundle = store.exportBundle("Mine");
+
+        // A number where the reader demands a string.  Anything a hand-edited or truncated file could
+        // hold would do; this is simply the smallest thing that reaches the strict accessor.
+        bundle.getJSONObject("shared").put("pointNames",
+            new org.json.JSONObject().put("1:4,7", 12345));
+
+        try
+        {
+            store.importBundle("Theirs", bundle);
+        }
+        catch (RuntimeException expected)
+        {
+            // the import is refused, which is right - what matters is what it left behind
+        }
+
+        assertEquals(store.getPointName(station), "Bottom Main",
+            "a refused import emptied the setup it was refused by");
+
+        assertTrue(store.isStation(station), "the station went with it");
+    }
+
+    /**
      * A page rename costs nothing, because entries are stored against the page id rather than its name.
      *
      * Every key here begins with a page, so keying on the name meant a rename orphaned a whole page of

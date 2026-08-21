@@ -80,6 +80,12 @@ public class LayoutGrid
     {
         discarded = true;
 
+        // Shown, whatever state the reveal had reached.  A grid is HIDDEN while its tiles decode and
+        // shown again by the reveal - which discarding cancels - so a grid discarded while it was
+        // still decoding stayed hidden for good.  It may already be in the page cache, and coming
+        // back to that page then showed an empty diagram until something rebuilt the cache.
+        container.setVisible(true);
+
         if (failsafe != null) failsafe.stop();
         if (grace != null) grace.stop();
     }

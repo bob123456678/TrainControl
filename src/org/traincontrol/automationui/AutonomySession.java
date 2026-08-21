@@ -1064,6 +1064,33 @@ public class AutonomySession
     }
 
     /**
+     * Everything the setup holds, for a caller that may have to put it all back.
+     *
+     * @return a snapshot for restoreSetup
+     */
+    public org.json.JSONObject snapshotSetup()
+    {
+        return store.snapshotSetup();
+    }
+
+    /**
+     * Puts back a whole snapshot, and writes it out.
+     *
+     * @param was a snapshot from snapshotSetup
+     * @return whether it reached the file
+     */
+    public boolean restoreSetup(org.json.JSONObject was)
+    {
+        if (was == null) return true;
+
+        store.restoreSetup(was);
+
+        rebuild();
+
+        return saveQuietly();
+    }
+
+    /**
      * Everything the setup holds about one page, for the diagram editor's undo.
      *
      * @param page the page name

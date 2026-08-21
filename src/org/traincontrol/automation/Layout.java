@@ -471,7 +471,13 @@ public class Layout
     private List<Integer> activateRouteIDs;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
-    private static int layoutVersion = 0;
+    // Volatile because the thread that writes it is never the thread that reads it: it is written
+    // once, by whichever thread loads a layout, and read by every driving thread at six points in its
+    // loop and by both timetable waits.  Without it a locomotive can keep reading the value it cached
+    // before the reload and drive a whole path against a graph that has been retired.  Every other
+    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting - is
+    // already volatile; this one was missed.
+    private static volatile int layoutVersion = 0;
 
     // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow
     // unwinds, mirroring the UI flag of the same lifetime.

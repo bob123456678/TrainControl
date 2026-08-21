@@ -125,6 +125,12 @@ array.
 
 ---
 
+## Added 2026-08-21, from the two reviews
+
+Tests 26-31 live in `2026-08-21-review-dispositions.md`, beside the findings they belong to.
+
+---
+
 ## Still untested, and known
 
 - **`testAutoDetect`** needs a Central Station answering on the network. It is red here and is not a

@@ -348,6 +348,102 @@ public class testAutonomyTileMove
             "the same signal is on the list twice, which would show it twice and command it twice");
     }
 
+    /**
+     * A facing travels with the tile it is about.
+     *
+     * A direction is keyed by the square AND the route across it - "page:x,y#state,index" - and the
+     * mover matched whole keys, so it never matched one of these.  Every facing stayed on the square
+     * the track had walked away from and was dropped by the next reconcile, which is exactly the loss
+     * moving the setup was written to prevent.
+     */
+    @Test
+    public void testAFacingTravelsWithTheTile()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey was = new TileKey("1 - Main", 14, 3);
+        TileKey now = new TileKey("1 - Main", 15, 3);
+
+        org.traincontrol.automationui.TileGraph.RouteId route =
+            new org.traincontrol.automationui.TileGraph.RouteId(0, 0);
+
+        store.setTileDirection(was, route, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+
+        store.moveTiles(moving(was, now));
+
+        assertEquals(store.getTileDirection(now, route),
+            org.traincontrol.automationui.TileGraph.Direction.TOWARD_A,
+            "the facing did not travel, so the next reconcile drops it and the square goes back to "
+            + "carrying trains both ways");
+
+        assertNull(store.getTileDirection(was, route), "and it was left behind as well");
+    }
+
+    /**
+     * A tile dragged onto a square takes that square's setup away, as the diagram takes its track.
+     *
+     * The mover only overwrote a landing square when the source had something to overwrite it with.
+     * So plain track dragged over a station left the station - its name, its signals, its length -
+     * attached to a square that now holds plain track, and reconcile never tidied it up because the
+     * square still had a tile on it.  Worse than a loss: nothing anywhere looks wrong.
+     */
+    @Test
+    public void testASquareLandedOnLetsGoOfWhatItKnew()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey plain = new TileKey("1 - Main", 9, 5);
+        TileKey station = new TileKey("1 - Main", 10, 5);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Platform 3");
+        store.setTileLength(station, 42);
+        store.setProtectingSignal(station, new TileKey("1 - Main", 11, 5));
+
+        // the plain square carries nothing at all, which is the case that used to leave the station
+        store.moveTiles(moving(plain, station));
+
+        assertFalse(store.isStation(station),
+            "the square still calls itself a station, with plain track on it");
+
+        assertNull(store.getPointName(station), "and still carries the station's name");
+
+        assertTrue(store.getProtectingSignals(station).isEmpty(),
+            "and would still hold trains out of it with a signal");
+    }
+
+    /**
+     * A square that is landed on AND moving away keeps what it is taking with it.
+     *
+     * The case a group drag is made of: every source square lands on another source square.  Letting
+     * go of a landing square must not throw away a setup that is on its way somewhere.
+     */
+    @Test
+    public void testASquareThatIsBothLandedOnAndMovingIsNotForgotten()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey first = new TileKey("1 - Main", 1, 1);
+        TileKey second = new TileKey("1 - Main", 2, 1);
+        TileKey third = new TileKey("1 - Main", 3, 1);
+
+        store.setPointName(first, "First");
+        store.setPointName(second, "Second");
+
+        Map<TileKey, TileKey> moves = new LinkedHashMap<>();
+
+        moves.put(first, second);
+        moves.put(second, third);
+
+        store.moveTiles(moves);
+
+        assertEquals(store.getPointName(second), "First", "the first square did not arrive");
+
+        assertEquals(store.getPointName(third), "Second",
+            "the middle square was forgotten as a landing square, even though it was moving too - "
+            + "which is every square of a group dragged one place along");
+    }
+
     private static Map<TileKey, TileKey> moving(TileKey from, TileKey to)
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();

@@ -394,10 +394,31 @@ public final class ConditionOutline
         NodeExpression left = or ? ((NodeOr) node).getLeft() : ((NodeAnd) node).getLeft();
         NodeExpression right = or ? ((NodeOr) node).getRight() : ((NodeAnd) node).getRight();
 
-        write(left, depth, into);
+        writeChild(left, depth, or, into);
 
         into.add(Row.joining(depth, or ? Joiner.OR : Joiner.AND));
 
-        write(right, depth, into);
+        writeChild(right, depth, or, into);
+    }
+
+    /**
+     * A child that joins its own pair with the OTHER word goes a level deeper.
+     *
+     * The whole grammar of this outline is that a level is one word: "and" beside "or" at the same
+     * depth means two different things and is shown in red.  Writing every child at the parent's depth
+     * therefore flattened "A and (B or C)" into one level reading "A and B or C" - which is not what
+     * the route says, is refused by this class's own rule the moment anything is saved, and parses
+     * back as "(A and B) or C" if it is not.  The Test button evaluated that wrong expression.
+     *
+     * A child joined by the SAME word stays flat, which is what makes "A and B and C" one list rather
+     * than a staircase.
+     */
+    private static void writeChild(NodeExpression child, int depth, boolean parentIsOr,
+        List<Row> into)
+    {
+        boolean childIsOr = child instanceof NodeOr;
+        boolean childIsAnd = child instanceof NodeAnd;
+
+        write(child, (childIsOr || childIsAnd) && childIsOr != parentIsOr ? depth + 1 : depth, into);
     }
 }

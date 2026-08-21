@@ -272,7 +272,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // Point names, where they are worth having.
                 this.locDest.setText(describePath(layout.getActiveLocomotives().get(locomotive)));
                 
-                this.locStation.setText("@" + stationName(milestones.get(milestones.size() - 1)));
+                // Guarded, because the two maps this reads are not written under one lock: the driver
+                // clears the active locomotives and the milestones in sequence, so a refresh landing
+                // between the two finds a locomotive that is still "running" with no milestones at
+                // all.  The NPE lands on the EDT inside the loop that refreshes every panel, so every
+                // panel after this one is left showing what it showed last time.
+                this.locStation.setText(milestones == null || milestones.isEmpty() ? ""
+                    : "@" + stationName(milestones.get(milestones.size() - 1)));
                 
                 this.locDest.setForeground(new Color(204, 0, 0));
                 this.locAvailPaths.setVisible(false);

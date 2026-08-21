@@ -429,7 +429,15 @@ public final class LayoutLabel extends JLabel
      */
     public boolean isParentVisible()
     {
-        return this.parent.isVisible();
+        // No parent at all counts as not visible, which is what gets the label REMOVED from the
+        // accessory or feedback that holds it.
+        //
+        // A grid built for an export is given a null master - it is painted offscreen and thrown away -
+        // and its labels are registered with the model like any others.  This method then NPEd on the
+        // message thread, inside the loop that updates every tile: the exception was swallowed by the
+        // executor's Future, and the loop abandoned every tile after it.  Exporting a picture of the
+        // diagram permanently stopped tile updates for the accessories on that page.
+        return this.parent != null && this.parent.isVisible();
     }
 
     /**
@@ -677,7 +685,9 @@ public final class LayoutLabel extends JLabel
                 if (update)
                 {
                     this.repaint();
-                    this.parent.repaint(); 
+
+                    // Null for a label built offscreen for an export - see isParentVisible
+                    if (this.parent != null) this.parent.repaint();
                     
                     if (this.component.isFeedback())
                     {

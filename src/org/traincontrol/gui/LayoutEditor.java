@@ -358,6 +358,33 @@ public class LayoutEditor extends PositionAwareJFrame
      * Failure is logged rather than shown.  A dialog per dragged tile would be unusable, and the move
      * itself stands either way - it is only the memory of it that is at risk.
      */
+    /**
+     * The setup as it stood when this window opened, for Cancel to put back.  Null when there was no
+     * autonomy session to ask, and cleared once the edits have been kept.
+     */
+    private org.json.JSONObject autonomyAsOpened;
+
+    /**
+     * Puts the autonomy setup back the way it was when this window opened.
+     *
+     * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
+     * halves have to be undone together or they are left describing different railways.
+     */
+    private void undoAutonomyEdits()
+    {
+        if (this.autonomyAsOpened == null) return;
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened)
+            && parent.getModel() != null)
+        {
+            parent.getModel().log("Could not put the autonomy setup back after cancelling");
+        }
+
+        this.autonomyAsOpened = null;
+    }
+
     private void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
     {
         if (autonomy == null) return;
@@ -397,11 +424,25 @@ public class LayoutEditor extends PositionAwareJFrame
     public LayoutEditor(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
-        
+
         this.ExtLayoutPanel.setLayout(new FlowLayout());
         this.parent = ui;
         this.size = size;
         this.layout = l;
+
+        // The autonomy setup exactly as it stands now, before anything in this window can touch it.
+        //
+        // Every gesture that moves track writes the setup to disk as it goes - it has to, because a
+        // setup that lags the diagram is one reconcile away from being deleted - so Cancel had nothing
+        // to undo those writes with.  The diagram was re-read from disk and the setup was not, and a
+        // cancelled drag left a station recorded on a square the track had been moved away from.
+        //
+        // Taken here rather than at the first edit, because by the time an edit reports itself the
+        // change has already been made to the live session.
+        org.traincontrol.automationui.AutonomySession opened = ui == null
+            ? null : ui.getAutonomySession();
+
+        this.autonomyAsOpened = opened == null ? null : opened.snapshotSetup();
         
         // Mirror address preference
         this.showAddressCheckbox.setSelected(l.getShowAddress());
@@ -2069,6 +2110,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
                         layout.getName(), x, y));
+
+                    // And written down, as every other edit here is.  Left in memory only, a caption
+                    // dropped by a paste reached disk only if something else happened to save later.
+                    rememberAutonomy(autonomy);
                 }
             }
 
@@ -2304,7 +2349,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!this.copySelection()) return false;
 
-        return this.deleteSelection();
+        // Held across the delete and put back afterwards.
+        //
+        // delete() ends by resetting the clipboard - it has to, because the single-tile clipboard it
+        // shares would otherwise go on offering a tile that has been removed - and that wiped the copy
+        // taken one line above.  A cut therefore took the track away and left nothing to paste, which
+        // is the one outcome this method's own comment says it was written to avoid.
+        java.util.List<CarriedTile> carried = this.groupClipboard;
+
+        boolean cut = this.deleteSelection();
+
+        this.groupClipboard = carried;
+
+        return cut;
     }
 
     /**
@@ -2358,6 +2415,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
                         layout.getName(), at.getX(), at.getY()));
+
+                    rememberAutonomy(autonomy);
                 }
             }
         }
@@ -2496,6 +2555,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
                         layout.getName(), getX(label), getY(label)));
+
+                    rememberAutonomy(autonomy);
                 }
 
                 this.resetClipboard();
@@ -2791,8 +2852,19 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void shiftUp()
     {
+        // Refused on the last row, rather than quietly meaning something else.
+        //
+        // LayoutDiagram.shiftUp normalises any start row past sy - 2 to the FIRST row, so hovering the
+        // bottom row - the natural gesture for "take this empty row away" - shifted the entire page up
+        // by one and destroyed row 0.  The map handed to the setup is built from the row the user
+        // pointed at, so it came out empty: the track moved and every station, name, length and
+        // pairing on the page stayed on the square it used to be on.  Nothing was dropped by the next
+        // reconcile either, because every square still had a tile - the whole page's setup was simply
+        // attached to the wrong tiles, silently.
+        if (lastHoveredY < 0 || lastHoveredY > layout.getSy() - 2) return;
+
         this.snapshotLayout();
-        
+
         try
         {
             if (lastHoveredY > -1)
@@ -2875,6 +2947,9 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void shiftLeft()
     {
+        // Refused on the last column - see shiftUp, which has the same normalisation behind it
+        if (lastHoveredX < 0 || lastHoveredX > layout.getSx() - 2) return;
+
         this.snapshotLayout();
 
         try
@@ -3557,6 +3632,10 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
         
+        // Both halves of the edit, or neither.  layoutEditingComplete re-reads the pages from disk,
+        // which undoes the diagram; this undoes what the same gestures wrote into the autonomy setup.
+        undoAutonomyEdits();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             parent.layoutEditingComplete();
@@ -3920,6 +3999,9 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             layout.saveChanges(null, false);
+
+            // Kept, so nothing can put them back.  The snapshot exists only for Cancel.
+            this.autonomyAsOpened = null;
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {

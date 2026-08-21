@@ -89,6 +89,15 @@ public class RouteEditorFrame extends JFrame
     private boolean locked = false;
 
     /**
+     * @return whether this route belongs to the Central Station and is shown read-only
+     */
+    public boolean isLocked()
+    {
+        return this.locked;
+    }
+
+
+    /**
      * Whether this window will let the route be changed.
      *
      * Asked before a mark is drawn and again before it acts.  Greying the tables was not enough:
@@ -699,7 +708,16 @@ public class RouteEditorFrame extends JFrame
             return row;
         }
 
-        return new CommandRow(CommandRow.Kind.SIGNAL, row.getTarget(), row.getSetting(),
+        // And the SETTING with it.  The kind decides which pair of words the dropdown offers, so a
+        // signal row still carrying "turn" had a setting its own dropdown does not contain: the combo
+        // fell back to the first entry, green, and one click into that cell and out again committed
+        // it.  A route that put a signal to danger quietly became one that cleared it.
+        String said = row.getSetting();
+
+        if ("turn".equalsIgnoreCase(said)) said = "red";
+        else if ("straight".equalsIgnoreCase(said)) said = "green";
+
+        return new CommandRow(CommandRow.Kind.SIGNAL, row.getTarget(), said,
             row.getProtocol(), row.getDelay());
     }
 
@@ -822,6 +840,11 @@ public class RouteEditorFrame extends JFrame
         s88Field.setText(String.valueOf(route.getS88()));
         triggerBox.setSelectedItem(triggerLabel(route.getTriggerType()));
         enabledBox.setSelected(route.isEnabled());
+
+        // setSelected fires no ActionEvent, so the listener that greys these two never ran on the way
+        // in: an existing automatic route opened with Automatic ticked and its sensor and trigger
+        // boxes dead, and the only way to reach them was to untick Automatic and tick it again.
+        showSensorIfAutomatic();
 
         List<RouteCommand> stored = route.getRoute();
 
@@ -1004,7 +1027,19 @@ public class RouteEditorFrame extends JFrame
             //
             // Through the LINES, because that is what the filter reads and what it has been tested
             // against - and a round trip through them is cheap next to the click that caused it.
-            settleCapturedRows();
+            //
+            // Caught on its own, so that a settle which cannot be done does not take the capture with
+            // it.  It used to share the catch below: a row this could not express threw, the table was
+            // never told about the row just added, and the capture went on filling a table that had
+            // stopped changing on screen.  Everything it captured was still saved.
+            try
+            {
+                settleCapturedRows();
+            }
+            catch (Exception cannot)
+            {
+                // The rows as they stand are the better answer
+            }
 
             commands.fireTableDataChanged();
         }
@@ -1028,6 +1063,10 @@ public class RouteEditorFrame extends JFrame
         for (Entry entry : commands.rows)
         {
             if (!entry.isEditable()) return;
+
+            // A three-way row stands for a PAIR of commands and refuses to answer as one, by design.
+            // Settling is a tidy-up; where it cannot be done the rows on screen are the better answer.
+            if (entry.getRow() != null && entry.getRow().getKind() == CommandRow.Kind.THREE_WAY) return;
 
             text.append(entry.toCommand().toLine(null));
         }
@@ -1307,7 +1346,7 @@ public class RouteEditorFrame extends JFrame
      * @param addOn the column the plus sits under on the last row
      */
     private void actOnRowMarks(final JTable table, final int delete, final int up, final int down,
-        final int addOn)
+        final int addOn, final int... alsoMarked)
     {
         final int mark = Math.max(12, table.getRowHeight() - 10);
 
@@ -1373,6 +1412,20 @@ public class RouteEditorFrame extends JFrame
             if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
         }
 
+        // Any further column that carries a mark gets the renderer and the pointer, and NOT a second
+        // copy of the listener below.
+        //
+        // This was a second whole call to this method, which added a second mouse listener to the same
+        // table - and the listener dispatches on the VALUE under the pointer rather than on the column,
+        // so both copies acted on every click.  One press of the trash deleted two commands: the first
+        // listener removed the row, the second read the same cell again, found the row that had just
+        // shifted up into it, and deleted that one too.  The arrows were worse than wrong - the second
+        // listener moved the row back, so they did nothing at all.
+        for (int column : alsoMarked)
+        {
+            if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
+        }
+
         table.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
@@ -1405,10 +1458,17 @@ public class RouteEditorFrame extends JFrame
                 int row = table.rowAtPoint(e.getPoint());
                 int column = table.columnAtPoint(e.getPoint());
 
+                boolean marked = column == up || column == down || column == delete
+                    || (row >= rowsOf(table) && column == addOn);
+
+                for (int also : alsoMarked)
+                {
+                    if (column == also) marked = true;
+                }
+
                 boolean live = row >= 0 && column >= 0
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
-                    && (column == up || column == down || column == delete
-                        || (row >= rowsOf(table) && column == addOn));
+                    && marked;
 
                 table.setCursor(java.awt.Cursor.getPredefinedCursor(
                     live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
@@ -2552,10 +2612,9 @@ public class RouteEditorFrame extends JFrame
             getColumnModel().getColumn(7).setPreferredWidth(70);
             getColumnModel().getColumn(8).setPreferredWidth(70);
 
-            actOnRowMarks(this, DELETE, UP, DOWN, UP);
-
-            // The duplicate column gets the same renderer, which is what draws its mark
-            actOnRowMarks(this, DUPLICATE, -1, -1, -1);
+            // The duplicate column is named here rather than in a second call: a second call would
+            // register a second mouse listener on this table, and both would act on every click
+            actOnRowMarks(this, DELETE, UP, DOWN, UP, DUPLICATE);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking

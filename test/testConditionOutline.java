@@ -177,6 +177,51 @@ public class testConditionOutline
     }
 
     /**
+     * A condition built as a TREE, rather than from an outline, keeps its shape.
+     *
+     * Everything above starts from an outline, so a nesting the outline could not express could not be
+     * reached by these tests at all - and that is exactly what the older editor's Insert AND and
+     * Insert OR buttons produced, and what a hand-written condition in a route file can hold.
+     *
+     * "A and (B or C)" was written out as one flat level reading "A and B or C": two different joining
+     * words at the same depth, which this class's own rule refuses.  So the route opened with its
+     * condition flagged red and could not be saved until the user restructured something they never
+     * wrote - and the reading, which the Test button evaluates, said "(A and B) or C" instead.
+     */
+    @Test
+    public void testATreeThatMixesWordsComesBackNested()
+    {
+        NodeExpression original = new NodeAnd(sensor(1),
+            new NodeOr(sensor(2), sensor(3)));
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(original);
+
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "the outline disagrees with itself: " + ConditionOutline.problems(shown)
+            + " - a route with this condition cannot be saved until it is restructured by hand");
+
+        assertEquals(meaning(ConditionOutline.toExpression(shown)), meaning(original),
+            "the condition means something else than it did, which is when it fires on the railway");
+    }
+
+    /**
+     * And the same with the mixed pair on the LEFT.
+     */
+    @Test
+    public void testATreeWithTheGroupFirstComesBackNested()
+    {
+        NodeExpression original = new NodeOr(new NodeAnd(sensor(1), sensor(2)), sensor(3));
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(original);
+
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "the outline disagrees with itself: " + ConditionOutline.problems(shown));
+
+        assertEquals(meaning(ConditionOutline.toExpression(shown)), meaning(original),
+            "(A and B) or C came back meaning something else");
+    }
+
+    /**
      * A flat chain of ANDs round-trips without growing an indent.
      *
      * An outline that indented itself a little more every time it was opened would walk off the side
@@ -372,6 +417,42 @@ public class testConditionOutline
     /**
      * The shape of an expression, for comparing two of them.
      */
+    /**
+     * describe(), with a bracket round a single thing ignored.
+     *
+     * Reading an outline back builds a group where the outline indents, so a nested pair comes back
+     * as "and(1,(or(2,3)))" where it went in as "and(1,or(2,3))".  That bracket is not a difference in
+     * what the condition MEANS - it is a bracket round one expression - and a test about meaning
+     * should not fail on it.
+     */
+    private static String meaning(NodeExpression node)
+    {
+        return describe(unwrapped(node));
+    }
+
+    private static NodeExpression unwrapped(NodeExpression node)
+    {
+        if (node instanceof org.traincontrol.base.NodeGroup
+            && ((org.traincontrol.base.NodeGroup) node).getExpressions().size() == 1)
+        {
+            return unwrapped(((org.traincontrol.base.NodeGroup) node).getExpressions().get(0));
+        }
+
+        if (node instanceof NodeAnd)
+        {
+            return new NodeAnd(unwrapped(((NodeAnd) node).getLeft()),
+                unwrapped(((NodeAnd) node).getRight()));
+        }
+
+        if (node instanceof NodeOr)
+        {
+            return new NodeOr(unwrapped(((NodeOr) node).getLeft()),
+                unwrapped(((NodeOr) node).getRight()));
+        }
+
+        return node;
+    }
+
     private static String describe(NodeExpression node)
     {
         if (node == null) return "-";

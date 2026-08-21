@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -48,11 +49,16 @@ import org.traincontrol.util.Util;
 public class AutonomyCompanionStore
 {
     /**
-     * The schema this class writes.  A file claiming a higher version was written by a newer
+     * The highest schema this class can read.  A file claiming a higher version was written by a newer
      * TrainControl and is refused rather than read partially - silently dropping fields it does not
      * recognise would lose the user's work on the next save.
+     *
+     * 2 is "a station may carry several protecting signals", where stationSignals holds an array
+     * rather than a square.  Version 1 reads that field with a string accessor and throws an
+     * unchecked exception on an array - after load() has already emptied the store - so a file it
+     * cannot read has to be one it REFUSES to read.  That is what the version is for.
      */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
@@ -764,7 +770,7 @@ public class AutonomyCompanionStore
     {
         JSONObject root = new JSONObject();
 
-        root.put("version", VERSION);
+        root.put("version", versionWritten());
 
         // what each id was called when this was written, so a renumber can be told from a rename
         Map<String, String> pages = new LinkedHashMap<>();
@@ -828,7 +834,7 @@ public class AutonomyCompanionStore
 
         JSONObject bundle = new JSONObject();
 
-        bundle.put("version", VERSION);
+        bundle.put("version", versionWritten());
         bundle.put(EXPORT_CONFIGURATION, new JSONObject(configuration.toString()));
         bundle.put(EXPORT_SHARED, sharedFields());
 
@@ -928,12 +934,91 @@ public class AutonomyCompanionStore
 
         if (filled > 0)
         {
-            // Through the same door load() uses, so the page-id translation happens once and here
-            clearShared();
-            readShared(merged);
+            // What the store holds now, in the shape readShared takes, so that an import which turns
+            // out to be unreadable can be put back.
+            //
+            // readShared uses the type-strict accessors and throws part way through on anything it did
+            // not expect - and the merged object is assembled straight out of somebody else's file
+            // without being checked.  Clearing first therefore emptied the shared half and then failed,
+            // and the panel's "import unreadable" told the user nothing had happened while the store
+            // stood blank, ready for the next save to write that over setup.json.
+            //
+            // load() was hardened against exactly this and says so; the import path shares readShared
+            // and was not.
+            JSONObject wasThere = sharedFields();
+
+            try
+            {
+                // Through the same door load() uses, so the page-id translation happens once and here
+                clearShared();
+                readShared(merged);
+            }
+            catch (RuntimeException e)
+            {
+                clearShared();
+                readShared(wasThere);
+
+                throw e;
+            }
         }
 
         return filled;
+    }
+
+    /**
+     * Everything this store holds, as JSON, for a caller that may have to put it back.
+     *
+     * The diagram editor writes the setup to disk as it goes - a moved tile has to reach the file, or
+     * a crash between the move and the save loses the lot - and its Cancel button then had nothing to
+     * undo those writes with: the DIAGRAM was re-read from disk and the setup was not, so cancelling
+     * left a station recorded on a square the track had been moved away from.
+     *
+     * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the
+     * editing that follows.  snapshotPage does not do this and should.
+     *
+     * @return a snapshot for restoreSetup
+     */
+    public JSONObject snapshotSetup()
+    {
+        JSONObject out = new JSONObject();
+
+        out.put("shared", sharedFields());
+
+        JSONObject copies = new JSONObject();
+
+        for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
+        {
+            copies.put(entry.getKey(), new JSONObject(entry.getValue().toString()));
+        }
+
+        out.put("configurations", copies);
+        out.put("active", activeConfiguration == null ? JSONObject.NULL : activeConfiguration);
+
+        return out;
+    }
+
+    /**
+     * Puts back everything snapshotSetup took.
+     *
+     * @param was a snapshot from snapshotSetup
+     */
+    public void restoreSetup(JSONObject was)
+    {
+        if (was == null) return;
+
+        clearShared();
+        readShared(was.getJSONObject("shared"));
+
+        configurations.clear();
+
+        JSONObject copies = was.getJSONObject("configurations");
+
+        for (String name : copies.keySet())
+        {
+            configurations.put(name, new JSONObject(copies.getJSONObject(name).toString()));
+        }
+
+        activeConfiguration = was.isNull("active") ? null : was.getString("active");
     }
 
     /**
@@ -971,6 +1056,8 @@ public class AutonomyCompanionStore
     {
         // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
         if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
+
+        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
 
         JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
 
@@ -1016,6 +1103,11 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_NAME_IN_USE);
         }
 
+        if (!from.equals(to) && fileNameTaken(to, from))
+        {
+            throw new IOException(ERROR_NAME_IN_USE);
+        }
+
         JSONObject configuration = configurations.remove(from);
 
         if (configuration == null) return;
@@ -1026,8 +1118,56 @@ public class AutonomyCompanionStore
         if (from.equals(activeConfiguration)) activeConfiguration = to;
 
         File old = configurationFile(from);
+        File now = configurationFile(to);
 
-        if (old.isFile()) old.delete();
+        // MOVED and rewritten, not deleted.
+        //
+        // The new file used to be written only by the save that follows this, so deleting the old one
+        // here left a window in which the configuration was on disk nowhere at all - and load()
+        // rebuilds the list by scanning the folder, so a save that failed for any reason (a sync
+        // client holding the folder, a full disk, the process dying) destroyed it permanently.
+        //
+        // Moving closes that window: the data is under one name or the other at every instant.  The
+        // rewrite that follows is what makes the file agree with its own name - load() takes the name
+        // from INSIDE the file, so a moved file alone would come back under the old name.
+        //
+        // A failure is raised rather than swallowed, for the reason deleteConfiguration gives: what is
+        // in memory and what is on disk have to keep saying the same thing, and only the user can
+        // decide what to do when they cannot.
+        if (old.isFile() && !old.equals(now))
+        {
+            try
+            {
+                Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                writeJson(now, configuration);
+            }
+            catch (IOException e)
+            {
+                // Back to exactly where we were, on disk and in memory both.  A file left at the new
+                // name holding the old name inside it would be saved a second time under the old name
+                // later, and load() would then find the same configuration twice.
+                if (now.isFile() && !old.isFile())
+                {
+                    try
+                    {
+                        Files.move(now.toPath(), old.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    catch (IOException hopeless)
+                    {
+                        // nothing further can be done here; the data is still on disk under one name
+                    }
+                }
+
+                configurations.remove(to);
+                configurations.put(from, configuration);
+                configuration.put("name", from);
+
+                if (to.equals(activeConfiguration)) activeConfiguration = from;
+
+                throw new IOException(I18n.f("autosetup.ui.errorRenameConfigurationFailed", from));
+            }
+        }
     }
 
     /**
@@ -1238,9 +1378,33 @@ public class AutonomyCompanionStore
 
         if (byKey.isEmpty()) return;
 
+        // Every square being LANDED ON that is not itself moving away.
+        //
+        // The diagram writes the arriving tile over whatever was there, and the setup has to let go of
+        // the same square - the two loops below only overwrite a landing square when the source had
+        // something to overwrite it with.  So dragging a piece of plain track onto a station left the
+        // station's name, signals, length and restrictions attached to a square that now holds plain
+        // track, and reconcile never tidied it up because the square still had a tile on it.
+        //
+        // A landing square that is ALSO a source is left alone: it is being vacated in the same
+        // gesture, and its own entry travels with it.
+        Set<String> landing = new LinkedHashSet<>();
+
+        for (String to : byKey.values())
+        {
+            if (!byKey.containsKey(to)) landing.add(to);
+        }
+
+        forgetSquares(landing);
+
         moveKeys(pointNames, byKey);
         moveKeys(tileLengths, byKey);
-        moveKeys(tileDirections, byKey);
+        // Suffixed, because a direction belongs to a square AND a route across it.  moveKeys matches
+        // whole keys, so it never matched one of these: a moved tile left every facing behind on the
+        // square the track had walked away from, and the next reconcile - which does know about the
+        // suffix - dropped them.  That is the same loss moveTiles exists to prevent, hiding behind a
+        // key shape.
+        moveSuffixedKeys(tileDirections, byKey);
         moveKeys(barredArrivals, byKey);
         moveKeys(linkNames, byKey);
 
@@ -1450,6 +1614,122 @@ public class AutonomyCompanionStore
         }
 
         if (was != null) into.addAll(was);
+    }
+
+    /**
+     * Lets go of everything the setup holds about a set of squares.
+     *
+     * Both halves: what is written ABOUT the square, and what elsewhere POINTS AT it.  A caption
+     * naming a station that has just been built over names nothing, and a pairing to a signal that
+     * has been built over would throw an accessory that is not there any more.
+     *
+     * @param squares stored keys, "page:x,y"
+     */
+    private void forgetSquares(Set<String> squares)
+    {
+        if (squares == null || squares.isEmpty()) return;
+
+        for (String key : squares)
+        {
+            pointNames.remove(key);
+            tileLengths.remove(key);
+            tileDirections.remove(key);
+            barredArrivals.remove(key);
+            linkNames.remove(key);
+            stationSignals.remove(key);
+            portals.remove(key);
+            captions.remove(key);
+            stations.remove(key);
+            disabledPortals.remove(key);
+        }
+
+        // A direction is keyed by the square and a route across it, so it is stored suffixed
+        for (java.util.Iterator<String> keys = tileDirections.keySet().iterator(); keys.hasNext();)
+        {
+            String key = keys.next();
+            int at = key.lastIndexOf('#');
+
+            if (at >= 0 && squares.contains(key.substring(0, at))) keys.remove();
+        }
+
+        // And what named them
+        for (java.util.Iterator<Map.Entry<String, String>> pairs = portals.entrySet().iterator();
+            pairs.hasNext();)
+        {
+            if (squares.contains(pairs.next().getValue())) pairs.remove();
+        }
+
+        for (java.util.Iterator<Map.Entry<String, String>> pairs = captions.entrySet().iterator();
+            pairs.hasNext();)
+        {
+            if (squares.contains(pairs.next().getValue())) pairs.remove();
+        }
+
+        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+            = stationSignals.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<String, List<String>> pair = pairs.next();
+
+            pair.getValue().removeAll(squares);
+
+            if (pair.getValue().isEmpty()) pairs.remove();
+        }
+
+        // The configurations key by square as well - facings, placements, homes, lengths
+        for (JSONObject configuration : configurations.values())
+        {
+            if (!configuration.has("points")) continue;
+
+            JSONObject points = configuration.getJSONObject("points");
+
+            for (String key : squares)
+            {
+                points.remove(key);
+            }
+        }
+    }
+
+    /**
+     * The same for a map whose keys are a square with something else appended after a '#'.
+     *
+     * The square is the part that moves; whatever follows it identifies which of that square's several
+     * entries this is, and travels unchanged.
+     */
+    private static <T> void moveSuffixedKeys(Map<String, T> map, Map<String, String> moves)
+    {
+        Map<String, T> out = new LinkedHashMap<>();
+
+        // The ones staying put first, so a tile arriving on a square that is not moving replaces what
+        // was there rather than the other way round - the same order moveKeys uses.
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            if (movedSuffixed(entry.getKey(), moves) == null) out.put(entry.getKey(), entry.getValue());
+        }
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            String moved = movedSuffixed(entry.getKey(), moves);
+
+            if (moved != null) out.put(moved, entry.getValue());
+        }
+
+        map.clear();
+        map.putAll(out);
+    }
+
+    /**
+     * @return where a suffixed key goes, or null if its square is not moving
+     */
+    private static String movedSuffixed(String key, Map<String, String> moves)
+    {
+        int at = key.lastIndexOf('#');
+
+        String square = at < 0 ? key : key.substring(0, at);
+        String suffix = at < 0 ? "" : key.substring(at);
+
+        String moved = moves.get(square);
+
+        return moved == null ? null : moved + suffix;
     }
 
     /**
@@ -1866,6 +2146,11 @@ public class AutonomyCompanionStore
         tileLengths.clear();
         tileDirections.clear();
         barredArrivals.clear();
+        // Was missing, and clearShared() below has always had it.  load() empties the store and then
+        // reads the file over it, and readShared only PUTS what the file holds - so a pairing made
+        // since the last save survived a discard, and the next save wrote it to disk.  A signal
+        // somebody had cancelled was then thrown on real hardware.
+        stationSignals.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();
@@ -1883,6 +2168,27 @@ public class AutonomyCompanionStore
         return new File(layoutFolder, FOLDER);
     }
 
+    /**
+     * The lowest version that can read what is about to be written.
+     *
+     * Not simply VERSION.  Bumping every file to 2 would make every setup this build touches
+     * unreadable by the previous one, including the great majority that use nothing new - and the
+     * whole point of writing a single signal as a bare string is that those files stay readable.  So
+     * the number describes the SHAPES actually present rather than the build that wrote them, and it
+     * rises only for the file that really does need the newer reader.
+     *
+     * @return 2 where some station carries more than one signal, 1 otherwise
+     */
+    private int versionWritten()
+    {
+        for (List<String> signals : stationSignals.values())
+        {
+            if (signals != null && signals.size() > 1) return 2;
+        }
+
+        return 1;
+    }
+
     private File setupFile()
     {
         return new File(folder(), SETUP_FILE);
@@ -1891,6 +2197,36 @@ public class AutonomyCompanionStore
     private File configurationFile(String name)
     {
         return new File(folder(), CONFIGURATION_PREFIX + CS2File.sanitizeFilename(name) + ".json");
+    }
+
+    /**
+     * Whether another configuration would be written to the same file as this name.
+     *
+     * The name is free text and the filename is sanitised, and sanitising is many to one - every
+     * character a filename may not hold becomes an underscore.  So "Night: Yard" and "Night_ Yard" are
+     * two different configurations by name and one file on disk: saving wrote both to it, the second
+     * over the first, and the next load - which rebuilds the list by scanning the folder - came back
+     * with one of them simply gone.  Deleting or renaming either took the other's data with it.
+     *
+     * Checked at the two doors a name comes in by, rather than at save time, so the answer arrives
+     * while the user is still looking at the name they typed.
+     *
+     * @param name the name being taken
+     * @param except a name that may share the file - the one being renamed away from
+     * @return whether some other configuration already owns that file
+     */
+    private boolean fileNameTaken(String name, String except)
+    {
+        File wanted = configurationFile(name);
+
+        for (String existing : configurations.keySet())
+        {
+            if (existing.equals(name) || existing.equals(except)) continue;
+
+            if (configurationFile(existing).equals(wanted)) return true;
+        }
+
+        return false;
     }
 
     private void writeJson(File target, final JSONObject json) throws IOException
