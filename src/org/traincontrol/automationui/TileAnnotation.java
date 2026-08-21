@@ -1226,14 +1226,31 @@ public class TileAnnotation
             size = Math.round(size * 1.35f);
         }
 
-        // Centred on the TRACK, not on the tile.  On a curve the art hugs the corner between the two
-        // sides it joins, so a badge in the middle of the square sits off the rails - which is what
-        // made sensors on curves look misplaced.  The midpoint of the route's own two sides lands on
-        // the track for a curve and is the tile centre for anything straight.
+        // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
+        // which is the tile centre for a straight and lands on the rails for anything else.
         int[] on = trackCentre(width, height);
 
         int x = on[0] - size / 2;
         int y = on[1] - size / 2;
+
+        // But a CURVE puts it in the bottom left, off the track.
+        //
+        // A curve's art hugs one corner, and the badge was centred on that art on the reasoning that
+        // a mark belongs on the rails it is about.  True in isolation, and wrong in company: the two
+        // direction arrows on a curve sit at the middles of the same two sides the chord joins, so
+        // the badge landed exactly between them and the three marks fought for one corner of a
+        // twenty-pixel square.  A station on a curve was the hardest thing on the diagram to read.
+        //
+        // The bottom left is the emptiest part of a curve whichever way it faces - three of the four
+        // curves bend away from it entirely, and the fourth's chord clips only its corner - and it is
+        // clear of the length, which is written top right.  Being off the track costs nothing: a
+        // badge is one square's worth of mark on one square, and nobody has to trace which rail it
+        // is sitting on to know which square it means.
+        if (curved)
+        {
+            x = 1;
+            y = height - size - 1;
+        }
 
         // never let it hang outside the square
         x = Math.max(1, Math.min(width - size - 1, x));

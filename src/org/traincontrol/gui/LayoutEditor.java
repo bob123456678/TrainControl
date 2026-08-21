@@ -550,35 +550,15 @@ public class LayoutEditor extends PositionAwareJFrame
         strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.Y_AXIS));
         strip.setOpaque(false);
 
-        // Two sections, headed the way New Components is.
+        // Only the size controls.
         //
-        // They were one row of three buttons, which read as three related things and they are not:
-        // picking squares is a mode the editor is in, and the size controls change the shape of the
-        // page.  A heading over each says which is which without anybody having to press one to find
-        // out.
-        JPanel picking = section(I18n.t("layout.ui.toolPickSeveral"), null);
-
-        pickSeveral = new javax.swing.JToggleButton(I18n.t("layout.ui.toolPickSeveral"));
-
-        pickSeveral.setFont(new java.awt.Font("Segoe UI", 1, 12));
-        pickSeveral.setToolTipText(I18n.t("layout.ui.tooltipPickSeveral"));
-
-        // NOT focusable.  Every shortcut in this window is handled by the FRAME's key listener - see
-        // formKeyPressed, which explains why - and a button that takes focus when it is pressed takes
-        // the key events with it.  So turning multi-select on, which is done by pressing this, was
-        // also the moment Delete, Control+C and Escape stopped working: exactly when a user needs
-        // them, and with nothing on screen to suggest why.  Every other control in this window was
-        // already made unfocusable for the same reason; these three were added later and missed it.
-        pickSeveral.setFocusable(false);
-
-        pickSeveral.addActionListener(e -> setSelectMode(pickSeveral.isSelected()));
-
-        picking.add(pickSeveral);
-
-        strip.add(picking);
-
-        // The size, in the heading's tooltip, because it is the thing a user wants to know before
-        // pressing either button and the buttons themselves are two characters wide.
+        // Pick Several was a button beside these, and it is gone: it was a MODE, which meant finding
+        // it, switching it on, using it, and remembering to switch it off - and "Pick by Dragging a
+        // Box" on the right-click menu does the same job for one box and then gets out of the way.
+        // A mode with a one-shot equivalent is a mode nobody needs.
+        //
+        // The size itself goes in the heading's tooltip, because it is what somebody wants to know
+        // before pressing either button and the buttons themselves are two characters wide.
         sizeSection = section(I18n.t("layout.ui.sectionDiagramSize"), null);
 
         JButton grow = new JButton("+");
@@ -653,9 +633,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /** The Diagram Size controls, whose heading carries the current size. */
     private JPanel sizeSection;
-
-    /** The Pick Several toggle, held so that Escape can un-press it. */
-    private javax.swing.JToggleButton pickSeveral;
 
     /**
      * Writes the current width and height into the Diagram Size heading's tooltip.
@@ -1026,7 +1003,17 @@ public class LayoutEditor extends PositionAwareJFrame
         this.dragSource = label;
         this.groupDragging = true;
 
-        ghostLabel = new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size()));
+        // The tiles themselves, not a count of them.
+        //
+        // It used to read "12 tiles", which says how MANY are moving and nothing about which - and on
+        // a diagram where the answer is a shape, a number is the one fact nobody needs.  Dragging a
+        // curve into a run of straights is a thing the eye can check in the moment the group is over
+        // the gap; it cannot check it against the word twelve.
+        javax.swing.Icon carried = selectionPreview();
+
+        ghostLabel = carried == null
+            ? new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size())) : new JLabel(carried);
+
         ghostLabel.setOpaque(true);
         ghostLabel.setBackground(Color.WHITE);
         ghostLabel.setBorder(new LineBorder(COMPONENT_BORDER_SELECTED_COLOR, 2));
@@ -1036,6 +1023,88 @@ public class LayoutEditor extends PositionAwareJFrame
         dragWindow.pack();
         dragWindow.setVisible(false);
     }
+
+    /**
+     * The picked squares drawn as one picture, for the thing that follows the pointer.
+     *
+     * Laid out as they sit on the diagram - the same gaps, the same shape - because that is what a
+     * user is lining up when they drag a group, and a tidy row of icons would be a different shape
+     * from the one actually being moved.
+     *
+     * Scaled down where the selection is large, since a group of forty squares at full size would be
+     * a window bigger than the diagram it is being dragged over.
+     *
+     * @return the picture, or null where there is nothing to draw
+     */
+    private javax.swing.Icon selectionPreview()
+    {
+        int[] bounds = this.selection.bounds();
+
+        if (bounds == null || grid == null) return null;
+
+        int across = bounds[2] - bounds[0] + 1;
+        int down = bounds[3] - bounds[1] + 1;
+
+        // Big enough to read, small enough to see past
+        double scale = Math.min(1.0, MAX_DRAG_PREVIEW / (double) (Math.max(across, down) * size));
+
+        int cell = Math.max(4, (int) Math.round(size * scale));
+
+        java.awt.image.BufferedImage picture = new java.awt.image.BufferedImage(
+            Math.max(1, across * cell), Math.max(1, down * cell),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = picture.createGraphics();
+
+        try
+        {
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+            for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+            {
+                LayoutLabel from = grid.getValueAt(at.getX(), at.getY());
+
+                if (from == null || from.getIcon() == null) continue;
+
+                int x = (at.getX() - bounds[0]) * cell;
+                int y = (at.getY() - bounds[1]) * cell;
+
+                // Through an image rather than by asking the icon to paint at a scale, because an
+                // ImageIcon paints at its own size and would spill over the cell beside it
+                java.awt.image.BufferedImage one = new java.awt.image.BufferedImage(
+                    Math.max(1, from.getIcon().getIconWidth()),
+                    Math.max(1, from.getIcon().getIconHeight()),
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D oneG = one.createGraphics();
+
+                try
+                {
+                    from.getIcon().paintIcon(from, oneG, 0, 0);
+                }
+                finally
+                {
+                    oneG.dispose();
+                }
+
+                g.drawImage(one, x, y, cell, cell, null);
+            }
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return new javax.swing.ImageIcon(picture);
+    }
+
+    /**
+     * The longest side a dragged group is drawn at, in pixels.  Past this it is scaled down: the
+     * picture is there to say WHAT is moving, and one big enough to hide the diagram underneath
+     * stops answering the question it was asked.
+     */
+    private static final int MAX_DRAG_PREVIEW = 260;
 
     public void updateDrag(MouseEvent e, LayoutLabel label)
     {
@@ -2069,14 +2138,6 @@ public class LayoutEditor extends PositionAwareJFrame
         if (!on) this.selectOnce = false;
 
         this.selectMode = on;
-
-        // The button follows the mode rather than being the only place it is recorded.  Escape turns
-        // the mode off, and a button still showing pressed after that says the editor is in a state
-        // it is not in - which is how "pick several persists after pressing the button" happens.
-        if (this.pickSeveral != null && this.pickSeveral.isSelected() != on)
-        {
-            this.pickSeveral.setSelected(on);
-        }
     }
 
     /**
