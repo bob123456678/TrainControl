@@ -1251,12 +1251,15 @@ public class TileAnnotation
         {
             size = Math.round(size * 1.35f);
 
-            // Two back off the big one.  The third-again applies to both diamonds and is about the
-            // shape rather than the size - a diamond covers half the box it sits in - but a station's
-            // box is already half the tile, so a third on top of that made it the loudest mark on
-            // the page rather than an equal of the circle beside it.  The small diamond keeps the
-            // full enlargement: at a third of a tile it has none to spare.
-            if (badge.isStation()) size -= 2;
+            // And then a little back off each.  The third-again is about the SHAPE rather than the
+            // size - a diamond covers half the box it sits in - and on both marks it overshot: a
+            // station's box is already half the tile, so a third on top made it the loudest thing on
+            // the page rather than an equal of the circle beside it, and even the small one came out
+            // a shade heavier than the circles it sits among.
+            //
+            // Two off the big one and one off the small, so each ends up the weight of the mark it
+            // is a variant of rather than the size the arithmetic suggested.
+            size -= badge.isStation() ? 2 : 1;
         }
 
         // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
