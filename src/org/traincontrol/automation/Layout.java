@@ -4066,7 +4066,16 @@ public class Layout
                     }
                     
                     this.updatePendingS88(loc, current.getS88());
-                    loc.waitForOccupiedFeedback(current.getS88());    
+
+                    // With an advisory, because THIS is the wait that means "a train was sent and
+                    // has not got there".  Nothing acts on it and the wait itself is unchanged - it
+                    // only stops the operator having to notice for themselves that a train has gone
+                    // quiet.  Asked for HERE rather than inside the wait, because "this train was
+                    // dispatched" is a fact the dispatch loop has and the wait does not: a route's
+                    // trigger monitor uses the same wait and is supposed to sit on its sensor for as
+                    // long as the layout runs.
+                    loc.waitForOccupiedFeedback(current.getS88(),
+                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS);
                     
                     if (this.simulate)
                     {            
@@ -4178,7 +4187,10 @@ public class Layout
                     
                     this.updatePendingS88(loc, current.getS88());
                     
-                    loc.waitForOccupiedFeedback(current.getS88()); 
+
+                    // With an advisory - see the intermediate points above
+                    loc.waitForOccupiedFeedback(current.getS88(),
+                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS);
                        
                     if (this.simulate)
                     {            

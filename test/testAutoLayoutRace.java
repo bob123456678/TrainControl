@@ -14,6 +14,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
+import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -237,20 +238,27 @@ public class testAutoLayoutRace
         final MarklinFeedback sensor = model.newFeedback(9001, null);
         model.setFeedbackState(sensor.getName(), false);
 
-        final long was = Locomotive.FEEDBACK_ADVISORY_MS;
-
-        Locomotive.FEEDBACK_ADVISORY_MS = 200;
+        final AtomicBoolean arrived = new AtomicBoolean(false);
 
         final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
 
-        // The advisory goes through the model's log, which is where the operator is already looking
-        final AtomicBoolean arrived = new AtomicBoolean(false);
+        // Records what it would have told the operator, rather than telling them
+        final MarklinLocomotive dispatched = new MarklinLocomotive(model, 1,
+            MarklinLocomotive.decoderType.MM2, "Dispatched")
+        {
+            @Override
+            protected void waitedTooLongFor(String feedbackName, long waitedMs)
+            {
+                said.add(feedbackName);
+            }
+        };
 
         try
         {
             Thread waiting = new Thread(() ->
             {
-                loc.waitForOccupiedFeedback(sensor.getName(), 0);
+                // The three-argument wait, which is the one the dispatch loop uses
+                dispatched.waitForOccupiedFeedback(sensor.getName(), 0, 200);
 
                 arrived.set(true);
             }, "waiting-for-a-train-that-is-not-coming");
@@ -267,6 +275,10 @@ public class testAutoLayoutRace
 
             assertTrue(waiting.isAlive(), "the waiting thread gave up, which it must never do");
 
+            assertEquals(said, java.util.Arrays.asList(sensor.getName()),
+                "the operator was told " + said + " - it should be the sensor, exactly once.  A train "
+                + "that never starts otherwise just stops being mentioned");
+
             // and it is still released by the thing that is supposed to release it
             model.setFeedbackState(sensor.getName(), true);
 
@@ -277,14 +289,63 @@ public class testAutoLayoutRace
 
             waiting.join(5000);
 
+            assertEquals(said.size(), 1, "it said so more than once");
+
             assertTrue(arrived.get(),
                 "the sensor came on and the wait did not end - the poll added for the advisory has "
                 + "broken the wait it was supposed to leave alone");
         }
         finally
         {
-            Locomotive.FEEDBACK_ADVISORY_MS = was;
+            // nothing to put back: the threshold is passed in rather than set globally
         }
+    }
+
+    /**
+     * And a wait that is SUPPOSED to be endless says nothing at all.
+     *
+     * A route's trigger monitor sits on its sensor for as long as the layout runs - that is the whole
+     * job - and it does so on a locomotive called "Dummy Loc" that exists only to borrow these
+     * utilities.  An advisory built into the wait itself would therefore have announced, once per
+     * route and for ever, that a locomotive nobody owns had failed to arrive.
+     *
+     * So the advisory is asked for by the caller, and this is the test that keeps it that way.
+     */
+    @Test
+    public void testAWaitThatIsMeantToBeEndlessStaysQuiet() throws Exception
+    {
+        final MarklinFeedback sensor = model.newFeedback(9002, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        // Built exactly as MarklinRoute builds its dummy - the constructor registers nothing - but
+        // recording what it would have said instead of saying it
+        final MarklinLocomotive listening = new MarklinLocomotive(model, 1,
+            MarklinLocomotive.decoderType.MM2, "Watcher")
+        {
+            @Override
+            protected void waitedTooLongFor(String feedbackName, long waitedMs)
+            {
+                said.add(feedbackName);
+            }
+        };
+
+        Thread waiting = new Thread(() -> listening.waitForOccupiedFeedback(sensor.getName(), 0),
+            "a-route-watching-its-sensor");
+
+        waiting.setDaemon(true);
+        waiting.start();
+
+        // Comfortably past anything a mutated build would use as a threshold
+        Thread.sleep(1500);
+
+        assertTrue(said.isEmpty(),
+            "the plain wait announced " + said + " - a route's trigger monitor would say that about "
+            + "its dummy locomotive once every few minutes, for every route, for the whole session");
+
+        assertTrue(waiting.isAlive(), "and it must still be waiting");
     }
 
     /**

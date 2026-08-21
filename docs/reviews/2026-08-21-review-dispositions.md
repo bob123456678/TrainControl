@@ -278,11 +278,23 @@ period, why not advise the user? this would usually happen if a locomotive fails
 the wrong track."*  Right, and it is the half that was missing: the wait is correct to be endless, but
 the operator was told nothing at all - a train that failed to start simply stopped being mentioned.
 
-`Locomotive.waitedTooLongFor` is called once, after `FEEDBACK_ADVISORY_MS` (three minutes, matching
-`Layout.TIMETABLE_STUCK_MS` and for the reason that constant gives), and `MarklinLocomotive` overrides
-it to put a line in the log naming the locomotive, the sensor and how long it has been.  The wait
-itself is untouched: it still ends only when the sensor says so, and nothing acts on the advisory.
-The `wait()` became `wait(5000)` purely so the thread can look at a clock.
+`Locomotive.waitedTooLongFor` fires once, after `FEEDBACK_ADVISORY_MS` - **five minutes**, Adam's
+number - and `MarklinLocomotive` overrides it to log the locomotive, the sensor and the minutes.  The
+wait itself is untouched: it still ends only when the sensor says so, and nothing acts on the advisory.
+
+**Where it fires, which is the part worth checking.**  Adam asked for that verification and it was
+worth asking for: the advisory started out inside the shared `waitForOccupiedFeedback`, and that method
+has a caller for which waiting for ever is the entire job.  `MarklinRoute`'s trigger monitor builds a
+locomotive it calls **"Dummy Loc"** purely to borrow these wait utilities, and sits on its sensor for
+as long as the layout runs.  Every automatic route would therefore have announced, once every five
+minutes and for the whole session, that a locomotive nobody owns had failed to arrive.
+
+So the advisory is asked for by the CALLER: the plain two-argument wait is exactly as it always was,
+and only `Layout.executePathInternal` - both its milestone waits - passes a threshold.  "This train was
+dispatched and is on its way" is a fact the dispatch loop has and the wait does not.
+
+Two tests hold that line, and both were seen failing: put the advisory back in the shared door and the
+route-monitor test fails; take it out altogether and the dispatch test fails.
 
 **The Layout monitor is held across per-command sleeps while a running train needs it.**
 `configureAndLockPath` holds `synchronized (this)` across a lock loop containing a 150 ms sleep per
@@ -425,5 +437,10 @@ anyway - and then the NEXT click should behave the same way rather than doing no
 the first such click stopped every tile in the application from ever responding again.
 
 **36. Start a train and stop it by hand before it reaches its next sensor** - lift it off, or turn its
-power off at the loco. After three minutes the log should name it, name the sensor, and say how long.
+power off at the loco. After five minutes the log should name it, name the sensor, and say how long.
 Nothing else should change: the train stays waiting, and autonomy carries on around it.
+
+**37. Leave an automatic route enabled and watch the log for ten minutes.** It must say NOTHING about
+its trigger sensor. A route waiting on its sensor is a route doing its job, and it does so on a
+locomotive called "Dummy Loc" - if that name ever appears in the log, the advisory has leaked out of
+the dispatch path into the shared wait.

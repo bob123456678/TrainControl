@@ -42,11 +42,11 @@ public abstract class Locomotive
     public static final int FEEDBACK_DURATION_THRESHOLD = 201;
 
     /**
-     * How long a train may be on its way to a sensor before the user is told it has not arrived.
+     * How long a DISPATCHED train may be on its way to a sensor before the user is told it has not
+     * arrived.
      *
-     * Three minutes, matching Layout.TIMETABLE_STUCK_MS and for the same reason it gives: minutes,
-     * deliberately, because a train may legitimately take a long while over a long block and crying
-     * wolf is worse than saying nothing.
+     * Five minutes.  A train may legitimately take a long while over a long block, and crying wolf is
+     * worse than saying nothing at all.
      *
      * This does NOT end the wait, and nothing acts on it.  There is no safe automatic answer to "the
      * train has not reached its sensor" - driving on blind is dangerous and stopping mid-block on a
@@ -57,8 +57,12 @@ public abstract class Locomotive
      *
      * The usual causes are the two Adam named: a locomotive that never started, and one that took a
      * different route from the one it was given.
+     *
+     * Only the dispatch path in Layout asks for it - see the three-argument wait below.  It is NOT a
+     * property of waiting for a sensor in general: a route's trigger monitor waits on its sensor for
+     * as long as the layout runs, which is exactly what it is for.
      */
-    public static volatile long FEEDBACK_ADVISORY_MS = 180000;
+    public static volatile long FEEDBACK_ADVISORY_MS = 300000;
 
     // How often a waiting thread wakes to check the clock.  Only the advisory needs this - the wait
     // itself is still released by the feedback change - so it is coarse on purpose.
@@ -721,18 +725,40 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration)
     {       
+        // No advisory.  This is the door everything except the dispatch path comes in by, and most of
+        // those are SUPPOSED to wait indefinitely - a route's trigger monitor sits on its sensor for
+        // as long as the layout runs, on a locomotive called "Dummy Loc" that exists only to borrow
+        // these utilities.  Saying "Dummy Loc has not arrived" every five minutes, once per route, is
+        // worse than saying nothing.
+        return waitForOccupiedFeedback(name, minDuration, 0);
+    }
+
+    /**
+     * The same, and says so if the train takes an unreasonable time to get there.
+     *
+     * Split out rather than added to the two-argument wait, because "this train was dispatched and is
+     * on its way" is a fact the CALLER has and this method does not.  Only Layout's dispatch loop
+     * passes an advisory; every other caller keeps the plain endless wait it wants.
+     *
+     * @param name the feedback to wait for
+     * @param minDuration how long the feedback must stay occupied to count
+     * @param adviseAfterMs say something once after this long, or 0 to stay quiet
+     * @return this
+     */
+    public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs)
+    {
         boolean interrupted = false;
 
         // Only so that the thread can look at the clock - see waitedTooLongFor.  The condition below
         // is unchanged and the wait is still ended by the feedback itself.
         long began = System.currentTimeMillis();
-        boolean advised = false;
+        boolean advised = adviseAfterMs <= 0;
 
         synchronized(monitor)
         {
             while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
-                if (!advised && System.currentTimeMillis() - began >= FEEDBACK_ADVISORY_MS)
+                if (!advised && System.currentTimeMillis() - began >= adviseAfterMs)
                 {
                     advised = true;
 
@@ -741,7 +767,21 @@ public abstract class Locomotive
 
                 try
                 {
-                    monitor.wait(FEEDBACK_ADVISORY_POLL);
+                    // Untimed unless somebody is waiting to be told - a wait that wakes for nothing is
+                    // a wait that wakes for nothing, however cheap.  Once it HAS been said there is
+                    // nothing left to wake up for, so the wait goes back to being untimed.
+                    //
+                    // Never coarser than the advisory itself: a caller asking to be told after half a
+                    // second and then being told five seconds later would be a promise not kept, and
+                    // it is what made the first test written for this pass without exercising it.
+                    if (advised)
+                    {
+                        monitor.wait();
+                    }
+                    else
+                    {
+                        monitor.wait(Math.max(1, Math.min(FEEDBACK_ADVISORY_POLL, adviseAfterMs)));
+                    }
                 }
                 catch (InterruptedException ex)
                 {
@@ -765,7 +805,10 @@ public abstract class Locomotive
             // Feedback should still be occupied.  Otherwise, start over
             if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
-                return this.waitForOccupiedFeedback(name, minDuration);
+                // Whatever is left of the advisory goes with it: a sensor that flickered is not a
+                // fresh journey, and restarting the clock would hide a train that never really arrived
+                return this.waitForOccupiedFeedback(name, minDuration,
+                    adviseAfterMs <= 0 ? 0 : Math.max(1, adviseAfterMs - (System.currentTimeMillis() - began)));
             }
         }
         
