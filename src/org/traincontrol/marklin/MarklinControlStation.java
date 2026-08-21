@@ -240,6 +240,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private long lastPacketAt;
 
     private static final long DUPLICATE_WINDOW_NS = 250L * 1000000L;
+
+    /**
+     * How long the Central Station is allowed to acknowledge a power command.
+     *
+     * Two seconds, which is generous by three orders of magnitude: the echo comes back over a local
+     * network in milliseconds or it does not come at all.  The number is large so that a busy station
+     * or a loaded Wi-Fi never trips it, and small enough that a station which has been switched off
+     * costs the user a two-second pause rather than a dead application.
+     */
+    public static final long POWER_STATE_TIMEOUT = 2000;
     // DAEMONS.  These serve inbound CAN messages and have no meaning without the application they
     // serve, but the default factory makes ordinary threads - so all three outlived every caller and
     // kept the JVM up.  The GUI hid it behind System.exit(0) and nothing else could.
@@ -660,20 +670,57 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void waitForPowerState(boolean state) throws InterruptedException
     {
+        waitForPowerState(state, POWER_STATE_TIMEOUT);
+    }
+
+    /**
+     * Delays until the power state matches, or until the Central Station has had long enough to answer.
+     *
+     * BOUNDED, unlike the waits a locomotive sits in for a sensor.  The difference is what is being
+     * waited for: a train reaching a sensor is an event out on the railway that may legitimately be
+     * minutes away, and there is nothing safe to do if it has not happened.  This is an
+     * ACKNOWLEDGEMENT of a command TrainControl itself just sent, over a local network, and it either
+     * comes back in milliseconds or it is not coming.
+     *
+     * Untimed, it could park a caller for the rest of the session.  The power state is written in
+     * exactly one place - the inbound GO/STOP echo - so nothing local can ever release the wait, and
+     * the socket is unconnected, which means a datagram sent to a Central Station that has been
+     * switched off or dropped off the network SUCCEEDS and simply disappears.  No error is raised
+     * anywhere; the caller just waits for ever.  The tile handler that does this runs on a single
+     * shared thread, so one such wait stopped every track diagram tile in the application from
+     * responding, silently, until TrainControl was restarted.
+     *
+     * @param state the state to wait for
+     * @param timeoutMs how long to allow before giving up
+     * @return whether the state was actually reached
+     * @throws InterruptedException
+     */
+    public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException
+    {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+
         synchronized(this)
         {
             while (this.getPowerState() != state)
             {
+                long left = deadline - System.currentTimeMillis();
+
+                if (left <= 0) return false;
+
                 try
                 {
-                    this.wait();
+                    this.wait(left);
                 }
                 catch (InterruptedException ex)
                 {
                     Thread.currentThread().interrupt();
+
+                    return this.getPowerState() == state;
                 }
             }
         }
+
+        return true;
     }
        
     @Override

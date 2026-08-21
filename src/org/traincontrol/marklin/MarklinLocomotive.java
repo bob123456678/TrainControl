@@ -718,6 +718,26 @@ public class MarklinLocomotive extends Locomotive
         return this;
     }
     
+    /**
+     * Says, once, that this locomotive has been waiting a long time for a sensor.
+     *
+     * The operator otherwise has nothing at all to go on: a train that fails to start, or that takes a
+     * different route from the one it was given, simply stops being mentioned - it is waiting for a
+     * sensor it will never reach, and the wait is silent and endless by design.  Nothing here changes
+     * that design; it only says so out loud, which is the half that was missing.
+     *
+     * @param feedbackName the sensor being waited for
+     * @param waitedMs how long the wait has gone on
+     */
+    @Override
+    protected void waitedTooLongFor(String feedbackName, long waitedMs)
+    {
+        if (this.network == null) return;
+
+        this.network.logf("autolayout.warnLocomotiveWaitingLong",
+            this.getName(), feedbackName, Math.round(waitedMs / 60000.0));
+    }
+
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {

@@ -40,6 +40,29 @@ public abstract class Locomotive
     // Should be > the CS2 polling interval.  Can be overriden when calling waitForOccupiedFeedback / waitForClearFeedback directly
     // TODO - make configurable
     public static final int FEEDBACK_DURATION_THRESHOLD = 201;
+
+    /**
+     * How long a train may be on its way to a sensor before the user is told it has not arrived.
+     *
+     * Three minutes, matching Layout.TIMETABLE_STUCK_MS and for the same reason it gives: minutes,
+     * deliberately, because a train may legitimately take a long while over a long block and crying
+     * wolf is worse than saying nothing.
+     *
+     * This does NOT end the wait, and nothing acts on it.  There is no safe automatic answer to "the
+     * train has not reached its sensor" - driving on blind is dangerous and stopping mid-block on a
+     * guess is a decision nobody asked for - and the state is not lost anyway, because the Central
+     * Station polls the s88 bus and re-reports, so a dropped message heals on the next poll while the
+     * train is still standing on the sensor.  What was missing was not a timeout: it was any word at
+     * all to the operator, who otherwise sees a train that has simply stopped being mentioned.
+     *
+     * The usual causes are the two Adam named: a locomotive that never started, and one that took a
+     * different route from the one it was given.
+     */
+    public static volatile long FEEDBACK_ADVISORY_MS = 180000;
+
+    // How often a waiting thread wakes to check the clock.  Only the advisory needs this - the wait
+    // itself is still released by the feedback change - so it is coarse on purpose.
+    private static final long FEEDBACK_ADVISORY_POLL = 5000;
     
     // Speed from 0 to 100 (percent)
     private int speed;
@@ -700,13 +723,25 @@ public abstract class Locomotive
     {       
         boolean interrupted = false;
 
+        // Only so that the thread can look at the clock - see waitedTooLongFor.  The condition below
+        // is unchanged and the wait is still ended by the feedback itself.
+        long began = System.currentTimeMillis();
+        boolean advised = false;
+
         synchronized(monitor)
         {
             while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
+                if (!advised && System.currentTimeMillis() - began >= FEEDBACK_ADVISORY_MS)
+                {
+                    advised = true;
+
+                    waitedTooLongFor(name, System.currentTimeMillis() - began);
+                }
+
                 try
                 {
-                    monitor.wait();
+                    monitor.wait(FEEDBACK_ADVISORY_POLL);
                 }
                 catch (InterruptedException ex)
                 {
@@ -737,6 +772,23 @@ public abstract class Locomotive
         return this;
     }
     
+    /**
+     * Told when this locomotive has been waiting for a sensor for an unusual length of time.
+     *
+     * Does nothing here: the base class drives model railways in the abstract and has nowhere to say
+     * it.  MarklinLocomotive overrides it and puts a line in the log the operator is already reading.
+     *
+     * Called ONCE per wait, from the waiting thread, with the monitor held - so an implementation must
+     * not block or call back into the layout.  A log line is exactly the right weight for it.
+     *
+     * @param feedbackName the sensor being waited for
+     * @param waitedMs how long the wait has gone on
+     */
+    protected void waitedTooLongFor(String feedbackName, long waitedMs)
+    {
+        // nothing, by default
+    }
+
     /**
      * Blocks until a certain feedback value is not set
      * If feedback is undefined, blocks until it is set

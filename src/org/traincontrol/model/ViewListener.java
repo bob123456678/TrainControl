@@ -114,6 +114,16 @@ public interface ViewListener
     public int getTotalLocStats(int days, long offset);
     public Locomotive isLocLinkedToOthers(Locomotive l);
     public void waitForPowerState(boolean state) throws InterruptedException;
+
+    /**
+     * The same, with a deadline.
+     *
+     * @param state the state to wait for
+     * @param timeoutMs how long to allow the Central Station to answer
+     * @return whether the state was reached
+     * @throws InterruptedException
+     */
+    public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
 

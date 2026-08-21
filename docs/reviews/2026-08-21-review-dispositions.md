@@ -229,9 +229,18 @@ velocity command (`:759`).  Real stop commands do go out.  They are simply also 
 not arrive, so the end state is the same - the UI says stopped and the railway may not be - but the
 cause is "no delivery confirmation anywhere", not "no command sent".  A fix has to report, not send.
 
-**Still open.**  The timeout is a number about your railway: how long a Central Station may reasonably
-take to answer GO before TrainControl gives up and lets the click proceed.  Say the number and it is a
-ten-line change.
+**Closed 2026-08-21.**  Adam: *"normally, the go would be resolved quickly - either we get a response
+or we dont (within ms)."*  That is the judgement the fix was waiting on.
+
+`waitForPowerState(state, timeoutMs)` now has a deadline, and `POWER_STATE_TIMEOUT` is **two
+seconds** - three orders of magnitude above a local round trip, so a busy station or a loaded Wi-Fi
+can never trip it, and small enough that a station which has been switched off costs a two-second
+pause rather than a dead application.  The tile handler says so in the log and throws the switch
+anyway, because carrying on is better than doing nothing silently.
+
+The discarded boolean in `exec()` is still discarded, deliberately: the trace above shows it cannot
+catch the case that actually happens.  It is worth doing for the narrow local-failure case and is now
+its own item rather than being bundled with this one.
 
 **Every wait on a level is untimed.** `waitForPowerState`, `waitForOccupiedFeedback`,
 `waitForClearFeedback`, `waitForAccessoryState` and `waitForS88Reached` all wait without a deadline on
@@ -262,7 +271,18 @@ Two notes from the trace:
 - `waitForPowerState` is the one that does not belong in this group and is the reason it was raised
   with the others.  It is not waiting for a train; it is waiting for an acknowledgement of a command
   TrainControl itself just sent, on a shared single thread, with a caller that has a perfectly good
-  fallback.  That is TR-A11, and it stays open.
+  fallback.  That is TR-A11, and it is now fixed.
+
+**One thing added rather than fixed.**  Adam: *"if we've been waiting for s88 feedback for an extended
+period, why not advise the user? this would usually happen if a locomotive fails to start or runs down
+the wrong track."*  Right, and it is the half that was missing: the wait is correct to be endless, but
+the operator was told nothing at all - a train that failed to start simply stopped being mentioned.
+
+`Locomotive.waitedTooLongFor` is called once, after `FEEDBACK_ADVISORY_MS` (three minutes, matching
+`Layout.TIMETABLE_STUCK_MS` and for the reason that constant gives), and `MarklinLocomotive` overrides
+it to put a line in the log naming the locomotive, the sensor and how long it has been.  The wait
+itself is untouched: it still ends only when the sensor says so, and nothing acts on the advisory.
+The `wait()` became `wait(5000)` purely so the thread can look at a clock.
 
 **The Layout monitor is held across per-command sleeps while a running train needs it.**
 `configureAndLockPath` holds `synchronized (this)` across a lock loop containing a 150 ms sleep per
@@ -398,3 +418,12 @@ labels it should have kept - which is the risk of that change, not the leak it f
 **34. Open a popup diagram window on the page the main window is showing, close it, then throw a
 switch on that page.** The same risk from the other side: a popup rebuilding a page must not evict the
 main window's labels for it.
+
+**35. Switch the Central Station off, leave TrainControl open, press Stop, then click a switch on the
+diagram.** It should pause about two seconds, say the power was not confirmed, and throw the switch
+anyway - and then the NEXT click should behave the same way rather than doing nothing. Before this,
+the first such click stopped every tile in the application from ever responding again.
+
+**36. Start a train and stop it by hand before it reaches its next sensor** - lift it off, or turn its
+power off at the loco. After three minutes the log should name it, name the sensor, and say how long.
+Nothing else should change: the train stays waiting, and autonomy carries on around it.

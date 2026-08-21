@@ -13,6 +13,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -215,6 +216,106 @@ public class testAutoLayoutRace
             + "waiting for, because a path being dispatched held the layout monitor.  Its train can "
             + "cross and clear that sensor in the meantime, and it then waits for a trigger that has "
             + "already happened");
+    }
+
+    /**
+     * A train that never arrives is said out loud, and the wait carries on.
+     *
+     * The wait itself is right to be endless - a sensor is the only thing that can say where a train
+     * is, and neither driving on blind nor stopping mid-block on a guess is a safe automatic answer -
+     * but the operator was told nothing at all.  A locomotive that failed to start, or that took a
+     * different route from the one it was given, simply stopped being mentioned.
+     *
+     * The threshold is turned down here rather than waiting three real minutes; it is not final for
+     * that reason, exactly as Layout.TIMETABLE_STUCK_MS is not.
+     */
+    @Test
+    public void testALocomotiveWaitingTooLongForASensorSaysSo() throws Exception
+    {
+        final Locomotive loc = model.getLocByName("Race loc A");
+
+        final MarklinFeedback sensor = model.newFeedback(9001, null);
+        model.setFeedbackState(sensor.getName(), false);
+
+        final long was = Locomotive.FEEDBACK_ADVISORY_MS;
+
+        Locomotive.FEEDBACK_ADVISORY_MS = 200;
+
+        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        // The advisory goes through the model's log, which is where the operator is already looking
+        final AtomicBoolean arrived = new AtomicBoolean(false);
+
+        try
+        {
+            Thread waiting = new Thread(() ->
+            {
+                loc.waitForOccupiedFeedback(sensor.getName(), 0);
+
+                arrived.set(true);
+            }, "waiting-for-a-train-that-is-not-coming");
+
+            waiting.setDaemon(true);
+            waiting.start();
+
+            // Well past the threshold, and still nothing has happened on the railway
+            Thread.sleep(1500);
+
+            assertFalse(arrived.get(),
+                "the wait ended without the sensor being occupied, which would mean a train was "
+                + "assumed to have arrived somewhere it had not");
+
+            assertTrue(waiting.isAlive(), "the waiting thread gave up, which it must never do");
+
+            // and it is still released by the thing that is supposed to release it
+            model.setFeedbackState(sensor.getName(), true);
+
+            synchronized (Locomotive.monitor)
+            {
+                Locomotive.monitor.notifyAll();
+            }
+
+            waiting.join(5000);
+
+            assertTrue(arrived.get(),
+                "the sensor came on and the wait did not end - the poll added for the advisory has "
+                + "broken the wait it was supposed to leave alone");
+        }
+        finally
+        {
+            Locomotive.FEEDBACK_ADVISORY_MS = was;
+        }
+    }
+
+    /**
+     * Waiting for the power to come on gives up, rather than parking the only switching thread.
+     *
+     * The power state is written in one place - the echo from the Central Station - so nothing local
+     * can release this wait, and the socket is unconnected, which means a datagram sent to a station
+     * that has been switched off succeeds and disappears.  Untimed, one click on a tile stopped every
+     * tile in the application from responding again.
+     */
+    @Test
+    public void testWaitingForPowerGivesUp() throws Exception
+    {
+        // Power believed OFF, which is the state the wait is entered from - a tile click that has to
+        // turn the power on first.  Set directly rather than by sending STOP, because whether a STOP
+        // echoes back at all is the very thing being simulated away here: nothing is going to answer.
+        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("powerState");
+
+        field.setAccessible(true);
+        field.setBoolean(model, false);
+
+        long began = System.currentTimeMillis();
+
+        boolean reached = model.waitForPowerState(true, 400);
+
+        long took = System.currentTimeMillis() - began;
+
+        assertFalse(reached, "the power came on with nothing there to turn it on");
+
+        assertTrue(took >= 300 && took < 3000,
+            "waited " + took + "ms for a deadline of 400ms");
     }
 
     /**

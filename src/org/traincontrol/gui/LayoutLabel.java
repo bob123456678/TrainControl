@@ -389,7 +389,22 @@ public final class LayoutLabel extends JLabel
                                             {
                                                 try
                                                 {
-                                                    tcUI.getModel().waitForPowerState(true);
+                                                    // Bounded, and the switching goes ahead either way.
+                                                    //
+                                                    // This wait used to have no deadline, and the power
+                                                    // state is set only by the echo from the Central
+                                                    // Station - so a station that had been switched off
+                                                    // parked this worker for ever.  It is the ONLY
+                                                    // thread in the switching pool, and the pool is
+                                                    // shared by every tile in the application: one such
+                                                    // click and no tile anywhere responded again, with
+                                                    // nothing logged and nothing shown.
+                                                    if (!tcUI.getModel().waitForPowerState(true,
+                                                        org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
+                                                    {
+                                                        tcUI.getModel().logf(
+                                                            "layout.warnPowerNotConfirmed");
+                                                    }
 
                                                     // We need a significant delay because the power might take some time to come on
                                                     Thread.sleep(1000);

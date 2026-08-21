@@ -45,7 +45,7 @@ Wrong behaviour on the layout, or data silently lost.
 | A8 | **An import that cannot be read empties the shared half on its way to failing.** `clearShared()` runs before `readShared(merged)`, and `merged` is assembled from someone else's file without type checking. The reader throws part way through; the panel reports "import unreadable", and the store stands blank, one save from being permanent. `load()` was hardened against exactly this and says so. | `AutonomyCompanionStore.java:929` | P9 | CONFIRMED | Fixed `174178c5` |
 | A9 | **The track-diagram page index is truncated in place.** `gleisbild.cs2` names every page there is and was the one file in the project not written atomically. A failure part way through leaves a header naming no pages; every page file stays on disk unreferenced, the next start shows an empty layout, and the autonomy setup is reconciled away against it. | `LayoutDiagram.java:801` | P6 | CONFIRMED | Fixed `174178c5` |
 | A10 | **`setup.json` gained an array shape with no version bump.** A station with two signals writes an array; the previous release reads that field with a string accessor and throws an unchecked exception — *after* `load()` has emptied the store, and past every `catch (IOException)` guarding `discardEdits`/`open`. The version gate exists for exactly this and did not fire. | `AutonomyCompanionStore.java:56`, `:2418` | R11 | CONFIRMED | Fixed `174178c5` |
-| A11 | **Every command reports success on a failed network write, and one failure wedges the switching thread for the session.** `NetworkProxy.sendMessage` returns `false` on `IOException`; `exec()` is `void` and discards it, and is the boolean's only caller. Click a switch with power off: the GO datagram is lost, `go()` returns normally, and the worker parks in `waitForPowerState` — an untimed wait on a single-thread executor, so every later click on any tile silently does nothing. `stopAllLocs()` and `stop()` are the same shape and worse: the UI shows a stopped railway while the trains keep running. | `MarklinControlStation.java:2264`, `:2424`, `:2491`; `NetworkProxy.java:99`; `LayoutLabel.java:382` | P1 | CONFIRMED | **Open** - validated and traced 2026-08-21, needs a timeout value |
+| A11 | **Every command reports success on a failed network write, and one failure wedges the switching thread for the session.** `NetworkProxy.sendMessage` returns `false` on `IOException`; `exec()` is `void` and discards it, and is the boolean's only caller. Click a switch with power off: the GO datagram is lost, `go()` returns normally, and the worker parks in `waitForPowerState` — an untimed wait on a single-thread executor, so every later click on any tile silently does nothing. `stopAllLocs()` and `stop()` are the same shape and worse: the UI shows a stopped railway while the trains keep running. | `MarklinControlStation.java:2264`, `:2424`, `:2491`; `NetworkProxy.java:99`; `LayoutLabel.java:382` | P1 | CONFIRMED | Fixed 2026-08-21.  The wait is bounded; the discarded boolean is C6 |
 
 ### A12-A23, the ones the user meets
 
@@ -96,6 +96,12 @@ worth fixing, not that it stopped being a finding.
 | C3 | **`AutonomyBanner.hold()` stores the rendered placeholder into `saying`**, so `isSaying()` returns true forever after the first message. | `AutonomyBanner.java:344` | R (minor) | CONFIRMED | **Declined** — no caller anywhere in `src` or `test` |
 | C4 | **`snapshotPage` puts live per-point `JSONObject` references into the undo snapshot**, and `setPointProperty` mutates them in place. Reachable only by editing an autonomy property between a diagram snapshot and its undo; the two modes are otherwise exclusive. | `AutonomyCompanionStore.java:1385` | R (minor) | CONFIRMED | **Declined** — `snapshotSetup`, added in this batch, deep-copies and is the model if it ever needs fixing |
 | C5 | **The page cache branch replaces a panel's contents without discarding the outgoing grid**, so its 120ms grace timer can still drop a spinner into the panel. | `TrainControlUI.java:19391` | R7 (related) | CONFIRMED | **Declined** — same shape as B2, no observed symptom on that path |
+| C6 | **`exec()` discards the boolean `sendMessage` returns**, so a send that failed locally - a closed socket that could not be reopened, a dead interface - is reported as a success. | `MarklinControlStation.java:2275`; `NetworkProxy.java:99` | P1 (split from A11) | CONFIRMED | Open |
+
+C6 was the half of A11 that the trace demoted.  It is real, but the socket is UNCONNECTED, so the case
+that will actually happen - a Central Station switched off or off the network - makes `send()` succeed
+and the datagram vanish.  The boolean cannot see that, which is why the bounded wait was the fix and
+this is a separate, smaller item.
 
 ---
 
@@ -124,15 +130,15 @@ and it says how much to trust the rest of the pass.
 | | A | B | C | D | Total |
 |---|---|---|---|---|---|
 | Fixed in `174178c5` | 19 | 12 | 0 | - | 31 |
-| Fixed 2026-08-21, second round | 2 | 1 | 0 | - | 3 |
-| Open | 1 | 0 | 0 | - | 1 |
+| Fixed 2026-08-21, second round | 3 | 1 | 0 | - | 4 |
+| Open | 0 | 0 | 1 | - | 1 |
 | Declined | 0 | 0 | 5 | - | 5 |
 | Withdrawn to D | 1 | 0 | 0 | - | 1 |
 | Not defects | - | - | - | 9 | 9 |
-| **Total** | **23** | **13** | **5** | **9** | **50** |
+| **Total** | **23** | **13** | **6** | **9** | **51** |
 
-Of the 40 defects that stand, one (A3) was found by me while verifying the reports rather than by
-either reviewer, and one (A21) was withdrawn on validation and is now D9.
+Of the 41 defects that stand, one (A3) was found by me while verifying the reports rather than by
+either reviewer, one (A21) was withdrawn on validation and is now D9, and one (C6) was split out of
+A11 when the trace showed the two halves address different cases.
 
-**One open finding: A11.**  It is validated and traced; what it needs is a timeout value, which is a
-judgement about the railway.
+**One open finding, and it is a C: C6.**  Everything an operator can meet is closed.
