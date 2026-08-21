@@ -3681,6 +3681,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         plusButton.setFont(new java.awt.Font("Segoe UI Black", 0, 11)); // NOI18N
         plusButton.setText("+");
+        plusButton.setToolTipText("");
+        plusButton.setFocusable(false);
         plusButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 plusButtonActionPerformed(evt);
@@ -3689,6 +3691,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         minusButton.setFont(new java.awt.Font("Segoe UI Black", 0, 11)); // NOI18N
         minusButton.setText("-");
+        minusButton.setFocusable(false);
         minusButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 minusButtonActionPerformed(evt);

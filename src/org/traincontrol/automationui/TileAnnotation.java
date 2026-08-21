@@ -656,20 +656,15 @@ public class TileAnnotation
                 g.setComposite(before);
             }
 
-            // The badge first, and the arrows over it.
-            //
-            // A station's badge is the largest mark on a square, and on a CURVE the track - and so
-            // the badge, which is centred on the track rather than on the tile - swings out towards
-            // the corner the rails bend around, which is exactly where the arrow for one of the two
-            // sides sits.  Drawn last, the badge covered it, and the direction of a curved station
-            // was the thing hardest to read on the whole diagram.
-            //
-            // Which way a train may run is worth more than an unbroken outline on a badge.
-            if (badge != null) paintBadge(g, width, height);
-
             paintArrows(g, width, height);
 
             paintArrivals(g, width, height);
+
+            // The badge last, and so over the arrows - which is where it started, and where it can go
+            // back now that a badge on a bend has moved off into the corner.  It was put underneath
+            // because the two were landing on the same few pixels; they no longer do, and a badge
+            // drawn last keeps a clean outline instead of having an arrowhead laid across it.
+            if (badge != null) paintBadge(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
@@ -1233,20 +1228,26 @@ public class TileAnnotation
         int x = on[0] - size / 2;
         int y = on[1] - size / 2;
 
-        // But a CURVE puts it in the bottom left, off the track.
+        // But where the TRACK BENDS, the badge goes in the bottom left, off the rails.
         //
-        // A curve's art hugs one corner, and the badge was centred on that art on the reasoning that
-        // a mark belongs on the rails it is about.  True in isolation, and wrong in company: the two
-        // direction arrows on a curve sit at the middles of the same two sides the chord joins, so
-        // the badge landed exactly between them and the three marks fought for one corner of a
-        // twenty-pixel square.  A station on a curve was the hardest thing on the diagram to read.
+        // A bend's art hugs one corner, and the badge was centred on that art on the reasoning that a
+        // mark belongs on the rails it is about.  True in isolation, and wrong in company: the two
+        // direction arrows sit at the middles of the same two sides the chord joins, so the badge
+        // landed exactly between them and three marks fought over one corner of a twenty-pixel
+        // square.  A station on a curve was the hardest thing on the diagram to read.
         //
-        // The bottom left is the emptiest part of a curve whichever way it faces - three of the four
-        // curves bend away from it entirely, and the fourth's chord clips only its corner - and it is
-        // clear of the length, which is written top right.  Being off the track costs nothing: a
-        // badge is one square's worth of mark on one square, and nobody has to trace which rail it
-        // is sitting on to know which square it means.
-        if (curved)
+        // Asked of the ROUTE rather than of the curved flag, which is a different question wearing
+        // the same word: that flag is about whether to TILT the arrows, and it is deliberately false
+        // for a curve carrying a sensor - a tilted arrow disappears into the heavy feedback art.  So
+        // every curved s88 - which is to say every station on a curve, the whole case this is for -
+        // came through here as "not curved" and kept its badge in the middle.  Two sides that are not
+        // opposite means the track turns a corner, whatever is drawn on it.
+        //
+        // The bottom left whichever way it bends: three of the four curves bend away from it
+        // entirely, the fourth clips only its corner, and it is clear of the length, which is written
+        // top right.  Being off the track costs nothing - a badge is one square's worth of mark on
+        // one square, and nobody has to trace which rail it sits on to know which square it means.
+        if (trackBends())
         {
             x = 1;
             y = height - size - 1;
@@ -1306,6 +1307,27 @@ public class TileAnnotation
      * The midpoint of the first route's two sides: the middle of the square for anything straight or
      * crossing, and the corner the rails actually bend around for a curve.
      */
+    /**
+     * Whether the track through this square turns a corner.
+     *
+     * The route's two sides, and whether they are opposite each other.  N, E, S and W are declared in
+     * that order, so opposite sides are two apart either way round and everything else is a bend.
+     *
+     * @return true where the track joins two sides that are not opposite
+     */
+    private boolean trackBends()
+    {
+        Side sideA = badge != null && badge.getA() != null ? badge.getA()
+            : marks.isEmpty() ? null : marks.get(0).getA();
+
+        Side sideB = badge != null && badge.getB() != null ? badge.getB()
+            : marks.isEmpty() ? null : marks.get(0).getB();
+
+        if (sideA == null || sideB == null || sideA == sideB) return false;
+
+        return Math.abs(sideA.ordinal() - sideB.ordinal()) != 2;
+    }
+
     private int[] trackCentre(int width, int height)
     {
         // the badge's own route where it has one, otherwise the first route drawn, otherwise centre

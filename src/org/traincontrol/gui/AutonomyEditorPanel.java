@@ -3876,10 +3876,12 @@ public class AutonomyEditorPanel extends JPanel
 
             if (onReveal != null) onReveal.accept(tile);
 
-            String name = JOptionPane.showInputDialog(owner(),
-                I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size()), "");
+            String name = askForName(I18n.f("autosetup.ui.promptNameEverything", i + 1,
+                unnamed.size()));
 
-            // cancel stops the walk rather than skipping one, because a walk of forty needs a way out
+            // Cancel stops the walk rather than skipping one square, because a walk of forty needs a
+            // way out - and Skip is now a button of its own rather than a blank field and OK, which
+            // worked and which nobody would ever have guessed at.
             if (name == null) break;
 
             if (name.trim().isEmpty()) continue;
@@ -3894,6 +3896,69 @@ public class AutonomyEditorPanel extends JPanel
         selection.clear();
 
         refresh();
+    }
+
+    /**
+     * Asks for one name, with somewhere to go for a square the user does not want to name.
+     *
+     * Three answers rather than two.  Naming forty points is a long walk, and there was no way along
+     * it that was not either typing a name or abandoning the whole thing - the way to skip one was to
+     * press OK with the box empty, which works and which nobody would ever guess.
+     *
+     * Built as a dialog rather than through showInputDialog so that Enter still means OK: typing a
+     * name and reaching for the mouse forty times is the difference between a tool and a chore.
+     *
+     * @param question which square this is, and how far along the walk
+     * @return the name, "" to skip this one, or null to stop
+     */
+    private String askForName(String question)
+    {
+        // Focuses itself, so a name can be typed the moment the dialog is up
+        final javax.swing.JTextField field = new javax.swing.JTextField(18)
+        {
+            @Override
+            public void addNotify()
+            {
+                super.addNotify();
+
+                requestFocusInWindow();
+            }
+        };
+
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+
+        panel.add(new JLabel(question), java.awt.BorderLayout.NORTH);
+        panel.add(field, java.awt.BorderLayout.CENTER);
+
+        final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"),
+            I18n.t("ui.cancel") };
+
+        final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, answers[0]);
+
+        final javax.swing.JDialog dialog = pane.createDialog(owner(),
+            I18n.t("autosetup.ui.btnNameEverything"));
+
+        // Enter in the box is OK, which showInputDialog gave for nothing and a dialog built by hand
+        // has to be told
+        field.addActionListener(e ->
+        {
+            pane.setValue(answers[0]);
+
+            dialog.dispose();
+        });
+
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        Object chosen = pane.getValue();
+
+        // Closed with the window button, which is the same as changing your mind about the walk
+        if (chosen == null || answers[2].equals(chosen)) return null;
+
+        if (answers[1].equals(chosen)) return "";
+
+        return field.getText();
     }
 
     /**
