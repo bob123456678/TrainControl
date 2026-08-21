@@ -395,7 +395,7 @@ public class AutonomyEditorPanel extends JPanel
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
-        whyButton.setToolTipText(I18n.t("autosetup.ui.tooltipWhy"));
+        whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
@@ -413,7 +413,7 @@ public class AutonomyEditorPanel extends JPanel
         // committing to it.  Ticked, the page greys out at once and the change waits for Save like
         // every other decision in this window.
         excludePage = new javax.swing.JCheckBox(I18n.t("autosetup.ui.btnExcludeThisPage"));
-        excludePage.setToolTipText(I18n.t("autosetup.ui.hintExcludeThisPage"));
+        excludePage.setToolTipText(wrapped(I18n.t("autosetup.ui.hintExcludeThisPage")));
         excludePage.setFocusable(false);
         excludePage.setFont(FONT_CONTROL);
         excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
@@ -825,7 +825,7 @@ public class AutonomyEditorPanel extends JPanel
                     javax.swing.JMenu facingMenu = new javax.swing.JMenu(
                         I18n.f("autosetup.ui.menuFacingGroup", standing));
 
-                    facingMenu.setToolTipText(I18n.t("autosetup.ui.hintFacing"));
+                    facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
 
                     javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
 
@@ -861,7 +861,7 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(
                 I18n.f("autosetup.ui.menuStationGroup", stationSummary(target, isStation)));
 
-            stationMenu.setToolTipText(I18n.t("autosetup.ui.tooltipStationGroup"));
+            stationMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipStationGroup")));
 
             javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
 
@@ -994,11 +994,16 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.addSeparator();
 
-            // Every label carries its current value, as the graph window's did - a menu that says
+            // Everything a station can be TUNED with, under one heading.
+            //
+            // Four settings that a railway works without: how long a train may be, which order
+            // stations are preferred in, how fast trains run through here, and which locomotives are
+            // not allowed.  Two of them were loose on the menu above and two were already down here,
+            // which is the worst of both - the menu was longer for no reason and the grouping said
+            // nothing about which settings were which.
+            //
+            // Every label carries its current value, as the graph window's did: a menu that says
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.
-            menu.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", percent(target)),
-                () -> promptPercent(target)));
-
             javax.swing.JMenu advanced = new javax.swing.JMenu(
                 I18n.t("autolayout.ui.menuEditAdvancedParameters"));
 
@@ -1016,11 +1021,14 @@ public class AutonomyEditorPanel extends JPanel
                 () -> promptNumber(target, "priority",
                     "autolayout.ui.promptEnterStationPriority", 0)));
 
-            menu.add(advanced);
+            advanced.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", percent(target)),
+                () -> promptPercent(target)));
 
-            menu.add(item(I18n.f("autolayout.ui.menuExcludedLocomotives",
+            advanced.add(item(I18n.f("autolayout.ui.menuExcludedLocomotives",
                 strings(target, "excludedLocs").size()),
                 () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
+
+            menu.add(advanced);
 
             String home = homeOf(target);
 
@@ -1402,7 +1410,7 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
             () -> promptStationLabel(tile, component));
 
-        name.setToolTipText(mine ? null : I18n.t("autosetup.ui.tooltipTextInTheWay"));
+        name.setToolTipText(mine ? null : wrapped(I18n.t("autosetup.ui.tooltipTextInTheWay")));
 
         menu.add(name);
 
@@ -3837,7 +3845,7 @@ public class AutonomyEditorPanel extends JPanel
             nameAll.setEnabled(unnamed > 0 && !ignored);
 
             nameAll.setToolTipText(unnamed > 0
-                ? null : I18n.t("autosetup.ui.hintNothingToName"));
+                ? null : wrapped(I18n.t("autosetup.ui.hintNothingToName")));
         }
 
         if (errors > 0)
