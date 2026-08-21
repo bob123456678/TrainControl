@@ -368,6 +368,15 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
+    /**
+     * How much taller than its old floor this window may not be shrunk past.
+     *
+     * The sidebar has grown - a Diagram Size heading and its two buttons, and the autonomy column
+     * when that mode is on - and at the old minimum the controls at the bottom of it were the first
+     * thing to be squeezed out.
+     */
+    private static final int EXTRA_MINIMUM_HEIGHT = 50;
+
     public static final int MAX_UNDO_HISTORY = 100;
     
     // Repaint state
@@ -3448,9 +3457,17 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 160));
                 this.setMinimumSize(new Dimension(
                         550 + (this.size == 60 ? 200 : 0), 
-                        630 + (this.size == 60 ? 320 : 0))
+                        630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0))
                 );
                 pack();
+            }
+            else
+            {
+                // A window whose size was remembered keeps the floor the form gave it, which is the
+                // one place the taller minimum would otherwise not reach - the form is generated and
+                // cannot be edited by hand.
+                this.setMinimumSize(new Dimension(getMinimumSize().width,
+                    Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
             }
 
             // Remember window location for different layouts and sizes
