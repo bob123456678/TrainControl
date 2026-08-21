@@ -1144,28 +1144,27 @@ public class AutonomyEditorPanel extends JPanel
 
             connections.addSeparator();
 
-            // A link's own settings, one level down.  Loose in Connections they sat beside "make a
-            // one-way run from here", which is about track and means nothing on a link - two unrelated
-            // subjects at the same level, one of which does not apply.
-            // Naming it stays out here, one level up from the rest.
+            // A link's settings, out here rather than in a submenu of their own.
             //
-            // A link is found by its name - the pairing list offers every other link on the railway
-            // by name, and an unnamed one shows as a coordinate pair nobody recognises - so naming is
-            // the first thing done to a new link and the thing done most often.  Buried a level down
-            // beside pairing and unpairing it was three clicks from the square it is about.
+            // They were one level down, on the reasoning that loose in Connections they sat beside
+            // "make a one-way run from here" - which is about track and means nothing on a link, so
+            // two unrelated subjects shared a level and one of them did not apply.  True, and not
+            // worth what it cost: there are only three of them, they are the only reason to
+            // right-click a link at all, and a submenu put each of them two clicks away.
+            //
+            // Naming first, because a link is FOUND by its name: the pairing list below offers every
+            // other link on the railway by name, and an unnamed one shows there as a coordinate pair
+            // nobody recognises.  So it is the first thing done to a new link and the thing done most
+            // often.
             connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
 
-            javax.swing.JMenu link = new javax.swing.JMenu(I18n.t("autosetup.ui.menuLinkGroup"));
-
-            link.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
+            connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
-                link.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
+                connections.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () -> session.unpairPortal(target)));
             }
-
-            connections.add(link);
         }
 
         menu.add(connections);
