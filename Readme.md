@@ -345,9 +345,8 @@ All of your data is stored in `LocDB.data`, `UIState.data`, and `autonomy.json`,
 
 Requires JDK 1.8+ and the following libraries:
 
-* org.json (json-20251224.jar) (from v1.6.0)
-* org.graphstream (gs-core-2.0.jar, gs-algo-2.0.jar, gs-ui-swing-2.0.jar) (from v1.8.0)
-* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.5.4.jar) (from v2.3.0)
+* org.json (json-20260814.jar) (from v1.6.0)
+* com.formdev.flatlaf.FlatLightLaf (flatlaf-3.7.2.jar) (from v2.3.0)
 * jcommander-1.69.jar, testng-6.14.3.jar (for unit tests only)
 
 ```ant -f /path/to/project/ -Dnb.internal.action.name=rebuild clean jar```
@@ -425,6 +424,8 @@ Tab icons provided by Freepik.
     - Central Station Sync Bug Fixes
         - Fixed bug where locomotive speeds and functions changed at the Central Station stopped being shown in TrainControl if the initial sync had failed while the Central Station was still reachable over the network
         - The locomotive database is no longer occasionally left unsaved when a backup or an automatic sync runs at the same moment as an edit
+    - Code
+        - Updated JSON library to json-20260814.jar and FlatLaf to 3.7.2
 
 * v2.8.0 [8/2/2026]
     - Added French, Italian, Spanish, Dutch, and Polish translations
