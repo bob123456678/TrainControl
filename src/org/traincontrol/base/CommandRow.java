@@ -32,6 +32,17 @@ public final class CommandRow
     {
         ACCESSORY,
 
+        // A signal, which is the same device as a switch at the same address with the same two
+        // states - accessoryType only decides which picture gets drawn.  Two kinds anyway, because
+        // "Signal 100 red" and "Switch 100 turn" are the same command said in the two vocabularies
+        // real people use, and being offered the wrong pair of words is being asked to translate
+        // your own layout.
+        //
+        // They BUILD identically, so nothing downstream has to know about the split; of() answers
+        // ACCESSORY for both, since a stored command carries no record of which it was, and the
+        // editor upgrades a row to SIGNAL when the layout says there is a signal at that address.
+        SIGNAL,
+
         // A three-way point: two motors at consecutive addresses, which a route holds as two
         // ordinary accessory commands in a particular order with a pause between them.  One row
         // rather than two because setting one by hand means knowing which motor moves first and why,
@@ -198,6 +209,7 @@ public final class CommandRow
         switch (kind)
         {
             case ACCESSORY: return "straight";
+            case SIGNAL: return "green";
             case THREE_WAY: return ThreeWaySwitch.wordFor(ThreeWaySwitch.Position.STRAIGHT);
             case FEEDBACK: return "off";
             case LOCOMOTIVE_DIRECTION: return "forward";
@@ -243,7 +255,8 @@ public final class CommandRow
      */
     public static boolean canBeACondition(Kind kind)
     {
-        return kind == Kind.ACCESSORY || kind == Kind.FEEDBACK || kind == Kind.AUTO_LOCOMOTIVE;
+        return kind == Kind.ACCESSORY || kind == Kind.SIGNAL
+            || kind == Kind.FEEDBACK || kind == Kind.AUTO_LOCOMOTIVE;
     }
 
     /**
@@ -251,7 +264,7 @@ public final class CommandRow
      */
     public static boolean hasProtocol(Kind kind)
     {
-        return kind == Kind.ACCESSORY || kind == Kind.THREE_WAY;
+        return kind == Kind.ACCESSORY || kind == Kind.SIGNAL || kind == Kind.THREE_WAY;
     }
 
     /**
@@ -260,7 +273,7 @@ public final class CommandRow
      */
     public static boolean hasDelay(Kind kind)
     {
-        return kind == Kind.ACCESSORY || kind == Kind.LOCOMOTIVE_SPEED
+        return kind == Kind.ACCESSORY || kind == Kind.SIGNAL || kind == Kind.LOCOMOTIVE_SPEED
             || kind == Kind.LOCOMOTIVE_DIRECTION || kind == Kind.FUNCTION
             || kind == Kind.THREE_WAY;
     }
@@ -448,6 +461,9 @@ public final class CommandRow
                 return RouteCommand.RouteCommandAutoLocomotive(target,
                     number(setting, "route.wordAddress"));
 
+            // One command either way.  The two kinds differ in the words the editor offers and in
+            // nothing else, and oneOf below has always accepted all four.
+            case SIGNAL:
             case ACCESSORY:
                 // Red and green as well as turn and straight.  A signal and a switch are the same
                 // device here - the type only decides which picture is drawn - so the same two states

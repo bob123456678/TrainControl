@@ -208,10 +208,9 @@ public class testBusyDialogInteraction
 
         station.start();
 
-        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+        String was = TestStationAddress.get();
 
-        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS =
-            "127.0.0.1:" + station.getAddress().getPort();
+        TestStationAddress.set("127.0.0.1:" + station.getAddress().getPort());
 
         final int[] result = {-1};
         final AtomicBoolean syncOnEDT = new AtomicBoolean(true);
@@ -241,7 +240,7 @@ public class testBusyDialogInteraction
         }
         finally
         {
-            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+            TestStationAddress.set(was);
             station.stop(0);
         }
     }
@@ -297,10 +296,9 @@ public class testBusyDialogInteraction
 
         station.start();
 
-        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+        String was = TestStationAddress.get();
 
-        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS =
-            "127.0.0.1:" + station.getAddress().getPort();
+        TestStationAddress.set("127.0.0.1:" + station.getAddress().getPort());
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
@@ -341,7 +339,7 @@ public class testBusyDialogInteraction
         }
         finally
         {
-            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+            TestStationAddress.set(was);
 
             closeQuietly(ui[0]);
 
@@ -390,10 +388,9 @@ public class testBusyDialogInteraction
 
         station.start();
 
-        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+        String was = TestStationAddress.get();
 
-        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS =
-            "127.0.0.1:" + station.getAddress().getPort();
+        TestStationAddress.set("127.0.0.1:" + station.getAddress().getPort());
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
@@ -446,7 +443,7 @@ public class testBusyDialogInteraction
         {
             holdTheFirst.countDown();
 
-            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+            TestStationAddress.set(was);
 
             closeQuietly(ui[0]);
 

@@ -325,9 +325,9 @@ public class testMockCentralStation
     @Test
     public void testAFullSyncAgainstTheMockStationSucceeds() throws Exception
     {
-        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+        String was = TestStationAddress.get();
 
-        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = address;
+        TestStationAddress.set(address);
 
         try
         {
@@ -344,7 +344,7 @@ public class testMockCentralStation
         }
         finally
         {
-            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+            TestStationAddress.set(was);
         }
     }
 
@@ -366,9 +366,9 @@ public class testMockCentralStation
             dead = socket.getLocalPort();
         }
 
-        String was = org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS;
+        String was = TestStationAddress.get();
 
-        org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = "127.0.0.1:" + dead;
+        TestStationAddress.set("127.0.0.1:" + dead);
 
         try
         {
@@ -380,7 +380,7 @@ public class testMockCentralStation
         }
         finally
         {
-            org.traincontrol.marklin.MarklinControlStation.TEST_CS2_ADDRESS = was;
+            TestStationAddress.set(was);
         }
     }
 

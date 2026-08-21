@@ -260,6 +260,14 @@ public class RouteEditorFrame extends JFrame
 
         buttonsOf(conditionSection).add(testButton);
 
+        // Help beside Test rather than down beside Cancel.
+        //
+        // Both are about the conditions, and most of what the help has to say is about them - how the
+        // indenting means what it means, and which word joins what.  Beside Cancel it sat in the row
+        // a user reads on the way OUT of the window, which is the one moment they have stopped
+        // needing it.
+        buttonsOf(conditionSection).add(button(I18n.t("ui.help"), this::showHelp));
+
         // The reading and the buttons, stacked, in the one slot BorderLayout has at the bottom.
         //
         // The reading used to be added straight to SOUTH, where section() had already put the button
@@ -307,10 +315,6 @@ public class RouteEditorFrame extends JFrame
 
         right.setBackground(java.awt.Color.WHITE);
 
-        // Help beside Cancel rather than at the top: it is the same offer the old editor makes, and
-        // this window needs it more - the formula under the conditions is a small language, and a
-        // small language with nothing explaining it is a box people leave empty.
-        right.add(button(I18n.t("ui.help"), this::showHelp));
         right.add(button(I18n.t("route.ui.frameCancel"), this::dispose));
 
         buttons.add(left, BorderLayout.WEST);
@@ -626,12 +630,11 @@ public class RouteEditorFrame extends JFrame
     {
         switch (row.getKind())
         {
-            // Whichever pair belongs to the thing at that address.  A signal and a switch are the same
-            // device and the same two states; offering a signal "turn" and "straight" is asking
-            // somebody to translate their own layout.  An address that names nothing yet - a row just
-            // added - gets the switch words, which is what most accessories are.
-            case ACCESSORY: return isSignalAt(row)
-                ? new String[]{"green", "red"} : new String[]{"straight", "turn"};
+            // The kind says which pair, now that there is a kind for each.  A signal and a switch
+            // are the same device at the same address with the same two states; offering a signal
+            // "turn" and "straight" is asking somebody to translate their own layout.
+            case ACCESSORY: return new String[]{"straight", "turn"};
+            case SIGNAL: return new String[]{"green", "red"};
 
             // Left, straight, right - as they read on the diagram.  The pair of commands each one
             // becomes is ThreeWaySwitch's business; nothing about the order or the pause is decided
@@ -646,6 +649,58 @@ public class RouteEditorFrame extends JFrame
             case FUNCTION: return new String[]{"off", "on"};
             default: return null;
         }
+    }
+
+    /**
+     * Which of Switch and Signal the layout says is at an address.
+     *
+     * @param target the address as typed
+     * @param protocol the row's decoder type, or null for the default
+     * @param unchanged what to answer when the layout has never heard of that address
+     * @return the kind
+     */
+    private CommandRow.Kind kindAtAddress(String target, Accessory.accessoryDecoderType protocol,
+        CommandRow.Kind unchanged)
+    {
+        if (parent == null || parent.getModel() == null) return unchanged;
+
+        try
+        {
+            Accessory accessory = parent.getModel().getAccessoryByAddressIfPresent(
+                Integer.parseInt(target.trim()),
+                protocol == null ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : protocol);
+
+            if (accessory == null) return unchanged;
+
+            return accessory.isSignal() ? CommandRow.Kind.SIGNAL : CommandRow.Kind.ACCESSORY;
+        }
+        catch (NumberFormatException e)
+        {
+            // A row with nothing in its address column yet, which is every row the moment it is added
+            return unchanged;
+        }
+    }
+
+    /**
+     * A stored command as a row, with an accessory named as whatever is actually at that address.
+     *
+     * A route file records one accessory command for both - they ARE one command - so of() can only
+     * answer ACCESSORY.  Asking the layout here is what makes an existing route open showing "Signal
+     * 100 red" rather than "Switch 100 turn", which is the difference between a route somebody can
+     * read and one they have to decode.
+     */
+    private CommandRow asShown(CommandRow row)
+    {
+        if (row == null || row.getKind() != CommandRow.Kind.ACCESSORY) return row;
+
+        if (kindAtAddress(row.getTarget(), row.getProtocol(), CommandRow.Kind.ACCESSORY)
+            != CommandRow.Kind.SIGNAL)
+        {
+            return row;
+        }
+
+        return new CommandRow(CommandRow.Kind.SIGNAL, row.getTarget(), row.getSetting(),
+            row.getProtocol(), row.getDelay());
     }
 
     /**
@@ -797,7 +852,10 @@ public class RouteEditorFrame extends JFrame
             // route of [Switch 1, run "Yard", Switch 2] whose first row is deleted put "Yard" AFTER
             // Switch 2, silently, having never shown it at all.  One list, one order, all of it on
             // screen.
-            commands.rows.add(Entry.of(stored.get(at)));
+            Entry loaded = Entry.of(stored.get(at));
+
+            commands.rows.add(loaded.isEditable()
+                ? Entry.of(asShown(loaded.getRow())) : loaded);
         }
 
         locked = route.isLocked();
@@ -1120,6 +1178,17 @@ public class RouteEditorFrame extends JFrame
     private static final int DOWN = 1;
     private static final int DELETE = 9;
 
+    /**
+     * Copies a row, and puts the copy directly under it.
+     *
+     * Beside the trash because the two are a pair: one takes a row away and the other makes another
+     * of it, and both act on the row they sit in.  Most of a route is near-repetition - the same
+     * switch at the next address, the same delay, the same protocol - and building each of those
+     * from a blank row means choosing the kind, the protocol and the delay again every time to get
+     * back to where the row above already was.
+     */
+    private static final int DUPLICATE = 10;
+
     /** The conditions table is narrower, so its trash sits in a different column. */
     private static final int CONDITION_DELETE = 8;
 
@@ -1145,6 +1214,7 @@ public class RouteEditorFrame extends JFrame
     private static final String MOVE_UP = "up";
     private static final String MOVE_DOWN = "down";
     private static final String DELETE_ROW = "delete";
+    private static final String COPY_ROW = "copy";
     private static final String ADD_HERE = "add";
 
     /**
@@ -1189,7 +1259,8 @@ public class RouteEditorFrame extends JFrame
                 boolean selected, boolean focused, int row, int column)
             {
                 boolean isMark = MOVE_UP.equals(value) || MOVE_DOWN.equals(value)
-                    || DELETE_ROW.equals(value) || ADD_HERE.equals(value);
+                    || DELETE_ROW.equals(value) || ADD_HERE.equals(value)
+                    || COPY_ROW.equals(value);
 
                 // Only a MARK is drawn as one.  This renderer also covers the column the plus sits
                 // under - which is the position column - and blanking every cell in it took the row
@@ -1213,6 +1284,7 @@ public class RouteEditorFrame extends JFrame
                         : RowIcons.arrow(mark, false, ink));
                 }
                 else if (DELETE_ROW.equals(value)) out.setIcon(RowIcons.trash(mark));
+                else if (COPY_ROW.equals(value)) out.setIcon(RowIcons.copy(mark));
                 else if (ADD_HERE.equals(value)) out.setIcon(RowIcons.plus(mark));
                 else out.setIcon(null);
 
@@ -1242,6 +1314,7 @@ public class RouteEditorFrame extends JFrame
                 if (MOVE_UP.equals(value)) moveRow(table, row, -1);
                 else if (MOVE_DOWN.equals(value)) moveRow(table, row, 1);
                 else if (DELETE_ROW.equals(value)) deleteRow(table, row);
+                else if (COPY_ROW.equals(value)) duplicateRow(table, row);
                 else if (ADD_HERE.equals(value)) addTo(table);
             }
         });
@@ -1416,6 +1489,22 @@ public class RouteEditorFrame extends JFrame
         else conditions.removeAt(row);
     }
 
+    /**
+     * Puts a copy of a row directly under it.
+     *
+     * Under rather than at the end, because the reason to copy a row is almost always that the next
+     * command is nearly the same one - and a route's order is its meaning, so a copy appearing eight
+     * rows away would have to be walked back up by hand.
+     */
+    private void duplicateRow(JTable table, int row)
+    {
+        if (locked || table != commands) return;
+
+        if (row < 0 || row >= commands.rows.size()) return;
+
+        commands.duplicateAt(row);
+    }
+
     private void addTo(JTable table)
     {
         if (locked) return;
@@ -1487,8 +1576,11 @@ public class RouteEditorFrame extends JFrame
             // and a switch are the same device at the same address and the same two states, and only
             // the layout knows which is standing there - so the reading asks, exactly as the Setting
             // column does.
-            case ACCESSORY: return I18n.f(isSignalAt(row) ? "route.reads.signal" : "route.reads.switch",
-                row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
+            case ACCESSORY:
+            case SIGNAL:
+                return I18n.f(row.getKind() == CommandRow.Kind.SIGNAL
+                        ? "route.reads.signal" : "route.reads.switch",
+                    row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
 
             case FEEDBACK: return I18n.f("route.reads.sensor",
                 row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
@@ -1676,6 +1768,15 @@ public class RouteEditorFrame extends JFrame
                 {
                     wrong.add(I18n.f("route.ui.frameNoSuchLocomotive", target));
                 }
+                else if (!RouteCommand.isNameUsable(target))
+                {
+                    // A comma or a bracket in the name breaks the formats a route is written in: the
+                    // command line is comma-separated, and the condition parser rewrites brackets
+                    // into line breaks.  The old editor refused such a name at both doors; this one
+                    // offered it in a dropdown and saved it, which produces a route file that reads
+                    // back as something else.  Real names look like this - "SBB 460 (2)".
+                    wrong.add(I18n.f("route.ui.frameNameNotUsable", target));
+                }
 
                 break;
 
@@ -1693,6 +1794,7 @@ public class RouteEditorFrame extends JFrame
                 break;
 
             case ACCESSORY:
+            case SIGNAL:
                 addressProblem(wrong, target, row.getProtocol());
                 break;
 
@@ -1715,13 +1817,36 @@ public class RouteEditorFrame extends JFrame
                 break;
         }
 
+        // A function number past the end of what that locomotive has.  The old editor built its list
+        // from the locomotive and so could not offer one; this one takes a typed number, and F30 on a
+        // five-function loco saves cleanly and does nothing on the rails.
+        if (row.getKind() == CommandRow.Kind.FUNCTION)
+        {
+            org.traincontrol.base.Locomotive loco = parent.getModel().getLocByName(target);
+
+            int number = numberOr(functionNumberOf(row.getSetting()), -1);
+
+            if (loco != null && (number < 0 || number >= loco.getNumF()))
+            {
+                wrong.add(I18n.f("route.ui.frameNoSuchFunction",
+                    String.valueOf(number) + " / " + target));
+            }
+        }
+
         // A speed the decoder cannot be given.  RouteCommand takes the number as typed, so a
         // hundred and fifty is saved, sent, and quietly clipped by something further down.
+        //
+        // A NEGATIVE speed is not a mistake: RouteCommand.parseLine documents it as an instant stop,
+        // and MarklinRoute calls instantStop() for it.  Refusing everything below zero blocked a
+        // route that already contained one from being saved AT ALL - the row loaded, the editor
+        // reported it as wrong, and the only ways out were to discard the edit or to change what the
+        // command meant.  Locking somebody out of their own route is worse than the typo this check
+        // was written to catch.
         if (row.getKind() == CommandRow.Kind.LOCOMOTIVE_SPEED)
         {
-            int speed = numberOr(row.getSetting(), -1);
+            int speed = numberOr(row.getSetting(), Integer.MIN_VALUE);
 
-            if (speed < 0 || speed > 100)
+            if (speed == Integer.MIN_VALUE || speed < INSTANT_STOP || speed > 100)
             {
                 wrong.add(I18n.f("route.ui.frameNotASpeed", String.valueOf(row.getSetting())));
             }
@@ -1753,6 +1878,26 @@ public class RouteEditorFrame extends JFrame
     /**
      * A number, or a fallback where the text is not one.
      */
+    /**
+     * The speed that means "stop now" rather than "coast to zero".
+     *
+     * Documented in RouteCommand.parseLine and acted on in MarklinRoute: any negative speed is an
+     * instant stop.  Named here so the validation below reads as a rule rather than as a magic -1.
+     */
+    private static final int INSTANT_STOP = -1;
+
+    /**
+     * A locomotive to start an autonomy condition off with, or blank where there are none.
+     */
+    private String firstLocomotive()
+    {
+        if (parent == null || parent.getModel() == null) return "";
+
+        java.util.List<String> names = parent.getModel().getLocList();
+
+        return names == null || names.isEmpty() ? "" : names.get(0);
+    }
+
     private static int numberOr(String text, int fallback)
     {
         try
@@ -1873,11 +2018,28 @@ public class RouteEditorFrame extends JFrame
             parent.refreshRouteList();
             parent.repaintLayout();
 
-            // Every other route mutation in the interface syncs afterwards, on the same reasoning -
-            // the Central Station holds routes too, and a route changed only here is a route the next
-            // sync can undo.  This one did not, which was an undocumented divergence rather than a
-            // decision.
-            parent.syncWithCS2();
+            // A route that a diagram tile triggers has to tell the main window, the way the old
+            // editor does: the tile carries the route's name, and renaming one here left the tile
+            // pointing at a route that no longer answers to it.
+            parent.layoutEditingComplete();
+
+            // A sync only when the route is NEW, which is what the old editor settled on years ago
+            // and what this one copied without reading the comment beside it.
+            //
+            // Routes travel one way: the Central Station's are imported and marked locked, and
+            // nothing is ever written back - editRoute is a delete-then-re-add in the local database
+            // and the station is never told.  So a sync after an EDIT re-fetches the layouts, the
+            // locomotives, the accessories and the routes over the network to learn nothing, and the
+            // route import it runs is keyed by id: a local route sharing an id with one on the
+            // station is deleted and replaced by the station's version.  It cannot help and it can
+            // hurt.  Restarting the route's monitoring thread, which is the thing that really has to
+            // happen, editRoute already does - it disables the old route before re-adding it.
+            //
+            // A NEW route is different in one way worth the round trip: its id is the next free one
+            // in the LOCAL database, which knows nothing about routes added on the station since the
+            // last sync.  Syncing now surfaces a collision while the user is still looking at the
+            // route they just made, rather than at the next startup.
+            if (originalName.isEmpty()) parent.syncWithCS2();
 
             dispose();
         }
@@ -2030,7 +2192,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 10;
+                return 11;
             }
 
             @Override
@@ -2082,6 +2244,7 @@ public class RouteEditorFrame extends JFrame
                 if (column == UP) return row > 0 && !locked ? MOVE_UP : "";
                 if (column == DOWN) return row < rows.size() - 1 && !locked ? MOVE_DOWN : "";
                 if (column == DELETE) return locked ? "" : DELETE_ROW;
+                if (column == DUPLICATE) return locked ? "" : COPY_ROW;
 
                 if (column == 2) return String.valueOf(row + 1);
 
@@ -2132,7 +2295,11 @@ public class RouteEditorFrame extends JFrame
                 // The adding row, and the three columns that are pressed rather than typed in
                 if (row >= rows.size()) return false;
 
-                if (column == UP || column == DOWN || column == DELETE || column == 2) return false;
+                if (column == UP || column == DOWN || column == DELETE || column == DUPLICATE
+                    || column == 2)
+                {
+                    return false;
+                }
 
                 Entry entry = rows.get(row);
 
@@ -2204,6 +2371,27 @@ public class RouteEditorFrame extends JFrame
                     delay = CommandRow.defaultDelayFor(kind);
                 }
 
+                // The address decides which of the two it really is.
+                //
+                // Switch and Signal are one command in two vocabularies, and only the layout knows
+                // which is standing at an address.  So typing one follows the layout: put in the
+                // address of a signal and the row becomes a Signal, with red and green in its
+                // setting box, without the user having to know that the kind box was the thing to
+                // fix.  Deliberately NOT done when the user has just chosen the kind by hand - that
+                // would make the box refuse to be set - and not for an address the layout has never
+                // heard of, which is every row the moment it is added.
+                if (column == 4 && (kind == CommandRow.Kind.ACCESSORY
+                    || kind == CommandRow.Kind.SIGNAL))
+                {
+                    CommandRow.Kind resolved = kindAtAddress(target, protocol, kind);
+
+                    if (resolved != kind)
+                    {
+                        kind = resolved;
+                        setting = CommandRow.defaultSettingFor(kind);
+                    }
+                }
+
                 // A kind that takes no target or setting does not keep the ones it had, so the blank
                 // the table shows and the row underneath it say the same thing
                 if (!CommandRow.hasTarget(kind)) target = "";
@@ -2254,6 +2442,7 @@ public class RouteEditorFrame extends JFrame
             narrow(this, UP);
             narrow(this, DOWN);
             narrow(this, DELETE);
+            narrow(this, DUPLICATE);
 
             TableColumn positionColumn = getColumnModel().getColumn(2);
             positionColumn.setPreferredWidth(30);
@@ -2267,6 +2456,9 @@ public class RouteEditorFrame extends JFrame
             getColumnModel().getColumn(8).setPreferredWidth(70);
 
             actOnRowMarks(this, DELETE, UP, DOWN, UP);
+
+            // The duplicate column gets the same renderer, which is what draws its mark
+            actOnRowMarks(this, DUPLICATE, -1, -1, -1);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
@@ -2355,6 +2547,28 @@ public class RouteEditorFrame extends JFrame
             }
 
             return super.getCellEditor(row, column);
+        }
+
+        /**
+         * Copies a row and puts the copy under it.
+         *
+         * A kept command - one of a kind this editor has no controls for - is copied as it stands,
+         * so duplicating one does not quietly turn it into something the editor CAN show.
+         */
+        void duplicateAt(int at)
+        {
+            if (at < 0 || at >= rows.size()) return;
+
+            Entry was = rows.get(at);
+
+            rows.add(at + 1, was.isEditable()
+                ? Entry.of(new CommandRow(was.getRow().getKind(), was.getRow().getTarget(),
+                    was.getRow().getSetting(), was.getRow().getProtocol(), was.getRow().getDelay()))
+                : Entry.of(was.toCommand()));
+
+            model.fireTableDataChanged();
+
+            setRowSelectionInterval(at + 1, at + 1);
         }
 
         void addRow()
@@ -2487,7 +2701,7 @@ public class RouteEditorFrame extends JFrame
                     return column == 4 ? joinerLabel(row.getJoiner()) : "";
                 }
 
-                CommandRow term = CommandRow.of(row.getCommand());
+                CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
                 if (term == null) return column == 4 ? String.valueOf(row.getCommand()) : "";
 
@@ -2563,14 +2777,24 @@ public class RouteEditorFrame extends JFrame
                     // target.  A sensor number left behind in an accessory row is an address, and it
                     // would be a perfectly good one belonging to something else entirely.
                     //
-                    // Reset to one rather than to blank, which is what a NEW condition row starts
-                    // as: this table stores each line as a built command, so a line with nothing in
-                    // its address cannot be held at all - the rebuild below would throw and the
-                    // keystroke would vanish.  The commands table above holds rows rather than
-                    // commands and so can be left properly empty.
-                    edited = new CommandRow(became,
-                        CommandRow.hasTarget(became) ? "1" : "",
-                        CommandRow.defaultSettingFor(became),
+                    // Reset to something that BUILDS rather than to blank: this table stores each
+                    // line as a built command, so a line with nothing in its address cannot be held
+                    // at all - the rebuild below would throw and the keystroke would vanish.  The
+                    // commands table above holds rows rather than commands and so can be left
+                    // properly empty.
+                    //
+                    // "Train X is at sensor N" is the awkward one: its target is a NAME and its
+                    // setting is an address, and the blank default meant choosing it did nothing
+                    // whatever - the dropdown offered the kind, the row threw on rebuild, and the
+                    // cell snapped back with no message.  The first locomotive on the roster is a
+                    // starting point somebody can then change, which is what every other kind gets.
+                    String starting = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                        ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
+
+                    String settingFor = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                        ? "1" : CommandRow.defaultSettingFor(became);
+
+                    edited = new CommandRow(became, starting, settingFor,
                         null, CommandRow.defaultDelayFor(became));
                 }
                 else

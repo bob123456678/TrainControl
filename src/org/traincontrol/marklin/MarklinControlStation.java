@@ -106,7 +106,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * The reconciliation is two hundred lines that decide what happens to every locomotive the user
      * owns, and until this existed none of it could be tested at all.  Null in every normal run.
      */
-    public static volatile String TEST_CS2_ADDRESS = null;
+    private static volatile String TEST_CS2_ADDRESS = null;
+
+    /**
+     * The name of the field above, for a test that wants to set it.
+     *
+     * Private, with the test reaching it by reflection.  A public mutable static is a control-station
+     * address that ANY code can redirect - the whole application talks to whatever it says - and
+     * "only the tests set it" is a convention rather than a rule.  Reflection makes the test say out
+     * loud that it is reaching past the front of the class, which is exactly what it is doing, and
+     * leaves nothing for ordinary code to reach for by accident.
+     *
+     * Named here rather than spelled out in the test so that renaming the field breaks the build
+     * instead of breaking the test at run time with a NoSuchFieldException.
+     */
+    public static final String TEST_ADDRESS_FIELD = "TEST_CS2_ADDRESS";
 
     /**
      * The address a sync should read from.

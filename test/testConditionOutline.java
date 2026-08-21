@@ -319,6 +319,57 @@ public class testConditionOutline
     }
 
     /**
+     * A condition whose FIRST line is indented keeps everything after the group.
+     *
+     * "(A or B) and C" is an ordinary thing to write in the old editor - it has a button that wraps
+     * the selection in brackets - and it comes back out of ConditionOutline.of as an outline whose
+     * first row is one level in, because the group is the first thing in the sentence.
+     *
+     * Reading it started at the depth of the FIRST row and stopped at the first row shallower than
+     * that, which is the "and" - so the whole of "and C" was dropped.  Nothing said so: the reading
+     * under the table showed the truncated version, no level disagreed with itself so nothing was
+     * flagged, and pressing Save wrote the shorter condition back.  Opening such a route and saving
+     * it unchanged made it fire on half its conditions.
+     */
+    @Test
+    public void testAConditionThatStartsWithAGroupKeepsTheRest()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 3));
+
+        assertEquals(describe(ConditionOutline.toExpression(rows)), "and((or(1,2)),3)",
+            "everything after the leading group was dropped, which is a route that fires on half "
+            + "the conditions somebody wrote");
+    }
+
+    /**
+     * And it survives the round trip out of an expression and back.
+     *
+     * The half that matters for a railway that already exists: this is the shape the old editor's
+     * "Group highlighted" button produces, and the shape NodeExpression.normalize makes on its own.
+     */
+    @Test
+    public void testALeadingGroupSurvivesBeingShownAsAnOutline()
+    {
+        NodeExpression original = new NodeAnd(
+            new org.traincontrol.base.NodeGroup(java.util.Arrays.<NodeExpression>asList(
+                new NodeOr(sensor(1), sensor(2)))),
+            sensor(3));
+
+        List<ConditionOutline.Row> shown = ConditionOutline.of(original);
+
+        assertTrue(ConditionOutline.problems(shown).isEmpty(),
+            "a condition that came from a real route must not open flagged");
+
+        assertEquals(describe(ConditionOutline.toExpression(shown)), describe(original),
+            "opening this route and saving it unchanged rewrote when it fires");
+    }
+
+    /**
      * The shape of an expression, for comparing two of them.
      */
     private static String describe(NodeExpression node)
@@ -370,5 +421,11 @@ public class testConditionOutline
     private static ConditionOutline.Row joining(int depth, ConditionOutline.Joiner joiner)
     {
         return ConditionOutline.Row.joining(depth, joiner);
+    }
+
+    private static NodeExpression sensor(int address)
+    {
+        return new org.traincontrol.base.NodeRouteCommand(
+            RouteCommand.RouteCommandFeedback(address, true));
     }
 }

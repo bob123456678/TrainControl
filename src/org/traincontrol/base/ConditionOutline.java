@@ -185,7 +185,23 @@ public final class ConditionOutline
 
         int[] at = new int[]{0};
 
-        return read(rows, at, rows.get(0).getDepth());
+        // The OUTERMOST level in the outline, not the depth of the first line.
+        //
+        // A condition that begins with a bracketed group - "(A or B) and C", which the old editor has
+        // a button for and which NodeExpression.normalize produces on its own - opens as an outline
+        // whose first row is one level in, because the group is the first thing in the sentence.
+        // Starting from the first row's depth then made read() stop at the first line shallower than
+        // it, which is the "and": everything from there on was dropped.
+        //
+        // Silently, which is what made it dangerous.  The reading under the table showed the
+        // truncated version, no level disagreed with itself so nothing was flagged red, and Save
+        // wrote the shorter condition back - so opening such a route and saving it unchanged left it
+        // firing on half the conditions somebody had written.
+        int outermost = rows.get(0).getDepth();
+
+        for (Row row : rows) outermost = Math.min(outermost, row.getDepth());
+
+        return read(rows, at, outermost);
     }
 
     /**

@@ -72,6 +72,42 @@ public final class RowIcons
     }
 
     /**
+     * Two overlapping sheets, for the mark that copies a row.
+     *
+     * Drawn rather than loaded, like the rest of these: an icon file is one more thing to ship, to
+     * scale to the row height, and to keep in step with the look of the others.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon copy(final int size)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setStroke(new BasicStroke(1.3f));
+
+                int w = Math.round(width * 0.52f);
+                int h = Math.round(height * 0.62f);
+                int gap = Math.max(2, Math.round(width * 0.20f));
+
+                // The sheet behind, then the one in front FILLED over it, so the front one hides the
+                // corner of the back and the two read as two sheets rather than as a little grid
+                g.setColor(QUIET);
+                g.drawRect(1, 1, w, h);
+
+                g.setColor(Color.WHITE);
+                g.fillRect(1 + gap, 1 + gap, w, h);
+
+                g.setColor(QUIET);
+                g.drawRect(1 + gap, 1 + gap, w, h);
+            }
+        };
+    }
+
+    /**
      * A plus.
      *
      * @param size how many pixels square

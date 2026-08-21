@@ -762,6 +762,8 @@ public class AutonomyEditorPanel extends JPanel
         // Remembered so every item on this menu can flash what it changed without being told twice.
         menuTarget = target;
 
+        rememberIfStation(target);
+
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         boolean isPoint = session.getReducer() != null
@@ -1394,6 +1396,28 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The station most recently clicked or right-clicked, so a label knows what it is probably for.
+     *
+     * Naming a square is a two-step job: look at the station, then put its name on a square beside
+     * it - a platform road usually has no room for the text, so the label goes on the blank square
+     * above or below.  By the time the user gets to the second step the editor has forgotten the
+     * first, and offered them an alphabetical list of every station on the railway with the one they
+     * are standing next to buried somewhere in it.
+     */
+    private TileKey lastStationTouched;
+
+    /**
+     * Notes a square if it is a station, so the next label offered defaults to it.
+     */
+    private void rememberIfStation(TileKey tile)
+    {
+        if (tile != null && session != null && session.getStore().isStation(tile))
+        {
+            lastStationTouched = tile;
+        }
+    }
+
+    /**
      * Asks which station this square should show.
      */
     private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
@@ -1451,9 +1475,21 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JComboBox<String> choice =
             new javax.swing.JComboBox<>(names.toArray(new String[0]));
 
+        // What this square already shows, or failing that the station the user was last looking at.
+        //
+        // Not the first name alphabetically, which is what it fell back to: a list of every station
+        // on the railway, opened on whichever one happens to sort first, is a list to be searched
+        // rather than an answer to be confirmed.
         TileKey showing = session.getCaptionTarget(tile);
 
-        if (showing != null) choice.setSelectedItem(session.getStore().getPointName(showing));
+        if (showing == null) showing = lastStationTouched;
+
+        if (showing != null)
+        {
+            String named = session.getStore().getPointName(showing);
+
+            if (named != null && names.contains(named)) choice.setSelectedItem(named);
+        }
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
         panel.add(new JLabel(I18n.t("autosetup.ui.promptStationLabel")), java.awt.BorderLayout.NORTH);
@@ -2392,6 +2428,8 @@ public class AutonomyEditorPanel extends JPanel
     public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
     {
         if (tile == null || session.getGraph() == null) return;
+
+        rememberIfStation(tile);
 
         // A one-way run was started from a right-click menu and is waiting for its far end.
         if (oneWayFrom != null)

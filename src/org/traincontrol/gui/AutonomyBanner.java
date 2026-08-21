@@ -62,7 +62,25 @@ public class AutonomyBanner extends JPanel
     public static final java.awt.Font MESSAGE_FONT =
         new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13);
 
-    private final JLabel message = new JLabel(" ");
+    /**
+     * The message itself.
+     *
+     * A JEditorPane rather than a JLabel, and in a scroll pane.
+     *
+     * The label was kept to ONE line, with nobr forced on so that a long message ran off the right
+     * edge rather than pushing the bar open and shoving the diagram down.  That is the right trade
+     * for "this tile is now one way".  It is the wrong one for the answer to "why is it not moving",
+     * which is a train, a dozen stations and the reason each one was refused - an answer somebody
+     * asked a question to get, and which was arriving with everything past the first few words off
+     * the side of the window with no way to reach it.
+     *
+     * An editor pane wraps to the width it is given, which a label will not do without being told a
+     * pixel count; the scroll pane caps how tall the bar can grow and hands over the rest.  So a
+     * sentence still occupies one line and a long answer can be read.
+     */
+    private final javax.swing.JEditorPane message = new javax.swing.JEditorPane();
+
+    private final javax.swing.JScrollPane scroller = new javax.swing.JScrollPane(message);
 
     /**
      * The one thing the message invites the user to do, where there is one.
@@ -80,6 +98,9 @@ public class AutonomyBanner extends JPanel
 
     private final Timer clear;
 
+    /** The message as it was handed in, so isSaying is not left reading HTML scaffolding. */
+    private String saying;
+
     public AutonomyBanner()
     {
         setLayout(new BorderLayout());
@@ -94,10 +115,33 @@ public class AutonomyBanner extends JPanel
 
         setBackground(INFO_BACKGROUND);
 
+        message.setContentType("text/html");
+        message.setEditable(false);
+        message.setOpaque(false);
+        message.setFocusable(false);
+        message.setBorder(null);
         message.setFont(MESSAGE_FONT);
         message.setForeground(INFO_TEXT);
 
-        add(message, BorderLayout.CENTER);
+        // The pane's own HTML rendering ignores setFont, so the family and size are put into the
+        // document itself - see hold(), which writes them into every message.
+        message.setText(" ");
+
+        scroller.setBorder(null);
+        scroller.setOpaque(false);
+        scroller.getViewport().setOpaque(false);
+
+        // Vertically only.  A message that has to be scrolled sideways to be read is a message that
+        // has not been shown, and wrapping is what the editor pane is here for.
+        scroller.setHorizontalScrollBarPolicy(
+            javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        scroller.setVerticalScrollBarPolicy(
+            javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        scroller.getVerticalScrollBar().setUnitIncrement(16);
+
+        add(scroller, BorderLayout.CENTER);
 
         // An offer that goes with the message, for the states where saying what is wrong is only half
         // the answer.  Hidden unless something has been offered, so an ordinary message is unchanged.
@@ -247,7 +291,9 @@ public class AutonomyBanner extends JPanel
      */
     public boolean isSaying()
     {
-        return message.getText() != null && !message.getText().trim().isEmpty();
+        // The document always carries a body wrapper now, so the markup cannot be the test - what
+        // is being asked is whether there is anything to READ.
+        return saying != null && !saying.trim().isEmpty();
     }
 
     /**
@@ -263,7 +309,13 @@ public class AutonomyBanner extends JPanel
     {
         java.awt.Dimension natural = super.getPreferredSize();
 
-        return new java.awt.Dimension(10, Math.max(MINIMUM_HEIGHT, natural.height));
+        // The message's own idea of how tall it needs to be, which the scroll pane will not report
+        // - a viewport asks for whatever it was given rather than for what is inside it.
+        int wanted = message.getPreferredSize().height + INSET_HEIGHT;
+
+        int height = Math.max(MINIMUM_HEIGHT, Math.min(MAXIMUM_HEIGHT, Math.max(wanted, natural.height)));
+
+        return new java.awt.Dimension(10, height);
     }
 
     /**
@@ -271,21 +323,47 @@ public class AutonomyBanner extends JPanel
      */
     private static final int MINIMUM_HEIGHT = 26;
 
+    /**
+     * And no taller than this, whatever is in it.
+     *
+     * Roughly six lines.  Past that the bar is not a bar any more, it is a panel that has eaten the
+     * top of the diagram - so the rest is scrolled to rather than shown.  The number is what the
+     * answer to "why is it not moving" usually needs without touching the scrollbar at all.
+     */
+    private static final int MAXIMUM_HEIGHT = 120;
+
+    /** The border this panel draws round its message, which the height has to allow for. */
+    private static final int INSET_HEIGHT = 10;
+
     private void hold(String text, boolean warning)
     {
-        // One line, always.  A JLabel given HTML wraps to the width it is offered, and this strip is
-        // one line tall - so a long message pushed the bar open and shoved the diagram down, or was
-        // clipped mid-sentence.  nowrap keeps it on one line and lets the end run off, which is the
-        // better failure: the front of a sentence is the part that carries it.
-        String shown = text == null || text.trim().isEmpty() ? " " : text;
+        // Wrapped, not cut off.  This used to force nobr and let a long message run off the right
+        // edge, on the reasoning that the front of a sentence is the part that carries it - true of
+        // a notice, and quite wrong for an answer somebody asked a question to get.  The bar grows to
+        // a few lines and scrolls past that, so nothing is lost and nothing is shoved out of shape.
+        String body = text == null || text.trim().isEmpty() ? "&nbsp;" : text;
 
-        if (shown.startsWith("<html>"))
-        {
-            shown = "<html><nobr>" + shown.substring("<html>".length());
-        }
+        if (body.startsWith("<html>")) body = body.substring("<html>".length());
 
-        message.setText(shown);
-        message.setForeground(warning ? WARNING_TEXT : INFO_TEXT);
+        if (body.endsWith("</html>")) body = body.substring(0, body.length() - "</html>".length());
+
+        java.awt.Color ink = warning ? WARNING_TEXT : INFO_TEXT;
+
+        // The font and the colour go into the DOCUMENT: an editor pane showing HTML takes neither
+        // from setFont nor from setForeground, so a message set the ordinary way came out in the
+        // default serif face in black.
+        message.setText("<html><body style=\"font-family:'" + MESSAGE_FONT.getFamily()
+            + "'; font-size:" + MESSAGE_FONT.getSize() + "pt; color:rgb("
+            + ink.getRed() + "," + ink.getGreen() + "," + ink.getBlue() + "); margin:0\">"
+            + body + "</body></html>");
+
+        // Back to the top, so a second answer does not open halfway down where the first was left
+        saying = body;
+
+        message.setCaretPosition(0);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            scroller.getVerticalScrollBar().setValue(0));
 
         setBackground(warning ? WARNING_BACKGROUND : INFO_BACKGROUND);
 
