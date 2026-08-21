@@ -29,6 +29,7 @@ import org.traincontrol.base.ConditionRows;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
+import org.traincontrol.base.ThreeWaySwitch;
 import org.traincontrol.util.I18n;
 
 /**
@@ -107,6 +108,12 @@ public class RouteEditorFrame extends JFrame
      * Held so that a route belonging to the Central Station can grey it.
      */
     private JButton saveButton;
+
+    /**
+     * Held so a route belonging to the Central Station can keep it: a locked route can still be
+     * TESTED, which is the one useful thing to do with a route somebody else owns.
+     */
+    private JButton testButton;
 
     /**
      * While ticked, an accessory thrown on the layout adds itself to the command list.
@@ -239,6 +246,19 @@ public class RouteEditorFrame extends JFrame
         // The reading goes under the table, saying in words what the outline says in shape.  It is
         // the one place the run-of-the-same-word rule is spelled out, so it earns its line.
         readsAs.setVerticalAlignment(JLabel.TOP);
+
+        // The old editor's Test button, which the outline editor was missing.
+        //
+        // It answers the one question a condition list cannot answer by being looked at: whether the
+        // route would fire RIGHT NOW.  The conditions are about the state of the railway, and the
+        // railway is in a state while the editor is open - so the sensors can be read and the
+        // expression evaluated against them, which is a great deal quicker than shunting a train
+        // over a sensor to find out.
+        testButton = button(I18n.t("ui.test"), this::testAgainstTheRailway);
+
+        testButton.setToolTipText(I18n.t("route.ui.tooltipTestConditions"));
+
+        buttonsOf(conditionSection).add(testButton);
 
         conditionSection.add(readsAs, BorderLayout.SOUTH);
 
@@ -599,6 +619,11 @@ public class RouteEditorFrame extends JFrame
             case ACCESSORY: return isSignalAt(row)
                 ? new String[]{"green", "red"} : new String[]{"straight", "turn"};
 
+            // Left, straight, right - as they read on the diagram.  The pair of commands each one
+            // becomes is ThreeWaySwitch's business; nothing about the order or the pause is decided
+            // here, or in two places, which is how the two would drift apart.
+            case THREE_WAY: return ThreeWaySwitch.words();
+
             case FEEDBACK: return new String[]{"off", "on"};
             case LOCOMOTIVE_DIRECTION: return new String[]{"forward", "backward"};
 
@@ -731,14 +756,34 @@ public class RouteEditorFrame extends JFrame
 
         List<RouteCommand> stored = route.getRoute();
 
-        for (RouteCommand command : stored)
+        for (int at = 0; at < stored.size(); at++)
         {
+            // Two lines that are one point come in as one row.
+            //
+            // Nothing in the file says so, so this is read rather than looked up: the pair has to
+            // match one of the three shapes exactly, down to the pause and the order, or it stays
+            // two ordinary rows.  A guess here would show a point that is not there and write a
+            // different pair back out on the next save.
+            ThreeWaySwitch point = ThreeWaySwitch.read(stored, at);
+
+            if (point != null)
+            {
+                commands.rows.add(Entry.of(new CommandRow(CommandRow.Kind.THREE_WAY,
+                    String.valueOf(point.getAddress()),
+                    ThreeWaySwitch.wordFor(point.getPosition()),
+                    point.getProtocol(), point.getSettle())));
+
+                at++;
+
+                continue;
+            }
+
             // A kind with no controls becomes a read-only row rather than a remembered index.  It was
             // an index, held against the ORIGINAL position, and the editable rows moved under it: a
             // route of [Switch 1, run "Yard", Switch 2] whose first row is deleted put "Yard" AFTER
             // Switch 2, silently, having never shown it at all.  One list, one order, all of it on
             // screen.
-            commands.rows.add(Entry.of(command));
+            commands.rows.add(Entry.of(stored.get(at)));
         }
 
         locked = route.isLocked();
@@ -783,7 +828,8 @@ public class RouteEditorFrame extends JFrame
         {
             try
             {
-                built.add(commands.rows.get(at).toCommand());
+                built.addAll(commands.rows.get(at).toCommands(
+                    Accessory.DEFAULT_IMPLICIT_PROTOCOL));
             }
             catch (IllegalArgumentException e)
             {
@@ -902,6 +948,41 @@ public class RouteEditorFrame extends JFrame
     /**
      * How many conditions the list holds, so a test can see that a capture arrived.
      */
+    /**
+     * Sets a cell of the command table, as typing in it would.
+     *
+     * For tests.  These four go through the table MODEL rather than round it, because the model is
+     * where the interesting behaviour lives: what a row keeps and what it throws away when its kind
+     * changes is decided there, and a test that built a CommandRow directly would be testing its own
+     * arithmetic rather than the editor's.
+     *
+     * @param row which row
+     * @param kind what to make it
+     */
+    public void setCommandKindForTest(int row, CommandRow.Kind kind)
+    {
+        commands.getModel().setValueAt(CommandRow.labelFor(kind), row, 3);
+    }
+
+    public void setCommandTargetForTest(int row, String target)
+    {
+        commands.getModel().setValueAt(target, row, 4);
+    }
+
+    public void setCommandSettingForTest(int row, String setting)
+    {
+        commands.getModel().setValueAt(setting, row, 6);
+    }
+
+    /**
+     * @param row which row
+     * @return what that row of the command table holds, or null where it is a kept command
+     */
+    public CommandRow commandRowForTest(int row)
+    {
+        return commands.rows.get(row).getRow();
+    }
+
     /**
      * Whether the command list is showing its plus.
      *
@@ -1421,71 +1502,328 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Builds the route back up and hands it to the same code the text editor uses.
+     * The problems as a list somebody can read down.
+     *
+     * Numbered, because "there are four things wrong" and "here are four sentences" are different
+     * amounts of help - and capped, because a route pasted in from somewhere else can have a fault
+     * in every row and a dialog taller than the screen has no buttons on it.
      */
-    private void onSave()
+    private static String listed(List<String> wrong)
     {
-        String name = nameField.getText().trim();
+        StringBuilder out = new StringBuilder();
 
-        if (name.isEmpty())
+        int shown = Math.min(wrong.size(), 12);
+
+        for (int at = 0; at < shown; at++)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameNeedsAName"));
-            return;
+            out.append("\n    ").append(at + 1).append(".  ").append(wrong.get(at));
         }
+
+        if (wrong.size() > shown)
+        {
+            out.append("\n\n").append(I18n.f("route.ui.frameAndMoreProblems",
+                String.valueOf(wrong.size() - shown)));
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * Everything wrong with the window, in the order a reader would work through it.
+     *
+     * Gathered rather than reported one at a time.  Save used to stop at the first problem, so a
+     * route with three things wrong took three attempts to find out - and each attempt named one
+     * cell, which reads as the editor changing its mind about what it wants.
+     *
+     * The point of most of these is that the row LOOKS right.  Changing an accessory into a
+     * locomotive command used to leave the address behind in the name column, giving a command for a
+     * locomotive called "3" - a name no locomotive has.  Nothing refused it: the row built, the
+     * route saved, and it did nothing whatever when it ran.  A route that quietly does nothing is
+     * the worst thing this editor can produce, because there is no error anywhere to lead anybody
+     * back to it.
+     *
+     * @return the problems, empty when there are none
+     */
+    private List<String> everythingWrong()
+    {
+        List<String> wrong = new ArrayList<>();
+
+        if (nameField.getText().trim().isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsAName"));
 
         int s88;
 
         try
         {
-            // Not abs().  A typed minus sign was silently turned into the positive address, so a
-            // route triggered off a sensor the user never named - and there is no way to tell from
-            // the saved route that it happened.  Refusing says which cell is wrong; coercing does not.
             s88 = Integer.parseInt(s88Field.getText().trim());
 
-            if (s88 < 0) throw new NumberFormatException("negative");
+            // Not abs().  A typed minus sign was silently turned into the positive address, so a
+            // route triggered off a sensor the user never named - and there is no way to tell from
+            // the saved route that it happened.
+            if (s88 < 0) s88 = -1;
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameS88NotANumber"));
-            return;
+            s88 = -1;
         }
+
+        if (s88 < 0) wrong.add(I18n.t("route.ui.frameS88NotANumber"));
 
         // Automatic with no sensor is a route that can never fire by itself: the sensor IS the thing
         // that fires it.  Saved, it would sit in the list marked automatic and do nothing, which is
         // the quietest way for a route to be wrong.
         if (enabledBox.isSelected() && s88 == 0)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameAutomaticNeedsSensor"));
-            return;
+            wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
         }
 
-        List<RouteCommand> built;
+        if (commands.rows.isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsACommand"));
 
-        try
+        for (int at = 0; at < commands.rows.size(); at++)
         {
-            built = commandsAsSaved();
-        }
-        catch (IllegalArgumentException e)
-        {
-            // Already carries its row number from commandsAsSaved
-            JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
-            return;
-        }
+            Entry entry = commands.rows.get(at);
 
-        if (built.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameNeedsACommand"));
-            return;
+            if (!entry.isEditable()) continue;
+
+            for (String problem : problemsWith(entry.getRow()))
+            {
+                wrong.add(I18n.f("route.ui.frameRowNumberIsWrong", String.valueOf(at + 1), problem));
+            }
         }
 
         // A level that disagrees with itself means two things at once, and the editor has been
         // showing which line is the problem in red.  Saving it would be picking one of the two
         // meanings quietly, and the route would then fire at times nobody asked for.
-        if (conditions.hasProblems())
+        if (conditions.hasProblems()) wrong.add(I18n.t("route.ui.frameLogicDisagrees"));
+
+        if (conditionsEditable)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameLogicDisagrees"));
+            int line = 0;
+
+            for (ConditionOutline.Row row : conditions.rows)
+            {
+                if (row.isJoiner()) continue;
+
+                line++;
+
+                for (String problem : problemsWith(CommandRow.of(row.getCommand())))
+                {
+                    wrong.add(I18n.f("route.ui.frameConditionNumberIsWrong",
+                        String.valueOf(line), problem));
+                }
+            }
+        }
+
+        return wrong;
+    }
+
+    /**
+     * What is wrong with one row, if anything.
+     *
+     * Two sorts of thing.  The first is a row that cannot be built at all - a blank address, a speed
+     * that is not a number - which the row itself refuses, and this asks it.  The second is a row
+     * that builds perfectly well and names something that does not exist: a locomotive nobody owns,
+     * a route nobody wrote, an address no decoder can carry.  Only the layout knows about those, and
+     * nothing was asking it.
+     *
+     * @param row the row, or null for a kind the editor has no controls for
+     * @return the problems with it
+     */
+    private List<String> problemsWith(CommandRow row)
+    {
+        List<String> wrong = new ArrayList<>();
+
+        if (row == null) return wrong;
+
+        try
+        {
+            row.toCommands(Accessory.DEFAULT_IMPLICIT_PROTOCOL);
+        }
+        catch (IllegalArgumentException e)
+        {
+            wrong.add(String.valueOf(e.getMessage()));
+
+            // No point asking whether a locomotive called "" exists
+            return wrong;
+        }
+
+        if (parent == null || parent.getModel() == null) return wrong;
+
+        String target = row.getTarget() == null ? "" : row.getTarget().trim();
+
+        switch (row.getKind())
+        {
+            // The name of a locomotive on this layout, not any text at all.  This is the one Adam
+            // found: an accessory turned into a locomotive command kept its address as the name.
+            case LOCOMOTIVE_SPEED:
+            case LOCOMOTIVE_DIRECTION:
+            case FUNCTION:
+            case AUTO_LOCOMOTIVE:
+                if (parent.getModel().getLocByName(target) == null)
+                {
+                    wrong.add(I18n.f("route.ui.frameNoSuchLocomotive", target));
+                }
+
+                break;
+
+            // A route that calls a route that is not there does nothing, and says nothing either
+            case ROUTE:
+                if (!parent.getModel().getRouteList().contains(target))
+                {
+                    wrong.add(I18n.f("route.ui.frameNoSuchRoute", target));
+                }
+                else if (target.equals(originalName))
+                {
+                    wrong.add(I18n.t("route.ui.frameRouteCallsItself"));
+                }
+
+                break;
+
+            case ACCESSORY:
+                addressProblem(wrong, target, row.getProtocol());
+                break;
+
+            // Both motors, because the second is the one the user never typed and so the one they
+            // would have no way of knowing was out of range
+            case THREE_WAY:
+                addressProblem(wrong, target, row.getProtocol());
+                addressProblem(wrong, String.valueOf(numberOr(target, 0) + 1), row.getProtocol());
+                break;
+
+            case FEEDBACK:
+                if (numberOr(target, 0) <= 0)
+                {
+                    wrong.add(I18n.f("route.ui.frameNotASensor", target));
+                }
+
+                break;
+
+            default:
+                break;
+        }
+
+        // A speed the decoder cannot be given.  RouteCommand takes the number as typed, so a
+        // hundred and fifty is saved, sent, and quietly clipped by something further down.
+        if (row.getKind() == CommandRow.Kind.LOCOMOTIVE_SPEED)
+        {
+            int speed = numberOr(row.getSetting(), -1);
+
+            if (speed < 0 || speed > 100)
+            {
+                wrong.add(I18n.f("route.ui.frameNotASpeed", String.valueOf(row.getSetting())));
+            }
+        }
+
+        return wrong;
+    }
+
+    /**
+     * Adds a complaint when an address is not one the decoder can carry.
+     *
+     * MM2 and DCC have different ranges, and an address past the end of either is not a switch that
+     * fails to move - it is a command sent to something that is not there.
+     */
+    private void addressProblem(List<String> wrong, String target,
+        Accessory.accessoryDecoderType protocol)
+    {
+        Accessory.accessoryDecoderType speaks =
+            protocol == null ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : protocol;
+
+        int address = numberOr(target, 0);
+
+        if (address <= 0 || !Accessory.isValidAddress(address, speaks))
+        {
+            wrong.add(I18n.f("route.ui.frameNotAnAddress", target + " (" + speaks + ")"));
+        }
+    }
+
+    /**
+     * A number, or a fallback where the text is not one.
+     */
+    private static int numberOr(String text, int fallback)
+    {
+        try
+        {
+            return Integer.parseInt(text == null ? "" : text.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return fallback;
+        }
+    }
+
+    /**
+     * Says whether this route would fire as the railway stands.
+     *
+     * The two halves are asked separately, because they fail for different reasons and a single
+     * "no" would leave the user to guess which: the trigger sensor is either occupied or it is not,
+     * and the conditions either hold or they do not.  Both have to be true for the route to run.
+     *
+     * Ported from the old editor, which read the expression out of a text box; this one asks the
+     * outline, so what is tested is what the table shows rather than what was last typed.
+     */
+    private void testAgainstTheRailway()
+    {
+        if (parent == null || parent.getModel() == null) return;
+
+        try
+        {
+            boolean sensor = parent.getModel().getFeedbackState(s88Field.getText().trim());
+
+            NodeExpression conditions = conditionsEditable
+                ? ConditionOutline.toExpression(this.conditions.rows) : conditionsAsFound;
+
+            // No conditions is a route held up by nothing but its sensor, which is true rather than
+            // unknown - a route with an empty condition list fires whenever it is triggered.
+            boolean held = conditions == null || conditions.evaluate(parent.getModel());
+
+            JOptionPane.showMessageDialog(this,
+                I18n.f("route.ui.messageTriggeringConditionSummary",
+                    I18n.t(sensor ? "route.ui.valueTrue" : "route.ui.valueFalse"),
+                    I18n.t(held ? "route.ui.valueTrue" : "route.ui.valueFalse"),
+                    I18n.t(sensor && held ? "route.ui.valueWould" : "route.ui.valueWouldNot")));
+        }
+        catch (Exception e)
+        {
+            // A sensor that names nothing, or an address that is not a number: the same message the
+            // old editor gave, because the answer is the same - there is something in here that
+            // cannot be evaluated, and the route would not fire on it either.
+            JOptionPane.showMessageDialog(this,
+                I18n.t("route.ui.errorConditionExpressionInvalid"));
+        }
+    }
+
+    /**
+     * Builds the route back up and hands it to the same code the text editor uses.
+     */
+    private void onSave()
+    {
+        List<String> wrong = everythingWrong();
+
+        if (!wrong.isEmpty())
+        {
+            // The window stays open on Fix, so the user is looking at the cells the list names.
+            //
+            // Discard is offered beside it because there is a state this editor can get into that no
+            // amount of fixing is worth: a row somebody was experimenting with, in a route they no
+            // longer want changed.  Without it, the only way out of a route with a problem in it was
+            // to correct the problem in order to be allowed to close the window.
+            String[] answers = { I18n.t("route.ui.frameGoAndFixIt"), I18n.t("route.ui.frameDiscard") };
+
+            int answer = JOptionPane.showOptionDialog(this,
+                I18n.f("route.ui.frameCannotSaveYet", listed(wrong)),
+                I18n.t("route.ui.frameCannotSaveYetTitle"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, answers, answers[0]);
+
+            if (answer == 1) dispose();
+
             return;
         }
+
+        String name = nameField.getText().trim();
+
+        int s88 = Integer.parseInt(s88Field.getText().trim());
+
+        List<RouteCommand> built = commandsAsSaved();
 
         NodeExpression expression = ConditionOutline.toExpression(conditions.rows);
 
@@ -1623,6 +1961,20 @@ public class RouteEditorFrame extends JFrame
         RouteCommand toCommand()
         {
             return row != null ? row.toCommand() : kept;
+        }
+
+        /**
+         * What this entry writes into the route - two commands where it stands for a point.
+         */
+        List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
+        {
+            if (row != null) return row.toCommands(protocol);
+
+            List<RouteCommand> out = new ArrayList<>();
+
+            out.add(kept);
+
+            return out;
         }
 
         /**
@@ -1797,6 +2149,17 @@ public class RouteEditorFrame extends JFrame
                 String text = value == null ? "" : value.toString().trim();
 
                 CommandRow.Kind kind = column == 3 ? CommandRow.kindFor(text) : at.getKind();
+
+                // A different kind is a different command, and it starts empty.
+                //
+                // The setting was already replaced, because the vocabularies do not overlap and the
+                // old word would be refused at Save.  The TARGET was carried over, and its
+                // vocabularies do not overlap either - they merely both accept text.  Turning
+                // "Accessory 3" into a locomotive command therefore produced a command for a
+                // locomotive called "3", which is a name no locomotive has: it saved without
+                // complaint and did nothing at all when the route ran.
+                boolean became = column == 3 && kind != at.getKind();
+
                 String target = column == 4 ? text : at.getTarget();
 
                 // Changing the KIND replaces the setting with one the new kind accepts.  The
@@ -1819,6 +2182,13 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == 7) protocol = protocolOf(text);
                 if (column == 8) delay = delayOf(text, at.getDelay());
+
+                if (became)
+                {
+                    target = "";
+                    protocol = null;
+                    delay = CommandRow.defaultDelayFor(kind);
+                }
 
                 // A kind that takes no target or setting does not keep the ones it had, so the blank
                 // the table shows and the row underneath it say the same thing
@@ -2175,11 +2545,19 @@ public class RouteEditorFrame extends JFrame
 
                     if (became == null) return;
 
-                    // A setting that means nothing to the new kind is replaced rather than carried
-                    // over: the vocabularies are disjoint, so keeping the old word makes the rebuild
-                    // below throw and the edit silently revert
-                    edited = new CommandRow(became, term.getTarget(),
-                        CommandRow.defaultSettingFor(became), term.getProtocol(), term.getDelay());
+                    // A different kind is a different condition, and it does not keep the old
+                    // target.  A sensor number left behind in an accessory row is an address, and it
+                    // would be a perfectly good one belonging to something else entirely.
+                    //
+                    // Reset to one rather than to blank, which is what a NEW condition row starts
+                    // as: this table stores each line as a built command, so a line with nothing in
+                    // its address cannot be held at all - the rebuild below would throw and the
+                    // keystroke would vanish.  The commands table above holds rows rather than
+                    // commands and so can be left properly empty.
+                    edited = new CommandRow(became,
+                        CommandRow.hasTarget(became) ? "1" : "",
+                        CommandRow.defaultSettingFor(became),
+                        null, CommandRow.defaultDelayFor(became));
                 }
                 else
                 {

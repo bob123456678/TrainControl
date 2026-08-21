@@ -13747,11 +13747,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
-                    // Ensure route changes are synced
-                    this.syncWithCS2();
-                    this.repaintLayout();   
-                    
+                    // The list first, and again after the sync.
+                    //
+                    // The copy exists the moment newRoute returns, so this is when the user should
+                    // see it - the sync that used to come first is a network round trip to the
+                    // Central Station and takes as long as it takes.  Worse, off the event thread it
+                    // is a plain call that can throw: a station that is not answering ended this
+                    // worker on a stack trace nobody sees, and the refresh below it never ran at
+                    // all.  The copy was then in the route database and not on screen until
+                    // something else happened to rebuild the table.
                     refreshRouteList();
+
+                    try
+                    {
+                        // Ensure route changes are synced
+                        this.syncWithCS2();
+                    }
+                    finally
+                    {
+                        // Whatever the station said, the copy is real and the list has to show it
+                        this.repaintLayout();
+
+                        refreshRouteList();
+                    }
                 }  
             }
         }).start();

@@ -31,6 +31,14 @@ public final class CommandRow
     public enum Kind
     {
         ACCESSORY,
+
+        // A three-way point: two motors at consecutive addresses, which a route holds as two
+        // ordinary accessory commands in a particular order with a pause between them.  One row
+        // rather than two because setting one by hand means knowing which motor moves first and why,
+        // and getting it wrong drives the point through a position nobody asked for.  ThreeWaySwitch
+        // is where the three shapes are written down; this is only the row that stands for one.
+        THREE_WAY,
+
         FEEDBACK,
         FUNCTION,
         LOCOMOTIVE_SPEED,
@@ -190,6 +198,7 @@ public final class CommandRow
         switch (kind)
         {
             case ACCESSORY: return "straight";
+            case THREE_WAY: return ThreeWaySwitch.wordFor(ThreeWaySwitch.Position.STRAIGHT);
             case FEEDBACK: return "off";
             case LOCOMOTIVE_DIRECTION: return "forward";
             case LOCOMOTIVE_SPEED: return "0";
@@ -201,6 +210,21 @@ public final class CommandRow
 
             default: return "";
         }
+    }
+
+    /**
+     * The pause a new row of this kind starts with, in milliseconds.
+     *
+     * Nothing waits by default; a three-way is the exception, because the pause between its two
+     * motors is not a preference but the thing that stops the second starting while the first is
+     * still moving.
+     *
+     * @param kind the kind
+     * @return the delay to start with
+     */
+    public static int defaultDelayFor(Kind kind)
+    {
+        return kind == Kind.THREE_WAY ? ThreeWaySwitch.SETTLE : 0;
     }
 
     /**
@@ -227,7 +251,7 @@ public final class CommandRow
      */
     public static boolean hasProtocol(Kind kind)
     {
-        return kind == Kind.ACCESSORY;
+        return kind == Kind.ACCESSORY || kind == Kind.THREE_WAY;
     }
 
     /**
@@ -237,7 +261,8 @@ public final class CommandRow
     public static boolean hasDelay(Kind kind)
     {
         return kind == Kind.ACCESSORY || kind == Kind.LOCOMOTIVE_SPEED
-            || kind == Kind.LOCOMOTIVE_DIRECTION || kind == Kind.FUNCTION;
+            || kind == Kind.LOCOMOTIVE_DIRECTION || kind == Kind.FUNCTION
+            || kind == Kind.THREE_WAY;
     }
 
     /**
@@ -341,6 +366,37 @@ public final class CommandRow
     }
 
     /**
+     * The commands this row means - usually one, and two for a three-way point.
+     *
+     * Every caller that writes a route out goes through here rather than through toCommand, because
+     * a row that stands for two commands has no single command to return and asking for one would
+     * quietly write out half a point.
+     *
+     * @param protocol the decoder type for a row that carries none of its own
+     * @return the commands, in the order they must be sent
+     * @throws IllegalArgumentException when the row cannot be made into commands
+     */
+    public java.util.List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
+    {
+        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+
+        if (kind == Kind.THREE_WAY)
+        {
+            out.addAll(ThreeWaySwitch.expand(number(target, "route.wordAddress"),
+                this.protocol != null ? this.protocol
+                    : (protocol != null ? protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL),
+                ThreeWaySwitch.positionFor(setting),
+                delay > 0 ? delay : ThreeWaySwitch.SETTLE));
+
+            return out;
+        }
+
+        out.add(toCommand(protocol));
+
+        return out;
+    }
+
+    /**
      * The command this row means.
      *
      * @param protocol the decoder type to give an accessory that does not carry one of its own - a row
@@ -365,6 +421,12 @@ public final class CommandRow
     {
         switch (kind)
         {
+            // A point is two commands, and there is no honest single one to hand back.  Reached only
+            // by a caller that has not been moved to toCommands, so it says so rather than writing
+            // out the first half of a point and losing the second.
+            case THREE_WAY:
+                throw new IllegalArgumentException(I18n.t("route.errorThreeWayNeedsBoth"));
+
             case STOP:
                 return RouteCommand.RouteCommandStop();
 
