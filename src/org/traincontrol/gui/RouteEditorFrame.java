@@ -88,6 +88,22 @@ public class RouteEditorFrame extends JFrame
     private boolean locked = false;
 
     /**
+     * Whether this window will let the route be changed.
+     *
+     * Asked before a mark is drawn and again before it acts.  Greying the tables was not enough:
+     * the marks in the rows are painted values rather than buttons, and the click that works them is
+     * a click on a cell picked up by a listener of this window's own - which a disabled table does
+     * nothing about.  So a route belonging to the Central Station opened with its name greyed, its
+     * Save switched off, and a working plus at the bottom of the command list.
+     *
+     * @return true when the route is this window's to change
+     */
+    public boolean isEditable()
+    {
+        return !locked;
+    }
+
+    /**
      * Held so that a route belonging to the Central Station can grey it.
      */
     private JButton saveButton;
@@ -139,6 +155,24 @@ public class RouteEditorFrame extends JFrame
      */
     public RouteEditorFrame(TrainControlUI parent, String routeName)
     {
+        this(parent, routeName,
+            parent == null || routeName == null ? null : parent.getModel().getRoute(routeName));
+    }
+
+    /**
+     * The same window, handed the route rather than sent to look it up.
+     *
+     * The name alone meant this window could only ever be opened against the running control
+     * station, which is also the only way its read-only behaviour could be exercised - and that
+     * behaviour is the half nobody notices is broken, because a route that cannot be changed looks
+     * exactly like one nobody has tried to change.
+     *
+     * @param parent the main window, or null
+     * @param routeName what to call it in the title
+     * @param route the route to show, or null for a new one
+     */
+    public RouteEditorFrame(TrainControlUI parent, String routeName, Route route)
+    {
         this.parent = parent;
         this.originalName = routeName == null ? "" : routeName;
 
@@ -159,7 +193,7 @@ public class RouteEditorFrame extends JFrame
 
         setContentPane(build());
 
-        load(routeName);
+        load(route);
 
         // After load(), which is what discovers whether the route is the station's
         if (locked) becomeReadOnly();
@@ -681,18 +715,14 @@ public class RouteEditorFrame extends JFrame
     /**
      * Fills the frame from a route, or leaves it empty for a new one.
      */
-    private void load(String routeName)
+    private void load(Route route)
     {
-        if (routeName == null)
+        if (route == null)
         {
             enabledBox.setSelected(false);
             s88Field.setText("0");
             return;
         }
-
-        Route route = parent.getModel().getRoute(routeName);
-
-        if (route == null) return;
 
         nameField.setText(route.getName());
         s88Field.setText(String.valueOf(route.getS88()));
@@ -796,6 +826,10 @@ public class RouteEditorFrame extends JFrame
      */
     public void appendCommand(String command)
     {
+        // The tick box that drives capture is greyed on a locked route, so nothing should arrive here
+        // - but this is a public way into the command list, and the rule belongs with the list.
+        if (locked) return;
+
         if (command == null || command.trim().isEmpty()) return;
 
         try
@@ -868,6 +902,28 @@ public class RouteEditorFrame extends JFrame
     /**
      * How many conditions the list holds, so a test can see that a capture arrived.
      */
+    /**
+     * Whether the command list is showing its plus.
+     *
+     * For tests.  The plus is a value the table paints rather than a button in a cell, so there is
+     * no component to ask - and it is exactly what went wrong: greying the table left the plus drawn
+     * and working on a route belonging to the Central Station.
+     *
+     * @return true when there is a way to add a command
+     */
+    public boolean offersToAddCommands()
+    {
+        return ADD_HERE.equals(commands.getValueAt(commands.getRowCount() - 1, UP));
+    }
+
+    /**
+     * The same question of the condition list.
+     */
+    public boolean offersToAddConditions()
+    {
+        return ADD_HERE.equals(conditions.getValueAt(conditions.getRowCount() - 1, UP));
+    }
+
     public int conditionCount()
     {
         // Conditions, not lines.  The outline holds the joining words as lines of their own, so the
@@ -1211,6 +1267,8 @@ public class RouteEditorFrame extends JFrame
 
                 Object value = table.getValueAt(row, column);
 
+                if (locked) return;
+
                 if (INDENT_ROW.equals(value)) table.indent(row, 1);
                 else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
             }
@@ -1240,20 +1298,33 @@ public class RouteEditorFrame extends JFrame
         return table == commands ? commands.rows.size() : conditions.rows.size();
     }
 
+    /**
+     * Nothing in either table moves, goes or arrives on a route that is not ours to change.
+     *
+     * Checked here as well as where the marks are drawn, because these are also reached from the
+     * keyboard and from anything added later that forgets to ask.  One rule, two guards: the drawing
+     * one is what the user sees, this one is what makes it true.
+     */
     private void moveRow(JTable table, int row, int by)
     {
+        if (locked) return;
+
         if (table == commands) commands.shift(row, by);
         else conditions.shift(row, by);
     }
 
     private void deleteRow(JTable table, int row)
     {
+        if (locked) return;
+
         if (table == commands) commands.removeAt(row);
         else conditions.removeAt(row);
     }
 
     private void addTo(JTable table)
     {
+        if (locked) return;
+
         if (table == commands) commands.addRow();
         else if (conditionsEditable) conditions.addRow();
     }
@@ -1626,14 +1697,16 @@ public class RouteEditorFrame extends JFrame
                 // The adding row: a plus under the position column and nothing else
                 if (row >= rows.size())
                 {
-                    return column == UP ? ADD_HERE : "";
+                    return column == UP && !locked ? ADD_HERE : "";
                 }
 
                 Entry entry = rows.get(row);
 
-                if (column == UP) return row > 0 ? MOVE_UP : "";
-                if (column == DOWN) return row < rows.size() - 1 ? MOVE_DOWN : "";
-                if (column == DELETE) return DELETE_ROW;
+                // No marks on a route that is not ours to change.  A mark that declines when it is
+                // pressed reads as a fault; one that was never drawn reads as the rule it is.
+                if (column == UP) return row > 0 && !locked ? MOVE_UP : "";
+                if (column == DOWN) return row < rows.size() - 1 && !locked ? MOVE_DOWN : "";
+                if (column == DELETE) return locked ? "" : DELETE_ROW;
 
                 if (column == 2) return String.valueOf(row + 1);
 
@@ -1679,6 +1752,8 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int row, int column)
             {
+                if (locked) return false;
+
                 // The adding row, and the three columns that are pressed rather than typed in
                 if (row >= rows.size()) return false;
 
@@ -1987,10 +2062,15 @@ public class RouteEditorFrame extends JFrame
                 if (line >= rows.size())
                 {
                     // On the left, where a new line begins rather than where its kind will land
-                    return column == UP ? ADD_HERE : "";
+                    return column == UP && conditionsEditable ? ADD_HERE : "";
                 }
 
                 ConditionOutline.Row row = rows.get(line);
+
+                if (!conditionsEditable && (column <= OUTDENT || column == CONDITION_DELETE))
+                {
+                    return "";
+                }
 
                 // Conditions only, and only where there is another condition that way to swap with.
                 // A word does not move by hand, and an arrow on one would have nothing to do.
