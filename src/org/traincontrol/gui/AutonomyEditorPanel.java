@@ -1490,12 +1490,17 @@ public class AutonomyEditorPanel extends JPanel
 
         if (showing == null) showing = lastStationTouched;
 
-        if (showing != null)
-        {
-            String named = session.getStore().getPointName(showing);
+        // Matched by SQUARE rather than by name, which is why the default never appeared.
+        //
+        // The list above is built from the REDUCED points, whose names are the ones the builder
+        // generates for each way into a station - and the name a square is stored under is the
+        // authored one it was given.  For any station split by its arrival sides those are different
+        // strings, so asking whether the list contained the stored name answered no every time, on
+        // exactly the stations most worth defaulting to.  Two names for one square; the square is
+        // the thing they agree on.
+        String named = nameInListFor(showing, names);
 
-            if (named != null && names.contains(named)) choice.setSelectedItem(named);
-        }
+        if (named != null) choice.setSelectedItem(named);
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
         panel.add(new JLabel(I18n.t("autosetup.ui.promptStationLabel")), java.awt.BorderLayout.NORTH);
@@ -1540,6 +1545,35 @@ public class AutonomyEditorPanel extends JPanel
      * The square of the station with this authored name, for turning a chooser’s answer back into
      * the thing a caption actually points at.
      */
+    /**
+     * Which entry of a name list stands for a given square.
+     *
+     * A station square can appear in the list under more than one name - one per way in, where its
+     * arrivals have been split - and any of them names the same place, so the first is as good an
+     * answer as the rest.
+     *
+     * @param tile the square to find, or null
+     * @param names what the dropdown is offering
+     * @return the entry to select, or null where the square is not in the list
+     */
+    private String nameInListFor(TileKey tile, java.util.List<String> names)
+    {
+        if (tile == null) return null;
+
+        // The stored name first, for a station that was never split: it is the exact answer where it
+        // is an answer at all.
+        String authored = session.getStore().getPointName(tile);
+
+        if (authored != null && names.contains(authored)) return authored;
+
+        for (String name : names)
+        {
+            if (tile.equals(session.tileForPointName(name))) return name;
+        }
+
+        return null;
+    }
+
     private TileKey stationTileNamed(String name)
     {
         if (name == null || session.getReducer() == null) return null;
