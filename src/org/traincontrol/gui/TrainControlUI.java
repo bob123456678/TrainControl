@@ -1035,7 +1035,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.numLocMappings <= MIN_LOC_MAPPINGS) return false;
 
-        return this.locMapping.get(this.locMappingNumber - 1).isEmpty();
+        // Empty means NO LOCOMOTIVE ON IT, not an empty map.
+        //
+        // The map is keyed by BUTTON, and the buttons always exist - clearing a page sets every one
+        // of its values to null rather than removing the keys, so a page cleared a moment ago still
+        // answered isEmpty() with false.  Delete stayed greyed with nothing on the page to explain
+        // it, which is the state Adam found.
+        for (Locomotive on : this.locMapping.get(this.locMappingNumber - 1).values())
+        {
+            if (on != null) return false;
+        }
+
+        return true;
     }
 
     /**
