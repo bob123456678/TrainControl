@@ -1344,8 +1344,17 @@ public class RouteEditorFrame extends JFrame
     {
         setTitle(I18n.f("route.ui.frameLockedTitle", originalName));
 
+        // Not focusable either, not merely uneditable.
+        //
+        // An uneditable text field still takes the caret: it can be tabbed into, clicked into, and
+        // its text selected, and it keeps the white background and the I-beam pointer of a box that
+        // is waiting to be typed in.  Somebody who does that and finds nothing happens has been told
+        // the window is broken rather than that the route belongs to the station.
         nameField.setEditable(false);
+        nameField.setFocusable(false);
+
         s88Field.setEditable(false);
+        s88Field.setFocusable(false);
         triggerBox.setEnabled(false);
         enabledBox.setEnabled(false);
 

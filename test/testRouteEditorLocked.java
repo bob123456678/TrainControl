@@ -114,6 +114,76 @@ public class testRouteEditorLocked
     }
 
     /**
+     * A field on a locked route cannot be tabbed or clicked into.
+     *
+     * Uneditable is not the same as out of the way.  A text field that refuses to be typed in still
+     * takes the caret, still selects its text, and still shows the white box and the I-beam of one
+     * that is waiting for input - so somebody who clicks it and finds nothing happens has been told
+     * the window is broken rather than that the route belongs to the station.
+     */
+    @Test
+    public void testALockedRouteHasNothingToTypeInto() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame frame = open(locked(true));
+
+        for (javax.swing.text.JTextComponent field : fieldsIn(frame.getContentPane()))
+        {
+            assertFalse(field.isFocusable(),
+                "a text field on a route belonging to the Central Station still takes the caret: \""
+                + field.getText() + "\"");
+        }
+
+        close(frame);
+    }
+
+    /**
+     * And an ordinary route still has fields to fill in, or the test above passes on an empty window.
+     */
+    @Test
+    public void testAnOrdinaryRouteStillHasFieldsToTypeInto() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame frame = open(locked(false));
+
+        boolean any = false;
+
+        for (javax.swing.text.JTextComponent field : fieldsIn(frame.getContentPane()))
+        {
+            any = any || field.isFocusable();
+        }
+
+        assertTrue(any, "a local route has no field the keyboard can reach, which would make the "
+            + "editor unusable rather than safe");
+
+        close(frame);
+    }
+
+    /**
+     * Every text field in a window, however deeply it is nested.
+     */
+    private static List<javax.swing.text.JTextComponent> fieldsIn(java.awt.Container where)
+    {
+        List<javax.swing.text.JTextComponent> found = new ArrayList<>();
+
+        for (java.awt.Component part : where.getComponents())
+        {
+            if (part instanceof javax.swing.text.JTextComponent)
+            {
+                found.add((javax.swing.text.JTextComponent) part);
+            }
+            else if (part instanceof java.awt.Container)
+            {
+                found.addAll(fieldsIn((java.awt.Container) part));
+            }
+        }
+
+        return found;
+    }
+
+    /**
      * A route with one command in it, locked or not.
      */
     private static Route locked(boolean owned)
