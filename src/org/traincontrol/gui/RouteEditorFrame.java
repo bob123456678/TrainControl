@@ -993,12 +993,66 @@ public class RouteEditorFrame extends JFrame
             }
 
             commands.rows.add(Entry.of(parsed));
+
+            // The same accessory thrown twice leaves ONE row, with the value it ended on.
+            //
+            // Somebody capturing a route changes their mind - a turnout goes the wrong way, is thrown
+            // back, and without this both throws are in the route.  The old text editor filtered its
+            // captured text this way and the rebuilt editor did not, so capture here recorded every
+            // throw; the filter moved into RouteCapture when that editor was deleted, and this is
+            // where it was always wanted.
+            //
+            // Through the LINES, because that is what the filter reads and what it has been tested
+            // against - and a round trip through them is cheap next to the click that caused it.
+            settleCapturedRows();
+
             commands.fireTableDataChanged();
         }
         catch (Exception e)
         {
             // A line that will not parse is not worth interrupting a capture for
         }
+    }
+
+    /**
+     * Collapses repeated captures of the same thing down to the last one.
+     *
+     * Only the rows this editor can express are offered to the filter; a kept command - one of a kind
+     * there are no controls for - is left exactly where it is, because it did not come from a capture
+     * and rewriting it through a text round trip is the one way to lose it.
+     */
+    private void settleCapturedRows() throws Exception
+    {
+        StringBuilder text = new StringBuilder();
+
+        for (Entry entry : commands.rows)
+        {
+            if (!entry.isEditable()) return;
+
+            text.append(entry.toCommand().toLine(null));
+        }
+
+        String settled = org.traincontrol.base.RouteCapture.filterConfigCommands(text.toString());
+
+        java.util.List<Entry> rebuilt = new ArrayList<>();
+
+        for (String line : settled.split("\n"))
+        {
+            if (line.trim().isEmpty()) continue;
+
+            RouteCommand one = RouteCommand.fromLine(line, false);
+
+            // A line the filter produced and the parser will not take back is a disagreement between
+            // the two, and the rows already on screen are the better answer
+            if (one == null) return;
+
+            rebuilt.add(Entry.of(one));
+        }
+
+        if (rebuilt.isEmpty()) return;
+
+        commands.rows.clear();
+        commands.rows.addAll(rebuilt);
     }
 
     /**

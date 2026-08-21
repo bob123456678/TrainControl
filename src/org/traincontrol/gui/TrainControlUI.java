@@ -413,7 +413,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LocomotiveSelector selector;
     private AddLocomotive adder;
     private LocomotiveStats stats;
-    private RouteEditor routeEditor;
+    /**
+     * The route editor, which is now the only one.
+     *
+     * Still called routeEditor because that is what it is: the old text-based one it replaces has
+     * been deleted, so there is no longer a second thing to distinguish it from.
+     */
+    private RouteEditorFrame routeEditor;
 
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
@@ -736,7 +742,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         buildPathPreferenceMenu();
-        buildNewRouteEditorMenu();
         buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
@@ -1698,6 +1703,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Takes the legacy track diagram editor off the Layouts menu.
+     *
+     * Removed here rather than in the form, which is generated and cannot be hand-edited - so the
+     * item is still built and still added by initComponents, and is taken off again immediately
+     * afterwards.  Say the word and it comes out of the .form properly.
+     *
+     * What it did: unpacked a bundled Windows executable into the layout folder and ran it, so that
+     * a diagram could be drawn in the tool the Central Station's own files came from.  The diagram
+     * editor in this window does that now, on every platform, without shipping a hundred and fifty
+     * kilobytes of somebody else's binary - and the executable has been removed from the resources
+     * along with it.
+     */
+    private void removeLegacyEditorItem()
+    {
+        if (modifyLocalLayoutMenu != null && openLegacyTrackDiagramEditor != null)
+        {
+            modifyLocalLayoutMenu.remove(openLegacyTrackDiagramEditor);
+        }
+    }
+
+    /**
      * The autonomy menu, beside Layouts.
      *
      * Added in code rather than in the form: the menu bar is generated, and everything autonomy has
@@ -1854,6 +1880,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // place those actions live, because they are a few hundred lines of dialogs and file handling
         // that gain nothing from being copied into a menu class.
         mountAutonomyMenu();
+
+        removeLegacyEditorItem();
 
         // And the tab it used to fill goes.  Removed here rather than left out of the form, because
         // the form is generated - and it comes BACK below when there is no local layout, where the
@@ -3231,7 +3259,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autonomyDiagramStrip;
 
     /** The new route editor, while one is open, so a captured accessory can reach it. */
-    private RouteEditorFrame newRouteEditor;
 
     private AutonomyOverlayToggle autonomyOverlayToggle;
 
@@ -4659,7 +4686,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // happened to be open beside it - the box ticked, switches were thrown, and no command
             // appeared.  Precisely the feature its own commit message called "easy to leave out of a
             // rebuild and hard to notice missing until somebody tried".
-            if (this.routeEditor != null || this.newRouteEditor != null
+            if (this.routeEditor != null
                 || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
             {
                 // Throttle to ensure commands are not duplicated
@@ -4677,21 +4704,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     lastCapturedAccessoryCommandTime = currentTime; 
 
                     // Pass the event to the route editor if we are capturing commands
-                    if (this.routeEditor != null && routeEditor.isVisible() && this.routeEditor.isCaptureCommandsSelected())
+                    if (this.routeEditor != null && routeEditor.isVisible()
+                        && this.routeEditor.isCapturing())
                     {
                         this.routeEditor.appendCommand(command);
-                    }
-
-                    // And to the new one, which has the same feature.
-                    //
-                    // Capture is the old editor's most useful trick by some way - the user throws the
-                    // switches in the order they want them and watches the route write itself, instead
-                    // of looking up addresses.  A rebuilt editor without it would have been easy to
-                    // ship and hard to notice until somebody tried.
-                    if (this.newRouteEditor != null && this.newRouteEditor.isVisible()
-                        && this.newRouteEditor.isCapturing())
-                    {
-                        this.newRouteEditor.appendCommand(command);
                     }
 
                     // Pass the event to the lock edge editor
@@ -5122,62 +5138,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             syncInFlight.set(false);
         }
-    }
-
-    /**
-     * Adds the new route editor to the Routes menu, beside the one it may replace.
-     *
-     * Both are offered rather than one being swapped for the other.  The new editor refuses to touch
-     * two things - a command of a kind it has no controls for, and a condition with a bracket in it -
-     * and until it grows controls for those, the text editor is how they are edited.  Offering both
-     * also lets the same route be opened in each and compared, which is the only honest way to be sure
-     * the new one is not quietly changing anything.
-     *
-     * Built here rather than in the form, so there is no generated block to keep in step.
-     */
-    private void buildNewRouteEditorMenu()
-    {
-        if (routesMenu == null) return;
-
-        javax.swing.JMenuItem item =
-            new javax.swing.JMenuItem(I18n.t("route.ui.menuNewEditor"));
-
-        item.setToolTipText(I18n.t("route.ui.tooltipNewEditor"));
-
-        item.addActionListener(event ->
-        {
-            // Not while trains are running.  A route can be triggered by a sensor at any moment, and
-            // editing one is not an atomic thing: rows are added, addresses are typed a digit at a
-            // time, and the list is only consistent again when Save is pressed.  Autonomy firing a
-            // half-built route throws real switches under a moving train.
-            //
-            // Refused rather than merely warned about, and said out loud rather than doing nothing,
-            // because "the menu item did not work" is not something a user should have to guess at.
-            if (isAutonomyBusy())
-            {
-                javax.swing.JOptionPane.showMessageDialog(this,
-                    I18n.t("autolayout.errorCannotEditWhileRunning"));
-                return;
-            }
-
-            String chosen = (String) javax.swing.JOptionPane.showInputDialog(this,
-                I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuNewEditor"),
-                javax.swing.JOptionPane.PLAIN_MESSAGE, null,
-                withNewFirst(this.model.getRouteList()), I18n.t("route.ui.frameNewRoute"));
-
-            if (chosen == null) return;
-
-            // Held so that a captured accessory can find it.  One at a time, as the old editor is.
-            if (this.newRouteEditor != null) this.newRouteEditor.dispose();
-
-            this.newRouteEditor = new RouteEditorFrame(this,
-                I18n.t("route.ui.frameNewRoute").equals(chosen) ? null : chosen);
-
-            this.newRouteEditor.setVisible(true);
-        });
-
-        routesMenu.addSeparator();
-        routesMenu.add(item);
     }
 
     /**
@@ -13646,13 +13606,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         currentRoute.getId()
                     );
 
-                    final String csv = currentRoute.toCSV();
-                    final String conditions = currentRoute.getConditionCSV();
-                    final boolean isEnabled = currentRoute.isEnabled();
-                    final int s88 = currentRoute.getS88();
-                    final Route.s88Triggers trigger = currentRoute.getTriggerType();
-                    final boolean locked = currentRoute.isLocked();
-
                     if (refuseWhileEditorOpen()) return;
 
                     javax.swing.SwingUtilities.invokeLater(() ->
@@ -13679,8 +13632,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             return;
                         }
 
-                        routeEditor = new RouteEditor(title, this, routeName, csv, isEnabled, s88,
-                            trigger, conditions, locked);
+                        // The route itself, rather than its name to look up again: this window is
+                        // handed what it is to show, which is what makes its read-only behaviour
+                        // testable without a control station on the network.
+                        routeEditor = new RouteEditorFrame(this, routeName, currentRoute);
+
+                        routeEditor.setTitle(title);
+                        routeEditor.setVisible(true);
                     });
                 }
             }
@@ -14940,17 +14898,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
 
-                    routeEditor = new RouteEditor(
-                        I18n.t("route.ui.dialogAddNewRoute"),
-                        this,
-                        newName,
-                        "",
-                        false,
-                        0,
-                        Route.s88Triggers.CLEAR_THEN_OCCUPIED,
-                        "",
-                        false
-                    );
+                    routeEditor = new RouteEditorFrame(this, null, null);
+
+                    routeEditor.setTitle(I18n.t("route.ui.dialogAddNewRoute"));
+                    routeEditor.setVisible(true);
                 });
             }
         }).start();
@@ -16960,7 +16911,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Old way to edit track diagrams
      */
     private void openLegacyTrackDiagramEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLegacyTrackDiagramEditorActionPerformed
-        
+
+        // WITHDRAWN.  The menu item is taken off the menu in the constructor and the executable it
+        // unpacked is no longer shipped, so nothing can reach this - see removeLegacyEditorItem.
+        //
+        // The code below is left standing on purpose.  It is the only worked example of unpacking a
+        // bundled tool and running it against the layout folder, and if a native editor is ever
+        // wanted again this is the half of it that was hard.  It will not compile away: the resource
+        // it looks for is gone, so it now fails at the unpack with a message in the log rather than
+        // doing anything, which is the correct behaviour for a path nothing calls.
+        if (true) return;
+
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(

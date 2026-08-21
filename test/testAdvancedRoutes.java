@@ -572,7 +572,7 @@ public class testAdvancedRoutes
     @Test
     public void testCapturingKeepsEveryLocomotivesCommands() throws Exception
     {
-        String filtered = org.traincontrol.gui.RouteEditor.filterConfigCommands(
+        String filtered = org.traincontrol.base.RouteCapture.filterConfigCommands(
             "locspeed,Loc A,50\nlocspeed,Loc B,40\nlocfunc,Loc A,3,1\nlocfunc,Loc A,4,1");
 
         assertTrue(filtered.contains("locspeed,Loc A,50"), "Loc A's speed was dropped:\n" + filtered);
@@ -592,7 +592,7 @@ public class testAdvancedRoutes
     @Test
     public void testCapturingStillCollapsesRepeatedAccessoryWrites() throws Exception
     {
-        String filtered = org.traincontrol.gui.RouteEditor.filterConfigCommands(
+        String filtered = org.traincontrol.base.RouteCapture.filterConfigCommands(
             "Switch 3,straight\nSwitch 4,turn\nSwitch 3,turn");
 
         assertFalse(filtered.contains("Switch 3,straight"),

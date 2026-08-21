@@ -7,7 +7,6 @@ import org.traincontrol.base.RouteCommand;
 import java.util.Arrays;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
-import org.traincontrol.gui.RouteEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
@@ -173,7 +172,7 @@ public class testRouteRoundTrip
         String captured = line(6, false) + "\n" + line(5, true) + "\n"
                         + line(5, false) + "\n" + line(6, true);
 
-        List<String> out = Arrays.asList(RouteEditor.filterConfigCommands(captured).split("\n"));
+        List<String> out = Arrays.asList(org.traincontrol.base.RouteCapture.filterConfigCommands(captured).split("\n"));
 
         assertEquals(out.size(), 2, "one line per drive: " + out);
 
@@ -182,33 +181,46 @@ public class testRouteRoundTrip
     }
 
     /**
-     * A three-way added as a condition can actually be saved.
+     * A three-way written as a condition can actually be saved.
      *
-     * A condition is an expression, not a sequence.  The wizard emitted the pair's two lines joined by
-     * a bare newline - the AND it inserts goes between whole entries, never inside one - and
-     * NodeExpression rejects two adjacent operands, so the first conditional three-way a user added
-     * made the entire condition unsaveable.
+     * A condition is an expression, not a sequence.  The old editor's wizard emitted the pair's two
+     * lines joined by a bare newline - the AND it inserts goes between whole entries, never inside
+     * one - and NodeExpression rejects two adjacent operands, so the first conditional three-way a
+     * user added made the entire condition unsaveable.
+     *
+     * The wizard is gone with the editor it belonged to, and ThreeWaySwitch owns the shape now.  The
+     * test stays, rewritten against it, because what it is really about is the FORMAT: two accessory
+     * lines are a route when a newline separates them and are nothing at all unless an AND does.
+     * That is a property of the two writers agreeing, and it outlived the wizard.
      */
     @Test
     public void testAConditionalThreeWayCanBeParsed() throws Exception
     {
-        // What the wizard used to emit
-        String bare = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", "", "\n");
+        List<RouteCommand> pair = org.traincontrol.base.ThreeWaySwitch.expand(5,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2,
+            org.traincontrol.base.ThreeWaySwitch.Position.LEFT,
+            org.traincontrol.base.ThreeWaySwitch.SETTLE);
+
+        assertEquals(pair.size(), 2, "a three-way is two commands");
+
+        // As a route: one line each, and the order is the whole point
+        String asARoute = pair.get(0).toLine(null) + pair.get(1).toLine(null);
 
         try
         {
-            NodeExpression.fromTextRepresentation(bare, null);
-            fail("two operands with no operator between them must not parse: " + bare);
+            NodeExpression.fromTextRepresentation(asARoute, null);
+            fail("two operands with no operator between them must not parse: " + asARoute);
         }
         catch (Exception expected)
         {
             // the reason the separator has to differ between a route and a condition
         }
 
-        // What it emits now
-        String conditional = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", "", "\nAND ");
+        // As a condition: the same two lines with an AND between them
+        String asACondition = pair.get(0).toLine(null).trim() + "\nAND "
+            + pair.get(1).toLine(null).trim();
 
-        NodeExpression parsed = NodeExpression.fromTextRepresentation(conditional, null);
+        NodeExpression parsed = NodeExpression.fromTextRepresentation(asACondition, null);
 
         assertNotNull(parsed, "the condition must parse");
         assertEquals(NodeExpression.toList(parsed).size(), 2, "both drives belong to the condition");
@@ -220,10 +232,18 @@ public class testRouteRoundTrip
     @Test
     public void testTheRouteFormOfAPairHasNoOperator()
     {
-        String route = RouteEditor.threeWayEntry(RouteEditor.LEFT, 5, "MM2", ",300", "\n");
+        List<RouteCommand> pair = org.traincontrol.base.ThreeWaySwitch.expand(5,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2,
+            org.traincontrol.base.ThreeWaySwitch.Position.LEFT, 300);
+
+        String route = pair.get(0).toLine(null) + pair.get(1).toLine(null);
 
         assertFalse(route.contains("AND"), "a route is executed in order, not evaluated: " + route);
-        assertEquals(route.split("\n").length, 2, "still two lines: " + route);
-        assertTrue(route.split("\n")[0].endsWith(",300"), "the pair's delay sits on its first line");
+
+        assertEquals(route.trim().split("\n").length, 2, "still two lines: " + route);
+
+        assertTrue(route.trim().split("\n")[0].endsWith(",300"),
+            "the pair's delay sits on its first line, which is what holds the second motor off "
+            + "until the first has finished: " + route);
     }
 }

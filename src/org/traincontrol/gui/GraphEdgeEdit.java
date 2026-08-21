@@ -68,7 +68,7 @@ public class GraphEdgeEdit extends javax.swing.JFrame
     public void appendCommand(String command)
     {
         this.configCommands.setText(this.configCommands.getText().trim() + "\n" + command);
-        this.configCommands.setText(RouteEditor.filterConfigCommands(this.configCommands.getText()));
+        this.configCommands.setText(org.traincontrol.base.RouteCapture.filterConfigCommands(this.configCommands.getText()));
     }
         
     public final void updateValues()
