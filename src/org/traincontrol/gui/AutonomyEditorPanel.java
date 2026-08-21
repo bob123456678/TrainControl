@@ -1152,12 +1152,7 @@ public class AutonomyEditorPanel extends JPanel
             // worth what it cost: there are only three of them, they are the only reason to
             // right-click a link at all, and a submenu put each of them two clicks away.
             //
-            // Naming first, because a link is FOUND by its name: the pairing list below offers every
-            // other link on the railway by name, and an unnamed one shows there as a coordinate pair
-            // nobody recognises.  So it is the first thing done to a new link and the thing done most
-            // often.
-            connections.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
-
+            // Naming has gone up again, out of Connections altogether - see below.
             connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
@@ -1168,6 +1163,22 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         menu.add(connections);
+
+        // Naming a link, on the menu itself rather than inside Connections.
+        //
+        // A link is FOUND by its name: the pairing list offers every other link on the railway by
+        // name, and an unnamed one shows there as a coordinate pair nobody recognises.  So it is the
+        // first thing done to a new link and the thing done most often - and until now it was the
+        // one thing on this menu that had to be gone looking for.
+        //
+        // Not inside Connections either, which is where it was: what a link is CALLED is not a
+        // connection, it is the label on the thing being connected.  Beside Set Length, which is the
+        // other property of the square that has nothing to do with what joins to it.
+        if (component != null && (component.isLink()
+            || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
+        {
+            menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
+        }
 
         menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
