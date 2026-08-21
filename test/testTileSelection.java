@@ -260,4 +260,74 @@ public class testTileSelection
         assertEquals(selection.size(), 41,
             "the overlap was counted twice, which would make a group operation act on a square twice");
     }
+
+    /**
+     * The grip sits at the top right of what is picked.
+     *
+     * With picking switched on every drag draws a new box - that is what the mode is - so the
+     * "start a drag on a picked square" gesture could not be reached without turning the mode off
+     * first, which works and which nobody would guess.  One square of the selection is a grip
+     * instead, and where it is has to be somewhere a user can predict.
+     */
+    @Test
+    public void testTheGripIsTheTopRightCorner()
+    {
+        TileSelection selection = new TileSelection();
+
+        selection.addRectangle(3, 7, 9, 11);
+
+        assertEquals(selection.handle()[0], 9, "the grip is not at the right-hand edge");
+        assertEquals(selection.handle()[1], 7, "nor at the top");
+    }
+
+    /**
+     * And it does not care which corner the box was dragged out from.
+     *
+     * A rectangle dragged up and to the left is the same rectangle, so its grip is in the same place
+     * - otherwise the control moves depending on how the selection happened to be made, which is the
+     * one thing a grip must not do.
+     */
+    @Test
+    public void testTheGripDoesNotDependOnHowTheBoxWasDrawn()
+    {
+        TileSelection forwards = new TileSelection();
+        TileSelection backwards = new TileSelection();
+
+        forwards.addRectangle(3, 7, 9, 11);
+        backwards.addRectangle(9, 11, 3, 7);
+
+        assertEquals(backwards.handle()[0], forwards.handle()[0]);
+        assertEquals(backwards.handle()[1], forwards.handle()[1]);
+    }
+
+    /**
+     * An L-shaped selection has an empty corner, and the grip goes there anyway.
+     *
+     * The corner of the BOX rather than the top right picked square: being able to grab the corner
+     * of the rectangle you can see is worth more than the grip always sitting on something chosen,
+     * and every square in the editor answers a drag whether or not it holds track.
+     */
+    @Test
+    public void testTheGripIsTheCornerOfTheBoxNotOfTheSquares()
+    {
+        TileSelection selection = new TileSelection();
+
+        selection.addRectangle(0, 0, 0, 4);
+        selection.addRectangle(0, 4, 4, 4);
+
+        assertFalse(selection.contains(4, 0), "the test needs a selection with an empty corner");
+
+        assertEquals(selection.handle()[0], 4);
+        assertEquals(selection.handle()[1], 0);
+    }
+
+    /**
+     * Nothing picked is no grip, rather than a grip at nowhere.
+     */
+    @Test
+    public void testNothingPickedHasNoGrip()
+    {
+        assertNull(new TileSelection().handle(),
+            "a grip drawn with nothing picked would be a control that moves nothing");
+    }
 }

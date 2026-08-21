@@ -103,6 +103,15 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(120, 205, 155);
 
     /**
+     * The grip at the top right of a selection.  Orange against the green of the selection itself,
+     * because it is a different thing to do rather than more of the same thing.
+     */
+    private static final Color COMPONENT_BORDER_HANDLE_COLOR = new Color(230, 120, 0);
+
+    /** Thicker than the selection outline, so the grip reads as a grip and not as a stray tile. */
+    private static final int SELECTION_HANDLE_BORDER_WIDTH = 4;
+
+    /**
      * The squares picked out for a group operation.
      *
      * Selection is a STATE rather than a key held down, which is the whole point of it: dragging a
@@ -649,7 +658,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 
             if (lastHoveredX != -1 && lastHoveredY != -1)
             {
-                if (this.hasToolFlag())
+                if (isSelectionHandle(label))
+                {
+                    // The four-way arrow, which is what a grip looks like everywhere else
+                    label.setCursor(new Cursor(Cursor.MOVE_CURSOR));
+                }
+                else if (this.hasToolFlag())
                 {
                     label.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 }
@@ -662,6 +676,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     this.clearBordersFromChildren(this.grid.getContainer());
                     this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
+
+                    // The hover clears every border on the page, which took the picked squares and
+                    // the grip with it - so moving the pointer across a selection erased the one
+                    // control that can move it.  Drawn back, after.
+                    if (!this.selection.isEmpty()) this.refreshSelectionBorders();
                 });
             }
         }
@@ -674,12 +693,60 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private LayoutLabel dragSource = null;
 
+    /**
+     * The square that drags the whole selection: the top right corner of what is picked.
+     *
+     * With picking switched on, EVERY drag draws a new box - that is what the mode is - so the
+     * "start a drag on a picked square and the group moves" gesture could not be reached at all
+     * without turning the mode off first.  Which works, and which nobody would guess.
+     *
+     * So one square of the selection is a grip instead.  Top right rather than top left, because a
+     * selection is usually dragged out left-to-right and the pointer is already over there when the
+     * button comes up; and a corner rather than the middle, because the middle of a selection is
+     * where its contents are and the grip has to be somewhere the user is not aiming at anyway.
+     *
+     * The corner of the BOUNDING BOX, which need not be a picked square itself - an L-shaped
+     * selection has an empty corner.  Being able to grab the corner of the box you can see is worth
+     * more than the grip always sitting on something chosen.
+     *
+     * @return the square, or null when nothing is picked
+     */
+    private int[] selectionHandle()
+    {
+        return this.selection.handle();
+    }
+
+    /**
+     * @param label a square
+     * @return whether that square is the grip
+     */
+    private boolean isSelectionHandle(LayoutLabel label)
+    {
+        if (label == null) return false;
+
+        int[] handle = selectionHandle();
+
+        return handle != null && getX(label) == handle[0] && getY(label) == handle[1];
+    }
+
     public void beginDrag(MouseEvent e, LayoutLabel label)
     {
         // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not
         // rearranging their railway, and a drag that quietly relaid the diagram would be the worst kind
         // of accident: silent, and to the thing everything else is derived from.
         if (isAutonomyMode()) return;
+
+        // The grip comes first, or picking mode would swallow it.
+        //
+        // While the mode is on every drag draws a box, which is what the mode is for - so this one
+        // square is the exception, and it is the only way to move a group without first turning the
+        // mode off.  Checked before the box branch rather than after, because the box branch returns.
+        if (label != null && isSelectionHandle(label))
+        {
+            beginGroupDrag(label);
+
+            return;
+        }
 
         // Shift held: this is a box, not a move.  Recorded and otherwise ignored - nothing is picked
         // until the button comes up, so a shift-drag that changes its mind can simply be released
@@ -707,18 +774,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (label != null && !this.selection.isEmpty()
             && this.selection.contains(getX(label), getY(label)))
         {
-            this.dragSource = label;
-            this.groupDragging = true;
-
-            ghostLabel = new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size()));
-            ghostLabel.setOpaque(true);
-            ghostLabel.setBackground(Color.WHITE);
-            ghostLabel.setBorder(new LineBorder(COMPONENT_BORDER_SELECTED_COLOR, 2));
-
-            dragWindow = new JWindow();
-            dragWindow.getContentPane().add(ghostLabel);
-            dragWindow.pack();
-            dragWindow.setVisible(false);
+            beginGroupDrag(label);
 
             return;
         }
@@ -757,6 +813,25 @@ public class LayoutEditor extends PositionAwareJFrame
             dragWindow.pack();
             dragWindow.setVisible(false);
         }
+    }
+
+    /**
+     * Picks the whole selection up, from a square inside it or from its grip.
+     */
+    private void beginGroupDrag(LayoutLabel label)
+    {
+        this.dragSource = label;
+        this.groupDragging = true;
+
+        ghostLabel = new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size()));
+        ghostLabel.setOpaque(true);
+        ghostLabel.setBackground(Color.WHITE);
+        ghostLabel.setBorder(new LineBorder(COMPONENT_BORDER_SELECTED_COLOR, 2));
+
+        dragWindow = new JWindow();
+        dragWindow.getContentPane().add(ghostLabel);
+        dragWindow.pack();
+        dragWindow.setVisible(false);
     }
 
     public void updateDrag(MouseEvent e, LayoutLabel label)
@@ -1710,7 +1785,36 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (label != null) this.highlightLabel(label, COMPONENT_BORDER_LANDING_COLOR);
         }
+
+        // The grip, last of all and drawn thicker, so it is visible even where it sits on a square
+        // already outlined as picked.  A control nobody can see is a control nobody uses, and while
+        // picking is on this is the only way to move what has been picked.
+        int[] handle = selectionHandle();
+
+        LayoutLabel grip = handle == null || !this.landingSelection.isEmpty()
+            ? null : this.grid.getValueAt(handle[0], handle[1]);
+
+        // The square that WAS the grip stops saying so.  The corner moves as squares are added to
+        // the selection, and a tooltip left behind on the old one offers a drag that would do
+        // something else entirely.
+        if (this.handleLabel != null && this.handleLabel != grip)
+        {
+            this.handleLabel.setToolTipText(null);
+        }
+
+        this.handleLabel = grip;
+
+        if (grip != null)
+        {
+            grip.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_HANDLE_COLOR,
+                SELECTION_HANDLE_BORDER_WIDTH));
+
+            grip.setToolTipText(I18n.t("layout.ui.tooltipSelectionHandle"));
+        }
     }
+
+    /** The square currently drawn as the grip, so it can be told when it stops being one. */
+    private LayoutLabel handleLabel;
 
     /**
      * Turns picking-by-drag on or off.

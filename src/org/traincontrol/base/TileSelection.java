@@ -181,6 +181,29 @@ public final class TileSelection
      *
      * @return the bounds, or null when nothing is picked
      */
+    /**
+     * The square that drags the whole selection: the top right corner of its bounding box.
+     *
+     * Here rather than in the editor because it is a rule about a selection rather than about a
+     * window, and because a rule that decides where a control appears is worth being able to test
+     * without opening one.
+     *
+     * The corner of the BOX, which need not be a chosen square - an L-shaped selection has an empty
+     * corner.  Being able to grab the corner of the rectangle you can see is worth more than the grip
+     * always sitting on something picked.
+     *
+     * Top RIGHT: a selection is usually dragged out left to right, so the pointer is already over
+     * there when the button comes up.
+     *
+     * @return the grip's x and y, or null when nothing is picked
+     */
+    public int[] handle()
+    {
+        int[] box = bounds();
+
+        return box == null ? null : new int[]{box[2], box[1]};
+    }
+
     public int[] bounds()
     {
         if (chosen.isEmpty()) return null;
