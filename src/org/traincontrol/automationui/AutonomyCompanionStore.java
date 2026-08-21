@@ -1143,6 +1143,146 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Follows tiles being moved on the diagram.
+     *
+     * Everything here is keyed by SQUARE, so a tile that moves leaves its whole setup behind at the
+     * old coordinates - where there is now no track.  The next reconcile finds a station on a square
+     * with no sensor and drops it, and a station that took ten minutes to name, face, restrict and
+     * measure is gone because somebody nudged a tile one square left.  The caption alone was
+     * followed, which made the loss look arbitrary: the NAME moved and the station under it did not.
+     *
+     * The whole set in one call, not one tile at a time.  A group dragged one square right has every
+     * source square landing on another source square, so moving them in sequence makes each write
+     * destroy the data the next read was going to need - the same trap the captions hit, where
+     * dragging left happened to work and dragging right ate every other one.
+     *
+     * Two different things happen to a key.  A square that MOVES takes what is written about it; a
+     * square that is only NAMED by something else - a caption pointing at a station, a station's
+     * protecting signal, a portal's partner - is repointed where it stands.  Doing only the first
+     * leaves half the setup naming the square the tile used to be on.
+     *
+     * A tile moved onto a square that is not itself moving replaces what was there, which is what
+     * the diagram does too.
+     *
+     * @param moves each square being vacated, and where it is going
+     */
+    public void moveTiles(Map<TileKey, TileKey> moves)
+    {
+        if (moves == null || moves.isEmpty()) return;
+
+        Map<String, String> byKey = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
+        {
+            if (move.getKey() == null || move.getValue() == null) continue;
+
+            if (move.getKey().equals(move.getValue())) continue;
+
+            byKey.put(move.getKey().toString(), move.getValue().toString());
+        }
+
+        if (byKey.isEmpty()) return;
+
+        moveKeys(pointNames, byKey);
+        moveKeys(tileLengths, byKey);
+        moveKeys(tileDirections, byKey);
+        moveKeys(barredArrivals, byKey);
+        moveKeys(linkNames, byKey);
+
+        // Key and value both name a square, so both follow.  The value is REPOINTED rather than
+        // moved: a caption on a square that stayed put, naming a station that moved, still names that
+        // station.
+        moveValues(stationSignals, byKey);
+        moveKeys(stationSignals, byKey);
+
+        moveValues(portals, byKey);
+        moveKeys(portals, byKey);
+
+        moveValues(captions, byKey);
+        moveKeys(captions, byKey);
+
+        moveMembers(stations, byKey);
+        moveMembers(disabledPortals, byKey);
+
+        // The configurations key by tile as well - setPointProperty and captureFromLayout both write
+        // "page:x,y" - and that is where the facings, the placements, the homes, the termini and the
+        // maximum lengths live.  See renamePage, which learned this the same way.
+        for (JSONObject configuration : configurations.values())
+        {
+            if (!configuration.has("points")) continue;
+
+            JSONObject points = configuration.getJSONObject("points");
+            JSONObject moved = new JSONObject();
+
+            // The ones staying put first, so a tile arriving on a square that is not moving replaces
+            // what was there rather than the other way round.
+            for (String key : points.keySet())
+            {
+                if (!byKey.containsKey(key)) moved.put(key, points.get(key));
+            }
+
+            for (String key : points.keySet())
+            {
+                if (byKey.containsKey(key)) moved.put(byKey.get(key), points.get(key));
+            }
+
+            configuration.put("points", moved);
+        }
+    }
+
+    /**
+     * Rewrites the keys of a map, moved keys winning over ones that merely stayed.
+     */
+    private static <T> void moveKeys(Map<String, T> map, Map<String, String> moves)
+    {
+        Map<String, T> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            if (!moves.containsKey(entry.getKey())) out.put(entry.getKey(), entry.getValue());
+        }
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            if (moves.containsKey(entry.getKey())) out.put(moves.get(entry.getKey()), entry.getValue());
+        }
+
+        map.clear();
+        map.putAll(out);
+    }
+
+    /**
+     * Repoints values that name a square that moved.  In place: the entry stays where it is.
+     */
+    private static void moveValues(Map<String, String> map, Map<String, String> moves)
+    {
+        for (Map.Entry<String, String> entry : map.entrySet())
+        {
+            String moved = moves.get(entry.getValue());
+
+            if (moved != null) entry.setValue(moved);
+        }
+    }
+
+    /**
+     * The same for a set of squares.
+     */
+    private static void moveMembers(Set<String> set, Map<String, String> moves)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String key : set)
+        {
+            String moved = moves.get(key);
+
+            out.add(moved == null ? key : moved);
+        }
+
+        set.clear();
+        set.addAll(out);
+    }
+
+    /**
      * What a reconciliation found.  Nothing here is acted on silently: the whole point is that a diagram
      * changing under a setup should be visible.
      */

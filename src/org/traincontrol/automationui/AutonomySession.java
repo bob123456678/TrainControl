@@ -1064,6 +1064,59 @@ public class AutonomySession
     }
 
     /**
+     * Follows tiles being moved on the diagram, with everything written about them.
+     *
+     * The diagram editor calls this when it moves track.  Only the CAPTION used to follow, so a
+     * station whose sensor was nudged one square kept its name floating over the new square and lost
+     * everything else it was - the station designation, its facings, its arrival restrictions, its
+     * length, its placement - because all of those are keyed by square and the square had changed.
+     * The next reconcile then found a station on a square with no sensor and dropped it for good.
+     *
+     * The whole group at once: see AutonomyCompanionStore.moveTiles for why one at a time is unsafe.
+     *
+     * @param moves each square being vacated, and where it is going
+     * @return true when anything moved
+     */
+    public boolean moveTiles(Map<TileKey, TileKey> moves)
+    {
+        if (moves == null || moves.isEmpty()) return false;
+
+        boolean any = false;
+
+        for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
+        {
+            if (move.getKey() != null && move.getValue() != null
+                && !move.getKey().equals(move.getValue()))
+            {
+                any = true;
+            }
+        }
+
+        if (!any) return false;
+
+        store.moveTiles(moves);
+
+        touched();
+
+        // The graph is built from the squares, so it is now describing the old ones
+        rebuild();
+
+        return true;
+    }
+
+    /**
+     * One tile, for the single-tile drag.
+     */
+    public boolean moveTile(TileKey from, TileKey to)
+    {
+        Map<TileKey, TileKey> one = new LinkedHashMap<>();
+
+        one.put(from, to);
+
+        return moveTiles(one);
+    }
+
+    /**
      * Moves a station's caption from one square to another, for the track diagram editor.
      *
      * Dragging a tile carries whatever was written on it.  Without this, rearranging a diagram meant

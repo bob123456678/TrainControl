@@ -1539,15 +1539,20 @@ public class LayoutEditor extends PositionAwareJFrame
             
             layout.addComponent(newComponent, getX(destLabel), getY(destLabel));
 
-            // Whatever autonomy had written on that square goes with it.
+            // Everything autonomy had written about that square goes with it.
             //
-            // A caption is not part of the diagram - it belongs to the setup, keyed by the square
-            // it sits on - so moving the tile underneath one used to leave it behind, pointing at
-            // track that is no longer there.  On a layout being rearranged that is every label,
-            // replaced by hand, which is most of the reason not to rearrange one.
+            // None of it is part of the diagram - the station designation, the name, the facings, the
+            // arrival restrictions, the length, the caption - and every one of them is keyed by the
+            // SQUARE, so moving the tile used to leave the lot behind on coordinates that now hold no
+            // track.  The next reconcile then found a station on a square with no sensor and dropped
+            // it, which is a setup destroyed by nudging a tile one square left.
+            //
+            // The caption alone used to follow, which was worse than nothing following: the name
+            // moved and the station under it did not, so the diagram looked right and the setup was
+            // in pieces.
             //
             // Only on a MOVE.  Copying a tile does not copy what was written about the square it
-            // came from: two squares cannot both be where one station name is shown.
+            // came from: two squares cannot both be one station.
             if (move && lastX >= 0 && lastY >= 0)
             {
                 org.traincontrol.automationui.AutonomySession autonomy =
@@ -1555,7 +1560,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 if (autonomy != null)
                 {
-                    autonomy.moveCaption(
+                    autonomy.moveTile(
                         new org.traincontrol.automationui.TileGraph.TileKey(
                             layout.getName(), lastX, lastY),
                         new org.traincontrol.automationui.TileGraph.TileKey(
@@ -1923,35 +1928,38 @@ public class LayoutEditor extends PositionAwareJFrame
 
             org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
-            // Captions read first too, for exactly the reason the tiles are.
+            // What autonomy holds about these squares moves with them, ALL of it and all at once.
             //
-            // moveCaption reads the live store and writes to it, so calling it per tile inside the
-            // write loop below made a group that overlaps its own footprint eat itself: two captioned
-            // squares side by side, dragged one to the right, and the first move overwrote the second
-            // square's caption before the second move came to read it - so one caption travelled two
-            // squares and the other was destroyed.  Dragging LEFT happened to work, which made it look
+            // Not per tile inside the loops below.  A group dragged one square right has every source
+            // square landing on another source square, so a per-tile move reads a store that the
+            // previous iteration has already written - which made the group eat itself: two set-up
+            // squares side by side, dragged right, and the first move overwrote the second square
+            // before the second came to read it.  Dragging LEFT happened to work, which made it look
             // intermittent rather than wrong.
-            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> carriedCaptions =
-                new java.util.ArrayList<>();
+            //
+            // And the whole setup, not the caption alone.  The station designation, the name, the
+            // facings, the arrival restrictions, the length and the placement are all keyed by
+            // SQUARE, so a moved tile used to leave every one of them behind on coordinates that now
+            // hold no track - and the next reconcile dropped the station for good.
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                org.traincontrol.automationui.TileGraph.TileKey> moving =
+                new java.util.LinkedHashMap<>();
 
             for (org.traincontrol.base.TileSelection.At at : from)
             {
-                carriedCaptions.add(autonomy == null ? null
-                    : autonomy.getCaptionTarget(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), at.getX(), at.getY())));
+                moving.put(
+                    new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), at.getX(), at.getY()),
+                    new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), at.getX() + dx, at.getY() + dy));
             }
+
+            if (autonomy != null) autonomy.moveTiles(moving);
 
             // Clear
             for (org.traincontrol.base.TileSelection.At at : from)
             {
                 layout.addComponent(null, at.getX(), at.getY());
-
-                // The caption goes with the tile, so the square it is leaving keeps nothing
-                if (autonomy != null)
-                {
-                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), at.getX(), at.getY()));
-                }
             }
 
             // Write
@@ -1971,23 +1979,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
 
                 layout.addComponent(carrying, toX, toY);
-
-                // Written from what was READ, not moved from a store the previous iterations have
-                // already changed.  A destination that carried a caption of its own loses it: the
-                // square now holds different track, and a caption that outlived the tile it described
-                // is the hazard the delete path exists to prevent.
-                if (autonomy != null)
-                {
-                    org.traincontrol.automationui.TileGraph.TileKey landing =
-                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), toX, toY);
-
-                    autonomy.forgetCaptionsAt(landing);
-
-                    if (carriedCaptions.get(i) != null)
-                    {
-                        autonomy.setCaption(landing, carriedCaptions.get(i));
-                    }
-                }
             }
 
             // The selection travels with the tiles, so a group can be nudged twice
