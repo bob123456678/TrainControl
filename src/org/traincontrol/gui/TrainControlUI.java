@@ -1691,6 +1691,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autonomyViewerPanel = null;
         activeDiagramConfiguration = null;
 
+        autonomyTileMenus = null;
+        autonomyTileMenusFor = null;
+
         mountAutonomyControls();
     }
 
@@ -2102,6 +2105,98 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.refreshReturnHomeButton();
         this.executeTimetable.setEnabled(true);
         this.gracefulStop.setEnabled(false);
+    }
+
+    /**
+     * The autonomy editor, held without a window, only so its right-click menu can be borrowed.
+     *
+     * The menu that square offers - station, facing, arrivals, connections, lengths, the lot - is four
+     * hundred lines of items hanging off thirty private helpers on that panel.  Copying it into the
+     * diagram's own menu would be two copies to keep in step, and they would not stay in step; asking
+     * the panel that owns it is one copy, and anything added to the editor appears here the same day.
+     *
+     * Never shown, never laid out.  Built lazily, because most sessions never right-click a square,
+     * and rebuilt whenever the session behind it is replaced - a panel still holding the old one would
+     * quietly edit a setup nobody is looking at.
+     */
+    private AutonomyEditorPanel autonomyTileMenus;
+
+    private org.traincontrol.automationui.AutonomySession autonomyTileMenusFor;
+
+    /**
+     * The autonomy setup menu for one square of the track diagram.
+     *
+     * Saved as it goes, unlike in the editor.  There is no Save button on this window and no Cancel
+     * either, so an edit that waited would sit in memory with nothing to commit it and nothing to say
+     * so - and the rest of this diagram's right-click menu already works the same way.
+     *
+     * @param tile the square, on its page
+     * @return the menu, or null when there is no setup to edit or the square has nothing to offer
+     */
+    public javax.swing.JPopupMenu buildAutonomyTileMenu(
+        org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (tile == null || !this.isLocalLayout()) return null;
+
+        final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return null;
+
+        if (autonomyTileMenus == null || autonomyTileMenusFor != session)
+        {
+            autonomyTileMenusFor = session;
+
+            // Built before the panel, and switched on after it.
+            //
+            // The panel refreshes itself in its own constructor and the refresh is what reports a
+            // change - so an unguarded runnable saved the setup the first time anybody right-clicked a
+            // square, before they had chosen anything.  Writing on open is how an edit somebody
+            // abandoned elsewhere gets committed by a menu they only looked at.
+            final boolean[] listening = { false };
+
+            autonomyTileMenus = new AutonomyEditorPanel(session, null, () ->
+            {
+                if (!listening[0]) return;
+
+                try
+                {
+                    session.save();
+                }
+                catch (java.io.IOException e)
+                {
+                    // The edit stands in the session either way; only the record of it is at risk
+                    this.model.log(e);
+                }
+
+                refreshStaticAutonomyLayer();
+                updateVisiblePoints();
+            });
+
+            autonomyTileMenus.setMenuOnly(true);
+
+            // This window, so a prompt from a borrowed menu comes up in front of the diagram it is
+            // about rather than behind it.
+            autonomyTileMenus.setDialogOwner(this);
+
+            // The two items that want a second click hand themselves to the editor instead.
+            autonomyTileMenus.setOnJumpToPage(where -> openAutonomyEditor(where));
+
+            // Asked for on every use rather than held, for the same reason the editor does it: loading
+            // a configuration replaces the Layout wholesale.
+            autonomyTileMenus.setLayoutSource(() -> this.model.getAutoLayout());
+
+            autonomyTileMenus.setLocomotiveNames(() ->
+                this.model == null ? new java.util.ArrayList<String>() : this.model.getLocList());
+
+            // Writing a station name onto a square changes the tile art, so the diagram is rebuilt
+            // rather than repainted.
+            autonomyTileMenus.setOnDiagramChanged(() ->
+                javax.swing.SwingUtilities.invokeLater(() -> repaintLayout()));
+
+            listening[0] = true;
+        }
+
+        return autonomyTileMenus.buildTileMenu(tile, null);
     }
 
     /**
@@ -2704,6 +2799,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The SQUARE, not its name.  Everything downstream of this resolves a station by where it is,
         // which is what a caption points at and what a Point is derived from.
         return tile;
+    }
+
+    /**
+     * The square that was clicked, named the way autonomy names squares.
+     *
+     * Not autonomyStationAt: that one answers "is there a station here", and returns nothing over
+     * plain track, over a page with the overlay switched off, and before any configuration is loaded.
+     * All three are squares somebody can right-click, and all three are squares whose SETUP they may
+     * want to change - the last two especially, since not having a configuration yet is the commonest
+     * reason to go looking for the setup menu at all.
+     *
+     * @param onPage the page the clicked label belongs to, or null for whichever is showing
+     * @param x
+     * @param y
+     * @return the key, or null when there is no page to name it on
+     */
+    public org.traincontrol.automationui.TileGraph.TileKey autonomyTileAt(
+        String onPage, int x, int y)
+    {
+        Object showing = onPage != null ? onPage : this.LayoutList.getSelectedItem();
+
+        if (showing == null) return null;
+
+        return new org.traincontrol.automationui.TileGraph.TileKey(showing.toString(), x, y);
     }
 
     /**
@@ -17262,7 +17381,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // through the door.  The menu decides what it has to offer; an empty one is not shown.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null);
+                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null, null);
 
                 if (menu.getComponentCount() > 0)
                 {

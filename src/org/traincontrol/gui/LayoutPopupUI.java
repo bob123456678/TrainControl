@@ -212,7 +212,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             // a layout has been built yet
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
+                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null, null);
 
                 if (menu.getComponentCount() > 0)
                 {

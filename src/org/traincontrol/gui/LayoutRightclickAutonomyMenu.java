@@ -26,6 +26,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
     private final org.traincontrol.automationui.TileGraph.TileKey station;
 
+    /**
+     * The square the pointer was actually over, station or not.
+     *
+     * Kept apart from the station above because they answer different questions.  Everything about a
+     * RUNNING layout - where this train may go, which locomotive is here - is about a station, and
+     * there is nothing to say over plain track.  The setup is about the square: whether it should
+     * become a station, which way trains may run through it, how long it is.  Sharing one field meant
+     * the setup menu could only be reached from squares that were already set up, which is exactly
+     * backwards.
+     */
+    private final org.traincontrol.automationui.TileGraph.TileKey here;
+
     private final org.traincontrol.automationui.AutonomySession session;
     
     /**
@@ -33,12 +45,15 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      *        rather than a name: a station is several Points now and none of them is called what the
      *        caption says, so resolving one by its text found nothing and the menu silently lost every
      *        item below the lookup.
+     * @param here the square that was clicked, or null where the click was not on one
      */
     public LayoutRightclickAutonomyMenu(TrainControlUI ui,
-        org.traincontrol.automationui.TileGraph.TileKey station)
+        org.traincontrol.automationui.TileGraph.TileKey station,
+        org.traincontrol.automationui.TileGraph.TileKey here)
     {
         this.ui = ui;
         this.station = station;
+        this.here = here;
         this.session = ui.getAutonomySession();
 
         JMenuItem menuItem;
@@ -440,15 +455,38 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * somebody watching trains move invites a click that will be turned down, and a menu full of
      * things that say no is worse than a menu that waited.
      */
+    /**
+     * Everything the autonomy editor offers on this square, folded into this menu.
+     *
+     * The editor's menu rather than the window's Autonomy menu.  The one in the menu bar is about the
+     * setup as a whole - configurations, imports, delete everything - and none of it has anything to
+     * say about the square being pointed at.  What somebody right-clicking a platform wants is what
+     * the editor gives them when they right-click the same platform there: make this a station, face
+     * the train this way, bar that arrival, set the length.  Borrowed from the panel that builds it,
+     * so the two can never drift.
+     *
+     * Under a parent entry, because it is a long menu and most right-clicks on a running layout are
+     * about sending a train somewhere, not about changing the track it runs on.
+     *
+     * Nothing while autonomy is running: the setup describes track that trains are on right now, and
+     * an editor open over it is already refused for the same reason.
+     */
     private void addSetupMenu()
     {
-        if (ui.isAutonomyBusy()) return;
+        if (here == null || ui.isAutonomyBusy()) return;
 
-        AutonomyMenu setup = new AutonomyMenu(ui);
+        JPopupMenu built = ui.buildAutonomyTileMenu(here);
 
-        if (!setup.isEnabled()) return;
+        if (built == null || built.getComponentCount() == 0) return;
 
-        setup.setText(I18n.t("autosetup.ui.menuAutonomySetup"));
+        javax.swing.JMenu setup = new javax.swing.JMenu(I18n.t("autosetup.ui.menuAutonomySetup"));
+
+        // getComponents hands back a copy, so moving each one out from under the popup as we go does
+        // not walk the array we are reading.
+        for (java.awt.Component part : built.getComponents())
+        {
+            setup.add(part);
+        }
 
         if (getComponentCount() > 0) addSeparator();
 

@@ -706,7 +706,28 @@ public class AutonomyEditorPanel extends JPanel
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
         java.awt.Component invoker, int x, int y)
     {
-        if (tile == null || session.getGraph() == null) return;
+        javax.swing.JPopupMenu menu = buildTileMenu(tile, component);
+
+        if (menu != null) menu.show(invoker, x, y);
+    }
+
+    /**
+     * The same menu, built and handed back rather than shown.
+     *
+     * Split off so the main window's own right-click menu can carry it: the track diagram there is
+     * the same diagram, and being sent to a different window to say "this platform is a station" is
+     * the round trip the whole surface exists to remove.  The items are identical - one menu, built
+     * once, so the two places can never drift into offering different things.
+     *
+     * @param tile which square
+     * @param component what is drawn there, or null to read it off the page
+     * @return the menu, or null where this square has nothing to offer
+     */
+    public javax.swing.JPopupMenu buildTileMenu(TileKey tile, LayoutDiagramComponent component)
+    {
+        if (tile == null || session == null || session.getGraph() == null) return null;
+
+        if (component == null) component = componentAt(tile);
 
         // Right-clicking abandons whatever gesture was in progress.  Opening a menu is how somebody
         // says "not that, this instead", and a half-finished path test that stayed armed underneath it
@@ -722,8 +743,7 @@ public class AutonomyEditorPanel extends JPanel
         // find the page" and every square on it would offer to become a station label.
         if (pageOf(tile) != null && (onPage == null || onPage.isText()))
         {
-            showTextMenu(tile, onPage, invoker, x, y);
-            return;
+            return buildTextMenu(tile, onPage);
         }
 
         // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu
@@ -731,7 +751,7 @@ public class AutonomyEditorPanel extends JPanel
         if (isIgnored(tile))
         {
             say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
-            return;
+            return null;
         }
 
         // Right-clicking anywhere in a run opens the run's own menu, so the greyed tiles are not dead
@@ -1099,6 +1119,8 @@ public class AutonomyEditorPanel extends JPanel
 
         connections.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
         {
+            if (needsTheGrid(target)) return;
+
             oneWayFrom = target;
             waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
         }));
@@ -1164,7 +1186,7 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
-        menu.show(invoker, x, y);
+        return menu;
     }
 
     /**
@@ -1319,6 +1341,15 @@ public class AutonomyEditorPanel extends JPanel
     private void showTextMenu(final TileKey tile, final LayoutDiagramComponent component,
         java.awt.Component invoker, int x, int y)
     {
+        buildTextMenu(tile, component).show(invoker, x, y);
+    }
+
+    /**
+     * The text-square menu, built and handed back.  See buildTileMenu.
+     */
+    private javax.swing.JPopupMenu buildTextMenu(final TileKey tile,
+        final LayoutDiagramComponent component)
+    {
         menuTarget = tile;
 
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
@@ -1353,7 +1384,7 @@ public class AutonomyEditorPanel extends JPanel
             menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyCaption(tile, null)));
         }
 
-        menu.show(invoker, x, y);
+        return menu;
     }
 
     /**
@@ -1523,7 +1554,50 @@ public class AutonomyEditorPanel extends JPanel
     {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
-        return window == null ? this : window;
+        if (window != null) return window;
+
+        // A panel held only to build menus is in no window at all, and a dialog parented on it lands
+        // wherever the platform feels like putting it - which on Windows is behind the main window,
+        // where a modal prompt that has to be answered is invisible and the application looks hung.
+        return dialogOwner == null ? this : dialogOwner;
+    }
+
+    /**
+     * Where to parent dialogs when this panel is not in a window of its own.
+     */
+    private java.awt.Component dialogOwner;
+
+    public void setDialogOwner(java.awt.Component dialogOwner)
+    {
+        this.dialogOwner = dialogOwner;
+    }
+
+    /**
+     * Whether this panel exists only to build menus, with no diagram of its own behind it.
+     *
+     * Two items on the tile menu ask for a SECOND click - one-way running wants the far end of the
+     * run, a protecting signal wants the signal - and the click they wait for is one the editor's own
+     * grid routes here.  Borrowed by the main window's diagram, those clicks go somewhere else
+     * entirely, so the prompt would sit in a banner nobody is looking at and the gesture would never
+     * finish.  They open the editor at that square instead, which is where the job can be done.
+     */
+    private boolean menuOnly;
+
+    public void setMenuOnly(boolean menuOnly)
+    {
+        this.menuOnly = menuOnly;
+    }
+
+    /**
+     * @return whether this had to be handed to the editor, and so must not be started here
+     */
+    private boolean needsTheGrid(TileKey tile)
+    {
+        if (!menuOnly) return false;
+
+        if (onJumpToPage != null) onJumpToPage.accept(tile);
+
+        return true;
     }
 
     /**
@@ -2109,6 +2183,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (answer == 0)
         {
+            if (needsTheGrid(station)) return;
+
             // Waits for a click.  Nothing else about the editor changes except that everything which is
             // not a signal goes grey, which is what makes "click the signal" a thing that can be done
             // rather than a thing that has to be searched for.

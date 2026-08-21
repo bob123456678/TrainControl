@@ -233,7 +233,7 @@ public class LayoutGrid
                                     javax.swing.SwingUtilities.invokeLater(() ->
                                     {
                                         LayoutRightclickAutonomyMenu menu =
-                                            new LayoutRightclickAutonomyMenu(ui, station);
+                                            new LayoutRightclickAutonomyMenu(ui, station, station);
 
                                         menu.show(e.getComponent(), e.getX(), e.getY());
                                     });

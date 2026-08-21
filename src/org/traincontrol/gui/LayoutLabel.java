@@ -459,13 +459,18 @@ public final class LayoutLabel extends JLabel
         final org.traincontrol.automationui.TileGraph.TileKey station =
             tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
+        // The square itself, which is what the setup menu acts on and is there whether or not
+        // anything has been made of it yet.
+        final org.traincontrol.automationui.TileGraph.TileKey here =
+            tcUI.autonomyTileAt(autonomyPage, component.getX(), component.getY());
+
         final java.awt.Component at = e.getComponent();
         final int atX = e.getX();
         final int atY = e.getY();
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(tcUI, station);
+            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(tcUI, station, here);
 
             // An empty menu is not worth showing.  Over a plain piece of track with autonomy running
             // and no setup to reach, there is genuinely nothing to offer, and a one-item-high grey box
