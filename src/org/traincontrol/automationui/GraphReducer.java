@@ -745,6 +745,31 @@ public class GraphReducer
 
     // --- edges ------------------------------------------------------------------------------------
 
+    /**
+     * Records a problem unless the same one is already recorded.
+     *
+     * walkEdges launches one walk per side of every Point and per exit of every side, so one FACT is
+     * reached several times: a balloon loop carrying a single sensor is walked out east and back by
+     * west, then out west and back by east, and reported twice.  N reconverging routes between one pair
+     * of Points report N-1 times, all against the same square.
+     *
+     * The rule and the reasoning are TileGraph.validatePortals's, which filters on tile and key for
+     * exactly this: "the same tile and the same message twice is one problem reported twice - which
+     * reads as two things to fix and cannot be, since fixing it makes both disappear."
+     *
+     * @param problem the problem to record
+     */
+    private void noteOnce(TileGraph.Problem problem)
+    {
+        for (TileGraph.Problem seen : problems)
+        {
+            if (seen.getTile() != null && seen.getTile().equals(problem.getTile())
+                && seen.getMessageKey().equals(problem.getMessageKey())) return;
+        }
+
+        problems.add(problem);
+    }
+
     private void walkEdges()
     {
         for (TileKey start : points.keySet())
@@ -809,7 +834,7 @@ public class GraphReducer
             // the model has no edge from a Point to itself.
             if (tile.equals(start))
             {
-                problems.add(new TileGraph.Problem(start, WARN_SELF_LOOP, false));
+                noteOnce(new TileGraph.Problem(start, WARN_SELF_LOOP, false));
                 return;
             }
 
@@ -824,13 +849,13 @@ public class GraphReducer
                 // duplicate was.
                 if (path.size() >= existing.getPath().size())
                 {
-                    problems.add(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+                    noteOnce(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
                     return;
                 }
 
                 edges.remove(existing);
 
-                problems.add(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+                noteOnce(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
             }
 
             ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),

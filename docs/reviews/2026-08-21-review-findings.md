@@ -142,3 +142,94 @@ either reviewer, one (A21) was withdrawn on validation and is now D9, and one (C
 A11 when the trace showed the two halves address different cases.
 
 **One open finding, and it is a C: C6.**  Everything an operator can meet is closed.
+
+---
+
+# Verification pass - the fixes themselves, 2026-08-21
+
+**Prefix stays `TR`**, and the numbering continues: A24, B14, C7-C9, D10-D17.  Nothing above this line
+was edited - the counts and the closing sentence of the first pass describe that pass, and A24 below
+means the "everything an operator can meet is closed" claim no longer holds.
+
+**What was reviewed:** the four fix commits, not the code they fixed - `174178c5`, `0b5f5e73`,
+`a5964843`, `7f482897`, i.e. `git diff 174178c5^..HEAD -- src test` at HEAD = `7f482897`, branch
+`autonomy-diagram-r0`.
+
+**Method:** read-only.  Nothing was compiled and nothing was run - another process owns the build
+directory and UDP 15730.  For each fix: read the diff, then the whole method, then its callers and the
+rest of the class, then the collection or monitor it touches and everyone else who reads that.  Where a
+claim rested on real data it was checked against `cs2_sample_layout`.  Three questions per fix: does it
+cover the case the disposition says it covers, did it break something beside it, and does the prose
+claim more than the code does.
+
+**Confidence** as above: CONFIRMED means traced end to end; PLAUSIBLE means the mechanism is certain
+but the trigger could not be exercised from a reading.
+
+## A - high
+
+| # | Finding | Where | Conf. | Status |
+|---|---|---|---|---|
+| A24 | **The fix for A23 evicts labels that are alive, so tiles stop following the railway - and it does so on the sample layout as it stands.**  `LayoutLabel.forgetReplaced` is the rule `DiagramTileRegistry.register` and `TrainControlUI.addLayoutStation` already used, moved to `MarklinAccessory`/`MarklinFeedback`/`MarklinRoute.addTile`.  Both of the older copies prune a set keyed by SQUARE, and `addLayoutStation` writes the precondition down: *"Per SQUARE, so pages cannot touch each other's labels - their keys differ."*  `tiles` is keyed by DEVICE, so that precondition is gone and "same window and not displayable" no longer means "replaced".  Two ways it bites, both from `LayoutGrid`: (1) **within one page.**  The grid loop registers every label (`:490`-`:511`) and `parent.add(container)` happens only afterwards (`:516`), so during the build NO new label is displayable.  A device on several squares of one page therefore loses every label but the last - the arriving one evicts its own predecessors.  `3 - Top Parking.cs2` has four `.typ=signal` elements on `.artikel=162` and `4 - Combined.cs2` has five, so on Adam's own layout three of those four signal tiles stop updating the moment the page is drawn.  (2) **across pages.**  `LayoutGrid` opens with `parent.removeAll()` (`:127`), which un-realises the cached grid of the page being left; building any page that carries the same device then drops the cached page's labels.  `addTile` is called only from `LayoutGrid`, and the cache branch in `repaintLayout` (`TrainControlUI:19433`) re-attaches a container without re-registering anything, so those tiles are dead until a `useCache = false` repaint rebuilds them.  The `sharesWindowWith` guard only stops a POPUP evicting main-window labels; every main-window page shares one master, `KeyboardTab`.  Manual tests 33/34 can miss this: one of the four tiles does still respond. | `LayoutLabel.java:501`, `:469`; `MarklinAccessory.java:117`, `MarklinFeedback.java:49`, `MarklinRoute.java:309`; `LayoutGrid.java:127`, `:490`, `:516`; `TrainControlUI.java:19433`, `:985` | CONFIRMED | **Open.**  Regression introduced by the TR-A23 fix in `0b5f5e73` |
+
+## B - medium
+
+Nothing.  The B-band fixes in `174178c5` that were re-read - B1, B3, B4, B5, B6, B9, B10, B11, B12 -
+all do what the disposition says, and no new medium-severity defect was found in them.
+
+## C - low
+
+| # | Finding | Where | Conf. | Status |
+|---|---|---|---|---|
+| C7 | **A rename between two names that resolve to ONE file is not written to disk at all, so it still reverts on a failed save.**  `renameConfiguration` guards its move-and-rewrite with `if (old.isFile() && !old.equals(now))`.  The rewrite is the half that matters - the comment says so: *"load() takes the name from INSIDE the file"* - and it is skipped whenever the two names share a file.  `java.io.File.equals` is case-insensitive on Windows, so renaming "Depot" to "depot" takes that branch, as does any pair that sanitises alike ("Night: Yard" to "Night_ Yard").  The store then says one name and the file says the other; if the `save()` that `AutonomyViewerPanel.rename()` runs next fails, `load()` brings the old name back.  Only the name is at risk - nothing is destroyed, which is why this is a C and A6 was an A - but the disposition's "The file is now moved and rewritten under the new name" is not true on that path.  `testARenameThatIsNeverSavedStillLeavesTheConfigurationOnDisk` uses "Morning"/"Evening", which are two files. | `AutonomyCompanionStore.java:1137`; `AutonomyViewerPanel.java:1200` | CONFIRMED | Open |
+| C8 | **The advisory can fire twice, the second time saying the train has waited 0 minutes.**  When `minDuration > 0` and the sensor drops during the re-check, `waitForOccupiedFeedback` recurses with `Math.max(1, adviseAfterMs - elapsed)`.  If the advisory has already fired, that expression is pinned to **1 ms** rather than to zero, so the recursive call re-arms it (`advised = adviseAfterMs <= 0` is false), waits 1 ms and announces again with `waitedMs` of about 1 - which `MarklinLocomotive.waitedTooLongFor` rounds to "0 minutes".  Repeats once per bounce.  The method's own javadoc says "Called ONCE per wait".  The opposite failure does not exist: because the remainder is floored at 1 rather than 0, the advisory can never be lost across a recursion. | `Locomotive.java:811`, `:755`, `:830`; `MarklinLocomotive.java:733` | CONFIRMED | Open |
+| C9 | **The second consecutive "power was not confirmed" warning is swallowed.**  `MarklinControlStation.log` drops a message equal to the one before it (`:2404`), and `layout.warnPowerNotConfirmed` takes no arguments, so it is byte-identical every time.  Manual test 35 asks for exactly this - *"the NEXT click should behave the same way"* - and the switch does still get thrown; it is only the sentence explaining the two-second pause that goes missing on the second click. | `LayoutLabel.java:405`; `MarklinControlStation.java:2404`; `messages.properties:1033` | CONFIRMED | Open |
+
+## D - not defects
+
+| # | Claim or check | Why it is a D |
+|---|---|---|
+| D10 | `moveTiles`: does `forgetSquares(landing)` throw away something that should have survived, and is the source/landing split right for a group drag? | Clean.  `landing` is every destination that is not itself a source, so a group moved by one square - where every square is both - forgets nothing, and a swap forgets nothing either.  `forgetSquares` covers exactly the ten square-keyed collections `moveTiles` moves, plus the suffixed `tileDirections` keys and the `points` map inside every configuration, and it drops REFERENCES to a landing square (`portals`, `captions`, `stationSignals` values) - which is right, because `moveListValues`/`moveValues` run afterwards and repoint a source's own references onto their new square.  Traced the emptied-list case too: `setProtectingSignals` removes rather than storing an empty list, and `forgetSquares` removes the entry when its list empties. |
+| D11 | `Layout.pendingS88Monitor`: are `updatePendingS88`/`waitForS88Reached` really the only users, and is there a new lost wakeup? | Clean.  `git show 1efa3b9a:...Layout.java` has exactly one `wait()` and one `notifyAll()` and both were this pair; after the change the file has no wait/notify on `this` at all, and nothing outside synchronizes on a `Layout`.  Every write to `locomotivePendingS88` goes through `updatePendingS88`, and both the test and the mutation happen under the new monitor, so the wait cannot miss a notify.  The interrupt handling is byte-for-byte what it was. |
+| D12 | `versionWritten()`: computed from the right state at the right moment, including on export? | Clean.  Both callers - `sharedFields()` (which `save()` calls and then writes immediately) and `exportBundle` - read the live `stationSignals` at the moment of writing, and the export's shared half is the same map, so bundle and payload cannot disagree.  The one hole worth checking is that `translateTileListMap` writes an ARRAY for a list of size 0 as well as size >1, which `versionWritten` would call 1 - it is unreachable: `setProtectingSignals` removes on empty, `readStringListMap` skips empty lists, and `forgetSquares` removes an entry whose list it has emptied. |
+| D13 | `LayoutEditor`: is the snapshot taken before anything can touch the store, does Save abandon it, and what about autonomy mode? | Clean.  The snapshot is the first thing in the constructor after the field assignments; `initComponents` only builds components.  Save nulls it (`:4004`).  Autonomy mode returns through `closeAutonomyMode()` before `undoAutonomyEdits()` is reached, and `setAutonomyMode(null)` has no caller, so a window cannot leave autonomy mode and restore a stale snapshot over edits the panel kept.  The page-id maps are written only by `AutonomySession.open`, never during an editor session, so `sharedFields`/`readShared` translate symmetrically across the snapshot.  `restoreSetup` writes through `saveQuietly`, which does NOT reconcile - important, because it runs before `layoutEditingComplete` re-reads the diagram, so a reconcile there would drop what the restore had just put back. |
+| D14 | The bounded `waitForPowerState`: deadline arithmetic across an interrupt, and the caller on false | Clean.  `left` is recomputed from a fixed deadline on every pass, so a spurious wakeup cannot extend it; an interrupt returns at once with the interrupt flag restored rather than restarting the clock.  `setPowerState` notifies on the same monitor, so the true path is not left to the timeout.  The one-argument overload now discards the boolean, but its only remaining callers are in `testLocomotive` - `LayoutLabel` is the sole production caller and it uses the bounded form, logs, and throws the switch anyway. |
+| D15 | A13: does the "turn"/"straight" to "red"/"green" translation round trip, and is its twin covered? | Clean.  `CommandRow.toCommand` resolves SIGNAL through `oneOf(setting, "turn", "straight", "red", "green")`, so red ≡ turn ≡ true and green ≡ straight ≡ false; the row is byte-identical on save.  The reverse direction - a SIGNAL row whose address is retyped to a switch - is handled separately at `RouteEditorFrame:2543`, which resets the setting through `defaultSettingFor`. |
+| D16 | A12: is the duplicate listener really gone, and are there twins? | Clean.  `actOnRowMarks` now has two call sites, one per table (`:2617`, `:3060`), and each adds one `MouseAdapter`.  The dispatch is still by cell value, which is what keeps the duplicate column working from the single listener; the cursor branch was widened to match. |
+| D17 | The CAN handlers: the feedback branch and the datagram length check | Clean.  `RemoteDeviceCollection.getById` returns `db.get(id)` under the collection's own lock, so the null test is one acquisition and the branch is race-free; `newFeedback` is still reached in exactly the old case.  No `hasId`-then-`getById` pair is left in `receiveMessage`.  `packet.getLength() == buffer.length` is right for a fixed 13-byte CAN frame (`initMessageBuffer` returns `new byte[CS2Message.MESSAGE_LENGTH]`); an over-long datagram is truncated to the buffer by `receive` and still parses, a short one is dropped, and `packet.setLength` still resets for the next receive. |
+
+## Counts, this pass only
+
+| | A | B | C | D | Total |
+|---|---|---|---|---|---|
+| Open | 1 | 0 | 3 | - | 4 |
+| Not defects | - | - | - | 8 | 8 |
+| **Total** | **1** | **0** | **3** | **8** | **12** |
+
+**One of these needs doing before the beta: A24.**  It is a regression, it is on the sample layout, and
+it makes a diagram tile lie about a signal - which is worse than the unbounded registration it was
+fixing.  The narrowest correct fix is the one the two older copies already use: judge only labels that
+are for the SAME SQUARE, not merely the same window, or drop the pruning from `addTile` and put it
+where the grid that owns the labels is replaced.
+
+---
+
+## Dispositions for the verification pass, 2026-08-21
+
+Every one of A24, C7, C8 and C9 was re-verified against the source before anything was changed, and all
+four held.
+
+- **A24 fixed.**  `forgetReplaced` now requires the SAME SQUARE as well as the same window.  That was the
+  precondition the rule had in the map it was lifted from, and dropping it was what made each arriving
+  label evict its own siblings.  `testRenderingCost.testEveryTileOfOneAccessoryStaysRegistered` builds a
+  real grid over the sample layout and counts the labels one shared accessory keeps - it fails on the old
+  code.  The hands-on tests could not have caught this and are not asked to: one tile of the four still
+  worked, which looks like a working diagram unless somebody is counting.
+- **C7 fixed.**  The move is skipped when both names resolve to one file, the rewrite is not.
+- **C8 fixed.**  The recursion carries 0 once the advisory has been said, rather than a floor of 1ms.
+  `testTheAdvisoryIsSaidOnceEvenIfTheSensorFlickers` covers it.
+- **C9 fixed.**  The message names the accessory, which makes it useful and also gets it past the log's
+  drop-the-same-line-twice rule.
+
+A24 is the second time this cycle that a fix has been the defect - the first was the s88 advisory going
+into a wait that a route trigger shares.  Both were found by asking where a change actually lands rather
+than whether it reads correctly, and both were mine.

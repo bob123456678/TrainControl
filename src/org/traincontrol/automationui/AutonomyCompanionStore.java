@@ -1134,11 +1134,20 @@ public class AutonomyCompanionStore
         // A failure is raised rather than swallowed, for the reason deleteConfiguration gives: what is
         // in memory and what is on disk have to keep saying the same thing, and only the user can
         // decide what to do when they cannot.
-        if (old.isFile() && !old.equals(now))
+        if (old.isFile())
         {
             try
             {
-                Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                // The move only when there is somewhere to move TO.  Two names can resolve to one
+                // file - sanitising is many to one, and File.equals is case-insensitive on Windows, so
+                // "Morning" to "morning" is a rename with nothing to move - but the REWRITE still has
+                // to happen, because load() takes a configuration's name from inside its file.  Skipping
+                // both left the old name in the file, so a rename that was not followed by a
+                // successful save silently undid itself.
+                if (!old.equals(now))
+                {
+                    Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
 
                 writeJson(now, configuration);
             }

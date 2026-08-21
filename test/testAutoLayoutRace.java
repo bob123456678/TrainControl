@@ -302,6 +302,75 @@ public class testAutoLayoutRace
     }
 
     /**
+     * And it is said ONCE, however the sensor behaves afterwards.
+     *
+     * The wait restarts itself when the feedback does not stay occupied for minDuration - a flicker is
+     * not an arrival - and the advisory's remaining time was carried into that restart by subtraction.
+     * Past the threshold the remainder is negative, and flooring it at a millisecond meant every
+     * flicker announced the same train again, immediately, as "0 minutes".
+     */
+    @Test
+    public void testTheAdvisoryIsSaidOnceEvenIfTheSensorFlickers() throws Exception
+    {
+        final MarklinFeedback sensor = model.newFeedback(9003, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        final MarklinLocomotive dispatched = new MarklinLocomotive(model, 1,
+            MarklinLocomotive.decoderType.MM2, "Flickering")
+        {
+            @Override
+            protected void waitedTooLongFor(String feedbackName, long waitedMs)
+            {
+                said.add(feedbackName);
+            }
+        };
+
+        // minDuration > 0, which is what makes the wait restart itself
+        Thread waiting = new Thread(() ->
+            dispatched.waitForOccupiedFeedback(sensor.getName(), 150, 200),
+            "waiting-through-a-flicker");
+
+        waiting.setDaemon(true);
+        waiting.start();
+
+        Thread.sleep(600);
+
+        assertEquals(said.size(), 1, "the advisory was said " + said.size() + " times before the "
+            + "sensor did anything at all");
+
+        // Occupied, but not for long enough to count - so the wait starts over
+        for (int flicker = 0; flicker < 3; flicker++)
+        {
+            model.setFeedbackState(sensor.getName(), true);
+
+            synchronized (Locomotive.monitor)
+            {
+                Locomotive.monitor.notifyAll();
+            }
+
+            Thread.sleep(60);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            synchronized (Locomotive.monitor)
+            {
+                Locomotive.monitor.notifyAll();
+            }
+
+            Thread.sleep(200);
+        }
+
+        assertEquals(said.size(), 1,
+            "the advisory was said " + said.size() + " times.  A sensor that flickers is one train "
+            + "not arriving, and the operator should hear about it once");
+
+        assertTrue(waiting.isAlive(), "and the train has still not arrived, so it is still waiting");
+    }
+
+    /**
      * And a wait that is SUPPOSED to be endless says nothing at all.
      *
      * A route's trigger monitor sits on its sensor for as long as the layout runs - that is the whole

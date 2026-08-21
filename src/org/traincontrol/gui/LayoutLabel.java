@@ -402,8 +402,14 @@ public final class LayoutLabel extends JLabel
                                                     if (!tcUI.getModel().waitForPowerState(true,
                                                         org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
                                                     {
+                                                        // Naming the tile, which is worth knowing and
+                                                        // is also what gets the message SAID: the log
+                                                        // drops a line identical to the one before it,
+                                                        // so a bare sentence would appear once and
+                                                        // every later failure would be silent.
                                                         tcUI.getModel().logf(
-                                                            "layout.warnPowerNotConfirmed");
+                                                            "layout.warnPowerNotConfirmed",
+                                                            component.getAddress());
                                                     }
 
                                                     // We need a significant delay because the power might take some time to come on
@@ -474,26 +480,36 @@ public final class LayoutLabel extends JLabel
     /**
      * Drops the labels that a newly registered one replaces.
      *
-     * Registering a label for a device is the moment the old labels for it became rubbish, so it is the
-     * moment to drop them.  Nothing else can: the prune inside updateTiles asks whether a label's
-     * parent is VISIBLE, and the main window's parent is the tab strip, which is visible for the life
-     * of the application - so on the main window that test can never be false and nothing was ever
-     * removed.  Every repaint of the diagram that rebuilt the grid - a size change, an address toggle,
-     * closing the editor, switching pages with the cache cold - left a whole page of dead labels
-     * registered, and each accessory then walked an ever-longer list on every message from the
-     * Central Station, decoding icons and posting repaints for components attached to nothing.
+     * Registering a label for a square is the moment the old labels for THAT SQUARE became rubbish, so
+     * it is the moment to drop them.  Nothing else can: the prune inside updateTiles asks whether a
+     * label's parent is VISIBLE, and the main window's parent is the tab strip, which is visible for
+     * the life of the application - so on the main window that test can never be false and nothing was
+     * ever removed.  Every repaint that rebuilt the grid - a size change, an address toggle, closing
+     * the editor, switching pages with the cache cold - left a whole page of dead labels registered,
+     * and each accessory then walked an ever-longer list on every message from the Central Station.
      *
-     * Judged by isDisplayable rather than by visibility: a label whose grid has been replaced has been
-     * removed from a realised window and has no peer, which is what "nobody can see this any more"
-     * actually means.  The arriving label is never judged - it may legitimately not be attached yet.
+     * Three conditions, and the first is the one this was written without.
      *
-     * And only labels of the SAME window.  The main window caches a page's grid and re-attaches it when
-     * the user comes back to that page, so its labels are detached - and perfectly alive - whenever
-     * another page is showing.  Judging them from a popup rebuilding the same page would throw them out
-     * while they were merely put away, and the page would come back registered nowhere.
+     * SAME SQUARE.  DiagramTileRegistry keeps its labels in a map keyed by square, so within one of
+     * its entries "an older label of this window" can only mean "the label this one replaces" - and
+     * its own comment says so.  The three device collections are keyed by DEVICE instead, and one
+     * accessory is routinely drawn on several squares of a page: the sample layout has address 162 on
+     * four tiles of "3 - Top Parking" and five of "4 - Combined".  Lifting the rule without its
+     * precondition therefore made each arriving label evict its own siblings, because LayoutGrid
+     * registers every label in its build loop and only attaches the container afterwards, so during a
+     * build NO label is displayable yet.  Three of those four signal tiles stopped updating the moment
+     * the page was drawn - which is worse than the leak this was fixing, and quieter.
      *
-     * The same rule DiagramTileRegistry.register applies to its own map, and for the same reasons; it
-     * lives here so that the three device classes share one copy of it rather than three.
+     * SAME WINDOW.  The main window caches a page's grid and re-attaches it when the user comes back,
+     * so its labels are detached - and perfectly alive - whenever another page is showing.  Judging
+     * them from a popup rebuilding the same page would throw them out while they were merely put away.
+     *
+     * NOT DISPLAYABLE, rather than not visible: a label whose grid has been replaced has been removed
+     * from a realised window and has no peer, which is what "nobody can see this" actually means.  The
+     * arriving label is never judged; it may legitimately not be attached yet.
+     *
+     * Where the square cannot be established the label is KEPT.  A missed prune is a slow leak; a
+     * wrong prune is a tile that never updates again, and of the two the leak is much the better bug.
      *
      * @param registered the labels already registered with the device
      * @param arriving the label being registered now
@@ -506,11 +522,34 @@ public final class LayoutLabel extends JLabel
         {
             LayoutLabel existing = i.next();
 
-            if (existing != arriving && existing.sharesWindowWith(arriving) && !existing.isDisplayable())
+            if (existing != arriving && existing.sharesWindowWith(arriving)
+                && existing.isSameSquareAs(arriving) && !existing.isDisplayable())
             {
                 i.remove();
             }
         }
+    }
+
+    /**
+     * Whether two labels are drawn on the same square of the same page.
+     *
+     * False whenever that cannot be established - a label with no component, or one whose page was
+     * never set - so an unknown square is never treated as a match.  See forgetReplaced: keeping a
+     * label that should have gone costs memory, and dropping one that should have stayed costs the
+     * user a tile that stops responding.
+     *
+     * @param other the other label
+     * @return whether both name the same square
+     */
+    private boolean isSameSquareAs(LayoutLabel other)
+    {
+        if (other == null || this.component == null || other.component == null) return false;
+
+        if (this.autonomyPage == null || other.autonomyPage == null) return false;
+
+        return this.autonomyPage.equals(other.autonomyPage)
+            && this.component.getX() == other.component.getX()
+            && this.component.getY() == other.component.getY();
     }
 
     /**

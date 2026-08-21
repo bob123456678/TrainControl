@@ -277,9 +277,8 @@ public final class CS2File
      */
     public static String sanitizeFilename(String name)
     {
-        if (name == null) return null;
-
-        return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
+        // One implementation, in Util, because LayoutDiagram is a writer too and cannot reach in here
+        return org.traincontrol.util.Util.sanitizeFilename(name);
     }
     
     /**
@@ -2203,223 +2202,243 @@ public final class CS2File
         for (String name : names)
         {
             pageIndex++;
+
+            // One page that will not parse costs THAT page, not the layout.
+            //
+            // Nothing here caught a per-page failure, while both sibling parsers in this file were
+            // given per-record guards - parseLocomotives says why: one bad locomotive used to abort
+            // the entire Central Station sync.  Here it was worse than an abort, because the caller
+            // answers a failed parse by clearing the local-layout folder preference: a single
+            // malformed element, or a page the index names and the folder does not hold, silently
+            // discarded the user's choice of where their layout lives.
+            //
+            // pageIndex is advanced ABOVE this, so a skipped page does not renumber the ones after
+            // it.  That matters more than it looks: the autonomy setup is keyed by page id.
+            try
+            {
  
-            String url = getLayoutURL(name);
+                String url = getLayoutURL(name);
             
-            // Null-checked, as every other logging call in this class is - they all go through the
-            // null-safe logMessage and this one did not.  A CS2File built without a control station is
-            // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
-            // hardware and no model behind it.
-            if (control != null && control.isDebug())
-            {
-                control.logf(
-                    "layout.loadingFromUrl",
-                    url
-                );            
-            }
-            
-            List<Map<String, String> > l = parseFile(fetchURL(url));
-                        
-            Map<Integer, MarklinAccessory> addressMap = accDB.stream()
-                .collect(Collectors.toMap(
-                        MarklinAccessory::getAddress, 
-                        accessory -> accessory,
-                        (existing, replacement) -> existing // uncouplers will have the same ID
-                ));
-            
-            int maxX = 0;
-            int maxY = 0;
-            
-            for (Map<String, String> m : l)
-            {
-                if ("element".equals(m.get("_type")))
+                // Null-checked, as every other logging call in this class is - they all go through the
+                // null-safe logMessage and this one did not.  A CS2File built without a control station is
+                // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
+                // hardware and no model behind it.
+                if (control != null && control.isDebug())
                 {
-                    Integer coord = 0;
-
-                    if (m.get("id") != null)
-                    {
-                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        logMessage(
-                            I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
-                            null,
-                            true
-                        );
-                    }
-                    
-                    Integer x = coord % 256;
-                    Integer y = (coord >> 8) % 256;
-
-                    if (x > maxX)
-                    {
-                        maxX = x;
-                    }
-
-                    if (y > maxY)
-                    {
-                        maxY = y;
-                    }
+                    control.logf(
+                        "layout.loadingFromUrl",
+                        url
+                    );            
                 }
-            }
             
-            LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
-
-            layout.setPageId(index.get(pageIndex).get("id"));
+                List<Map<String, String> > l = parseFile(fetchURL(url));
                         
-            for (Map<String, String> m : l)
-            {
-                // The blocks above the elements - version, groesse, anything a later firmware adds -
-                // kept so that saving the page does not delete them.  The exporter used to write a
-                // hardcoded version block in their place.
-                if (!"element".equals(m.get("_type")))
+                Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+                    .collect(Collectors.toMap(
+                            MarklinAccessory::getAddress, 
+                            accessory -> accessory,
+                            (existing, replacement) -> existing // uncouplers will have the same ID
+                    ));
+            
+                int maxX = 0;
+                int maxY = 0;
+            
+                for (Map<String, String> m : l)
                 {
-                    layout.addUnmodelledBlock(m);
-                    continue;
-                }
-
-                if ("element".equals(m.get("_type")))
-                {
-                    Integer coord = 0;
-
-                    if (m.get("id") != null)
+                    if ("element".equals(m.get("_type")))
                     {
-                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                    }
+                        Integer coord = 0;
 
-                    Integer x = coord % 256;
-                    Integer y = (coord >> 8) % 256;
-
-                    Integer orient = 0;
-                    Integer state = 0;
-                    String type = m.get("typ");
-                    
-                    // Handle missing type
-                    if (type == null)
-                    {
-                        if (m.get("text") != null)
+                        if (m.get("id") != null)
                         {
-                            type = "text";
+                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
                         }
                         else
-                        {
-                            type = "unknown";
-                        }
-                    }
-                    
-                    Integer rawAddress = 0;
-                    
-                    try
-                    {
-                        rawAddress = Integer.valueOf(m.get("artikel"));
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        if (!"text".equals(type))
                         {
                             logMessage(
-                                I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                                I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
+                                null,
+                                true
                             );
                         }
+                    
+                        Integer x = coord % 256;
+                        Integer y = (coord >> 8) % 256;
+
+                        if (x > maxX)
+                        {
+                            maxX = x;
+                        }
+
+                        if (y > maxY)
+                        {
+                            maxY = y;
+                        }
                     }
-                    
-                    Integer address = rawAddress;
-                    
-                    if (!"fahrstrasse".equals(type))
+                }
+            
+                LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+                layout.setPageId(index.get(pageIndex).get("id"));
+                        
+                for (Map<String, String> m : l)
+                {
+                    // The blocks above the elements - version, groesse, anything a later firmware adds -
+                    // kept so that saving the page does not delete them.  The exporter used to write a
+                    // hardcoded version block in their place.
+                    if (!"element".equals(m.get("_type")))
                     {
-                        if (address % 2 == 0)
-                        {
-                            address = (address / 2);
-                        }
-                        else
-                        {
-                            address = (address - 1) / 2;
-                        }
+                        layout.addUnmodelledBlock(m);
+                        continue;
                     }
+
+                    if ("element".equals(m.get("_type")))
+                    {
+                        Integer coord = 0;
+
+                        if (m.get("id") != null)
+                        {
+                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                        }
+
+                        Integer x = coord % 256;
+                        Integer y = (coord >> 8) % 256;
+
+                        Integer orient = 0;
+                        Integer state = 0;
+                        String type = m.get("typ");
+                    
+                        // Handle missing type
+                        if (type == null)
+                        {
+                            if (m.get("text") != null)
+                            {
+                                type = "text";
+                            }
+                            else
+                            {
+                                type = "unknown";
+                            }
+                        }
+                    
+                        Integer rawAddress = 0;
+                    
+                        try
+                        {
+                            rawAddress = Integer.valueOf(m.get("artikel"));
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            if (!"text".equals(type))
+                            {
+                                logMessage(
+                                    I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                                );
+                            }
+                        }
+                    
+                        Integer address = rawAddress;
+                    
+                        if (!"fahrstrasse".equals(type))
+                        {
+                            if (address % 2 == 0)
+                            {
+                                address = (address / 2);
+                            }
+                            else
+                            {
+                                address = (address - 1) / 2;
+                            }
+                        }
                                         
-                    if (m.get("drehung") != null)
-                    {
-                        orient = Integer.valueOf(m.get("drehung")); 
-                    }
-                   
-                    if (m.get("zustand") != null)
-                    {
-                        state = Integer.valueOf(m.get("zustand"));
-                    }
-                    
-                    // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
-                    if (type.contains("_f_"))
-                    {
-                        orient = Math.floorMod(orient - 1, 4);
-                    }
-                    
-                    Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
-                    
-                    // Read protocol from mags file
-                    if (addressMap.get(address) != null)
-                    {
-                        protocol = addressMap.get(address).getDecoderType();
-                    }
-                    
-                    // Custom - read protocol from the local layout files
-                    if (m.get("prot") != null)
-                    {
-                        if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                        if (m.get("drehung") != null)
                         {
-                            protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                            orient = Integer.valueOf(m.get("drehung")); 
+                        }
+                   
+                        if (m.get("zustand") != null)
+                        {
+                            state = Integer.valueOf(m.get("zustand"));
+                        }
+                    
+                        // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
+                        if (type.contains("_f_"))
+                        {
+                            orient = Math.floorMod(orient - 1, 4);
+                        }
+                    
+                        Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
+                    
+                        // Read protocol from mags file
+                        if (addressMap.get(address) != null)
+                        {
+                            protocol = addressMap.get(address).getDecoderType();
+                        }
+                    
+                        // Custom - read protocol from the local layout files
+                        if (m.get("prot") != null)
+                        {
+                            if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                            {
+                                protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                            }
+                            else
+                            {
+                                logMessage(
+                                    I18n.f("acc.errorUnknownProtocol", m.get("prot"))
+                                );
+                            }
+                        }
+                    
+                        LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
+
+                        if (modelled != null)
+                        {
+                            layout.addComponent(
+                               modelled,
+                               x, y, orient, state, address, rawAddress, protocol, m.get("text")
+                            );
+
+                            // Anything the file said about this square that the component has no field for.
+                            // Saving regenerates the page from the model, so a key nobody carries is a key
+                            // deleted from the user's diagram.
+                            LayoutDiagramComponent added = layout.getComponent(x, y);
+
+                            if (added != null)
+                            {
+                                added.setUnmodelledKeys(m);
+
+                                // And the file's own word for the type, plus its rotation exactly as given.
+                                // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
+                                // writing the canonical word back collapses every variant the file
+                                // distinguished, and the rotation of a semaphore signal is corrected on the
+                                // way in by a rule keyed on the word that has just been thrown away.
+                                // Only the word.  The rotation used to be kept too, so that an
+                                // untouched component could be written back verbatim, but the export now
+                                // derives the file's number from the word it is writing - which is exact,
+                                // and cannot disagree with a second rule.
+                                added.setOriginalTyp(m.get("typ"));
+                            }
                         }
                         else
                         {
-                            logMessage(
-                                I18n.f("acc.errorUnknownProtocol", m.get("prot"))
-                            );
+                            // Not a component this program knows, and therefore not one it may delete.  Kept
+                            // verbatim so that saving the page - which naming a station does, unasked - puts
+                            // it back rather than dropping it.
+                            layout.addUnmodelledElement(m);
                         }
-                    }
-                    
-                    LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
-
-                    if (modelled != null)
-                    {
-                        layout.addComponent(
-                           modelled,
-                           x, y, orient, state, address, rawAddress, protocol, m.get("text")
-                        );
-
-                        // Anything the file said about this square that the component has no field for.
-                        // Saving regenerates the page from the model, so a key nobody carries is a key
-                        // deleted from the user's diagram.
-                        LayoutDiagramComponent added = layout.getComponent(x, y);
-
-                        if (added != null)
-                        {
-                            added.setUnmodelledKeys(m);
-
-                            // And the file's own word for the type, plus its rotation exactly as given.
-                            // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
-                            // writing the canonical word back collapses every variant the file
-                            // distinguished, and the rotation of a semaphore signal is corrected on the
-                            // way in by a rule keyed on the word that has just been thrown away.
-                            // Only the word.  The rotation used to be kept too, so that an
-                            // untouched component could be written back verbatim, but the export now
-                            // derives the file's number from the word it is writing - which is exact,
-                            // and cannot disagree with a second rule.
-                            added.setOriginalTyp(m.get("typ"));
-                        }
-                    }
-                    else
-                    {
-                        // Not a component this program knows, and therefore not one it may delete.  Kept
-                        // verbatim so that saving the page - which naming a station does, unasked - puts
-                        // it back rather than dropping it.
-                        layout.addUnmodelledElement(m);
                     }
                 }
+            
+                layout.checkBounds();
+            
+                out.add(layout);
             }
-            
-            layout.checkBounds();
-            
-            out.add(layout);
+            catch (Exception | Error bad)
+            {
+                logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
+                    null, true);
+            }
         }
         
         return out;

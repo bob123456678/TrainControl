@@ -131,6 +131,18 @@ Tests 26-31 live in `2026-08-21-review-dispositions.md`, beside the findings the
 
 ---
 
+## Added 2026-08-21, from the verification pass and the independent pass
+
+Tests 38-40 are in `2026-08-21-independent-pass.md`, beside the findings they belong to.  The one worth
+doing first is not numbered there because it is a check on a FIX rather than on a finding:
+
+**41. A page that draws one signal or switch on several squares** - "2 - Bottom" has Signal 116 on three
+- and throw that accessory.  EVERY one of those squares has to change.  Two of the three stopped
+updating for a day, from a change meant to stop a memory leak, and the hands-on test written for that
+change could not see it because the third still worked.
+
+---
+
 ## Still untested, and known
 
 - **`testAutoDetect`** needs a Central Station answering on the network. It is red here and is not a

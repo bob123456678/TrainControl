@@ -3696,7 +3696,13 @@ public class Layout
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
                         }
-                        catch (Exception e)
+                        // Throwable, for the reason runLocomotive gives where it catches the same call:
+                        // executePath's own handler is catch (RuntimeException), so an Error walks
+                        // straight past it AND past this - and past the block below, which is the only
+                        // place the last entry clears `running`.  isRunning() then stays true for ever,
+                        // the completion wait never returns, and Start and Graceful Stop never come
+                        // back.  Stopping the trains and saying so is the right answer to an Error too.
+                        catch (Throwable e)
                         {
                             this.control.logf(
                                 "autolayout.errorTimetableExecutionFailed",
@@ -3709,7 +3715,7 @@ public class Layout
                                 this.stopLocomotives();
                             }
 
-                            control.log(e);
+                            control.log(e instanceof Exception ? (Exception) e : new Exception(e));
                         }
 
                         // When we are done, exit in this thread to avoid disrupting the final path

@@ -228,6 +228,35 @@ public class Util
      * @param body writes the content to the stream it is given; need not close it
      * @throws IOException
      */
+    /**
+     * Makes a page name safe to use as a local filename.
+     *
+     * Page names are free text - they come out of the Central Station index, or out of the rename box -
+     * and one carrying a path separator or a character the filesystem forbids used to be joined
+     * straight onto the layouts folder.  On download that made the write land outside the folder, or
+     * fail part way through and leave a half-written layout the next sync reads as authoritative.
+     *
+     * Applied on BOTH sides on purpose.  The local read locates a page by the name in the index, so
+     * sanitizing only the write produces a file the reader cannot find.
+     *
+     * Here in Util rather than on CS2File, which is where it started, because there are three writers
+     * and one of them is LayoutDiagram - which is in base and must not reach into the Marklin
+     * package to ask.  CS2File.sanitizeFilename now delegates here, so every existing caller is
+     * unchanged and there is still one implementation.
+     *
+     * Only characters that are actually unusable are replaced, so ordinary names with spaces, dashes
+     * and accented letters are returned untouched and existing local layouts load exactly as before.
+     *
+     * @param name the page name
+     * @return the name with anything unusable replaced by an underscore
+     */
+    public static String sanitizeFilename(String name)
+    {
+        if (name == null) return null;
+
+        return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
+    }
+
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
         File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);

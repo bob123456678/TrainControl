@@ -298,6 +298,144 @@ public class testRenderingCost
     }
 
     /**
+     * One accessory drawn on several squares keeps a label on every one of them.
+     *
+     * A real layout puts one address on several tiles - the sample layout has 162 on four squares of
+     * "3 - Top Parking" and five of "4 - Combined" - and the control station gives all of them the SAME
+     * MarklinAccessory, because it resolves by address out of the database.  Each of those tiles has to
+     * stay registered with it or it stops being repainted when the accessory is thrown.
+     *
+     * This is the test that was missing when a pruning rule was carried over from a map keyed by SQUARE
+     * into three collections keyed by DEVICE.  Inside one square's entry, "an older label of this
+     * window that is no longer displayable" means "the label this one replaces"; inside one device's,
+     * it also matches that device's OTHER squares - and LayoutGrid registers every label in its build
+     * loop and only attaches the container afterwards, so during a build none of them is displayable.
+     * Every arriving label therefore evicted its own siblings and only the last one survived.
+     *
+     * The hands-on test for that change could not see it: three of the four tiles stopped updating and
+     * the fourth still worked, which looks like a working diagram unless you are counting.
+     *
+     * A fresh parse rather than the shared fixture, because the accessories have to be shared by
+     * address the way the control station shares them, and the fixture deliberately gives each tile
+     * its own.
+     */
+    @Test
+    public void testEveryTileOfOneAccessoryStaysRegistered() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("building labels needs a display");
+        }
+
+        File folder = new File("cs2_sample_layout");
+
+        String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        CS2File parser = new CS2File(path, model);
+        parser.setLayoutDataLoc(path);
+
+        List<LayoutDiagram> fresh = parser.parseLayout(new LinkedList<MarklinAccessory>());
+
+        // Wired by ADDRESS, one accessory object however many tiles carry it - which is what
+        // MarklinControlStation.syncLayouts does through accDB.getById
+        java.util.Map<Integer, MarklinAccessory> byAddress = new java.util.HashMap<>();
+
+        LayoutDiagram page = null;
+        MarklinAccessory shared = null;
+        int squares = 0;
+
+        for (LayoutDiagram candidate : fresh)
+        {
+            if (pageExclusions.contains(candidate.getName())) continue;
+
+            java.util.Map<Integer, Integer> seen = new java.util.HashMap<>();
+
+            for (org.traincontrol.base.LayoutDiagramComponent c : candidate.getAll())
+            {
+                if (!c.isSwitch() && !c.isSignal()) continue;
+
+                if (c.getAddress() <= 0) continue;
+
+                org.traincontrol.base.Accessory.accessoryType type = c.isSignal()
+                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
+                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
+
+                MarklinAccessory one = byAddress.get(c.getAddress());
+
+                if (one == null)
+                {
+                    one = accessory(c.getAddress(), type, c.getProtocol());
+                    byAddress.put(c.getAddress(), one);
+                }
+
+                c.setAccessory(one);
+
+                Integer count = seen.get(c.getAddress());
+
+                seen.put(c.getAddress(), count == null ? 1 : count + 1);
+
+                if (seen.get(c.getAddress()) > squares)
+                {
+                    squares = seen.get(c.getAddress());
+                    shared = one;
+                    page = candidate;
+                }
+            }
+        }
+
+        if (page == null || squares < 2)
+        {
+            throw new org.testng.SkipException(
+                "no page in the sample layout draws one accessory on two squares");
+        }
+
+        System.out.println("SHARED ACCESSORY page=" + page.getName()
+            + " accessory=" + shared.getName() + " squares=" + squares);
+
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+        ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+        final LayoutDiagram drawing = page;
+        final javax.swing.JPanel host = new javax.swing.JPanel();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                new org.traincontrol.gui.LayoutGrid(drawing, 30, host, null, true, ui[0]);
+            });
+
+            assertEquals(registeredTiles(shared), squares,
+                "the accessory is drawn on " + squares + " squares of " + drawing.getName()
+                + " and kept " + registeredTiles(shared) + " of them.  The others will not be "
+                + "repainted when it is thrown - the diagram will show them in whatever state they "
+                + "were drawn in, for the rest of the session");
+        }
+        finally
+        {
+            final org.traincontrol.gui.TrainControlUI toClose = ui[0];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> toClose.dispose());
+        }
+    }
+
+    /**
+     * How many labels an accessory holds.  Private in the model, and rightly: nothing in the
+     * application has any business reading it, and a test is not the application.
+     */
+    private static int registeredTiles(MarklinAccessory accessory) throws Exception
+    {
+        java.lang.reflect.Field field = MarklinAccessory.class.getDeclaredField("tiles");
+
+        field.setAccessible(true);
+
+        return ((java.util.Collection<?>) field.get(accessory)).size();
+    }
+
+    /**
      * How many LayoutLabels a grid builds, against how many cells it has.
      *
      * Needs a display, and is skipped without one.  The point is a ratio, not a duration: if a grid

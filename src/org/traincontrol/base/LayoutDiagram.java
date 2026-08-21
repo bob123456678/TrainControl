@@ -428,10 +428,20 @@ public class LayoutDiagram
             // Retrieve the export data
             String data = exportToCS2TextFormat();
 
-            // Determine the file path
+            // Determine the file path.
+            //
+            // Sanitised, because this is the third writer of a page file and the only one that was
+            // not.  sanitizeFilename says why in its own javadoc: the reader locates a page by the
+            // name in the index and applies it, so a write that does not produces a file the reader
+            // will never look for.  A name holding a slash was the live case - resolveSibling reads it
+            // as a directory, so "Up/Down" was written into a folder of its own and the page was
+            // simply gone from the layout.
+            String renaming = filename == null ? null
+                : org.traincontrol.util.Util.sanitizeFilename(filename.trim());
+
             Path originalFilePath = getFilePath();
-            Path newFilePath = (filename != null && !"".equals(filename.trim()))
-                    ? originalFilePath.resolveSibling(filename.trim() + ".cs2")
+            Path newFilePath = (renaming != null && !"".equals(renaming))
+                    ? originalFilePath.resolveSibling(renaming + ".cs2")
                     : originalFilePath;
 
             // Staged and moved into place, never truncated where it stands.
@@ -480,7 +490,7 @@ public class LayoutDiagram
                     // The bytes are already right; what is left is the spelling.  Through a temporary
                     // name because a direct move onto a path the filesystem considers identical is
                     // rejected rather than treated as a rename.
-                    Path staged = originalFilePath.resolveSibling(filename.trim() + ".cs2.renaming");
+                    Path staged = originalFilePath.resolveSibling(renaming + ".cs2.renaming");
 
                     Files.move(originalFilePath, staged);
                     Files.move(staged, newFilePath);

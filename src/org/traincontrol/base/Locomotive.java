@@ -806,9 +806,14 @@ public abstract class Locomotive
             if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
                 // Whatever is left of the advisory goes with it: a sensor that flickered is not a
-                // fresh journey, and restarting the clock would hide a train that never really arrived
-                return this.waitForOccupiedFeedback(name, minDuration,
-                    adviseAfterMs <= 0 ? 0 : Math.max(1, adviseAfterMs - (System.currentTimeMillis() - began)));
+                // fresh journey, and restarting the clock would hide a train that never really arrived.
+                //
+                // Nothing left once it has been SAID, which is the case the arithmetic alone gets
+                // wrong: past the threshold the remainder is negative, and flooring it at 1ms made a
+                // flicker announce the same train again a millisecond later, as "0 minutes".  The
+                // javadoc says once per wait and this is what makes that true.
+                return this.waitForOccupiedFeedback(name, minDuration, advised
+                    ? 0 : Math.max(1, adviseAfterMs - (System.currentTimeMillis() - began)));
             }
         }
         

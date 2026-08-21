@@ -179,8 +179,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
-    /** How many locomotive mapping pages this installation has - see numLocMappings. */
-    public static final String LOC_MAPPING_PAGES_PREF = "LocMappingPages";
+    /**
+     * How many locomotive mapping pages this installation has - see numLocMappings.
+     *
+     * Per FOLDER, like every other preference that describes one: the pages it counts live in that
+     * folder's own UIState.data, and prefs is a userNodeForPackage, so without the hash one number was
+     * shared by every working directory the user runs TrainControl from.  Adding a page in one folder
+     * then made the other folder's count disagree with its own file - which used to skip the restore
+     * of the page names and the saved position, and then write the empty result back over them.
+     */
+    public static final String LOC_MAPPING_PAGES_PREF = "LocMappingPages" + Conversion.getFolderHash(10);
 
     /**
      * Which route autonomy takes when it has a choice.  Stored by name, so a value written by a newer
@@ -1378,6 +1386,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save page names
         l.add(this.pageNames);
         
+        // A file that would not READ is copied aside before it is written over.
+        //
+        // Straight from the locomotive database, which learned it the hard way: one transient read
+        // failure at startup plus an ordinary exit destroyed everything the user had set up, with no
+        // undo and no automatic backup.  Writing atomically is no protection at all against this - a
+        // complete successful write of nothing is not a partial write.
+        //
+        // Once, and the save still happens: refusing to save for ever would throw away whatever the
+        // session did instead.
+        if (!backup && this.uiStateLoadFailed)
+        {
+            this.uiStateLoadFailed = false;
+
+            try
+            {
+                File existing = new File(TrainControlUI.DATA_FILE_NAME);
+
+                if (existing.exists())
+                {
+                    File kept = new File(Util.getBackupPath("unreadable"
+                        + org.traincontrol.util.Conversion.convertSecondsToDatetime(
+                            System.currentTimeMillis()).replace(':', '-').replace(' ', '_')
+                        + TrainControlUI.DATA_FILE_NAME));
+
+                    java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
+                }
+            }
+            catch (IOException | RuntimeException keepFailed)
+            {
+                this.model.log(keepFailed);
+            }
+        }
+
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String statePath = backup
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
@@ -1664,6 +1708,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Restores list of initialized components from a file
      * @return 
      */
+    /**
+     * Whether the UI state file was there and could not be read.
+     *
+     * Not the same as "there was no file", which is an ordinary first launch.  Only the read sets it
+     * and only the next real save clears it, after keeping a copy of what it is about to replace.
+     */
+    private boolean uiStateLoadFailed = false;
+
     public final List<Map<Integer,String>> restoreState()
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
@@ -1686,12 +1738,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (IOException iOException)
         {
+            // A file that is THERE and would not read is not a first launch, and until this was
+            // recorded the two were told apart nowhere.  The message below says "no data file found",
+            // and the save on the way out then wrote the empty state over the real one - every
+            // locomotive-to-key mapping on every page, every page name, and the saved position, gone,
+            // with no copy kept.  The locomotive database was given exactly this distinction and a
+            // paragraph explaining why; this file sits beside it in the same folder, is written on the
+            // same window close, and had neither.
+            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+
             this.model.logf(
-                "ui.infoUiInitializingDefaultData"
+                this.uiStateLoadFailed ? "ui.errorBadUiDataFile" : "ui.infoUiInitializingDefaultData"
             );
         }
         catch (ClassNotFoundException classNotFoundException)
         {
+            // The same: a file written by another version reads as garbage, and saying so is no use
+            // if the next exit destroys it anyway
+            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+
             this.model.logf(
                 "ui.errorBadUiDataFile"
             );
@@ -3914,7 +3979,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             adjustTabbedPaneHeight(locKeyTabs);
         }
 
-        for (int j = 0; j < saveStates.size() && j < this.numLocMappings; j++)
+        // size() - 1 because the last entry is the page names rather than a page.  It did no harm
+        // read as one - its keys are page numbers and two sentinels, and a page is keyed by VK_A..VK_Z,
+        // so every lookup missed - but a loop that reads the wrong thing and gets away with it is one
+        // rename away from not getting away with it.
+        for (int j = 0; j < saveStates.size() - 1 && j < this.numLocMappings; j++)
         {
             Map<Integer, String> saveState = saveStates.get(j);
      
@@ -3936,7 +4005,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         boolean savedLocKey = false;
         // Restore page names, active button, and page, which are stored at the end
-        if (saveStates.size() > this.numLocMappings)
+        // The last entry, whenever there IS one.
+        //
+        // saveState always appends the page names after the pages, so the list is always one longer
+        // than the page count - but this was gated on the count in the PREFERENCE, which only matches
+        // when the two agree.  A preference larger than the file (a page added, then an unclean exit;
+        // or, before the folder hash above, a page added in another working directory) skipped the
+        // page names, the active page and the active button - and the exit then serialised the empty
+        // map over them.  The button mappings survived, so it read as "my page names vanished".
+        if (!saveStates.isEmpty())
         {
             this.pageNames = saveStates.get(saveStates.size() - 1);
             
