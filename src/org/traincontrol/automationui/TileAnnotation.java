@@ -1192,15 +1192,6 @@ public class TileAnnotation
     private static final Color ARRIVAL_BARRED = new Color(150, 140, 100);
 
     /**
-     * Whether a reversing point is drawn as a cross rather than as a small square.
-     *
-     * False, at the author's instruction: the cross read as an error marker rather than as a statement
-     * about direction.  Kept as a switch rather than deleted, because the shape is a judgement about
-     * what a diagram reads like and those get revisited - flip this one word and cross() is back.
-     */
-    private static final boolean REVERSING_AS_CROSS = false;
-
-    /**
      * Draws what a sensor IS, in the graph window's own shapes and colours.
      *
      *   plain point       small diamond
@@ -1224,6 +1215,17 @@ public class TileAnnotation
         int size = Math.max(badge.isStation() ? 11 : 8,
             Math.min(width, height) / (badge.isStation() ? 2 : 3));
 
+        // A diamond is drawn larger than a circle or a square of the same box.
+        //
+        // Half the area, geometrically: turn a square through forty-five degrees and the corners that
+        // stick out are smaller than the ones that go in.  So a diamond nominally the same size as
+        // the station circle beside it reads as the smaller mark, which is backwards - the diamonds
+        // are the designations somebody is scanning for, and the circles are the ordinary case.
+        if ((badge.isTerminus() || badge.isReversing()) && badge.isOptional())
+        {
+            size = Math.round(size * 1.35f);
+        }
+
         // Centred on the TRACK, not on the tile.  On a curve the art hugs the corner between the two
         // sides it joins, so a badge in the middle of the square sits off the rails - which is what
         // made sensors on curves look misplaced.  The midpoint of the route's own two sides lands on
@@ -1243,60 +1245,37 @@ public class TileAnnotation
         Color fill = badge.isNamed() ? colour : Color.WHITE;
         Color line = badge.isNamed() ? Color.WHITE : colour;
 
-        if (badge.isReversing())
-        {
-            // A small square, at the non-station size, so it reads as a lesser relative of the
-            // terminus square rather than as a different kind of thing altogether - which is what it
-            // is: the same act of switching direction, on a square trains do not stop at.  The cross
-            // it used to be said "something is wrong here" more than it said anything about direction.
-            if (REVERSING_AS_CROSS)
-            {
-                cross(g, x, y, size, fill, line);
-            }
-            else
-            {
-                g.setColor(fill);
-                g.fillRect(x, y, size, size);
-                g.setColor(line);
-                g.drawRect(x, y, size, size);
-            }
-        }
-        else if (badge.isTerminus() && badge.isOptional())
-        {
-            // A station a train MAY turn at: the station diamond, with the cross inside it.
-            //
-            // It was a bare cross, which said the "may" clearly enough and stopped saying "station"
-            // at all - so on a diagram where the station mark is a diamond, the one designation that
-            // is a choice offered AT a station did not look like a station.  Both marks, one inside
-            // the other, say both things: the diamond that this is a place trains stop, and the
-            // cross that turning here is offered rather than required.
-            diamond(g, x, y, size, fill, line);
+        // THE SHAPE SAYS WHAT TURNING MEANS HERE.  THE SIZE SAYS WHETHER IT IS A STATION.
+        //
+        //                     trains do not turn    trains MAY turn    trains ALWAYS turn
+        //     a station            big circle          big diamond         big square
+        //     a passing point     small circle        small diamond       small square
+        //
+        // Two questions, two dimensions, and every square on the diagram is one cell of that grid.
+        // It had grown up the other way: a cross for a station that may turn, a square for one that
+        // must, a circle for a station, a diamond for a plain point - four shapes with no system
+        // behind them, so each one had to be learned separately and none of them said anything about
+        // the others.  Here, having seen any two marks, the rest can be read off.
+        //
+        // The bordering cases are what makes it worth the trouble.  A station where every train turns
+        // and a siding where every train turns are the SAME fact about a railway happening in two
+        // places, and they now look like the same fact in two sizes.
+        boolean turns = badge.isTerminus() || badge.isReversing();
+        boolean mayTurn = turns && badge.isOptional();
 
-            // Drawn in the badge's own colour rather than the diamond's outline colour, so it shows
-            // against the fill whichever way round the named/unnamed pair has put them
-            crossInside(g, x, y, size, badge.isNamed() ? Color.WHITE : colour);
+        if (turns && mayTurn)
+        {
+            diamond(g, x, y, size, fill, line);
         }
-        else if (badge.isTerminus())
+        else if (turns)
         {
             g.setColor(fill);
             g.fillRect(x, y, size, size);
             g.setColor(line);
             g.drawRect(x, y, size, size);
         }
-        else if (badge.isStation())
-        {
-            // A diamond, and the big one.  The two were the other way round - a large circle for a
-            // station and a small diamond for a passing point - and the circle is the shape that
-            // loses: on a curve the tile art is itself a circular sweep, so a round badge sitting on
-            // it reads as part of the track rather than as a mark on top of it.  A diamond has
-            // corners nothing else on a diagram has, which is what makes it findable at a glance.
-            diamond(g, x, y, size, fill, line);
-        }
         else
         {
-            // And a plain sensor is a small circle: the quietest shape there is, which is right for
-            // the thing there is most of.  A diamond for every sensor on the layout made the
-            // designations that matter compete with the ones that are simply track.
             g.setColor(fill);
             g.fillOval(x, y, size, size);
             g.setColor(line);
@@ -1327,41 +1306,6 @@ public class TileAnnotation
         if (a == null || b == null) return new int[] {width / 2, height / 2};
 
         return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
-    }
-
-    private void cross(Graphics2D g, int x, int y, int size, Color fill, Color line)
-    {
-        int arm = size / 3;
-
-        int[] xs = {x + arm, x + size - arm, x + size - arm, x + size, x + size,
-                    x + size - arm, x + size - arm, x + arm, x + arm, x, x, x + arm};
-        int[] ys = {y, y, y + arm, y + arm, y + size - arm, y + size - arm, y + size,
-                    y + size, y + size - arm, y + size - arm, y + arm, y + arm};
-
-        g.setColor(fill);
-        g.fillPolygon(xs, ys, xs.length);
-        g.setColor(line);
-        g.drawPolygon(xs, ys, xs.length);
-    }
-
-    /**
-     * The cross, drawn small and centred inside another mark rather than being the mark itself.
-     *
-     * Half the size, so its arms stay within the diamond's slopes: a cross drawn at full width in a
-     * diamond has its four tips outside the shape, which reads as damage rather than as a symbol.
-     */
-    private void crossInside(Graphics2D g, int x, int y, int size, Color ink)
-    {
-        int arm = Math.max(2, size / 4);
-        int middleX = x + size / 2;
-        int middleY = y + size / 2;
-
-        g.setColor(ink);
-        g.setStroke(new BasicStroke(Math.max(1.5f, size / 7f), BasicStroke.CAP_ROUND,
-            BasicStroke.JOIN_ROUND));
-
-        g.drawLine(middleX - arm, middleY, middleX + arm, middleY);
-        g.drawLine(middleX, middleY - arm, middleX, middleY + arm);
     }
 
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
