@@ -107,6 +107,24 @@ diagram opens. Set an arrival or departure function, then run autonomy and liste
 
 ---
 
+## Added 2026-08-21, second round
+
+**23. Two signals on one station.** On a station with an approach at each end, open "Signal Protecting
+This Station", add one signal by clicking it and a second by typing its address, and check the list
+shows both with the diagram outlining both behind the window. Then remove one and add it back. Save,
+reopen the editor, and check both are still listed.
+
+**24. The same station on the railway.** Run autonomy and let a train stand there: BOTH signals have to
+go red, and both back to green when it leaves. This is the half that cannot be tested from here - the
+list can be right in the editor and only one signal actually wired into the built configuration.
+
+**25. A layout saved by the previous version.** Open it, look at a station that already had a signal
+paired: it must still be paired, and the file must be unchanged until you edit something. That is the
+compatibility case - one signal is still written as a bare string, and only a station with two gets an
+array.
+
+---
+
 ## Still untested, and known
 
 - **`testAutoDetect`** needs a Central Station answering on the network. It is red here and is not a
