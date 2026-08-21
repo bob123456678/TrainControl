@@ -19400,6 +19400,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // another page shows, and detached is not dead.  Each grid now drops the
                         // labels it replaces as it registers their successors; see addLayoutStation.
 
+                        // The one it replaces lets go of the panel first - see LayoutGrid.discard
+                        if (this.trainGrid != null) this.trainGrid.discard();
+
                         this.trainGrid = new LayoutGrid(
                             this.model.getLayout(this.LayoutList.getSelectedItem().toString()), 
                             this.layoutSizes.get(this.SizeList.getSelectedItem().toString()), 

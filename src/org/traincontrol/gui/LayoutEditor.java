@@ -333,36 +333,133 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private JPanel buildToolStrip()
     {
-        JPanel strip = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
+        JPanel strip = new JPanel();
 
+        strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.Y_AXIS));
         strip.setOpaque(false);
 
-        javax.swing.JToggleButton pick =
-            new javax.swing.JToggleButton(I18n.t("layout.ui.toolPickSeveral"));
+        // Two sections, headed the way New Components is.
+        //
+        // They were one row of three buttons, which read as three related things and they are not:
+        // picking squares is a mode the editor is in, and the size controls change the shape of the
+        // page.  A heading over each says which is which without anybody having to press one to find
+        // out.
+        JPanel picking = section(I18n.t("layout.ui.toolPickSeveral"), null);
 
-        pick.setFont(new java.awt.Font("Segoe UI", 1, 12));
-        pick.setToolTipText(I18n.t("layout.ui.tooltipPickSeveral"));
-        pick.addActionListener(e -> setSelectMode(pick.isSelected()));
+        pickSeveral = new javax.swing.JToggleButton(I18n.t("layout.ui.toolPickSeveral"));
 
-        strip.add(pick);
+        pickSeveral.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        pickSeveral.setToolTipText(I18n.t("layout.ui.tooltipPickSeveral"));
+
+        // NOT focusable.  Every shortcut in this window is handled by the FRAME's key listener - see
+        // formKeyPressed, which explains why - and a button that takes focus when it is pressed takes
+        // the key events with it.  So turning multi-select on, which is done by pressing this, was
+        // also the moment Delete, Control+C and Escape stopped working: exactly when a user needs
+        // them, and with nothing on screen to suggest why.  Every other control in this window was
+        // already made unfocusable for the same reason; these three were added later and missed it.
+        pickSeveral.setFocusable(false);
+
+        pickSeveral.addActionListener(e -> setSelectMode(pickSeveral.isSelected()));
+
+        picking.add(pickSeveral);
+
+        strip.add(picking);
+
+        // The size, in the heading's tooltip, because it is the thing a user wants to know before
+        // pressing either button and the buttons themselves are two characters wide.
+        sizeSection = section(I18n.t("layout.ui.sectionDiagramSize"), null);
 
         JButton grow = new JButton("+");
 
         grow.setFont(new java.awt.Font("Segoe UI", 1, 12));
         grow.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
+        grow.setFocusable(false);
         grow.addActionListener(e -> growEdges());
 
-        strip.add(grow);
+        sizeSection.add(grow);
 
         JButton shrink = new JButton("−");
 
         shrink.setFont(new java.awt.Font("Segoe UI", 1, 12));
         shrink.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
+        shrink.setFocusable(false);
         shrink.addActionListener(e -> shrinkEdges());
 
-        strip.add(shrink);
+        sizeSection.add(shrink);
+
+        strip.add(sizeSection);
+
+        showDiagramSize();
 
         return strip;
+    }
+
+    /**
+     * A headed group of controls, in this window's own heading style.
+     *
+     * Copied off jLabel1 - the "New Components" heading - rather than restated, so a change to the
+     * window's look reaches these without anybody having to remember they exist.
+     *
+     * @param title what to call it
+     * @param tooltip what the heading says on hover, or null for none
+     * @return the panel the controls go into
+     */
+    private JPanel section(String title, String tooltip)
+    {
+        JPanel outer = new JPanel();
+
+        outer.setLayout(new javax.swing.BoxLayout(outer, javax.swing.BoxLayout.Y_AXIS));
+        outer.setOpaque(false);
+        outer.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        javax.swing.JLabel heading = new javax.swing.JLabel(title);
+
+        heading.setFont(this.jLabel1.getFont());
+        heading.setForeground(this.jLabel1.getForeground());
+        heading.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        heading.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 2, 2, 2));
+        heading.setToolTipText(tooltip);
+
+        outer.add(heading);
+
+        JPanel controls = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
+
+        controls.setOpaque(false);
+        controls.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        outer.add(controls);
+
+        // The panel the caller fills, with its heading remembered so the size can be written into it
+        sectionHeadings.put(controls, heading);
+
+        return controls;
+    }
+
+    /** Each section's controls panel, and the heading above it. */
+    private final java.util.Map<JPanel, javax.swing.JLabel> sectionHeadings =
+        new java.util.HashMap<>();
+
+    /** The Diagram Size controls, whose heading carries the current size. */
+    private JPanel sizeSection;
+
+    /** The Pick Several toggle, held so that Escape can un-press it. */
+    private javax.swing.JToggleButton pickSeveral;
+
+    /**
+     * Writes the current width and height into the Diagram Size heading's tooltip.
+     *
+     * On the heading rather than on the buttons: the buttons say what they do, and this says what
+     * they would be doing it to.  Re-read after every grow and shrink, because a number written once
+     * at startup is a number that is wrong from the first press.
+     */
+    private void showDiagramSize()
+    {
+        javax.swing.JLabel heading = sizeSection == null ? null : sectionHeadings.get(sizeSection);
+
+        if (heading == null) return;
+
+        heading.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
+            layout.getSx() + " x " + layout.getSy()));
     }
 
     public boolean hasToolFlag()
@@ -1618,6 +1715,14 @@ public class LayoutEditor extends PositionAwareJFrame
     public void setSelectMode(boolean on)
     {
         this.selectMode = on;
+
+        // The button follows the mode rather than being the only place it is recorded.  Escape turns
+        // the mode off, and a button still showing pressed after that says the editor is in a state
+        // it is not in - which is how "pick several persists after pressing the button" happens.
+        if (this.pickSeveral != null && this.pickSeveral.isSelected() != on)
+        {
+            this.pickSeveral.setSelected(on);
+        }
     }
 
     /**
@@ -1952,6 +2057,28 @@ public class LayoutEditor extends PositionAwareJFrame
         this.selection.addRectangle(0, 0, layout.getSx() - 1, layout.getSy() - 1);
 
         this.refreshSelectionBorders();
+    }
+
+    /**
+     * Copies the picked squares and then clears them, as one step.
+     *
+     * The verb the group was missing.  Copy, paste, rotate, fill and delete were all there and cut
+     * was not, so moving a run of track to another part of the diagram meant copying it, pasting it,
+     * and going back to delete the originals - three actions for one idea, with the third the easy
+     * one to forget and the one that leaves a duplicate railway behind.
+     *
+     * Copy first and only delete if it took, because a cut that lost the tiles and kept nothing on
+     * the clipboard is the one outcome that cannot be undone by pasting.
+     *
+     * @return true if anything was cut
+     */
+    synchronized public boolean cutSelection()
+    {
+        if (this.selection.isEmpty()) return false;
+
+        if (!this.copySelection()) return false;
+
+        return this.deleteSelection();
     }
 
     /**
@@ -2419,6 +2546,103 @@ public class LayoutEditor extends PositionAwareJFrame
      * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
      * shift-the-page operation with the store rewritten to match.
      */
+    /**
+     * Inserts a row or a column at the hovered square and pushes everything past it along.
+     *
+     * Restored after being taken out with the rest of the bulk operations when multi-select arrived.
+     * The reasoning then was that making room by dragging what is in the way out of it can be seen
+     * before it happens, and that is still true - but it is a different job.  Dragging moves the
+     * squares you picked; this moves everything below or to the right of one square, which on a
+     * diagram of two hundred tiles is not a selection anybody wants to make by hand.
+     *
+     * Undoable, which is what makes it safe to reach for: each one takes a snapshot first, so a
+     * mis-aimed shift is one Control+Z away.
+     *
+     * Worth knowing, and the reason these do not appear in autonomy mode: everything the autonomy
+     * setup holds about a page is keyed by SQUARE, and shifting the diagram moves the track without
+     * moving those keys.  See the note on growEdges, which is why THAT one only ever grows at the
+     * right and the bottom.
+     */
+    public void shiftUp()
+    {
+        this.snapshotLayout();
+        
+        try
+        {
+            if (lastHoveredY > -1)
+            {
+                layout.shiftUp(lastHoveredY);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
+    public void shiftDown()
+    {
+        this.snapshotLayout();
+        
+        try
+        {
+            if (lastHoveredY > -1)
+            {
+                layout.shiftDown(lastHoveredY);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
+    public void shiftLeft()
+    {
+        this.snapshotLayout();
+
+        try
+        {
+            if (lastHoveredX > -1)
+            {
+                layout.shiftLeft(lastHoveredX);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+    
+    public void shiftRight()
+    {
+        this.snapshotLayout();
+
+        try
+        {
+            if (lastHoveredX > -1)
+            {
+                layout.shiftRight(lastHoveredX);
+
+                refreshGrid();
+            }
+        }
+        catch (Exception e)
+        {
+            this.parent.getModel().log(e.getMessage());
+            this.parent.getModel().log(e);
+        }
+    }
+
     public void growEdges()
     {
         if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
@@ -2433,6 +2657,8 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             layout.addRowsAndColumns(1, 1);
+
+            showDiagramSize();
 
             // The picked squares are let go of.  A selection that outlived a resize would still name
             // coordinates by number, and after a SHRINK some of those numbers are off the diagram -
@@ -2470,6 +2696,8 @@ public class LayoutEditor extends PositionAwareJFrame
         try
         {
             layout.trimEdges();
+
+            showDiagramSize();
 
             clearSelection();
 
@@ -2645,6 +2873,15 @@ public class LayoutEditor extends PositionAwareJFrame
         
         try
         {       
+            // The outgoing grid lets go of the panel before the new one takes it.
+            //
+            // A grid hides itself until its tiles have decoded and arms two timers to reveal it; both
+            // outlive a rebuild and both still hold this panel.  Left armed, the old grid's grace
+            // timer drops a spinner into the middle of the new one, and a FlowLayout with an extra
+            // component in it pushes the tiles along - which is a row that comes out half drawn a
+            // moment after a resize.
+            if (grid != null) grid.discard();
+
             grid = new LayoutGrid(this.layout, size,
                 this.ExtLayoutPanel,
                 this,
@@ -3151,7 +3388,18 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
             {
-                this.initCopy(getLastHoveredLabel(), null, true);
+                // The verb the selection was missing.  Copy, paste, rotate and delete were all there
+                // for a group and cut was not, so moving several squares to another page meant
+                // copying them, pasting them, and then going back to delete the originals by hand -
+                // three steps for one idea, with the third easy to forget.
+                if (!this.selection.isEmpty())
+                {
+                    this.cutSelection();
+                }
+                else
+                {
+                    this.initCopy(getLastHoveredLabel(), null, true);
+                }
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
             {
@@ -3217,9 +3465,12 @@ public class LayoutEditor extends PositionAwareJFrame
             else if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
             {
                 // Escape lets go of everything the editor is holding, which is what a user pressing it
-                // means: the picked squares, the copied group, and the armed tool alike
+                // means: the picked squares, the copied group, the armed tool - and the picking MODE,
+                // which stayed on afterwards with its button still pressed.  Letting go of the
+                // squares but not of the mode is the half of Escape nobody asks for.
                 this.clearSelection();
                 this.resetClipboard();
+                this.setSelectMode(false);
             }
         });
     }//GEN-LAST:event_formKeyPressed

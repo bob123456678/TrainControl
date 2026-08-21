@@ -106,6 +106,16 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             copySelected.setEnabled(anyPicked);
             selectionMenu.add(copySelected);
 
+            // Cut, which the group had no way of doing.  Copy, paste, rotate, fill and delete were
+            // all here; moving a run of track therefore meant copying it, pasting it, and going back
+            // to delete the originals - three actions for one idea, and the third is the one that
+            // gets forgotten and leaves a duplicate railway behind.
+            JMenuItem cutSelected = new JMenuItem(I18n.t("ui.cut"));
+            cutSelected.addActionListener(event -> edit.cutSelection());
+            cutSelected.setToolTipText("Control+X");
+            cutSelected.setEnabled(anyPicked);
+            selectionMenu.add(cutSelected);
+
             JMenuItem fillSelected = new JMenuItem(I18n.t("layout.ui.menuFillSelection"));
             fillSelected.addActionListener(event -> edit.fillSelection());
             fillSelected.setEnabled(anyPicked && edit.hasToolFlag());
@@ -371,10 +381,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         // NOT a row at the top, which is what was asked for.  Inserting one moves every tile down, and
         // everything autonomy knows about a page is keyed by SQUARE - see LayoutEditor.growEdges.
         //
-        // The four "shift the whole diagram" items that used to sit below have gone.  Each inserted a
-        // row or column at the hovered square and pushed everything past it along - a thing users
-        // reached for to make room and then could not undo by eye.  With a selection, making room is
-        // dragging what is in the way out of it, which can be seen before it happens.
+        // The four "shift the whole diagram" items are below, restored.  Each inserts a row or a
+        // column at the hovered square and pushes everything past it along.  They were taken out when
+        // multi-select arrived, on the reasoning that making room is now dragging what is in the way
+        // out of it - which can be seen before it happens, and is still true, and is a different job.
+        // Dragging moves the squares you picked; these move everything below or to the right of one
+        // square, which on a diagram of two hundred tiles is not a selection anybody wants to make by
+        // hand.  Each takes a snapshot first, so a mis-aimed one is a Control+Z away.
         menuItem = new JMenuItem(
             I18n.f(
                 "layout.ui.menuIncreaseSize",
@@ -416,6 +429,21 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         diagramSubmenu.add(menuItem);
 
         diagramSubmenu.addSeparator();
+
+        // In the order somebody reaches for them: down and right make room, up and left take it back.
+        addShift(diagramSubmenu, "layout.ui.shiftDown", "layout.ui.tooltip.shiftDiagramDown",
+            () -> edit.shiftDown());
+
+        addShift(diagramSubmenu, "layout.ui.shiftRight", "layout.ui.tooltip.shiftDiagramRight",
+            () -> edit.shiftRight());
+
+        addShift(diagramSubmenu, "layout.ui.shiftUp", "layout.ui.tooltip.shiftDiagramUp",
+            () -> edit.shiftUp());
+
+        addShift(diagramSubmenu, "layout.ui.shiftLeft", "layout.ui.tooltip.shiftDiagramLeft",
+            () -> edit.shiftLeft());
+
+        diagramSubmenu.addSeparator();
         
         menuItem = new JMenuItem(I18n.t("layout.ui.clearDiagram"));
         menuItem.addActionListener(event -> 
@@ -433,6 +461,33 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         diagramSubmenu.add(menuItem);
         
         add(diagramSubmenu);
+    }
+
+    /**
+     * One of the four shift items.
+     *
+     * Written once rather than four times: they differ only in their words and in which method they
+     * call, and four copies of the same try/catch is four places for one of them to drift.
+     */
+    private void addShift(JMenu into, String label, String tooltip, Runnable action)
+    {
+        JMenuItem item = new JMenuItem(I18n.t(label));
+
+        item.addActionListener(event ->
+        {
+            try
+            {
+                action.run();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+        });
+
+        item.setToolTipText(I18n.t(tooltip));
+
+        into.add(item);
     }
 }
    

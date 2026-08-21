@@ -51,6 +51,38 @@ public class LayoutGrid
 
     // Component that holds the layout
     private JPanel container;
+
+    /**
+     * Whether this grid has been replaced by another on the same panel.
+     *
+     * A grid hides itself until its tiles have finished decoding, and shows a spinner in the meantime
+     * - which means two timers and a callback holding the PANEL, still due to fire after the grid
+     * that armed them has gone.  Rebuilding the diagram calls parent.removeAll(), so those three then
+     * act on somebody else's grid: the grace timer adds a spinner into the middle of it, and because
+     * the panel is a FlowLayout an extra component there pushes the tiles along and the last row comes
+     * out short.  A half-drawn row appearing after a resize is exactly that.
+     *
+     * So a replaced grid is told, and its three stragglers do nothing.
+     */
+    private volatile boolean discarded = false;
+
+    private javax.swing.Timer failsafe;
+
+    private javax.swing.Timer grace;
+
+    /**
+     * Stops this grid from touching its panel again.
+     *
+     * Called on the OUTGOING grid before a new one is built over the same panel.  Idempotent, and
+     * safe on a grid that never had a spinner.
+     */
+    public void discard()
+    {
+        discarded = true;
+
+        if (failsafe != null) failsafe.stop();
+        if (grace != null) grace.stop();
+    }
     
     private boolean cacheable = false;
     
@@ -512,7 +544,8 @@ public class LayoutGrid
 
         final Runnable reveal = () ->
         {
-            if (revealed[0]) return;
+            // Nothing from a grid that has been replaced.  See discard().
+            if (revealed[0] || discarded) return;
 
             revealed[0] = true;
 
@@ -532,15 +565,15 @@ public class LayoutGrid
         // for the rest of the session, and a blank window is a far worse fault than the flicker this
         // exists to remove.  Nothing known can swallow the count - the decrement is in a finally - but
         // "nothing known" is not a good enough reason to make the diagram depend on it.
-        javax.swing.Timer failsafe = new javax.swing.Timer(8000, e -> reveal.run());
+        failsafe = new javax.swing.Timer(8000, e -> reveal.run());
 
         failsafe.setRepeats(false);
         failsafe.start();
 
         // A short grace period before the spinner is shown at all - see above
-        javax.swing.Timer grace = new javax.swing.Timer(120, e ->
+        grace = new javax.swing.Timer(120, e ->
         {
-            if (revealed[0]) return;
+            if (revealed[0] || discarded) return;
 
             parent.add(spinner);
 

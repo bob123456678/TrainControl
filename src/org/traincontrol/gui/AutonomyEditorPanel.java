@@ -1366,15 +1366,21 @@ public class AutonomyEditorPanel extends JPanel
 
         // Offered on a blank square too, not only on one that already carries text: writing a station
         // name on a blank square is how a diagram with no text squares at all gets its first one.
-        // Not over somebody's own caption.  A square carrying text that is not a station label is part
-        // of the user's drawing - a yard name, a note - and this editor writes autonomy, not diagrams.
-        // Offered and refused rather than hidden, so it is clear the square was considered.
+        //
+        // And offered over somebody's own text, having been refused there.  The reasoning was that a
+        // square carrying text which is not a caption is part of the user's drawing - a yard name, a
+        // note - and this editor writes autonomy rather than diagrams.  True, but it left a state
+        // with no way out: Adam moved a station, replaced its label, moved it back and cleared the
+        // label, and the square he wanted the name on now held leftover text of its own.  The item
+        // was greyed, so the label could not be put back at all, from here or from anywhere.
+        //
+        // So it asks instead, naming the text it would replace.  A question is a way out; a disabled
+        // menu item is not.
         boolean mine = label.trim().isEmpty() || captioned != null;
 
         javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
             () -> promptStationLabel(tile, component));
 
-        name.setEnabled(mine);
         name.setToolTipText(mine ? null : I18n.t("autosetup.ui.tooltipTextInTheWay"));
 
         menu.add(name);
@@ -1392,6 +1398,25 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
     {
+        // Text of the user's own on this square is replaced only if they say so.
+        //
+        // The text is named in the question, because "there is something here" is not enough to
+        // decide on - the whole reason somebody is doing this is that they are looking at a square
+        // whose contents they have lost track of.
+        String standing = component == null || component.getLabel() == null
+            ? "" : component.getLabel().trim();
+
+        if (!standing.isEmpty() && session.getCaptionTarget(tile) == null)
+        {
+            if (JOptionPane.showConfirmDialog(owner(),
+                I18n.f("autosetup.ui.confirmReplaceText", standing),
+                I18n.t("autosetup.ui.titleStationLabel"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION)
+            {
+                return;
+            }
+        }
+
         // A station labelling ITSELF has nothing to ask about.  Offering a list of every station on
         // the layout, with this one's own name buried in it, is a question whose answer is already
         // known - and getting it wrong would put another platform's name on this platform.
@@ -2088,13 +2113,48 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        Object chosen = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptPickPartner"), I18n.t("autosetup.ui.toolPortals"),
-            JOptionPane.PLAIN_MESSAGE, null, labels.toArray(), labels.get(0));
+        // The diagram follows the dropdown.
+        //
+        // It used to follow the OK button: pick a partner, watch the pair light up, and if it was the
+        // wrong one, undo it and open the list again.  The names in this list are the names of things
+        // on a diagram of two hundred squares, and a coordinate pair is not something anybody holds
+        // in their head - so the moment to be shown which square is meant is while the choice is
+        // being made, not after it has been committed.
+        //
+        // Built by hand rather than through showInputDialog, which gives no way at the combo box.
+        final javax.swing.JComboBox<String> choice =
+            new javax.swing.JComboBox<>(labels.toArray(new String[0]));
 
-        if (chosen == null) return;
+        choice.addActionListener(e ->
+        {
+            int at = choice.getSelectedIndex();
 
-        session.pairPortals(tile, candidates.get(labels.indexOf(String.valueOf(chosen))));
+            if (at >= 0 && at < candidates.size() && onReveal != null)
+            {
+                onReveal.accept(candidates.get(at));
+            }
+        });
+
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+
+        panel.add(new JLabel(I18n.t("autosetup.ui.promptPickPartner")), java.awt.BorderLayout.NORTH);
+        panel.add(choice, java.awt.BorderLayout.CENTER);
+
+        // The one it opens on is shown too, so the diagram and the list agree before anything is
+        // touched - otherwise the first entry looks like nothing until it is scrolled past and back.
+        if (onReveal != null) onReveal.accept(candidates.get(0));
+
+        if (JOptionPane.showConfirmDialog(owner(), panel, I18n.t("autosetup.ui.toolPortals"),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
+        {
+            return;
+        }
+
+        int at = choice.getSelectedIndex();
+
+        if (at < 0) return;
+
+        session.pairPortals(tile, candidates.get(at));
     }
 
     /**

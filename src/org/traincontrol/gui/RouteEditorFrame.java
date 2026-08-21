@@ -260,7 +260,21 @@ public class RouteEditorFrame extends JFrame
 
         buttonsOf(conditionSection).add(testButton);
 
-        conditionSection.add(readsAs, BorderLayout.SOUTH);
+        // The reading and the buttons, stacked, in the one slot BorderLayout has at the bottom.
+        //
+        // The reading used to be added straight to SOUTH, where section() had already put the button
+        // row - and a second component at SOUTH does not sit under the first, it REPLACES it.  The
+        // row was still a child of the panel with nothing laying it out, so it had no size and never
+        // appeared.  Nobody noticed while the conditions section had no buttons of its own; adding
+        // Test to it is what made an invisible row visible as a missing feature.
+        JPanel below = new JPanel(new BorderLayout(4, 4));
+
+        below.setBackground(java.awt.Color.WHITE);
+
+        below.add(readsAs, BorderLayout.NORTH);
+        below.add(buttonsOf(conditionSection), BorderLayout.SOUTH);
+
+        conditionSection.add(below, BorderLayout.SOUTH);
 
         middle.add(conditionSection);
 
