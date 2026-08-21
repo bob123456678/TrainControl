@@ -438,217 +438,9 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setPreferredSize(new Dimension(0, 0)); // no default height
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
-    }
 
-    /**
-     * Puts the tools in the sidebar, BESIDE the palette rather than inside it.
-     *
-     * They were inside newComponents, which is the white bordered panel the tiles are laid out in -
-     * so picking several squares and resizing the page read as two more things to place on the
-     * diagram, which is what everything else in that panel is.  They are not; they are tools, and
-     * they now sit under headings of their own on the window's own background.
-     *
-     * Mounted by REPLACING the Toggle Visibility heading with a column holding the tools and then
-     * that heading, which is how everything added to this window since the diagram work has been
-     * mounted: the layout is generated and cannot be edited by hand, but GroupLayout will swap one
-     * component for another.
-     */
-    private void mountToolStrip()
-    {
-        if (toolStrip != null) return;
-
-        toolStrip = buildToolStrip();
-
-        // Not from the constructor, and not from render() either.
-        //
-        // GroupLayout.replace refuses a component it has not registered, and it registers them the
-        // first time it lays the window out - which is neither of those moments, whatever pack()
-        // looks like it is doing.  From the constructor it threw "Component must already exist" and
-        // took the whole editor with it; from render() it threw the same and fell back to putting
-        // the tools inside the palette, which is where they were not wanted.
-        //
-        // So it waits for the window to be SHOWN, which is after the first layout by definition.
-        // The autonomy panel mounts itself the same way and never hit this, because by then the user
-        // has been looking at the window for a while.
-        try
-        {
-            if (!(getContentPane().getLayout() instanceof javax.swing.GroupLayout))
-            {
-                throw new IllegalStateException("not a GroupLayout");
-            }
-
-            JPanel column = new JPanel();
-
-            column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
-            column.setOpaque(false);
-
-            toolStrip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-            this.jLabel2.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-            column.add(toolStrip);
-            column.add(this.jLabel2);
-
-            ((javax.swing.GroupLayout) getContentPane().getLayout()).replace(this.jLabel2, column);
-        }
-        catch (RuntimeException e)
-        {
-            // Back inside the palette, which is where these lived before and is not where they
-            // belong - but a toolbar in the wrong place is a far smaller fault than an editor that
-            // will not open, and swapping a component in a generated layout is exactly the sort of
-            // thing a later change to the form can quietly break.
-            if (parent != null && parent.getModel() != null) parent.getModel().log(e);
-
-            this.newComponents.add(toolStrip);
-        }
-
-        this.newComponents.revalidate();
-        getContentPane().revalidate();
-        getContentPane().repaint();
-    }
-
-    /**
-     * Mounts the tools the first time this window is shown.
-     *
-     * addNotify is too early - the peer exists but nothing has been laid out - and the constructor
-     * and render() are both earlier still.  A window listener fires after the first layout, which is
-     * the one thing GroupLayout.replace needs.
-     */
-    @Override
-    public void setVisible(boolean visible)
-    {
-        super.setVisible(visible);
-
-        if (visible)
-        {
-            javax.swing.SwingUtilities.invokeLater(() -> mountToolStrip());
-        }
-    }
-
-    /**
-     * The tools, held so that autonomy mode can put them away.
-     *
-     * Picking several squares and resizing the page are both about EDITING the diagram, and autonomy
-     * mode is not editing the diagram - it is deciding which way trains may run over one.  They used
-     * to live inside the palette, which that mode empties wholesale, so they went away by accident;
-     * out here they have to be told.
-     */
-    private JPanel toolStrip;
-
-    /**
-     * The row of tools under the tile palette: pick-several, and the two size controls.
-     *
-     * Hand-built rather than drawn in the form editor, which is how everything added to this window
-     * since the diagram work has been done - the generated blocks cannot be edited by hand, so a new
-     * control either goes in here or goes nowhere.
-     *
-     * @return the strip
-     */
-    private JPanel buildToolStrip()
-    {
-        JPanel strip = new JPanel();
-
-        strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.Y_AXIS));
-        strip.setOpaque(false);
-
-        // Only the size controls.
-        //
-        // Pick Several was a button beside these, and it is gone: it was a MODE, which meant finding
-        // it, switching it on, using it, and remembering to switch it off - and "Pick by Dragging a
-        // Box" on the right-click menu does the same job for one box and then gets out of the way.
-        // A mode with a one-shot equivalent is a mode nobody needs.
-        //
-        // The size itself goes in the heading's tooltip, because it is what somebody wants to know
-        // before pressing either button and the buttons themselves are two characters wide.
-        sizeSection = section(I18n.t("layout.ui.sectionDiagramSize"), null);
-
-        JButton grow = new JButton("+");
-
-        grow.setFont(new java.awt.Font("Segoe UI", 1, 12));
-        grow.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
-        grow.setFocusable(false);
-        grow.addActionListener(e -> growEdges());
-
-        sizeSection.add(grow);
-
-        JButton shrink = new JButton("−");
-
-        shrink.setFont(new java.awt.Font("Segoe UI", 1, 12));
-        shrink.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
-        shrink.setFocusable(false);
-        shrink.addActionListener(e -> shrinkEdges());
-
-        sizeSection.add(shrink);
-
-        strip.add(sizeSection);
-
+        // So the heading reads correctly before anything has been pressed
         showDiagramSize();
-
-        return strip;
-    }
-
-    /**
-     * A headed group of controls, in this window's own heading style.
-     *
-     * Copied off jLabel1 - the "New Components" heading - rather than restated, so a change to the
-     * window's look reaches these without anybody having to remember they exist.
-     *
-     * @param title what to call it
-     * @param tooltip what the heading says on hover, or null for none
-     * @return the panel the controls go into
-     */
-    private JPanel section(String title, String tooltip)
-    {
-        JPanel outer = new JPanel();
-
-        outer.setLayout(new javax.swing.BoxLayout(outer, javax.swing.BoxLayout.Y_AXIS));
-        outer.setOpaque(false);
-        outer.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-        javax.swing.JLabel heading = new javax.swing.JLabel(title);
-
-        heading.setFont(this.jLabel1.getFont());
-        heading.setForeground(this.jLabel1.getForeground());
-        heading.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        heading.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 2, 2, 2));
-        heading.setToolTipText(tooltip);
-
-        outer.add(heading);
-
-        JPanel controls = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
-
-        controls.setOpaque(false);
-        controls.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-        outer.add(controls);
-
-        // The panel the caller fills, with its heading remembered so the size can be written into it
-        sectionHeadings.put(controls, heading);
-
-        return controls;
-    }
-
-    /** Each section's controls panel, and the heading above it. */
-    private final java.util.Map<JPanel, javax.swing.JLabel> sectionHeadings =
-        new java.util.HashMap<>();
-
-    /** The Diagram Size controls, whose heading carries the current size. */
-    private JPanel sizeSection;
-
-    /**
-     * Writes the current width and height into the Diagram Size heading's tooltip.
-     *
-     * On the heading rather than on the buttons: the buttons say what they do, and this says what
-     * they would be doing it to.  Re-read after every grow and shrink, because a number written once
-     * at startup is a number that is wrong from the first press.
-     */
-    private void showDiagramSize()
-    {
-        javax.swing.JLabel heading = sizeSection == null ? null : sectionHeadings.get(sizeSection);
-
-        if (heading == null) return;
-
-        heading.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
-            layout.getSx() + " x " + layout.getSy()));
     }
 
     public boolean hasToolFlag()
@@ -1269,8 +1061,16 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
-        // See the field: these are diagram-editing tools and this mode does not edit the diagram.
-        if (toolStrip != null) toolStrip.setVisible(session == null);
+        // Growing and shrinking the page is EDITING the diagram, and this mode does not edit the
+        // diagram - it decides which way trains may run over one.  So the two size buttons and the
+        // heading over them go away with the palette they sit under.
+        //
+        // Toggle Visibility stays.  Text labels and addresses are about what is DRAWN, which is a
+        // question in autonomy mode as much as any other - the addresses are half of how somebody
+        // checks that the square they are setting up is the sensor they meant.
+        if (this.diagramSize != null) this.diagramSize.setVisible(session == null);
+        if (this.plusButton != null) this.plusButton.setVisible(session == null);
+        if (this.minusButton != null) this.minusButton.setVisible(session == null);
 
         if (session == null)
         {
@@ -3188,6 +2988,26 @@ public class LayoutEditor extends PositionAwareJFrame
         return moving;
     }
 
+    /**
+     * Writes the current width and height into the Diagram Size heading's tooltip.
+     *
+     * On the heading rather than on the buttons: the buttons say what they do, and this says what
+     * they would be doing it to.  Re-read after every grow and shrink, because a number written once
+     * at startup is wrong from the first press.
+     */
+    private void showDiagramSize()
+    {
+        if (this.diagramSize == null) return;
+
+        // The heading's own text as well, which the form points at the visibility key - two headings
+        // reading "Diagram Size" and nothing saying Toggle Visibility.  Set here rather than in the
+        // form, which is generated and not mine to edit; say the word and it moves into the .form.
+        this.diagramSize.setText(I18n.t("layout.ui.sectionDiagramSize"));
+
+        this.diagramSize.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
+            layout.getSx() + " x " + layout.getSy()));
+    }
+
     public void growEdges()
     {
         if (layout.getSx() >= MAX_SIZE || layout.getSy() >= MAX_SIZE)
@@ -3759,8 +3579,11 @@ public class LayoutEditor extends PositionAwareJFrame
         jLabel1 = new javax.swing.JLabel();
         showTextCheckbox = new javax.swing.JCheckBox();
         showAddressCheckbox = new javax.swing.JCheckBox();
-        jLabel2 = new javax.swing.JLabel();
+        toggleVisibility = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
+        diagramSize = new javax.swing.JLabel();
+        plusButton = new javax.swing.JButton();
+        minusButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
@@ -3848,9 +3671,29 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         });
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(0, 0, 155));
-        jLabel2.setText(bundle.getString("layout.ui.toggleVisibility")); // NOI18N
+        toggleVisibility.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        toggleVisibility.setForeground(new java.awt.Color(0, 0, 155));
+        toggleVisibility.setText(bundle.getString("layout.ui.toggleVisibility")); // NOI18N
+
+        diagramSize.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13)); // NOI18N
+        diagramSize.setForeground(new java.awt.Color(0, 0, 155));
+        diagramSize.setText(bundle.getString("layout.ui.toggleVisibility")); // NOI18N
+
+        plusButton.setFont(new java.awt.Font("Segoe UI Black", 0, 11)); // NOI18N
+        plusButton.setText("+");
+        plusButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                plusButtonActionPerformed(evt);
+            }
+        });
+
+        minusButton.setFont(new java.awt.Font("Segoe UI Black", 0, 11)); // NOI18N
+        minusButton.setText("-");
+        minusButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                minusButtonActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -3860,15 +3703,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 675, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(saveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(showTextCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(showAddressCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jSeparator1))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(saveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(showTextCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(showAddressCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(toggleVisibility, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jSeparator1)
+                        .addComponent(diagramSize, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(plusButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(minusButton)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -3881,7 +3730,13 @@ public class LayoutEditor extends PositionAwareJFrame
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(newComponents, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel2)
+                        .addComponent(diagramSize)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(plusButton)
+                            .addComponent(minusButton))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(toggleVisibility)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(showTextCheckbox)
                         .addGap(4, 4, 4)
@@ -4084,16 +3939,27 @@ public class LayoutEditor extends PositionAwareJFrame
         toggleText();
     }//GEN-LAST:event_showTextCheckboxActionPerformed
 
+    private void plusButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plusButtonActionPerformed
+        growEdges();
+    }//GEN-LAST:event_plusButtonActionPerformed
+
+    private void minusButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_minusButtonActionPerformed
+        shrinkEdges();
+    }//GEN-LAST:event_minusButtonActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ExtLayoutPanel;
     private javax.swing.JButton cancelButton;
+    private javax.swing.JLabel diagramSize;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JButton minusButton;
     private javax.swing.JPanel newComponents;
+    private javax.swing.JButton plusButton;
     private javax.swing.JButton saveButton;
     private javax.swing.JCheckBox showAddressCheckbox;
     private javax.swing.JCheckBox showTextCheckbox;
+    private javax.swing.JLabel toggleVisibility;
     // End of variables declaration//GEN-END:variables
 }
