@@ -250,6 +250,14 @@ public class RouteEditorFrame extends JFrame
 
         content.add(buttons, BorderLayout.SOUTH);
 
+        // Escape is Cancel.  A modal-feeling window that can only be dismissed by finding a button is
+        // one the keyboard cannot get out of, and this one is opened from a list somebody is working
+        // down.  WHEN_IN_FOCUSED_WINDOW is checked after the focused component's own bindings, so a
+        // cell being edited still gets its Escape first and cancels the edit rather than the window.
+        getRootPane().registerKeyboardAction(e -> dispose(),
+            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+
         return content;
     }
 
@@ -302,12 +310,19 @@ public class RouteEditorFrame extends JFrame
 
     private JPanel header()
     {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        // No leading gap.  FlowLayout puts its hgap before the FIRST component as well as between
+        // them, so Name sat eight pixels in from the left edge while the framed panels below it
+        // started at the edge - near enough to look like a mistake rather than an indent.  The gaps
+        // between the fields are struts instead, which puts them where they were and leaves the
+        // first label flush with everything else down that side.
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
 
         row.setBackground(java.awt.Color.WHITE);
 
         row.add(label(I18n.t("route.ui.frameName")));
+        row.add(javax.swing.Box.createHorizontalStrut(8));
         row.add(nameField);
+        row.add(javax.swing.Box.createHorizontalStrut(8));
 
         // The tick first, and the sensor only when it is ticked.
         //
@@ -315,10 +330,14 @@ public class RouteEditorFrame extends JFrame
         // so a sensor box standing next to an unticked box is asking a question that has no bearing on
         // anything yet.  Ticking is what raises it.
         row.add(enabledBox);
+        row.add(javax.swing.Box.createHorizontalStrut(8));
 
         row.add(sensorLabel);
+        row.add(javax.swing.Box.createHorizontalStrut(8));
         row.add(s88Field);
+        row.add(javax.swing.Box.createHorizontalStrut(8));
         row.add(triggerLabelText);
+        row.add(javax.swing.Box.createHorizontalStrut(8));
         row.add(triggerBox);
 
         enabledBox.addActionListener(e -> showSensorIfAutomatic());
@@ -564,6 +583,10 @@ public class RouteEditorFrame extends JFrame
      */
     private boolean isSignalAt(CommandRow row)
     {
+        // The layout is what knows.  Without one - the editor opened from a test, or before a control
+        // station has answered - every accessory reads as a switch, which is what most of them are.
+        if (parent == null || parent.getModel() == null) return false;
+
         try
         {
             Accessory accessory =
@@ -1273,16 +1296,48 @@ public class RouteEditorFrame extends JFrame
     /**
      * A condition in as few words as possible, for the reading above.
      */
-    private static String shortly(RouteCommand command)
+    private String shortly(RouteCommand command)
     {
         if (command == null) return "?";
 
-        if (command.isFeedback())
-        {
-            return "s88 " + command.getAddress() + (command.getSetting() ? " on" : " off");
-        }
+        CommandRow row = CommandRow.of(command);
 
-        return String.valueOf(command);
+        // A kind this editor has no controls for.  Its own toString is the only description there is,
+        // and printing it is better than printing nothing.
+        if (row == null) return String.valueOf(command);
+
+        switch (row.getKind())
+        {
+            // The words the row's own dropdown offers, so the reading and the table agree.  A signal
+            // and a switch are the same device at the same address and the same two states, and only
+            // the layout knows which is standing there - so the reading asks, exactly as the Setting
+            // column does.
+            case ACCESSORY: return I18n.f(isSignalAt(row) ? "route.reads.signal" : "route.reads.switch",
+                row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
+
+            case FEEDBACK: return I18n.f("route.reads.sensor",
+                row.getTarget(), settingWords(row)[command.getSetting() ? 1 : 0]);
+
+            case FUNCTION: return I18n.f("route.reads.function", row.getTarget(),
+                command.getFunction(), command.getSetting() ? "on" : "off");
+
+            case LOCOMOTIVE_SPEED: return I18n.f("route.reads.speed",
+                row.getTarget(), row.getSetting());
+
+            case LOCOMOTIVE_DIRECTION: return I18n.f("route.reads.direction",
+                row.getTarget(), row.getSetting());
+
+            case ROUTE: return I18n.f("route.reads.route", row.getTarget());
+
+            // "Train X is standing at sensor 21" - the one kind that is a fact rather than an order,
+            // which is why it is only ever a condition.
+            case AUTO_LOCOMOTIVE: return I18n.f("route.reads.trainAt",
+                row.getTarget(), row.getSetting());
+
+            // Stop, all functions off, lights on: nothing to name and nothing to set, so the kind's
+            // own label already says the whole thing.
+            default: return CommandRow.labelFor(row.getKind());
+        }
     }
 
     /**
@@ -1937,8 +1992,10 @@ public class RouteEditorFrame extends JFrame
 
                 ConditionOutline.Row row = rows.get(line);
 
-                if (column == UP) return line > 0 ? MOVE_UP : "";
-                if (column == DOWN) return line < rows.size() - 1 ? MOVE_DOWN : "";
+                // Conditions only, and only where there is another condition that way to swap with.
+                // A word does not move by hand, and an arrow on one would have nothing to do.
+                if (column == UP) return ConditionOutline.canMove(rows, line, -1) ? MOVE_UP : "";
+                if (column == DOWN) return ConditionOutline.canMove(rows, line, 1) ? MOVE_DOWN : "";
 
                 if (column == INDENT)
                 {
@@ -2245,18 +2302,42 @@ public class RouteEditorFrame extends JFrame
             model.fireTableDataChanged();
         }
 
+        /**
+         * Moves a condition past the one above or below it, leaving the outline's shape alone.
+         *
+         * Not by moving the LINE.  The joining words are lines of their own here, so lifting a
+         * condition one line put it next to the word above instead of past it - and a word with a
+         * word on one side and nothing on the other is not a sentence, so tidy() swept it away.
+         * Three conditions joined by two ANDs came back as three conditions joined by one, which is
+         * a change to when the route fires made by a button that says nothing about firing.
+         *
+         * So the two conditions trade places and every word stays where it is.  The shape on screen
+         * IS the logic - which condition is nested inside which group, joined by which word - and
+         * reordering the conditions within it is what the arrows are for.  "A and (B or C)" with B
+         * moved up is "B and (A or C)": the same sentence about different sensors, which is what
+         * somebody pressing the arrow beside B means.
+         *
+         * @param line the row that was pressed
+         * @param by -1 for up, 1 for down
+         */
         void shift(int line, int by)
         {
-            int to = line + by;
+            if (!ConditionOutline.canMove(rows, line, by)) return;
 
-            if (line < 0 || line >= rows.size() || to < 0 || to >= rows.size()) return;
+            List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
 
-            rows.add(to, rows.remove(line));
+            rows.clear();
+            rows.addAll(after);
 
-            tidy();
-
+            // No tidy(): nothing about the shape changed, only which condition sits where in it.
             settle();
             model.fireTableDataChanged();
+
+            // Where the condition ended up, which is past the words rather than one line along
+            int to = line + by;
+
+            while (to >= 0 && to < rows.size() && rows.get(to).isJoiner()) to += by;
+
             setRowSelectionInterval(to, to);
         }
 

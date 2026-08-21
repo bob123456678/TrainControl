@@ -171,9 +171,25 @@ public class MarklinRoute extends Route
         }
     }
 
+    /**
+     * Route IDs to treat as if they had come from the Central Station.
+     *
+     * TEMPORARY, FOR TESTING THE READ-ONLY ROUTE EDITOR.  A route from a Central Station is not
+     * editable here - the editor opens it greyed, with Save switched off - and there is no way to
+     * try that on a bench without a Central Station holding routes.  Two of the local ones are made
+     * to look imported so the read-only path can be walked.
+     *
+     * DELETE THIS FIELD AND THE TWO LINES BELOW IT ONCE THAT IS DONE.  Left in, it makes two routes
+     * on somebody's layout permanently uneditable for a reason nothing on screen explains.
+     */
+    private static final java.util.Set<Integer> PRETEND_IMPORTED =
+        new java.util.HashSet<>(java.util.Arrays.asList(48, 49));
+
     @Override
     public boolean isLocked()
     {
+        if (PRETEND_IMPORTED.contains(this.getId())) return true;
+
         return locked;
     }
 

@@ -263,6 +263,80 @@ public final class ConditionOutline
     }
 
     /**
+     * The outline with one condition moved past the condition above or below it.
+     *
+     * Not by moving the LINE.  The joining words are lines of their own, so lifting a condition one
+     * line puts it next to the word above rather than past it - and a word with a word on one side
+     * and nothing on the other is not a sentence, so straightening the outline afterwards throws it
+     * away.  "A and B" with B moved up came back as "A B": one fewer condition joined, and a change
+     * to when the route fires made by a button that says nothing about firing.
+     *
+     * So the two conditions trade places and every word, and every level, stays exactly where it
+     * was.  The shape IS the logic here - which condition is nested in which group, joined by which
+     * word - and the arrows reorder the conditions within it rather than rebuilding it.  "A and (B
+     * or C)" with B moved up is "B and (A or C)": the same sentence about different sensors, which
+     * is what somebody pressing the arrow beside B means.
+     *
+     * @param rows the outline
+     * @param line the row that was pressed
+     * @param by -1 for up, 1 for down
+     * @return a new list in the new order, or a copy unchanged where there is nowhere to go
+     */
+    public static List<Row> moved(List<Row> rows, int line, int by)
+    {
+        List<Row> out = new ArrayList<>();
+
+        if (rows != null) out.addAll(rows);
+
+        int to = destination(out, line, by);
+
+        if (to < 0) return out;
+
+        RouteCommand moving = out.get(line).getCommand();
+
+        out.set(line, out.get(line).about(out.get(to).getCommand()));
+        out.set(to, out.get(to).about(moving));
+
+        return out;
+    }
+
+    /**
+     * Whether there is another condition that way for this one to trade places with.
+     *
+     * Asked by the editor to decide whether to draw the arrow at all: an arrow that does nothing is
+     * worse than no arrow, because pressing it reads as the feature being broken.
+     *
+     * @param rows the outline
+     * @param line the row
+     * @param by -1 to look up, 1 to look down
+     * @return true when moved() would do something
+     */
+    public static boolean canMove(List<Row> rows, int line, int by)
+    {
+        return destination(rows, line, by) >= 0;
+    }
+
+    /**
+     * Which row a move would land on, or -1 for none.
+     *
+     * @return the index of the nearest condition that way, skipping the words in between
+     */
+    private static int destination(List<Row> rows, int line, int by)
+    {
+        if (rows == null || line < 0 || line >= rows.size() || by == 0) return -1;
+
+        // A word's place is settled by the conditions around it, so it is not moved by hand.
+        if (rows.get(line).isJoiner()) return -1;
+
+        for (int at = line + by; at >= 0 && at < rows.size(); at += by)
+        {
+            if (!rows.get(at).isJoiner()) return at;
+        }
+
+        return -1;
+    }
+
+    /**
      * Walks the tree, flattening runs of one word and indenting anything bracketed.
      */
     private static void write(NodeExpression node, int depth, List<Row> into)

@@ -249,6 +249,76 @@ public class testConditionOutline
     }
 
     /**
+     * Moving a condition past its neighbour leaves the joining word where it was.
+     *
+     * Adam's: three lines reading "A and B", with B moved up, came back as "A B" - the AND gone and
+     * the route now firing on a condition nobody changed.  Moving the LINE put B beside the word
+     * instead of past it, and a word with nothing on one side is not a sentence, so the tidy that
+     * runs after every move swept the word away.  The arrow said nothing about when the route fires;
+     * it changed it anyway, and quietly.
+     */
+    @Test
+    public void testMovingAConditionKeepsTheWordThatJoinsIt()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2));
+
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 2, -1);
+
+        assertEquals(moved.size(), 3, "the word is still there: " + describe(
+            ConditionOutline.toExpression(moved)));
+
+        assertTrue(moved.get(1).isJoiner(), "and it is still in the middle");
+
+        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(2,1)",
+            "the two conditions traded places and nothing else moved");
+    }
+
+    /**
+     * The nesting is the logic, so moving a condition must not deform it.
+     *
+     * "1 and (2 or 3)" with 2 moved up is "2 and (1 or 3)" - the same sentence about different
+     * sensors.  Lifting the line itself would have pulled a condition out of the group it was
+     * nested in, which is a change to the logic rather than to the order.
+     */
+    @Test
+    public void testMovingAConditionDoesNotDeformTheNesting()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3));
+
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 2, -1);
+
+        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(2,(or(1,3)))",
+            "the shape is untouched; only which condition sits where in it changed");
+    }
+
+    /**
+     * A joining word is not moved by hand, and neither is a condition with nowhere to go.
+     */
+    @Test
+    public void testThereIsNothingToMoveAtTheEnds()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2));
+
+        assertFalse(ConditionOutline.canMove(rows, 0, -1), "nothing above the first condition");
+        assertFalse(ConditionOutline.canMove(rows, 2, 1), "nor below the last");
+        assertFalse(ConditionOutline.canMove(rows, 1, -1),
+            "and a word's place is settled by the conditions around it, not by an arrow");
+
+        assertTrue(ConditionOutline.canMove(rows, 2, -1), "the last condition can come up");
+    }
+
+    /**
      * The shape of an expression, for comparing two of them.
      */
     private static String describe(NodeExpression node)
