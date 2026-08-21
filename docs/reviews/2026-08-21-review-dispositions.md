@@ -6,9 +6,10 @@ source before it was acted on. Two of the second reviewer's own candidates did n
 verification and were never reported (`CS2File.sanitizeFilename` does handle path separators;
 `MarklinAccessory.parseMessage` applies state before `updateTiles`).
 
-Findings are grouped here by what happened to them.  The findings THEMSELVES - labelled, with a
-severity, the reviewer they came from and how confident that reviewer was - are the register in
-`2026-08-21-review-findings.md`, which is the file to read first.  The two are cross-referenced by id.
+Findings are grouped here by what happened to them.  The findings THEMSELVES - lettered A/B/C/D to the
+convention in README.md, with the reviewer they came from and how confident that reviewer was - are the
+register in `2026-08-21-review-findings.md`, prefix `TR`, which is the file to read first.  Cite
+findings as `TR-A1`; this file follows its ordering.
 
 ---
 
@@ -202,6 +203,8 @@ again. The fix is to give `locomotivePendingS88` its own monitor; it is already 
 the Layout monitor buys nothing. Left alone because it is a concurrency change to the driving path and
 wants a running railway to trust it.
 
+We can test this in simulation mode.  Validate and fix.
+
 **Main-window diagram tiles are registered with the model forever.** Removal is opportunistic and keyed
 on `isParentVisible()`, and for a main-window tile the parent is a tab that is visible for the life of
 the application — so nothing is ever removed, and every rebuild adds a generation. Each accessory ends
@@ -211,10 +214,14 @@ up walking hundreds of dead labels per CS echo, decoding icons and posting repai
 visibility is the wrong discriminator, because cached pages are legitimately detached but alive — so it
 wants a deliberate pass rather than being tacked onto this batch.
 
+Fix this.
+
 **Executors and sockets are never shut down.** Three single-thread pools with non-daemon threads, a
 `DatagramSocket` nothing closes, a non-daemon reader thread, and a discarded `Timer` in the UI. The GUI
 masks all of it with `System.exit(0)`; the programmatic entry point in `examples/` hangs on return, and
 a second `init()` in one JVM leaks the port. Worth a tidy-up, no user-visible symptom today.
+
+Clean it up.
 
 ### Deliberate, or not worth it
 
