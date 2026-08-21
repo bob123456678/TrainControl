@@ -105,13 +105,102 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(245, 150, 150);
 
     /**
-     * The grip at the top right of a selection.  Orange against the red of the selection itself,
-     * because it is a different thing to do rather than more of the same thing.
+     * The wash over the grip: the yellow this application already uses to say "look here", the same
+     * one the autonomy editor flashes a tested path in.
      */
-    private static final Color COMPONENT_BORDER_HANDLE_COLOR = new Color(230, 120, 0);
+    private static final Color HANDLE_FILL = new Color(255, 214, 0);
 
-    /** The wash behind the grip, which is what makes it findable without taking any space. */
-    private static final Color HANDLE_FILL = new Color(255, 232, 200);
+    /**
+     * The grip's mark: a yellow wash over the square and a four-way arrow on top of it.
+     *
+     * A Border rather than anything else, because a border is the only thing painted AFTER the
+     * component itself - and the square underneath is a piece of track drawn as an opaque image, so
+     * anything painted before it is simply not there.  It also reserves no space, which is what the
+     * thick line it replaces got wrong.
+     *
+     * The four-way arrow because that is what a grip looks like everywhere else, and because it says
+     * what the yellow alone cannot: not "this square is interesting" but "take hold here and move".
+     */
+    private static final class SelectionGrip implements javax.swing.border.Border
+    {
+        @Override
+        public boolean isBorderOpaque()
+        {
+            return false;
+        }
+
+        @Override
+        public java.awt.Insets getBorderInsets(java.awt.Component on)
+        {
+            // Nothing: this draws over the tile rather than around it
+            return new java.awt.Insets(0, 0, 0, 0);
+        }
+
+        @Override
+        public void paintBorder(java.awt.Component on, java.awt.Graphics g, int x, int y,
+            int width, int height)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Translucent, so the track underneath still reads - the grip marks a square, it does
+                // not replace it
+                g2.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 0.55f));
+
+                g2.setColor(HANDLE_FILL);
+                g2.fillRect(x, y, width, height);
+
+                g2.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 1f));
+
+                arrows(g2, x, y, width, height);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
+
+        /**
+         * The four-way arrow, drawn as one stroke each way with a head on every end.
+         */
+        private void arrows(java.awt.Graphics2D g, int x, int y, int width, int height)
+        {
+            int middleX = x + width / 2;
+            int middleY = y + height / 2;
+
+            // Short of the edges, so the arrow reads as one glyph on the square rather than as
+            // something continuing onto the squares beside it
+            int reach = Math.max(4, Math.min(width, height) / 2 - 3);
+            int head = Math.max(2, reach / 3);
+
+            g.setColor(java.awt.Color.BLACK);
+            g.setStroke(new java.awt.BasicStroke(Math.max(1.6f, reach / 6f),
+                java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+            g.drawLine(middleX - reach, middleY, middleX + reach, middleY);
+            g.drawLine(middleX, middleY - reach, middleX, middleY + reach);
+
+            // west, east, north, south
+            head(g, middleX - reach, middleY, head, -1, 0);
+            head(g, middleX + reach, middleY, head, 1, 0);
+            head(g, middleX, middleY - reach, head, 0, -1);
+            head(g, middleX, middleY + reach, head, 0, 1);
+        }
+
+        private void head(java.awt.Graphics2D g, int tipX, int tipY, int size, int dx, int dy)
+        {
+            int[] xs = {tipX, tipX - dx * size - dy * size, tipX - dx * size + dy * size};
+            int[] ys = {tipY, tipY - dy * size - dx * size, tipY - dy * size + dx * size};
+
+            g.fillPolygon(xs, ys, 3);
+        }
+    }
 
     /**
      * The squares picked out for a group operation.
@@ -370,14 +459,17 @@ public class LayoutEditor extends PositionAwareJFrame
 
         toolStrip = buildToolStrip();
 
-        // Called from render() rather than from the constructor.
+        // Not from the constructor, and not from render() either.
         //
-        // GroupLayout.replace refuses a component it has not registered, and it registers them when
-        // it first lays the window out - which has not happened while the constructor is still
-        // running, whatever pack() looks like it is doing.  From the constructor this threw
-        // "Component must already exist" and the editor would not open at all.  The autonomy panel
-        // mounts itself the same way and never hit this, because it mounts on a window the user has
-        // already been looking at.
+        // GroupLayout.replace refuses a component it has not registered, and it registers them the
+        // first time it lays the window out - which is neither of those moments, whatever pack()
+        // looks like it is doing.  From the constructor it threw "Component must already exist" and
+        // took the whole editor with it; from render() it threw the same and fell back to putting
+        // the tools inside the palette, which is where they were not wanted.
+        //
+        // So it waits for the window to be SHOWN, which is after the first layout by definition.
+        // The autonomy panel mounts itself the same way and never hit this, because by then the user
+        // has been looking at the window for a while.
         try
         {
             if (!(getContentPane().getLayout() instanceof javax.swing.GroupLayout))
@@ -412,6 +504,24 @@ public class LayoutEditor extends PositionAwareJFrame
         this.newComponents.revalidate();
         getContentPane().revalidate();
         getContentPane().repaint();
+    }
+
+    /**
+     * Mounts the tools the first time this window is shown.
+     *
+     * addNotify is too early - the peer exists but nothing has been laid out - and the constructor
+     * and render() are both earlier still.  A window listener fires after the first layout, which is
+     * the one thing GroupLayout.replace needs.
+     */
+    @Override
+    public void setVisible(boolean visible)
+    {
+        super.setVisible(visible);
+
+        if (visible)
+        {
+            javax.swing.SwingUtilities.invokeLater(() -> mountToolStrip());
+        }
     }
 
     /**
@@ -1005,6 +1115,9 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             this.selection.addRectangle(anchorX, anchorY, getX(to), getY(to));
+
+            // One box was all that was asked for
+            if (this.selectOnce) setSelectMode(false);
 
             this.refreshSelectionBorders();
 
@@ -1898,30 +2011,23 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.handleLabel != null && this.handleLabel != grip)
         {
             this.handleLabel.setToolTipText(null);
-
-            // And stops being painted as one.  A square left washed orange after the corner moved is
-            // a grip that is not there.
-            this.handleLabel.setOpaque(false);
-            this.handleLabel.setBackground(null);
         }
 
         this.handleLabel = grip;
 
         if (grip != null)
         {
-            // The SAME width as every other border on the diagram.
+            // Drawn as a BORDER, over the tile rather than behind it.
             //
-            // It was drawn four pixels thick to stand out, and a border is drawn INSIDE the label -
-            // so the tile art was squeezed into what was left and the square gained a visible gap
-            // around it.  A mark that moves the thing it is marking is not a mark.
+            // A background will not do: the tile art is an opaque image, so a coloured background is
+            // hidden by whatever track is drawn on that square - and the corner of a selection is as
+            // likely to be a piece of track as an empty square.  A border paints AFTER the component
+            // does, so this is the one hook that can put something on top.
             //
-            // What makes it findable instead is the fill behind it: a pale orange wash on the one
-            // square, which costs no space at all because the label was already that size.
-            grip.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_HANDLE_COLOR,
-                COMPONENT_BORDER_WIDTH));
-
-            grip.setOpaque(true);
-            grip.setBackground(HANDLE_FILL);
+            // And it takes no space at all, which the four-pixel line it replaces did: a border is
+            // laid inside the label, so a thick one squeezed the tile art and opened a visible gap
+            // around the square.  A mark that moves the thing it marks is not a mark.
+            grip.setBorder(new SelectionGrip());
 
             grip.setToolTipText(I18n.t("layout.ui.tooltipSelectionHandle"));
         }
@@ -1935,8 +2041,33 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * @param on true to make a drag pick squares rather than move them
      */
+    /**
+     * Turns picking on for ONE box, then turns it off again.
+     *
+     * For the right-click menu.  Dragging to pick cannot be the default over track, because a drag
+     * that starts on a tile has to go on moving that tile - that is the older gesture and the one
+     * people use constantly.  So a drag across a diagram picks nothing unless the mode is on, and the
+     * mode is a button somebody has to find, turn on, use, and remember to turn off.
+     *
+     * This is the same thing without the remembering: pick one box and the editor goes back to
+     * normal by itself.  The button stays for the times somebody wants to pick several boxes in a
+     * row.
+     */
+    public void selectOnce()
+    {
+        setSelectMode(true);
+
+        this.selectOnce = true;
+    }
+
+    /** Whether the picking mode currently on is the one-box kind. */
+    private boolean selectOnce = false;
+
     public void setSelectMode(boolean on)
     {
+        // Turning it off, by whatever route, also cancels the one-box promise
+        if (!on) this.selectOnce = false;
+
         this.selectMode = on;
 
         // The button follows the mode rather than being the only place it is recorded.  Escape turns
@@ -3422,8 +3553,6 @@ public class LayoutEditor extends PositionAwareJFrame
     {        
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            mountToolStrip();
-
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
             drawGrid();

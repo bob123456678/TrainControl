@@ -90,6 +90,20 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             everything.addActionListener(event -> edit.selectAll());
             selectionMenu.add(everything);
 
+            // Drag out ONE box, then back to normal.
+            //
+            // Dragging to pick cannot be what a drag does by default: a drag that begins on a tile has
+            // to go on moving that tile, which is the older gesture and the one used constantly.  So
+            // picking by drag needs a mode, and a mode is a button to find, switch on, use, and
+            // remember to switch off - three of which are the user's problem rather than the task's.
+            //
+            // This asks for one box and then gets out of the way.  The button stays for picking
+            // several boxes in a row.
+            JMenuItem oneBox = new JMenuItem(I18n.t("layout.ui.menuSelectByDragging"));
+            oneBox.addActionListener(event -> edit.selectOnce());
+            oneBox.setToolTipText(I18n.t("layout.ui.tooltipSelectByDragging"));
+            selectionMenu.add(oneBox);
+
             // Only reachable on a grid square - the palette has no row to speak of
             boolean onDiagram = edit.getGridX(label) >= 0 && edit.getGridY(label) >= 0;
 
