@@ -206,17 +206,19 @@ public class LayoutPopupUI extends PositionAwareJFrame
     }//GEN-LAST:event_formKeyPressed
 
     private void ExtLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseClicked
-        if (parent.getModel().hasAutoLayout() && parent.getModel().getAutoLayout().isValid())
+        if (evt.getButton() == MouseEvent.BUTTON3)
         {
-            if (evt.getButton() == MouseEvent.BUTTON3)
-            {                              
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
+            // Same as the main window: the menu carries the setup now, so it is offered whether or not
+            // a layout has been built yet
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
 
-                    menu.show(evt.getComponent(), evt.getX(), evt.getY());      
-                });
-            }
+                if (menu.getComponentCount() > 0)
+                {
+                    menu.show(evt.getComponent(), evt.getX(), evt.getY());
+                }
+            });
         }
     }//GEN-LAST:event_ExtLayoutPanelMouseClicked
 

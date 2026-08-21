@@ -168,6 +168,27 @@ public final class LayoutLabel extends JLabel
         
         if (this.component != null)
         {
+            // Every square answers a right-click, whatever is drawn on it.
+            //
+            // The kinds below have listeners because they can be operated - thrown, triggered, jumped
+            // through.  Plain track cannot be operated and so had no listener at all, which made a
+            // right-click on most of the diagram do nothing.  The autonomy menu is about the PLACE
+            // rather than about the thing standing on it, and a piece of plain track is as much a
+            // place as a turnout is.
+            if (!edit && !(this.component.isSwitch() || this.component.isSignal()
+                    || this.component.isUncoupler() || this.component.isFeedback()
+                    || this.component.isRoute() || this.component.isLink()))
+            {
+                this.addMouseListener(new MouseAdapter()
+                {
+                    @Override
+                    public void mouseClicked(MouseEvent e)
+                    {
+                        openStationMenu(e);
+                    }
+                });
+            }
+
             if (this.component.isSwitch() || this.component.isSignal() 
                     || this.component.isUncoupler() || this.component.isFeedback()
                     || this.component.isRoute() || this.component.isLink())
@@ -428,17 +449,29 @@ public final class LayoutLabel extends JLabel
     {
         if (e.getButton() != MouseEvent.BUTTON3 || component == null) return false;
 
+        // A station gets the station items; every other square gets the menu without them.
+        //
+        // It used to open only over a station, and a right-click anywhere else did nothing at all -
+        // which meant the way into the autonomy setup was the menu bar, and the menu bar is not where
+        // somebody working on their railway is looking.  They are looking at the diagram.  A square
+        // that is not a station has nothing station-shaped to offer, but it can still be the place
+        // this layout's setup is reached from.
         final org.traincontrol.automationui.TileGraph.TileKey station =
             tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
-
-        if (station == null) return false;
 
         final java.awt.Component at = e.getComponent();
         final int atX = e.getX();
         final int atY = e.getY();
 
         javax.swing.SwingUtilities.invokeLater(() ->
-            new LayoutRightclickAutonomyMenu(tcUI, station).show(at, atX, atY));
+        {
+            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(tcUI, station);
+
+            // An empty menu is not worth showing.  Over a plain piece of track with autonomy running
+            // and no setup to reach, there is genuinely nothing to offer, and a one-item-high grey box
+            // appearing under the pointer reads as a fault.
+            if (menu.getComponentCount() > 0) menu.show(at, atX, atY);
+        });
 
         return true;
     }

@@ -62,6 +62,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             return;
         }
         
+        if (!ui.getModel().hasAutoLayout())
+        {
+            // Nothing is running because nothing is set up, which is exactly when somebody needs the
+            // setup menu most - and the only place they would think to look is the diagram in front
+            // of them.
+            addSetupMenu();
+        }
+
         if (ui.getModel().hasAutoLayout())
         {     
             if (!ui.getModel().getAutoLayout().isAutoRunning())
@@ -377,6 +385,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     HomeLocomotiveMenu.addStationItem(this, ui, speaksForTheSquare, ui, null,
                         ui::updateVisiblePoints);
                 }
+
+                addSetupMenu();
             }
             else
             {
@@ -409,6 +419,42 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * @param pointName the copy to place on
      * @param facing which way it is pointing, or null when the square has only one copy
      */
+    /**
+     * The whole Autonomy menu, as a submenu, for when nothing is running.
+     *
+     * Everything in it was already reachable from the menu bar, and the menu bar is not where somebody
+     * working on their railway is looking - they are looking at the diagram, and they got to it by
+     * right-clicking. This is the same menu rather than a copy of it: one place decides what autonomy
+     * offers, so the two cannot drift apart.
+     *
+     * Its own instance, because a Swing component has one parent and the menu bar already owns the
+     * other one - adding that one here would take it out of the menu bar. It costs nothing: the menu
+     * builds its items when it is opened rather than when it is made.
+     *
+     * Under a parent entry so it stays out of the way. Most right-clicks on a diagram are about the
+     * train or the square under the pointer; the setup is the occasional errand, and an errand does
+     * not need to be in the way of the everyday thing.
+     *
+     * Only while nothing is running, as Adam asked. Half of what is in there rebuilds the layout, and
+     * the items that must not run mid-session already refuse - but offering a page of settings to
+     * somebody watching trains move invites a click that will be turned down, and a menu full of
+     * things that say no is worse than a menu that waited.
+     */
+    private void addSetupMenu()
+    {
+        if (ui.isAutonomyBusy()) return;
+
+        AutonomyMenu setup = new AutonomyMenu(ui);
+
+        if (!setup.isEnabled()) return;
+
+        setup.setText(I18n.t("autosetup.ui.menuAutonomySetup"));
+
+        if (getComponentCount() > 0) addSeparator();
+
+        add(setup);
+    }
+
     /**
      * Drops the paths that end where the train already is.
      *

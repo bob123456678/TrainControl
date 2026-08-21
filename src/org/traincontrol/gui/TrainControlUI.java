@@ -17255,16 +17255,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void InnerLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_InnerLayoutPanelMouseClicked
         if (evt.getButton() == MouseEvent.BUTTON3)
-        {      
-            if (this.getModel().hasAutoLayout() && this.getModel().getAutoLayout().isValid())
+        {
+            // No longer gated on there BEING an autonomy layout.  This menu now carries the setup
+            // itself, and the moment somebody most needs to reach the setup is when there is not one
+            // yet - gating it on a valid layout meant the way in appeared only once you were already
+            // through the door.  The menu decides what it has to offer; an empty one is not shown.
+            javax.swing.SwingUtilities.invokeLater(() ->
             {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null);
+                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null);
 
-                    menu.show(evt.getComponent(), evt.getX(), evt.getY());      
-                });
-            }
+                if (menu.getComponentCount() > 0)
+                {
+                    menu.show(evt.getComponent(), evt.getX(), evt.getY());
+                }
+            });
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
 
