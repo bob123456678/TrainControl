@@ -126,8 +126,6 @@ import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
-import org.graphstream.graph.Graph;
-import org.graphstream.graph.implementations.SingleGraph;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive.decoderType;
@@ -302,7 +300,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private volatile boolean stagingFlowActive = false;
     
     // Graph viewer instance
-    private GraphViewer graphViewer;
     
     // The active locomotive
     private Locomotive activeLoc;
@@ -1890,9 +1887,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (configTab >= 0) locCommandPanels.remove(configTab);
 
-        // Pending deletion with the rest of the graph window.  Nothing routes through it any more -
-        // the diagram IS the graph - and a button that reopens a second, stale view of the same
-        // railway is an invitation to edit the wrong one.
+        // The graph window is gone, so this reopens nothing.  Hidden rather than taken out of the
+        // form, which is generated - say the word and it comes out properly.
         this.reopenGraphButton.setVisible(false);
 
         // the JSON-era controls; everything they did has a home on the panel now
@@ -2285,7 +2281,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.setAlwaysOnTop(false);
 
-                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
                 editor.render();
                 editor.setAutonomyMode(session);
@@ -2587,10 +2582,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Everything standing on this square, not only the copy that answered first.
         final java.util.List<Point> crowd = this.getAutonomyOccupantsForTile(square);
 
-        if (!this.getLayoutStations(square).isEmpty()
-                && (this.activeDiagramConfiguration != null
-                    || (this.graphViewer != null && this.graphViewer.isVisible()))
-        )
+        if (!this.getLayoutStations(square).isEmpty() && this.activeDiagramConfiguration != null)
         {
             Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
             Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());
@@ -4686,8 +4678,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // happened to be open beside it - the box ticked, switches were thrown, and no command
             // appeared.  Precisely the feature its own commit message called "easy to leave out of a
             // rebuild and hard to notice missing until somebody tried".
-            if (this.routeEditor != null
-                || (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null))
+            if (this.routeEditor != null)
             {
                 // Throttle to ensure commands are not duplicated
                 long currentTime = System.currentTimeMillis(); 
@@ -4711,10 +4702,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
 
                     // Pass the event to the lock edge editor
-                    if (this.graphViewer != null && this.graphViewer.getGraphEdgeEditor() != null && this.graphViewer.getGraphEdgeEditor().isCaptureCommandsSelected())
-                    {
-                        this.graphViewer.getGraphEdgeEditor().appendCommand(command);
-                    }
                 }
             }
         });
@@ -5465,10 +5452,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
                             
-                            if (this.graphViewer != null)
-                            {
-                                this.graphViewer.setTitle(I18n.f("app.ui.autonomyGraphTitleLoc", windowTitleString));
-                            }
                             
                             for (LayoutPopupUI popup : this.popups)
                             {
@@ -5660,10 +5643,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         
                         // Clear locomotive from graph UI title
-                        if (this.graphViewer != null)
-                        {
-                            this.graphViewer.setTitle(I18n.t("app.ui.autonomyGraphTitle"));
-                        }
                         
                         for (LayoutPopupUI popup : this.popups)
                         {
@@ -15031,7 +15010,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         windowAlwaysOnTopMenuItemActionPerformed(null);
         
         // Revert preference for graph UI
-        if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(this.isAlwaysOnTop());
 
         if (after != null) after.run();
     }
@@ -15131,7 +15109,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Force window to not be on top
                 this.setAlwaysOnTop(false);
 
-                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
                 popup.render();
 
@@ -15499,14 +15476,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         
                         if (dialogResult == JOptionPane.NO_OPTION)
                         {
-                            // Reopen the window
-                            this.ensureGraphUIVisible();
                             return;
                         }
                         else
                         {
                             // Hide the window
-                            if (this.graphViewer != null) this.graphViewer.setVisible(false);
                         }
                     }
                 }
@@ -15589,9 +15563,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.KeyboardTab.requestFocus();
 
-                this.renderAutoLayoutGraph();
-
-                this.graphViewer.requestFocus();
 
                 this.exportJSON.setEnabled(true);
                 this.gracefulStop.setEnabled(false);
@@ -16082,19 +16053,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Opens the autonomy UI
-     */
-    public void ensureGraphUIVisible()
-    {
-        // Show graph window if it was closed
-        if (this.graphViewer != null && !this.graphViewer.isVisible())
-        {
-            this.graphViewer.setVisible(true);
-            this.repaintLoc();
-            updateVisiblePoints();
-        }
-    }
     
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
@@ -16118,8 +16076,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
                     return;
                 }
-
-                this.ensureGraphUIVisible();
 
                 for (String routeName : this.model.getRouteList())
                 {
@@ -16947,7 +16903,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Force window to not be on top
         this.setAlwaysOnTop(false);
         
-        if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(false);
 
         new Thread(() ->
             {
@@ -17015,8 +16970,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Revert preference
                 windowAlwaysOnTopMenuItemActionPerformed(null);
                 
-                if (this.graphViewer != null) this.graphViewer.setAlwaysOnTop(this.isAlwaysOnTop());
-
+        
             }).start();
     }//GEN-LAST:event_openLegacyTrackDiagramEditorActionPerformed
 
@@ -17283,20 +17237,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_popUpAllMenuItemActionPerformed
 
     private void reopenGraphButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reopenGraphButtonActionPerformed
-        this.ensureGraphUIVisible();
-        
-        if (this.graphViewer != null && this.graphViewer.isVisible())
-        {
-            if ((this.graphViewer.getExtendedState() & JFrame.ICONIFIED) == JFrame.ICONIFIED)
-            {
-                this.graphViewer.setExtendedState(JFrame.NORMAL);
-            }
 
-            // Bring it to the front
-            this.graphViewer.toFront();
-            this.graphViewer.requestFocus();
-        }
-        else
+        // WITHDRAWN with the graph window itself.  The button is hidden in the constructor - see
+        // hideGraphButton - so nothing reaches this; what follows is what it said when the graph
+        // could not be shown, which is now the only truthful answer it has.
         {
             JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorConfigurationInvalidMustReload"));
         }
@@ -17710,37 +17654,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //AltEmergencyStopActionPerformed(null);
     }
     
-    /**
-     * Updates the shown length of an edge
-     * @param e
-     * @param graph 
-     */
-    public void updateEdgeLength(Edge e, Graph graph)
-    {
-        if (e.getLength() > 0 && prefs.getBoolean(SHOW_STATION_LENGTH, true))
-        {
-            graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getLength());
-        }
-        else
-        {
-            graph.getEdge(e.getUniqueId()).removeAttribute("ui.label");
-        }
-    }
     
-    /**
-     * Adds an edge to the graph
-     * @param e
-     * @param graph 
-     */
-    synchronized public void addEdge(Edge e, Graph graph)
-    {
-        graph.addEdge(e.getUniqueId(), graph.getNode(e.getStart().getUniqueId()), graph.getNode(e.getEnd().getUniqueId()), true);
-        // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", e.getStart().getCurrentLocomotive() != null ?  e.getStart().getCurrentLocomotive().getName() : "" );
-        // graph.getEdge(e.getUniqueId()).setAttribute("ui.style", e.getStart().getCurrentLocomotive() != null ? "fill-color: rgb(255,165,0);" : "fill-color: rgb(0,0,0);" );    
-        graph.getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
-        
-        updateEdgeLength(e, graph);
-    }
         
     /**
      * Updates the visibility of certain points and edges
@@ -17749,433 +17663,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.model.hasAutoLayout()) return;
 
-        // Without the graph window there is no graph to style, but the station labels on the track
-        // diagram still have to be written - so that half runs on its own rather than the whole method
-        // returning, which is what left the labels blank for the entire diagram path.
-        if (this.graphViewer == null)
-        {
-            for (Point p : this.model.getAutoLayout().getPoints())
-            {
-                this.updateStationLabels(p);
-            }
-
-            return;
-        }
-
-        Graph g = this.graphViewer.getMainGraph();
-        
+        // The station labels on the track diagram, which is all this does now.
+        //
+        // It used to style the graph's nodes and edges as well, and to write the labels only when
+        // there was no graph window - so on the diagram path the labels were the whole job and on the
+        // graph path they were an afterthought.  The graph is gone; the labels are what was worth
+        // keeping.
         for (Point p : this.model.getAutoLayout().getPoints())
-        {    
-            this.updatePoint(p, g);
-
-            if (prefs.getBoolean(HIDE_REVERSING_PREF, false) && 
-                    (p.isReversing() 
-                    && (this.model.getAutoLayout().hasOnlyReversingIncoming(p)
-                    || this.model.getAutoLayout().hasOnlyReversingNeighbors(p))
-                    )
-            )
-            {
-                g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
-            }
-            else if (prefs.getBoolean(HIDE_INACTIVE_PREF, false) && 
-                    (!p.isActive()
-                    && (this.model.getAutoLayout().hasOnlyInactiveIncoming(p) 
-                    || this.model.getAutoLayout().hasOnlyInactiveNeighbors(p))
-                    )
-            )
-            {
-                g.getNode(p.getUniqueId()).setAttribute("ui.hide"); 
-            }
-            else
-            {
-                g.getNode(p.getUniqueId()).removeAttribute("ui.hide");
-            }
-        }
-        
-        // Hides edges, TODO move to a separate function later
-        for (Edge e : this.model.getAutoLayout().getEdges())
         {
-            this.updateEdgeLength(e, g);
-            
-            // Incoming edges to a reversing point, hidden on their own account rather than because
-            // an endpoint is.  A reversing point is typically fed from several directions, so on a
-            // large layout these are most of the clutter - and unlike hiding the points themselves,
-            // this leaves them on the graph to be clicked, assigned homes and read.
-            boolean intoReversing = prefs.getBoolean(HIDE_REVERSING_EDGES_PREF, false)
-                && e.getEnd().isReversing();
-
-            if (intoReversing
-                    || g.getNode(e.getEnd().getUniqueId()).getAttribute("ui.hide") != null
-                    || g.getNode(e.getStart().getUniqueId()).getAttribute("ui.hide") != null)
-            {
-                g.getEdge(e.getUniqueId()).setAttribute("ui.hide");
-            }
-            else
-            {
-                g.getEdge(e.getUniqueId()).removeAttribute("ui.hide");
-            }   
+            this.updateStationLabels(p);
         }
+
     }
     
-    /**
-     * Refreshes the text of a point
-     * @param p
-     * @param graph 
-     */
-    synchronized public void updatePoint(Point p, Graph graph)
-    {
-        // Labels for station length and exclusions
-        String lengthSuffix = "";
-        String additionalStyle = "";
         
-        if (p.getMaxTrainLength() > 0 && prefs.getBoolean(SHOW_STATION_LENGTH, true))
-        {
-            lengthSuffix = " (" + p.getMaxTrainLength() + ")";
-        }
-        
-        if (!p.getExcludedLocs().isEmpty() && prefs.getBoolean(SHOW_STATION_LENGTH, true))
-        {
-            additionalStyle = "shadow-mode:plain; shadow-color:rgb(255,102,0); shadow-width: 4; shadow-offset:0;";
-        }
-        else
-        {
-            additionalStyle = "shadow-mode:none;";
-        }
-
-        // Which locomotive belongs here, in three states, on the one channel nothing else uses.
-        //
-        // Fill is out - the run-state classes override it, so a home colour would vanish exactly when
-        // trains move; shape and size carry terminus/reversing/station; the shadow is exclusions, and a
-        // node gets one.  Stroke is uniform #EEE everywhere today, so any change to it is pure signal.
-        //
-        // Solid means the station has its locomotive; dots mean it is waiting for one, which is the
-        // state Return Home acts on.  Two channels rather than one, so the difference survives being
-        // read quickly and does not depend on telling two shades apart.
-        //
-        // Teal, and the choice is more constrained than it looks.  The stroke has to read against three
-        // things: the dark blue active fill, the orange an inactive station or an exclusion shadow
-        // paints, and the white canvas.  Blue and orange sit almost opposite each other, so no hue is
-        // far from both - one of them has to be beaten on lightness instead.  A purple lost to the blue
-        // it neighbours; a magenta lost to the orange, sharing its full red channel.  Teal is the
-        // orange's complement and far lighter than the blue, and stays saturated enough for white.
-        //
-        // The dots are a pixel wider than the solid line, since they cover about half as much of it -
-        // except on a cross, where that width leaves too few of them to read as dots at all.  See below.
-        //
-        // Read entirely from the Point - no Layout call, so this stays lock-free.  updatePoint runs on
-        // the EDT for every node, and reaching for the monitor here is the shape that produced IR-B2.
-        String homeStyle = "stroke-mode: plain; stroke-color: #EEE; stroke-width: 1px;";
-
-        if (p.getHomeLoc() != null && prefs.getBoolean(SHOW_HOME_LOCOMOTIVES, true))
-        {
-            boolean settled = p.getCurrentLocomotive() != null
-                && p.getHomeLoc().equals(p.getCurrentLocomotive().getName());
-
-            // Dot length, gap and thickness are all one number: DotsShapeStroke builds its dash pattern
-            // as {width, width}, so the outline repeats every 2 * width.  A reversing station is drawn
-            // as a cross, whose outline is twelve short segments, and at 4px barely one dot lands on
-            // each - they read as blobs stuck on the corners rather than as a dotted line.  Halving the
-            // width doubles the number of dots and thins them in the same move, which is the only
-            // control GraphStream offers here.
-            //
-            // isReversing is an exact test for the cross shape, not an approximation of it: Point
-            // rejects terminus and reversing together in both directions, so the box branch below can
-            // never be a reversing station.
-            int dotWidth = p.isReversing() ? 3 : 4;
-
-            homeStyle = settled
-                ? "stroke-mode: plain; stroke-color: rgb("
-                    + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
-                    + COLOR_AT_HOME.getBlue() + "); stroke-width: 3px;"
-                : "stroke-mode: dots; stroke-color: rgb("
-                    + COLOR_AT_HOME.getRed() + "," + COLOR_AT_HOME.getGreen() + ","
-                    + COLOR_AT_HOME.getBlue() + "); stroke-width: " + dotWidth + "px;";
-        }
-        
-        // Remove locomotive from graph if it was deleted
-        if (p.isOccupied() && p.getCurrentLocomotive() != null && !this.model.getLocomotives().contains((Locomotive) p.getCurrentLocomotive()))
-        {
-            p.setLocomotive(null);
-        }
-        
-        if (p.isOccupied() && p.getCurrentLocomotive() != null)
-        {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + lengthSuffix + "  [" + p.getCurrentLocomotive().getName() + "]");
-            graph.getNode(p.getUniqueId()).setAttribute("ui.class", "occupied");
-        }
-        else
-        {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.label", p.getName() + lengthSuffix);
-            graph.getNode(p.getUniqueId()).setAttribute("ui.class", "unoccupied");
-        }
-
-        // Different styles for stations and non-stations
-        if (p.isDestination())
-        {
-            if (p.isTerminus())
-            {
-                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: box; size: 20px;");
-            }
-            else if (p.isReversing())
-            {
-                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: cross; size: 20px;");
-            }
-            else
-            {
-                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: circle; size: 20px;");
-            }
-        }
-        else
-        {
-            if (p.isReversing())
-            {
-                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: cross; size: 15px;");
-            }
-            else
-            {
-                graph.getNode(p.getUniqueId()).setAttribute("ui.style", "shape: diamond; size: 17px;");
-            }
-        }
-        
-        if (p.isActive())
-        {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(0,0,200);" + additionalStyle + homeStyle);
-        }
-        else
-        {
-            graph.getNode(p.getUniqueId()).setAttribute("ui.style", "fill-color: rgb(255,102,0);" + additionalStyle + homeStyle);
-        }
-        
-        updateStationLabels(p);
-    }
-        
-    /**
-     * Highlights lock edges on the graph for easier editing
-     * @param current
-     * @param lockedEdges 
-     */
-    public void highlightLockedEdges(Edge current, List<Edge> lockedEdges)
-    {
-        for (Edge e : this.model.getAutoLayout().getEdges())
-        {                        
-            if (lockedEdges != null && lockedEdges.contains(e))
-            {
-                this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "lockedpreview");
-            }
-            // Reset unlocked lock edges
-            else
-            {
-                if (current != null && e.equals(current))
-                {
-                    this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "completed");
-                }
-                else
-                {
-                    this.graphViewer.getMainGraph().getEdge(e.getUniqueId()).setAttribute("ui.class", "inactive");
-                }
-            }
-        }
-    }
     
-    /**
-     * Renders a graph visualization of the automated layout
-     */
-    synchronized private void renderAutoLayoutGraph()
-    {
-        if (this.graphViewer != null)
-        {
-            this.graphViewer.dispose();
-        }
-        
-        // Do we set coordinates manually?
-        boolean setPoints = true;
-        for (Point p : this.model.getAutoLayout().getPoints())
-        {
-            if (!p.coordinatesSet() || (p.getX() == 0 && p.getY() == 0))
-            {
-                this.model.logf(
-                    "autolayout.ui.infoPointHasNoCoordinateInfo",
-                    p.getName()
-                );
-                setPoints = false;
-                break;
-            }
-        }
-        
-        Graph graph = new SingleGraph(I18n.t("autolayout.ui.layoutGraph")); 
-        graphViewer = new GraphViewer(graph, this, !setPoints);
-
-        // Custom stylesheet
-        URL resource = TrainControlUI.class.getResource(RESOURCE_PATH + GRAPH_CSS_FILE);
-        
-        int maxY = 0;
-        
-        for (Point p : this.model.getAutoLayout().getPoints())
-        {
-            if (p.coordinatesSet() && p.getY() > maxY)
-            {
-                maxY = p.getY();
-            }
-        }
-        
-        try
-        {
-            graph.setAttribute("ui.stylesheet", "url('" + resource.toURI() +"')");
-            
-            // Add dummy points to make dragging new nodes make more sense
-            if (this.model.getAutoLayout().getPoints().size() < 4)
-            {
-                graph.addNode("a");
-                graph.getNode("a").setAttribute( "ui.class",  "invis" );
-                graph.getNode("a").setAttribute( "x", 0 );
-                graph.getNode("a").setAttribute( "y", 0 );
-                graph.addNode("b");
-                graph.getNode("b").setAttribute( "ui.class",  "invis" );
-                graph.getNode("b").setAttribute( "x", 200 );
-                graph.getNode("b").setAttribute( "y", 0 );
-                graph.addNode("c");
-                graph.getNode("c").setAttribute( "ui.class",  "invis" );
-                graph.getNode("c").setAttribute( "x", 0 );
-                graph.getNode("c").setAttribute( "y", 200 );
-                graph.addNode("d");
-                graph.getNode("d").setAttribute( "ui.class",  "invis" );
-                graph.getNode("d").setAttribute( "x", 200 );
-                graph.getNode("d").setAttribute( "y", 200 );
-            }
-
-            for (Point p : this.model.getAutoLayout().getPoints())
-            {
-                graph.addNode(p.getUniqueId());
-                
-                graph.getNode(p.getUniqueId()).setAttribute("weight", 3);
-                
-                // Set manual coordinates
-                if (setPoints)
-                {
-                    graph.getNode(p.getUniqueId()).setAttribute("x", p.getX());
-                    graph.getNode(p.getUniqueId()).setAttribute("y", p.getY());
-                }
-                
-                updatePoint(p, graph);
-            }
-
-            for (Edge e : this.model.getAutoLayout().getEdges())
-            {
-                addEdge(e, graph);
-            }
-            
-            // Callback fires at the beginning and end of each path
-            this.model.getAutoLayout().setCallback("GraphCallback", (List<Edge> edges, Locomotive l, Boolean locked) -> 
-            {    
-                synchronized(graph)
-                {  
-                    // Update locomotive panel
-                    this.repaintAutoLocListLite();
-                    
-                    this.repaintTimetable();
-                                    
-                    for (Edge e : edges)
-                    {                        
-                        for (Edge e2 : e.getLockEdges())
-                        {
-                            // Grey out locked-lock edges
-                            if (locked)
-                            {
-                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class", "locked");
-                            }
-                            // Reset unlocked lock edges
-                            else
-                            {
-                                graph.getEdge(e2.getUniqueId()).setAttribute("ui.class", "inactive");
-                            }
-                        }
-                    }
-                    
-                    List<Point> milestones = null;
-                    
-                    if (l != null)
-                    {
-                        milestones = this.model.getAutoLayout().getReachedMilestones(l);
-                    }
-                    
-                    // Update edge colors and labels
-                    for (Edge e : edges)
-                    {
-                        // Make active edges red
-                        graph.getEdge(e.getUniqueId()).setAttribute("ui.class", locked ? "active" : "inactive");
-                        // graph.getEdge(e.getUniqueId()).setAttribute("ui.label", locked ? l.getName() : "");
-
-                        // Update point labels
-                        for (Point p : Arrays.asList(e.getStart(), e.getEnd()))    
-                        {
-                            updatePoint(p, graph);
-                                                        
-                            // Point reached and route is active
-                            if (locked)
-                            {
-                                if (milestones != null && milestones.contains(p))
-                                {
-                                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "completed");
-                                }
-                                else
-                                {
-                                    graph.getNode(p.getUniqueId()).setAttribute("ui.class", "active");
-                                }
-                            }
-                        }    
-                    }
-                    
-                    // Mark completed edges green
-                    if (milestones != null && locked)
-                    {
-                        for (int i = 1; i < milestones.size(); i++)
-                        {
-                            graph.getEdge(Edge.getEdgeUniqueId(milestones.get(i - 1), milestones.get(i)))
-                                .setAttribute("ui.class", "completed");
-                        }
-                    }
-                    
-                    // Highlight start and destination if path is active
-                    if (milestones != null && locked && !edges.isEmpty())
-                    {
-                        if (!milestones.contains(edges.get(edges.size() - 1).getEnd()))
-                        {
-                            graph.getNode(edges.get(edges.size() - 1).getEnd().getUniqueId()).setAttribute("ui.class", "end");
-                        }
-                        
-                        if (!milestones.contains(edges.get(0).getStart()))
-                        {
-                            graph.getNode(edges.get(0).getStart().getUniqueId()).setAttribute("ui.class", "start");
-                        }
-                    }
-                             
-                    // Update button visibility
-                    if (!this.model.getAutoLayout().isRunning())
-                    {
-                        this.exportJSON.setEnabled(true);
-                        this.gracefulStop.setEnabled(false);
-                    }
-                    else
-                    {
-                        this.exportJSON.setEnabled(false);
-                        // this.gracefulStop.setEnabled(true);
-                    }
-                }
-
-                return null;                
-            });
-            
-            this.repaintAutoLocList(false);
-            this.repaintTimetable();
-            this.updateVisiblePoints();
-        } 
-        catch (URISyntaxException ex)
-        {
-            this.model.log(
-                I18n.t("autolayout.ui.errorLoadingGraphUi")
-            );
-        }        
-    }
         
     /**
      * Repaints the timetable once a route completes

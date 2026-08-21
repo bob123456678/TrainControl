@@ -162,7 +162,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                         }
                                         else
                                         {
-                                            ui.ensureGraphUIVisible();
 
                                             boolean success = ui.getModel().getAutoLayout().executePath(
                                                 path, locomotive, locomotive.getPreferredSpeed(), null

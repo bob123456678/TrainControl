@@ -688,7 +688,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                     new Thread(() ->
                     {
-                        parent.ensureGraphUIVisible();
 
                         boolean success = this.layout.executePath(chosen, locomotive, locomotive.getPreferredSpeed(), null);
 
