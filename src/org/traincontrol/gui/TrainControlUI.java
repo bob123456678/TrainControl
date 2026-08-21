@@ -179,6 +179,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
+    /** How many locomotive mapping pages this installation has - see numLocMappings. */
+    public static final String LOC_MAPPING_PAGES_PREF = "LocMappingPages";
+
     /**
      * Which route autonomy takes when it has a choice.  Stored by name, so a value written by a newer
      * version simply falls back to the default here rather than throwing.
@@ -267,8 +270,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Total number of keyboards >= 1
     private static final int NUM_KEYBOARDS = 32;
     
-    // Total number of locomotive mappings >= 1
-    private static final int NUM_LOC_MAPPINGS = 10;
+    /**
+     * How many locomotive mapping pages a new installation gets.
+     *
+     * Ten, which is what it always was and what the number keys reach - the pages are switched with
+     * the digits, and there are ten of those.
+     */
+    private static final int DEFAULT_LOC_MAPPINGS = 10;
+
+    /**
+     * And the fewest anybody may have.
+     *
+     * Two rather than one: the whole apparatus around pages - the next and previous buttons, the
+     * tab strip, copy and paste between pages - means nothing with a single page, and somebody who
+     * has deleted their way down to one has probably not meant to lose the machinery with it.
+     */
+    private static final int MIN_LOC_MAPPINGS = 2;
+
+    /**
+     * How many pages THIS installation has.
+     *
+     * Was a constant, and is now a preference: a user with four locomotives does not want ten pages
+     * of empty buttons, and one with a hundred wants more than ten.  Read once at startup and
+     * written whenever a page is added or deleted.
+     *
+     * Grown rather than truncated when a saved state holds more pages than this says - see
+     * setViewListener.  A number in a preferences file is a poor reason to drop somebody's mappings.
+     */
+    private int numLocMappings = DEFAULT_LOC_MAPPINGS;
     
     // How many columns to show in the route UI
     private static final int ROUTE_UI_COLS = 3;
@@ -494,7 +523,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         this.locMapping = new ArrayList<>();
     
-        for (int i = 0; i < TrainControlUI.NUM_LOC_MAPPINGS; i++)
+        this.numLocMappings = Math.max(MIN_LOC_MAPPINGS,
+            prefs.getInt(LOC_MAPPING_PAGES_PREF, DEFAULT_LOC_MAPPINGS));
+
+        for (int i = 0; i < this.numLocMappings; i++)
         {
             this.locMapping.add(new HashMap<>());
         }
@@ -852,7 +884,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         
-        for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
+        for (int i = 0; i < this.numLocMappings; i++)
         {
             locKeyTabs.add(getLocMappingPageTabTitle(i + 1), new JPanel());
         }
@@ -983,6 +1015,109 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param tabNumber
      * @return 
      */
+    /**
+     * How many locomotive mapping pages there are.
+     */
+    public int getNumLocMappings()
+    {
+        return this.numLocMappings;
+    }
+
+    /**
+     * Whether the page showing now could be deleted.
+     *
+     * Two conditions.  It has to be EMPTY, because a page is deleted by index and everything after it
+     * shifts up - so deleting a full one throws away mappings that are not on screen and cannot be
+     * got back; asking somebody to clear it first is one extra step and no surprises.  And there has
+     * to be a page left over the minimum afterwards.
+     */
+    public boolean canDeleteCurrentPage()
+    {
+        if (this.numLocMappings <= MIN_LOC_MAPPINGS) return false;
+
+        return this.locMapping.get(this.locMappingNumber - 1).isEmpty();
+    }
+
+    /**
+     * Adds a page at the end and goes to it.
+     *
+     * At the end rather than after the current one, because the pages are reached by NUMBER - the
+     * digit keys switch between them - and inserting in the middle renumbers every page after it.
+     * Somebody who wanted page 4 would find their page 4 had become page 5.
+     */
+    public void addLocMappingPage()
+    {
+        this.numLocMappings++;
+
+        this.locMapping.add(new HashMap<>());
+
+        prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
+
+        this.locKeyTabs.add(getLocMappingPageTabTitle(this.numLocMappings), new JPanel());
+
+        adjustTabbedPaneHeight(locKeyTabs);
+
+        this.switchLocMapping(this.numLocMappings);
+
+        repaintMappings();
+    }
+
+    /**
+     * Deletes the page showing now, if it is empty and is not the last one that may be deleted.
+     *
+     * Its NAME goes with it, and the names of the pages after it move up - they are stored by page
+     * number, so leaving them would put each name on the page below its own.
+     */
+    public void deleteCurrentLocMappingPage()
+    {
+        if (!canDeleteCurrentPage())
+        {
+            JOptionPane.showMessageDialog(this, this.numLocMappings <= MIN_LOC_MAPPINGS
+                ? I18n.f("page.ui.errorNeedAtLeast", MIN_LOC_MAPPINGS)
+                : I18n.t("page.ui.errorPageNotEmpty"));
+
+            return;
+        }
+
+        int going = this.locMappingNumber;
+
+        this.locMapping.remove(going - 1);
+
+        // The names, which are stored by page number and so all move up one
+        for (int at = going; at < this.numLocMappings; at++)
+        {
+            String next = this.pageNames.get(at + 1);
+
+            if (next == null)
+            {
+                this.pageNames.remove(at);
+            }
+            else
+            {
+                this.pageNames.put(at, next);
+            }
+        }
+
+        this.pageNames.remove(this.numLocMappings);
+
+        this.numLocMappings--;
+
+        prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
+
+        this.locKeyTabs.remove(this.numLocMappings);
+
+        for (int at = 0; at < this.numLocMappings; at++)
+        {
+            this.locKeyTabs.setTitleAt(at, getLocMappingPageTabTitle(at + 1));
+        }
+
+        adjustTabbedPaneHeight(locKeyTabs);
+
+        this.switchLocMapping(Math.min(going, this.numLocMappings));
+
+        repaintMappings();
+    }
+
     private String getLocMappingPageTabTitle(int tabNumber)
     {
         String pageTitle = this.getPageName(tabNumber, true).trim();
@@ -3470,12 +3605,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void switchLocMapping(int locPageNum)
     {
-        if (locPageNum <= TrainControlUI.NUM_LOC_MAPPINGS && locPageNum >= 1)
+        if (locPageNum <= this.numLocMappings && locPageNum >= 1)
         {
             this.locMappingNumber = locPageNum;
         }
          
-        if (TrainControlUI.NUM_LOC_MAPPINGS > 1)
+        if (this.numLocMappings > 1)
         {
             if (this.locMappingNumber == 1)
             {
@@ -3486,7 +3621,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.PrevLocMapping.setEnabled(true);
             }
 
-            if (this.locMappingNumber == TrainControlUI.NUM_LOC_MAPPINGS)
+            if (this.locMappingNumber == this.numLocMappings)
             {
                 this.NextLocMapping.setEnabled(false);
             }
@@ -3735,7 +3870,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         List<Map<Integer, String>> saveStates = this.restoreState();
         boolean locWasLoaded = false;
         
-        for (int j = 0; j < saveStates.size() && j < TrainControlUI.NUM_LOC_MAPPINGS; j++)
+        // A saved state with more pages than the preference says GROWS the preference.
+        //
+        // The count used to be fixed, so a state could never hold more than it - now it can, and the
+        // alternative to growing is silently dropping every mapping past the tenth.  The last entry
+        // is the page names rather than a page, hence the -1.
+        while (saveStates.size() - 1 > this.numLocMappings)
+        {
+            this.numLocMappings++;
+            this.locMapping.add(new HashMap<>());
+        }
+
+        for (int j = 0; j < saveStates.size() && j < this.numLocMappings; j++)
         {
             Map<Integer, String> saveState = saveStates.get(j);
      
@@ -3757,7 +3903,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         boolean savedLocKey = false;
         // Restore page names, active button, and page, which are stored at the end
-        if (saveStates.size() > TrainControlUI.NUM_LOC_MAPPINGS)
+        if (saveStates.size() > this.numLocMappings)
         {
             this.pageNames = saveStates.get(saveStates.size() - 1);
             
@@ -5805,12 +5951,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private Map<JButton, Locomotive> nextLocMapping()
     {
-        return this.locMapping.get(this.locMappingNumber % TrainControlUI.NUM_LOC_MAPPINGS);
+        return this.locMapping.get(this.locMappingNumber % this.numLocMappings);
     }
     
     private Map<JButton, Locomotive> prevLocMapping()
     {
-        return this.locMapping.get(Math.floorMod(this.locMappingNumber - 2, TrainControlUI.NUM_LOC_MAPPINGS));
+        return this.locMapping.get(Math.floorMod(this.locMappingNumber - 2, this.numLocMappings));
     }
         
     private Map<JButton, Locomotive> currentLocMapping()
@@ -12116,7 +12262,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else if ((keyCode == KeyEvent.VK_PERIOD && altPressed) || (keyCode == KeyEvent.VK_COLON && altPressed))
         {
-            this.switchLocMapping(TrainControlUI.NUM_LOC_MAPPINGS); 
+            this.switchLocMapping(this.numLocMappings); 
         }
         else if ((keyCode == KeyEvent.VK_COMMA && !altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && !altPressed) || (keyCode == KeyEvent.VK_LEFT && altPressed))
         {
@@ -13335,7 +13481,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JComboBox<String> pageDropdown = new JComboBox<>();
                 Map<String, Integer> pageNameToIndex = new LinkedHashMap<>();
-                for (int i = 0; i < NUM_LOC_MAPPINGS; i++)
+                for (int i = 0; i < this.numLocMappings; i++)
                 {
                     int oneBasedIndex = i + 1;
                     if (oneBasedIndex != this.getLocMappingNumber())
@@ -17070,6 +17216,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     copy.setX(x);
                     copy.setY(y + top);
+
+                    // Nothing autonomy has written comes across.
+                    //
+                    // This page is a picture, excluded from autonomy for good - so a station label
+                    // copied onto it is a label naming a station that is nowhere on this page.  Worse
+                    // than useless: a "Point:" label is the OLD way of storing a caption, and the
+                    // migration that reads them would pick these up and write captions into the setup
+                    // for squares on an excluded page.
+                    //
+                    // The user's own text stays.  A yard name or a note is part of the drawing, and
+                    // the drawing is the whole reason for making this page.
+                    if (copy.getLabel() != null && copy.getLabel().startsWith(
+                        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX))
+                    {
+                        copy.setLabel("");
+                    }
 
                     made.addComponent(copy, x, y + top);
                 }

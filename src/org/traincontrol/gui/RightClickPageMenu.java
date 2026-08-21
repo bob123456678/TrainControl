@@ -88,6 +88,34 @@ public class RightClickPageMenu extends MouseAdapter
             );
             menuItem.addActionListener(event -> ui.clearCurrentPage());
             add(menuItem);
+
+            addSeparator();
+
+            menuItem = new JMenuItem(
+                I18n.f("page.ui.menuAddPage", ui.getNumLocMappings() + 1)
+            );
+            menuItem.addActionListener(event -> ui.addLocMappingPage());
+            menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
+            add(menuItem);
+
+            // Offered and refused rather than hidden, with the reason on it.  An item that appears
+            // and disappears depending on what is on the page reads as an interface that cannot make
+            // up its mind; one that is greyed with an explanation says what to do about it.
+            menuItem = new JMenuItem(
+                I18n.f("page.ui.menuDeletePage", ui.getLocMappingNumber())
+            );
+
+            if (ui.canDeleteCurrentPage())
+            {
+                menuItem.addActionListener(event -> ui.deleteCurrentLocMappingPage());
+            }
+            else
+            {
+                menuItem.setEnabled(false);
+            }
+
+            menuItem.setToolTipText(I18n.t("page.ui.tooltipDeletePage"));
+            add(menuItem);
         }
     }
 }

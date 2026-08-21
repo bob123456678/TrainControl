@@ -3587,7 +3587,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setIconImage(Toolkit.getDefaultToolkit().getImage(TrainControlUI.class.getResource("resources/locicon.png")));
-        setMinimumSize(new java.awt.Dimension(300, 180));
+        setMinimumSize(new java.awt.Dimension(750, 650));
         addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 formKeyPressed(evt);
@@ -3595,6 +3595,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         ExtLayoutPanel.setBackground(new java.awt.Color(255, 255, 255));
+        ExtLayoutPanel.setPreferredSize(new java.awt.Dimension(750, 474));
         ExtLayoutPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 ExtLayoutPanelMouseEntered(evt);
@@ -3609,7 +3610,7 @@ public class LayoutEditor extends PositionAwareJFrame
         );
         ExtLayoutPanelLayout.setVerticalGroup(
             ExtLayoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 434, Short.MAX_VALUE)
+            .addGap(0, 474, Short.MAX_VALUE)
         );
 
         jScrollPane1.setViewportView(ExtLayoutPanel);
