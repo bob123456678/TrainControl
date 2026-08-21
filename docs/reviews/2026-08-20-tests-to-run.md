@@ -88,6 +88,25 @@ not only after pressing OK.
 
 ---
 
+## Added 2026-08-21
+
+**20. Combine Linked Pages**, on the Layouts menu, from a page that links somewhere. The new page
+should show the current page and every page its links lead to, one under another with a blank row
+between. Then check the autonomy editor's page list: it must be EXCLUDED, and the findings must not
+have grown - if it were included, every sensor on it would become a second Point for a sensor that
+already has one.
+
+**21. Control+X, Control+V and Delete on the track diagram.** Point at a station with a train on it
+and press Control+X; point at another and press Control+V. Then check the same two squares in the
+autonomy editor - the placement has to have moved there as well, or the next build puts the train
+back where it was. With the pointer NOT over the diagram, the same keys must still cut and paste
+locomotive buttons exactly as before.
+
+**22. A locomotive's settings from the autonomy editor's tile menu** - the same dialog the track
+diagram opens. Set an arrival or departure function, then run autonomy and listen for it.
+
+---
+
 ## Still untested, and known
 
 - **`testAutoDetect`** needs a Central Station answering on the network. It is red here and is not a

@@ -16915,11 +16915,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        // On a worker, because it parses every page of the layout twice over.
+        new Thread(() ->
         {
             try
             {
-                writeCombinedPage(combined, pages);
+                // MADE the way every other page is made: by saving an existing one under a new name.
+                //
+                // A LayoutDiagram built by hand cannot save itself.  It writes by resolving its new
+                // filename against the path it was constructed with, and only a page read from disk
+                // carries the path of a FILE - one built with the layout folder resolved its sibling
+                // against a directory and threw at the write.  So the page is created by the same
+                // call the Duplicate Page menu item uses, and then filled in.
+                this.model.getLayout(from).saveChanges(combined, true);
 
                 List<String> layoutList = this.model.getLayoutList();
 
@@ -16927,9 +16935,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
-                // Excluded BEFORE the pages are re-read, so that the rebuild which follows never sees
-                // it as a page to walk.  Included for even one build, every sensor on it becomes a
-                // second Point for a sensor that already has one.
+                // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk.
+                // Included for even one build, every sensor on it becomes a second Point for a sensor
+                // that already has one.
                 org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
                 if (session != null)
@@ -16938,20 +16946,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     session.saveQuietly();
                 }
 
-                this.layoutEditingComplete(() ->
+                // Re-read, so the new page exists as an object with its own file behind it
+                this.model.refreshLayouts();
+
+                fillCombinedPage(combined, pages);
+
+                javax.swing.SwingUtilities.invokeLater(() -> this.layoutEditingComplete(() ->
                 {
                     this.LayoutList.setSelectedItem(combined);
                     this.repaintLayout();
-                });
+                }));
             }
             catch (Exception ex)
             {
-                JOptionPane.showMessageDialog(this,
-                    I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage()));
-
                 this.model.log(ex);
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
             }
-        });
+        }).start();
     }
 
     /**
@@ -16999,15 +17013,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes the combined page: each source page's squares, stacked with a blank row between.
+     * Fills the new page in: each source page's squares, stacked with a blank row between.
      *
-     * Copied square by square rather than by reference, because a LayoutDiagramComponent carries its
-     * own coordinates and the copies sit at different ones.  A link on a combined page keeps pointing
-     * at the page it always pointed at - it is a redrawing, and following it should still go where
-     * the original does.
+     * The page already exists - it was made as a copy of the one being combined - so this empties it,
+     * grows it to fit, and writes the squares in.  Copied square by square rather than by reference,
+     * because a LayoutDiagramComponent carries its own coordinates and the copies sit at different
+     * ones.  A link on a combined page keeps pointing at the page it always pointed at: it is a
+     * redrawing, and following it should still arrive where the original does.
+     *
+     * @param name the page just created
+     * @param pages the source pages, the one being combined first
      */
-    private void writeCombinedPage(String name, List<String> pages) throws Exception
+    private void fillCombinedPage(String name, List<String> pages) throws Exception
     {
+        LayoutDiagram made = this.model.getLayout(name);
+
+        if (made == null) throw new Exception(I18n.f("layout.ui.errorLayoutPageDoesNotExist", name));
+
         int width = 0;
         int height = 0;
 
@@ -17021,8 +17043,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             height += page.getSy() + 1;
         }
 
-        LayoutDiagram made = new LayoutDiagram(name, Math.max(1, width), Math.max(1, height),
-            this.getLocalLayoutPath(), this.model);
+        made.clear();
+
+        // Grown rather than built to size: the copy started as whichever page was being combined, and
+        // a page can only be made bigger from here
+        made.addRowsAndColumns(Math.max(0, height - made.getSy()), Math.max(0, width - made.getSx()));
 
         int top = 0;
 
@@ -17053,7 +17078,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             top += page.getSy() + 1;
         }
 
-        made.saveChanges(name, true);
+        // In place, under its own name
+        made.saveChanges(null, false);
     }
 
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
