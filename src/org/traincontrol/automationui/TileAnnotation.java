@@ -1249,8 +1249,12 @@ public class TileAnnotation
         // one square, and nobody has to trace which rail it sits on to know which square it means.
         if (trackBends())
         {
-            x = 1;
-            y = height - size - 1;
+            // Three pixels in from the very corner, at the author's eye.  Hard against the edge the
+            // badge read as something that had slipped off the tile rather than as a mark placed on
+            // it, and it was tight against the arrival chevron that sits at the middle of the west
+            // side.
+            x = CORNER_INSET;
+            y = height - size - CORNER_INSET;
         }
 
         // never let it hang outside the square
@@ -1307,6 +1311,14 @@ public class TileAnnotation
      * The midpoint of the first route's two sides: the middle of the square for anything straight or
      * crossing, and the corner the rails actually bend around for a curve.
      */
+    /**
+     * How far in from the bottom left corner a badge on a bend sits.
+     *
+     * One pixel put it hard against both edges; three lifts it clear without moving it back under the
+     * track it was moved out of.
+     */
+    private static final int CORNER_INSET = 4;
+
     /**
      * Whether the track through this square turns a corner.
      *
