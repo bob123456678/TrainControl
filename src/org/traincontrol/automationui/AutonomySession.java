@@ -1614,11 +1614,20 @@ public class AutonomySession
      */
     /**
      * @param station a station's square
-     * @return the square of the signal protecting it, or null
+     * @return the square of the first signal protecting it, or null
      */
     public TileKey getProtectingSignal(TileKey station)
     {
         return store.getProtectingSignal(station);
+    }
+
+    /**
+     * @param station a station's square
+     * @return the squares of every signal protecting it, in the order they were paired
+     */
+    public List<TileKey> getProtectingSignals(TileKey station)
+    {
+        return store.getProtectingSignals(station);
     }
 
     /**
@@ -1632,30 +1641,52 @@ public class AutonomySession
     }
 
     /**
-     * Which ACCESSORY protects each station, by name.
+     * Replaces every signal protecting a station.
+     *
+     * @param station a station's square
+     * @param signals the signals' squares; empty or null unpairs
+     */
+    public void setProtectingSignals(TileKey station, List<TileKey> signals)
+    {
+        store.setProtectingSignals(station, signals);
+        touched();
+    }
+
+    /**
+     * Which ACCESSORIES protect each station, by name.
      *
      * The store pairs squares, because a square survives everything; the running layout commands
      * accessories, which it knows by name.  This is the join, and it is made here because only the
      * session has the diagram to read the address off.
      *
      * A pairing whose signal tile has gone, or carries no address, is left out rather than emitted as
-     * something the layout would fail to find.
+     * something the layout would fail to find - and a station whose signals have ALL gone that way is
+     * left out entirely rather than emitted with an empty list.
      *
-     * @return station square to accessory name
+     * @return station square to accessory names
      */
-    public Map<TileKey, String> protectingSignalNames()
+    public Map<TileKey, List<String>> protectingSignalNames()
     {
-        Map<TileKey, String> out = new LinkedHashMap<>();
+        Map<TileKey, List<String>> out = new LinkedHashMap<>();
 
         if (graph == null) return out;
 
-        for (Map.Entry<TileKey, TileKey> pair : store.getProtectingSignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> pair : store.getProtectingSignals().entrySet())
         {
-            LayoutDiagramComponent signal = graph.getTiles().get(pair.getValue());
+            List<String> names = new ArrayList<>();
 
-            if (signal == null || signal.getAccessory() == null) continue;
+            for (TileKey tile : pair.getValue())
+            {
+                LayoutDiagramComponent signal = graph.getTiles().get(tile);
 
-            out.put(pair.getKey(), signal.getAccessory().getName());
+                if (signal == null || signal.getAccessory() == null) continue;
+
+                String name = signal.getAccessory().getName();
+
+                if (!names.contains(name)) names.add(name);
+            }
+
+            if (!names.isEmpty()) out.put(pair.getKey(), names);
         }
 
         return out;
@@ -2368,7 +2399,7 @@ public class AutonomySession
         {
             if (!store.isStation(tile)) continue;
 
-            if (store.getProtectingSignal(tile) == null) out.add(tile);
+            if (store.getProtectingSignals(tile).isEmpty()) out.add(tile);
         }
 
         return out;
@@ -2380,11 +2411,20 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        for (java.util.Map.Entry<TileKey, TileKey> pair : store.getProtectingSignals().entrySet())
+        // ANY of them, not all: a station paired to two signals of which one has gone is protected on
+        // one approach and not on the other, which is exactly the state worth warning about.
+        for (Map.Entry<TileKey, List<TileKey>> pair : store.getProtectingSignals().entrySet())
         {
-            LayoutDiagramComponent signal = graph.getTiles().get(pair.getValue());
+            for (TileKey tile : pair.getValue())
+            {
+                LayoutDiagramComponent signal = graph.getTiles().get(tile);
 
-            if (signal == null || signal.getAccessory() == null) out.add(pair.getKey());
+                if (signal == null || signal.getAccessory() == null)
+                {
+                    out.add(pair.getKey());
+                    break;
+                }
+            }
         }
 
         return out;

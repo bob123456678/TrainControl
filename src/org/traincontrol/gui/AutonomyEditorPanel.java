@@ -258,8 +258,8 @@ public class AutonomyEditorPanel extends JPanel
     // The station whose protecting signal is being picked by clicking one, waiting for that click
     private TileKey signalFor;
 
-    // A signal drawn outlined, so that "protected by signal 12" can be pointed at rather than read
-    private TileKey highlightedSignal;
+    // The signals drawn outlined, so that "protected by signal 12" can be pointed at rather than read
+    private final java.util.Set<TileKey> highlightedSignals = new java.util.LinkedHashSet<>();
 
     // Where the locomotive roster comes from.  Supplied rather than read here, because the session is
     // headless and knows nothing about the control station.
@@ -523,7 +523,7 @@ public class AutonomyEditorPanel extends JPanel
         oneWayFrom = null;
         pendingPortal = null;
         signalFor = null;
-        highlightedSignal = null;
+        highlightedSignals.clear();
         traces.clear();
 
         if (testButton != null) testButton.setSelected(false);
@@ -983,12 +983,14 @@ public class AutonomyEditorPanel extends JPanel
             // outline says where.
             if (isStation)
             {
-                TileKey paired = session.getProtectingSignal(target);
+                java.util.List<TileKey> paired = session.getProtectingSignals(target);
 
                 menu.add(item(
-                    paired == null
+                    paired.isEmpty()
                         ? I18n.t("autosetup.ui.menuPairSignal")
-                        : I18n.f("autosetup.ui.menuPairedSignal", addressOf(paired)),
+                        : I18n.f(paired.size() == 1
+                            ? "autosetup.ui.menuPairedSignal" : "autosetup.ui.menuPairedSignals",
+                            signalAddresses(paired)),
                     () -> pairProtectingSignal(target)));
             }
 
@@ -2364,7 +2366,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks which signal protects a station, and how the user would like to say.
+     * Asks which signals protect a station, and how the user would like to say.
      *
      * Two ways, because two quite different people ask this question.  Somebody looking at the diagram
      * knows the signal by where it is and can point at it; somebody who set the layout up knows it by
@@ -2372,85 +2374,134 @@ public class AutonomyEditorPanel extends JPanel
      * neither: it named them by accessory and coordinate, which is the one description nobody holds in
      * their head.
      *
-     * Clicking is the default, and it is the one offered first.
+     * Both ways ADD to a list rather than replace one answer, because a platform reachable from two
+     * directions needs a signal on each approach.  What is paired so far is on screen the whole time -
+     * that is the difference between a list and being asked the same question twice.
      *
      * @param station the station's square
      */
     private void pairProtectingSignal(TileKey station)
     {
-        TileKey already = session.getProtectingSignal(station);
-
-        boolean paired = already != null;
-
-        // Outlined on the diagram for as long as the question is on screen.  The item names the signal
-        // by address, which identifies it; the outline is what says WHERE it is, and that is the half
-        // somebody checking an existing pairing has come to find out.
-        highlightedSignal = already;
-
-        if (paired) refresh();
-
         try
         {
-            askAboutProtectingSignal(station, already, paired);
+            askAboutProtectingSignals(station);
         }
         finally
         {
-            highlightedSignal = null;
-
-            if (paired) refresh();
-        }
-    }
-
-    /**
-     * The question itself, with the highlight held around it by the caller.
-     */
-    private void askAboutProtectingSignal(TileKey station, TileKey already, boolean paired)
-    {
-        java.util.List<String> choices = new java.util.ArrayList<>();
-
-        choices.add(I18n.t("autosetup.ui.optionClickSignal"));
-        choices.add(I18n.t("autosetup.ui.optionSignalAddress"));
-
-        // Only where there is something to remove.  "Remove the pairing" on a station that has none is
-        // a button that cannot do anything, sitting where the user is choosing between two that can.
-        if (paired) choices.add(I18n.t("autosetup.ui.optionClearSignal"));
-
-        int answer = JOptionPane.showOptionDialog(owner(),
-            !paired ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
-                    : I18n.f("autosetup.ui.promptSignalHowPaired",
-                        describeTile(station), addressOf(already)),
-            I18n.t("autosetup.ui.menuPairSignal"),
-            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-            choices.toArray(), choices.get(0));
-
-        if (answer < 0) return;
-
-        if (paired && answer == 2)
-        {
-            applyProtectingSignal(station, null);
-            return;
-        }
-
-        if (answer == 0)
-        {
-            if (needsTheGrid(station)) return;
-
-            // Waits for a click.  Nothing else about the editor changes except that everything which is
-            // not a signal goes grey, which is what makes "click the signal" a thing that can be done
-            // rather than a thing that has to be searched for.
-            signalFor = station;
-
-            waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
-
+            highlightedSignals.clear();
             refresh();
-            return;
         }
-
-        pairSignalByAddress(station);
     }
 
     /**
-     * Finds a signal by the address written on it and pairs that.
+     * The list itself, with the highlight held around it by the caller.
+     *
+     * A loop rather than one question, because the answer is a LIST: adding a second signal, removing
+     * one that was paired by mistake and looking at what is there are all the same gesture repeated,
+     * and closing the window between each of them would hide the list at the moment it changed.  The
+     * one answer that does not come back here is "click it on the diagram", which has to give the
+     * diagram back before anything can be clicked on it.
+     *
+     * @param station the station's square
+     */
+    private void askAboutProtectingSignals(TileKey station)
+    {
+        while (true)
+        {
+            java.util.List<TileKey> paired = session.getProtectingSignals(station);
+
+            // Outlined on the diagram for as long as the list is on screen, and re-read on every turn
+            // of the loop so that a signal just added is outlined with the rest.  The list names them by
+            // address, which identifies them; the outline is what says WHERE they are, and that is the
+            // half somebody checking a pairing has come to find out.
+            highlightedSignals.clear();
+            highlightedSignals.addAll(paired);
+            refresh();
+
+            javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+
+            for (TileKey one : paired)
+            {
+                model.addElement(I18n.f("autosetup.ui.signalListEntry",
+                    addressOf(one), describeTile(one)));
+            }
+
+            if (paired.isEmpty()) model.addElement(I18n.t("autosetup.ui.signalListEmpty"));
+
+            javax.swing.JList<String> list = new javax.swing.JList<>(model);
+
+            list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+            list.setVisibleRowCount(Math.min(6, Math.max(3, model.size())));
+
+            if (!paired.isEmpty()) list.setSelectedIndex(0);
+            else list.setEnabled(false);
+
+            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+
+            panel.add(new javax.swing.JLabel(paired.isEmpty()
+                ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
+                : I18n.f("autosetup.ui.promptSignalsPaired", describeTile(station))),
+                java.awt.BorderLayout.NORTH);
+
+            panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+
+            java.util.List<String> choices = new java.util.ArrayList<>();
+
+            choices.add(I18n.t("autosetup.ui.optionClickSignal"));
+            choices.add(I18n.t("autosetup.ui.optionSignalAddress"));
+
+            // Only where there is something to remove.  "Remove" on a station that has no signals is a
+            // button that cannot do anything, sitting where the user is choosing between two that can.
+            if (!paired.isEmpty()) choices.add(I18n.t("autosetup.ui.optionRemoveSignal"));
+
+            choices.add(I18n.t("autosetup.ui.optionSignalsDone"));
+
+            int answer = JOptionPane.showOptionDialog(owner(), panel,
+                I18n.t("autosetup.ui.menuPairSignal"),
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                choices.toArray(), choices.get(choices.size() - 1));
+
+            // Closing the window means the same as Done.  Nothing here is held until an OK - each
+            // change is applied as it is made - so there is no half-finished state to discard.
+            if (answer < 0) return;
+
+            String chosen = choices.get(answer);
+
+            if (chosen.equals(I18n.t("autosetup.ui.optionSignalsDone"))) return;
+
+            if (chosen.equals(I18n.t("autosetup.ui.optionRemoveSignal")))
+            {
+                int at = list.getSelectedIndex();
+
+                if (at >= 0 && at < paired.size()) removeProtectingSignal(station, paired.get(at));
+
+                continue;
+            }
+
+            if (chosen.equals(I18n.t("autosetup.ui.optionClickSignal")))
+            {
+                if (needsTheGrid(station)) return;
+
+                // Waits for a click.  Nothing else about the editor changes except that everything which
+                // is not a signal goes grey, which is what makes "click the signal" a thing that can be
+                // done rather than a thing that has to be searched for.
+                //
+                // The list comes back by itself once the click lands, so a second signal is another
+                // click and a button rather than the whole menu again.
+                signalFor = station;
+
+                waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
+
+                refresh();
+                return;
+            }
+
+            pairSignalsByAddress(station);
+        }
+    }
+
+    /**
+     * Finds signals by the addresses written on them and adds them.
      *
      * The LOGICAL address, which is the number the user sees everywhere - on the tile, in the switch
      * panel, in the accessory list.  Taken off the diagram component, which holds exactly that number:
@@ -2458,9 +2509,14 @@ public class AutonomyEditorPanel extends JPanel
      * from zero.  Asking the accessory instead would mean asking the user to subtract that one
      * themselves, from the label in front of them.
      *
+     * SEVERAL at once, separated by commas or spaces, because somebody who knows the addresses knows
+     * all of them and should not have to reopen this once per signal.  Every address that resolves is
+     * added, and the ones that do not are reported together at the end rather than one at a time -
+     * stopping at the first would throw away the good ones typed after it.
+     *
      * @param station the station's square
      */
-    private void pairSignalByAddress(TileKey station)
+    private void pairSignalsByAddress(TileKey station)
     {
         String typed = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptSignalAddress"), I18n.t("autosetup.ui.menuPairSignal"),
@@ -2468,63 +2524,159 @@ public class AutonomyEditorPanel extends JPanel
 
         if (typed == null) return;
 
-        int wanted;
+        java.util.List<String> notNumbers = new java.util.ArrayList<>();
+        java.util.List<String> notFound = new java.util.ArrayList<>();
+        java.util.List<TileKey> found = new java.util.ArrayList<>();
 
-        try
+        for (String piece : typed.split("[,;\\s]+"))
         {
-            wanted = Integer.parseInt(typed.trim());
-        }
-        catch (NumberFormatException e)
-        {
-            JOptionPane.showMessageDialog(owner(),
-                I18n.f("autosetup.ui.errorSignalAddressNotANumber", typed.trim()));
-            return;
-        }
+            if (piece.trim().isEmpty()) continue;
 
-        TileKey found = null;
+            int wanted;
 
-        if (session.getGraph() != null)
-        {
-            for (java.util.Map.Entry<TileKey, LayoutDiagramComponent> entry
-                : session.getGraph().getTiles().entrySet())
+            try
             {
-                if (!isPairableSignal(entry.getValue())) continue;
-
-                if (entry.getValue().getAddress() == wanted)
-                {
-                    found = entry.getKey();
-                    break;
-                }
+                wanted = Integer.parseInt(piece.trim());
             }
+            catch (NumberFormatException e)
+            {
+                notNumbers.add(piece.trim());
+                continue;
+            }
+
+            TileKey at = signalAtAddress(wanted);
+
+            if (at == null) notFound.add(String.valueOf(wanted));
+            else if (!found.contains(at)) found.add(at);
         }
 
-        if (found == null)
+        for (TileKey one : found)
         {
-            JOptionPane.showMessageDialog(owner(),
-                I18n.f("autosetup.ui.errorNoSignalAtAddress", wanted));
-            return;
+            addProtectingSignal(station, one, false);
         }
 
-        applyProtectingSignal(station, found);
+        if (!found.isEmpty()) refresh();
+
+        // Said once, however many went wrong, and after the good ones have been taken.  A dialog per
+        // bad address would be a row of them to dismiss before seeing whether anything worked.
+        if (!notNumbers.isEmpty() || !notFound.isEmpty())
+        {
+            StringBuilder trouble = new StringBuilder();
+
+            if (!notNumbers.isEmpty())
+            {
+                trouble.append(I18n.f("autosetup.ui.errorSignalAddressNotANumber",
+                    joined(notNumbers)));
+            }
+
+            if (!notFound.isEmpty())
+            {
+                if (trouble.length() > 0) trouble.append("\n");
+
+                trouble.append(I18n.f("autosetup.ui.errorNoSignalAtAddress", joined(notFound)));
+            }
+
+            JOptionPane.showMessageDialog(owner(), trouble.toString());
+        }
     }
 
     /**
-     * Records the pairing, or clears it, and says which in words.
+     * @param wanted a logical address
+     * @return the square of a signal carrying it, or null
+     */
+    private TileKey signalAtAddress(int wanted)
+    {
+        if (session.getGraph() == null) return null;
+
+        for (java.util.Map.Entry<TileKey, LayoutDiagramComponent> entry
+            : session.getGraph().getTiles().entrySet())
+        {
+            if (!isPairableSignal(entry.getValue())) continue;
+
+            if (entry.getValue().getAddress() == wanted) return entry.getKey();
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds one signal to a station's protection, and says so in words.
      *
      * @param station the station's square
-     * @param signal the signal's square, or null to remove the pairing
+     * @param signal the signal's square
+     * @param redraw whether to repaint now - false while several are being added at once
      */
-    private void applyProtectingSignal(TileKey station, TileKey signal)
+    private void addProtectingSignal(TileKey station, TileKey signal, boolean redraw)
     {
-        session.setProtectingSignal(station, signal);
+        java.util.List<TileKey> paired
+            = new java.util.ArrayList<>(session.getProtectingSignals(station));
 
-        say(hint, signal == null
+        if (paired.contains(signal))
+        {
+            say(hint, I18n.f("autosetup.ui.signalAlreadyPaired", addressOf(signal)));
+            return;
+        }
+
+        paired.add(signal);
+
+        session.setProtectingSignals(station, paired);
+
+        say(hint, I18n.f(paired.size() == 1 ? "autosetup.ui.setSignal" : "autosetup.ui.addedSignal",
+            describeTile(station), describeTile(signal)));
+
+        if (redraw) refresh();
+    }
+
+    /**
+     * Takes one signal out of a station's protection, and says so in words.
+     *
+     * @param station the station's square
+     * @param signal the signal's square
+     */
+    private void removeProtectingSignal(TileKey station, TileKey signal)
+    {
+        java.util.List<TileKey> paired
+            = new java.util.ArrayList<>(session.getProtectingSignals(station));
+
+        if (!paired.remove(signal)) return;
+
+        session.setProtectingSignals(station, paired);
+
+        say(hint, paired.isEmpty()
             ? I18n.f("autosetup.ui.clearedSignal", describeTile(station))
-            : I18n.f("autosetup.ui.setSignal", describeTile(station), describeTile(signal)));
+            : I18n.f("autosetup.ui.removedSignal", describeTile(signal), describeTile(station)));
 
         refresh();
+    }
 
+    /**
+     * @param signals squares carrying signals
+     * @return their addresses, for a menu label
+     */
+    private String signalAddresses(java.util.List<TileKey> signals)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
 
+        for (TileKey one : signals)
+        {
+            out.add(addressOf(one));
+        }
+
+        return joined(out);
+    }
+
+    private static String joined(java.util.List<String> pieces)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String piece : pieces)
+        {
+            if (out.length() > 0) out.append(", ");
+
+            out.append(piece);
+        }
+
+        return out.toString();
     }
 
     private void applyLength(TileKey tile)
@@ -2614,7 +2766,11 @@ public class AutonomyEditorPanel extends JPanel
 
             signalFor = null;
 
-            applyProtectingSignal(station, tile);
+            addProtectingSignal(station, tile, true);
+
+            // And straight back to the list, which is where the signal just clicked now appears.  A
+            // second one is a button and another click rather than the whole right-click menu again.
+            pairProtectingSignal(station);
             return;
         }
 
@@ -3475,7 +3631,7 @@ public class AutonomyEditorPanel extends JPanel
         // address names the signal but does not say where it is, and where it is is the thing somebody
         // checking a pairing actually wants to know.
         boolean outlined = selection.contains(tile) || tile.equals(testFrom)
-            || tile.equals(highlightedSignal);
+            || highlightedSignals.contains(tile);
 
         // In the arrivals view every station shows every side it has, so the setting can be READ -
         // an unrestricted station drawing nothing is right on the running diagram and useless in the

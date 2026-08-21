@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import static org.testng.Assert.*;
@@ -230,6 +231,121 @@ public class testAutonomyTileMove
         assertEquals(store.getPointName(elsewhere), "OnPageTwo",
             "restoring one page reached into another, which would undo edits made somewhere the "
             + "editor was never looking");
+    }
+
+    /**
+     * A station guarded by two signals keeps both when it moves, and both are repointed when THEY move.
+     *
+     * The pairing is square to square at both ends, so a move has to be applied to the keys and to the
+     * values - and now to every entry of a list of values rather than to one.  A signal left pointing
+     * at coordinates that hold no track is dropped by the next reconcile, which is the same silent
+     * loss that moving a station used to cause.
+     */
+    @Test
+    public void testEverySignalGuardingAStationTravelsWithIt()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey was = new TileKey("1 - Main", 14, 3);
+        TileKey now = new TileKey("1 - Main", 15, 3);
+
+        TileKey north = new TileKey("1 - Main", 12, 3);
+        TileKey south = new TileKey("1 - Main", 16, 3);
+        TileKey southMoved = new TileKey("1 - Main", 16, 4);
+
+        store.setStation(was, true);
+        store.setProtectingSignals(was, Arrays.asList(north, south));
+
+        assertEquals(store.getProtectingSignals(was), Arrays.asList(north, south),
+            "a station could not be given two signals at all");
+
+        Map<TileKey, TileKey> moves = new LinkedHashMap<>();
+
+        moves.put(was, now);
+        moves.put(south, southMoved);
+
+        store.moveTiles(moves);
+
+        assertTrue(store.getProtectingSignals(was).isEmpty(),
+            "the old square still claims to be guarded, with no track on it");
+
+        assertEquals(store.getProtectingSignals(now), Arrays.asList(north, southMoved),
+            "the station arrived without both of its signals, or with one still pointing at the "
+            + "square the signal left");
+    }
+
+    /**
+     * A page put back brings back every signal on it, not the first one.
+     */
+    @Test
+    public void testRestoringAPageBringsBackEverySignal()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey station = new TileKey("1 - Main", 1, 1);
+        TileKey near = new TileKey("1 - Main", 2, 1);
+        TileKey far = new TileKey("1 - Main", 3, 1);
+
+        store.setStation(station, true);
+        store.setProtectingSignals(station, Arrays.asList(near, far));
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        store.setProtectingSignal(station, near);
+
+        store.restorePage("1 - Main", before);
+
+        assertEquals(store.getProtectingSignals(station), Arrays.asList(near, far),
+            "the discarded edit kept one of the two signals, which is the half-restored state a "
+            + "snapshot exists to prevent");
+    }
+
+    /**
+     * The one-signal calls still mean what they always did.
+     *
+     * Everything outside this feature - promoting a square, demoting it, the tests written when a
+     * station had one signal - goes through the singular pair, and it has to keep replacing rather
+     * than appending.
+     */
+    @Test
+    public void testTheSingularCallStillReplacesAndClears()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey station = new TileKey("1 - Main", 1, 1);
+        TileKey near = new TileKey("1 - Main", 2, 1);
+        TileKey far = new TileKey("1 - Main", 3, 1);
+
+        store.setProtectingSignals(station, Arrays.asList(near, far));
+        store.setProtectingSignal(station, far);
+
+        assertEquals(store.getProtectingSignals(station), Arrays.asList(far),
+            "setting one signal added to the list instead of replacing it");
+
+        assertEquals(store.getProtectingSignal(station), far);
+
+        store.setProtectingSignal(station, null);
+
+        assertTrue(store.getProtectingSignals(station).isEmpty(), "null did not unpair");
+
+        assertNull(store.getProtectingSignal(station));
+    }
+
+    /**
+     * One signal cannot be paired to the same station twice.
+     */
+    @Test
+    public void testASignalIsNotPairedTwice()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey station = new TileKey("1 - Main", 1, 1);
+        TileKey signal = new TileKey("1 - Main", 2, 1);
+
+        store.setProtectingSignals(station, Arrays.asList(signal, signal));
+
+        assertEquals(store.getProtectingSignals(station), Arrays.asList(signal),
+            "the same signal is on the list twice, which would show it twice and command it twice");
     }
 
     private static Map<TileKey, TileKey> moving(TileKey from, TileKey to)

@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -840,6 +841,92 @@ public class testAutoLayout
 
         assertTrue(signal.isRed(),
             "the signal was left GREEN with a train standing at the platform");
+    }
+
+    /**
+     * Two signals, one platform: BOTH follow it.
+     *
+     * A platform reachable from two directions needs a signal on each approach, and they say the same
+     * thing about the same platform - so a train standing there has to put both to red and leaving has
+     * to release both.  The failure this guards against is quiet in the worst way: the approach whose
+     * signal was dropped stays green with a train in the platform, and only that approach.
+     */
+    @Test
+    public void testEverySignalGuardingAPlatformIsThrown() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback fb = model.newFeedback(104, null);
+        model.setFeedbackState(fb.getName(), false);
+
+        MarklinAccessory north = borrowedAccessory(0);
+        MarklinAccessory south = borrowedAccessory(1);
+
+        layout.createPoint("BOTH_ENDS", true, fb.getName());
+
+        layout.getPoint("BOTH_ENDS").setProtectingSignals(
+            Arrays.asList(north.getName(), south.getName()));
+
+        assertEquals(layout.getPoint("BOTH_ENDS").getProtectingSignals().size(), 2,
+            "a platform could not be given two signals at all");
+
+        MarklinLocomotive train = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("BOTH_ENDS").setLocomotive(train);
+
+        assertTrue(north.isRed(), "the first signal stayed green with a train in the platform");
+        assertTrue(south.isRed(), "the second signal stayed green with a train in the platform, so "
+            + "that approach is unprotected and nothing on the diagram says so");
+
+        layout.getPoint("BOTH_ENDS").setLocomotive(null);
+
+        assertTrue(north.isGreen(), "the first signal was left red on an empty platform");
+        assertTrue(south.isGreen(), "the second signal was left red on an empty platform");
+    }
+
+    /**
+     * A configuration carrying a list of signals is read back as that list.
+     *
+     * parseAuto has always taken a bare string, and a file written before this feature still holds one.
+     * Both shapes therefore have to arrive as the same thing - a list - or a railway upgraded to this
+     * version comes back with every platform unprotected and nothing saying so.
+     */
+    @Test
+    public void testBothShapesOfProtectingSignalAreRead() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        // The s88 is written as a NUMBER, and the run-wide delays are present, because parseAuto
+        // invalidates the WHOLE layout over either - and an invalidated layout answers null for every
+        // point in it, which reads exactly like the signal having been dropped
+        String json = "{"
+            + "\"points\": ["
+            + "  {\"name\": \"OLD_SHAPE\", \"station\": true, \"s88\": 106,"
+            + "   \"protectingSignal\": \"Signal 12\"},"
+            + "  {\"name\": \"NEW_SHAPE\", \"station\": true, \"s88\": 107,"
+            + "   \"protectingSignal\": [\"Signal 12\", \"Signal 14\"]}"
+            + "],"
+            + "\"edges\": [{\"start\": \"OLD_SHAPE\", \"end\": \"NEW_SHAPE\", \"length\": 1}],"
+            + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        Layout parsed = Layout.fromJSON(json, model);
+
+        assertEquals(parsed.getPoint("OLD_SHAPE").getProtectingSignals(),
+            Arrays.asList("Signal 12"),
+            "a pairing written as a bare string was not read, which would unprotect every platform "
+            + "on a railway set up before this version");
+
+        assertEquals(parsed.getPoint("NEW_SHAPE").getProtectingSignals(),
+            Arrays.asList("Signal 12", "Signal 14"), "a list of signals did not survive the file");
+
+        // and what is read is written back out the same way round
+        org.json.JSONObject back = parsed.getPoint("NEW_SHAPE").toJSON();
+
+        assertTrue(back.get("protectingSignal") instanceof org.json.JSONArray,
+            "two signals were exported as something an import would read as one");
+
+        assertTrue(parsed.getPoint("OLD_SHAPE").toJSON().get("protectingSignal") instanceof String,
+            "one signal was exported as a list, which the version before this one cannot read");
     }
 
     /**

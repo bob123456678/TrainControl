@@ -166,58 +166,113 @@ public class AutonomyCompanionStore
     private final Map<String, String> portals = new LinkedHashMap<>();
 
     /**
-     * The signal that protects each station, keyed by the station's square.
+     * The signals that protect each station, keyed by the station's square.
      *
-     * One per station, and paired by hand rather than inferred.  The nearest signal on the approach is
-     * not always the protecting one, and a wrong guess here throws a real signal on real hardware.
+     * Paired by hand rather than inferred.  The nearest signal on the approach is not always the
+     * protecting one, and a wrong guess here throws a real signal on real hardware.
+     *
+     * SEVERAL per station, because a platform reachable from two directions needs a signal on each
+     * approach.  It held one until 3.0.0, and a setup written before then has a bare string where this
+     * now has an array - both are read, and a station with one signal is still written as a string.
      *
      * Keyed like the portals - square to square - so it survives a page rename for the same reason
-     * they do, and so it is reconciled away when either tile goes.
+     * they do, and so it is reconciled away when the station goes.
      */
-    private final Map<String, String> stationSignals = new LinkedHashMap<>();
+    private final Map<String, List<String>> stationSignals = new LinkedHashMap<>();
 
     /**
      * @param station the station's square
-     * @return the square of the signal protecting it, or null
+     * @return the square of the first signal protecting it, or null
      */
     public TileKey getProtectingSignal(TileKey station)
     {
-        if (station == null) return null;
+        List<TileKey> all = getProtectingSignals(station);
 
-        return parseTileKey(stationSignals.get(station.toString()));
+        return all.isEmpty() ? null : all.get(0);
     }
 
     /**
      * @param station the station's square
-     * @param signal the signal's square, or null to unpair
+     * @return the squares of every signal protecting it, in the order they were paired
+     */
+    public List<TileKey> getProtectingSignals(TileKey station)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        if (station == null) return out;
+
+        List<String> keys = stationSignals.get(station.toString());
+
+        if (keys == null) return out;
+
+        for (String key : keys)
+        {
+            TileKey signal = parseTileKey(key);
+
+            if (signal != null) out.add(signal);
+        }
+
+        return out;
+    }
+
+    /**
+     * @param station the station's square
+     * @param signal the signal's square, or null to unpair everything
      */
     public void setProtectingSignal(TileKey station, TileKey signal)
     {
+        setProtectingSignals(station, signal == null
+            ? Collections.<TileKey>emptyList() : Collections.singletonList(signal));
+    }
+
+    /**
+     * Replaces every signal protecting a station.
+     *
+     * @param station the station's square
+     * @param signals the signals' squares; empty or null unpairs
+     */
+    public void setProtectingSignals(TileKey station, List<TileKey> signals)
+    {
         if (station == null) return;
 
-        if (signal == null)
+        List<String> keys = new ArrayList<>();
+
+        if (signals != null)
+        {
+            for (TileKey signal : signals)
+            {
+                // De-duplicated here rather than in the picker, so that nothing else which writes this
+                // - an import, a restored snapshot - can leave one signal in the list twice
+                if (signal != null && !keys.contains(signal.toString())) keys.add(signal.toString());
+            }
+        }
+
+        if (keys.isEmpty())
         {
             stationSignals.remove(station.toString());
         }
         else
         {
-            stationSignals.put(station.toString(), signal.toString());
+            stationSignals.put(station.toString(), keys);
         }
     }
 
     /**
-     * @return every station that has a protecting signal, against that signal's square
+     * @return every station that has protecting signals, against those signals' squares
      */
-    public Map<TileKey, TileKey> getProtectingSignals()
+    public Map<TileKey, List<TileKey>> getProtectingSignals()
     {
-        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : stationSignals.entrySet())
+        for (String key : stationSignals.keySet())
         {
-            TileKey station = parseTileKey(entry.getKey());
-            TileKey signal = parseTileKey(entry.getValue());
+            TileKey station = parseTileKey(key);
 
-            if (station != null && signal != null) out.put(station, signal);
+            if (station == null) continue;
+
+            List<TileKey> signals = getProtectingSignals(station);
+
+            if (!signals.isEmpty()) out.put(station, signals);
         }
 
         return out;
@@ -726,7 +781,7 @@ public class AutonomyCompanionStore
         root.put("tileLengths", new JSONObject(translateLengths()));
         root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
         root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
-        root.put("stationSignals", new JSONObject(translateTileMap(stationSignals)));
+        root.put("stationSignals", new JSONObject(translateTileListMap(stationSignals)));
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
@@ -1084,7 +1139,7 @@ public class AutonomyCompanionStore
 
         // Both halves, like the captions: the key is the station's square and the value is the
         // signal's, and a rename moves both.
-        rekeyValues(stationSignals, from, to);
+        rekeyListValues(stationSignals, from, to);
         rekey(stationSignals, from, to);
         rekeyValues(portals, from, to);
         rekey(portals, from, to);
@@ -1192,7 +1247,7 @@ public class AutonomyCompanionStore
         // Key and value both name a square, so both follow.  The value is REPOINTED rather than
         // moved: a caption on a square that stayed put, naming a station that moved, still names that
         // station.
-        moveValues(stationSignals, byKey);
+        moveListValues(stationSignals, byKey);
         moveKeys(stationSignals, byKey);
 
         moveValues(portals, byKey);
@@ -1310,7 +1365,7 @@ public class AutonomyCompanionStore
         putBack(tileDirections, page, (Map<String, String>) snapshot.get("tileDirections"));
         putBack(barredArrivals, page, (Map<String, String>) snapshot.get("barredArrivals"));
         putBack(linkNames, page, (Map<String, String>) snapshot.get("linkNames"));
-        putBack(stationSignals, page, (Map<String, String>) snapshot.get("stationSignals"));
+        putBack(stationSignals, page, (Map<String, List<String>>) snapshot.get("stationSignals"));
         putBack(portals, page, (Map<String, String>) snapshot.get("portals"));
         putBack(captions, page, (Map<String, String>) snapshot.get("captions"));
 
@@ -1416,6 +1471,29 @@ public class AutonomyCompanionStore
 
         map.clear();
         map.putAll(out);
+    }
+
+    /**
+     * The same for a map whose values are LISTS of squares.
+     *
+     * Separately named rather than overloaded: erasure makes both signatures the same method, so a
+     * list-valued copy of any of these helpers needs its own name whether or not that reads better.
+     */
+    private static void moveListValues(Map<String, List<String>> map, Map<String, String> moves)
+    {
+        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        {
+            List<String> out = new ArrayList<>();
+
+            for (String value : entry.getValue())
+            {
+                String moved = moves.get(value);
+
+                out.add(moved == null ? value : moved);
+            }
+
+            entry.setValue(out);
+        }
     }
 
     /**
@@ -1721,7 +1799,7 @@ public class AutonomyCompanionStore
         readStringSet(root, "stations", stations);
         readStringMap(root, "tileDirections", tileDirections);
         readStringMap(root, "barredArrivals", barredArrivals);
-        readStringMap(root, "stationSignals", stationSignals);
+        readStringListMap(root, "stationSignals", stationSignals);
         readStringMap(root, "portals", portals);
         readStringMap(root, "captions", captions);
         readStringMap(root, "linkNames", linkNames);
@@ -1744,7 +1822,7 @@ public class AutonomyCompanionStore
         untranslate(pointNames);
         untranslate(tileDirections);
         untranslate(barredArrivals);
-        untranslateTileMap(stationSignals);
+        untranslateTileListMap(stationSignals);
         untranslate(linkNames);
         untranslatePortals();
         untranslateTileMap(captions);
@@ -1896,6 +1974,51 @@ public class AutonomyCompanionStore
 
         map.clear();
         map.putAll(out);
+    }
+
+    /**
+     * The same for a map whose values are lists of squares.
+     */
+    private void untranslateTileListMap(Map<String, List<String>> map)
+    {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        {
+            List<String> values = new ArrayList<>();
+
+            for (String value : entry.getValue())
+            {
+                values.add(fromStored(value));
+            }
+
+            out.put(fromStored(entry.getKey()), values);
+        }
+
+        map.clear();
+        map.putAll(out);
+    }
+
+    private Map<String, Object> translateTileListMap(Map<String, List<String>> map)
+    {
+        Map<String, Object> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        {
+            List<String> values = new ArrayList<>();
+
+            for (String value : entry.getValue())
+            {
+                values.add(toStored(value));
+            }
+
+            // One is written as a bare string, which is what every version before this one wrote and
+            // is all a station with a single signal - most of them - ever needs.  A file gains an
+            // array only where somebody has actually paired a second signal.
+            out.put(toStored(entry.getKey()), values.size() == 1 ? values.get(0) : new JSONArray(values));
+        }
+
+        return out;
     }
 
     private Map<String, String> translateTileMap(Map<String, String> map)
@@ -2162,6 +2285,21 @@ public class AutonomyCompanionStore
         }
     }
 
+    private static void rekeyListValues(Map<String, List<String>> map, String fromPage, String toPage)
+    {
+        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        {
+            List<String> out = new ArrayList<>();
+
+            for (String value : entry.getValue())
+            {
+                out.add(rekeyOne(value, fromPage, toPage));
+            }
+
+            entry.setValue(out);
+        }
+    }
+
     private static <T> List<String> dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)
     {
         List<String> gone = new ArrayList<>();
@@ -2191,6 +2329,45 @@ public class AutonomyCompanionStore
         for (String key : object.keySet())
         {
             into.put(key, object.getString(key));
+        }
+    }
+
+    /**
+     * Reads a map whose values are either one square or an array of them.
+     *
+     * Both shapes, because this field held a bare string until 3.0.0 and every setup written before
+     * then still has one.  Nothing migrates: the string is read as a list of one, and the file gains
+     * an array only when a second signal is paired and it is saved again.
+     */
+    private static void readStringListMap(JSONObject root, String field, Map<String, List<String>> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            List<String> values = new ArrayList<>();
+
+            JSONArray several = object.optJSONArray(key);
+
+            if (several != null)
+            {
+                for (int at = 0; at < several.length(); at++)
+                {
+                    String one = several.optString(at, null);
+
+                    if (one != null && !values.contains(one)) values.add(one);
+                }
+            }
+            else
+            {
+                String one = object.optString(key, null);
+
+                if (one != null) values.add(one);
+            }
+
+            if (!values.isEmpty()) into.put(key, values);
         }
     }
 

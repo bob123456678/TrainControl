@@ -3,11 +3,13 @@ package org.traincontrol.automation;
 import org.traincontrol.base.Locomotive;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.util.I18n;
 
@@ -494,23 +496,69 @@ public class Point
     private String block;
 
     /**
-     * The accessory thrown to red while this platform is claimed, or null.
+     * The accessories thrown to red while this platform is claimed.
      *
-     * A station's protection, not a side's: every copy of a square carries the same one, because the
+     * A station's protection, not a side's: every copy of a square carries the same ones, because the
      * copies are one platform.
+     *
+     * A LIST rather than one accessory, because a platform reachable from two directions needs a
+     * signal on each approach, and a real station often has several.  They are commanded together and
+     * show the same aspect - they say the same thing about the same platform - so nothing here has to
+     * decide which of them applies to an approach.  That would need the arrival side, which the Point
+     * knows and the pairing does not.
+     *
+     * Never null, so no caller has to check twice.
      */
-    private String protectingSignal;
+    private final List<String> protectingSignals = new ArrayList<>();
 
+    /**
+     * @return the first signal protecting this platform, or null
+     */
     public String getProtectingSignal()
     {
-        return this.protectingSignal;
+        return this.protectingSignals.isEmpty() ? null : this.protectingSignals.get(0);
     }
 
+    /**
+     * @return every signal protecting this platform, in the order they were paired
+     */
+    public List<String> getProtectingSignals()
+    {
+        return Collections.unmodifiableList(this.protectingSignals);
+    }
 
-
+    /**
+     * Replaces the protection with one accessory, or none.
+     *
+     * @param accessory the signal, or null to clear
+     * @return this
+     */
     public Point setProtectingSignal(String accessory)
     {
-        this.protectingSignal = accessory;
+        this.protectingSignals.clear();
+
+        if (accessory != null) this.protectingSignals.add(accessory);
+
+        return this;
+    }
+
+    /**
+     * Replaces the protection with a list.
+     *
+     * @param accessories the signals, or null to clear
+     * @return this
+     */
+    public Point setProtectingSignals(List<String> accessories)
+    {
+        this.protectingSignals.clear();
+
+        if (accessories != null)
+        {
+            for (String one : accessories)
+            {
+                if (one != null && !this.protectingSignals.contains(one)) this.protectingSignals.add(one);
+            }
+        }
 
         return this;
     }
@@ -731,9 +779,17 @@ public class Point
         // export made the configuration JSON quietly lossy: a setup exported and imported came back
         // with every station-signal pairing gone, and nothing said so.  Exactly what happened to the
         // block field before it, which is the line below.
-        if (this.protectingSignal != null)
+        // One is written as a bare string, several as an array.  The single case is what every
+        // version before this one wrote and read, and a station guarded by one signal - which is most
+        // of them - stays readable to an older TrainControl rather than becoming an array it would
+        // make nonsense of.
+        if (this.protectingSignals.size() == 1)
         {
-            jsonObj.put("protectingSignal", this.protectingSignal);
+            jsonObj.put("protectingSignal", this.protectingSignals.get(0));
+        }
+        else if (!this.protectingSignals.isEmpty())
+        {
+            jsonObj.put("protectingSignal", new JSONArray(this.protectingSignals));
         }
 
         if (this.block != null)

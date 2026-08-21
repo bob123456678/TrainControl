@@ -4535,10 +4535,35 @@ public class Layout
     {
         if (point == null || this.control == null) return;
 
-        String accessory = point.getProtectingSignal();
+        List<String> accessories = point.getProtectingSignals();
 
-        if (accessory == null) return;
+        if (accessories.isEmpty()) return;
 
+        try
+        {
+            for (String accessory : accessories)
+            {
+                refreshOneSignal(accessory);
+            }
+        }
+        catch (Exception e)
+        {
+            this.control.log(e);
+        }
+    }
+
+    /**
+     * Throws one protecting signal to whatever the platforms behind it now say.
+     *
+     * Per SIGNAL rather than per point, because that is the thing being commanded and because a signal
+     * may protect more than one platform - and, since this change, a platform may have more than one
+     * signal.  Neither of those is a special case here: the question asked is only ever "is anything
+     * this signal protects claimed", of every Point in the layout.
+     *
+     * @param accessory the signal to bring up to date
+     */
+    private void refreshOneSignal(String accessory)
+    {
         try
         {
             // Red if ANY platform this signal protects is claimed.
@@ -4552,7 +4577,7 @@ public class Layout
 
             for (Point other : this.points.values())
             {
-                if (!accessory.equals(other.getProtectingSignal())) continue;
+                if (!other.getProtectingSignals().contains(accessory)) continue;
 
                 if (other.getCurrentLocomotive() != null)
                 {
@@ -5550,12 +5575,30 @@ public class Layout
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
                 }
 
-                // The signal thrown to red while this platform is claimed.  Absent everywhere it has
-                // not been paired, and on everything hand-written.
+                // The signals thrown to red while this platform is claimed.  Absent everywhere they
+                // have not been paired, and on everything hand-written.
+                //
+                // One is written as a bare string and several as an array, so both are read - a file
+                // from any earlier version has the string, and nothing about it needs converting.
                 if (point.has("protectingSignal"))
                 {
-                    layout.getPoint(point.getString("name"))
-                        .setProtectingSignal(point.optString("protectingSignal", null));
+                    List<String> signals = new ArrayList<>();
+
+                    JSONArray several = point.optJSONArray("protectingSignal");
+
+                    if (several != null)
+                    {
+                        for (int at = 0; at < several.length(); at++)
+                        {
+                            signals.add(several.getString(at));
+                        }
+                    }
+                    else if (point.optString("protectingSignal", null) != null)
+                    {
+                        signals.add(point.getString("protectingSignal"));
+                    }
+
+                    layout.getPoint(point.getString("name")).setProtectingSignals(signals);
                 }
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive

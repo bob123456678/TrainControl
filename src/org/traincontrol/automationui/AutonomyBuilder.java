@@ -320,23 +320,23 @@ public class AutonomyBuilder
      * @return this
      */
     /**
-     * Which accessory protects each station.
+     * Which accessories protect each station.
      *
-     * Emitted on every copy of the square, because the copies are one platform and the signal guards
+     * Emitted on every copy of the square, because the copies are one platform and the signals guard
      * the platform rather than a side of it.
      *
-     * @param signals station square to accessory name
+     * @param signals station square to accessory names
      * @return this
      */
-    public AutonomyBuilder withProtectingSignals(Map<TileKey, String> signals)
+    public AutonomyBuilder withProtectingSignals(Map<TileKey, List<String>> signals)
     {
         this.protectingSignals = signals == null
-            ? Collections.<TileKey, String>emptyMap() : signals;
+            ? Collections.<TileKey, List<String>>emptyMap() : signals;
 
         return this;
     }
 
-    private Map<TileKey, String> protectingSignals = Collections.emptyMap();
+    private Map<TileKey, List<String>> protectingSignals = Collections.emptyMap();
 
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
@@ -793,11 +793,18 @@ public class AutonomyBuilder
                 // feedback - so the sensor cannot say which Points are one square.  The tile can.
                 if (nodes.size() > 1) json.put("block", point.getTile().toString());
 
-                // The signal that is thrown to red while this platform is claimed.  On every copy,
-                // because the copies are one platform.
-                String protecting = protectingSignals.get(point.getTile());
+                // The signals thrown to red while this platform is claimed.  On every copy, because
+                // the copies are one platform.
+                //
+                // One is written as a bare string and several as an array, which is the shape parseAuto
+                // reads and the shape every version before this one wrote.
+                List<String> protecting = protectingSignals.get(point.getTile());
 
-                if (protecting != null && stops) json.put("protectingSignal", protecting);
+                if (protecting != null && !protecting.isEmpty() && stops)
+                {
+                    json.put("protectingSignal", protecting.size() == 1
+                        ? (Object) protecting.get(0) : new JSONArray(protecting));
+                }
 
                 if (coordinatePages != null)
                 {

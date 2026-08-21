@@ -2962,6 +2962,194 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station may be guarded by more than one signal, and every one of them survives the file.
+     *
+     * A platform reachable from two directions needs a signal on each approach, and the setup held one
+     * per station until 3.0.0 - so this is as much about the file as about the pairing: the second
+     * signal has to come back, and the first has to still be first.
+     */
+    @Test
+    public void testAStationKeepsEverySignalGuardingIt() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey north = new TileKey("main", 2, 1);
+        TileKey south = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignals(station, Arrays.asList(north, south));
+
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(pageOnDisk()));
+
+        assertEquals(reopened.getProtectingSignals(station), Arrays.asList(north, south),
+            "the second signal did not survive the file");
+
+        // and the singular call, which everything written before this feature uses, still answers
+        assertEquals(reopened.getProtectingSignal(station), north);
+    }
+
+    /**
+     * A setup written before 3.0.0 holds one signal as a bare string, and still reads.
+     *
+     * Nothing migrates it.  The string is read as a list of one, and the file gains an array only when
+     * somebody pairs a second signal and saves - so a setup opened by this version and never edited is
+     * still openable by the last one.
+     */
+    @Test
+    public void testASetupFromBeforeThisFeatureStillReads() throws Exception
+    {
+        File folder = new File(layout, "config/autonomy");
+
+        assertTrue(folder.mkdirs() || folder.isDirectory(), "could not create " + folder);
+
+        // Keyed by page ID rather than by page name, which is how the file has always stored a square
+        Files.write(new File(folder, "setup.json").toPath(),
+            ("{\"stations\": [\"1:1,1\"], \"stationSignals\": {\"1:1,1\": \"1:2,1\"}}")
+                .getBytes(StandardCharsets.UTF_8));
+
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 1);
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(signal),
+            "a pairing written as a bare string was not read at all, which would silently unprotect "
+            + "every platform on an existing railway");
+    }
+
+    /**
+     * One signal is still written as a bare string.
+     *
+     * The compatibility half of the change: a station with a single signal - most of them - is written
+     * exactly as it was, so an older TrainControl reading the same layout finds what it expects.
+     */
+    @Test
+    public void testOneSignalIsStillWrittenAsAString() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignal(station, new TileKey("main", 2, 1));
+
+        session.save();
+
+        org.json.JSONObject written = new org.json.JSONObject(new String(
+            Files.readAllBytes(new File(layout, "config/autonomy/setup.json").toPath()),
+            StandardCharsets.UTF_8));
+
+        Object one = written.getJSONObject("stationSignals").get("1:1,1");
+
+        assertTrue(one instanceof String,
+            "one signal was written as " + one.getClass().getSimpleName()
+            + ", which the version before this one cannot read");
+
+        // and two are written as an array
+        session.setProtectingSignals(station,
+            Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 3, 1)));
+
+        session.save();
+
+        org.json.JSONObject again = new org.json.JSONObject(new String(
+            Files.readAllBytes(new File(layout, "config/autonomy/setup.json").toPath()),
+            StandardCharsets.UTF_8));
+
+        assertTrue(again.getJSONObject("stationSignals").get("1:1,1") instanceof org.json.JSONArray,
+            "two signals were not written as a list");
+    }
+
+    /**
+     * Every signal guarding a station reaches the built configuration.
+     *
+     * The pairing is between squares and the running layout commands accessories by name, so this is
+     * the join that would quietly drop the second signal: a platform that looks guarded on both
+     * approaches in the editor and is guarded on one of them on the railway.
+     */
+    @Test
+    public void testEverySignalReachesTheBuiltConfiguration() throws Exception
+    {
+        session.open(Arrays.asList(pageWithTwoSignals()));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignals(station,
+            Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 3, 1)));
+
+        assertEquals(session.protectingSignalNames().get(station).size(), 2,
+            "one of the two signals was lost on the way to the accessory names");
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        boolean seen = false;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!point.has("protectingSignal")) continue;
+
+            seen = true;
+
+            assertTrue(point.get("protectingSignal") instanceof org.json.JSONArray,
+                "the built configuration carries one signal where two were paired, so the platform "
+                + "runs unprotected on one of its approaches");
+
+            assertEquals(point.getJSONArray("protectingSignal").length(), 2);
+        }
+
+        assertTrue(seen, "nothing in the built configuration mentions a protecting signal at all");
+    }
+
+    /**
+     * A run of track with a station at one end and two signals beside it.
+     */
+    private LayoutDiagram pageWithTwoSignals() throws IOException
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        pageFile = new File(pages, "main.cs2");
+
+        Files.write(pageFile.toPath(),
+            "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + pageFile.getAbsolutePath().replace('\\', '/');
+
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SIGNAL, 3, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        // Wired as parsing a real layout does.  Without an accessory a signal has no address to
+        // command, and the pairing is dropped on the way to the built configuration rather than emitted
+        // as something the running layout would fail to find.
+        wire(page, 2, 1, 21);
+        wire(page, 3, 1, 22);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    private void wire(LayoutDiagram page, int x, int y, int address)
+    {
+        page.getComponent(x, y).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, address, org.traincontrol.base.Accessory.accessoryType.SIGNAL,
+            accessoryDecoderType.MM2, "Signal " + address, false, 0));
+    }
+
+    /**
      * Demoting a station takes its name plaque with it.
      *
      * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption
