@@ -156,6 +156,56 @@
         <test-one-class class="testAutonomyDiagramMonitor"/>
         <test-one-class class="testAutonomyDiagramReversal"/>
         <test-one-class class="testAutonomyDiagramSampleLayout"/>
+
+        <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
+             running 41 of the 76 test classes and reporting success for the whole suite.
+
+             Among the missing were testAutonomyStoreSettingsMatrix - which exists specifically to catch
+             the setup-collection bug class that has produced five defects this month - the whole of the
+             route editor's suite, and every test written in the week to 2026-08-22.  A gate that runs
+             half the tests is not a gate; it is a gate-shaped thing that says yes.
+
+             This costs wall-clock: several of these need a display and skip without one, and a few are
+             slow.  That is the right trade against a green build that means nothing.  See the note above
+             about the shutdown path that would make this list unnecessary - MarklinControlStation.shutdown
+             now exists, so that is a real option rather than a hypothetical one.
+
+             Not added: TestStationAddress, which is a helper rather than a test - it reaches past the
+             front of MarklinControlStation to point the suite at a local server, and holds no @Test. -->
+        <test-one-class class="testAutonomyGroundTruth"/>
+        <test-one-class class="testAutonomyStoreSettingsMatrix"/>
+        <test-one-class class="testAutonomyTileMove"/>
+        <test-one-class class="testBusyDialogInteraction"/>
+        <test-one-class class="testCommandRow"/>
+        <test-one-class class="testConditionOutline"/>
+        <test-one-class class="testConditionRows"/>
+        <test-one-class class="testControlStationFaults"/>
+        <test-one-class class="testDiagramExport"/>
+        <test-one-class class="testDiagramResize"/>
+        <test-one-class class="testDiagramShiftKeepsSetup"/>
+        <test-one-class class="testDiscardedEditsDoNotDeleteSetup"/>
+        <test-one-class class="testLayoutEditorBulkEdits"/>
+        <test-one-class class="testLayoutFolderRobustness"/>
+        <test-one-class class="testMaxActiveTrains"/>
+        <test-one-class class="testMockCentralStation"/>
+        <test-one-class class="testNoSelfRecursiveWrappers"/>
+        <test-one-class class="testNonReversibleTrains"/>
+        <test-one-class class="testRenderingCost"/>
+        <test-one-class class="testRouteCapture"/>
+        <test-one-class class="testRouteCommandParity"/>
+        <test-one-class class="testRouteEditorLocked"/>
+        <test-one-class class="testRouteEditorValidation"/>
+        <test-one-class class="testRouteInventory"/>
+        <test-one-class class="testRoutePicking"/>
+        <test-one-class class="testRouteReachesTheRails"/>
+        <test-one-class class="testStationLabelsFollowMoves"/>
+        <test-one-class class="testStuckTrainAdvisory"/>
+        <test-one-class class="testThreeWaySwitch"/>
+        <test-one-class class="testTileSelection"/>
+        <test-one-class class="testTimetableOnDerivedGraph"/>
+        <test-one-class class="testTracedPathIsContinuous"/>
+        <test-one-class class="testUiStateIsNotLostWhenUnreadable"/>
+        <test-one-class class="testWhyStuck"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

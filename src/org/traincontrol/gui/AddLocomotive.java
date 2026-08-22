@@ -298,40 +298,29 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 locAddress = Math.abs(locAddress);
 
-                if (type == decoderType.MM2)
+                // The model's own rule, asked rather than re-stated.
+                //
+                // This used to test each decoder type in its own if, against the upper bound ONLY -
+                // so with the abs() above, address 0 passed all three and made a locomotive the model
+                // itself would have refused: validateNewAddress requires address > 0 for every type.
+                // MULTI_UNIT had no branch at all, which was survivable only because this dialog does
+                // not offer it, and would have stopped being survivable the day it did.
+                //
+                // One rule, one place.  The message still names the type, because "out of range" with
+                // no range in it is not much of a message.
+                if (!org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, locAddress))
                 {
-                    if (locAddress > Locomotive.MM2_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorMM2AddressOutOfRange")
-                        ));
-                        return;
-                    }
-                }
+                    final String said = type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
+                        : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
+                        : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange"
+                        : "loc.errorAddressOutOfRange";
 
-                if (type == decoderType.DCC)
-                {
-                    if (locAddress > Locomotive.DCC_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorDCCAddressOutOfRange")
-                        ));
-                        return;
-                    }
-                }
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t(said)
+                    ));
 
-                if (type == decoderType.MFX)
-                {
-                    if (locAddress > Locomotive.MFX_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorMFXAddressOutOfRange")
-                        ));
-                        return;
-                    }
+                    return;
                 }
 
                 if (type == decoderType.MFX)

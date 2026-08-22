@@ -2834,15 +2834,6 @@ public class RouteEditorFrame extends JFrame
 
             // The duplicate column is named here rather than in a second call: a second call would
             // register a second mouse listener on this table, and both would act on every click
-            // The same shading the conditions table has had all along.
-            //
-            // Only that table was ever given it, so a command's cells all looked alike whatever kind
-            // it was: the function number on a signal command, the protocol on a stop, the delay on a
-            // command that has none.  Every one of those is refused when clicked, and until now the
-            // only way to find that out was to click it.  isCellEditable already knows the answer per
-            // kind - hasTarget, isFunction, hasSetting, hasProtocol, hasDelay - and this draws it.
-            greyWhatCannotBeEdited(this);
-
             actOnRowMarks(this, DELETE, UP, DOWN, UP, DUPLICATE);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
@@ -2874,6 +2865,19 @@ public class RouteEditorFrame extends JFrame
                     return c;
                 }
             });
+
+            // Wrapped AROUND the renderer above, and it has to be after it.
+            //
+            // It was called BEFORE, in the fix for AR-19, and setDefaultRenderer here replaced it six
+            // lines later - so the change I reported as landed had no effect at all.  That fix was also
+            // wrong about what was missing: this table has greyed by KIND all along, through
+            // model.isCellEditable in the renderer above.
+            //
+            // What it does not do is the background.  Most unusable cells are EMPTY - a function number
+            // on a signal command, a protocol on a stop - and grey text in an empty cell looks exactly
+            // like black text in an empty cell.  That is what Adam was asking for, and it is what
+            // greyWhatCannotBeEdited adds: a wash, plus the exemption that keeps the + row unshaded.
+            greyWhatCannotBeEdited(this);
         }
 
         /**
@@ -3129,7 +3133,10 @@ public class RouteEditorFrame extends JFrame
 
                 if (row.isJoiner()) return column == 4;
 
-                CommandRow term = CommandRow.of(row.getCommand());
+                // As SHOWN, not as stored - see asShown.  The display path already converts, and a
+                // cell whose editability is decided from a different kind than the one on screen is a
+                // cell that argues with itself.
+                CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
                 if (term == null) return false;
 
@@ -3159,7 +3166,12 @@ public class RouteEditorFrame extends JFrame
                     return;
                 }
 
-                CommandRow term = CommandRow.of(row.getCommand());
+                // As SHOWN.  The user answered a question the display asked, so the answer has to be
+                // interpreted in the display's vocabulary: picking "red" from a signal row must build a
+                // signal row, not an accessory row carrying the word "red" by accident.  toCommand
+                // treats the two kinds identically and accepts all four words, so what is STORED is
+                // unchanged either way.
+                CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
                 if (term == null) return;
 
@@ -3337,7 +3349,15 @@ public class RouteEditorFrame extends JFrame
 
             if (row.isJoiner()) return super.getCellEditor(line, column);
 
-            CommandRow term = CommandRow.of(row.getCommand());
+            // As SHOWN, and this is the one that mattered.
+            //
+            // The cell DISPLAYS "red" - getValueAt has converted since this table was written - and the
+            // dropdown was built from the stored kind, so it offered "straight" and "turn".  A combo
+            // whose model does not contain the current value falls back to its first entry, and one
+            // click into that cell and out again committed it: a condition that tested a signal at
+            // danger quietly became one that tested it clear.  That is the exact mechanism asShown's
+            // own javadoc describes for the commands table, left in place here.
+            CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
             if (term == null) return super.getCellEditor(line, column);
 

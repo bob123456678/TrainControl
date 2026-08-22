@@ -62,7 +62,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | - |
 | [MT-026](#mt-026) | 2026-08-21 | Shift Up and Shift Left at the edges | needs test | AR-17 |
 | [MT-029](#mt-029) | 2026-08-21 | The command table's marks | fixed unvalidated | AR-18 |
-| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | needs test | AR-19, DD |
+| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19, DD |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
 | [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | AR-20 |
@@ -93,8 +93,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
 | [MT-063](#mt-063) | 2026-08-22 | A second copy of TrainControl says so | fixed unvalidated | AR-16 |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
+| [MT-089](#mt-089) | 2026-08-22 | A signal CONDITION offers red and green | needs test | DD - live defect |
+| [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
+| [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 
-Everything else - 14 of 88 - is **fixed validated** and needs nothing from you unless the
+Everything else - 14 of 91 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1104,7 +1107,7 @@ row yet, it is the control that makes one.
 
 ### MT-030 - 2026-08-21 - A route holding a signal command
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** AR-19  
 **Written:** 2026-08-21
 
@@ -1128,9 +1131,23 @@ kept ROW and still shades no cell by kind.
 
 Verified by reading `RouteEditorFrame.java:2844` against `:2850`, not taken on the reviewer's word.
 
-**Not fixed yet** - you asked for the duplication report to be made and not acted on, and this is one of
-its findings. It is a small change (the two renderers have to be one, or applied in the other order).
-Say the word and it goes in on its own, ahead of anything else in that report.
+**Fixed 2026-08-22**, and the diagnosis changed on the way.
+
+`greyWhatCannotBeEdited(this)` now runs AFTER the table's own renderer rather than before it, so it
+wraps that renderer instead of being replaced by it.
+
+But the AR-19 note above was wrong about what was missing. **This table has greyed by kind all along** -
+its own renderer has always consulted `model.isCellEditable`, which knows `hasTarget`, `isFunction`,
+`hasSetting`, `hasProtocol` and `hasDelay`. I checked the commit before mine and it was there.
+
+What it did NOT do is the background. Most unusable cells are EMPTY - a function number on a signal
+command, a protocol on a stop - and grey text in an empty cell looks exactly like black text in an empty
+cell. That is what you were asking for, and it is what the wrap adds, along with the exemption that
+keeps the + row unshaded.
+
+**What to look for:** open a route with a mixed list. On a signal command, the function-number cell
+should carry a faint grey wash rather than just being empty; the same for the protocol cell on a stop.
+The + row at the bottom must not be washed at all.
 
 ---
 <a id="mt-031"></a>
@@ -1795,5 +1812,91 @@ Works OK. But it currently says "close the other window". There could also be a 
 **Claude, 2026-08-22.** Reworded: "Close the other window - or the background process, if you have one
 running from a script or a test - and try again." Left as **fixed unvalidated** rather than validated,
 because the sentence you read is not the sentence that is there now.
+
+---
+
+<a id="mt-089"></a>
+
+### MT-089 - 2026-08-22 - A signal CONDITION offers red and green
+
+**Disposition:** needs test  
+**From:** DD - live defect  
+**Written:** 2026-08-22
+
+**What to do.** Build a route whose CONDITION names a signal's address - not a command, a condition. The cell shows
+"red" or "green" (it always has). Now click into that setting cell: the dropdown must offer **red and
+green**, not "straight" and "turn".
+
+Then click into it and straight back out without choosing anything, and save. The condition must still
+say what it said before.
+
+That last step is the defect: the dropdown was built from the stored kind while the cell displayed the
+signal wording, so the list did not contain the value on screen, and a combo whose model lacks its
+current value falls back to its first entry. One click in and out committed it - a condition testing a
+signal at danger quietly became one testing it clear.
+
+#### Comments
+
+**Claude, 2026-08-22.** `asShown` was applied in the conditions table's display path only. It is now
+applied in all four - display, editability, edit, and the cell editor - which is what the commands table
+has always done by storing the shown row.
+
+Nothing stored changes: `toCommand` treats SIGNAL and ACCESSORY identically and has always accepted all
+four words.
+
+---
+
+<a id="mt-090"></a>
+
+### MT-090 - 2026-08-22 - Add Locomotive refuses address 0
+
+**Disposition:** needs test  
+**From:** DD appendix A3.3 - verified  
+**Written:** 2026-08-22
+
+**What to do.** Open Add Locomotive, type **0** as the address, and try each decoder type. It must be refused with a
+message naming the type. Then try the maximum for that type (it must be accepted) and one past it (it
+must be refused).
+
+#### Comments
+
+**Claude, 2026-08-22.** Verified from the source before fixing: the dialog tested the UPPER bound
+only, in three separate `if` blocks, with no branch for MULTI_UNIT and an `abs()` above them - so zero
+passed all three, because zero is not greater than any maximum, and made a locomotive the model itself
+would have refused.
+
+It now asks `MarklinLocomotive.validateNewAddress`, which is the rule, and picks the message from the
+type. `testLocomotiveAddressRules` pins the rule - including that zero and negatives are refused for
+every decoder type - but note it pins the RULE, not the dialog: the dialog is a Swing screen and this
+hands-on check is what covers the delegation.
+
+---
+
+<a id="mt-091"></a>
+
+### MT-091 - 2026-08-22 - ant test runs the whole suite
+
+**Disposition:** needs test  
+**From:** DD-A2 - verified  
+**Written:** 2026-08-22
+
+**What to do.** Run `ant test` and count what it runs. It should now run **75 classes** - every test class on disk
+except `testAutoDetect`, which probes the network for a real Central Station and is excluded on purpose.
+
+It will take noticeably longer than it used to.
+
+#### Comments
+
+**Claude, 2026-08-22.** Verified by counting rather than by reading: 76 classes carry `@Test`, and
+`build.xml` listed 41. **Thirty-five were never run by `ant test`** - among them
+`testAutonomyStoreSettingsMatrix`, which exists specifically to catch the setup-collection bug class
+that has produced five defects this month, the whole of the route editor's suite, and every test written
+in the week to 2026-08-22.
+
+All 34 real ones are added. `TestStationAddress` is not, because it is a helper with no `@Test`, and
+`testAutoDetect` stays out for the reason already documented there.
+
+**If you have been treating a green `ant test` as the gate, it has been narrower than the battery I run
+from the scratchpad.** That is the whole finding.
 
 ---
