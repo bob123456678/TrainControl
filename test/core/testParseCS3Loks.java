@@ -1,0 +1,321 @@
+package core;
+
+import java.net.URISyntaxException;
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.List;
+import org.traincontrol.marklin.file.CS2File;
+import static org.traincontrol.marklin.file.CS2File.parseJSONArray;
+import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.traincontrol.marklin.MarklinLocomotive;
+import static org.traincontrol.marklin.file.CS2File.fetchURL;
+import static org.traincontrol.marklin.file.CS2File.parseFile;
+
+/**
+ * Tests CS2 and CS3 locomotive parsing
+ */
+public class testParseCS3Loks
+{   
+    private String cs3_loks;
+    private String cs2_loks;
+    private String cs2_loks_from_cs3;
+    private String cs3_loks_v260;
+
+    public List<MarklinLocomotive> loksCS3;
+    public List<MarklinLocomotive> loksCS2;
+    public List<MarklinLocomotive> loksCS2_fromCS3;
+    public List<MarklinLocomotive> loksCS3_v260;
+
+    //public MarklinControlStation model;
+    public CS2File parser;
+            
+    /**
+     * Utility function to get a locomotive from the list
+     * @param lst
+     * @param name
+     * @return 
+     */
+    public static MarklinLocomotive getLocByName(List<MarklinLocomotive> lst, String name)
+    {
+        if (lst != null)
+        {
+            for (MarklinLocomotive l : lst)
+            {
+                try
+                {
+                    if (l.getName().equals(name)) return l;
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+                
+        return null;
+    }
+
+    @BeforeClass
+    public void init() throws URISyntaxException
+    {
+        this.cs3_loks_v260 = getClass().getResource("/CS3_loks_v260.json").toURI().toString();
+        this.cs2_loks_from_cs3 = getClass().getResource("/lokomotive_cs3.cs2").toURI().toString();
+        this.cs2_loks = getClass().getResource("/lokomotive.cs2").toURI().toString();
+        this.cs3_loks = getClass().getResource("/CS3_loks.json").toURI().toString();
+        
+        parser = new CS2File(null, null);
+        
+        try
+        {
+            loksCS2 = parser.parseLocomotives(parseFile(fetchURL(cs2_loks)));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        try
+        {
+            loksCS2_fromCS3 = parser.parseLocomotives(parseFile(fetchURL(cs2_loks_from_cs3)));  
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        try
+        {
+            loksCS3 = parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks)));  
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        try
+        {
+            loksCS3_v260 = parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));  
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+    }
+     
+    @Test
+    public void testParseCS3Loks() throws Exception
+    {
+        parser = new CS2File(null, null);
+        
+        parser.parseLocomotives(parseFile(fetchURL(cs2_loks)));
+        parser.parseLocomotives(parseFile(fetchURL(cs2_loks_from_cs3)));  
+        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks)));  
+        parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));    
+    }
+       
+    /**
+     * Check basic state
+     */
+    @Test
+    public void testLoaded()
+    {   
+        assertTrue(!loksCS2.isEmpty());
+        assertTrue(!loksCS2_fromCS3.isEmpty());
+        assertTrue(!loksCS3.isEmpty());
+        assertEquals(loksCS3.size(), loksCS2_fromCS3.size());
+        
+        assertTrue(!loksCS3_v260.isEmpty());
+    }
+    
+    @Test
+    public void testCS2Locs()
+    {
+        // Locomotive direction is not downloaded
+        List<MarklinLocomotive> db = loksCS2;
+
+        assertEquals(getLocByName(db, "CE 6/8 14310").getAddress(), 68);
+        assertEquals(getLocByName(db, "CE 6/8 14310").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+
+        assertEquals(getLocByName(db, "ABns").getAddress(), 3);
+        assertEquals(getLocByName(db, "ABns").getDecoderType(), MarklinLocomotive.decoderType.DCC);
+        
+        assertEquals(getLocByName(db, "MY 1112").getAddress(), 12);
+        assertEquals(getLocByName(db, "MY 1112").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        
+        assertEquals(getLocByName(db, "TGV POS").getAddress(), 5);
+        assertEquals(getLocByName(db, "TGV POS").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+        
+        assertEquals(getLocByName(db, "ICE 1").getAddress(), 27);
+        assertEquals(getLocByName(db, "ICE 1").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+        
+        assertEquals(getLocByName(db, "ICE=4").getAddress(), 124);
+        assertEquals(getLocByName(db, "ICE=4").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+    }
+    
+    @Test
+    public void testCS2LocsFromCS3()
+    {
+        List<MarklinLocomotive> db = loksCS2_fromCS3;
+        
+        // Edge case for address 1
+        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        
+        assertEquals(getLocByName(db, "02 0314-1 DDR").getAddress(), 39);
+        assertEquals(getLocByName(db, "02 0314-1 DDR").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+        assertTrue(!getLocByName(db, "02 0314-1 DDR").getImageURL().isEmpty());
+        
+        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);  
+        assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
+        assertTrue(getLocByName(db, "Test TC").getModelMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
+    }
+    
+    @Test
+    public void testCS3()
+    {
+        // System.out.println(loksCS3);
+        List<MarklinLocomotive> db = loksCS3;
+
+        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        
+        assertEquals(getLocByName(db, "02 0314-1 DDR").getAddress(), 39);
+        assertEquals(getLocByName(db, "02 0314-1 DDR").getDecoderType(), MarklinLocomotive.decoderType.MFX);
+        assertTrue(!getLocByName(db, "02 0314-1 DDR").getImageURL().isEmpty());
+                
+        // Test multi unit
+        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);  
+        assertEquals(getLocByName(db, "Test TC").getAddress(), 1);  
+        assertTrue(getLocByName(db, "Test TC").getModelMultiUnitLocomotiveNames().containsKey("118 028-0 DB"));
+        
+        assertEquals(db.size(), 136);
+    }
+    
+    @Test
+    public void testCS3_v260()
+    {
+        List<MarklinLocomotive> db = loksCS3_v260;
+
+        assertEquals(getLocByName(db, "ICE 3 406").getAddress(), 1);
+        assertEquals(getLocByName(db, "ICE 3 406").getDecoderType(), MarklinLocomotive.decoderType.MM2);
+        assertEquals(loksCS3_v260.size(), 154);
+
+        assertEquals(getLocByName(db, "ES44 x2").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "MF+ER").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "SBB420  Red/Cargo").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+        assertEquals(getLocByName(db, "Test TC").getDecoderType(), MarklinLocomotive.decoderType.MULTI_UNIT);
+    }
+    
+    /**
+     * These should be the same, except that the CS2 file will have a limited function count and different icons
+     */
+    @Test
+    public void testBothCS3Equivalent()
+    {
+        for(MarklinLocomotive l1 : loksCS3)
+        {
+            for(MarklinLocomotive l2 : loksCS2_fromCS3)
+            {
+                if (l1.getName().equals(l2.getName()))
+                {
+                    assertEquals(l1.getAddress(), l2.getAddress());
+                    assertEquals(l1.getDecoderType(), l2.getDecoderType());
+                    assertEquals(l1.getImageURL().isEmpty(), l2.getImageURL().isEmpty());
+                    assertEquals(l1.getNumF(), l2.getNumF());
+
+                    for (int i = 0; i < l1.getNumF(); i++)
+                    {
+                        // Some types do differ between the two file formats
+                        if (l1.getFunctionType(i) == 0)
+                        {
+                            assertEquals(l1.getFunctionType(i), l2.getFunctionType(i));
+                            assertEquals(l1.getFunctionTriggerTypes()[i], l2.getFunctionTriggerTypes()[i]);
+                        }  
+                    }
+                }
+            }
+        }
+    }
+    
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception
+    {
+    }
+
+    @BeforeMethod
+    public void setUpMethod() throws Exception
+    {
+    }
+
+    @AfterMethod
+    public void tearDownMethod() throws Exception
+    {
+    }
+
+    /**
+     * RS-C1: a multi-unit member whose name contains an equals sign must survive parsing.
+     *
+     * parseFileContents handles two line shapes.  The ordinary one (" .key=value") splits with a limit
+     * of two, and its comment says why: a route or locomotive name may contain an equals sign.  The
+     * nested array shape (" ..key=value") splits without one - and the only array key carrying free
+     * text is lokname, the name of a multi-unit member, which parseLocomotives matches against the
+     * locomotive database to assemble the consist.  Truncated at its first equals sign it matches
+     * nothing, so the member is silently dropped and the consist comes back short.
+     *
+     * The second member is ordinary on purpose: a fix that mangled the array shape in general would
+     * lose it too, so it cannot pass by accident.
+     */
+    @Test
+    public void testAMultiUnitMemberNameContainingAnEqualsSignSurvivesParsing() throws Exception
+    {
+        final String awkward = "BR 50 = Ep.III";
+
+        String contents = String.join("\n",
+            "[lokomotive]",
+            "version",
+            " .minor=3",
+            "lokomotive",
+            " .name=Doppeltraktion",
+            " .uid=0x4001",
+            " .traktion",
+            " ..lok=0x400b",
+            " ..lokname=" + awkward,
+            " .traktion",
+            " ..lok=0x400a",
+            " ..lokname=Ordinary Name"
+        );
+
+        Map<String, String> consist = null;
+
+        for (Map<String, String> item : parseFile(new BufferedReader(new StringReader(contents))))
+        {
+            if ("Doppeltraktion".equals(item.get("name"))) consist = item;
+        }
+
+        assertNotNull(consist, "precondition: the multi-unit entry must parse at all");
+
+        String traktion = consist.get("traktion");
+
+        assertNotNull(traktion, "precondition: its traktion block must have been collected");
+
+        assertTrue(traktion.contains("lokname=" + awkward),
+            "the member name was truncated at its equals sign, so nothing in the locomotive database "
+                + "can match it and the member is dropped from the consist: " + traktion);
+
+        assertTrue(traktion.contains("lokname=Ordinary Name"),
+            "control: the ordinary member must still be present: " + traktion);
+    }
+}

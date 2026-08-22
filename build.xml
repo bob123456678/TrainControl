@@ -104,6 +104,9 @@
       let the whole suite share one JVM and make this list unnecessary.
     -->
     <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">
+        <!-- The tests live in test/core, test/ui, test/regression and test/support since 2026-08-22 -
+             see test/README.md for which folder a new one belongs in.  These entries do not name the
+             folder, because testincludes below is a FILE pattern and **/ already spans it. -->
         <macrodef name="test-one-class">
             <attribute name="class"/>
             <sequential>
