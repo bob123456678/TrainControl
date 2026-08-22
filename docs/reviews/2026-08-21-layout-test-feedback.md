@@ -182,6 +182,45 @@ So it is one call again: `moveTiles(moves, builtOver)` takes both halves, derive
 and does them in the only order that works.  `forgetTiles` is that call with no moves.  There is now no
 way for a caller to get the order or the sparing wrong, because neither is theirs to decide.
 
+## Where else a matrix belongs
+
+The question Adam asked after LT-A9, and the answer is that this project has exactly one shape of
+settings bug and a matrix is the thing that finds it.
+
+Every one of them has been a COLLECTION that some OPERATION did not know about.  The store keeps eleven
+sets of settings keyed by square; the diagram supports a dozen structural edits.  That is a grid, the
+code fills it in one cell at a time as features arrive, and the tests were written the same way - one
+setting, one operation, whichever pair the author had in mind.  So the bugs live in the cells nobody
+paired up: directions were left behind by every move for a release, because their keys carry a suffix;
+switched-off links had to be added to the mover separately; labels were dropped by a move that landed on
+them.  Each time the other ten collections were handled correctly and a test for that operation existed.
+
+`test/testAutonomyStoreSettingsMatrix.java` is that grid: eleven settings against move, build-over,
+page restore, page rename, and save-and-load.  Delete `moveMembers(disabledPortals, byKey)` from the
+mover - one line, the exact shape of a real past bug - and it fails twice, while testAutonomyTileMove and
+testAutonomyDiagramStore both pass.
+
+It also carries a guard that reflects over the store's own fields and fails if a collection is neither in
+the matrix nor on the list of things not keyed by square.  That is the part that matters in a year: a
+matrix that can silently stop being complete is a matrix that will, and adding a twelfth setting is
+exactly when nobody is thinking about the other ten operations.
+
+### The same treatment is worth having in three more places
+
+  - **The editor's structural edits.**  The matrix above is about the STORE.  The editor has its own
+    grid - single drag, group drag, the four shifts, insert row, insert column, bulk row, bulk column,
+    delete, grow, shrink - and each has to tell the store what it did.  LT-A8 was a whole column of that
+    grid being blank.  Covering it properly means driving the editor, which wants a running window; the
+    cheaper version is to give each operation a plan object like `planBulkLine` and sweep those.
+  - **Direction against entry side.**  `directionAllows` is four directions by two sides: eight cells,
+    fully enumerable, currently sampled.
+  - **Tile ports.**  Already done, and worth noticing WHY: `testEveryComponentTypeIsClassified` sweeps
+    `componentType.values()` rather than listing the types somebody remembered.  It is the one area of
+    this codebase that has not produced a bug of this shape.
+
+The rule of thumb: wherever a small fixed set has to be handled uniformly by another small fixed set,
+enumerate both and assert every cell - and add the guard that fails when the set grows.
+
 ## LT-M11: what "must trigger save/exit checks" was taken to mean
 
 Going to a link's other end closes this window and opens it on that page - the editor is built around one
