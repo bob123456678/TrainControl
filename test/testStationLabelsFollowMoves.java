@@ -171,13 +171,48 @@ public class testStationLabelsFollowMoves
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * A group drag where one member lands on another member's label.
+     * A group drag where a station lands on its OWN label keeps it.
      *
      * Every square in a group drag is both a source and a target of something, which is why the whole
-     * set moves in one call.  The label belongs to a station inside the group, so it is arriving too.
+     * set moves in one call - and one of those targets can be the label of the station arriving there.
      */
     @Test
-    public void testAGroupDragKeepsALabelBelongingToTheGroup()
+    public void testAGroupDragKeepsALabelTheArrivingStationLandsOn()
+    {
+        AutonomyCompanionStore store = named(at(4, 4), at(5, 4), "Platform3");
+
+        store.setStation(at(9, 9), true);
+        store.setPointName(at(9, 9), "Platform4");
+
+        // The label's square is not itself moving, which is what makes this the landing case.  A label
+        // sitting on a square that IS moving travels with that square instead - it belongs to it - and
+        // that is a different rule tested elsewhere.
+        Map<TileKey, TileKey> moving = new LinkedHashMap<>();
+
+        moving.put(at(4, 4), at(5, 4));
+        moving.put(at(9, 9), at(9, 8));
+
+        store.moveTiles(moving);
+
+        assertEquals(store.getCaptionTarget(at(5, 4)), at(5, 4),
+            "Platform3 landed on its own label and the label was thrown away by the same drag that "
+            + "carried the platform");
+
+        assertEquals(store.getPointName(at(5, 4)), "Platform3", "the first platform did not arrive");
+
+        assertEquals(store.getPointName(at(9, 8)), "Platform4", "nor did the second");
+    }
+
+    /**
+     * And a group drag where something ELSE lands on the label drops it.
+     *
+     * The label named a station in the group, and the station in the group is fine - but what arrived
+     * on the label's own square is a different tile, so leaving the name there would draw one station's
+     * name across another station's track.  "Its station is moving" is not the rule; "its station is
+     * moving HERE" is.
+     */
+    @Test
+    public void testAGroupDragDropsALabelSomethingElseLandsOn()
     {
         AutonomyCompanionStore store = named(at(4, 4), at(6, 4), "Platform3");
 
@@ -191,13 +226,9 @@ public class testStationLabelsFollowMoves
 
         store.moveTiles(moving);
 
-        assertEquals(store.getCaptionTarget(at(6, 4)), at(5, 4),
-            "the label was destroyed by a member of its own group landing on it, and it named a "
-            + "station that is still very much there");
-
-        assertEquals(store.getPointName(at(5, 4)), "Platform3", "the first platform did not arrive");
-
-        assertEquals(store.getPointName(at(6, 4)), "Platform4", "nor did the second");
+        assertNull(store.getCaptionTarget(at(6, 4)),
+            "Platform4 was built over the top of Platform3's label, and the label stayed - so the "
+            + "diagram now writes one platform's name across the other one's track");
     }
 
     /**
@@ -247,6 +278,44 @@ public class testStationLabelsFollowMoves
         assertNull(store.getCaptionTarget(at(7, 3)),
             "a label naming a square nothing in this edit touched has been built over, and is still "
             + "sitting on the new track");
+    }
+
+    /**
+     * A label is spared only by the station it NAMES landing on it - not by that station moving.
+     *
+     * The difference only appears when more than one tile moves at once, which is every column move.
+     * A destination column twenty squares long will contain a label naming one of the arriving tiles
+     * roughly as often as not; sparing it because its station is "moving" leaves the name sitting on
+     * whichever OTHER tile actually landed there, drawn over track it has nothing to do with.
+     *
+     * The rule is the one the fix was described by: when the thing a label refers to is what has just
+     * built over it, the reference is not stale.  Anything looser is a different rule that happens to
+     * agree in the single-tile case.
+     */
+    @Test
+    public void testALabelIsSparedOnlyByTheStationThatLandsOnIt()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        store.setStation(at(2, 3), true);
+        store.setPointName(at(2, 3), "Platform3");
+
+        // The label is nowhere near the platform, and nothing about it is arriving: the tile that
+        // lands on it comes from (2, 8), which is not the station it names
+        store.setCaption(at(7, 8), at(2, 3));
+
+        LayoutEditor.BulkPlan plan =
+            LayoutEditor.planBulkLine(PAGE, true, 2, 7, 10, occupied(3, 8), true);
+
+        store.moveTiles(plan.moves, plan.builtOver);
+
+        assertNull(store.getCaptionTarget(at(7, 8)),
+            "a label was spared because the station it names happened to be moving somewhere - and "
+            + "what landed on the label was a different tile, so the name is now drawn on track it "
+            + "has nothing to do with");
+
+        assertEquals(store.getPointName(at(7, 3)), "Platform3",
+            "and the station itself should still have arrived");
     }
 
     // ---------------------------------------------------------------------------------------------

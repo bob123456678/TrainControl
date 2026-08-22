@@ -1640,10 +1640,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 try
                 {   
-                    // Clear existing tiles
+                    // Clear existing tiles.  Quietly: applyBulkPlan below tells the setup about this
+                    // whole line at once, and knows which of these squares are being vacated rather
+                    // than destroyed - which a delete on its own cannot know.
                     for (LayoutLabel l : destColumn)
                     {
-                        if (l.getComponent() != null) this.delete(l);
+                        if (l.getComponent() != null) this.delete(l, false);
                     }
                     
                     for (int i = 0; i < sourceColumn.size(); i++)
@@ -1667,7 +1669,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     
                     for (LayoutLabel l : sourceColumn)
                     {
-                        if (isMove && l.getComponent() != null) this.delete(l);
+                        if (isMove && l.getComponent() != null) this.delete(l, false);
                     }      
                 }
                 finally
@@ -1712,10 +1714,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 try
                 {
-                    // Clear existing tiles
+                    // Clear existing tiles - quietly, see the column above
                     for (LayoutLabel l : destinationRow)
                     {
-                        if (l.getComponent() != null) this.delete(l);
+                        if (l.getComponent() != null) this.delete(l, false);
                     }
                     
                     for (int i = 0; i < sourceRow.size(); i++)
@@ -1738,7 +1740,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     
                     for (LayoutLabel l : sourceRow)
                     {
-                        if (isMove && l.getComponent() != null) this.delete(l);
+                        if (isMove && l.getComponent() != null) this.delete(l, false);
                     }
                     
                 }
@@ -1888,6 +1890,25 @@ public class LayoutEditor extends PositionAwareJFrame
             //
             // Only on a MOVE.  Copying a tile does not copy what was written about the square it
             // came from: two squares cannot both be one station.
+            //
+            // A copy still has to clear the square it lands ON, which a move does through moveTile.
+            // Dropping a tile from the palette onto a set-up station used to replace the sensor and
+            // leave the station, its name, its length and its facings behind, describing a sensor that
+            // was no longer there - and reconcile cannot find that, because the square is not empty.
+            if (!move)
+            {
+                org.traincontrol.automationui.AutonomySession landing = parent.getAutonomySession();
+
+                if (landing != null)
+                {
+                    landing.forgetTiles(java.util.Collections.singletonList(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), getX(destLabel), getY(destLabel))));
+
+                    rememberAutonomy(landing);
+                }
+            }
+
             if (move && lastX >= 0 && lastY >= 0)
             {
                 org.traincontrol.automationui.AutonomySession autonomy =
@@ -2236,12 +2257,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 layout.addComponent(placing, x, y);
 
                 // Whatever was written about the square being written over is about track that is no
-                // longer there.  A copy does NOT bring the source's captions with it - two squares
-                // cannot both be where one station name is shown - so this only forgets.
+                // longer there.  A copy does NOT bring the source's settings with it - two squares
+                // cannot both be one station - so this only forgets.
+                //
+                // ALL of it, not only the caption.  A paste over a set-up station used to leave the
+                // designation, the name, the length, the facings, the arrival restrictions and the
+                // link pairing sitting on a square whose sensor had just been replaced - and nothing
+                // else finds those, because reconcile drops settings from squares that are EMPTY and
+                // this one is occupied, just by something else.
                 if (autonomy != null)
                 {
-                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), x, y));
+                    autonomy.forgetTiles(java.util.Collections.singletonList(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), x, y)));
 
                     // And written down, as every other edit here is.  Left in memory only, a caption
                     // dropped by a paste reached disk only if something else happened to save later.
@@ -2540,12 +2568,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 layout.addComponent(placing, at.getX(), at.getY());
 
                 // Whatever was written about the square being written over is about track that has
-                // just been replaced.  A fill does not carry captions with it - there is one tile
-                // being copied and many squares receiving it, so there is nothing to move.
+                // just been replaced - all of it, see pasteSelection.  A fill carries nothing with it:
+                // there is one tile being copied and many squares receiving it.
                 if (autonomy != null)
                 {
-                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), at.getX(), at.getY()));
+                    autonomy.forgetTiles(java.util.Collections.singletonList(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), at.getX(), at.getY())));
 
                     rememberAutonomy(autonomy);
                 }
@@ -2663,6 +2692,21 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     synchronized public void delete(LayoutLabel label)
     {
+        delete(label, true);
+    }
+
+    /**
+     * @param tellAutonomy false when the CALLER is going to tell the setup what happened
+     *
+     * A bulk column or row move deletes the line it is vacating, one square at a time, and then tells
+     * the setup that the whole line moved.  If each of those deletes had already announced itself, the
+     * announcement would be wrong: it says the track is gone, and the track is not gone, it is one
+     * column to the right.  The captions were the visible half of that - every station name on a moved
+     * column was thrown away by the clearing loop moments before the thing that would have carried it
+     * ran - and it is why this parameter exists rather than the callers reaching past delete().
+     */
+    synchronized public void delete(LayoutLabel label, boolean tellAutonomy)
+    {
         LayoutDiagramComponent lc = layout.getComponent(getX(label), getY(label));
 
         if (lc != null)
@@ -2680,7 +2724,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // and any caption elsewhere naming it: both are about track that no longer exists.
                 // Left behind, the label stayed where it was naming nothing, with no way to remove it
                 // - and putting any tile back on that square made it look like the new tile's label.
-                org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+                org.traincontrol.automationui.AutonomySession autonomy =
+                    tellAutonomy ? parent.getAutonomySession() : null;
 
                 if (autonomy != null)
                 {
@@ -3686,7 +3731,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.setPreferredSize(
                     new Dimension(grid.maxWidth + 210 + sideways, grid.maxHeight + 160));
                 this.setMinimumSize(new Dimension(
-                        550 + (this.size == 60 ? 200 : 0), 
+                        550 + sideways + (this.size == 60 ? 200 : 0),
                         630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0))
                 );
                 pack();
@@ -3696,7 +3741,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 // A window whose size was remembered keeps the floor the form gave it, which is the
                 // one place the taller minimum would otherwise not reach - the form is generated and
                 // cannot be edited by hand.
-                this.setMinimumSize(new Dimension(getMinimumSize().width,
+                // Plus the sidebar, which is new since those bounds were remembered: without it the
+                // floor is a width the diagram used to have all of and now has to share.
+                int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
+
+                this.setMinimumSize(new Dimension(getMinimumSize().width + sideways,
                     Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
             }
 
@@ -3771,10 +3820,9 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Whether this window may be left, asking about unsaved work first.
      *
-     * Asked by closing AND by switching page or mode, which are the same thing to everything below the
-     * window: the diagram is re-read, the setup is put back, and what is on screen is built again.  So
-     * they ask the same question, from one place - a second copy would be a second set of rules about
-     * what counts as unsaved, and the two would agree until one of them was changed.
+     * Closing only.  Switching page or mode asks its own question - see leaveFor, which can offer to
+     * SAVE because the window is coming straight back, where closing can only offer to throw the work
+     * away.  What counts as unsaved is the same test in both, and is the first line of each.
      *
      * In autonomy mode the diagram was never touched, so the undo stack is empty and the question that
      * matters is whether the setup has unsaved edits.  Answering yes discards them here, before the
@@ -3844,13 +3892,69 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void leaveFor(String page, boolean autonomy)
     {
-        if (!mayLeave())
+        // Save, discard, or stay - three answers, not two.
+        //
+        // Closing offers two because closing is final: the window is going whatever happens, and the
+        // only question is whether the work goes with it.  Switching is not final - the user is coming
+        // straight back to the same editor on a different page - and a two-button "throw it away or
+        // stay here" makes them close the window, save, and reopen it, which is the whole thing the
+        // sidebar exists to stop them doing.
+        //
+        // Save is the default because it is the answer that cannot lose anything, and this dialog
+        // appears on a gesture as small as clicking a tab.
+        boolean unsaved = isAutonomyMode() ? autonomyPanel.isDirty() : canUndo();
+
+        if (unsaved)
         {
-            // Put the sidebar back to what is actually on screen: the user said no, so nothing moved,
-            // and a control still showing the page they did not go to would be lying about where they
-            // are.
-            syncSidebar();
-            return;
+            Object[] answers = {
+                I18n.t("layout.ui.switchSave"),
+                I18n.t("layout.ui.switchDiscard"),
+                I18n.t("layout.ui.switchCancel")
+            };
+
+            int answer = JOptionPane.showOptionDialog(
+                this,
+                I18n.t("layout.ui.confirmSwitchWithUnsavedWork"),
+                I18n.t("layout.ui.dialogSwitchConfirmation"),
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                answers,
+                answers[0]
+            );
+
+            // Cancelled, or the dialog was closed.  Put the sidebar back to what is actually on
+            // screen: nothing moved, and a control showing the page they did not go to would be lying
+            // about where they are.
+            if (answer != 0 && answer != 1)
+            {
+                syncSidebar();
+                return;
+            }
+
+            if (answer == 0 && !saveBeforeLeaving())
+            {
+                syncSidebar();
+                return;
+            }
+
+            // Discarding the SETUP has to happen here, because the setup is shared: the window that
+            // opens next is looking at the same session, so edits left in it would survive a discard.
+            // Discarding the DIAGRAM happens by itself - layoutEditingComplete re-reads the pages from
+            // disk, and undoAutonomyEdits below puts the setup back as it was found.
+            if (answer == 1 && isAutonomyMode())
+            {
+                String failed = autonomyPanel.discardEdits();
+
+                if (failed != null)
+                {
+                    JOptionPane.showMessageDialog(this,
+                        I18n.f("autosetup.ui.errorDiscardFailed", failed));
+
+                    syncSidebar();
+                    return;
+                }
+            }
         }
 
         if (isAutonomyMode())
@@ -3862,7 +3966,10 @@ public class LayoutEditor extends PositionAwareJFrame
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 parent.autonomyEditorClosed();
-                parent.openLayoutEditor(page, autonomy, null);
+
+                // Remembered: picking a mode from the sidebar is the user saying which editor they
+                // want, in the plainest way there is.
+                parent.openLayoutEditor(page, autonomy, null, true);
             });
 
             return;
@@ -3872,9 +3979,48 @@ public class LayoutEditor extends PositionAwareJFrame
         undoAutonomyEdits();
 
         javax.swing.SwingUtilities.invokeLater(() ->
-            parent.layoutEditingComplete(() -> parent.openLayoutEditor(page, autonomy, null)));
+            parent.layoutEditingComplete(() -> parent.openLayoutEditor(page, autonomy, null, true)));
 
         this.dispose();
+    }
+
+    /**
+     * Writes what this window has been editing, for somebody who is switching away from it.
+     *
+     * The same two saves the Save button makes, and the same refusal while trains are running.  Split
+     * out rather than called through the button's handler because that handler CLOSES the window on
+     * success, which is the one thing a switch must not do before it is ready.
+     *
+     * @return true when it was written, so the caller may leave
+     */
+    private boolean saveBeforeLeaving()
+    {
+        try
+        {
+            if (parent.getModel() != null && parent.getModel().isAutonomyRunning())
+            {
+                JOptionPane.showMessageDialog(this,
+                    I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+                return false;
+            }
+
+            if (isAutonomyMode()) return autonomyPanel.save();
+
+            layout.saveChanges(null, false);
+
+            // Kept, so that undoAutonomyEdits below cannot put back a setup the user has just saved.
+            // The snapshot exists for Cancel, and this is not one.
+            this.autonomyAsOpened = null;
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("error.generic", ex.getMessage()));
+
+            return false;
+        }
     }
 
     /**

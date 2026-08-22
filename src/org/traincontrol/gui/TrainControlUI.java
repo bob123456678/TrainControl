@@ -2572,6 +2572,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal)
     {
+        openLayoutEditor(page, autonomy, reveal, false);
+    }
+
+    /**
+     * @param remember whether this counts as the user CHOOSING a mode to come back to
+     *
+     * Most ways in do not.  Double-clicking a train's name to see where it is standing, following a
+     * finding, or walking to the other end of a link are all incidental - they name a mode because
+     * they have to open something, not because the user has expressed a preference about editors - and
+     * remembering them would silently change what the Edit button does next time.
+     */
+    public void openLayoutEditor(String page, Boolean autonomy,
+        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember)
+    {
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this,
@@ -2603,7 +2617,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // An explicit request says why it cannot be honoured; a remembered one just falls back
             if (autonomy != null)
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoConfigurationToEdit"));
+                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
                 return;
             }
 
@@ -2638,9 +2652,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the editor edits one page, so the page has to be selected before it is opened
         if (page != null) this.LayoutList.setSelectedItem(page);
 
-        // Remembered for next time, from whichever door was used.  The menu items name a mode
-        // explicitly, and naming one is a perfectly good way of saying which you want to come back to.
-        prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
+        // Remembered only when it is an answer.
+        //
+        // Not when the mode was forced back to the track because a configuration is not loaded or
+        // trains are running: those are temporary facts about right now, and writing them down turns a
+        // week of setting autonomy up into "you last used the track editor" the moment somebody starts
+        // a train.  The preference is a record of what the user chose, and a fallback is not a choice.
+        if (remember && autonomy != null)
+        {
+            prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
+        }
 
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
@@ -3165,7 +3186,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void openAutonomyEditorOnPage(String page)
     {
-        openLayoutEditor(page, Boolean.TRUE, null);
+        // A menu item that names the setup editor is somebody saying which editor they want
+        openLayoutEditor(page, Boolean.TRUE, null, true);
     }
 
 

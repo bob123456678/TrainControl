@@ -1462,7 +1462,7 @@ public class AutonomyCompanionStore
 
         // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose
         // name is written on the square below it, nudged down one, lands ON its own label.
-        forgetSquares(landing, byKey.keySet());
+        forgetSquares(landing, byKey);
 
         if (byKey.isEmpty()) return;
 
@@ -1700,7 +1700,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * @param stillComing squares that are MOVING here, whose labels are therefore not stale
+     * @param arriving each square that is MOVING and where it is going, so that a label about to be
+     *        built over by the very thing it names can be told from one that is merely stale
      *
      * A caption is the odd one out among everything stored per square: it is a reference to somewhere
      * else rather than a fact about the square it sits on.  So when a square is built over, its caption
@@ -1715,8 +1716,14 @@ public class AutonomyCompanionStore
      * Kept and left where it is.  A caption may sit on its own station's square - that is how a name
      * gets drawn over a platform rather than beside it - so the entry that survives here is repointed
      * by the caller and ends up naming the tile it is now sitting on.
+     *
+     * The test is that the station it names is arriving on THIS square, not that it is moving at all.
+     * Those are different questions the moment more than one tile moves at once: a column move carries
+     * twenty tiles, and a label anywhere in the destination column names one of them roughly as often
+     * as not - which would spare a label that some other tile has just been built over the top of, and
+     * leave a station's name written on track it has nothing to do with.
      */
-    private void forgetSquares(Set<String> squares, Set<String> stillComing)
+    private void forgetSquares(Set<String> squares, Map<String, String> arriving)
     {
         if (squares == null || squares.isEmpty()) return;
 
@@ -1732,7 +1739,7 @@ public class AutonomyCompanionStore
 
             String names = captions.get(key);
 
-            if (names == null || stillComing == null || !stillComing.contains(names))
+            if (names == null || arriving == null || !key.equals(arriving.get(names)))
             {
                 captions.remove(key);
             }
@@ -1757,17 +1764,15 @@ public class AutonomyCompanionStore
             if (squares.contains(pairs.next().getValue())) pairs.remove();
         }
 
-        // A caption elsewhere naming one of these squares named track that is gone - unless that
-        // square is being moved rather than built over, in which case the caption follows it.
+        // A caption elsewhere naming one of these squares named track that is gone.
+        //
+        // No exception for the arriving tiles, and none is possible: a square that is being vacated is
+        // never in this set - moveTiles builds it by excluding them - so a caption naming one of those
+        // is not looked at here at all.  It is repointed afterwards instead.
         for (java.util.Iterator<Map.Entry<String, String>> pairs = captions.entrySet().iterator();
             pairs.hasNext();)
         {
-            String named = pairs.next().getValue();
-
-            if (squares.contains(named) && (stillComing == null || !stillComing.contains(named)))
-            {
-                pairs.remove();
-            }
+            if (squares.contains(pairs.next().getValue())) pairs.remove();
         }
 
         for (java.util.Iterator<Map.Entry<String, List<String>>> pairs

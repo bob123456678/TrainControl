@@ -570,14 +570,6 @@ public final class LayoutLabel extends JLabel
     private String autonomyPage;
 
     /**
-     * @param page the name of the page this label's square belongs to
-     */
-    public void setAutonomyPage(String page)
-    {
-        this.autonomyPage = page;
-    }
-
-    /**
      * Where this label sits on its page.
      *
      * Told to it rather than read off the component, because a label with NO component still has a
