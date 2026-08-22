@@ -1373,7 +1373,19 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException ex)
             {
-                JOptionPane.showMessageDialog(owner(), String.valueOf(ex.getMessage()));
+                // The class as well as the message.  A NullPointerException has no message, so this
+                // showed a dialog whose entire content was the word "null" - which tells the user
+                // nothing and told me nothing either, for a week.
+                String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
+                    ? ex.getClass().getSimpleName() : ex.getMessage();
+
+                JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", said));
+
+                // And into the log, with the stack, which is the only thing that says WHERE
+                if (parentWindow() != null && parentWindow().getModel() != null)
+                {
+                    parentWindow().getModel().log(ex);
+                }
             }
 
             refresh();
@@ -2210,6 +2222,14 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return;
 
+        // Only when there is a train to EDIT.
+        //
+        // With the square empty this item reads "Place Locomotive...", which is the third way of
+        // saying the same thing on one menu - "Add a Locomotive to Autonomy..." and "Move a Locomotive
+        // to This Station..." are both directly above it and both ask which locomotive, which this
+        // does not.  Editing what is already standing there is the part that has no other door.
+        if (point.getCurrentLocomotive() == null) return;
+
         menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
         {
             GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, false);
@@ -2255,10 +2275,22 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The main window, which this dialog needs as its parent rather than merely as a component.
+     * The main window, which is not always up the tree from here.
+     *
+     * This used to walk the window ancestry, and inside the layout editor that walk cannot arrive: the
+     * editor is a JFrame, a JFrame has no owner, and the chain therefore ends at it.  So every menu
+     * item that needed the main window - Place Locomotive and Edit Locomotive, both of which build a
+     * GraphLocAssign from it - got null, threw a NullPointerException on the first dereference, and
+     * was caught by item()'s handler, which showed a dialog saying the exception's message.  A
+     * NullPointerException has no message, so the dialog said "null".
+     *
+     * Told rather than found, whenever the owner can tell it - see setMainWindow.  The walk stays as
+     * the fallback for the surfaces that really are inside the main window.
      */
     private TrainControlUI parentWindow()
     {
+        if (mainWindow != null) return mainWindow;
+
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
         while (window != null && !(window instanceof TrainControlUI))
@@ -2268,6 +2300,16 @@ public class AutonomyEditorPanel extends JPanel
 
         return window instanceof TrainControlUI ? (TrainControlUI) window : null;
     }
+
+    /**
+     * @param window the main window, for the surfaces that are not inside it
+     */
+    public void setMainWindow(TrainControlUI window)
+    {
+        this.mainWindow = window;
+    }
+
+    private TrainControlUI mainWindow;
 
     private String locomotiveAt(TileKey tile)
     {
@@ -3436,12 +3478,121 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
+        // "Nowhere to go", with nothing after it, is not an answer.
+        //
+        // The list below names the stations that were considered and says why each was refused - so
+        // when it is empty as well, the report is the word "nowhere" and nothing else, and there is
+        // no way to tell "every station refused this train" from "there were no stations to refuse
+        // it".  Those need opposite things done about them, and Adam met the second one: a train
+        // sitting at a station the report said had nowhere to go, with no reason given for anywhere.
+        //
+        // So when nothing was considered, say what the setup actually holds.
+        String going = available.isEmpty()
+            ? I18n.t("autosetup.ui.whyNowhere")
+            : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(available)));
+
+        String detail = blocked.toString();
+
+        if (available.isEmpty() && reasons.isEmpty())
+        {
+            detail = "<br>" + escape(I18n.f("autosetup.ui.whyNothingConsidered",
+                countStations(layout), countDestinations(layout),
+                escape(describeBlock(layout.getLocomotiveLocation(standing)))));
+        }
+
+        // The reason behind the reason.
+        //
+        // "No track route leads there", said once per station, is what a SEVERED railway looks like
+        // from here - and it is the answer to the wrong question.  A switch or a signal drawn without
+        // an accessory address cannot be routed over, so every run through it is cut, and a setup with
+        // a few dozen of those has stations that are all perfectly fine and no way between any of them.
+        // The sample layout is exactly that: 79 blocking findings, seven edges, and a "why" report that
+        // named twenty-eight stations and blamed the track.
+        //
+        // So when nothing is available and the setup has blocking findings, say that first.  It is the
+        // one thing that has to be fixed before any of the rest can be true.
+        if (available.isEmpty())
+        {
+            int blockingFindings = countBlockingFindings();
+
+            if (blockingFindings > 0)
+            {
+                detail = "<br><b>" + escape(I18n.f("autosetup.ui.whyBlockedBySetup", blockingFindings))
+                    + "</b>" + detail;
+            }
+        }
+
         sayRich(hint, I18n.f("autosetup.ui.whyReport", escape(standing.getName()),
-            available.isEmpty() ? I18n.t("autosetup.ui.whyNowhere")
-                : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(available))),
-            blocked.toString() + unsavedWarning()));
+            going, detail + unsavedWarning()));
 
         refresh();
+    }
+
+    /**
+     * How many findings would stop this setup being built at all.
+     *
+     * The same list the findings box shows, counted rather than read: a report that says a train cannot
+     * go anywhere is describing a symptom, and when there are blocking findings they are the cause.
+     */
+    private int countBlockingFindings()
+    {
+        int count = 0;
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getSeverity() == AutonomyChecks.Severity.ERROR) count++;
+        }
+
+        return count;
+    }
+
+    /**
+     * How many stations the running setup holds at all.
+     *
+     * Counted from the RUNNING layout rather than from the store, because that is what the answer is
+     * about: the store can hold a station the last build refused, and the question being asked is why
+     * the train in front of the user is not moving now.
+     */
+    private static int countStations(org.traincontrol.automation.Layout layout)
+    {
+        int count = 0;
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.isDestination()) count++;
+        }
+
+        return count;
+    }
+
+    /**
+     * And how many of those a train may actually be SENT to - a station can be a place trains stop
+     * without being a place autonomy chooses.
+     */
+    private static int countDestinations(org.traincontrol.automation.Layout layout)
+    {
+        int count = 0;
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.isDestination() && point.isActive() && point.isAutoDestination()) count++;
+        }
+
+        return count;
+    }
+
+    /**
+     * What the train is standing on, for a report that has nothing else to say.
+     *
+     * The block matters here and nowhere else in this report: every station sharing a block with the
+     * train is skipped before it can be given a reason, so on a layout where one block holds all the
+     * platforms the considered list comes back empty and nothing says why.
+     */
+    private static String describeBlock(org.traincontrol.automation.Point standing)
+    {
+        if (standing == null) return "?";
+
+        return standing.getBlock() == null ? standing.getName() : String.valueOf(standing.getBlock());
     }
 
     /**
@@ -3848,7 +3999,8 @@ public class AutonomyEditorPanel extends JPanel
         // track.  Shading them turned the gaps between the lines into a field of grey boxes.
         boolean shaded = ignored && componentAt(tile) != null;
 
-        return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
+        org.traincontrol.automationui.TileAnnotation annotation =
+            new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directions.getSelectedIndex() == 1,
             ignored ? null
@@ -3858,6 +4010,13 @@ public class AutonomyEditorPanel extends JPanel
             // arrival chevrons on the same square, and so the only one where the badge has to give
             // way.  On a diagram it goes back onto the track it is about.
             .inTheEditor();
+
+        // A train the setup puts here gets a mark of its own.  The caption says which train, and the
+        // caption is on another square, is sometimes on no square, and can be switched off - so
+        // without this the diagram can be read right through without seeing where the trains are.
+        if (locomotiveAt(tile) != null) annotation.withTrain();
+
+        return annotation;
     }
 
     /**

@@ -143,6 +143,11 @@ public class AutonomyBanner extends JPanel
         // look-and-feel draws it with its own track - a vertical grey bar against the banner, which
         // looks like a rendering fault rather than a control.  Painted in the banner's own colour it
         // is there when it is needed and invisible when it is not.
+        //
+        // Except when there is more to read than fits.  An invisible scrollbar on a one-line notice is
+        // tidiness; on the answer to "why is it not moving", which is a train and a dozen stations, it
+        // is a message that stops in the middle with nothing on screen saying there is any more of it.
+        // See setScrollbarVisible, called from show().
         scroller.getVerticalScrollBar().setOpaque(false);
         scroller.getVerticalScrollBar().setBorder(null);
 
@@ -352,7 +357,7 @@ public class AutonomyBanner extends JPanel
      * top of the diagram - so the rest is scrolled to rather than shown.  The number is what the
      * answer to "why is it not moving" usually needs without touching the scrollbar at all.
      */
-    private static final int MAXIMUM_HEIGHT = 120;
+    private static final int MAXIMUM_HEIGHT = 260;
 
     /** The border this panel draws round its message, which the height has to allow for. */
     private static final int INSET_HEIGHT = 10;
@@ -385,7 +390,24 @@ public class AutonomyBanner extends JPanel
         message.setCaretPosition(0);
 
         javax.swing.SwingUtilities.invokeLater(() ->
-            scroller.getVerticalScrollBar().setValue(0));
+        {
+            scroller.getVerticalScrollBar().setValue(0);
+
+            // And the bar becomes visible when there is more than fits.
+            //
+            // Posted, because the answer depends on the height the message has just been laid out to,
+            // which it does not have until this pass is over.  Invisible on a one-line notice is
+            // tidiness; invisible on an answer that stops in the middle is a message with no way to
+            // tell there is more of it, which is what Adam met asking why a train was not moving.
+            boolean more = message.getPreferredSize().height + INSET_HEIGHT > MAXIMUM_HEIGHT;
+
+            scroller.getVerticalScrollBar().setOpaque(more);
+
+            scroller.getVerticalScrollBar().setVisible(true);
+
+            revalidate();
+            repaint();
+        });
 
         setBackground(warning ? WARNING_BACKGROUND : INFO_BACKGROUND);
 

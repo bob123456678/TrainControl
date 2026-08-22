@@ -541,6 +541,24 @@ public class TileAnnotation
 
     private boolean editing = false;
 
+    /**
+     * Says a train is set up to be standing on this square.
+     *
+     * A builder rather than another constructor argument: there are five constructors already, all
+     * chaining into the longest, and a sixth position for a boolean is a thing to get wrong at a call
+     * site rather than a thing to read.
+     *
+     * @return this
+     */
+    public TileAnnotation withTrain()
+    {
+        this.occupied = true;
+
+        return this;
+    }
+
+    private boolean occupied = false;
+
     public boolean isIgnored()
     {
         return ignored;
@@ -691,6 +709,8 @@ public class TileAnnotation
             paintArrows(g, width, height);
 
             paintArrivals(g, width, height);
+
+            if (occupied) paintTrainMark(g, width, height);
 
             // The badge last, and so over the arrows - which is where it started, and where it can go
             // back now that a badge on a bend has moved off into the corner.  It was put underneath
@@ -910,6 +930,56 @@ public class TileAnnotation
         arrow(g, leaving, outward, allowed, span);
         arrow(g, arriving, new double[] {-outward[0], -outward[1]}, allowed, span);
     }
+
+    /**
+     * A small star in the middle of a square, saying a train is set up to stand here.
+     *
+     * The setup can put a train on a platform, and until now the only place that showed was the caption
+     * beside it - which is on a different square, is sometimes on no square at all, and is the first
+     * thing to go when somebody turns the labels off.  So the diagram could be read all the way through
+     * without ever seeing where the trains had been placed.
+     *
+     * White with a dark edge, because the tile art underneath is not one colour: white alone vanishes on
+     * a pale platform and a dark mark vanishes on the black of the rails.  Drawn last of the marks and
+     * before the badge, so it sits over the arrows rather than under them.
+     */
+    private void paintTrainMark(Graphics2D g, int width, int height)
+    {
+        int span = Math.min(width, height);
+
+        double arm = Math.max(3.0, span / 6.0);
+
+        double centreX = width / 2.0;
+        double centreY = height / 2.0;
+
+        java.awt.geom.Path2D star = new java.awt.geom.Path2D.Double();
+
+        // Six arms rather than four: four reads as a plus, which on a track diagram is a crossing
+        for (int point = 0; point < 6; point++)
+        {
+            double angle = Math.PI * point / 3.0;
+
+            star.moveTo(centreX, centreY);
+            star.lineTo(centreX + Math.cos(angle) * arm, centreY + Math.sin(angle) * arm);
+        }
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+        // The dark edge first, as a wider stroke of the same shape underneath
+        g.setStroke(new BasicStroke((float) Math.max(3.0, arm / 1.6),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(TRAIN_MARK_EDGE);
+        g.draw(star);
+
+        g.setStroke(new BasicStroke((float) Math.max(1.6, arm / 3.0),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(TRAIN_MARK);
+        g.draw(star);
+    }
+
+    private static final Color TRAIN_MARK = Color.WHITE;
+
+    private static final Color TRAIN_MARK_EDGE = new Color(40, 40, 40, 180);
 
     /**
      * The tested path, drawn through the square rather than around it.
@@ -1493,6 +1563,7 @@ public class TileAnnotation
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
+            && occupied == other.occupied
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -1501,7 +1572,8 @@ public class TileAnnotation
     {
         return marks.hashCode() * 31 + length * 2
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
-            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + traces.hashCode() * 3
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
+            + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + arrivals.hashCode() * 7;
     }
 

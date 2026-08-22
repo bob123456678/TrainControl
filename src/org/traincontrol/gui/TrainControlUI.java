@@ -975,6 +975,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (station == null || value == null) return;
 
+        // In whatever state the overlay switch is in.
+        //
+        // Hiding the labels when the switch goes off only reaches the labels that exist at that
+        // moment, and the grid rebuilds itself for a dozen reasons - a page change, a repaint, an
+        // edit - so without this the names came back on their own with the switch still off.
+        value.setVisible(autonomyOverlayToggle == null || autonomyOverlayToggle.isOverlayShown());
+
         // The SET as well as the map.  Making only the map concurrent moved the hazard rather than
         // removing it: the iterator-with-removal below runs on the event thread while
         // updateStationLabels walks the same set from a worker, so a plain HashSet still gives a
@@ -1923,14 +1930,83 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (modifyLocalLayoutMenu == null) return;
 
-        javax.swing.JMenuItem item =
-            new javax.swing.JMenuItem(I18n.t("layout.ui.menuCombineLinkedPages"));
+        // Once, however many times this runs.
+        //
+        // mountAutonomyControls is called on startup, on every layout reload, whenever a configuration
+        // is loaded or dropped, and at the end of every visit to the editor - and each call added
+        // another copy, so a session of ordinary work ended with a menu that was mostly this item.
+        // Kept in a field rather than searched for by label: the label is translated.
+        if (combinePagesItem != null) modifyLocalLayoutMenu.remove(combinePagesItem);
 
-        item.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
+        combinePagesItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuCombineLinkedPages"));
 
-        item.addActionListener(event -> combineLinkedPages());
+        // Wrapped, or the explanation lays itself out on one line and runs off the screen
+        combinePagesItem.setToolTipText(
+            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipCombineLinkedPages")));
 
-        modifyLocalLayoutMenu.add(item);
+        combinePagesItem.addActionListener(event -> combineLinkedPages());
+
+        modifyLocalLayoutMenu.add(combinePagesItem);
+    }
+
+    /** The one Combine item, so that mounting the controls again replaces it rather than adding another */
+    private javax.swing.JMenuItem combinePagesItem;
+
+    /**
+     * "Edit Layout Page..." on the Layouts menu, listing the pages.
+     *
+     * The counterpart to the Autonomy menu's own edit item, and the reason "Edit Current Page" came out
+     * of Manage Pages: managing pages is adding, renaming, duplicating and deleting them, and opening
+     * one to work on is not that.  Each entry opens the editor on that page in whichever mode was last
+     * used, which is what the Edit button does - naming a PAGE is not naming a mode.
+     *
+     * Rebuilt whole on every mount, because the pages change under it.
+     */
+    private void mountEditPageMenu()
+    {
+        if (layoutMenu == null) return;
+
+        if (editPageMenu != null) layoutMenu.remove(editPageMenu);
+
+        editPageMenu = new javax.swing.JMenu(I18n.t("layout.ui.menuEditLayoutPage"));
+
+        editPageMenu.setToolTipText(
+            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipEditLayoutPage")));
+
+        java.util.List<String> pages = this.model == null
+            ? new java.util.ArrayList<String>() : this.model.getLayoutList();
+
+        for (final String page : pages)
+        {
+            javax.swing.JMenuItem item = new javax.swing.JMenuItem(page);
+
+            item.addActionListener(event -> openLayoutEditor(page, null, null));
+
+            editPageMenu.add(item);
+        }
+
+        editPageMenu.setEnabled(!pages.isEmpty() && isLocalLayout());
+
+        // Beside Manage Pages rather than inside it
+        layoutMenu.add(editPageMenu);
+    }
+
+    /** The one Edit Layout Page menu, rebuilt rather than duplicated - see mountEditPageMenu */
+    private javax.swing.JMenu editPageMenu;
+
+    /**
+     * Takes "Edit Current Page" off Manage Pages.
+     *
+     * It is now the first entry of Edit Layout Page, by name, along with all the others.  Removed here
+     * rather than left out of the form, which is generated - the same treatment the legacy editor item
+     * gets immediately above.
+     */
+    private void removeEditCurrentPageItem()
+    {
+        if (modifyLocalLayoutMenu != null && editCurrentPageActionPerformed != null)
+        {
+            modifyLocalLayoutMenu.remove(editCurrentPageActionPerformed);
+        }
     }
 
     /**
@@ -2114,7 +2190,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         removeLegacyEditorItem();
 
+        removeEditCurrentPageItem();
+
         addCombinePagesItem();
+
+        mountEditPageMenu();
 
         // And the tab it used to fill goes.  Removed here rather than left out of the form, because
         // the form is generated - and it comes BACK below when there is no local layout, where the
@@ -2517,6 +2597,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // about rather than behind it.
             autonomyTileMenus.setDialogOwner(this);
 
+            // And which window is the main one.  This panel is never added to anything, so the walk up
+            // the window tree finds nothing at all from here - see parentWindow.
+            autonomyTileMenus.setMainWindow(this);
+
             // The two items that want a second click hand themselves to the editor instead.
             autonomyTileMenus.setOnJumpToPage(where -> openAutonomyEditor(where));
 
@@ -2734,6 +2818,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
+        // The station NAMES go with the badges.
+        //
+        // "Show autonomy" is one switch and it meant two different things: the arrows, the lengths and
+        // the point badges went away, and the platform names stayed - which are the most autonomy-
+        // looking thing on the diagram, since a track diagram of its own has no station names on it at
+        // all.  So switching autonomy off left the diagram still saying where the stations were.
+        //
+        // Hidden rather than emptied: the text is written by updateStationLabels from a worker as
+        // trains move, so a label cleared here would fill itself in again at the next report.
+        for (Set<JLabel> labels : layoutStations.values())
+        {
+            for (JLabel label : labels) label.setVisible(show);
+        }
+
         // Cleared BEFORE anything can return.  This only ever walks tiles that are IN the graph, so a
         // square that has left it - a page just excluded, track just deleted - was never visited again
         // and kept whatever it was last told to draw.  And the early return below used to skip the
@@ -2772,6 +2870,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         return session == null ? null : session.getCaptionTarget(where);
+    }
+
+    /**
+     * The locomotive the SETUP puts on a square, which is not the same as the one standing there.
+     *
+     * The running diagram shows what is on the rails; the editor shows what has been set up, and until
+     * a configuration is started those are different things - which is why the editor drew the empty
+     * placeholder over a platform that had a train assigned to it.
+     *
+     * @param station the sensor's square
+     * @return the locomotive's name, or null when the setup puts none there
+     */
+    public String autonomyLocomotiveAt(org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || station == null) return null;
+
+        Object placed = session.getPointProperty(station, "loc");
+
+        String name = placed == null ? null : String.valueOf(placed).trim();
+
+        return name == null || name.isEmpty() ? null : name;
     }
 
     /**

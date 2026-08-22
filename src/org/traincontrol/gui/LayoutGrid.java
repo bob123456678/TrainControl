@@ -349,17 +349,43 @@ public class LayoutGrid
                     {
                         if (captioned != null && autonomyEditor)
                         {
-                            // In the AUTONOMY editor, the placeholder the running diagram shows when
-                            // nothing is standing there - so the square looks like what it will look
-                            // like.
-                            text.setText(LAYOUT_STATION_EMPTY);
+                            // What the SETUP puts on this square, which is the question the editor is
+                            // about.  The running diagram shows what is on the rails; here there may be
+                            // no run at all, and a platform with a train assigned to it was drawing the
+                            // empty placeholder - so the one view where placements are made was the one
+                            // view that did not show them.
+                            String placed = ui.autonomyLocomotiveAt(captioned);
 
-                            // Greyed HERE and nowhere else.  This placeholder says only "a caption
-                            // lands on this square", and in the editor it sits on top of the arrows
-                            // that say which way trains may arrive - which are the thing somebody has
-                            // opened the editor to look at.  Kept rather than hidden: where the
-                            // captions are is worth seeing while arranging them.
-                            labelColour = new Color(150, 150, 150);
+                            if (placed != null)
+                            {
+                                text.setText(placed);
+
+                                // The running diagram's own style for a named train: black on
+                                // translucent white, so it reads over whatever tile art is underneath.
+                                // Set on the label rather than through labelColour, which the greying
+                                // below would otherwise take back.
+                                text.setOpaque(true);
+                                text.setBackground(
+                                    new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+
+                                labelColour = Color.BLACK;
+                            }
+                            else
+                            {
+                                // The placeholder the running diagram shows when nothing is standing
+                                // there - so the square looks like what it will look like.
+                                text.setText(LAYOUT_STATION_EMPTY);
+
+                                // Greyed HERE and nowhere else.  This placeholder says only "a caption
+                                // lands on this square", and in the editor it sits on top of the arrows
+                                // that say which way trains may arrive - which are the thing somebody
+                                // has opened the editor to look at.  Kept rather than hidden: where the
+                                // captions are is worth seeing while arranging them.
+                                //
+                                // A NAMED train is not that: it is the answer, not a placeholder, and
+                                // greying it would hide the thing the user just set.
+                                labelColour = new Color(150, 150, 150);
+                            }
                         }
                         else if (captioned != null)
                         {

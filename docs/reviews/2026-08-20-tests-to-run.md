@@ -211,19 +211,26 @@ themselves are here, so that one file can be carried to the layout.
 do nothing at all. Then the same one row up and one column in, which should shift normally — and check
 the autonomy editor afterwards to see the stations went with the track.
 
+Mostly OK after shifting, but links still got unlinked.  Seems the coordinate mapping there may be an issue.
+
+
+Confirmed- I tested this already.
+
 **27. Drag a tile onto a station square.** The station has to be gone from the autonomy editor
 afterwards, not left on a square holding plain track.
-
+OK
 **28. Cancel the diagram editor after moving a set-up station.** Both the diagram and the autonomy
 setup have to be back where they started. This is the one that used to lose the station quietly.
-
+OK
 **29. The command table's marks.** Delete removes exactly one row; the arrows move a row and leave it
 moved; duplicate makes one copy.
-
+OK - but don't grey out cells in the + row in the condition editor.
 **30. A route holding a signal command.** Open it, click the Setting cell, click away without choosing
 anything, and save. The signal must still be at danger.
-
+OK.  But grey out irrelevant settings' cells (like number) for commands that don't use it.
 **31. Export a diagram as a picture, then throw a switch on that page.** The tile has to keep updating.
+OK
+
 
 ## Added 2026-08-21, second round
 
@@ -231,28 +238,30 @@ anything, and save. The signal must still be at danger.
 is being sent off over several edges, a train already under way has to reach and stop at its next
 sensor normally. What it must NOT do is run past it. Worth doing in simulation first, then for real.
 
+Defer for later once other bugs are fixed.
+
 **33. Switch pages, change tile size, and toggle addresses a dozen times, then throw a switch on the
 first page.** TR-A23: the tile still has to respond. If it does, the pruning is not throwing away
 labels it should have kept - which is the risk of that change, not the leak it fixes.
-
+OK.
 **34. Open a popup diagram window on the page the main window is showing, close it, then throw a
 switch on that page.** The same risk from the other side: a popup rebuilding a page must not evict the
 main window's labels for it.
-
+OK.
 **35. Switch the Central Station off, leave TrainControl open, press Stop, then click a switch on the
 diagram.** It should pause about two seconds, say the power was not confirmed, and throw the switch
 anyway - and then the NEXT click should behave the same way rather than doing nothing. Before this,
 the first such click stopped every tile in the application from ever responding again.
-
+Defer for later.
 **36. Start a train and stop it by hand before it reaches its next sensor** - lift it off, or turn its
 power off at the loco. After five minutes the log should name it, name the sensor, and say how long.
 Nothing else should change: the train stays waiting, and autonomy carries on around it.
-
+Defer for later.
 **37. Leave an automatic route enabled and watch the log for ten minutes.** It must say NOTHING about
 its trigger sensor. A route waiting on its sensor is a route doing its job, and it does so on a
 locomotive called "Dummy Loc" - if that name ever appears in the log, the advisory has leaked out of
 the dispatch path into the shared wait.
-
+Defer for later.
 ---
 
 ## Added 2026-08-21, from the independent pass
@@ -263,12 +272,22 @@ Beside their findings in `2026-08-21-independent-pass.md`.
 and look in `tc_backup`.  There should be a copy named `unreadable<timestamp>UIState.data`, and the log
 should say where it went rather than "no data file found".
 
+Make a test for this yourself in the suite, and run this test for me after backing up the current file first.
+
+Also, make a similar test to ensure autonomy is unloaded (or regenerated, if the app is running) gracefully if its config files are corrupt or manually removed.
+
 **39. Rename a track diagram page to something with a slash in it**, "Up/Down".  Close TrainControl and
 reopen it: the page must still be there.
+
+You should write a test for this.
+
+Also, when the user sees this error: "Error occurred: Address already in use: Cannot bind", tell them that two copies of TrainControl cannot run at the same time.  The detailed error can stay in the log, but not the popup.
 
 **40. Put a page in `gleisbild.cs2` that the folder does not hold**, then open the layout.  Every other
 page has to load, the missing one has to be named in the log, and the Layouts menu must still be
 pointing at your folder afterwards.
+
+You should write a test for this.
 
 **41. A page that draws one signal or switch on several squares** - "2 - Bottom" has Signal 116 on three
 - and throw that accessory.  EVERY one of those squares has to change.  Two of the three stopped
@@ -324,6 +343,36 @@ On a single-page layout, the page tabs must be gone.
 
 **52. Open the editor on a page, resize the window, close and reopen it.**  The remembered size must not
 have squeezed the diagram now that there is a sidebar taking width from it.
+
+---
+
+## Added 2026-08-22, second round - from Adam's review
+
+**53. Right-click a station with a train on it in the autonomy editor.**  "Edit Locomotive..." must open
+the assignment dialog, not a popup saying "null".  On an EMPTY station there must be no Place Locomotive
+item at all - "Add a Locomotive to Autonomy..." is what places one.
+
+**54. Open and close the autonomy editor five times, then look at the Layouts menu.**  "Combine Linked
+Pages..." must appear once.  Its tooltip must wrap instead of running off the screen.
+
+**55. Layouts menu.**  "Manage Pages" holds add, rename, duplicate, combine and delete.  "Edit Layout
+Page" lists every page and opens the one you pick, in whichever editor you used last.
+
+**56. The sidebar with a very long page name.**  The buttons must stay one width and show the whole name
+in a tooltip.  With more than eight pages the tabs must scroll.  The headings must be blue semibold and
+the buttons bold black.
+
+**57. In the autonomy editor, place a train on a station.**  A white star must appear in the middle of
+that square, and the station's label must show the train's NAME in black on white rather than [---].
+Regular text labels must stay grey.
+
+**58. On the main diagram, untick "Show autonomy".**  The station names must go with the badges.  Change
+page and come back: still gone.  Tick it again and they return.
+
+**59. Ask "why is it not moving" on a layout whose switches and signals HAVE addresses.**  The sample
+layout does not, which is why it answers "nowhere to go" - see 2026-08-22-adam-round.md.  On a real one
+the report should name the stations it can reach.  With blocking findings present it must lead with how
+many there are.
 
 ---
 

@@ -1147,7 +1147,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // put the Addresses box back where the form had it
-            if (autonomyVisibility != null)
+            if (autonomyVisibility != null && formPane.getLayout() instanceof javax.swing.GroupLayout)
             {
                 ((javax.swing.GroupLayout) formPane.getLayout())
                     .replace(autonomyVisibility, this.showAddressCheckbox);
@@ -1172,6 +1172,11 @@ public class LayoutEditor extends PositionAwareJFrame
                     parent.refreshStaticAutonomyLayer();
                 }
             });
+
+            // Which window is the main one.  It cannot be found from here: this panel sits in a
+            // JFrame, a JFrame has no owner, and the walk up the window tree therefore ends at the
+            // editor - which is why every menu item needing it used to open a dialog saying "null".
+            autonomyPanel.setMainWindow(parent);
 
             // Asked for on every use rather than held, because loading a configuration replaces the
             // Layout wholesale and a kept reference would answer about the previous one without
@@ -1285,6 +1290,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowLengths().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
                 visibility.add(this.showAddressCheckbox);
+
+                // The same gap the form leaves between Text Labels and Addresses.  Stacked straight
+                // into a BoxLayout these two touched, so the pair read as one control with two lines
+                // rather than as two switches of the same kind as the one above them.
+                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+
                 visibility.add(autonomyPanel.getShowLengths());
 
                 // A label, because unlike its neighbours this one is a choice rather than a switch and
@@ -1298,8 +1309,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 directionsLabel.setFont(this.jLabel1.getFont());
                 directionsLabel.setForeground(this.jLabel1.getForeground());
                 directionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                // And the same air under this heading as the form leaves under its own, which is what
+                // the sidebar's headings use too - see HEADING_GAP
                 directionsLabel.setBorder(
-                    javax.swing.BorderFactory.createEmptyBorder(6, 0, 2, 0));
+                    javax.swing.BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
 
                 visibility.add(directionsLabel);
 
@@ -1348,8 +1361,14 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
                 stack.setOpaque(false);
 
-                ((javax.swing.GroupLayout) formPane.getLayout())
-                    .replace(this.jScrollPane1, stack);
+                // Guarded like the two above it.  All three reach for the form's own layout, and the
+                // form is generated - so if it is ever rebuilt with anything other than a GroupLayout,
+                // two of these would decline and the third would throw.
+                if (formPane.getLayout() instanceof javax.swing.GroupLayout)
+                {
+                    ((javax.swing.GroupLayout) formPane.getLayout())
+                        .replace(this.jScrollPane1, stack);
+                }
 
                 stack.add(this.jScrollPane1, BorderLayout.CENTER);
 
@@ -4078,7 +4097,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (offersPages)
         {
             sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
-            sidebar.add(buildPageControl(pages));
+            sidebar.add(scrollable(buildPageControl(pages), pages.size()));
             sidebar.add(javax.swing.Box.createVerticalStrut(12));
         }
 
@@ -4086,6 +4105,15 @@ public class LayoutEditor extends PositionAwareJFrame
         sidebar.add(buildModeControl());
 
         sidebar.add(javax.swing.Box.createVerticalGlue());
+
+        // One width, whatever the pages are called.
+        //
+        // A page named "Lower level, back road and the carriage sidings" is a page name like any other,
+        // and a strip that grows to fit it takes that width off the diagram for as long as the window
+        // is open.  The buttons truncate instead and say the whole name in a tooltip.
+        sidebar.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH, sidebar.getPreferredSize().height));
+        sidebar.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH, Short.MAX_VALUE));
+        sidebar.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH, 0));
 
         // Wrapped rather than added.
         //
@@ -4118,13 +4146,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         for (final String page : pages)
         {
-            javax.swing.JToggleButton tab = new javax.swing.JToggleButton(page);
+            javax.swing.JToggleButton tab = tab(page);
 
             tab.setSelected(page.equals(layout.getName()));
-            tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-            tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-            tab.setFocusable(false);
-            tab.setMaximumSize(new java.awt.Dimension(Short.MAX_VALUE, 26));
+
+            // The whole name, for the one that has been cut short
+            tab.setToolTipText(page);
 
             tab.addActionListener(e ->
             {
@@ -4190,13 +4217,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
     {
-        javax.swing.JToggleButton tab = new javax.swing.JToggleButton(text);
+        javax.swing.JToggleButton tab = tab(text);
 
         tab.setSelected(isAutonomyMode() == autonomy);
-        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        tab.setFocusable(false);
-        tab.setMaximumSize(new java.awt.Dimension(Short.MAX_VALUE, 26));
 
         tab.addActionListener(e ->
         {
@@ -4212,16 +4235,92 @@ public class LayoutEditor extends PositionAwareJFrame
         return tab;
     }
 
+    /**
+     * A tab in the strip: bold black, one width, and cut short rather than widened.
+     *
+     * Both controls come through here, so the two kinds of tab cannot drift apart - and it is the one
+     * place to change if these should be a list or a drop-down instead.
+     */
+    private javax.swing.JToggleButton tab(String text)
+    {
+        javax.swing.JToggleButton tab = new javax.swing.JToggleButton(text);
+
+        // docs/UI-standards.md: buttons are Segoe UI Bold 12, black
+        tab.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        tab.setForeground(java.awt.Color.BLACK);
+
+        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        tab.setFocusable(false);
+
+        // Maximum AND preferred: the maximum alone still let the button ask for the width of its text,
+        // which is what BoxLayout gives the strip as a whole
+        tab.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 20, 26));
+        tab.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 20, 26));
+        tab.setMinimumSize(new java.awt.Dimension(0, 26));
+
+        return tab;
+    }
+
+    /**
+     * The page tabs, scrolling when there are more of them than the strip can show.
+     *
+     * A railway of twenty pages is a railway of twenty pages; without this the strip simply grows past
+     * the bottom of the window and the last few cannot be reached at all.  No border and no horizontal
+     * bar: it should look like the column it replaces until it needs to scroll.
+     */
+    private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
+    {
+        if (pages <= SIDEBAR_TABS_BEFORE_SCROLLING) return column;
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(column,
+            javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        scroll.setBorder(null);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        scroll.getVerticalScrollBar().setUnitIncrement(26);
+
+        int height = SIDEBAR_TABS_BEFORE_SCROLLING * 26;
+
+        scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
+        scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
+
+        return scroll;
+    }
+
     private javax.swing.JLabel heading(String text)
     {
         javax.swing.JLabel label = new javax.swing.JLabel(text);
 
         label.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        label.setFont(label.getFont().deriveFont(java.awt.Font.BOLD));
-        label.setBorder(new javax.swing.border.EmptyBorder(0, 0, 4, 0));
+
+        // docs/UI-standards.md: section headings are Segoe UI Semibold 13 in 0,0,155
+        label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+        label.setForeground(new java.awt.Color(0, 0, 155));
+
+        // The same air under a heading as the form leaves under its own - see HEADING_GAP
+        label.setBorder(new javax.swing.border.EmptyBorder(0, 0, HEADING_GAP, 0));
 
         return label;
     }
+
+    /** One width for the strip, so a long page name cannot take it off the diagram */
+    private static final int SIDEBAR_WIDTH = 150;
+
+    /** Beyond this many pages the tabs scroll rather than running off the bottom of the window */
+    private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 8;
+
+    /**
+     * The air under a blue heading, and between the checkboxes in the visibility column.
+     *
+     * One number because Adam noticed the two were different: the form leaves this much under its own
+     * headings and between its own checkboxes, and everything added by hand beside them has to leave
+     * the same or the column reads as two columns that happen to be touching.
+     */
+    static final int HEADING_GAP = 6;
 
     /**
      * Puts the sidebar back to what is actually on screen.
