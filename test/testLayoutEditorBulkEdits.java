@@ -273,26 +273,37 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A square that is both landed on and vacated is not forgotten.
+     * A square that is both landed on and vacated keeps what it is taking with it.
      *
-     * Cannot happen for a column moved onto a different column, and would be silent data loss the day
-     * some other operation reuses this rule - the forgetting runs first, so a square that is about to
+     * Cannot arise for a column moved onto a different column, and is silent data loss the day some
+     * other operation reuses this rule: the forgetting happens first, so a square that is about to
      * travel would be emptied before it went anywhere.
+     *
+     * Asserted through the store rather than through the plan, because the store is what decides it -
+     * that is the point of handing it both halves in one call.
      */
     @Test
     public void testASquareThatIsBothSourceAndTargetIsNotForgotten()
     {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        store.setStation(at(5, 3), true);
+        store.setPointName(at(5, 3), "Travelling");
+
+        store.setStation(at(6, 3), true);
+        store.setPointName(at(6, 3), "BuiltOver");
+
         LayoutEditor.BulkPlan plan = new LayoutEditor.BulkPlan();
 
         plan.moves.put(at(5, 3), at(6, 3));
         plan.builtOver.add(at(6, 3));
         plan.builtOver.add(at(5, 3));
 
-        assertFalse(plan.forgetting().contains(at(5, 3)),
-            "a square whose setup is on its way somewhere else is being forgotten first, which "
-            + "throws away the thing the move exists to carry");
+        apply(store, plan);
 
-        assertTrue(plan.forgetting().contains(at(6, 3)), "and the square landed on is not being cleared");
+        assertEquals(store.getPointName(at(6, 3)), "Travelling",
+            "the square whose setup was on its way somewhere else was emptied before it left, which "
+            + "throws away the thing the move exists to carry");
     }
 
     /**
@@ -317,9 +328,7 @@ public class testLayoutEditorBulkEdits
 
     private static void apply(AutonomyCompanionStore store, LayoutEditor.BulkPlan plan)
     {
-        store.forgetTiles(plan.forgetting());
-
-        store.moveTiles(plan.moves);
+        store.moveTiles(plan.moves, plan.builtOver);
     }
 
     private static LayoutEditor.BulkPlan plan(boolean column, int from, int to, int span,

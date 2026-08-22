@@ -1156,22 +1156,37 @@ public class AutonomySession
      */
     public boolean moveTiles(Map<TileKey, TileKey> moves)
     {
-        if (moves == null || moves.isEmpty()) return false;
+        return moveTiles(moves, null);
+    }
 
-        boolean any = false;
+    /**
+     * One diagram edit: what moved, and what else was built over.
+     *
+     * See AutonomyCompanionStore.moveTiles for why these are one call rather than two.
+     *
+     * @param moves each square being vacated, and where it is going - may be null
+     * @param builtOver squares whose track has been replaced - may be null
+     * @return true when there was anything to do
+     */
+    public boolean moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    {
+        boolean any = builtOver != null && !builtOver.isEmpty();
 
-        for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
+        if (moves != null)
         {
-            if (move.getKey() != null && move.getValue() != null
-                && !move.getKey().equals(move.getValue()))
+            for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
             {
-                any = true;
+                if (move.getKey() != null && move.getValue() != null
+                    && !move.getKey().equals(move.getValue()))
+                {
+                    any = true;
+                }
             }
         }
 
         if (!any) return false;
 
-        store.moveTiles(moves);
+        store.moveTiles(moves, builtOver);
 
         touched();
 
@@ -1195,15 +1210,7 @@ public class AutonomySession
      */
     public boolean forgetTiles(java.util.Collection<TileKey> tiles)
     {
-        if (tiles == null || tiles.isEmpty()) return false;
-
-        store.forgetTiles(tiles);
-
-        touched();
-
-        rebuild();
-
-        return true;
+        return moveTiles(null, tiles);
     }
 
     /**

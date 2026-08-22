@@ -1382,34 +1382,59 @@ public class AutonomyCompanionStore
      */
     public void forgetTiles(java.util.Collection<TileKey> tiles)
     {
-        if (tiles == null || tiles.isEmpty()) return;
+        moveTiles(null, tiles);
+    }
 
+    private static Set<String> asKeys(java.util.Collection<TileKey> tiles)
+    {
         Set<String> keys = new LinkedHashSet<>();
+
+        if (tiles == null) return keys;
 
         for (TileKey tile : tiles)
         {
             if (tile != null) keys.add(tile.toString());
         }
 
-        forgetSquares(keys);
+        return keys;
     }
 
     public void moveTiles(Map<TileKey, TileKey> moves)
     {
-        if (moves == null || moves.isEmpty()) return;
+        moveTiles(moves, null);
+    }
 
+    /**
+     * One diagram edit: what moved, and what else was built over.
+     *
+     * Both halves in one call, and deliberately not two.  Every edit that replaces track has both - a
+     * bulk column move is a line arriving and a line being written over - and doing them separately
+     * means the caller has to get the ORDER right (forget first, or the arriving setup is wiped) and
+     * has to tell the forgetting which squares are only passing through.  The bulk path did exactly
+     * that, by hand, with the second argument nobody else had to pass; and a rule that has to be
+     * restated at each call site is a rule that will eventually be restated wrongly.
+     *
+     * So the store works out the whole landing set itself and the callers cannot get it wrong.  A pure
+     * forget is this with no moves, and a pure move is this with nothing built over.
+     *
+     * @param moves each square being vacated, and where it is going - may be null
+     * @param builtOver squares whose track has been replaced by other track - may be null
+     */
+    public void moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    {
         Map<String, String> byKey = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
+        if (moves != null)
         {
-            if (move.getKey() == null || move.getValue() == null) continue;
+            for (Map.Entry<TileKey, TileKey> move : moves.entrySet())
+            {
+                if (move.getKey() == null || move.getValue() == null) continue;
 
-            if (move.getKey().equals(move.getValue())) continue;
+                if (move.getKey().equals(move.getValue())) continue;
 
-            byKey.put(move.getKey().toString(), move.getValue().toString());
+                byKey.put(move.getKey().toString(), move.getValue().toString());
+            }
         }
-
-        if (byKey.isEmpty()) return;
 
         // Every square being LANDED ON that is not itself moving away.
         //
@@ -1428,7 +1453,18 @@ public class AutonomyCompanionStore
             if (!byKey.containsKey(to)) landing.add(to);
         }
 
-        forgetSquares(landing);
+        // And the squares the caller says were built over by something other than a move: a bulk
+        // column edit clears the whole destination line, including the squares whose source was blank.
+        for (String over : asKeys(builtOver))
+        {
+            if (!byKey.containsKey(over)) landing.add(over);
+        }
+
+        // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose
+        // name is written on the square below it, nudged down one, lands ON its own label.
+        forgetSquares(landing, byKey.keySet());
+
+        if (byKey.isEmpty()) return;
 
         moveKeys(pointNames, byKey);
         moveKeys(tileLengths, byKey);
@@ -1660,6 +1696,28 @@ public class AutonomyCompanionStore
      */
     private void forgetSquares(Set<String> squares)
     {
+        forgetSquares(squares, null);
+    }
+
+    /**
+     * @param stillComing squares that are MOVING here, whose labels are therefore not stale
+     *
+     * A caption is the odd one out among everything stored per square: it is a reference to somewhere
+     * else rather than a fact about the square it sits on.  So when a square is built over, its caption
+     * normally goes with the rest - it named track that is gone.
+     *
+     * Except when what built over it is the very station the caption names.  A platform's name is
+     * usually written on a blank square beside it, and "beside" is often the square below - so nudging
+     * that platform down one square lands it on its own label, and the label was thrown away by the
+     * same gesture that carried the platform.  The name vanished for a move of one square in one
+     * direction and survived every other, which is exactly how Adam found it.
+     *
+     * Kept and left where it is.  A caption may sit on its own station's square - that is how a name
+     * gets drawn over a platform rather than beside it - so the entry that survives here is repointed
+     * by the caller and ends up naming the tile it is now sitting on.
+     */
+    private void forgetSquares(Set<String> squares, Set<String> stillComing)
+    {
         if (squares == null || squares.isEmpty()) return;
 
         for (String key : squares)
@@ -1671,7 +1729,14 @@ public class AutonomyCompanionStore
             linkNames.remove(key);
             stationSignals.remove(key);
             portals.remove(key);
-            captions.remove(key);
+
+            String names = captions.get(key);
+
+            if (names == null || stillComing == null || !stillComing.contains(names))
+            {
+                captions.remove(key);
+            }
+
             stations.remove(key);
             disabledPortals.remove(key);
         }
@@ -1692,10 +1757,17 @@ public class AutonomyCompanionStore
             if (squares.contains(pairs.next().getValue())) pairs.remove();
         }
 
+        // A caption elsewhere naming one of these squares named track that is gone - unless that
+        // square is being moved rather than built over, in which case the caption follows it.
         for (java.util.Iterator<Map.Entry<String, String>> pairs = captions.entrySet().iterator();
             pairs.hasNext();)
         {
-            if (squares.contains(pairs.next().getValue())) pairs.remove();
+            String named = pairs.next().getValue();
+
+            if (squares.contains(named) && (stillComing == null || !stillComing.contains(named)))
+            {
+                pairs.remove();
+            }
         }
 
         for (java.util.Iterator<Map.Entry<String, List<String>>> pairs

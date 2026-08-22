@@ -1821,32 +1821,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         public final java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver = new java.util.LinkedHashSet<>();
 
-        /**
-         * The squares whose setup is to be dropped: built over, and not themselves moving away.
-         *
-         * A square that is both is left out.  Its own entry is travelling, and dropping it here would
-         * throw away the thing the move exists to carry - which is the mistake this method exists to
-         * be unable to make twice.
-         *
-         * @return the squares to forget
-         */
-        public java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> forgetting()
-        {
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> out = new java.util.LinkedHashSet<>(builtOver);
-
-            out.removeAll(moves.keySet());
-
-            return out;
-        }
     }
 
     /**
      * Tells the setup what the diagram just did.
-     *
-     * Forgetting comes first: a square being built over has to let go of what it was before anything
-     * arrives on it, or the arriving data lands on top of what was there and the two cannot be told
-     * apart afterwards.  A square that is BOTH built over and vacated is left out of the forgetting -
-     * its own entry is travelling, and moveTiles clears the squares it lands on itself.
      */
     private void applyBulkPlan(BulkPlan plan)
     {
@@ -1856,11 +1834,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (autonomy == null) return;
 
-        boolean any = autonomy.forgetTiles(plan.forgetting());
-
-        if (autonomy.moveTiles(plan.moves)) any = true;
-
-        if (any) rememberAutonomy(autonomy);
+        // One call, both halves.  Which squares are only passing through, and what order the two
+        // halves have to happen in, are the store's business - see AutonomyCompanionStore.moveTiles.
+        // Working that out here is what this path got wrong the first time.
+        if (autonomy.moveTiles(plan.moves, plan.builtOver)) rememberAutonomy(autonomy);
     }
 
     /**
