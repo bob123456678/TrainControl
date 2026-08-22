@@ -53,6 +53,20 @@ public class testUiStateIsNotLostWhenUnreadable
     private static boolean weWroteIt;
 
     /**
+     * The same bytes, on DISK, for the whole time the live file is rubbish.
+     *
+     * Holding the only copy in a static field is holding it nowhere: this test overwrites the
+     * operator's real file and then builds a whole TrainControlUI, and anything that ends the JVM in
+     * between - a hang in invokeAndWait, an out-of-memory, the operator stopping the run, or the
+     * runner's own orphan reaper, which taskkills leftover test JVMs before every battery - takes the
+     * only copy with it and leaves the file corrupt with nothing to restore from.
+     *
+     * An earlier version of this class destroyed that file once already, by a different route.  Once is
+     * a mistake; twice would be a habit.
+     */
+    private static File onDisk;
+
+    /**
      * Before anything: what is on disk now.
      *
      * Unconditionally, and before the headless check - a run that skips must still put back anything a
@@ -83,6 +97,14 @@ public class testUiStateIsNotLostWhenUnreadable
 
         // What the backup folder held before, so that only a NEW file counts
         java.util.Set<String> before = listBackups();
+
+        // On disk before a single byte is changed, and not deleted until the restore has been checked
+        if (hadOne)
+        {
+            onDisk = new File(DATA + ".reviewbak");
+
+            Files.write(onDisk.toPath(), original);
+        }
 
         // A file that exists and cannot possibly be read as a serialised state
         weWroteIt = true;
@@ -150,9 +172,18 @@ public class testUiStateIsNotLostWhenUnreadable
             Files.write(live.toPath(), original);
 
             // Checked, not assumed.  This file is the operator's, and "restored" is a claim.
+            //
+            // The copy on disk is named here rather than described, because a failure message about a
+            // file somebody has to go and find is only useful if it says where.
             assertEquals(Files.readAllBytes(live.toPath()), original,
-                "UIState.data was NOT put back as it was found - the bytes this class read at the "
-                + "start are the only copy, and they are still in memory as this fails");
+                "UIState.data was NOT put back as it was found.  A copy of the original is on disk at "
+                + (onDisk == null ? "(none)" : onDisk.getAbsolutePath())
+                + " and has deliberately NOT been deleted - rename it back over UIState.data");
+
+            // Only now, with the restore verified
+            if (onDisk != null && onDisk.exists()) onDisk.delete();
+
+            onDisk = null;
         }
         else if (weWroteIt && live.exists())
         {
@@ -167,6 +198,29 @@ public class testUiStateIsNotLostWhenUnreadable
         File staging = new File(DATA + ".part");
 
         if (staging.exists()) staging.delete();
+
+        // And the copy this run put in the backup folder, which holds the test's own rubbish rather
+        // than anything of the operator's.  Checked by CONTENT, not by name: deleting from a backup
+        // folder on a guess is exactly the wrong instinct.
+        File backups = new File(BACKUPS);
+
+        String[] found = backups.list();
+
+        if (found == null) return;
+
+        for (String name : found)
+        {
+            if (!name.startsWith("unreadable") || !name.endsWith(DATA)) continue;
+
+            File candidate = new File(backups, name);
+
+            byte[] held = Files.readAllBytes(candidate.toPath());
+
+            if (new String(held, StandardCharsets.UTF_8).equals("this is not a serialised anything"))
+            {
+                candidate.delete();
+            }
+        }
     }
 
     private static java.util.Set<String> listBackups()

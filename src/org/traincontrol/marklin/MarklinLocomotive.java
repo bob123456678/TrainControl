@@ -734,9 +734,40 @@ public class MarklinLocomotive extends Locomotive
     {
         if (this.network == null) return;
 
-        this.network.logf("autolayout.warnLocomotiveWaitingLong",
-            this.getName(), feedbackName, Math.round(waitedMs / 60000.0));
+        // Off this thread, because this thread is holding the lock every sensor event needs.
+        //
+        // The hook is called from inside synchronized(monitor), and that monitor is STATIC - one for
+        // every locomotive in the application - so Feedback._setState cannot run while it is held, and
+        // s88 events arrive on a single thread.  The log call goes to a java.util.logging handler
+        // writing to System.out, which blocks whenever its consumer does: run from the IDE with output
+        // to the editor window, and a slow console write would stop arrival detection for EVERY train
+        // under way, not just this one.
+        //
+        // The base class's javadoc says this hook must not block.  This was the only override, and it
+        // did.  A single thread rather than a pool: these are strictly ordered notices about the same
+        // railway, and two of them interleaved would read as one.
+        final String said = this.getName();
+        final long elapsed = waitedMs;
+
+        ADVISORIES.submit(() -> this.network.logf("autolayout.warnLocomotiveWaitingLong",
+            said, feedbackName, Math.round(elapsed / 60000.0)));
     }
+
+    /**
+     * The one thread that says these out loud.
+     *
+     * A daemon, so it cannot keep the application alive on its own - an advisory that has not been
+     * printed is not a reason to refuse to shut down.
+     */
+    private static final java.util.concurrent.ExecutorService ADVISORIES =
+        java.util.concurrent.Executors.newSingleThreadExecutor(runnable ->
+        {
+            Thread thread = new Thread(runnable, "TrainControl stuck-train advisories");
+
+            thread.setDaemon(true);
+
+            return thread;
+        });
 
     @Override
     synchronized public Locomotive setSpeed(int speed)

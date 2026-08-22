@@ -1636,9 +1636,30 @@ public class AutonomyCompanionStore
      * Whether a stored key names a square on a page.  The key is "page:x,y", and a page name may
      * itself contain a colon - so the comparison is on the prefix rather than on a split.
      */
+    /**
+     * Whether a stored key belongs to this page.
+     *
+     * By what the key PARSES to, not by what it starts with.  A key is "page:x,y" and a page name may
+     * hold a colon - "Yard: Upper" is an ordinary thing to call a page - so "Yard: Upper:2,3" starts
+     * with "Yard:" and was taken to be on the page called "Yard".  snapshotPage and restorePage then
+     * captured and rewrote another page's entries, which is exactly what the editor's undo promises
+     * not to do.
+     *
+     * parseTileKey splits on the LAST colon and has been exact all along.  This was the one place not
+     * using it.
+     */
     private static boolean isOnPage(String key, String page)
     {
-        return key != null && key.startsWith(page + ":");
+        TileKey parsed = key == null ? null : parseTileKey(key);
+
+        // A suffixed direction key - "page:x,y#state,index" - parses as its square, which is right:
+        // it belongs to whatever page that square is on.
+        if (parsed == null && key != null && key.lastIndexOf('#') > 0)
+        {
+            parsed = parseTileKey(key.substring(0, key.lastIndexOf('#')));
+        }
+
+        return parsed != null && parsed.getPage().equals(page);
     }
 
     private static <T> Map<String, T> onPage(Map<String, T> from, String page)
@@ -2703,11 +2724,29 @@ public class AutonomyCompanionStore
         }
     }
 
+    /**
+     * The same key on a renamed page.
+     *
+     * Same rule as isOnPage, and it matters more here: renaming "Yard" would have rewritten every key
+     * belonging to "Yard: Upper" as well, orphaning that page's whole setup for the next reconcile to
+     * find and drop.  Nothing renames a page today - but "Manage Pages" is where a rename lands, and
+     * that menu was built this week.
+     */
     private static String rekeyOne(String key, String fromPage, String toPage)
     {
-        return key.startsWith(fromPage + ":")
-            ? toPage + key.substring(fromPage.length())
-            : key;
+        if (key == null) return null;
+
+        // The suffix, where there is one, is carried across untouched
+        int hash = key.lastIndexOf('#');
+
+        String square = hash > 0 ? key.substring(0, hash) : key;
+        String suffix = hash > 0 ? key.substring(hash) : "";
+
+        TileKey parsed = parseTileKey(square);
+
+        if (parsed == null || !parsed.getPage().equals(fromPage)) return key;
+
+        return toPage + ":" + parsed.getX() + "," + parsed.getY() + suffix;
     }
 
     private static <T> void rekey(Map<String, T> map, String fromPage, String toPage)

@@ -1679,7 +1679,9 @@ public class LayoutEditor extends PositionAwareJFrame
                         {
                             occupied.add(i);
 
-                            execCopy(destLabel, false);
+                            // Quietly: applyBulkPlan below tells the setup about this whole line at
+                            // once, and knows which squares are arriving rather than being destroyed
+                            execCopy(destLabel, false, false);
                         }
 
                         // Tool will get reset
@@ -1751,7 +1753,8 @@ public class LayoutEditor extends PositionAwareJFrame
                         {
                             occupied.add(i);
 
-                            execCopy(destLabel, false);
+                            // Quietly - see the column above
+                            execCopy(destLabel, false, false);
                         }
 
                         //this.toolFlag = tool.COPY;
@@ -1870,11 +1873,57 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Tells the setup that these squares have been built over - once, for the whole gesture.
+     *
+     * Per square it was ruinous, and invisibly so.  Each call rebuilt the entire graph TWICE - moveTiles
+     * calls touched(), which rebuilds, and then rebuilds again - and wrote the whole setup to disk,
+     * every file of it, atomically.  Select all, copy, paste is three clicks and covers the bounding
+     * box INCLUDING blank squares: on a sixty by thirty page that is eighteen hundred iterations, some
+     * thirty-six hundred graph rebuilds and eighteen hundred whole-setup disk writes, on the event
+     * thread, with repainting suppressed so nothing on screen moves while it happens.  The layout
+     * folder is under OneDrive here, so each write may also wake a sync client.
+     *
+     * The shape is the one applyBulkPlan already used: collect, tell once, and save only if anything
+     * actually changed.  moveSelection and the four shift operations do the same for their gestures.
+     *
+     * @param builtOver the squares whose track has been replaced
+     */
+    private void forgetBuiltOver(java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver)
+    {
+        if (builtOver == null || builtOver.isEmpty()) return;
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy == null) return;
+
+        if (autonomy.forgetTiles(builtOver)) rememberAutonomy(autonomy);
+    }
+
+    /**
      * Copies lastComponent on the clipboard to the location designated by destLabel
      * @param destLabel
      * @param move
      */
     synchronized private void execCopy(LayoutLabel destLabel, boolean move)
+    {
+        execCopy(destLabel, move, true);
+    }
+
+    /**
+     * @param tellAutonomy false when the CALLER is going to tell the setup what happened
+     *
+     * The same flag delete(LayoutLabel, boolean) carries, and for the same reason - which is why it is
+     * here at all.  When delete was given it, this method was left as it was, and it is called from the
+     * same two bulk loops: so a column move cleared its line quietly and then announced every landing
+     * square LOUDLY, one at a time, with no moves map.
+     *
+     * That is not merely wasteful.  A landing square announced with no moves map cannot be told apart
+     * from a square being built over by something unrelated, so the rule that spares a station's label
+     * when the station itself is what lands on it - see AutonomyCompanionStore.forgetSquares - cannot
+     * apply, and the label is dropped a moment before applyBulkPlan would have carried it.  The bulk
+     * path lost station names again, by a third route, from the fix for the second one.
+     */
+    synchronized private void execCopy(LayoutLabel destLabel, boolean move, boolean tellAutonomy)
     {        
         try
         {
@@ -1914,7 +1963,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Dropping a tile from the palette onto a set-up station used to replace the sensor and
             // leave the station, its name, its length and its facings behind, describing a sensor that
             // was no longer there - and reconcile cannot find that, because the square is not empty.
-            if (!move)
+            if (!move && tellAutonomy)
             {
                 org.traincontrol.automationui.AutonomySession landing = parent.getAutonomySession();
 
@@ -2251,6 +2300,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.snapshotLayout();
 
+        // Every square this writes over, told to the setup ONCE when the gesture is done - see
+        // forgetBuiltOver for what per-square cost
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver =
+            new java.util.LinkedHashSet<>();
+
         boolean was = this.pauseRepaint;
 
         this.pauseRepaint = true;
@@ -2275,26 +2329,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 layout.addComponent(placing, x, y);
 
-                // Whatever was written about the square being written over is about track that is no
-                // longer there.  A copy does NOT bring the source's settings with it - two squares
-                // cannot both be one station - so this only forgets.
-                //
-                // ALL of it, not only the caption.  A paste over a set-up station used to leave the
-                // designation, the name, the length, the facings, the arrival restrictions and the
-                // link pairing sitting on a square whose sensor had just been replaced - and nothing
-                // else finds those, because reconcile drops settings from squares that are EMPTY and
-                // this one is occupied, just by something else.
-                if (autonomy != null)
-                {
-                    autonomy.forgetTiles(java.util.Collections.singletonList(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), x, y)));
-
-                    // And written down, as every other edit here is.  Left in memory only, a caption
-                    // dropped by a paste reached disk only if something else happened to save later.
-                    rememberAutonomy(autonomy);
-                }
+                // Collected, not announced.  See below the loop for why.
+                builtOver.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), x, y));
             }
+
+            forgetBuiltOver(builtOver);
 
             // What was just pasted becomes the selection, so it can be nudged into place
             this.selection.clear();
@@ -2569,6 +2609,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.snapshotLayout();
 
+        // Every square this writes over, told to the setup ONCE when the gesture is done - see
+        // forgetBuiltOver for what per-square cost
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver =
+            new java.util.LinkedHashSet<>();
+
         boolean was = this.pauseRepaint;
 
         this.pauseRepaint = true;
@@ -2586,18 +2631,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 layout.addComponent(placing, at.getX(), at.getY());
 
-                // Whatever was written about the square being written over is about track that has
-                // just been replaced - all of it, see pasteSelection.  A fill carries nothing with it:
-                // there is one tile being copied and many squares receiving it.
-                if (autonomy != null)
-                {
-                    autonomy.forgetTiles(java.util.Collections.singletonList(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
-                            layout.getName(), at.getX(), at.getY())));
-
-                    rememberAutonomy(autonomy);
-                }
+                // Collected, not announced - see pasteSelection
+                builtOver.add(new org.traincontrol.automationui.TileGraph.TileKey(
+                    layout.getName(), at.getX(), at.getY()));
             }
+
+            forgetBuiltOver(builtOver);
         }
         catch (IOException ex)
         {
@@ -2746,11 +2785,15 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.AutonomySession autonomy =
                     tellAutonomy ? parent.getAutonomySession() : null;
 
-                if (autonomy != null)
+                // Only when something was actually forgotten.
+                //
+                // forgetCaptionsAt returns whether it changed anything, and this ignored it - so
+                // deleting a square that had no caption still wrote the whole setup to disk, every
+                // file of it.  Deleting a selection is one call per square.
+                if (autonomy != null && autonomy.forgetCaptionsAt(
+                        new org.traincontrol.automationui.TileGraph.TileKey(
+                            layout.getName(), getX(label), getY(label))))
                 {
-                    autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
-                        layout.getName(), getX(label), getY(label)));
-
                     rememberAutonomy(autonomy);
                 }
 
@@ -3644,7 +3687,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // its name at the square it had been dragged to.
                 java.util.Map<String, Object> captionsBefore = captionSnapshot();
 
-                restoreCaptions(this.previousCaptions.isEmpty() ? null : this.previousCaptions.pop());
+                java.util.Map<String, Object> captionsToRestore =
+                    this.previousCaptions.isEmpty() ? null : this.previousCaptions.pop();
 
                 this.previousCaptionsRedo.push(captionsBefore);
                 
@@ -3659,7 +3703,16 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
-                                
+
+                // The setup is put back AFTER the diagram, not before it.
+                //
+                // restoreCaptions rebuilds the graph from the pages, so doing it first derived a graph
+                // from the pre-undo diagram against the post-undo setup - the two disagreeing about
+                // every square the undo touched - and nothing rebuilt afterwards.  It is the same
+                // ordering moveSelection and the four shift operations were fixed for, and the comment
+                // there ("it took a corrupted layout to notice") applies word for word.
+                restoreCaptions(captionsToRestore);
+
                 this.refreshGrid();
             }
         }
@@ -3684,8 +3737,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // The captions go forward with it, exactly as they came back
                 java.util.Map<String, Object> captionsBefore = captionSnapshot();
 
-                restoreCaptions(this.previousCaptionsRedo.isEmpty()
-                    ? null : this.previousCaptionsRedo.pop());
+java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEmpty()
+                    ? null : this.previousCaptionsRedo.pop();
 
                 this.previousCaptions.push(captionsBefore);
                 
@@ -3711,7 +3764,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     layout.addComponent(lc, lc.getX(), lc.getY());
                 }
-                                
+
+                // The setup after the diagram - see undo() above for why
+                restoreCaptions(captionsToRestore);
+
                 this.refreshGrid();
             }
         }
@@ -3725,6 +3781,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {        
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+          try
+          {
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
 
@@ -3790,6 +3848,23 @@ public class LayoutEditor extends PositionAwareJFrame
                     confirmExit();
                 }
             });            
+          }
+          catch (RuntimeException failed)
+          {
+            // The Edit button was disabled before this window was asked for, and openLayoutEditor
+            // wraps the CONSTRUCTION in a catch that hands it back - with a comment saying why: without
+            // it, autonomy setup is unreachable until the application is restarted.  But this body runs
+            // on a later event, outside that catch, so anything thrown here escaped to the event
+            // thread's default handler and left the button disabled for the session with no window to
+            // show for it.
+            //
+            // Same remedy, at the other end of the queue.
+            parent.autonomyEditorClosed();
+
+            if (parent.getModel() != null) parent.getModel().log(failed);
+
+            dispose();
+          }
         });
     }
     

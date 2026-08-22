@@ -747,12 +747,32 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs)
     {
+        return waitForOccupiedFeedback(name, minDuration, adviseAfterMs,
+            System.currentTimeMillis(), adviseAfterMs <= 0);
+    }
+
+    /**
+     * @param originMs when the WAIT began, which is not when this call began
+     * @param alreadyAdvised whether the advisory has been given for this wait
+     *
+     * A sensor that makes for a moment and lets go restarts the wait - the tile bounced, or a bogie
+     * bridged it, and a train that has not really arrived must not be treated as though it had.  The
+     * restart used to carry a REMAINDER of the quota rather than the origin, so the clock began again
+     * with it: a train dispatched at 0:00 whose sensor flickered at 4:30 was announced as stuck "after
+     * 0 minutes" when it had been missing for five and a half.
+     *
+     * The origin travels instead.  The elapsed time in the message is then the time since the train was
+     * sent, which is the only number that answers the question somebody is asking when they read it.
+     */
+    private Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
+        long originMs, boolean alreadyAdvised)
+    {
         boolean interrupted = false;
 
         // Only so that the thread can look at the clock - see waitedTooLongFor.  The condition below
         // is unchanged and the wait is still ended by the feedback itself.
-        long began = System.currentTimeMillis();
-        boolean advised = adviseAfterMs <= 0;
+        long began = originMs;
+        boolean advised = alreadyAdvised;
 
         synchronized(monitor)
         {
@@ -795,9 +815,6 @@ public abstract class Locomotive
             }  
         }
 
-        // Put back so that whoever interrupted this thread still gets their answer
-        if (interrupted) Thread.currentThread().interrupt();
-        
         if (minDuration > 0)
         {
             this.delay(minDuration);
@@ -812,10 +829,19 @@ public abstract class Locomotive
                 // wrong: past the threshold the remainder is negative, and flooring it at 1ms made a
                 // flicker announce the same train again a millisecond later, as "0 minutes".  The
                 // javadoc says once per wait and this is what makes that true.
-                return this.waitForOccupiedFeedback(name, minDuration, advised
-                    ? 0 : Math.max(1, adviseAfterMs - (System.currentTimeMillis() - began)));
+                return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised);
             }
         }
+
+        // Put back LAST, after the debounce below rather than before it.
+        //
+        // delay() is Thread.sleep, which throws the moment the flag is set, catches, sets it again and
+        // returns - so with the flag restored first, an interrupted wait skipped its confirmation
+        // entirely and re-tested the sensor in the same instant, always true.  A one-millisecond blip
+        // would then have been taken for an arrival and the train stopped where the blip happened.
+        // Latent, because nothing in the application interrupts these threads, and one statement away
+        // from not being.
+        if (interrupted) Thread.currentThread().interrupt();
         
         return this;
     }
@@ -868,9 +894,6 @@ public abstract class Locomotive
             }  
         }
 
-        // Put back so that whoever interrupted this thread still gets their answer
-        if (interrupted) Thread.currentThread().interrupt();
-        
         if (minDuration > 0)
         {
             this.delay(minDuration);
@@ -881,6 +904,16 @@ public abstract class Locomotive
                 return this.waitForClearFeedback(name, minDuration);
             }
         }
+
+        // Put back LAST, after the debounce below rather than before it.
+        //
+        // delay() is Thread.sleep, which throws the moment the flag is set, catches, sets it again and
+        // returns - so with the flag restored first, an interrupted wait skipped its confirmation
+        // entirely and re-tested the sensor in the same instant, always true.  A one-millisecond blip
+        // would then have been taken for an arrival and the train stopped where the blip happened.
+        // Latent, because nothing in the application interrupts these threads, and one statement away
+        // from not being.
+        if (interrupted) Thread.currentThread().interrupt();
                 
         return this;
     }

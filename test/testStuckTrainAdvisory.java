@@ -154,6 +154,10 @@ public class testStuckTrainAdvisory
             "the advisory does not name the train, so the operator does not know which one to go and "
             + "look at: " + said);
 
+        assertTrue(said.contains(waitingFor(layout, "MT37_C")),
+            "the advisory does not name the SENSOR it is waiting for, which is the other half of "
+            + "where to look: " + said);
+
         dispatch.interrupt();
     }
 
@@ -184,6 +188,16 @@ public class testStuckTrainAdvisory
         watching.start();
 
         Thread.sleep(QUOTA_MS * 4);
+
+        // The precondition that makes the two assertions below mean anything.
+        //
+        // They are both assertNull, so a thread that threw on its first line - and a bare Thread
+        // swallows that - would pass them while nothing had ever waited on anything.  This is the
+        // regression test for "every enabled route announces a phantom stuck train", so a version of it
+        // that cannot fail is worse than not having it.
+        assertTrue(watching.isAlive(),
+            "the watching thread is not running, so nothing waited and the assertions below prove "
+            + "nothing");
 
         assertNull(find("has not reached"),
             "a route waiting on its trigger sensor announced a stuck train.  That is what every "
@@ -261,6 +275,89 @@ public class testStuckTrainAdvisory
     }
 
     /**
+     * A sensor that makes and lets go does not restart the clock.
+     *
+     * The flicker case: a tile that bounces, or a bogie that bridges a gap.  The wait starts again -
+     * correctly, since a train that has not really arrived must not be treated as though it had - and
+     * the elapsed time in the advisory must still be measured from when the train was SENT.
+     *
+     * It was not.  The restart carried a REMAINDER of the quota rather than the origin, so the clock
+     * began again with it and a train missing for five and a half minutes was announced as stuck after
+     * "0 minutes".
+     *
+     * This watches the number the hook is handed rather than the sentence it produces, because the
+     * sentence rounds to whole minutes and every number in a test this short rounds to zero.  The first
+     * version of this test asserted on the sentence, and a build with the defect deliberately put back
+     * passed it - which is the whole reason to mutate a test before believing it.
+     */
+    @Test
+    public void testAFlickerDoesNotRestartTheClock() throws Exception
+    {
+        Watcher watcher = new Watcher(model);
+
+        MarklinFeedback sensor = model.newFeedback(79, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        final long quota = QUOTA_MS * 2;
+
+        long began = System.currentTimeMillis();
+
+        // minDuration means the sensor must STAY made, so a blip sends it round again
+        Thread waiting = new Thread(() ->
+            watcher.waitForOccupiedFeedback(sensor.getName(), 500, quota));
+
+        waiting.setDaemon(true);
+        waiting.start();
+
+        // Well before the quota: make it, and let go before the duration is up
+        Thread.sleep(300);
+
+        model.setFeedbackState(sensor.getName(), true);
+
+        Thread.sleep(100);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        // Now past the quota, measured from the START rather than from the flicker
+        Thread.sleep(quota + 800);
+
+        assertTrue(watcher.reported > 0,
+            "the advisory never fired at all, so this test proves nothing about when it fires");
+
+        long sinceTheStart = System.currentTimeMillis() - began;
+
+        assertTrue(watcher.reported >= quota - 200,
+            "the advisory reported " + watcher.reported + "ms, but the train has been waiting for "
+            + sinceTheStart + "ms and the quota is " + quota + "ms.  The clock restarted at the "
+            + "flicker, so a train missing for minutes is described as freshly sent");
+
+        waiting.interrupt();
+    }
+
+    /**
+     * A locomotive that writes down what the advisory hook was handed.
+     *
+     * waitedTooLongFor is protected, which is exactly what it is for: the base class calls it, the
+     * Marklin subclass logs it, and a test can watch the number without the message having to carry it.
+     */
+    private static final class Watcher extends MarklinLocomotive
+    {
+        volatile long reported = -1;
+
+        Watcher(MarklinControlStation model)
+        {
+            super(model, 2, MarklinLocomotive.decoderType.MM2, "Watcher");
+        }
+
+        @Override
+        protected void waitedTooLongFor(String feedbackName, long waitedMs)
+        {
+            reported = waitedMs;
+        }
+    }
+
+    /**
      * Waits until the dispatch has actually set the train going.
      *
      * @return whether it did, within a few seconds
@@ -288,6 +385,12 @@ public class testStuckTrainAdvisory
         assertNotNull(sensor, "no sensor on " + point);
 
         model.setFeedbackState(sensor, true);
+    }
+
+    /** The sensor a station's Point is watching, as the advisory names it */
+    private static String waitingFor(Layout layout, String point)
+    {
+        return layout.getPoint(point).getS88();
     }
 
     private static String find(String fragment)

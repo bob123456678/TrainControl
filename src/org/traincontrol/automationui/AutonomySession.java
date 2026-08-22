@@ -1110,9 +1110,8 @@ public class AutonomySession
 
         store.restorePage(page, snapshot);
 
+        // Once - see moveTiles above
         touched();
-
-        rebuild();
     }
 
     /**
@@ -1188,10 +1187,11 @@ public class AutonomySession
 
         store.moveTiles(moves, builtOver);
 
+        // The graph is built from the squares, so it is now describing the old ones - and touched()
+        // is what rebuilds it.  This used to call rebuild() again immediately afterwards, so every
+        // move paid for two full passes: a fresh TileGraph over every page, a GraphReducer.reduce, and
+        // an AutonomyBuilder naming run, twice.  Nothing between them could have changed.
         touched();
-
-        // The graph is built from the squares, so it is now describing the old ones
-        rebuild();
 
         return true;
     }

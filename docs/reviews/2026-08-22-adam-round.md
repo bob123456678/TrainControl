@@ -92,10 +92,13 @@ exercise all three:
 
 ## AR-16, and the wiring gap: what is actually left
 
-**Switching without closing the window.** The mode half is nearly free: `setAutonomyMode(session)` already
-has a `session == null` branch that takes the panel down and puts the form back, so switching Track and
-Autonomy in place is close to wired. It has never run, though - closing has always been how autonomy mode
-ends - so it wants a careful pass rather than a quick flip.
+**Switching without closing the window.** ~~The mode half is nearly free~~ - **corrected 2026-08-22,
+see IR-C4 in [2026-08-22-independent-week-review.md](2026-08-22-independent-week-review.md).** I said
+`setAutonomyMode(session)`'s `session == null` branch made the mode half close to wired. It does not.
+Entering the mode destroys the palette with `newComponents.removeAll()` and the branch only removes the
+autonomy panel, so the palette would come back empty; three other entry-side changes are also not
+undone. The teardown has to be BUILT, not connected. That does not change the recommendation below, but
+it does change the size of it.
 
 The page half is the expensive one. `layout` is a final field the whole class is built around: the grid,
 the title, the remembered window bounds, the page the autonomy panel edits, the annotations and the
