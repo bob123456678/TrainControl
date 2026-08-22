@@ -427,6 +427,14 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         initComponents();
 
+        // The panel the designer laid out, remembered before anything can wrap it.
+        //
+        // The sidebar puts this inside a panel of its own, so getContentPane() stops being the thing
+        // the form built - and three places below reach for its GroupLayout to swap one control for
+        // another.  Those want the form's panel whether or not there is a sidebar, so they ask for it
+        // by name.
+        this.formPane = getContentPane();
+
         this.ExtLayoutPanel.setLayout(new FlowLayout());
         this.parent = ui;
         this.size = size;
@@ -1141,7 +1149,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // put the Addresses box back where the form had it
             if (autonomyVisibility != null)
             {
-                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                ((javax.swing.GroupLayout) formPane.getLayout())
                     .replace(autonomyVisibility, this.showAddressCheckbox);
 
                 autonomyVisibility = null;
@@ -1263,14 +1271,14 @@ public class LayoutEditor extends PositionAwareJFrame
             // Visibility group.  GroupLayout cannot have a component added to it after the fact, but it
             // can REPLACE one - so the Addresses box is swapped for a small column holding both, which
             // lands the new toggle exactly where it belongs without touching the generated form.
-            if (getContentPane().getLayout() instanceof javax.swing.GroupLayout)
+            if (formPane.getLayout() instanceof javax.swing.GroupLayout)
             {
                 javax.swing.JPanel visibility = new javax.swing.JPanel();
                 visibility.setLayout(new javax.swing.BoxLayout(visibility,
                     javax.swing.BoxLayout.Y_AXIS));
                 visibility.setOpaque(false);
 
-                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                ((javax.swing.GroupLayout) formPane.getLayout())
                     .replace(this.showAddressCheckbox, visibility);
 
                 this.showAddressCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -1340,7 +1348,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
                 stack.setOpaque(false);
 
-                ((javax.swing.GroupLayout) getContentPane().getLayout())
+                ((javax.swing.GroupLayout) formPane.getLayout())
                     .replace(this.jScrollPane1, stack);
 
                 stack.add(this.jScrollPane1, BorderLayout.CENTER);
@@ -3655,6 +3663,14 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
+
+            // Before the grid and before pack(), so the window is sized with the sidebar in it.
+            //
+            // Here rather than in the constructor because it asks which mode this window is in, and
+            // that is decided by setAutonomyMode - which runs between the constructor and this, since
+            // render() queues its work rather than doing it.
+            mountSidebar();
+
             drawGrid();
 
             setTitle(
@@ -3664,7 +3680,11 @@ public class LayoutEditor extends PositionAwareJFrame
             // Scale the popup according to the size of the layout
             if (!this.isLoaded())
             {
-                this.setPreferredSize(new Dimension(grid.maxWidth + 210, grid.maxHeight + 160));
+                // The sidebar takes width from the diagram unless it is asked for as well
+                int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
+
+                this.setPreferredSize(
+                    new Dimension(grid.maxWidth + 210 + sideways, grid.maxHeight + 160));
                 this.setMinimumSize(new Dimension(
                         550 + (this.size == 60 ? 200 : 0), 
                         630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0))
@@ -3749,65 +3769,125 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * If there are unsaved changes, checks with the user prior to closng the window
+     * Whether this window may be left, asking about unsaved work first.
+     *
+     * Asked by closing AND by switching page or mode, which are the same thing to everything below the
+     * window: the diagram is re-read, the setup is put back, and what is on screen is built again.  So
+     * they ask the same question, from one place - a second copy would be a second set of rules about
+     * what counts as unsaved, and the two would agree until one of them was changed.
+     *
+     * In autonomy mode the diagram was never touched, so the undo stack is empty and the question that
+     * matters is whether the setup has unsaved edits.  Answering yes discards them here, before the
+     * caller does anything: they live in the shared session, so leaving them would mean the question
+     * was asked and its answer ignored.
+     *
+     * @return true when the window may go
      */
-    private void confirmExit()
+    private boolean mayLeave()
     {
-        // In autonomy mode the diagram was never touched, so the undo stack is empty and the question
-        // that matters is whether the autonomy setup has unsaved edits.
         if (isAutonomyMode())
         {
-            if (autonomyPanel.isDirty())
-            {
-                int result = JOptionPane.showOptionDialog(
-                    this,
-                    I18n.t("autosetup.ui.confirmExitWithoutSaving"),
-                    I18n.t("layout.ui.dialogExitConfirmation"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    TrainControlUI.YES_NO_OPTS,
-                    TrainControlUI.YES_NO_OPTS[0]
-                );
+            if (!autonomyPanel.isDirty()) return true;
 
-                if (result != JOptionPane.YES_OPTION) return;
-
-                // And actually throw them away.  Answering yes used to close the window and nothing
-                // else: the edits stayed in the live session, kept being drawn on the diagram, and were
-                // written out by the next save from anywhere - so the question was asked and its answer
-                // ignored.
-                String failed = autonomyPanel.discardEdits();
-
-                if (failed != null)
-                {
-                    JOptionPane.showMessageDialog(this,
-                        I18n.f("autosetup.ui.errorDiscardFailed", failed));
-
-                    return;
-                }
-            }
-
-            closeAutonomyMode();
-            return;
-        }
-
-        if (canUndo())
-        {
             int result = JOptionPane.showOptionDialog(
                 this,
-                I18n.t("layout.ui.confirmExitWithoutSaving"),
+                I18n.t("autosetup.ui.confirmExitWithoutSaving"),
                 I18n.t("layout.ui.dialogExitConfirmation"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
+                TrainControlUI.YES_NO_OPTS[0]
             );
 
-            if (result != JOptionPane.YES_OPTION)
+            if (result != JOptionPane.YES_OPTION) return false;
+
+            String failed = autonomyPanel.discardEdits();
+
+            if (failed != null)
             {
-                return;
+                JOptionPane.showMessageDialog(this,
+                    I18n.f("autosetup.ui.errorDiscardFailed", failed));
+
+                return false;
             }
+
+            return true;
+        }
+
+        if (!canUndo()) return true;
+
+        int result = JOptionPane.showOptionDialog(
+            this,
+            I18n.t("layout.ui.confirmExitWithoutSaving"),
+            I18n.t("layout.ui.dialogExitConfirmation"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
+        );
+
+        return result == JOptionPane.YES_OPTION;
+    }
+
+    /**
+     * Closes this window and opens the editor again, on another page or in the other mode.
+     *
+     * The same exit and reopen the user used to do by hand, which is what the sidebar replaces.  It is
+     * not a lighter operation than closing: the window is built around one diagram and one mode, the
+     * diagram is re-read from disk on the way out, and the setup is put back as it was - so switching
+     * asks what closing asks, and for the same reason.
+     *
+     * @param page the page to open
+     * @param autonomy whether to open the setup rather than the track
+     */
+    private void leaveFor(String page, boolean autonomy)
+    {
+        if (!mayLeave())
+        {
+            // Put the sidebar back to what is actually on screen: the user said no, so nothing moved,
+            // and a control still showing the page they did not go to would be lying about where they
+            // are.
+            syncSidebar();
+            return;
+        }
+
+        if (isAutonomyMode())
+        {
+            layout.setEdit(false);
+
+            dispose();
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                parent.autonomyEditorClosed();
+                parent.openLayoutEditor(page, autonomy, null);
+            });
+
+            return;
+        }
+
+        // Both halves of the edit, or neither - see confirmExit
+        undoAutonomyEdits();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            parent.layoutEditingComplete(() -> parent.openLayoutEditor(page, autonomy, null)));
+
+        this.dispose();
+    }
+
+    /**
+     * If there are unsaved changes, checks with the user prior to closng the window
+     */
+    private void confirmExit()
+    {
+        if (!mayLeave()) return;
+
+        if (isAutonomyMode())
+        {
+            closeAutonomyMode();
+            return;
         }
         
         // Both halves of the edit, or neither.  layoutEditingComplete re-reads the pages from disk,
@@ -3822,6 +3902,226 @@ public class LayoutEditor extends PositionAwareJFrame
         this.dispose();    
     }
     
+    /**
+     * The strip down the side of the window: which page, and which of the two editors.
+     *
+     * Both of these used to mean closing the window and opening it again from the main one - and for
+     * the mode, answering a dialog about which editor you wanted before you could get back to the one
+     * you had just left.  On a railway with eight pages that is the whole of the work.
+     *
+     * It is not a lighter operation than it was: switching still closes and reopens, and still asks
+     * about unsaved work.  What changes is that the user does not have to know that.
+     *
+     * Hidden when it would say nothing - one page, and no setup to switch to.  A control that offers
+     * one choice is furniture.
+     */
+    private void mountSidebar()
+    {
+        java.util.List<String> pages = parent.getModel() == null
+            ? new java.util.ArrayList<String>() : parent.getModel().getLayoutList();
+
+        boolean offersPages = pages.size() > 1;
+        boolean offersModes = parent.editableAutonomySession() != null || isAutonomyMode();
+
+        if (!offersPages && !offersModes) return;
+
+        sidebar = new javax.swing.JPanel();
+        sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
+        sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 8));
+
+        if (offersPages)
+        {
+            sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
+            sidebar.add(buildPageControl(pages));
+            sidebar.add(javax.swing.Box.createVerticalStrut(12));
+        }
+
+        sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
+        sidebar.add(buildModeControl());
+
+        sidebar.add(javax.swing.Box.createVerticalGlue());
+
+        // Wrapped rather than added.
+        //
+        // The window's own contents are laid out by the form, which is generated and must not be
+        // edited by hand, so there is nowhere in it to put this.  Putting the form's panel inside a
+        // new one leaves it exactly as the designer built it.
+        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
+
+        wrapper.add(sidebar, java.awt.BorderLayout.WEST);
+        wrapper.add(formPane, java.awt.BorderLayout.CENTER);
+
+        setContentPane(wrapper);
+    }
+
+    /**
+     * Which page, as a column of tabs.
+     *
+     * The control type lives here and nowhere else - swap the body and the rest of the window does not
+     * notice.  Toggle buttons in a group because they read as tabs down the side and stay readable at
+     * eight pages; a list or a drop-down would work the same way and take the same three lines.
+     */
+    private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
+    {
+        javax.swing.JPanel column = new javax.swing.JPanel();
+        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+
+        pageButtons = new java.util.LinkedHashMap<>();
+
+        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        for (final String page : pages)
+        {
+            javax.swing.JToggleButton tab = new javax.swing.JToggleButton(page);
+
+            tab.setSelected(page.equals(layout.getName()));
+            tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+            tab.setFocusable(false);
+            tab.setMaximumSize(new java.awt.Dimension(Short.MAX_VALUE, 26));
+
+            tab.addActionListener(e ->
+            {
+                if (switching || page.equals(layout.getName()))
+                {
+                    syncSidebar();
+                    return;
+                }
+
+                leaveFor(page, isAutonomyMode());
+            });
+
+            group.add(tab);
+            column.add(tab);
+
+            pageButtons.put(page, tab);
+        }
+
+        return column;
+    }
+
+    /**
+     * Which editor, as a pair of tabs.
+     *
+     * Same rule as the pages: the control type is confined to this method, because which control this
+     * ought to be is exactly the sort of thing that gets decided again after somebody has used it.
+     *
+     * The setup half is disabled rather than hidden when there is nothing to set up.  Hidden, the
+     * window would look different for a reason the user cannot see; disabled with a tooltip says what
+     * is missing, and the missing thing - a configuration - is something they can go and load.
+     */
+    private javax.swing.JComponent buildModeControl()
+    {
+        javax.swing.JPanel column = new javax.swing.JPanel();
+        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+
+        trackModeButton = modeTab(I18n.t("layout.ui.sidebarTrack"), false);
+        autonomyModeButton = modeTab(I18n.t("layout.ui.sidebarAutonomy"), true);
+
+        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        group.add(trackModeButton);
+        group.add(autonomyModeButton);
+
+        column.add(trackModeButton);
+        column.add(autonomyModeButton);
+
+        if (parent.editableAutonomySession() == null)
+        {
+            autonomyModeButton.setEnabled(false);
+            autonomyModeButton.setToolTipText(
+                AutonomyEditorPanel.wrapped(I18n.t("layout.ui.hintNoAutonomyToEdit")));
+        }
+        else if (parent.isAutonomyBusy())
+        {
+            autonomyModeButton.setEnabled(false);
+            autonomyModeButton.setToolTipText(
+                AutonomyEditorPanel.wrapped(I18n.t("autolayout.errorCannotEditWhileRunning")));
+        }
+
+        return column;
+    }
+
+    private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
+    {
+        javax.swing.JToggleButton tab = new javax.swing.JToggleButton(text);
+
+        tab.setSelected(isAutonomyMode() == autonomy);
+        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        tab.setFocusable(false);
+        tab.setMaximumSize(new java.awt.Dimension(Short.MAX_VALUE, 26));
+
+        tab.addActionListener(e ->
+        {
+            if (switching || isAutonomyMode() == autonomy)
+            {
+                syncSidebar();
+                return;
+            }
+
+            leaveFor(layout.getName(), autonomy);
+        });
+
+        return tab;
+    }
+
+    private javax.swing.JLabel heading(String text)
+    {
+        javax.swing.JLabel label = new javax.swing.JLabel(text);
+
+        label.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        label.setFont(label.getFont().deriveFont(java.awt.Font.BOLD));
+        label.setBorder(new javax.swing.border.EmptyBorder(0, 0, 4, 0));
+
+        return label;
+    }
+
+    /**
+     * Puts the sidebar back to what is actually on screen.
+     *
+     * Selecting a tab is a REQUEST, and a request that is refused - the user answered no to losing
+     * their work - must not leave the control showing where they did not go.
+     */
+    private void syncSidebar()
+    {
+        switching = true;
+
+        try
+        {
+            if (pageButtons != null)
+            {
+                for (java.util.Map.Entry<String, javax.swing.JToggleButton> tab
+                    : pageButtons.entrySet())
+                {
+                    tab.getValue().setSelected(tab.getKey().equals(layout.getName()));
+                }
+            }
+
+            if (trackModeButton != null) trackModeButton.setSelected(!isAutonomyMode());
+            if (autonomyModeButton != null) autonomyModeButton.setSelected(isAutonomyMode());
+        }
+        finally
+        {
+            switching = false;
+        }
+    }
+
+    /** The panel the form built, which the sidebar wraps rather than replaces */
+    private java.awt.Container formPane;
+
+    /** The strip down the side, or null when it would have nothing to offer */
+    private javax.swing.JPanel sidebar;
+
+    private java.util.Map<String, javax.swing.JToggleButton> pageButtons;
+
+    private javax.swing.JToggleButton trackModeButton;
+
+    private javax.swing.JToggleButton autonomyModeButton;
+
+    /** Set while the sidebar is being put back, so that doing so does not read as a click */
+    private boolean switching;
+
     public int getLayoutSize()
     {
         return this.size;

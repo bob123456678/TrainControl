@@ -182,6 +182,51 @@ So it is one call again: `moveTiles(moves, builtOver)` takes both halves, derive
 and does them in the only order that works.  `forgetTiles` is that call with no moves.  There is now no
 way for a caller to get the order or the sparing wrong, because neither is theirs to decide.
 
+## LT-F2: what was built, and the three judgement calls in it
+
+**The Edit button no longer asks.**  It opens whichever editor was used last, on the page the main
+window is showing.  The question used to be asked every single time, and the answer was almost always
+the same one twice running - somebody setting autonomy up does that for an hour, somebody rearranging
+track does that for an hour.  So it was asked hundreds of times to be answered the same way, and the one
+time it mattered it was answered by reflex.
+
+A remembered answer that is no longer possible - the configuration has been unloaded, or trains are
+running - falls back to the track editor silently.  The user asked to edit, not to be told about a
+preference.  A menu item that NAMES a mode still gets it, or a message saying why it cannot.
+
+**Everything goes through one method now.**  `openLayoutEditor(page, mode, reveal)`.  There were three
+ways in - the button, the autonomy menu, the finding jump - each with its own copy of the guards, and
+they had drifted: one refused while trains ran and another let you in and then refused to save.  The
+window can now reopen itself, which would have been a fourth.
+
+**The sidebar** is a column of pages and a pair of modes.  Switching either one closes the window and
+opens it again, exactly as the user had to do by hand - the window is built around one diagram and one
+mode, the diagram is re-read from disk on the way out, and the setup is put back as it was.  So it asks
+the same question closing asks, from the same place: `mayLeave()` is now the only thing that decides
+what counts as unsaved, and closing and switching both call it.
+
+### Three judgement calls, all open to reversal
+
+  - **"Hide the sidebar entirely if there is only one page"** is read as hiding the PAGE tabs, not the
+    mode tabs.  Taken literally, a single-page layout would have no way to reach the setup editor except
+    by closing the window, which is the thing this feature exists to remove.  So: page tabs appear with
+    two or more pages, the mode tabs always appear, and the whole strip is hidden only when there is one
+    page AND no setup to switch to - at which point it would be a control offering one choice.
+  - **The autonomy tab is disabled, not hidden**, when no configuration is loaded, with a tooltip saying
+    what to load.  Hidden, the window would look different for a reason the user cannot see.
+  - **The control type** is a column of toggle buttons, chosen because it reads as tabs down the side and
+    stays readable at eight pages.  It is confined to `buildPageControl` and `buildModeControl`, one
+    method each: swapping either for a list, a drop-down or real tabs is a change to that method and
+    nothing else, which is what "easy to change later" was asked for.
+
+### Not done, and worth deciding
+
+  - No menu item opens the TRACK editor by name.  The autonomy menu has one for the setup, and "Edit
+    Current Page" now means "the one you used last".  Symmetry would suggest a matching item; nobody has
+    asked for one, and it is three lines.
+  - The four `autosetup.ui.editChoice*` strings are now unused.  Left in the bundles rather than removed
+    from eight files for no behaviour.
+
 ## Where else a matrix belongs
 
 The question Adam asked after LT-A9, and the answer is that this project has exactly one shape of
@@ -256,7 +301,7 @@ Which one it was decides the fix, so it is left open rather than guessed at.
 | # | What | From |
 |---|---|---|
 | LT-F1 | Double-clicking a locomotive label on the track diagram opens the placement view, when autonomy is not running | 1 | **Done** - opens the autonomy editor at that station; does nothing while autonomy is running, where the editor cannot open anyway |
-| LT-F2 | The autonomy editor and the track diagram editor as two tabs of one window | 19 |
+| LT-F2 | The autonomy editor and the track diagram editor as two tabs of one window | 19 | **Done** - a sidebar of pages and modes; the Edit button no longer asks.  See the notes below |
 
 ## Documentation
 

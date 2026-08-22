@@ -194,6 +194,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Which route autonomy takes when it has a choice.  Stored by name, so a value written by a newer
      * version simply falls back to the default here rather than throwing.
      */
+    /** Which of the two editors was opened last, so that the Edit button does not have to ask */
+    public static final String LAST_EDITOR_AUTONOMY_PREF = "LastEditorWasAutonomy";
+
     public static final String PATH_PREFERENCE_PREF = "AutonomyPathPreference";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
@@ -2551,6 +2554,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
     {
+        openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile);
+    }
+
+    /**
+     * Opens the layout editor, on a page, in a mode.
+     *
+     * The one way in.  There were three - the Edit button, the autonomy menu, and the finding jump -
+     * each with its own copy of the guards, and they had drifted: one refused while trains were
+     * running and another let you in and then refused to save.  The window can now also reopen ITSELF
+     * on a different page or in the other mode, which would have been a fourth.
+     *
+     * @param page the page to open, or null for whichever the main window is showing
+     * @param autonomy TRUE for the setup, FALSE for the track, or null for whichever was used last
+     * @param reveal a square to scroll to and flash, or null
+     */
+    public void openLayoutEditor(String page, Boolean autonomy,
+        final org.traincontrol.automationui.TileGraph.TileKey reveal)
+    {
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this,
@@ -2558,14 +2579,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // Two different questions, and they were one until a finding jump went missing.
+        //
+        // What can be OPENED is any session at all: a setup with blocking errors will not load, and
+        // the editor is the only place those errors can be fixed, so the menu and the findings list
+        // have always been able to open one that is not running.
+        //
+        // What can be DEFAULTED to is narrower - a configuration that is actually chosen.  Coming back
+        // to the setup editor because that is where you were last is only sensible when there is a
+        // setup on screen to come back to.
         final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        if (session == null) return;
+        // What "last time" means when last time is no longer possible: a setup that has since been
+        // unloaded, or trains that have since been started.  The track is always editable, so it is
+        // what an impossible preference falls back to - silently, because the user asked to edit,
+        // not to be told about a preference.
+        boolean wantsAutonomy = autonomy == null
+            ? prefs.getBoolean(LAST_EDITOR_AUTONOMY_PREF, false) && editableAutonomySession() != null
+            : autonomy;
 
-        if (this.isAutonomyBusy())
+        if (wantsAutonomy && session == null)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
-            return;
+            // An explicit request says why it cannot be honoured; a remembered one just falls back
+            if (autonomy != null)
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoConfigurationToEdit"));
+                return;
+            }
+
+            wantsAutonomy = false;
+        }
+
+        if (wantsAutonomy && this.isAutonomyBusy())
+        {
+            if (autonomy != null)
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+                return;
+            }
+
+            wantsAutonomy = false;
         }
 
         // One editor at a time, over the same button the diagram editor is gated on.
@@ -2583,7 +2636,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editLayoutButton.setEnabled(false);
 
         // the editor edits one page, so the page has to be selected before it is opened
-        if (tile != null) this.LayoutList.setSelectedItem(tile.getPage());
+        if (page != null) this.LayoutList.setSelectedItem(page);
+
+        // Remembered for next time, from whichever door was used.  The menu items name a mode
+        // explicitly, and naming one is a perfectly good way of saying which you want to come back to.
+        prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
+
+        final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -2600,17 +2659,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
 
                 editor.render();
-                editor.setAutonomyMode(session);
+
+                if (opening != null) editor.setAutonomyMode(opening);
 
                 // Posted, twice over.  render() and setAutonomyMode both only QUEUE the work that
                 // builds the grid, so calling reveal here ran while the grid was still null and it
                 // returned without doing anything - every jump-to-a-finding landed on the right page
                 // and then left the user to find the square themselves, which is the whole thing the
                 // feature exists to avoid.
-                if (tile != null)
+                if (reveal != null)
                 {
                     javax.swing.SwingUtilities.invokeLater(() ->
-                        javax.swing.SwingUtilities.invokeLater(() -> editor.reveal(tile)));
+                        javax.swing.SwingUtilities.invokeLater(() -> editor.reveal(reveal)));
                 }
             }
             catch (Exception e)
@@ -2622,6 +2682,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (this.model.isDebug()) this.model.log(e);
             }
         });
+    }
+
+    /**
+     * The setup, if there is one there is any point opening.
+     *
+     * A configuration that is CHOSEN, not necessarily one that loaded: gating on a running setup locks
+     * the door on the room the user is being sent to, because a setup with blocking errors refuses to
+     * load and the editor is the only place those errors can be fixed.
+     *
+     * @return the session, or null when there is nothing to set up
+     */
+    public org.traincontrol.automationui.AutonomySession editableAutonomySession()
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
     }
 
     /**
@@ -3089,10 +3165,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void openAutonomyEditorOnPage(String page)
     {
-        if (page != null) this.LayoutList.setSelectedItem(page);
-
-        openAutonomyEditor(null);
+        openLayoutEditor(page, Boolean.TRUE, null);
     }
+
 
     /**
      * The station on a square, for a right-click on the track itself.
@@ -15616,94 +15691,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
         
-        // One button, two editors: the track itself, or the autonomy drawn over it.
+        // The button no longer asks which editor.
         //
-        // Only asked when a configuration is actually LOADED, not merely when one exists on disk.
-        // Offering to edit a setup that is not running means editing something the diagram beside it
-        // is not showing: the overlay is blank, the monitor is watching nothing, and Apply writes to a
-        // configuration the user may not even realise is selected.  Enable it first, and the question
-        // becomes about the thing on screen.
-        final org.traincontrol.automationui.AutonomySession autonomyToEdit;
-
-        org.traincontrol.automationui.AutonomySession candidateSession = getAutonomySession();
-
-        // A configuration that is CHOSEN, not necessarily one that loaded.  Gating this on a running
-        // setup locked the door on the room the user was being sent to: a setup with blocking errors
-        // refuses to load, and the editor is the only place those errors can be fixed - so "4 things
-        // must be dealt with" came with no way to deal with them.
-        if (candidateSession != null
-            && candidateSession.getStore().getActiveConfiguration() != null)
-        {
-            Object[] editChoices = {
-                I18n.t("autosetup.ui.editChoiceDiagram"),
-                I18n.t("autosetup.ui.editChoiceAutonomy")
-            };
-
-            int editChoice = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("autosetup.ui.editChoiceMessage"),
-                I18n.t("autosetup.ui.editChoiceTitle"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                editChoices,
-                editChoices[0]
-            );
-
-            if (editChoice == JOptionPane.CLOSED_OPTION) return;
-
-            // Autonomy edits were not blocked while trains ran, only the diagram ones - and Save then
-            // refused with errorCannotEditWhileRunning, trapping the work.  Refused up front instead.
-            if (editChoice == 1 && this.isAutonomyBusy())
-            {
-                JOptionPane.showMessageDialog(this,
-                    I18n.t("autolayout.errorCannotEditWhileRunning"));
-                return;
-            }
-
-            autonomyToEdit = editChoice == 1 ? candidateSession : null;
-        }
-        else
-        {
-            autonomyToEdit = null;
-        }
-
-        this.editLayoutButton.setEnabled(false);
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                // New native editor
-                LayoutEditor popup = new LayoutEditor(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                // Force window to not be on top
-                this.setAlwaysOnTop(false);
-
-
-                popup.render();
-
-                if (autonomyToEdit != null) popup.setAutonomyMode(autonomyToEdit);
-            }
-            catch (Exception e)
-            {
-                if (this.model.isDebug())
-                {
-                    this.model.log(e);
-                }
-
-                // Only on failure.  Handing the button straight back after the editor opened was what
-                // let a second one be opened on top of it - through the findings count, or "place
-                // locomotives", both of which go through openAutonomyEditor and check only this button.
-                // On success the editor gives it back itself, when it closes.
-                this.editLayoutButton.setEnabled(true);
-            }
-        });
+        // It used to, every time, with a dialog naming the two - and the answer was almost always the
+        // same one twice running, because a person setting autonomy up does that for an hour and a
+        // person rearranging track does that for an hour.  So the question was asked hundreds of times
+        // to be answered the same way, and the one time it mattered it was answered by reflex.
+        //
+        // The window itself can now change page and mode, so the cost of guessing wrong is one click
+        // inside it rather than a close and a reopen - which is what made the question worth asking.
+        openLayoutEditor(null, null, null);
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
     private void showLayoutPopup(String layoutName, int size)
