@@ -2448,6 +2448,46 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Squares whose recorded facing is not one the square can actually hold.
+     *
+     * The facing says which way the train standing there points, and the build honours it by choosing
+     * the copy of the split square that faces that way.  When no copy does, the builder falls through
+     * to the first one - it has to place the train somewhere - and that copy may point the other way.
+     * So the train quietly turns round.
+     *
+     * The way squares stop being able to hold a facing is that the track around them changes: move a
+     * tile so that it is entered from different sides and the facings it offers change with it, while
+     * the recorded one stays as it was.  Adam met exactly that - "the locomotive direction suddenly
+     * changed" after moving a tile onto valid connected track.
+     *
+     * Reported rather than corrected, because there is no correct answer available here: the train is
+     * physically pointing whichever way it is pointing, and only the operator knows.  What was missing
+     * was being told at all.
+     *
+     * A square with NO facings is left out - that is a disconnected square, which has its own findings
+     * and does not need this one on top.
+     */
+    private java.util.Set<TileKey> facingsThatCannotBeHeld()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            Side recorded = getFacing(placed.getKey());
+
+            if (recorded == null) continue;
+
+            List<Side> offered = facingChoices(placed.getKey());
+
+            if (offered.isEmpty() || offered.contains(recorded)) continue;
+
+            out.add(placed.getKey());
+        }
+
+        return out;
+    }
+
     private java.util.Set<TileKey> signalsThatAreGone()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
@@ -2623,7 +2663,7 @@ public class AutonomySession
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
-            stationsWithNoSignal());
+            stationsWithNoSignal(), facingsThatCannotBeHeld());
     }
 
     /**

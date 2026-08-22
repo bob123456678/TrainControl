@@ -130,6 +130,8 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
+    public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
+
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
 
     public static final String NO_SIGNAL_PAIRED = "autosetup.ui.checkNoProtectingSignal";
@@ -280,7 +282,8 @@ public class AutonomyChecks
     {
         return run(graph, reducer, termini, labelledStations, mayTurnOnDeadEnd, trapped,
             coveredCaptions, placedLocomotives, shutStations, mayTurn, mustTurn, homes,
-            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet());
+            Collections.<TileKey>emptySet(), Collections.<TileKey>emptySet(),
+            Collections.<TileKey>emptySet());
     }
 
     /**
@@ -290,9 +293,12 @@ public class AutonomyChecks
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal)
+        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
+        Set<TileKey> facingsImpossible)
     {
         List<Finding> findings = new ArrayList<>();
+
+        findings.addAll(checkFacings(reducer, facingsImpossible));
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
 
@@ -450,6 +456,30 @@ public class AutonomyChecks
             ReducedPoint point = reducer.getPoints().get(tile);
 
             findings.add(new Finding(Severity.NOTICE, NO_SIGNAL_PAIRED,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A train recorded facing a way its square cannot hold.
+     *
+     * The build has to put it somewhere, so it uses the first copy of the square - which may point the
+     * other way, and the train appears to have turned round on its own.  Nothing here can work out
+     * which way it really points; only the operator can, and until now nothing told them to look.
+     */
+    private static List<Finding> checkFacings(GraphReducer reducer, Set<TileKey> facingsImpossible)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (facingsImpossible == null) return findings;
+
+        for (TileKey tile : facingsImpossible)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, FACING_IMPOSSIBLE,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 

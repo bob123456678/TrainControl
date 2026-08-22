@@ -21,11 +21,11 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Fixed - it was the station LABEL, which resolves to no Point |
 | LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Fixed - the capture pruned by Point, not by tile |
 | LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Believed fixed with A2 - same prune; needs a re-run to confirm |
-| LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Open |
+| LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Reported, not corrected - a new check names the square |
 | LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Fixed - sensors reached the view through nothing at all |
 | LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Fixed - the tab is put back rather than the culprit hunted |
 | LT-B2 | Signal auto-detection by address does not work in conditions, only in commands | 10 | Fixed |
-| LT-B3 | A paired, in-use link is drawn greyed out as if autonomy ignored it | 19 | Open |
+| LT-B3 | A paired, in-use link is drawn greyed out as if autonomy ignored it | 19 | Open - could not reproduce by reading; needs one detail |
 | LT-B4 | An unnamed station is a warning; it should be an error | 24 | Fixed - the javadoc always said blocking |
 | LT-B5 | The route editor still syncs with the Central Station on close even with no CS routes | 4 | Fixed |
 | LT-B6 | No confirmation when closing the route editor with unsaved changes | 5 | Fixed |
@@ -47,8 +47,23 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-M4 | Hide "Make a One-Way Run from Here..." in the deep menu; it stays in the autonomy editor | Fixed |
 | LT-M5 | Rename "Connections and Direction" to "Trains May Depart...", and move "Trains May Arrive" beside it | Fixed |
 | LT-M6 | Move the link options out of Connections and into the menu itself | Fixed |
-| LT-M7 | Give every right-click group of three or more a semantic heading | Partly - the two new groups are headed |
+| LT-M7 | Give every right-click group of three or more a semantic heading | Fixed - station, turning, arrivals, departures and links all headed |
 | LT-M8 | Selection menu: rename "Pick" to "Select", make the existing item a Deselect, and deselect automatically once a move completes | Fixed |
+
+## What LT-B3 needs from Adam
+
+A link that is paired and in use should not be shaded, and reading the code says it is not: shading is
+`isDimmed`, which is a component plus `isIgnored`, and `isIgnored` is false for a LINK or TUNNEL unless
+its PAGE is excluded from autonomy.  Neither disqualified nor transparent covers them.
+
+Two states would explain what was seen, and they are different bugs:
+
+- the link's PARTNER is on a page excluded from autonomy, in which case shading the far end is correct
+  and shading this one is not;
+- the link was shaded while the pairing list was open, in which case something in that flow is greying
+  what it should be highlighting.
+
+Which one it was decides the fix, so it is left open rather than guessed at.
 
 ## Not defects - feature requests, recorded not started
 

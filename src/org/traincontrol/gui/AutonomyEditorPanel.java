@@ -880,6 +880,9 @@ public class AutonomyEditorPanel extends JPanel
 
             javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
 
+            // Headed: four answers under one menu, and the heading says what the four are about
+            title(stationMenu, I18n.t("autosetup.ui.menuStationHeading"));
+
             stationMenu.add(radio(group, I18n.t("autosetup.ui.menuCanStop"),
                 "autolayout.ui.tooltip.Station", isOpen && isStation,
                 () -> setUsage(target, true, true)));
@@ -928,6 +931,8 @@ public class AutonomyEditorPanel extends JPanel
             boolean must = session.isMustTurnAround(target);
             boolean may = session.isTurnAround(target) && !must;
 
+            title(turning, I18n.t("autosetup.ui.menuTurningHeading"));
+
             turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
                 "autosetup.ui.hintTurnNever", !may && !must,
                 () -> setTurning(target, false, false)));
@@ -961,6 +966,8 @@ public class AutonomyEditorPanel extends JPanel
                     I18n.t("autosetup.ui.menuArrivalsGroup"));
 
                 arrivals.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivals")));
+
+                title(arrivals, I18n.t("autosetup.ui.menuArrivalsHeading"));
 
                 final java.util.Set<org.traincontrol.automationui.TilePorts.Side> barred =
                     session.getBarredArrivals(target);
