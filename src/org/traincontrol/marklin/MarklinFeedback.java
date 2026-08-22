@@ -97,6 +97,9 @@ public class MarklinFeedback extends Feedback
                     this._setState((state == 1));
                                         
                     this.updateTiles();
+
+                    // And anything watching for one, which today is the route editor's capture
+                    this.network.feedbackChanged(this.getName(), state == 1);
                     
                     this.network.logf(
                         "acc.feedbackState",

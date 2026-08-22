@@ -22,13 +22,13 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Fixed - the capture pruned by Point, not by tile |
 | LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Believed fixed with A2 - same prune; needs a re-run to confirm |
 | LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Open |
-| LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Open |
-| LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Open |
-| LT-B2 | Signal auto-detection by address does not work in conditions, only in commands | 10 | Open |
+| LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Fixed - sensors reached the view through nothing at all |
+| LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Fixed - the tab is put back rather than the culprit hunted |
+| LT-B2 | Signal auto-detection by address does not work in conditions, only in commands | 10 | Fixed |
 | LT-B3 | A paired, in-use link is drawn greyed out as if autonomy ignored it | 19 | Open |
-| LT-B4 | An unnamed station is a warning; it should be an error | 24 | Open |
-| LT-B5 | The route editor still syncs with the Central Station on close even with no CS routes | 4 | Open |
-| LT-B6 | No confirmation when closing the route editor with unsaved changes | 5 | Open |
+| LT-B4 | An unnamed station is a warning; it should be an error | 24 | Fixed - the javadoc always said blocking |
+| LT-B5 | The route editor still syncs with the Central Station on close even with no CS routes | 4 | Fixed |
+| LT-B6 | No confirmation when closing the route editor with unsaved changes | 5 | Fixed |
 | LT-C1 | The signal picker window closes and reopens when a signal is removed | 23 | Fixed |
 | LT-C2 | The autonomy editor's banner has an odd border and a grey artifact on its right | 18 | Fixed |
 | LT-C3 | The autonomy diagram needs about one more row of scrollable height | 14 | Fixed |
@@ -61,7 +61,7 @@ Every entry names the test it came from, so his words can be found in context.
 
 | # | What |
 |---|---|
-| LT-D1 | Bring tests 26-41 into the manual list itself rather than pointing at two other documents |
+| LT-D1 | Bring tests 26-41 into the manual list itself rather than pointing at two other documents - **done**, all 41 are in one file |
 
 ---
 

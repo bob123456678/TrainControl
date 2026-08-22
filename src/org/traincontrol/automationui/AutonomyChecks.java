@@ -368,13 +368,17 @@ public class AutonomyChecks
             if (point.getName() != null
                     && !point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
 
-            // A station without a name is a WARNING: it works, and it is the name the user picks a
-            // destination by, so it will be met every time they do.  A plain point without one is a
-            // NOTICE - trains pass it, its name appears in a path and nowhere anybody chooses from,
-            // and a layout has dozens of them.  Listing those beside real problems buried the real
-            // problems.
+            // A station without a name is an ERROR, which is what the paragraph above always said it
+            // was - "an unnamed one is blocking" - and what the code did not do.  It is the name the
+            // user picks a destination by and the name an arrival is announced as, and "1 - Main 12,7"
+            // is neither.  Adam asked for it to refuse rather than grumble, having lived with the
+            // grumble.
+            //
+            // A plain point without one stays a NOTICE: trains pass it, its name appears in a path and
+            // nowhere anybody chooses from, and a layout has dozens of them.  Listing those beside real
+            // problems buried the real problems.
             findings.add(new Finding(
-                point.isStation() ? Severity.WARNING : Severity.NOTICE,
+                point.isStation() ? Severity.ERROR : Severity.NOTICE,
                 point.isStation() ? UNNAMED_STATION : UNNAMED_POINT,
                 String.valueOf(point.getTile()), point.getTile()));
         }

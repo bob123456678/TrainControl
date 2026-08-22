@@ -195,7 +195,17 @@ public class RouteEditorFrame extends JFrame
         setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
             : I18n.f("route.ui.frameEditRoute", routeName));
 
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        // DO_NOTHING, because the close has a question to ask first - see closeIfThrowingNothingAway
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+
+        addWindowListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e)
+            {
+                closeIfThrowingNothingAway();
+            }
+        });
 
         setIconImage(java.awt.Toolkit.getDefaultToolkit().getImage(
             TrainControlUI.class.getResource("resources/locicon.png")));
@@ -213,6 +223,10 @@ public class RouteEditorFrame extends JFrame
 
         // After load(), which is what discovers whether the route is the station's
         if (locked) becomeReadOnly();
+
+        // What the window says before anybody has touched it.  Everything closeIfThrowingNothingAway
+        // asks about is the difference between this and the same question asked later.
+        loadedSignature = stateSignature();
 
         pack();
         setLocationRelativeTo(parent);
@@ -335,11 +349,122 @@ public class RouteEditorFrame extends JFrame
         // one the keyboard cannot get out of, and this one is opened from a list somebody is working
         // down.  WHEN_IN_FOCUSED_WINDOW is checked after the focused component's own bindings, so a
         // cell being edited still gets its Escape first and cancels the edit rather than the window.
-        getRootPane().registerKeyboardAction(e -> dispose(),
+        getRootPane().registerKeyboardAction(e -> closeIfThrowingNothingAway(),
             javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
             javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         return content;
+    }
+
+    /**
+     * Closes, asking first if anything would be lost.
+     *
+     * A route editor is a form with two tables in it, and closing one by accident - Escape, or the
+     * window's own X - threw away everything typed since it opened with no warning at all.  Save is
+     * the only way out that keeps anything, and nothing said so.
+     *
+     * Only asks when there IS something to lose, compared against what was loaded rather than against
+     * a flag: a flag has to be set by every path that changes anything, and the paths here are two
+     * table models, four fields and a capture that writes from another window.  One of them would have
+     * been missed, and a prompt that does not appear is worse than none - it teaches the user that
+     * closing is safe.
+     */
+    private void closeIfThrowingNothingAway()
+    {
+        if (locked || stateSignature().equals(loadedSignature))
+        {
+            dispose();
+            return;
+        }
+
+        int answer = JOptionPane.showOptionDialog(this,
+            I18n.t("route.ui.confirmDiscardChanges"),
+            I18n.t("route.ui.titleDiscardChanges"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
+
+        if (answer == 0) dispose();
+    }
+
+    /**
+     * Everything the window is currently saying, as one string.
+     *
+     * Tolerant on purpose: it is compared with itself, never parsed, so a half-typed row that cannot
+     * be built still contributes its text rather than throwing.  toCommand is only asked of the kept
+     * commands, which are RouteCommands already.
+     *
+     * @return a signature to compare against loadedSignature
+     */
+    private String stateSignature()
+    {
+        StringBuilder out = new StringBuilder();
+
+        out.append(nameField.getText()).append('\u0001')
+           .append(s88Field.getText()).append('\u0001')
+           .append(String.valueOf(triggerBox.getSelectedItem())).append('\u0001')
+           .append(enabledBox.isSelected()).append('\u0002');
+
+        for (Entry entry : commands.rows)
+        {
+            if (entry.isEditable())
+            {
+                CommandRow row = entry.getRow();
+
+                out.append(row.getKind()).append(',')
+                   .append(row.getTarget()).append(',')
+                   .append(row.getSetting()).append(',')
+                   .append(row.getProtocol()).append(',')
+                   .append(row.getDelay());
+            }
+            else
+            {
+                out.append(entry.toCommand().toLine(null));
+            }
+
+            out.append('\u0002');
+        }
+
+        out.append('\u0003');
+
+        for (ConditionOutline.Row row : conditions.rows)
+        {
+            out.append(row.getDepth()).append(',');
+
+            if (row.isJoiner()) out.append(row.getJoiner());
+            else out.append(row.getCommand() == null ? "" : row.getCommand().toLine(null));
+
+            out.append('\u0002');
+        }
+
+        return out.toString();
+    }
+
+    /** What the window said when it finished loading, for closeIfThrowingNothingAway to compare with. */
+    private String loadedSignature = "";
+
+    /**
+     * Whether any route in the database was imported from the Central Station.
+     *
+     * A locked route is one of the station's - they travel one way, are marked on import, and are never
+     * written back.  With none of them, a new route's id cannot collide with anything the station knows
+     * about, which is the only thing the sync after a save was there to find out.
+     *
+     * @return whether a sync could tell us anything
+     */
+    private boolean anyRouteCameFromTheStation()
+    {
+        for (String name : parent.getModel().getRouteList())
+        {
+            org.traincontrol.base.Route route = parent.getModel().getRoute(name);
+
+            if (route instanceof org.traincontrol.marklin.MarklinRoute
+                && ((org.traincontrol.marklin.MarklinRoute) route).isLocked())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -2208,7 +2333,13 @@ public class RouteEditorFrame extends JFrame
             // in the LOCAL database, which knows nothing about routes added on the station since the
             // last sync.  Syncing now surfaces a collision while the user is still looking at the
             // route they just made, rather than at the next startup.
-            if (originalName.isEmpty()) parent.syncWithCS2();
+            // And only when the station HAS routes of its own.
+            //
+            // The paragraph above is about an id collision with a route added on the station since the
+            // last sync.  A layout whose routes are all local cannot have one: every id in the database
+            // came from the database.  So the round trip - layouts, locomotives, accessories and routes,
+            // over the network - buys nothing there, and Adam asked why it was happening at all.
+            if (originalName.isEmpty() && anyRouteCameFromTheStation()) parent.syncWithCS2();
 
             dispose();
         }
@@ -2985,6 +3116,26 @@ public class RouteEditorFrame extends JFrame
                         column == 6 ? text : term.getSetting(),
                         column == 7 ? protocolOf(text) : term.getProtocol(),
                         term.getDelay());
+
+                    // The address decides which of the two it really is - the same rule the commands
+                    // table follows, and for the same reason.  Switch and Signal are one command in
+                    // two vocabularies and only the layout knows which is standing at an address, so
+                    // typing a signal's address here turns the row into a Signal with red and green in
+                    // its setting box.  It worked when building a route and not when building the
+                    // condition that fires it, which is the same question asked in the same words.
+                    if (column == 5 && (edited.getKind() == CommandRow.Kind.ACCESSORY
+                        || edited.getKind() == CommandRow.Kind.SIGNAL))
+                    {
+                        CommandRow.Kind resolved = kindAtAddress(edited.getTarget(),
+                            edited.getProtocol(), edited.getKind());
+
+                        if (resolved != edited.getKind())
+                        {
+                            edited = new CommandRow(resolved, edited.getTarget(),
+                                CommandRow.defaultSettingFor(resolved),
+                                edited.getProtocol(), edited.getDelay());
+                        }
+                    }
                 }
 
                 try

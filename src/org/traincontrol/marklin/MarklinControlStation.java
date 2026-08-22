@@ -2388,6 +2388,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param key
      * @param args 
      */
+    /**
+     * Tells the view a feedback changed, if there is one listening.
+     *
+     * Only the route editor's capture wants it.  A sensor's tiles repaint themselves, so nothing else
+     * here has ever needed to know - which is why capturing a CONDITION worked for switches, whose
+     * repaint already reached the view, and did nothing at all for sensors.
+     *
+     * @param name the feedback's name
+     * @param state whether it is now occupied
+     */
+    public void feedbackChanged(String name, boolean state)
+    {
+        if (this.view != null) this.view.feedbackChanged(name, state);
+    }
+
     @Override
     public final void logf(String key, Object... args)
     {

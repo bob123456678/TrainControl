@@ -204,18 +204,71 @@ No need to test, not deployed.
 
 ## Added 2026-08-21, from the two reviews
 
-Tests 26-31 live in `2026-08-21-review-dispositions.md`, beside the findings they belong to.
+Written up beside the findings they belong to in `2026-08-21-review-dispositions.md`; the tests
+themselves are here, so that one file can be carried to the layout.
 
-List them all here for simplicity.
+**26. Shift Up with the pointer on the bottom row, and Shift Left on the last column.** Both should now
+do nothing at all. Then the same one row up and one column in, which should shift normally — and check
+the autonomy editor afterwards to see the stations went with the track.
+
+**27. Drag a tile onto a station square.** The station has to be gone from the autonomy editor
+afterwards, not left on a square holding plain track.
+
+**28. Cancel the diagram editor after moving a set-up station.** Both the diagram and the autonomy
+setup have to be back where they started. This is the one that used to lose the station quietly.
+
+**29. The command table's marks.** Delete removes exactly one row; the arrows move a row and leave it
+moved; duplicate makes one copy.
+
+**30. A route holding a signal command.** Open it, click the Setting cell, click away without choosing
+anything, and save. The signal must still be at danger.
+
+**31. Export a diagram as a picture, then throw a switch on that page.** The tile has to keep updating.
+
+## Added 2026-08-21, second round
+
+**32. Two trains running, one dispatched onto a long path.** TR-A22 in the flesh: while one locomotive
+is being sent off over several edges, a train already under way has to reach and stop at its next
+sensor normally. What it must NOT do is run past it. Worth doing in simulation first, then for real.
+
+**33. Switch pages, change tile size, and toggle addresses a dozen times, then throw a switch on the
+first page.** TR-A23: the tile still has to respond. If it does, the pruning is not throwing away
+labels it should have kept - which is the risk of that change, not the leak it fixes.
+
+**34. Open a popup diagram window on the page the main window is showing, close it, then throw a
+switch on that page.** The same risk from the other side: a popup rebuilding a page must not evict the
+main window's labels for it.
+
+**35. Switch the Central Station off, leave TrainControl open, press Stop, then click a switch on the
+diagram.** It should pause about two seconds, say the power was not confirmed, and throw the switch
+anyway - and then the NEXT click should behave the same way rather than doing nothing. Before this,
+the first such click stopped every tile in the application from ever responding again.
+
+**36. Start a train and stop it by hand before it reaches its next sensor** - lift it off, or turn its
+power off at the loco. After five minutes the log should name it, name the sensor, and say how long.
+Nothing else should change: the train stays waiting, and autonomy carries on around it.
+
+**37. Leave an automatic route enabled and watch the log for ten minutes.** It must say NOTHING about
+its trigger sensor. A route waiting on its sensor is a route doing its job, and it does so on a
+locomotive called "Dummy Loc" - if that name ever appears in the log, the advisory has leaked out of
+the dispatch path into the shared wait.
 
 ---
 
-## Added 2026-08-21, from the verification pass and the independent pass
+## Added 2026-08-21, from the independent pass
 
-Tests 38-40 are in `2026-08-21-independent-pass.md`, beside the findings they belong to.  The one worth
-doing first is not numbered there because it is a check on a FIX rather than on a finding:
+Beside their findings in `2026-08-21-independent-pass.md`.
 
-List them all here for simplicity.
+**38. Make `UIState.data` unreadable** - copy any other file over it - then start TrainControl, close it,
+and look in `tc_backup`.  There should be a copy named `unreadable<timestamp>UIState.data`, and the log
+should say where it went rather than "no data file found".
+
+**39. Rename a track diagram page to something with a slash in it**, "Up/Down".  Close TrainControl and
+reopen it: the page must still be there.
+
+**40. Put a page in `gleisbild.cs2` that the folder does not hold**, then open the layout.  Every other
+page has to load, the missing one has to be named in the log, and the Layouts menu must still be
+pointing at your folder afterwards.
 
 **41. A page that draws one signal or switch on several squares** - "2 - Bottom" has Signal 116 on three
 - and throw that accessory.  EVERY one of those squares has to change.  Two of the three stopped

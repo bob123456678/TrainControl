@@ -2399,6 +2399,67 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param tile the square
      * @return the submenu, or null when the square has no locomotive or only one facing
      */
+    /**
+     * A sensor changed, and the route editor may be capturing.
+     *
+     * The accessory half of this rides on repaintSwitch, because a switch has a tile to redraw and
+     * feedback tiles redraw themselves - so sensors reached the view through nothing at all, and
+     * capturing a CONDITION worked for switches and did nothing for sensors.  Half of what a condition
+     * can say is about sensors, which made capture look broken to anybody using it for what it is
+     * mainly for.
+     *
+     * Throttled the same way and for the same reason: a sensor a train is standing on reports itself
+     * repeatedly, and each report is the same line.
+     *
+     * @param name the feedback's name
+     * @param state whether it is now occupied
+     */
+    @Override
+    public void feedbackChanged(String name, boolean state)
+    {
+        if (this.routeEditor == null || !this.routeEditor.isVisible()) return;
+
+        if (!this.routeEditor.isCapturing()) return;
+
+        // Only into the conditions.  A route's COMMANDS are things it does, and a sensor is not
+        // something a route can do - it is something a route can wait for.
+        if (!this.routeEditor.capturingIntoConditions()) return;
+
+        int address = 0;
+
+        try
+        {
+            address = Integer.parseInt(name.replaceAll("[^0-9]", ""));
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return;
+        }
+
+        if (address <= 0) return;
+
+        String command = org.traincontrol.base.RouteCommand
+            .RouteCommandFeedback(address, state).toLine(null);
+
+        long now = System.currentTimeMillis();
+
+        if (command.equals(lastCapturedFeedbackCommand)
+            && now - lastCapturedFeedbackCommandTime <= CAPTURE_COMMAND_THROTTLE)
+        {
+            return;
+        }
+
+        lastCapturedFeedbackCommand = command;
+        lastCapturedFeedbackCommandTime = now;
+
+        final String line = command;
+
+        javax.swing.SwingUtilities.invokeLater(() -> this.routeEditor.appendCommand(line));
+    }
+
+    private String lastCapturedFeedbackCommand;
+    private long lastCapturedFeedbackCommandTime;
+
     public javax.swing.JMenu buildAutonomyFacingMenu(
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
@@ -15439,11 +15500,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         this.editLayoutButton.setEnabled(false);
 
+        // Which tab the user was on, put back at the end.
+        //
+        // This runs after a diagram edit AND after saving a ROUTE, and everything it does in between -
+        // resetting the autonomy session, greying the Auto tab while there is no configuration,
+        // remounting the inner tabs, reloading the configuration - can move the selection.  So saving a
+        // route from the route list threw the user somewhere they had not asked to go, which is
+        // alarming in proportion to how little they did to cause it.
+        //
+        // Restoring rather than hunting for whichever step moved it: several can, they are all doing
+        // something legitimate, and none of them is entitled to decide what the user is looking at.
+        final int wasOn = this.KeyboardTab.getSelectedIndex();
+
         new Thread(() ->
         {
             this.model.refreshLayouts();
 
-            javax.swing.SwingUtilities.invokeLater(() -> layoutRefreshComplete(after));
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                layoutRefreshComplete(after);
+
+                // Only if it is still there and still usable - a tab that has been greyed in the
+                // meantime is one the user cannot be left sitting on
+                if (wasOn >= 0 && wasOn < this.KeyboardTab.getTabCount()
+                    && this.KeyboardTab.isEnabledAt(wasOn))
+                {
+                    this.KeyboardTab.setSelectedIndex(wasOn);
+                }
+            });
         }).start();
     }
 

@@ -22,6 +22,22 @@ public interface View
      */
     public void repaintSwitches();
     public void repaintSwitch(int id, Accessory.accessoryDecoderType protocol);
+
+    /**
+     * A feedback has changed state.
+     *
+     * Only the route editor's capture wants this, and it wants it for the same reason it wants
+     * repaintSwitch: capturing a CONDITION means "run this when the railway looks like it does now",
+     * and half of what a condition can say is about sensors.  Switches reached the editor because
+     * their repaint already came this way and feedback had no callback at all - so a sensor triggered
+     * while capturing simply did nothing, with the tick box still ticked.
+     *
+     * Named for what happened rather than for what to redraw: the tiles repaint themselves.
+     *
+     * @param name the feedback's name, as a route command spells it
+     * @param state whether it is now occupied
+     */
+    public void feedbackChanged(String name, boolean state);
     
     /**
      * Regenerates the layout display
