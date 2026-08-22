@@ -96,8 +96,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-089](#mt-089) | 2026-08-22 | A signal CONDITION offers red and green | needs test | DD - live defect |
 | [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
+| [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
 
-Everything else - 14 of 91 - is **fixed validated** and needs nothing from you unless the
+Everything else - 14 of 92 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1898,5 +1899,29 @@ All 34 real ones are added. `TestStationAddress` is not, because it is a helper 
 
 **If you have been treating a green `ant test` as the gate, it has been narrower than the battery I run
 from the scratchpad.** That is the whole finding.
+
+---
+
+<a id="mt-092"></a>
+
+### MT-092 - 2026-08-22 - The triage app
+
+**Disposition:** needs test  
+**From:** feature request  
+**Written:** 2026-08-22
+
+**What to do.** Run `py -3 docs\manual-tests\triage.py` beside TrainControl. Confirm:
+
+- The ledger of open entries loads and matches what is at the top of this file.
+- Pick an entry, choose a result, write something, click **Submit and next** - the comment appears
+  under that entry's `#### Comments` here, and nothing else in the file moves.
+- Add a bug and a feature request from an entry's screen, submit, and confirm they land in
+  `bug-reports.md` / `feature-requests.md` as `OB-###` items referencing the test.
+- The **Launch TrainControl** button starts it with Simulate + Debug (a train can be dispatched in
+  simulation without a real Central Station) and the **Output…** window shows its console.
+- Close and reopen the app; the entries you already answered are marked, and unanswered drafts (typed
+  but not submitted) are still there.
+
+#### Comments
 
 ---

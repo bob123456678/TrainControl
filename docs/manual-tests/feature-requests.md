@@ -31,6 +31,7 @@ where its state and its comments are.
 
 | Filed | Tag | What |
 |---|---|---|
+| 2026-08-22 | [MT-092](tests.md#mt-092) | The triage app - a companion window for running the ledger without alt-tabbing to this file (asked directly, not through the Inbox above) |
 | 2026-08-22 | [MT-064](tests.md#mt-064) | Highlight on Diagram button in the route editor, and rename Test to Test Condition |
 
 ---

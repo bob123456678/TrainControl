@@ -81,6 +81,37 @@ A feature request reaches **fixed validated** the same way every other entry doe
 works. "Built" is not "validated", and a feature nobody has used is exactly the kind of thing that gets
 marked finished and turns out to be half of what was wanted.
 
+[bug-reports.md](bug-reports.md) is the same mechanism for something that is broken rather than
+something new, and empties into `tests.md` the same way - each item becomes an `MT-###` entry, with its
+**From** line naming the finding once one exists rather than reading `feature request`.
+
+---
+
+## The triage app
+
+[triage.py](triage.py) is a companion window for this file, for running down the ledger without
+alt-tabbing between a long markdown document and the running railway. `py -3 docs\manual-tests\triage.py`
+- no build step, no dependency beyond the Python standard library.
+
+Pick an entry from the list, say whether it worked, write what happened, add anything else noticed
+along the way, and submit. It has a button that starts TrainControl itself, using the Simulate + Debug
+configuration, so the two windows can sit side by side.
+
+**What it writes, and to where.** A result is appended under that entry's `#### Comments` in
+`tests.md` - dated, signed, and stamped with the commit it was run against - the same shape a comment
+typed by hand would take. Anything else noticed becomes an `OB-###` item in
+[bug-reports.md](bug-reports.md) or [feature-requests.md](feature-requests.md), cross-referenced back
+to the test it came from if it came from one.
+
+**What it deliberately never writes: the Disposition line, or the ledger.** Rule 4 above says the
+disposition is Claude's to set, and that stays true whether the comment arrived by hand or through the
+app - the app records what Adam said, nothing more, and the next round reads it the same way it reads
+anything typed directly into the file.
+
+Every write backs the target file up first and replaces it atomically, and the app checks the file has
+not changed on disk since it was loaded before writing to it, so a round running in one window and
+triage.py open in another cannot silently overwrite each other.
+
 ---
 
 ## Working from it
@@ -97,7 +128,11 @@ does that from what you wrote.
    fixed there, and the entry moves to **fixed unvalidated** with the new finding tag added to its
    **From** line.
 4. A comment asking for something new gets a NEW entry at the bottom, referencing the tag it came from.
-5. Never mark anything validated. Never edit an instruction. Never reorder.
+5. Check [bug-reports.md](bug-reports.md) and [feature-requests.md](feature-requests.md) for anything
+   the triage app filed as an `OB-###` - it may already be referenced from a test's Comments, but a
+   standalone one (filed with nothing on screen) only exists in the inbox. Pick it up the same way a
+   direct entry in either file would be.
+6. Never mark anything validated. Never edit an instruction. Never reorder.
 
 **When a fix lands that changes behaviour a validated test covered**, move that test back to
 **fixed unvalidated** and say why in its Comments. A test validated against code that has since changed
