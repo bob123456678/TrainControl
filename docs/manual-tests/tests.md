@@ -41,9 +41,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19 |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
-| [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | needs test | - |
-| [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | needs test | AR-20 |
-| [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | needs test | IP-*, AR-21 |
+| [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | AR-20 |
+| [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | fixed unvalidated | AR-20 |
+| [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | fixed unvalidated | IP-*, AR-21 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
 | [MT-040](#mt-040) | 2026-08-21 | A page the folder does not hold | fixed unvalidated | AR-23 |
 | [MT-042](#mt-042) | 2026-08-22 | Hovering a station's name to paste | needs test | LT-A7 |
@@ -711,7 +711,7 @@ Defer for later.
 
 ### MT-036 - 2026-08-21 - A train stopped by hand
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** hands-on testing  
 **Written:** 2026-08-21
 
@@ -723,12 +723,27 @@ Nothing else should change: the train stays waiting, and autonomy carries on aro
 
 Defer for later.
 
+**Claude, 2026-08-22.** Automated as `testStuckTrainAdvisory`, to the procedure written
+under MT-037 - you noted afterwards that it belonged here, and it does: this is the train that stops
+between sensors.
+
+Three stations in a line, autonomy simulation OFF so nothing triggers the sensors for us, the quota
+shrunk to a second, the train dispatched from one end, the first sensor made by hand, and the second
+never made. The log then names the train and the sensor it is waiting for, once.
+
+The quota is a second rather than your ten. Nothing asserted depends on the number, and
+`FEEDBACK_ADVISORY_MS` is a public volatile field precisely so a test can shrink it - ten seconds is
+the right number for watching a real railway do nothing.
+
+There is no popup, by design: the advisory is a log line and nothing acts on it. If you would rather it
+raised something on screen, say so and it is a small change.
+
 ---
 <a id="mt-037"></a>
 
 ### MT-037 - 2026-08-21 - An automatic route says nothing about its trigger
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** AR-20  
 **Written:** 2026-08-21
 
@@ -751,12 +766,23 @@ station with two or more sensors between it and its target, trigger the first by
 timeout plus the startup delay plus a buffer, then check the log and whether the popup fired. Debug
 and simulate on, autonomy simulation OFF so the sensors are not triggered for us.
 
+**Claude, 2026-08-22.** Automated as the second half of `testStuckTrainAdvisory`: a
+locomotive called "Dummy Loc" waiting on a sensor through the two-argument wait - which is exactly what
+a route's trigger monitor does - and nothing said about it over four quotas. Neither "has not reached"
+nor the name "Dummy Loc" may appear at all.
+
+Verified by mutation: putting the advisory back inside the shared wait, which is where it started, fails
+this test. That is the leak it exists for.
+
+Your procedure above has moved to MT-036, which is the test it describes; this entry keeps the negative
+half, which is the regression guard.
+
 ---
 <a id="mt-038"></a>
 
 ### MT-038 - 2026-08-21 - An unreadable UIState.data is kept
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** IP-*, AR-21  
 **Written:** 2026-08-21
 
@@ -776,6 +802,21 @@ not automated yet - it lives in a JFrame and reads the file by a RELATIVE path, 
 against whatever `UIState.data` is in the working directory, which is yours. That is why you asked
 for a backup first, and it is why I have not run it unasked. **Say the word and I will back the file
 up, run it, and put it back.**
+
+**Claude, 2026-08-22.** Run, and it passes: `testUiStateIsNotLostWhenUnreadable` writes
+an unreadable file, opens a session, saves, and finds `unreadable<timestamp>UIState.data` in `tc_backup`
+holding exactly what the bad file held.
+
+**Your file was backed up first, as you asked, and it needed to be.** The first version of the test took
+its copy inside the test method, after the headless check - so the headless pass threw the skip before
+the copy was taken, and the teardown, finding no copy and a file on disk, deleted your real
+`UIState.data`. It was restored byte for byte from a safety copy I had taken by hand a few minutes
+earlier, and I checked the hash before and after: `d500f6b9...`, 1997 bytes, unchanged.
+
+The test now reads the file in `@BeforeClass`, before anything can skip, keeps the bytes in memory,
+writes them back unconditionally and asserts that what is on disk afterwards matches. It also only
+deletes a file when it knows it created one. The two stray `unreadable...` artefacts my runs left in
+`tc_backup` have been removed - they held the test's own rubbish, nothing of yours.
 
 ---
 <a id="mt-039"></a>
