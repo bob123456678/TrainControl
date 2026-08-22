@@ -287,6 +287,30 @@ public class LayoutGrid
                             @Override
                             public void mouseClicked(MouseEvent e)
                             {
+                                // Double-click opens the setup at this station.
+                                //
+                                // The name of the train standing on a platform is the thing on the
+                                // running diagram somebody points at when they want to change what is
+                                // standing there - and until now pointing at it activated the
+                                // locomotive and nothing else, so getting to the placement view meant
+                                // finding the button for it and then finding the station again.
+                                //
+                                // Not while autonomy is running: the editor cannot open then, and the
+                                // refusal is better said by the menu, which explains itself.  A
+                                // double-click that opened a dialog saying no would be worse than one
+                                // that does nothing.
+                                if (e.getClickCount() == 2
+                                    && javax.swing.SwingUtilities.isLeftMouseButton(e))
+                                {
+                                    if (!ui.isAutonomyBusy())
+                                    {
+                                        javax.swing.SwingUtilities.invokeLater(
+                                            () -> ui.openAutonomyEditor(station));
+                                    }
+
+                                    return;
+                                }
+
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
                                     javax.swing.SwingUtilities.invokeLater(() ->

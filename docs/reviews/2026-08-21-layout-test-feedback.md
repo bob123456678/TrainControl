@@ -255,7 +255,7 @@ Which one it was decides the fix, so it is left open rather than guessed at.
 
 | # | What | From |
 |---|---|---|
-| LT-F1 | Double-clicking a locomotive label on the track diagram opens the placement view, when autonomy is not running | 1 |
+| LT-F1 | Double-clicking a locomotive label on the track diagram opens the placement view, when autonomy is not running | 1 | **Done** - opens the autonomy editor at that station; does nothing while autonomy is running, where the editor cannot open anyway |
 | LT-F2 | The autonomy editor and the track diagram editor as two tabs of one window | 19 |
 
 ## Documentation
