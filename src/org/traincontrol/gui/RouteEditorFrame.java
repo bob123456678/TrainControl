@@ -1500,6 +1500,18 @@ public class RouteEditorFrame extends JFrame
 
                 boolean editable = which.getModel().isCellEditable(row, column);
 
+                // A joining word's row is left alone.
+                //
+                // Only its own column can be typed into, so every other cell in it was shaded - and a
+                // row that is four-fifths grey reads as a row that is switched off, when it is one of
+                // the two things the outline is MADE of.  The shading exists to tell an empty cell that
+                // will take a value from one that will not, and a joiner has no such cells: there is
+                // one word and nothing else, which the row already shows.
+                if (which instanceof ConditionTable && ((ConditionTable) which).isJoinerRow(row))
+                {
+                    return out;
+                }
+
                 if (!selected)
                 {
                     out.setForeground(editable ? which.getForeground() : java.awt.Color.GRAY);
@@ -2784,6 +2796,19 @@ public class RouteEditorFrame extends JFrame
      */
     private final class ConditionTable extends JTable
     {
+        /**
+         * Whether the row at this line is a joining word rather than a condition.
+         *
+         * Asked by the renderer, which is handed a row number and nothing else.
+         *
+         * @param line the row
+         * @return whether it is a joiner
+         */
+        boolean isJoinerRow(int line)
+        {
+            return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
+        }
+
         private final List<ConditionOutline.Row> rows = new ArrayList<>();
 
         /** How many pixels one level of indentation is worth. */

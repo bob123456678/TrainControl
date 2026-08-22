@@ -46,8 +46,14 @@ public class AutonomyBanner extends JPanel
      */
     private static final int MS_PER_CHARACTER = 90;
 
-    private static final Color PANEL_BACKGROUND = Color.WHITE;
-    private static final Color PANEL_LINE = new Color(204, 204, 204);
+    /**
+     * A light grey, and no line around it.
+     *
+     * It was white with a single-line border, which is how a PANEL is drawn - and drawn that way at
+     * the top of a window full of other panels it read as an odd extra one rather than as a strip
+     * saying something.  Grey is quieter and needs no edge to be a distinct area.
+     */
+    private static final Color PANEL_BACKGROUND = new Color(242, 242, 242);
 
     private static final Color INFO_BACKGROUND = PANEL_BACKGROUND;
     private static final Color INFO_TEXT = new Color(0, 0, 155);
@@ -101,17 +107,17 @@ public class AutonomyBanner extends JPanel
     /** The message as it was handed in, so isSaying is not left reading HTML scaffolding. */
     private String saying;
 
+    /** Holds the offer button, and is taken out of the layout with it - see the constructor. */
+    private javax.swing.JPanel right;
+
     public AutonomyBanner()
     {
         setLayout(new BorderLayout());
 
-        // A panel, the way every other panel in this application is one: white, with a single line
-        // round it.  It was a pale blue bar with no edge running the width of the window, which reads
-        // as something that has been stuck on top of the interface rather than as part of it.  The
-        // blue stays where it belongs - on the text, in the colour headings use.
-        setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(PANEL_LINE, 1),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        // Padding, and nothing else.  A light grey strip is already a distinct area; giving it a line
+        // as well made it read as a panel that had been stuck on top of the interface rather than as
+        // part of it.  The colour that carries meaning stays where it belongs - on the text.
+        setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         setBackground(INFO_BACKGROUND);
 
@@ -130,6 +136,15 @@ public class AutonomyBanner extends JPanel
         scroller.setBorder(null);
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
+
+        // The scrollbar is the grey sliver that used to appear down the right-hand edge.
+        //
+        // AS_NEEDED means it arrives whenever a message runs to more than a couple of lines, and the
+        // look-and-feel draws it with its own track - a vertical grey bar against the banner, which
+        // looks like a rendering fault rather than a control.  Painted in the banner's own colour it
+        // is there when it is needed and invisible when it is not.
+        scroller.getVerticalScrollBar().setOpaque(false);
+        scroller.getVerticalScrollBar().setBorder(null);
 
         // Vertically only.  A message that has to be scrolled sideways to be read is a message that
         // has not been shown, and wrapping is what the editor pane is here for.
@@ -150,11 +165,16 @@ public class AutonomyBanner extends JPanel
         action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
         action.setMargin(new java.awt.Insets(0, 10, 0, 10));
 
-        javax.swing.JPanel right = new javax.swing.JPanel(
+        right = new javax.swing.JPanel(
             new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
 
         right.setOpaque(false);
         right.add(action);
+
+        // Kept out of the layout entirely while there is no offer to make, rather than sitting there
+        // empty: an invisible button inside a visible panel still reserves the panel's insets, which
+        // is a few pixels of nothing on the right of every ordinary message.
+        right.setVisible(false);
 
         add(right, BorderLayout.EAST);
 
@@ -249,6 +269,7 @@ public class AutonomyBanner extends JPanel
         {
             acting = null;
             action.setVisible(false);
+            right.setVisible(false);
 
             // And the banner itself goes when it has nothing to offer.
             //
@@ -269,6 +290,7 @@ public class AutonomyBanner extends JPanel
         action.setText(buttonText);
         action.addActionListener(acting);
         action.setVisible(true);
+        right.setVisible(true);
 
         setVisible(true);
 

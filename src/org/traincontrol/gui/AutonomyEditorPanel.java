@@ -2465,29 +2465,51 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The list itself, with the highlight held around it by the caller.
      *
-     * A loop rather than one question, because the answer is a LIST: adding a second signal, removing
-     * one that was paired by mistake and looking at what is there are all the same gesture repeated,
-     * and closing the window between each of them would hide the list at the moment it changed.  The
-     * one answer that does not come back here is "click it on the diagram", which has to give the
-     * diagram back before anything can be clicked on it.
+     * One window that stays open, because the answer is a LIST: adding a second signal, removing one
+     * that was paired by mistake and looking at what is there are all the same gesture repeated, and a
+     * window that closed and reopened between each of them hid the list at the moment it changed.  The
+     * one answer that does give the window back is "click it on the diagram", which has to, because
+     * the next click belongs to the diagram.
      *
      * @param station the station's square
      */
     private void askAboutProtectingSignals(TileKey station)
     {
-        while (true)
+        // A dialog of its own, held open while the list is worked on.
+        //
+        // It was an option pane re-shown in a loop, which is the same window closing and opening again
+        // on every change - so removing one signal of three made the whole thing blink, and the list
+        // somebody was reading jumped out from under them.  The list is the point of this window; it
+        // has to survive being edited.
+        final javax.swing.JDialog dialog = new javax.swing.JDialog(
+            javax.swing.SwingUtilities.getWindowAncestor(owner()),
+            I18n.t("autosetup.ui.menuPairSignal"),
+            java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+
+        final javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+        final javax.swing.JList<String> list = new javax.swing.JList<>(model);
+        final javax.swing.JLabel heading = new javax.swing.JLabel();
+
+        final javax.swing.JButton byClick =
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionClickSignal"));
+        final javax.swing.JButton byAddress =
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalAddress"));
+        final javax.swing.JButton remove =
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionRemoveSignal"));
+        final javax.swing.JButton done =
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone"));
+
+        // What is paired now, on screen and on the diagram behind.  Called again after every change
+        // rather than rebuilding the window.
+        final Runnable show = () ->
         {
             java.util.List<TileKey> paired = session.getProtectingSignals(station);
 
-            // Outlined on the diagram for as long as the list is on screen, and re-read on every turn
-            // of the loop so that a signal just added is outlined with the rest.  The list names them by
-            // address, which identifies them; the outline is what says WHERE they are, and that is the
-            // half somebody checking a pairing has come to find out.
             highlightedSignals.clear();
             highlightedSignals.addAll(paired);
             refresh();
 
-            javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+            model.clear();
 
             for (TileKey one : paired)
             {
@@ -2497,76 +2519,89 @@ public class AutonomyEditorPanel extends JPanel
 
             if (paired.isEmpty()) model.addElement(I18n.t("autosetup.ui.signalListEmpty"));
 
-            javax.swing.JList<String> list = new javax.swing.JList<>(model);
+            heading.setText(paired.isEmpty()
+                ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
+                : I18n.f("autosetup.ui.promptSignalsPaired", describeTile(station)));
 
-            list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-            list.setVisibleRowCount(Math.min(6, Math.max(3, model.size())));
+            list.setEnabled(!paired.isEmpty());
+            remove.setEnabled(!paired.isEmpty());
 
             if (!paired.isEmpty()) list.setSelectedIndex(0);
-            else list.setEnabled(false);
+        };
 
-            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        list.setVisibleRowCount(6);
 
-            panel.add(new javax.swing.JLabel(paired.isEmpty()
-                ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
-                : I18n.f("autosetup.ui.promptSignalsPaired", describeTile(station))),
-                java.awt.BorderLayout.NORTH);
+        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
 
-            panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+        panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(heading, java.awt.BorderLayout.NORTH);
+        panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
 
-            java.util.List<String> choices = new java.util.ArrayList<>();
+        javax.swing.JPanel buttons = new javax.swing.JPanel(
+            new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
 
-            choices.add(I18n.t("autosetup.ui.optionClickSignal"));
-            choices.add(I18n.t("autosetup.ui.optionSignalAddress"));
+        buttons.add(byClick);
+        buttons.add(byAddress);
+        buttons.add(remove);
+        buttons.add(done);
 
-            // Only where there is something to remove.  "Remove" on a station that has no signals is a
-            // button that cannot do anything, sitting where the user is choosing between two that can.
-            if (!paired.isEmpty()) choices.add(I18n.t("autosetup.ui.optionRemoveSignal"));
+        panel.add(buttons, java.awt.BorderLayout.SOUTH);
 
-            choices.add(I18n.t("autosetup.ui.optionSignalsDone"));
+        byAddress.addActionListener(e ->
+        {
+            pairSignalsByAddress(station);
 
-            int answer = JOptionPane.showOptionDialog(owner(), panel,
-                I18n.t("autosetup.ui.menuPairSignal"),
-                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                choices.toArray(), choices.get(choices.size() - 1));
+            show.run();
+        });
 
-            // Closing the window means the same as Done.  Nothing here is held until an OK - each
-            // change is applied as it is made - so there is no half-finished state to discard.
-            if (answer < 0) return;
+        remove.addActionListener(e ->
+        {
+            java.util.List<TileKey> paired = session.getProtectingSignals(station);
 
-            String chosen = choices.get(answer);
+            int at = list.getSelectedIndex();
 
-            if (chosen.equals(I18n.t("autosetup.ui.optionSignalsDone"))) return;
+            if (at >= 0 && at < paired.size()) removeProtectingSignal(station, paired.get(at));
 
-            if (chosen.equals(I18n.t("autosetup.ui.optionRemoveSignal")))
+            show.run();
+        });
+
+        // The one answer that has to give the window back: the next click belongs to the diagram.
+        // The list returns by itself once the click lands - see the click handler - so a second signal
+        // is another click and a button rather than the whole menu again.
+        byClick.addActionListener(e ->
+        {
+            if (needsTheGrid(station))
             {
-                int at = list.getSelectedIndex();
-
-                if (at >= 0 && at < paired.size()) removeProtectingSignal(station, paired.get(at));
-
-                continue;
-            }
-
-            if (chosen.equals(I18n.t("autosetup.ui.optionClickSignal")))
-            {
-                if (needsTheGrid(station)) return;
-
-                // Waits for a click.  Nothing else about the editor changes except that everything which
-                // is not a signal goes grey, which is what makes "click the signal" a thing that can be
-                // done rather than a thing that has to be searched for.
-                //
-                // The list comes back by itself once the click lands, so a second signal is another
-                // click and a button rather than the whole menu again.
-                signalFor = station;
-
-                waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
-
-                refresh();
+                dialog.dispose();
                 return;
             }
 
-            pairSignalsByAddress(station);
-        }
+            signalFor = station;
+
+            dialog.dispose();
+
+            waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
+
+            refresh();
+        });
+
+        done.addActionListener(e -> dialog.dispose());
+
+        // Escape closes it, which means the same as Done: every change was applied as it was made, so
+        // there is nothing half-finished to discard.
+        dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
+            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        dialog.getRootPane().setDefaultButton(done);
+
+        show.run();
+
+        dialog.setContentPane(panel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(owner());
+        dialog.setVisible(true);
     }
 
     /**

@@ -96,13 +96,15 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Where a group being dragged would land, in a paler shade of the picking colour.
      *
-     * Paler on purpose: the squares a group currently occupies and the squares it would move to are
-     * both worth seeing at once, and drawing them the same would make a drag look like it had already
-     * happened. This is the answer to "where will this end up", which is the question a group drag
-     * raises and a single-tile drag does not - one tile follows the cursor and can be seen, twenty
-     * cannot.
+     * A different COLOUR, not a paler shade of the selection.  The squares a group currently occupies
+     * and the squares it would move to are both worth seeing at once, and two reds differing only in
+     * strength read as one thing drawn twice - which is exactly how a pale red landing box looked
+     * beside a red selection.  Blue says "somewhere else" at a glance and needs no comparison.
+     *
+     * This is the answer to "where will this end up", which is the question a group drag raises and a
+     * single-tile drag does not - one tile follows the cursor and can be seen, twenty cannot.
      */
-    private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(245, 150, 150);
+    private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(0, 90, 220);
 
     /**
      * The wash over the grip: the yellow this application already uses to say "look here", the same
@@ -3335,6 +3337,18 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.ExtLayoutPanel,
                 this,
                 true, parent);
+
+            // One row of slack at the bottom of the scrollable area.
+            //
+            // The panel is laid out to exactly the height of the grid, so the last row sits flush
+            // against the edge of the viewport - and anything that takes a few pixels (a horizontal
+            // scrollbar appearing, a border, a slightly taller row of tiles in autonomy mode) pushes
+            // it out of sight.  It comes back if the window is stretched, which is not something the
+            // user should have to work out.
+            //
+            // A row rather than a fixed number of pixels, because the tile size is a setting.
+            this.ExtLayoutPanel.setPreferredSize(new Dimension(
+                grid.maxWidth, grid.maxHeight + size));
 
             grid.getContainer().revalidate();
             this.ExtLayoutPanel.revalidate();

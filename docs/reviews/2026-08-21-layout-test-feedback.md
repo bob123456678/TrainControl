@@ -18,7 +18,7 @@ Every entry names the test it came from, so his words can be found in context.
 
 | # | What | From | Status |
 |---|---|---|---|
-| LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Investigating |
+| LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Made visible, awaiting a re-run |
 | LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Open |
 | LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Open |
 | LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Open |
@@ -29,20 +29,20 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-B4 | An unnamed station is a warning; it should be an error | 24 | Open |
 | LT-B5 | The route editor still syncs with the Central Station on close even with no CS routes | 4 | Open |
 | LT-B6 | No confirmation when closing the route editor with unsaved changes | 5 | Open |
-| LT-C1 | The signal picker window closes and reopens when a signal is removed | 23 | Open |
-| LT-C2 | The autonomy editor's banner has an odd border and a grey artifact on its right | 18 | Open |
-| LT-C3 | The autonomy diagram needs about one more row of scrollable height | 14 | Open |
-| LT-C4 | Boolean-operator rows in the conditions table are greyed, which reads as disabled | 3 | Open |
-| LT-C5 | The drag-target group is light red; it should be blue, with the selection staying red | 13 | Open |
+| LT-C1 | The signal picker window closes and reopens when a signal is removed | 23 | Fixed |
+| LT-C2 | The autonomy editor's banner has an odd border and a grey artifact on its right | 18 | Fixed |
+| LT-C3 | The autonomy diagram needs about one more row of scrollable height | 14 | Fixed |
+| LT-C4 | Boolean-operator rows in the conditions table are greyed, which reads as disabled | 3 | Fixed |
+| LT-C5 | The drag-target group is light red; it should be blue, with the selection staying red | 13 | Fixed |
 
 ## Menu work, all from tests 22 and 23
 
 | # | What | Status |
 |---|---|---|
-| LT-M1 | Track diagram deep menu only: hide Show a Station Name Here, Clear This Square, the locomotive settings item, Signal Protecting This Station, and all three locomotive entries (Add to Autonomy, Move to This Station, Remove from This Square) | Open |
-| LT-M2 | Home appears in both the track diagram's own menu and the deep menu - remove it from the top one | Open |
-| LT-M3 | Move "{loc} Is Facing..." out of the deep menu and up to the track diagram's own menu | Open |
-| LT-M4 | Hide "Make a One-Way Run from Here..." in the deep menu; it stays in the autonomy editor | Open |
+| LT-M1 | Track diagram deep menu only: hide Show a Station Name Here, Clear This Square, the locomotive settings item, Signal Protecting This Station, and all three locomotive entries (Add to Autonomy, Move to This Station, Remove from This Square) | Fixed |
+| LT-M2 | Home appears in both the track diagram's own menu and the deep menu - remove it from the top one | Fixed |
+| LT-M3 | Move "{loc} Is Facing..." out of the deep menu and up to the track diagram's own menu | Fixed |
+| LT-M4 | Hide "Make a One-Way Run from Here..." in the deep menu; it stays in the autonomy editor | Fixed |
 | LT-M5 | Rename "Connections and Direction" to "Trains May Depart...", and move "Trains May Arrive" beside it | Open |
 | LT-M6 | Move the link options out of Connections and into the menu itself | Open |
 | LT-M7 | Give every right-click group of three or more a semantic heading | Open |
