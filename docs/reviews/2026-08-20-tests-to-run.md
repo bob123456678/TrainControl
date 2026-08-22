@@ -19,10 +19,22 @@ editor and look at that square: station designation, point name, facing, arrival
 length, and any locomotive placed there. All still present, all on the new square, none left on the
 old one.
 
+Moved back: station name and everything is restored, locomotive removed.
+
+If moved so it's disconnected from the graph: everything disappears.  No longer a station (and can't be made one), no locomotive.  At least keep the locomotive on graph but not placed when this happens, but ideally we should just keep the locomotive there and in an invalid state.
+
+If moved to a valid connected track: everything else is OK, except that the locomotive direction suddently changed.
+
+Make double clicking a locomotive label in the track diagram open the loc placement view IF autonomy isn't running.
+
 **2. The same with a group.** Pick several squares including at least two stations, drag them one
 square RIGHT. Right specifically — a group dragged right has every source square landing on another
 source square, which is the case that used to eat itself. Dragging left happened to work, which is
 what made the same bug in the captions look intermittent.
+
+Works right, but dragging left removed the locomotive.  If loc removed from graph, don't remove them from autonomy though unless we reload or explicitly delete.
+
+Also, when selecting, add a deselect option to the right click menu (just change the one that's already there).  Change "pick" to Select.  And auto deselect once a move is complete.
 
 ---
 
@@ -33,28 +45,50 @@ route whose conditions contain brackets, use that one: a condition beginning wit
 `(A or B) and C` - used to come back as `A or B`, silently, with the "reads as" line showing the
 short version and nothing flagged red.
 
+Looks OK.  But don't grey out cells on boolean operators, since it makes it look a bit confusing.
+
 **4. A three-way point.** Build a route with one, set it left, save, reopen. Still one row, still
 left. Then run the route and watch the ironwork: the motor that ends up straight should move first,
 and the other should follow after a pause.
 
+Works.  But it still syncs with CS2 on close- is that sync still needed for consistency?  Perhaps only sync if there exist central station sourced routes.
+
 **5. Type a signal's address into a switch row.** The kind should become Signal by itself, and the
 setting box should offer red and green rather than straight and turn.
+
+Works.  But add a "discard unsaved changes" confirmation to the new route window.
 
 **6. Duplicate a row** with the mark beside the trash. The copy lands directly under it. Change its
 address, save, reopen.
 
+Editing a route, after sync, teleports the user to the track diagram tab.  Don't do this.  This may be due to the autonomy load, etc.
+
 **7. Change a row's kind.** Every other field clears - it should not be possible to end up with a
 locomotive named `3` because an accessory address stayed behind.
+
+Confirmed
 
 **8. Save a route with three things wrong in it.** One dialog listing all three, numbered. "Go back
 and fix" leaves the window open on the cells it named; "Discard and close" closes it.
 
+Works.
+
 **9. The Test button**, against a sensor you can occupy by hand. It should agree with the railway.
+
+Works.
 
 **10. Capture**, into the commands and into the conditions.
 
+Feedback events do not capture into CONDITIONS.  Switches do.
+
+Signal auto-update does not work on conditions.
+
+Rest works.
+
 **11. A Central Station route.** Everything greyed, no marks in any row, nothing typeable, no field
 that takes the caret, and Escape closes it.
+
+We tested this synthetically earlier.  I can retest if you changed anything.
 
 ---
 
@@ -63,10 +97,16 @@ that takes the caret, and Escape closes it.
 **12. Pick Several on, then Delete, Control+C, Control+X and Escape.** All four have to work while
 the mode is on - the button used to take the keyboard focus with it.
 
+OK
+
 **13. The orange grip** at the top right of a selection. Drag the group by it, with picking still on.
+
+OK.  Highlight the "move to' group in blue, not light red, for better clarity.  The selection itself should remain red.
 
 **14. `+` and `−`.** After growing, look at the new row: it should be drawn whole, with no fragment
 or stray gap a moment later.
+
+OK.  In the autonomy diagram editor, we need to force the scrollable height of the diagram to be about 1 row more.  Sometimes it hides unless the window is stretched.
 
 **15. Shift Down and Shift Right** from the right-click menu, then Control+Z.
 
@@ -77,14 +117,25 @@ or stray gap a moment later.
 **16. "Show station name here"** on a blank square beside a station you have just clicked. The
 station you were looking at should already be selected rather than whichever sorts first.
 
+OK
+
 **17. The same over a square that already has text of your own on it.** It should ask whether to
 replace it, naming the text, rather than refusing.
+
+OK
 
 **18. "Why is it not moving"** on a train with several blocked destinations. The whole answer has to
 be readable - it wraps now, and scrolls past a few lines.
 
+OK.  But the bar at the top of the editor has an odd border- give it a light gray background instead.  And there is an odd gray artifact on the right side of it.
+
 **19. Pair a tunnel or a link.** The diagram should highlight each candidate as you scroll the list,
 not only after pressing OK.
+
+OK.  Minor bug though: linked, active tile is greyed out.
+
+Future feature request: make the autonomy editor and track diagram editor be on two tabs in one window.  Easy to flip between them if state is saved in one.
+
 
 ---
 
@@ -96,14 +147,26 @@ between. Then check the autonomy editor's page list: it must be EXCLUDED, and th
 have grown - if it were included, every sensor on it would become a second Point for a sensor that
 already has one.
 
+OK
+
 **21. Control+X, Control+V and Delete on the track diagram.** Point at a station with a train on it
 and press Control+X; point at another and press Control+V. Then check the same two squares in the
 autonomy editor - the placement has to have moved there as well, or the next build puts the train
 back where it was. With the pointer NOT over the diagram, the same keys must still cut and paste
-locomotive buttons exactly as before.
+locomotive buttons exactly as before.  
+
+Doesn't work- only goes to the default route.
 
 **22. A locomotive's settings from the autonomy editor's tile menu** - the same dialog the track
 diagram opens. Set an arrival or departure function, then run autonomy and listen for it.
+
+Works.  
+
+In autonomy editor: Remove one-way run from the right-click menu and put it into the autonomy editor.
+
+In track diagram right click autonomy deep menu only: Hide entries that manipulate the diagram, such as "show a station name here".  Hide edit locomotive, since it's already in the top menu. Hide home locomotive appears twice, remove the one in the top menu. Hide signal protecting this station. Hide clear this square. Hide place locomotive, hide place locomotive. 
+
+In track diagram right click autonomy deep menu only: add the loc is facing menu to the parent level, and hide it in the deep menu.
 
 ---
 
@@ -114,20 +177,36 @@ This Station", add one signal by clicking it and a second by typing its address,
 shows both with the diagram outlining both behind the window. Then remove one and add it back. Save,
 reopen the editor, and check both are still listed.
 
+Seems to work. Minor- window closes and reopens on removal.
+
+In the right click menu, change "Connections and direction" to "Trains may depart...".  Move "trains may arrive" next to it.
+
+Move all the link options out of this submenu, into the main one. 
+
+Give the each of the right click menu groups semantic labels where there are 3+ options.
+
 **24. The same station on the railway.** Run autonomy and let a train stand there: BOTH signals have to
 go red, and both back to green when it leaves. This is the half that cannot be tested from here - the
 list can be right in the editor and only one signal actually wired into the built configuration.
+
+Works.
+
+We need unnamed stations (default) to throw an error, not a warning.
 
 **25. A layout saved by the previous version.** Open it, look at a station that already had a signal
 paired: it must still be paired, and the file must be unchanged until you edit something. That is the
 compatibility case - one signal is still written as a bare string, and only a station with two gets an
 array.
 
+No need to test, not deployed.
+
 ---
 
 ## Added 2026-08-21, from the two reviews
 
 Tests 26-31 live in `2026-08-21-review-dispositions.md`, beside the findings they belong to.
+
+List them all here for simplicity.
 
 ---
 
@@ -136,10 +215,14 @@ Tests 26-31 live in `2026-08-21-review-dispositions.md`, beside the findings the
 Tests 38-40 are in `2026-08-21-independent-pass.md`, beside the findings they belong to.  The one worth
 doing first is not numbered there because it is a check on a FIX rather than on a finding:
 
+List them all here for simplicity.
+
 **41. A page that draws one signal or switch on several squares** - "2 - Bottom" has Signal 116 on three
 - and throw that accessory.  EVERY one of those squares has to change.  Two of the three stopped
 updating for a day, from a change meant to stop a memory leak, and the hands-on test written for that
 change could not see it because the third still worked.
+
+All OK.
 
 ---
 

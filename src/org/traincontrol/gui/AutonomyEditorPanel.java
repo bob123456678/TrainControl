@@ -789,21 +789,30 @@ public class AutonomyEditorPanel extends JPanel
             final boolean isStation = session.getStore().isStation(target);
             final String standing = locomotiveAt(target);
 
-            if (standing != null)
+            // Everything about the locomotive itself is left out of the DEEP menu.
+            //
+            // The track diagram's own right-click menu already carries Place, Facing, Remove and the
+            // locomotive's settings, one level up from here - so inside "Autonomy Setup" they were the
+            // same four answers a second time, under different words.  In the editor, where there is no
+            // menu above this one, they are the only way to reach them and they stay.
+            if (standing != null && !menuOnly)
             {
                 menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
                     () -> session.placeLocomotive(target, null)));
             }
 
-            addLocomotiveSettings(menu, target);
+            if (!menuOnly) addLocomotiveSettings(menu, target);
 
             if (isStation)
             {
-                menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
-                    () -> placeLocomotive(target, true)));
+                if (!menuOnly)
+                {
+                    menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
+                        () -> placeLocomotive(target, true)));
 
-                menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
-                    () -> placeLocomotive(target, false)));
+                    menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
+                        () -> placeLocomotive(target, false)));
+                }
 
                 // Which way round the train is standing.
                 //
@@ -820,7 +829,9 @@ public class AutonomyEditorPanel extends JPanel
                 final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
                     session.facingChoices(target);
 
-                if (standing != null && facings.size() > 1)
+                // Not in the deep menu: it is offered by the track diagram's own menu instead, beside
+                // the other things about the train standing there - see buildFacingMenu.
+                if (standing != null && facings.size() > 1 && !menuOnly)
                 {
                     javax.swing.JMenu facingMenu = new javax.swing.JMenu(
                         I18n.f("autosetup.ui.menuFacingGroup", standing));
@@ -981,7 +992,9 @@ public class AutonomyEditorPanel extends JPanel
             // Labelled with the signal's ADDRESS, which is how anybody refers to a signal, and outlined
             // on the diagram while the item is being acted on: the address says which signal, the
             // outline says where.
-            if (isStation)
+            // Left out of the deep menu: pairing one means clicking the signal on the diagram, and
+            // the diagram is what the deep menu is drawn over rather than part of.
+            if (isStation && !menuOnly)
             {
                 java.util.List<TileKey> paired = session.getProtectingSignals(target);
 
@@ -1131,13 +1144,19 @@ public class AutonomyEditorPanel extends JPanel
             connections.addSeparator();
         }
 
-        connections.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
+        // Editor only.  It is a two-click gesture - this square, then the far one - and the deep menu
+        // has no diagram of its own to take the second click on, so from there it could only ever jump
+        // the user to the page and abandon what they had started.
+        if (!menuOnly)
         {
-            if (needsTheGrid(target)) return;
+            connections.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
+            {
+                if (needsTheGrid(target)) return;
 
-            oneWayFrom = target;
-            waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
-        }));
+                oneWayFrom = target;
+                waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
+            }));
+        }
 
         // A link's pairing is the longest-range connection on the diagram - it joins two pages - so it
         // belongs here rather than on its own at the end.
@@ -1201,7 +1220,10 @@ public class AutonomyEditorPanel extends JPanel
         //
         // The CLICKED square, not the run leader the rest of this menu acts on: a name belongs where
         // it was put, and moving it to the head of the run would drop it somewhere else entirely.
-        if (isStraightThrough(tile))
+        //
+        // Editor only, both of them: they write text onto the DIAGRAM, which is a diagram edit wearing
+        // an autonomy hat, and the deep menu is reached by right-clicking the diagram itself.
+        if (isStraightThrough(tile) && !menuOnly)
         {
             menu.addSeparator();
 
@@ -1709,6 +1731,53 @@ public class AutonomyEditorPanel extends JPanel
      * finish.  They open the editor at that square instead, which is where the job can be done.
      */
     private boolean menuOnly;
+
+    /**
+     * The "{loc} Is Facing..." submenu for a square, or null when there is nothing to ask.
+     *
+     * Handed out on its own so that the track diagram's own right-click menu can carry it, beside the
+     * other things it offers about the train standing there - Place, Facing, Remove and the
+     * locomotive's settings.  Inside Autonomy Setup it was one level further down than everything it
+     * belongs with, and the deep menu no longer offers it.
+     *
+     * Null unless a locomotive is standing there AND the square has more than one facing to choose
+     * between: on a square one line reaches, the facing is not a question.
+     *
+     * @param target the square
+     * @return the submenu, or null
+     */
+    public javax.swing.JMenu buildFacingMenu(final TileKey target)
+    {
+        if (target == null) return null;
+
+        final String standing = locomotiveAt(target);
+
+        if (standing == null) return null;
+
+        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
+            session.facingChoices(target);
+
+        if (facings.size() <= 1) return null;
+
+        javax.swing.JMenu facingMenu = new javax.swing.JMenu(
+            I18n.f("autosetup.ui.menuFacingGroup", standing));
+
+        facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
+
+        javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
+
+        org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
+
+        for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
+        {
+            facingMenu.add(radio(facingGroup,
+                I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
+                recorded == null ? facing == facings.get(0) : facing == recorded,
+                () -> session.setFacing(target, facing)));
+        }
+
+        return facingMenu;
+    }
 
     public void setMenuOnly(boolean menuOnly)
     {

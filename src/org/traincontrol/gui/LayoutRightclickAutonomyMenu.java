@@ -369,35 +369,25 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
-                    // Which locomotive belongs here, as opposed to which one happens to be here now
-                    addSeparator();
-
-                    // Asked of the copy that answers for the SQUARE, not of the one the train is on.
+                    // Which locomotive belongs here used to be offered from this menu AND from inside
+                    // Autonomy Setup, so a square asked the same question twice under two labels.  It
+                    // belongs with the rest of the setup, and that is the copy that was kept.
                     //
-                    // A home belongs to a platform and the build writes it onto every copy of one, so
-                    // any copy can be asked - but the copy that speaks for a square is the OCCUPIED
-                    // one, and a train can be standing on a copy that is not itself a destination.
-                    // Editing the square's type while a train is there produces exactly that, and so
-                    // does barring an arrival side.  Asked about that copy the item took itself off
-                    // the menu, which is to say it vanished precisely when a train was standing on the
-                    // platform - the moment somebody is most likely to be setting its home.
-                    Point speaksForTheSquare = current;
+                    // What went with it was the care over WHICH Point to ask: a home belongs to a
+                    // platform and the build writes it onto every copy, but the copy that speaks for a
+                    // square is the occupied one, and a train can stand on a copy that is not itself a
+                    // destination.  The setup menu works from the SQUARE rather than from a Point, so
+                    // that whole question stops arising there - which is the better reason for it to
+                    // live in one place rather than two.
+                }
 
-                    if (session != null)
-                    {
-                        for (Point copy : session.getStationIndex()
-                            .pointsAt(ui.getModel().getAutoLayout(), station))
-                        {
-                            if (copy.isDestination())
-                            {
-                                speaksForTheSquare = copy;
-                                break;
-                            }
-                        }
-                    }
+                // Which way round the train is standing, beside the other things about the train
+                // rather than a level down inside the setup submenu
+                javax.swing.JMenu facing = ui.buildAutonomyFacingMenu(here);
 
-                    HomeLocomotiveMenu.addStationItem(this, ui, speaksForTheSquare, ui, null,
-                        ui::updateVisiblePoints);
+                if (facing != null)
+                {
+                    add(facing);
                 }
 
                 addSetupMenu();

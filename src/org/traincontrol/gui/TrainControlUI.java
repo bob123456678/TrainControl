@@ -2390,6 +2390,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param tile the square, on its page
      * @return the menu, or null when there is no setup to edit or the square has nothing to offer
      */
+    /**
+     * The "{loc} Is Facing..." submenu for a square, for the track diagram's own right-click menu.
+     *
+     * Built by the same panel that builds the deep menu, so there is one implementation of the
+     * question and one place that knows which facings a square offers.
+     *
+     * @param tile the square
+     * @return the submenu, or null when the square has no locomotive or only one facing
+     */
+    public javax.swing.JMenu buildAutonomyFacingMenu(
+        org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        // Through the same door, so the panel exists and is wired to the current session
+        if (buildAutonomyTileMenu(tile) == null) return null;
+
+        return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
+    }
+
     public javax.swing.JPopupMenu buildAutonomyTileMenu(
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
@@ -3113,7 +3131,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.TileGraph.TileKey over = hoveredDiagramTile;
 
-        if (over == null || !this.model.hasAutoLayout() || this.isAutonomyBusy()) return false;
+        // No square under the pointer, or no autonomy at all: the keys mean the buttons, which is
+        // what they have always meant, and this says nothing.
+        if (over == null || !this.model.hasAutoLayout()) return false;
 
         boolean cut = controlPressed && keyCode == KeyEvent.VK_X;
         boolean paste = controlPressed && keyCode == KeyEvent.VK_V;
@@ -3125,9 +3145,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (!cut && !paste && !clear) return false;
 
+        // Past this line the pointer IS on a diagram square and the key IS one of the three, so this
+        // handles it whatever happens next - and says so when it cannot.
+        //
+        // It used to return false instead, which handed the key to the locomotive buttons: somebody
+        // pointing at a station and pressing Control+X watched a BUTTON change, with nothing said
+        // about why.  That is the one outcome they cannot have meant, and it made every reason this
+        // could decline look identical from the outside.
+        if (this.isAutonomyBusy())
+        {
+            this.model.logf("layout.warnDiagramKeyWhileBusy");
+
+            return true;
+        }
+
         org.traincontrol.automation.Point point = getAutonomyPointForTile(over);
 
-        if (point == null) return false;
+        if (point == null)
+        {
+            // Autonomy does not know this square.  Ordinary over plain track; worth saying over one
+            // the user believes is a station, which is the case that brought this about - the square
+            // resolves only once a configuration has been loaded and built.
+            this.model.logf("layout.warnNoAutonomyPointHere", over.toString());
+
+            return true;
+        }
 
         if (paste)
         {
