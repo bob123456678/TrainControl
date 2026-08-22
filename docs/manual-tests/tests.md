@@ -62,7 +62,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | - |
 | [MT-026](#mt-026) | 2026-08-21 | Shift Up and Shift Left at the edges | needs test | AR-17 |
 | [MT-029](#mt-029) | 2026-08-21 | The command table's marks | fixed unvalidated | AR-18 |
-| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19 |
+| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | needs test | AR-19, DD |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
 | [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | AR-20 |
@@ -1104,7 +1104,7 @@ row yet, it is the control that makes one.
 
 ### MT-030 - 2026-08-21 - A route holding a signal command
 
-**Disposition:** fixed unvalidated  
+**Disposition:** needs test  
 **From:** AR-19  
 **Written:** 2026-08-21
 
@@ -1119,6 +1119,18 @@ OK.  But grey out irrelevant settings' cells (like number) for commands that don
 shading was only ever wired to the CONDITIONS table, so no command cell was ever greyed whatever its
 kind. The command table now shades by kind - the function number on a signal, the protocol on a stop,
 the delay on a command that has none.
+
+**Claude, 2026-08-22, correcting the above: that fix did not take, and I told you it had.** The
+duplication review found it. `greyWhatCannotBeEdited(this)` wraps whatever renderer the table has and
+installs its own - and six lines later the constructor calls `setDefaultRenderer(Object.class, ...)`
+again for the kept-command greying, which replaces it outright. So the command table still shades a
+kept ROW and still shades no cell by kind.
+
+Verified by reading `RouteEditorFrame.java:2844` against `:2850`, not taken on the reviewer's word.
+
+**Not fixed yet** - you asked for the duplication report to be made and not acted on, and this is one of
+its findings. It is a small change (the two renderers have to be one, or applied in the other order).
+Say the word and it goes in on its own, ahead of anything else in that report.
 
 ---
 <a id="mt-031"></a>
