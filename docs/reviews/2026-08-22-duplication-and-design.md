@@ -1398,6 +1398,10 @@ was still running when this document was written. Three questions are recorded s
    `marklin/file/CS2File.java`. Note that DD-A5 already found three copies of one loop living in
    `marklin/`, which suggests this is worth someone's afternoon.
 
+**Answered after the fact - see the appendix at the end of this document.** The reading finished about
+twenty minutes after this file was written, and its material is appended rather than folded in, so that
+what the main pass verified stays separable from what arrived late and has not been.
+
 ---
 
 ## What this pass did not look at
@@ -1416,3 +1420,106 @@ Named so the next reviewer knows what is uncovered rather than clean:
 - **Anything requiring the railway or a display.** Nothing was run. Several findings above
   (DD-B1, DD-B5, DD-A3) would be settled in one launch by somebody with the window open, and DD-A3 and
   DD-A4 should get `MT-###` entries in `docs/manual-tests/tests.md` if they are acted on.
+
+
+---
+
+# Appendix - the DD-D13 gap, answered late and NOT verified
+
+Added 2026-08-22, after the body of this document was written and committed.
+
+**Read this section differently from the rest.** Everything above was re-checked against the source
+before it was written down, and three claims were withdrawn at that check. Nothing below has had that
+treatment. It arrived from the parallel reading that DD-D13 records as still running, it is reproduced
+here so it is not lost, and **it carries a specific reason for caution**: that reading reported, of its
+own accord, that it had earlier stated a result which did not exist - "I fabricated a status claim
+mid-session... Nothing was behind it." It says the material below comes from files and git it read
+directly. That may well be so. It has not been confirmed, and until it is, treat every line number and
+every quotation in this appendix as a lead rather than as a fact.
+
+Nothing here has been acted on.
+
+## A1 - the automationui chain
+
+- **One BFS rule, three implementations.** `GraphReducer.findPath` and `reachableTiles` are reportedly
+  the same walk twice, with the turn block identical in both - the second's own comment said to read
+  "The same three-way rule findPath walks." `AutonomyBuilder.Node.leavesBy`/`arrivesBy` is named as a
+  third expression of it, as graph shape.
+- **`onwardSides` and `onwardFrom`** are said to be the same body in `GraphReducer` and
+  `AutonomyBuilder`.
+- **The trapped-arrival rule is computed twice and has drifted.** `AutonomyBuilder.nodesFor` against
+  `AutonomySession.check()`: `splitSides` returns empty when any incoming edge has a null entry side,
+  where the session's copy skips those edges. Claimed consequence: a square reached both through a link
+  and by track is emitted as one unconstrained Point and simultaneously reported `ARRIVAL_TRAPPED`.
+- **The checker disagreeing with the railway has happened once already** - `db1db789` is cited as
+  "it reported a station pair reachable that the runtime bfs never routes". The claimed live remnant is
+  that the editor's path test knows `mayTurn`/`mustTurn` but nothing of `barredArrivals` or
+  `autoDestination`, so it answers "can get there" for a platform the built configuration marks
+  `station:false`. **This overlaps DD-A7**, which the main pass did verify.
+- **The hardware restriction is honoured once and re-derived twice**: `isTraversableFrom` consulted in
+  one place, `continuations` ignoring it, and the editor re-deriving it a third time for drawing. The
+  claimed consequence is that a one-way run can be written onto a defective turnout and close it both
+  ways.
+- **The port table is said to exist in three copies**, one of them `docs/plans/portmap-verification.py`,
+  which the production javadoc asks you to hand-edit in step.
+
+## A2 - `Layout.java` and `HomeStaging`
+
+The substantive claim is that `HomeStaging` re-implements seven of `Layout`'s rules against a shadow
+state - accessory-command conflict, excluded intermediates, inactive points, train length, terminus
+reversibility, feedback occupancy, and lock edges - and that the class says so itself: *"it
+re-implements the rules, and every time a rule was mis-copied the result was a plan the runtime then
+refused, or no plan where one existed."*
+
+Two pieces of evidence are worth checking first, because if they hold they are the strongest argument in
+this whole document:
+
+1. **`2ab59d4` changed the lock-edge rule in the runtime; `6c897c84`, two days later, had to make the
+   same change in the planner** - reportedly quoting "the old rule, character for character", with the
+   planner having become the stricter half and reporting `NO_PLAN_FOUND` only after exhausting a
+   fifteen-second budget. The same commit message is said to contain: **"That is the third time today a
+   fix has been applied to one of two matching places."**
+2. **Eight of the eleven commits touching `HomeStaging.java` also touched `Layout.java`.**
+
+Also claimed: the 45%-of-station-pairs justification is written out in full in **both** files; four
+separate graph walks exist across the two; and `canEnter`'s own comment says the point-level and
+block-level occupancy rules *"agree by coincidence rather than by construction"*.
+
+**The mitigation already there** is `auditAgainstRuntime()`, which compares planner against runtime for
+the one state both can answer. The suggestion worth taking seriously - independently of whether the
+detail above holds - is that this audit pattern is the right response to a duplicate that cannot be
+removed, and that the automationui checker has no equivalent.
+
+**Recommended shape:** a `PathRules` object with a live implementation and a snapshot implementation,
+so `isPathClear` and `canEnter`/`canRest` become one rule set with two data sources. Reported as ~250
+lines and **high risk**, on the grounds that `isPathClear` is the chokepoint every tier passes through
+and that a previous attempt to move a rule to the wrong tier broke the manual menu and the planner
+together. Lower-risk items offered first: collapse the `pickPath`/`getPossiblePaths` enumeration behind
+one predicate, and give `isPathClear` a `fail(key, args...)` helper.
+
+## A3 - `base/` against `marklin/`
+
+Reported **clean**: `Feedback`/`MarklinFeedback`, `Accessory`/`MarklinAccessory`,
+`Locomotive`/`MarklinLocomotive` all extend rather than repeat, with no shadowed state found, and
+`RemoteDeviceCollection` used properly with its `synchronized` design explained in its own javadoc.
+
+Three findings:
+
+1. **The tile registry is written three times** - `Set<LayoutLabel> tiles` plus `addTile` plus
+   `updateTiles` in `MarklinAccessory`, `MarklinFeedback` and `MarklinRoute`, with the same comment
+   copied verbatim and `addTile` byte-identical, including a dead fragment in two of them. The cost is
+   said to be already paid twice: `8bde2099` making one `ConcurrentHashMap.newKeySet()` fix in four
+   places, and `0b5f5e73` lifting the eviction rule into all three **and dropping its precondition** -
+   which is the Signal 116 defect this repository has already recorded and fixed in `d6b9b00c`. **That
+   part matches what is independently known**, which is a point in the report's favour.
+2. **Address-to-UID conversion split across the layer boundary**: `calculateUID` adds the decoder base
+   and `CS2File` subtracts it back off inline, per type, in three branches - with `739c933c` cited as
+   the defect where the MFX branch never did, so a locomotive was created addressing a decoder past the
+   highest MFX address there is.
+3. **Address validation in three copies, drifted**: the canonical `validateNewAddress` against
+   `AddLocomotive`'s three `if` blocks, which are claimed to check the upper bound only, to have no
+   MULTI_UNIT branch, and to let address 0 through because of an `abs()` above them.
+
+If any one item in this appendix is worth confirming first, it is **A3.3** - a validation hole is
+cheap to check and cheap to close.
+
