@@ -263,6 +263,27 @@ public class LayoutGrid
 
                         text.addMouseListener(new MouseAdapter()
                         {
+                            // The name is a component of its own, stacked on top of the square, and the
+                            // keyboard's idea of what is hovered comes from the square's listener - which
+                            // gets mouseEXITED the moment the pointer moves onto the name.  So Control+V
+                            // over the platform worked and Control+V over the name did nothing, when the
+                            // name is the larger and more obvious of the two things to aim at.
+                            //
+                            // Reports the STATION rather than whichever square the text happens to sit on:
+                            // a caption may be drawn on blank space beside its platform, and pointing at a
+                            // station's name means that station either way.
+                            @Override
+                            public void mouseEntered(MouseEvent e)
+                            {
+                                ui.setHoveredDiagramTile(station.getPage(), station.getX(), station.getY());
+                            }
+
+                            @Override
+                            public void mouseExited(MouseEvent e)
+                            {
+                                ui.setHoveredDiagramTile(null, -1, -1);
+                            }
+
                             @Override
                             public void mouseClicked(MouseEvent e)
                             {
@@ -469,12 +490,21 @@ public class LayoutGrid
                 // Here because this is the only place that knows both the page and the square: a
                 // LayoutLabel is told neither, and LayoutGrid keeps no reference to the LayoutDiagram
                 // after the constructor returns.
+                // Which SQUARE this label is, told to the label itself - every label, including the
+                // ones with nothing drawn on them.
+                //
+                // Its right-click menu used to ask the main window which page was showing, which is the
+                // wrong page in every popup window; and the keyboard shortcuts ask which square the
+                // pointer is over, which a blank label could not answer at all.  A station's name is
+                // usually drawn on blank space beside the platform, so those blanks are exactly the
+                // squares somebody aims at.
+                if (ui != null)
+                {
+                    grid[x][y].setAutonomySquare(layout.getName(), x + offsetX, y + offsetY);
+                }
+
                 if (c != null && ui != null)
                 {
-                    // Which page this square is on, told to the label itself.  Its right-click menu used
-                    // to ask the main window which page was showing, which is the wrong page in every
-                    // popup window.
-                    grid[x][y].setAutonomyPage(layout.getName());
 
                     if (ui.getDiagramTileRegistry() != null)
                     {

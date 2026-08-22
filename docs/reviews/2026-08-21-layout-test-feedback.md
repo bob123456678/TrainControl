@@ -20,7 +20,7 @@ Every entry names the test it came from, so his words can be found in context.
 |---|---|---|---|
 | LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Fixed - it was the station LABEL, which resolves to no Point |
 | LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Fixed - the capture pruned by Point, not by tile |
-| LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Believed fixed with A2 - same prune; needs a re-run to confirm |
+| LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Fixed - same prune as A2; confirmed by Adam on a re-run |
 | LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Reported, not corrected - a new check names the square |
 | LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Fixed - sensors reached the view through nothing at all |
 | LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Fixed - the tab is put back rather than the culprit hunted |
@@ -35,13 +35,13 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-C4 | Boolean-operator rows in the conditions table are greyed, which reads as disabled | 3 | Fixed |
 | LT-C5 | The drag-target group is light red; it should be blue, with the selection staying red | 13 | Fixed |
 | LT-A6 | Cutting a locomotive threw its protecting signals - real ironwork moved from a setup gesture | 21 re-run | Fixed |
-| LT-A7 | Pasting worked over the platform but not over the station's name beside it | 21 re-run | Fixed |
+| LT-A7 | Pasting worked over the platform but not over the station's name | 21 re-run | Fixed - twice; see below |
 
 ## Menu work, all from tests 22 and 23
 
 | # | What | Status |
 |---|---|---|
-| LT-M1 | Track diagram deep menu only: hide Show a Station Name Here, Clear This Square, the locomotive settings item, Signal Protecting This Station, and all three locomotive entries (Add to Autonomy, Move to This Station, Remove from This Square) | Fixed |
+| LT-M1 | Track diagram deep menu only: hide Show a Station Name Here, Clear This Square, the locomotive settings item, Signal Protecting This Station, and all three locomotive entries (Add to Autonomy, Move to This Station, Remove from This Square) | Fixed, then amended - see LT-M9 |
 | LT-M2 | Home appears in both the track diagram's own menu and the deep menu - remove it from the top one | Fixed |
 | LT-M3 | Move "{loc} Is Facing..." out of the deep menu and up to the track diagram's own menu | Fixed |
 | LT-M4 | Hide "Make a One-Way Run from Here..." in the deep menu; it stays in the autonomy editor | Fixed |
@@ -49,6 +49,29 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-M6 | Move the link options out of Connections and into the menu itself | Fixed |
 | LT-M7 | Give every right-click group of three or more a semantic heading | Fixed - station, turning, arrivals, departures and links all headed |
 | LT-M8 | Selection menu: rename "Pick" to "Select", make the existing item a Deselect, and deselect automatically once a move completes | Fixed |
+| LT-M9 | Put "Add a Locomotive to Autonomy..." back into the deep menu, against LT-M1 | Fixed - it is not the duplicate the other two were |
+
+## LT-A7, and why it took two goes
+
+The first fix was aimed at the wrong thing.  A caption is usually drawn on blank space beside its
+platform, so the obvious explanation was that a blank square cannot report itself - which is true, and
+now fixed: every label is told its own coordinates rather than reading them off whatever is drawn on it,
+so a blank one answers like any other.
+
+But it was not what Adam was hitting.  His caption sits on the station icon itself, and the name there
+is painted by a JLabel of its OWN stacked on top of the square.  The square's listener is what the
+keyboard reads, and it gets mouseExited the moment the pointer crosses onto the name - so the hovered
+square went to null, and pasting had nothing to aim at.  The address overlay two hundred lines further
+down already cascades mouseEntered for exactly this reason; the caption overlay never did.
+
+It now reports the STATION rather than the square the text sits on, which covers both arrangements at
+once - on the icon or beside it, pointing at a name means that station.
+
+Both changes are kept.  The second is the defect Adam saw; the first is the same defect waiting on any
+layout where the caption sits on blank space, which is where placeCaption puts it by default.
+
+No test.  Every part of this is Swing listener wiring - which component receives an enter, and what it
+reports - and the harness runs headless with no pointer to move.  It is confirmed by hovering.
 
 ## What LT-B3 needs from Adam
 

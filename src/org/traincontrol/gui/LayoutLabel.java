@@ -185,9 +185,15 @@ public final class LayoutLabel extends JLabel
                 @Override
                 public void mouseEntered(MouseEvent e)
                 {
+                    // From the label's OWN square, not from whatever is drawn on it.
+                    //
+                    // It used to ask the component for its coordinates and report nothing at all when
+                    // there was no component - and a station's NAME is usually drawn on blank space
+                    // beside the platform, because that is where there is room for it.  So the one part
+                    // of a station big enough to aim at was the one part the keyboard could not see,
+                    // and Control+V over the name did nothing while Control+V over the sensor worked.
                     tcUI.setHoveredDiagramTile(hovering.autonomyPage,
-                        hovering.component == null ? -1 : hovering.component.getX(),
-                        hovering.component == null ? -1 : hovering.component.getY());
+                        hovering.squareX, hovering.squareY);
                 }
 
                 @Override
@@ -570,6 +576,28 @@ public final class LayoutLabel extends JLabel
     {
         this.autonomyPage = page;
     }
+
+    /**
+     * Where this label sits on its page.
+     *
+     * Told to it rather than read off the component, because a label with NO component still has a
+     * square - and those are the squares a station's name is drawn on.
+     *
+     * @param page the page
+     * @param x the column
+     * @param y the row
+     */
+    public void setAutonomySquare(String page, int x, int y)
+    {
+        this.autonomyPage = page;
+        this.squareX = x;
+        this.squareY = y;
+    }
+
+    // Where this label is, for a hover to report.  -1 until it is told, which is the state of the
+    // spacer labels at the edge of the grid - they are on no square and must report none.
+    private int squareX = -1;
+    private int squareY = -1;
     
     /**
      * A station's own menu, from the track rather than from its caption.

@@ -809,11 +809,17 @@ public class AutonomyEditorPanel extends JPanel
 
             if (isStation)
             {
+                // This one stays in the deep menu.
+                //
+                // The diagram's own menu places the locomotive selected on the KEYBOARD, which is the
+                // fast way when that is the train being worked on and no way at all otherwise.  This
+                // asks which locomotive, so it is not the same answer under different words - it is the
+                // only way to put a train on a square from the diagram without selecting it first.
+                menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
+                    () -> placeLocomotive(target, true)));
+
                 if (!menuOnly)
                 {
-                    menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
-                        () -> placeLocomotive(target, true)));
-
                     menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
                         () -> placeLocomotive(target, false)));
                 }
