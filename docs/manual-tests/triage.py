@@ -921,7 +921,9 @@ class Triage(tk.Tk):
             mark = self.state_.mark(e.tag)
 
             if mode.startswith("open - not yet"):
-                if not e.is_open or mark in ("done", "skipped"):
+                # Skipped is a marker, not an exit - Adam still wants that row in front of him, just
+                # flagged, so only a real Submit (mark == "done") drops an entry out of this view.
+                if not e.is_open or mark == "done":
                     continue
             elif mode.startswith("open - everything"):
                 if not e.is_open:
