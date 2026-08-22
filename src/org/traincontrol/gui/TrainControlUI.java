@@ -2517,6 +2517,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The two items that want a second click hand themselves to the editor instead.
             autonomyTileMenus.setOnJumpToPage(where -> openAutonomyEditor(where));
 
+            // A link's other end, from the diagram's own deep menu.  No window is being left here, so
+            // there is nothing to ask about - it opens the editor on that page, which is the only way
+            // this surface can show a square somewhere else.
+            autonomyTileMenus.setOnJumpToLink(where -> openAutonomyEditor(where));
+
             // Asked for on every use rather than held, for the same reason the editor does it: loading
             // a configuration replaces the Layout wholesale.
             autonomyTileMenus.setLayoutSource(() -> this.model.getAutoLayout());

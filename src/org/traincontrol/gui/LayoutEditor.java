@@ -1220,6 +1220,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
+            // Going to a link's other end.  Same close-and-reopen as a finding on another page, but it
+            // asks first: a finding is the window taking the user somewhere as part of showing them a
+            // result, and this is the user choosing to leave a page they were working on.
+            autonomyPanel.setOnJumpToLink(new java.util.function.Consumer<
+                org.traincontrol.automationui.TileGraph.TileKey>()
+            {
+                @Override
+                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
+                {
+                    jumpToSquare(tile);
+                }
+            });
+
             autonomyPanel.setLocomotiveNames(new java.util.function.Supplier<java.util.List<String>>()
             {
                 @Override
@@ -1612,6 +1625,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 List<LayoutLabel> destColumn = grid.getColumn(destCol);
                 List<LayoutLabel> sourceColumn = grid.getColumn(startCol);
 
+                // Which squares in the column carry track, noted BEFORE any of it is deleted
+                java.util.Set<Integer> occupied = new java.util.LinkedHashSet<>();
+
                 pauseRepaint = true;
 
                 try
@@ -1632,6 +1648,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                         if (this.lastComponent != null)
                         {
+                            occupied.add(i);
+
                             execCopy(destLabel, false);
                         }
 
@@ -1648,7 +1666,22 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     pauseRepaint = false;
                 }
-                
+
+                // And the setup follows the column.
+                //
+                // execCopy carries it for a single tile, but only on a MOVE - and this passes false,
+                // because a bulk move copies the whole line first and deletes the source line
+                // afterwards rather than tile by tile.  So a column that was moved took its track and
+                // left behind everything autonomy knew about it: the stations, the names, the lengths,
+                // the facings, the link pairings, the switched-off links.  All of it stayed on the
+                // column the track had walked away from, where the next reconcile - finding a station
+                // on a square with no sensor - threw it away for good.
+                //
+                // Adam found it as links coming unpaired, which is the half of it that shows: a pairing
+                // is mutual, so the partner is left pointing at a square that is now bare.
+                applyBulkPlan(planBulkLine(layout.getName(), true, startCol, destCol,
+                    sourceColumn.size(), occupied, isMove));
+
                 this.resetClipboard();
                 refreshGrid();
             }
@@ -1664,6 +1697,8 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 List<LayoutLabel> destinationRow = grid.getRow(destRow);
                 List<LayoutLabel> sourceRow = grid.getRow(startRow);
+
+                java.util.Set<Integer> occupied = new java.util.LinkedHashSet<>();
 
                 pauseRepaint = true;
 
@@ -1685,6 +1720,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                         if (this.lastComponent != null)
                         {
+                            occupied.add(i);
+
                             execCopy(destLabel, false);
                         }
 
@@ -1701,7 +1738,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     pauseRepaint = false;
                 }
-                
+
+                // The setup follows the row - see the column above for what was being lost.
+                applyBulkPlan(planBulkLine(layout.getName(), false, startRow, destRow,
+                    sourceRow.size(), occupied, isMove));
+
                 this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually put the original tile back on the clipboard, and specify the tool
                 refreshGrid();
             }
@@ -1719,9 +1760,113 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
+     * What a whole-column or whole-row replacement does to the setup.
+     *
+     * Two separate things, and the difference between them is the whole point:
+     *
+     *   - the squares being BUILT OVER.  The line is cleared and other tiles are written into it, so
+     *     whatever the setup said about those squares is about track that is gone.  Reconcile cannot
+     *     find these on its own: it drops setup from squares that are now EMPTY, and one of these is
+     *     not empty, it is occupied by something else.
+     *   - the squares being VACATED, when this is a move.  Their setup travels to where their track
+     *     went, exactly as it does for a single dragged tile.
+     *
+     * A copy has only the first sort.  Two squares cannot both be one station, so nothing travels -
+     * but the line being copied onto is still being built over, and letting that data sit there was
+     * how a copied column ended up carrying somebody else's station names.
+     *
+     * A function of coordinates rather than of labels, so that it can be checked without a window:
+     * see testLayoutEditorBulkEdits, which walks the combinations.
+     *
+     * @param page the page being edited
+     * @param column true for a column, false for a row
+     * @param from the line being taken
+     * @param to the line being written over
+     * @param span how many squares long the line is
+     * @param occupied indices along the source line that carry track
+     * @param move whether the source line is being emptied
+     * @return the plan, possibly empty, never null
+     */
+    public static BulkPlan planBulkLine(String page, boolean column, int from, int to, int span,
+        java.util.Set<Integer> occupied, boolean move)
+    {
+        BulkPlan plan = new BulkPlan();
+
+        if (page == null || from == to || from < 0 || to < 0 || span <= 0) return plan;
+
+        for (int i = 0; i < span; i++)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey source = column ? new org.traincontrol.automationui.TileGraph.TileKey(page, from, i) : new org.traincontrol.automationui.TileGraph.TileKey(page, i, from);
+
+            org.traincontrol.automationui.TileGraph.TileKey dest = column ? new org.traincontrol.automationui.TileGraph.TileKey(page, to, i) : new org.traincontrol.automationui.TileGraph.TileKey(page, i, to);
+
+            plan.builtOver.add(dest);
+
+            if (move && occupied != null && occupied.contains(i)) plan.moves.put(source, dest);
+        }
+
+        return plan;
+    }
+
+    /**
+     * The two halves of a bulk edit, kept apart so that each can be checked on its own.
+     *
+     * Public so that the rule can be tested without a window - see testLayoutEditorBulkEdits.  The
+     * editor is a JFrame that wants a running TrainControlUI behind it, and a rule that can only be
+     * checked by building one is a rule that does not get checked.
+     */
+    public static final class BulkPlan
+    {
+        public final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> moves = new java.util.LinkedHashMap<>();
+
+        public final java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver = new java.util.LinkedHashSet<>();
+
+        /**
+         * The squares whose setup is to be dropped: built over, and not themselves moving away.
+         *
+         * A square that is both is left out.  Its own entry is travelling, and dropping it here would
+         * throw away the thing the move exists to carry - which is the mistake this method exists to
+         * be unable to make twice.
+         *
+         * @return the squares to forget
+         */
+        public java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> forgetting()
+        {
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> out = new java.util.LinkedHashSet<>(builtOver);
+
+            out.removeAll(moves.keySet());
+
+            return out;
+        }
+    }
+
+    /**
+     * Tells the setup what the diagram just did.
+     *
+     * Forgetting comes first: a square being built over has to let go of what it was before anything
+     * arrives on it, or the arriving data lands on top of what was there and the two cannot be told
+     * apart afterwards.  A square that is BOTH built over and vacated is left out of the forgetting -
+     * its own entry is travelling, and moveTiles clears the squares it lands on itself.
+     */
+    private void applyBulkPlan(BulkPlan plan)
+    {
+        if (plan == null || (plan.moves.isEmpty() && plan.builtOver.isEmpty())) return;
+
+        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+
+        if (autonomy == null) return;
+
+        boolean any = autonomy.forgetTiles(plan.forgetting());
+
+        if (autonomy.moveTiles(plan.moves)) any = true;
+
+        if (any) rememberAutonomy(autonomy);
+    }
+
+    /**
      * Copies lastComponent on the clipboard to the location designated by destLabel
      * @param destLabel
-     * @param move 
+     * @param move
      */
     synchronized private void execCopy(LayoutLabel destLabel, boolean move)
     {        
@@ -3583,6 +3728,49 @@ public class LayoutEditor extends PositionAwareJFrame
         });
     }
     
+    /**
+     * Closes this page and opens another, at a given square.
+     *
+     * Nothing is thrown away: an edit made here has already gone into the shared session, and the
+     * window that opens is looking at the same session.  The question exists because the window
+     * DISAPPEARS - work that has not been saved is easy to forget about once the window it was done in
+     * has gone, and a page change is the moment to be reminded, not afterwards.
+     *
+     * So it asks rather than discarding, unlike confirmExit: answering yes here loses nothing.
+     *
+     * @param tile the square to open on
+     */
+    public void jumpToSquare(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (tile == null) return;
+
+        if (isAutonomyMode() && autonomyPanel != null && autonomyPanel.isDirty())
+        {
+            int result = JOptionPane.showOptionDialog(
+                this,
+                I18n.t("autosetup.ui.confirmJumpWithUnsavedEdits"),
+                I18n.t("layout.ui.dialogExitConfirmation"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                TrainControlUI.YES_NO_OPTS[0]
+            );
+
+            if (result != JOptionPane.YES_OPTION) return;
+        }
+
+        layout.setEdit(false);
+
+        dispose();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            parent.autonomyEditorClosed();
+            parent.openAutonomyEditor(tile);
+        });
+    }
+
     /**
      * If there are unsaved changes, checks with the user prior to closng the window
      */

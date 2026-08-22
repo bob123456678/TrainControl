@@ -665,7 +665,18 @@ public class TileAnnotation
             // No wash when only the shut directions are drawn.  It exists to lift thin arrows off busy
             // tile art, and with the open ones gone there is little left to lift - so all it did was
             // grey most of the layout to make a handful of red arrows very slightly crisper.
-            if (!marks.isEmpty() && !blockedOnly)
+            // Never on a paired link, which is the one tile where this wash says the opposite of what
+            // it means.
+            //
+            // Grey on this diagram means "autonomy takes no notice of this square".  A link that is
+            // paired and in use carries arrows, so it got the wash; a link switched off carries none,
+            // so it did not - and the result was that the link being USED looked faded and the one
+            // being ignored looked solid.  Exactly the wrong way round, and on the one tile type whose
+            // whole job is to be either connected or not.
+            //
+            // Nothing is lost by skipping it.  The wash exists to lift thin arrows off busy tile art,
+            // and a link's art is a single bold arrow in a box with room around it.
+            if (!marks.isEmpty() && !blockedOnly && !portal)
             {
                 java.awt.Composite before = g.getComposite();
 

@@ -25,7 +25,7 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Fixed - sensors reached the view through nothing at all |
 | LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Fixed - the tab is put back rather than the culprit hunted |
 | LT-B2 | Signal auto-detection by address does not work in conditions, only in commands | 10 | Fixed |
-| LT-B3 | A paired, in-use link is drawn greyed out as if autonomy ignored it | 19 | Open - could not reproduce by reading; needs one detail |
+| LT-B3 | A paired, in-use link is drawn greyed out as if autonomy ignored it | 19 | Fixed - Adam named it exactly: the fade is the inverse of the status |
 | LT-B4 | An unnamed station is a warning; it should be an error | 24 | Fixed - the javadoc always said blocking |
 | LT-B5 | The route editor still syncs with the Central Station on close even with no CS routes | 4 | Fixed |
 | LT-B6 | No confirmation when closing the route editor with unsaved changes | 5 | Fixed |
@@ -36,6 +36,7 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-C5 | The drag-target group is light red; it should be blue, with the selection staying red | 13 | Fixed |
 | LT-A6 | Cutting a locomotive threw its protecting signals - real ironwork moved from a setup gesture | 21 re-run | Fixed |
 | LT-A7 | Pasting worked over the platform but not over the station's name | 21 re-run | Fixed - twice; see below |
+| LT-A8 | Cut and paste a COLUMN and the links come unpaired - and stations, names, lengths and facings go with them | 25 | Fixed - a bulk edit told the setup nothing at all |
 
 ## Menu work, all from tests 22 and 23
 
@@ -50,6 +51,8 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-M7 | Give every right-click group of three or more a semantic heading | Fixed - station, turning, arrivals, departures and links all headed |
 | LT-M8 | Selection menu: rename "Pick" to "Select", make the existing item a Deselect, and deselect automatically once a move completes | Fixed |
 | LT-M9 | Put "Add a Locomotive to Autonomy..." back into the deep menu, against LT-M1 | Fixed - it is not the duplicate the other two were |
+| LT-M10 | A rule under the link group, so it reads apart from the items about the square | Fixed |
+| LT-M11 | Go to a link's other end from the menu, asking first when there is unsaved work | Fixed - see the note on what "save/exit checks" was taken to mean |
 
 ## LT-A7, and why it took two goes
 
@@ -73,7 +76,82 @@ layout where the caption sits on blank space, which is where placeCaption puts i
 No test.  Every part of this is Swing listener wiring - which component receives an enter, and what it
 reports - and the harness runs headless with no pointer to move.  It is confirmed by hovering.
 
-## What LT-B3 needs from Adam
+## LT-B3: the fade was the inverse of the status, and here is why
+
+Adam's own words were the diagnosis.  A link that is paired and in use was drawn faded; a link switched
+off was drawn solid.
+
+Neither is a decision anything made deliberately.  The wash comes from a legibility rule: before thin
+direction arrows are drawn on a square, the tile art underneath is knocked back so the arrows read
+against it.  A link in use carries arrows - the two-way door - so it got the wash.  A link switched off
+carries none, so it did not.  The appearance therefore tracked "does this tile have arrows on it",
+which on every other tile type is unrelated to status and on this one is exactly backwards from it.
+
+Underneath that sat a second fault, which is why switching a link off appeared to do nothing at all.
+annotationFor works out an `ignored` flag, refines it twice - once for a switched-off link, once for the
+square-greying while a signal is being picked - and then handed the drawing `isDimmed(tile)`, which
+computes the whole thing again from scratch and so threw both refinements away.  A disabled link never
+greyed, and the signal-picking gesture, whose entire point is that everything which is not a signal goes
+grey, greyed nothing.  Both now come from the answer the method actually worked out.
+
+The three states now read in order: switched off is greyed and hatched, paired but unset is knocked
+back, in use is solid with its door arrows on it.
+
+## LT-A8: a bulk column or row edit told the setup nothing
+
+The single-tile path carries a square's setup to wherever its track went - that was LT-A2's fix - but
+only on a MOVE.  A whole-column or whole-row edit is not built out of single-tile moves: it copies the
+line into place with the move flag off and deletes the source line afterwards.  So the call that carries
+the setup was never made, for any square in the line.
+
+Everything stayed on the column the track had walked away from: the stations, the names, the lengths,
+the facings, the arrival restrictions, the link pairings and the switched-off links.  Reconcile then
+found stations on squares with no sensors and dropped them for good.
+
+Links are what shows first, which is why Adam saw it as links unpairing: a pairing is two entries, one
+at each end, so moving one end leaves the FAR end pointing at a square that is now bare.  The pair looks
+intact from the page you are on and is broken from the page you are not.
+
+The other half was never handled at all: the line being written ONTO.  Its tiles are deleted and other
+tiles put in their place, so what the setup says about those squares describes track that is gone - and
+reconcile cannot catch this one, because it drops setup from squares that are EMPTY and these are
+occupied, just by something else.  A copied column arrived carrying the station names of the column it
+landed on.
+
+Both halves now go through one rule, `planBulkLine`, which says what a line replacement moves and what it
+forgets.  The four shift operations - insert a row, insert a column, and their two mirrors - were already
+doing this correctly and are untouched.
+
+### The test, and what it does not cover
+
+`test/testLayoutEditorBulkEdits.java` - ten tests over the rule and the store: what travels, what is
+forgotten, a copy versus a move, a row versus a column, the far end of a pairing, captions that move and
+captions that merely point, empty squares on the line, and a square that is both vacated and landed on.
+Eight of the ten fail against a build with the rule removed.
+
+What it does not cover is the one line in `executeTool` that calls the rule - which is the shape this bug
+actually took, since the rule was not wrong, it was never consulted.  Covering that means driving a real
+`LayoutEditor`, which is a JFrame that wants a running `TrainControlUI`, the model, and a layout folder
+behind it; the harness can run tests with a display, so it is possible, but it would also point the
+session at whatever layout the preferences name, which is Adam's own.  Worth doing on a temporary copy of
+the layout if this class of bug shows up again.
+
+## LT-M11: what "must trigger save/exit checks" was taken to mean
+
+Going to a link's other end closes this window and opens it on that page - the editor is built around one
+diagram, so there is no way to change pages in place.  It now asks before doing that, when there is
+unsaved work.
+
+It asks rather than discarding.  The existing exit question offers to throw the edits away, and that
+would be wrong here: pairing a link is itself an unsaved edit, so answering yes would discard the very
+pairing being followed, and land on a link that is no longer paired.  Nothing is lost by the jump - the
+edits live in the shared session, which is what the window that opens is looking at - so the new question
+says so and answering yes simply goes.
+
+If the intent was the stronger thing - offer to SAVE first, or refuse to leave until saved - say so and
+it is a small change.
+
+## What LT-B3 needed from Adam
 
 A link that is paired and in use should not be shaded, and reading the code says it is not: shading is
 `isDimmed`, which is a component plus `isIgnored`, and `isIgnored` is false for a LINK or TUNNEL unless

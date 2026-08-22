@@ -1182,6 +1182,31 @@ public class AutonomySession
     }
 
     /**
+     * Squares whose track has been replaced by other track.
+     *
+     * What was written about a square describes the tile that WAS there - a station is a particular
+     * sensor, a length is a particular piece of rail - so when a different tile is written over it,
+     * the setup is describing something that is gone.  Reconcile cannot catch this on its own: it
+     * drops setup from squares that are now EMPTY, and one of these is not empty, it is occupied by
+     * something else.
+     *
+     * @param tiles the squares built over
+     * @return true when there was anything to forget
+     */
+    public boolean forgetTiles(java.util.Collection<TileKey> tiles)
+    {
+        if (tiles == null || tiles.isEmpty()) return false;
+
+        store.forgetTiles(tiles);
+
+        touched();
+
+        rebuild();
+
+        return true;
+    }
+
+    /**
      * One tile, for the single-tile drag.
      */
     public boolean moveTile(TileKey from, TileKey to)

@@ -1215,11 +1215,31 @@ public class AutonomyEditorPanel extends JPanel
 
             menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
-            if (session.getStore().getPortalPartner(target) != null)
+            final TileKey partner = session.getStore().getPortalPartner(target);
+
+            if (partner != null)
             {
+                // The other end.
+                //
+                // A pairing is the one thing on this menu that is ABOUT somewhere else, and until now
+                // the only way to see where was to open the pairing list and read the coordinates off
+                // the selected row.  The two ends of a link are usually on different pages, which is
+                // the entire reason links exist, so "where does this one go" was a question the
+                // drawing could not answer and neither could the menu.
+                menu.add(item(I18n.f("autosetup.ui.menuGoToLinkPartner", linkLabel(partner)),
+                    () -> goToLink(partner)));
+
                 menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () -> session.unpairPortal(target)));
             }
+
+            // And a rule under the group.
+            //
+            // Everything above this line is about the link as a link - whether autonomy uses it, what
+            // it is joined to, where that is.  Everything below is about the SQUARE, the same items any
+            // other square gets.  Without the rule the two ran together and the link items read as the
+            // first four of a list of nine.
+            menu.addSeparator();
         }
 
         // Naming a link, on the menu itself rather than inside Connections.
@@ -1804,6 +1824,56 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return facingMenu;
+    }
+
+    /**
+     * Goes to a link's other end.
+     *
+     * On this page it is a scroll and a flash; anywhere else the window has to be reopened on that
+     * page, which is what the jump hook is for - the editor is built around one diagram.
+     *
+     * The deep menu always jumps: it is opened from the track diagram, where this panel is a menu
+     * builder with no page of its own, so "is it on this page" has no answer here.
+     */
+    private void goToLink(TileKey partner)
+    {
+        if (partner == null) return;
+
+        if (!menuOnly && onThisPage(partner))
+        {
+            if (onReveal != null) onReveal.accept(partner);
+
+            return;
+        }
+
+        if (onJumpToLink != null) onJumpToLink.accept(partner);
+        else if (onJumpToPage != null) onJumpToPage.accept(partner);
+    }
+
+    /**
+     * What to call a link in a menu: its name, or its square when it has none.
+     */
+    private String linkLabel(TileKey tile)
+    {
+        if (tile == null) return "";
+
+        String named = session.getStore().getLinkName(tile);
+
+        return named == null || named.trim().isEmpty() ? tile.toString() : named;
+    }
+
+    /**
+     * Leaving this page to look at a link's other end.
+     *
+     * Separate from onJumpToPage, which a finding uses: that one is the window taking the user
+     * somewhere as part of showing them a result, while this is the user choosing to leave, and the
+     * editor asks before it closes on unsaved work.
+     */
+    private java.util.function.Consumer<TileKey> onJumpToLink;
+
+    public void setOnJumpToLink(java.util.function.Consumer<TileKey> action)
+    {
+        this.onJumpToLink = action;
     }
 
     public void setMenuOnly(boolean menuOnly)
@@ -3767,8 +3837,19 @@ public class AutonomyEditorPanel extends JPanel
         // In the arrivals view every station shows every side it has, so the setting can be READ -
         // an unrestricted station drawing nothing is right on the running diagram and useless in the
         // one place somebody has come to look at exactly this.
+        // Shaded from the SAME answer everything else here was decided from.
+        //
+        // It used to call isDimmed, which worked isIgnored out again from scratch - and so threw away
+        // both of the refinements made above.  A link switched OFF therefore never greyed, and while a
+        // signal was being picked nothing greyed at all, which is the whole of that gesture.
+        //
+        // The empty-square rule is the one part of isDimmed worth keeping: shading is a message about
+        // a DRAWING - "autonomy cannot use this piece of track" - and an empty square is not a piece of
+        // track.  Shading them turned the gaps between the lines into a field of grey boxes.
+        boolean shaded = ignored && componentAt(tile) != null;
+
         return new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
-            badgeFor(tile), isDimmed(tile), isCurved(tile), isPairedPortal(tile),
+            badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directions.getSelectedIndex() == 1,
             ignored ? null
                 : session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS))
@@ -3968,19 +4049,6 @@ public class AutonomyEditorPanel extends JPanel
 
         return org.traincontrol.automationui.TilePorts.isDisqualified(component.getType())
             || org.traincontrol.automationui.TilePorts.isTransparent(component.getType());
-    }
-
-    /**
-     * Whether the square is drawn shaded.
-     *
-     * Narrower than isIgnored, and deliberately so: shading is a message about a DRAWING - "autonomy
-     * cannot use this piece of track" - and an empty square is not a piece of track.  Shading them
-     * turned the gaps between lines into a field of grey boxes that read as broken rather than blank.
-     * They are still not configurable; they just have nothing to say.
-     */
-    private boolean isDimmed(TileKey tile)
-    {
-        return componentAt(tile) != null && isIgnored(tile);
     }
 
     /**
