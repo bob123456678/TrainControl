@@ -37,6 +37,7 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-A6 | Cutting a locomotive threw its protecting signals - real ironwork moved from a setup gesture | 21 re-run | Fixed |
 | LT-A7 | Pasting worked over the platform but not over the station's name | 21 re-run | Fixed - twice; see below |
 | LT-A8 | Cut and paste a COLUMN and the links come unpaired - and stations, names, lengths and facings go with them | 25 | Fixed - a bulk edit told the setup nothing at all |
+| LT-A9 | A sensor nudged DOWN one loses its station name; down one and right one keeps it | 26 | Fixed - it landed on its own label |
 
 ## Menu work, all from tests 22 and 23
 
@@ -135,6 +136,51 @@ actually took, since the rule was not wrong, it was never consulted.  Covering t
 behind it; the harness can run tests with a display, so it is possible, but it would also point the
 session at whatever layout the preferences name, which is Adam's own.  Worth doing on a temporary copy of
 the layout if this class of bug shows up again.
+
+## LT-A9: why one direction and not the others, and why the earlier tests missed it
+
+A platform's name is written on a separate square beside it, and "beside" is usually the square below,
+because that is where there is room.  So nudging the platform down one square lands it exactly on its own
+label.  Everything on a square being built over is dropped - correctly, it described track that is gone -
+and a caption went with the rest.
+
+A caption is the one thing stored per square that is not a fact ABOUT that square: it is a reference to
+another square.  When the thing it refers to is what has just built over it, the reference is not stale.
+It was the only copy of a name that the same gesture was carrying to safety.
+
+It is kept where it is rather than moved somewhere clever, because a caption may sit on its own station's
+square - that is how a name comes to be drawn over a platform instead of beside it.
+
+### Why the tests that existed did not catch it
+
+Both halves of the rule were already tested, and each fixture was built so that the other half did not
+apply:
+
+  - `testAReferenceToAMovedSquareIsRepointed` uses a platform at 14,3 with its label at 14,4 - the exact
+    arrangement - and then moves the platform SIDEWAYS, to 15,3.  One square in a different direction and
+    it would have failed the day it was written.
+  - `testASquareLandedOnLetsGoOfWhatItKnew` covers the landing rule, but what gets landed on is a
+    station, never a label.
+  - `testASquareThatIsBothLandedOnAndMovingIsNotForgotten` covers sparing a square that is on its way
+    somewhere - its own setup, not a reference pointing at it.
+
+Which is the general shape: two rules, each with a test, meeting in a case neither fixture reached.  The
+new tests are a matrix rather than a case for that reason - the same platform and label moved to every
+neighbouring square, from every side the label might be on - because a rule that holds for seven of the
+eight neighbours is exactly what was shipped.
+
+### And "shouldn't it all be happening in one place?"
+
+It was, and it had just stopped being.  Every editor path - single drag, group drag, the four shifts, and
+now the bulk line - goes through `AutonomyCompanionStore.moveTiles`, which works out which squares are
+being landed on and lets go of them itself.  But a bulk edit also clears squares that are NOT the target
+of any move, so LT-A8 added a second call beside it, and the caller then had to pass the moving set by
+hand so that the forgetting would spare the arrivals.  A rule restated at a call site is a rule that will
+eventually be restated wrongly - which is how the last three of these started.
+
+So it is one call again: `moveTiles(moves, builtOver)` takes both halves, derives the landing set itself,
+and does them in the only order that works.  `forgetTiles` is that call with no moves.  There is now no
+way for a caller to get the order or the sparing wrong, because neither is theirs to decide.
 
 ## LT-M11: what "must trigger save/exit checks" was taken to mean
 
