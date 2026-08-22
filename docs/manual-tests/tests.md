@@ -91,7 +91,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
 | [MT-061](#mt-061) | 2026-08-22 | Graceful stop timing | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
-| [MT-063](#mt-063) | 2026-08-22 | A second copy of TrainControl says so | needs test | AR-16 |
+| [MT-063](#mt-063) | 2026-08-22 | A second copy of TrainControl says so | fixed unvalidated | AR-16 |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
 
 Everything else - 14 of 88 - is **fixed validated** and needs nothing from you unless the
@@ -1769,7 +1769,7 @@ which is the gap that produced LT-A8 and FR-A1 - see MT-044.
 
 ### MT-063 - 2026-08-22 - A second copy of TrainControl says so
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated  
 **From:** AR-16  
 **Written:** 2026-08-22
 
@@ -1778,7 +1778,10 @@ only one copy can run at a time, rather than "Error occurred: Address already in
 The detailed error should still be in the console and the stack trace should still print.
 
 #### Comments
+Works OK. But it currently says "close the other window". There could also be a test process or CLI version running, so just say window or background process.
 
-It currently says "close the other window". There could also be a test process or CLI version running, so just say window or background process.
+**Claude, 2026-08-22.** Reworded: "Close the other window - or the background process, if you have one
+running from a script or a test - and try again." Left as **fixed unvalidated** rather than validated,
+because the sentence you read is not the sentence that is there now.
 
 ---
