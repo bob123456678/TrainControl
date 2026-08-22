@@ -810,6 +810,11 @@ public class testAutoLayout
         layout.createPoint("SIG_east", true, fb.getName());
         layout.createPoint("SIG_west", true, fb.getName());
 
+        // Signals are only thrown while trains are being RUN - see refreshProtectingSignal.  Placing
+        // one by hand is how a railway is arranged before a run, and driving real ironwork from that
+        // is what the guard exists to stop.
+        running(layout);
+
         for (String name : new String[]{"SIG_east", "SIG_west"})
         {
             layout.getPoint(name).setBlock("main:5,5");
@@ -863,6 +868,8 @@ public class testAutoLayout
         MarklinAccessory south = borrowedAccessory(1);
 
         layout.createPoint("BOTH_ENDS", true, fb.getName());
+
+        running(layout);
 
         layout.getPoint("BOTH_ENDS").setProtectingSignals(
             Arrays.asList(north.getName(), south.getName()));
@@ -930,6 +937,79 @@ public class testAutoLayout
     }
 
     /**
+     * Arranging the railway does not throw its signals.
+     *
+     * Every occupancy change refreshes the protecting signals, and placing a train by hand is an
+     * occupancy change - so setting a layout up before a run drove real ironwork: cutting a locomotive
+     * off a platform with Control+X threw its signals on the spot.  Adam found it doing exactly that.
+     * Nobody asked for the railway to be commanded while they were still deciding what it should look
+     * like.
+     *
+     * The wait for the run to start is not a loss of protection: the memo of what each signal was last
+     * told is cleared when a run begins, so the first arrival commands them for real.
+     */
+    @Test
+    public void testPlacingATrainByHandDoesNotThrowItsSignals() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback fb = model.newFeedback(106, null);
+        model.setFeedbackState(fb.getName(), false);
+
+        MarklinAccessory signal = borrowedAccessory(0);
+
+        layout.createPoint("ARRANGING", true, fb.getName());
+        layout.getPoint("ARRANGING").setProtectingSignal(signal.getName());
+
+        // Whatever it happens to be showing now is what it must still be showing afterwards
+        boolean before = signal.isRed();
+
+        MarklinLocomotive train = model.getLocByName(model.getLocList().get(0));
+
+        // Nothing is running: this is somebody setting their railway up
+        layout.getPoint("ARRANGING").setLocomotive(train);
+
+        assertEquals(signal.isRed(), before,
+            "putting a train on a platform by hand threw its protecting signal.  The railway was "
+            + "being arranged, not run, and real ironwork moved");
+
+        layout.getPoint("ARRANGING").setLocomotive(null);
+
+        assertEquals(signal.isRed(), before, "and taking it off again threw it back");
+
+        // A train put on the platform while nothing was running, and left there
+        layout.getPoint("ARRANGING").setLocomotive(train);
+
+        assertEquals(signal.isRed(), before, "still arranging, still not throwing anything");
+
+        // And now the run begins.  No occupancy CHANGE is coming for this train - it was already
+        // standing there - so the signal is only protected if starting a run asks every signal again.
+        running(layout);
+        layout.refreshAllProtectingSignals();
+
+        assertTrue(signal.isRed(),
+            "the run started with a train already standing at the platform and its signal stayed "
+            + "clear.  Nothing calls the refresh for a square whose occupancy has not changed, so "
+            + "forgetting the memo is not enough - every signal has to be asked again");
+    }
+
+    /**
+     * Makes a layout report itself as running, without dispatching anything.
+     *
+     * isRunning() is true while any locomotive is active, so an entry in that map is enough - and it
+     * is the same map executePath writes, under the same lock.  Calling runLocomotives would set real
+     * trains off.
+     */
+    private static void running(Layout layout)
+    {
+        synchronized (layout.getActiveLocomotives())
+        {
+            layout.getActiveLocomotives().put(
+                model.getLocByName(model.getLocList().get(0)), new java.util.ArrayList<>());
+        }
+    }
+
+    /**
      * One signal, two platforms: red while EITHER is occupied.
      *
      * The pairing menu lets two stations pick the same signal, and a signal can only show one aspect.
@@ -950,6 +1030,8 @@ public class testAutoLayout
 
         layout.createPoint("SHARE_A", true, one.getName());
         layout.createPoint("SHARE_B", true, two.getName());
+
+        running(layout);
 
         layout.getPoint("SHARE_A").setProtectingSignal(signal.getName());
         layout.getPoint("SHARE_B").setProtectingSignal(signal.getName());

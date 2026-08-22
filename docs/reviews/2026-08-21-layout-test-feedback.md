@@ -19,8 +19,8 @@ Every entry names the test it came from, so his words can be found in context.
 | # | What | From | Status |
 |---|---|---|---|
 | LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Fixed - it was the station LABEL, which resolves to no Point |
-| LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Open |
-| LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Open |
+| LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Fixed - the capture pruned by Point, not by tile |
+| LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Believed fixed with A2 - same prune; needs a re-run to confirm |
 | LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Open |
 | LT-A5 | Feedback events do not capture into CONDITIONS; switches do | 10 | Open |
 | LT-B1 | Editing a route teleports the user to the Track Diagram tab after the sync | 6 | Open |

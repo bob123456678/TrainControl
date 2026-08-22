@@ -2962,6 +2962,74 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A square that stops being a Point keeps its locomotive.
+     *
+     * A sensor reduces to a Point only where track connects it to something, so nudging a station one
+     * square - far enough that it no longer joins the run either side of it - leaves a square that is
+     * perfectly present on the diagram and is not a Point.  The capture judged its prune on Points and
+     * deleted everything about that square: the locomotive standing there, its facing, its markings.
+     *
+     * Adam found it by moving a tile and watching the train disappear, and asked for the opposite:
+     * keep the placement, let the build refuse it, and have it come back when the track is joined up
+     * again.  A disconnected station is a mistake somebody is in the middle of making, not an
+     * instruction to forget the train.
+     *
+     * A square whose TILE is gone is a different thing and still keeps nothing - see the point named
+     * "a point whose track was deleted" in the capture test above.
+     */
+    @Test
+    public void testASquareThatStopsBeingAPointKeepsItsLocomotive() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+        session.initialize("Default");
+
+        // 1,1 and 4,1 are the sensors, and reduce to Points.  2,1 is a straight: a square that is
+        // certainly ON the page and just as certainly not a Point, which is the state a sensor lands in
+        // when somebody moves it out of the run it was part of.
+        TileKey adrift = new TileKey("main", 2, 1);
+
+        session.setStation(new TileKey("main", 1, 1), true);
+
+        // Put a train on the square that is not a Point, the way a capture would after somebody moved
+        // the tile out of the run
+        org.json.JSONObject running = new org.json.JSONObject();
+
+        running.put("minDelay", 1);
+        running.put("maxDelay", 2);
+        running.put("edges", new org.json.JSONArray());
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        running.put("points", points);
+
+        session.captureFromLayout(running.toString());
+
+        org.json.JSONObject config = session.getStore().getConfiguration("Default");
+
+        // Written straight into the configuration, which is what a placement on a square that has no
+        // Point looks like: nothing in the running layout can speak for it
+        org.json.JSONObject standing = new org.json.JSONObject();
+
+        standing.put("loc", new org.json.JSONObject().put("name", "BR 218"));
+
+        config.getJSONObject("points").put(adrift.toString(), standing);
+
+        // Autonomy runs, and reports what it found
+        session.captureFromLayout(running.toString());
+
+        org.json.JSONObject after = session.getStore()
+            .getConfiguration("Default").getJSONObject("points");
+
+        assertTrue(after.has(adrift.toString()),
+            "the square is still on the diagram and its locomotive was deleted anyway.  Moving a tile "
+            + "out of a run is a mistake somebody is in the middle of making, not an instruction to "
+            + "forget the train standing on it");
+
+        assertEquals(after.getJSONObject(adrift.toString())
+            .getJSONObject("loc").getString("name"), "BR 218");
+    }
+
+    /**
      * A station may be guarded by more than one signal, and every one of them survives the file.
      *
      * A platform reachable from two directions needs a signal on each approach, and the setup held one

@@ -2293,13 +2293,29 @@ public class AutonomySession
             existing.put(id, before);
         }
 
-        // A point whose TRACK is gone keeps nothing.  Judged against the squares that are still Points,
-        // not against the ones this capture had something to say about: a square marked "trains may turn
-        // round here" and nothing else carries no operational data at all, so keying the prune on what
-        // was captured deleted the marking the first time autonomy ran.
-        Set<String> stillPoints = new LinkedHashSet<>();
+        // A square whose TILE is gone keeps nothing.  A square that is merely not a Point keeps
+        // everything.
+        //
+        // This used to be judged against the squares that are still POINTS, and those are not the same
+        // set: a sensor reduces to a Point only where track connects it to something.  Nudge a station
+        // one square so that it no longer joins the run either side of it and it stops being a Point
+        // while remaining perfectly present on the diagram - and the next capture deleted its
+        // locomotive, its facing and its markings.  Adam found it doing exactly that, and asked for the
+        // opposite: keep the placement, let the build refuse it, and have it come back when the track
+        // is joined up again.
+        //
+        // Which is what this does now.  A disconnected station is a mistake somebody is in the middle
+        // of making, not an instruction to forget the train that was standing there; the check reports
+        // it, and reconnecting the track brings it back with nothing to re-enter.  Deleting the tile is
+        // still deleting it - the tile is then not in the graph either.
+        //
+        // (Judged against squares rather than against what this capture had something to say about,
+        // which is the older reasoning and still holds: a square marked "trains may turn round here"
+        // and nothing else carries no operational data, so keying the prune on what was captured
+        // deleted the marking the first time autonomy ran.)
+        Set<String> stillThere = new LinkedHashSet<>();
 
-        for (TileKey tile : tilesByName.values()) stillPoints.add(tile.toString());
+        for (TileKey tile : graph.getTiles().keySet()) stillThere.add(tile.toString());
 
         // Which pages this reduction was even allowed to look at.  A page left out of autonomy has no
         // Points in the reduction, so judging its squares by that reduction condemns every one of them -
@@ -2321,7 +2337,7 @@ public class AutonomySession
 
         for (String id : existing.keySet())
         {
-            if (stillPoints.contains(id)) continue;
+            if (stillThere.contains(id)) continue;
 
             TileKey tile = AutonomyCompanionStore.parseTileKey(id);
 
