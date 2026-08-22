@@ -15,11 +15,13 @@ markdown file and a live railway is where results get lost.
 
 What it writes, and where:
 
-  A test result            appended under that entry's "#### Comments" in tests.md, dated, signed,
-                           and stamped with the build it was run against.
-  A bug you noticed        an OB-### item in bug-reports.md, cross-referenced from the test's
-                           comments if it came from one.
-  A feature request        an OB-### item in feature-requests.md, the inbox that already existed.
+  A test result             appended under that entry's "#### Comments" in tests.md, dated, signed,
+                            and stamped with the build it was run against.
+  A bug or feature request  an OB-### item in issues.md - one inbox for both, told apart by a Kind
+                            field - cross-referenced from the test's comments if it came from one.
+
+It also has a query API: run it with an argument (stats, tests, test TAG, issues, verify-ledger) and
+it prints JSON to stdout and exits, no window involved.  See --help.
 
 What it deliberately does NOT write: the **Disposition** line, and the ledger.  Rule 4 in README.md
 says dispositions are Claude's to set and only Claude's, and that rule is the reason the file is
@@ -59,8 +61,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
 
 TESTS_MD = os.path.join(HERE, "tests.md")
-FEATURES_MD = os.path.join(HERE, "feature-requests.md")
-BUGS_MD = os.path.join(HERE, "bug-reports.md")
+ISSUES_MD = os.path.join(HERE, "issues.md")
 README_MD = os.path.join(HERE, "README.md")
 
 BACKUP_DIR = os.path.join(HERE, ".triage-backups")
@@ -286,11 +287,11 @@ class TestsDoc(object):
 
 
 def next_observation_number():
-    """The next OB-### across both inboxes, so the two never collide."""
+    """The next OB-### across the issue inbox and tests.md, so a tag is never reused."""
 
     highest = 0
 
-    for path in (BUGS_MD, FEATURES_MD, TESTS_MD):
+    for path in (ISSUES_MD, TESTS_MD):
         if not os.path.exists(path):
             continue
 
@@ -332,45 +333,147 @@ def append_to_inbox(path, block):
     write_text(path, text[:body_from] + section + text[end:], crlf)
 
 
-BUGS_SKELETON = u"""# Bug reports
+# --------------------------------------------------------------------------------------------
+# issues.md, parsed - the pending Inbox and the historical receipt table, both machine-readable
+# --------------------------------------------------------------------------------------------
 
-Adam writes here - usually through [triage.py](triage.py), sometimes by hand. Claude reads here,
-turns each item into a finding in `docs/reviews/` under the round's prefix, opens an `MT-###` entry
-in [tests.md](tests.md) to cover it, and clears this file back to empty.
-
-This is the bug half of the inbox that [feature-requests.md](feature-requests.md) is the feature
-half of, and it works exactly the same way. The split is only so that "something is broken" and
-"I would like something new" do not have to be sorted out later from one pile.
-
-**Filing is not asking for it to be fixed.** Filing puts it on the list; asking gets it worked. The
-one exception is your own judgement - say a bug is urgent in its text and it will be treated that
-way.
-
-Items keep their `OB-###` reference when they are picked up, so a bug can be traced from the test
-that turned it up, through the finding that fixed it, to the test written to cover it.
-
----
-
-## Inbox
-
-*(empty)*
-
----
-
-## What has been picked up
-
-Newest first. This is only a receipt - once picked up, the item lives in `tests.md` under its own
-`MT-###` tag, and that is where its state and its comments are.
-
-| Filed | Ref | Raised from | What | Became |
-|---|---|---|---|---|
-"""
+ISSUE_ITEM_RE = re.compile(
+    r'^### (OB-\d+) - (\d{4}-\d{2}-\d{2}) - (.*)$', re.M)
 
 
-def ensure_bugs_file():
-    if not os.path.exists(BUGS_MD):
-        with io.open(BUGS_MD, "wb") as fh:
-            fh.write(BUGS_SKELETON.encode("utf-8"))
+class IssueItem(object):
+    """One structured OB-### entry sitting in the Inbox, not yet picked up."""
+
+    def __init__(self, ref, filed_date, summary, block):
+        self.ref = ref
+        self.filed = filed_date
+        self.summary = summary.strip()
+        self.kind = self._field(block, "Kind") or "?"
+        self.raised_from = self._field(block, "Raised from") or "-"
+        self.filed_at = self._field(block, "Filed") or filed_date
+        self.build = self._field(block, "Build") or "-"
+        self.detail = self._detail(block)
+
+    @staticmethod
+    def _field(block, name):
+        m = re.search(FIELD_RE % name, block, re.M)
+        return m.group(1).strip() if m else None
+
+    @staticmethod
+    def _detail(block):
+        marker = "**Build:**"
+        at = block.find(marker)
+
+        if at < 0:
+            return ""
+
+        rest = block[at:]
+        nl = rest.find("\n")
+
+        return rest[nl:].strip() if nl >= 0 else ""
+
+    def as_dict(self):
+        return {
+            "ref": self.ref,
+            "filed": self.filed,
+            "kind": self.kind,
+            "summary": self.summary,
+            "raised_from": self.raised_from,
+            "build": self.build,
+            "detail": self.detail,
+        }
+
+
+class IssuesDoc(object):
+    """issues.md: the pending Inbox (structured items, plus whatever does not parse) and the
+    receipt table of items already picked up into tests.md.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.load()
+
+    def load(self):
+        self.text, self.crlf = read_text(self.path)
+
+        self.pending, self.freeform = self._parse_inbox()
+        self.picked = self._parse_picked()
+
+    def _inbox_span(self):
+        start = self.text.find("\n## Inbox")
+
+        if start < 0:
+            return None
+
+        body_from = self.text.index("\n", start + 1)
+        end = self.text.find("\n---", body_from)
+
+        if end < 0:
+            end = len(self.text)
+
+        return body_from, end
+
+    def _parse_inbox(self):
+        span = self._inbox_span()
+
+        if not span:
+            return [], ""
+
+        section = self.text[span[0]:span[1]]
+
+        marks = list(ISSUE_ITEM_RE.finditer(section))
+
+        items = []
+
+        for i, m in enumerate(marks):
+            block_end = marks[i + 1].start() if i + 1 < len(marks) else len(section)
+            block = section[m.start():block_end]
+
+            items.append(IssueItem(m.group(1), m.group(2), m.group(3), block))
+
+        # Whatever is left once every structured item is cut out - free-hand notes Adam dropped
+        # straight into the Inbox, which follow no format on purpose (see README.md).  Never
+        # discarded, only set aside, so an API caller sees it exists without having to parse it.
+        leftover = section
+
+        for m in reversed(marks):
+            block_end = leftover.find("\n### OB-", m.start() + 1)
+
+            if block_end < 0:
+                block_end = len(leftover)
+
+            leftover = leftover[:m.start()] + leftover[block_end:]
+
+        leftover = leftover.replace(INBOX_EMPTY, "").strip()
+
+        return items, leftover
+
+    def _parse_picked(self):
+        marker = "## What has been picked up"
+        at = self.text.find(marker)
+
+        if at < 0:
+            return []
+
+        rows = []
+
+        for line in self.text[at:].splitlines():
+            line = line.strip()
+
+            if not line.startswith("|") or not line.endswith("|"):
+                continue
+
+            cells = [c.strip() for c in line.strip("|").split("|")]
+
+            if not cells or set("".join(cells)) <= set("-: "):
+                continue
+
+            if cells and cells[0].lower() == "filed":
+                continue
+
+            rows.append(cells)
+
+        return rows
 
 
 # --------------------------------------------------------------------------------------------
@@ -570,8 +673,6 @@ class Triage(tk.Tk):
 
         self.title("TrainControl - manual test triage")
 
-        ensure_bugs_file()
-
         self.state_ = State()
         self.doc = TestsDoc(TESTS_MD)
         self.build = git_build()
@@ -595,6 +696,7 @@ class Triage(tk.Tk):
         self.bind("<Control-r>", lambda e: self.reload())
         self.bind("<Control-Return>", lambda e: self.submit())
         self.bind("<Control-l>", lambda e: self.launch())
+        self.bind("<Control-n>", lambda e: self.free_observation())
 
         self.after(20000, self._autosave)
 
@@ -634,8 +736,7 @@ class Triage(tk.Tk):
         f.add_command(label="Reload from disk\tCtrl+R", command=self.reload)
         f.add_separator()
         f.add_command(label="Open tests.md", command=lambda: self._open(TESTS_MD))
-        f.add_command(label="Open bug-reports.md", command=lambda: self._open(BUGS_MD))
-        f.add_command(label="Open feature-requests.md", command=lambda: self._open(FEATURES_MD))
+        f.add_command(label="Open issues.md", command=lambda: self._open(ISSUES_MD))
         f.add_command(label="Open the backups folder", command=lambda: self._open(BACKUP_DIR))
         f.add_separator()
         f.add_command(label="Quit", command=self._on_close)
@@ -645,7 +746,7 @@ class Triage(tk.Tk):
         t.add_command(label="Launch TrainControl (simulate + debug)\tCtrl+L", command=self.launch)
         t.add_command(label="Show TrainControl output", command=self.show_output)
         t.add_separator()
-        t.add_command(label="File an observation not tied to a test", command=self.free_observation)
+        t.add_command(label="New issue…\tCtrl+N", command=self.free_observation)
         t.add_separator()
         t.add_command(label="Clear this session's marks", command=self.clear_marks)
         bar.add_cascade(label="Tools", menu=t)
@@ -668,7 +769,8 @@ class Triage(tk.Tk):
 
         ttk.Button(bar, text="Output\u2026", command=self.show_output).pack(side=tk.LEFT, padx=(8, 0))
 
-        ttk.Button(bar, text="Observation\u2026", command=self.free_observation).pack(side=tk.RIGHT)
+        ttk.Button(bar, text="New issue\u2026", style="Big.TButton",
+                   command=self.free_observation).pack(side=tk.RIGHT)
 
         ttk.Label(bar, text="Show:").pack(side=tk.RIGHT, padx=(12, 4))
 
@@ -982,7 +1084,7 @@ class Triage(tk.Tk):
             self._stash_draft()
 
     def free_observation(self):
-        """Something you noticed that no test asked about.  Filed on its own."""
+        """A new issue - bug or feature request - that has nothing to do with the entry on screen."""
 
         got = ObservationDialog(self, "bug", standalone=True).result
 
@@ -993,9 +1095,7 @@ class Triage(tk.Tk):
 
         self._file_observation(got, number, None)
 
-        messagebox.showinfo("Filed", "Filed as OB-%03d in %s."
-                            % (number, os.path.basename(
-                                BUGS_MD if got["kind"] == "bug" else FEATURES_MD)), parent=self)
+        messagebox.showinfo("Filed", "Filed as OB-%03d in issues.md." % number, parent=self)
 
         self._say("OB-%03d filed." % number)
 
@@ -1021,7 +1121,7 @@ class Triage(tk.Tk):
             ob["detail"].strip() or "(no further detail)",
         )
 
-        append_to_inbox(BUGS_MD if ob["kind"] == "bug" else FEATURES_MD, block)
+        append_to_inbox(ISSUES_MD, block)
 
     def _build_note(self):
         bits = []
@@ -1117,11 +1217,8 @@ class Triage(tk.Tk):
             listed = ", ".join(
                 "OB-%03d (%s - %s)" % (n, ob["kind"], ob["summary"]) for n, ob in receipts)
 
-            lines.append("Filed from this test: %s.  They are in `%s` until they are picked up."
-                         % (listed, "bug-reports.md / feature-requests.md"
-                            if len(set(ob["kind"] for _n, ob in receipts)) > 1
-                            else ("bug-reports.md" if receipts[0][1]["kind"] == "bug"
-                                  else "feature-requests.md")))
+            lines.append("Filed from this test: %s.  They are in `issues.md` until they are picked up."
+                         % listed)
 
         lines.append("")
         lines.append("*Run against %s.*" % self._build_note())
@@ -1278,12 +1375,16 @@ class Triage(tk.Tk):
             "Work down the list.  For each test: say whether it works, write what happened, add "
             "anything else you noticed, then Submit.\n\n"
             "Submit appends your words under that test's Comments in tests.md, dated and stamped "
-            "with the build.  Bugs and feature requests go to bug-reports.md and "
-            "feature-requests.md as OB-### items, cross-referenced from the test.\n\n"
+            "with the build.  Bugs and feature requests go to issues.md as OB-### items, "
+            "cross-referenced from the test.\n\n"
+            "New issue files something that has nothing to do with the entry on screen - it goes to "
+            "issues.md the same way, without a test to reference.\n\n"
             "Skip writes nothing at all.\n\n"
             "This app never changes a Disposition or the ledger - Claude sets those from what you "
             "wrote, which is the rule that makes the file mean anything.\n\n"
-            "Every write backs the file up first, into .triage-backups.", parent=self)
+            "Every write backs the file up first, into .triage-backups.  From a terminal, run this "
+            "script with an argument (stats, tests, issues, verify-ledger, --help) for the same data "
+            "as JSON, no window needed.", parent=self)
 
     def _open(self, path):
         try:
@@ -1318,7 +1419,7 @@ class ObservationDialog(tk.Toplevel):
 
         self.result = None
 
-        self.title("Something you noticed")
+        self.title("New issue" if standalone else "Something you noticed")
         self.transient(parent)
         self.resizable(True, False)
 
@@ -1450,7 +1551,265 @@ class LogWindow(tk.Toplevel):
         self.after(1500, self._tick)
 
 
+# --------------------------------------------------------------------------------------------
+# Query API - the same data the window shows, as JSON, no GUI, meant to be called programmatically
+# --------------------------------------------------------------------------------------------
+#
+# This exists so that reading the ledger stops being something a round does by eye.  "read the
+# file, scan for open rows, re-derive the counts" is exactly the kind of step that quietly drifts
+# from what the file actually says; a command that returns the same structured answer every time
+# does not.  Every subcommand prints one JSON value to stdout and sets its exit code (0 found /
+# fine, 1 bad input, 2 not found) - nothing else goes to stdout, so the output is always valid to
+# parse on its own.
+
+def entry_dict(e, full=True):
+    d = {
+        "tag": e.tag,
+        "date": e.date,
+        "title": e.title,
+        "disposition": e.disposition,
+        "from": e.origin,
+        "written": e.written,
+        "open": e.is_open,
+    }
+
+    if full:
+        d["what"] = e.what
+        d["comments"] = e.comments
+
+    return d
+
+
+def cli_stats(_args):
+    doc = TestsDoc(TESTS_MD)
+    issues = IssuesDoc(ISSUES_MD) if os.path.exists(ISSUES_MD) else None
+
+    by_disposition = {}
+
+    for e in doc.entries:
+        by_disposition[e.disposition] = by_disposition.get(e.disposition, 0) + 1
+
+    out = {
+        "tests": {
+            "total": len(doc.entries),
+            "open": sum(1 for e in doc.entries if e.is_open),
+            "by_disposition": by_disposition,
+        },
+        "issues": {
+            "pending": len(issues.pending) if issues else 0,
+            "pending_by_kind": {},
+            "has_freeform_pending": bool(issues.freeform) if issues else False,
+            "picked_up": len(issues.picked) if issues else 0,
+        } if issues is not None else None,
+    }
+
+    if issues:
+        for it in issues.pending:
+            k = it.kind
+            out["issues"]["pending_by_kind"][k] = out["issues"]["pending_by_kind"].get(k, 0) + 1
+
+    return out, 0
+
+
+def cli_tests(args):
+    doc = TestsDoc(TESTS_MD)
+
+    if args.tag:
+        e = doc.by_tag.get(args.tag.upper())
+
+        if not e:
+            return {"error": "no such entry: %s" % args.tag}, 2
+
+        return entry_dict(e), 0
+
+    wanted = doc.entries if args.all else [e for e in doc.entries if e.is_open]
+
+    return [entry_dict(e, full=args.full) for e in wanted], 0
+
+
+def cli_issues(args):
+    if not os.path.exists(ISSUES_MD):
+        return {"error": "issues.md not found"}, 2
+
+    doc = IssuesDoc(ISSUES_MD)
+
+    pending = doc.pending
+
+    if args.kind:
+        wanted = "feature request" if args.kind.startswith("feat") else "bug"
+        pending = [it for it in pending if it.kind == wanted]
+
+    out = {"pending": [it.as_dict() for it in pending], "freeform_pending": doc.freeform}
+
+    if args.all:
+        out["picked_up"] = doc.picked
+
+    return out, 0
+
+
+def cli_verify_ledger(_args):
+    """Compare the ledger table in tests.md against what the entries themselves say.
+
+    Read-only on purpose - the ledger allows hand notes on a row (README.md: "crossing something
+    out or adding a note to it is fine"), and a wholesale rewrite here would erase them without
+    knowing which rows carried one.  This reports exactly what a human edit needs to fix.
+    """
+
+    text, _ = read_text(TESTS_MD)
+
+    doc = TestsDoc(TESTS_MD)
+
+    ledger_start = text.find("\n## Ledger")
+    ledger_end = text.find("\n## The tests") if ledger_start >= 0 else -1
+
+    if ledger_start < 0 or ledger_end < 0:
+        return {"error": "could not find the '## Ledger' section in tests.md"}, 2
+
+    section = text[ledger_start:ledger_end]
+
+    row_re = re.compile(
+        r'^\|\s*\[(MT-\d+)\]\([^)]*\)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*$',
+        re.M)
+
+    ledger_rows = {}
+
+    for m in row_re.finditer(section):
+        ledger_rows[m.group(1)] = {
+            "date": m.group(2).strip(),
+            "what": m.group(3).strip(),
+            "disposition": m.group(4).strip(),
+            "from": m.group(5).strip(),
+        }
+
+    should_be_open = dict((e.tag, e) for e in doc.entries if e.is_open)
+
+    missing = sorted(tag for tag in should_be_open if tag not in ledger_rows)
+    stale = sorted(tag for tag in ledger_rows if tag not in should_be_open)
+
+    # Disposition drift is unambiguous: the two either say the same word or they don't, and if they
+    # don't the ledger is simply wrong.
+    #
+    # "From" is judged differently.  The ledger's column is a deliberately short label - "Tier 1",
+    # "AR-20" - while the entry's own From field is sometimes the long sentence it was filed under.
+    # Equality would flag that shorthand as broken on nearly every Tier 1-6 row, which is noise, not
+    # a finding.  So this only flags a "from" pair where NEITHER side is contained in the other
+    # (case-insensitively) - which still catches a ledger citing a tag the entry does not mention at
+    # all (MT-036: ledger says AR-20, the entry says "hands-on testing" - not a shorthand of it) and
+    # a ledger that is missing a tag the entry has gained since (MT-030 the other way round), while
+    # leaving "Tier 1" vs. "...Tier 1 - diagram and editor..." alone.
+    disposition_drift = []
+    from_notes = []
+
+    for tag, row in ledger_rows.items():
+        e = should_be_open.get(tag)
+
+        if not e:
+            continue
+
+        if row["disposition"] != e.disposition:
+            disposition_drift.append({
+                "tag": tag, "ledger": row["disposition"], "actual": e.disposition,
+            })
+
+        ledger_from = row["from"].lower()
+        actual_from = e.origin.lower()
+
+        if ledger_from not in actual_from and actual_from not in ledger_from:
+            from_notes.append({"tag": tag, "ledger_from": row["from"], "actual_from": e.origin})
+
+    out = {
+        "ledger_rows": len(ledger_rows),
+        "should_be_open": len(should_be_open),
+        "missing_from_ledger": missing,
+        "stale_in_ledger": stale,
+        "disposition_drift": disposition_drift,
+        "from_notes": from_notes,
+        "clean": not missing and not stale and not disposition_drift,
+    }
+
+    return out, (0 if out["clean"] else 1)
+
+
+CLI_COMMANDS = {
+    "stats": (cli_stats, "Counts: tests by disposition, issues pending, whether ledger looks clean."),
+    "tests": (cli_tests, "List entries. Default: open only. --all for everything, --tag for one."),
+    "issues": (cli_issues, "List Inbox items not yet picked up. --kind bug|feature, --all adds picked-up."),
+    "verify-ledger": (cli_verify_ledger, "Diff the ledger table against the entries. Read-only."),
+}
+
+
+def build_arg_parser():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="triage.py",
+        description="Query tests.md / issues.md as JSON.  Run with no arguments to open the window "
+                    "instead.")
+
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("stats", help=CLI_COMMANDS["stats"][1])
+
+    p_tests = sub.add_parser("tests", help=CLI_COMMANDS["tests"][1])
+    p_tests.add_argument("tag", nargs="?", default=None,
+                         help="Look up one entry by tag (e.g. MT-089) instead of listing.")
+    p_tests.add_argument("--all", action="store_true", help="Include fixed validated entries too.")
+    p_tests.add_argument("--open", dest="all", action="store_false",
+                         help="Only entries not fixed validated (default).")
+    p_tests.add_argument("--full", dest="full", action="store_true", default=True,
+                         help="Include What/Comments text (default).")
+    p_tests.add_argument("--brief", dest="full", action="store_false",
+                         help="Tag/date/title/disposition only, no body text.")
+
+    p_test = sub.add_parser("test", help="Look up one entry by tag, in full.")
+    p_test.add_argument("tag")
+
+    p_issues = sub.add_parser("issues", help=CLI_COMMANDS["issues"][1])
+    p_issues.add_argument("--kind", choices=["bug", "feature"], default=None)
+    p_issues.add_argument("--all", action="store_true", help="Also include the picked-up receipt table.")
+
+    sub.add_parser("verify-ledger", help=CLI_COMMANDS["verify-ledger"][1])
+
+    return parser
+
+
+def run_cli(argv):
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+
+    if not args.command:
+        return None       # no subcommand - caller opens the GUI instead
+
+    if not os.path.exists(TESTS_MD):
+        print(json.dumps({"error": "tests.md not found next to this script"}), file=sys.stderr)
+        return 2
+
+    try:
+        if args.command == "test":
+            # 'test TAG' is 'tests TAG' under a shorter name - reuse the same handler.
+            args.all = False
+            args.full = True
+            out, code = cli_tests(args)
+        else:
+            handler = CLI_COMMANDS[args.command][0]
+            out, code = handler(args)
+
+    except Exception as bad:
+        print(json.dumps({"error": str(bad)}), file=sys.stderr)
+        return 1
+
+    print(json.dumps(out, indent=2, ensure_ascii=False, sort_keys=False))
+
+    return code
+
+
 def main():
+    if len(sys.argv) > 1:
+        code = run_cli(sys.argv[1:])
+
+        if code is not None:
+            return code
+
     if not os.path.exists(TESTS_MD):
         print("tests.md not found next to this script (%s)" % HERE)
         return 1

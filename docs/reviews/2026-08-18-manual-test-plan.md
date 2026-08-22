@@ -14,7 +14,8 @@
 > the feature backlog of 18 August, the manual review items closed that day, and the stuck-train
 > diagnosis. That is why this document stays open rather than being archived - the backlog in it has
 > not been picked up. Anything from it that you want built can go in
-> [../manual-tests/feature-requests.md](../manual-tests/feature-requests.md).
+> [../manual-tests/issues.md](../manual-tests/issues.md) (formerly `feature-requests.md`, merged with
+> `bug-reports.md` on 2026-08-22).
 
 For the autonomy-diagram work on `autonomy-diagram-r0`. Work top to bottom; later tiers assume earlier
 ones passed.

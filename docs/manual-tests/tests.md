@@ -65,7 +65,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19, DD |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
-| [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | AR-20 |
+| [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | hands-on testing |
 | [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | fixed unvalidated | AR-20 |
 | [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | fixed unvalidated | IP-*, AR-21 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
@@ -1900,6 +1900,11 @@ All 34 real ones are added. `TestStationAddress` is not, because it is a helper 
 **If you have been treating a green `ant test` as the gate, it has been narrower than the battery I run
 from the scratchpad.** That is the whole finding.
 
+**Also 2026-08-22:** the test classes moved into `test/core`, `test/ui`, `test/regression` and
+`test/support` - see [test/README.md](../../test/README.md) for which folder a new one belongs in.
+`build.xml` needed no change, because it matches on a file pattern that already spans subfolders. If
+you have the test folder open in NetBeans it will look rearranged; nothing was deleted.
+
 ---
 
 <a id="mt-092"></a>
@@ -1916,7 +1921,12 @@ from the scratchpad.** That is the whole finding.
 - Pick an entry, choose a result, write something, click **Submit and next** - the comment appears
   under that entry's `#### Comments` here, and nothing else in the file moves.
 - Add a bug and a feature request from an entry's screen, submit, and confirm they land in
-  `bug-reports.md` / `feature-requests.md` as `OB-###` items referencing the test.
+  `issues.md` as `OB-###` items referencing the test.
+- Use **New issue** to file something not tied to any test on screen, and confirm it lands in
+  `issues.md` the same way, with no test referenced.
+- From a terminal, run `py -3 docs\manual-tests\triage.py stats` and `... tests --open` and confirm
+  the JSON matches what the app itself shows - this is the API other rounds call instead of reading
+  the file by hand.
 - The **Launch TrainControl** button starts it with Simulate + Debug (a train can be dispatched in
   simulation without a real Central Station) and the **Output…** window shows its console.
 - Close and reopen the app; the entries you already answered are marked, and unanswered drafts (typed
