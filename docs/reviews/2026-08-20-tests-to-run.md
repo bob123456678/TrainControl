@@ -279,6 +279,54 @@ All OK.
 
 ---
 
+## Added 2026-08-22, the layout-test round and the two features
+
+These are the ones with the least test coverage behind them, because most of what changed is Swing
+wiring - which component receives a mouse event, and what a window puts on screen - and the harness runs
+headless with no pointer to move.
+
+**42. Hover a station's NAME on the track diagram and press Control+V.**  Not the platform - the name
+beside it, or drawn over it.  The train must land on that station.  Then hover a blank square that
+carries no name and press it: nothing should happen and the log should say why.
+
+**43. Move a sensor that has a name DOWN one square**, so it lands on the square its own name is written
+on.  The name must survive, and be drawn over the tile it has landed on.  Then move it down one and
+right one, and down one and right two: the name must survive all three.  This is the [---] bug.
+
+**44. Cut and paste a whole COLUMN that contains a paired link**, and one that contains named stations.
+The pairing must survive, from BOTH pages - go to the other end and check it still points back.  The
+stations must arrive with their names, lengths and facings.  Then check the column you pasted ONTO: it
+must not still be carrying the names it had before.
+
+**45. The same for a whole ROW**, which is the same rule with the axes swapped.
+
+**46. Switch a link off in the autonomy editor.**  It must go grey and hatched.  A link that is paired
+and in use must be solid and carry its two arrows.  Before this round it was the other way round.
+
+**47. Right-click a paired link and choose "Go to the Other End".**  It must close and reopen on that
+page, at that square, flashing it.  With unsaved work, it must ask first - and answering yes must NOT
+lose the pairing you just made.
+
+**48. Double-click a train's name on the running track diagram** with autonomy stopped: the placement
+view must open at that station.  With autonomy RUNNING, it must do nothing at all.
+
+**49. Press Edit twice.**  The second press must open the same editor as the first, on the page the main
+window is showing, without asking anything.  Then use the Autonomy menu's own edit item: that must take
+you to the setup editor whatever you used last.
+
+**50. The sidebar.**  With more than one page, switch pages from it: same as closing and reopening, and
+it must ask about unsaved work first.  Say no: the sidebar must go back to showing the page you are
+actually on.  Switch modes the same way.
+
+**51. The sidebar with nothing to offer.**  Unload the autonomy configuration: the Autonomy Setup tab
+must be greyed with a tooltip saying what to load.  Start trains: it must grey for that reason instead.
+On a single-page layout, the page tabs must be gone.
+
+**52. Open the editor on a page, resize the window, close and reopen it.**  The remembered size must not
+have squeezed the diagram now that there is a sidebar taking width from it.
+
+---
+
 ## Still untested, and known
 
 - **`testAutoDetect`** needs a Central Station answering on the network. It is red here and is not a
