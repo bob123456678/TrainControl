@@ -1637,6 +1637,14 @@ public class RouteEditorFrame extends JFrame
                     return out;
                 }
 
+                // And so is the row at the bottom with the + on it.
+                //
+                // Nothing in it can be edited, because it is not a row yet - it is the button that
+                // makes one.  Shading it therefore shaded the whole line, which reads as a row that has
+                // been switched off rather than as the way to add another, and it is the one line in
+                // the table a new user is looking for.
+                if (row >= which.getRowCount() - 1) return out;
+
                 if (!selected)
                 {
                     out.setForeground(editable ? which.getForeground() : java.awt.Color.GRAY);
@@ -2757,6 +2765,15 @@ public class RouteEditorFrame extends JFrame
 
             // The duplicate column is named here rather than in a second call: a second call would
             // register a second mouse listener on this table, and both would act on every click
+            // The same shading the conditions table has had all along.
+            //
+            // Only that table was ever given it, so a command's cells all looked alike whatever kind
+            // it was: the function number on a signal command, the protocol on a stop, the delay on a
+            // command that has none.  Every one of those is refused when clicked, and until now the
+            // only way to find that out was to click it.  isCellEditable already knows the answer per
+            // kind - hasTarget, isFunction, hasSetting, hasProtocol, hasDelay - and this draws it.
+            greyWhatCannotBeEdited(this);
+
             actOnRowMarks(this, DELETE, UP, DOWN, UP, DUPLICATE);
 
             // Kept commands are drawn greyed, so "you cannot edit this one" is something the table

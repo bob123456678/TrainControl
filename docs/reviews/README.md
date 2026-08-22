@@ -11,6 +11,17 @@ and renumbering would break that for no gain. The convention applies to new revi
 what, the patterns that recurred across passes, and the consolidated reviewer-error tally. Start there
 rather than with any single document.
 
+**Hands-on tests live somewhere else.** Everything that needs the real railway or a display is in
+[../manual-tests/tests.md](../manual-tests/tests.md), under the rules in
+[../manual-tests/README.md](../manual-tests/README.md) - one file, append-only, tagged `MT-###`, each
+entry carrying a disposition that says whether its last result still means anything. Nothing about the
+review process below changes: a finding is still lettered by severity and dispositioned here. What
+changed is that the TEST for a finding is written there and referenced by tag, rather than living in a
+document of its own that goes stale the moment the code moves.
+
+When a round produces work for the layout, add entries there and put their tags beside the findings
+here.
+
 ---
 
 ## The document

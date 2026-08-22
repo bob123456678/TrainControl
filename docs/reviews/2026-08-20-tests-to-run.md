@@ -1,5 +1,15 @@
 # Tests to run at the layout
 
+> **Superseded 2026-08-22.** Everything in this file - all 59 tests and every comment on them - has
+> been carried into [../manual-tests/tests.md](../manual-tests/tests.md), which is now the single
+> source of truth. Test *N* here is `MT-0NN` there.
+>
+> Nothing was dropped in the move, and the instructions are word for word. What changed is that each
+> one now carries a tag, a date, where it came from, and a disposition saying whether its last result
+> still stands - see [../manual-tests/README.md](../manual-tests/README.md).
+>
+> **Do not add to this file.** It is kept because commits and reviews refer to it.
+
 Everything below needs the real railway, or a display, or both. None of it can be settled from here.
 
 Written 2026-08-20, covering the work from `941070da` (the tile-move data-loss fix) through
@@ -261,7 +271,13 @@ Defer for later.
 its trigger sensor. A route waiting on its sensor is a route doing its job, and it does so on a
 locomotive called "Dummy Loc" - if that name ever appears in the log, the advisory has leaked out of
 the dispatch path into the shared wait.
-Defer for later.
+
+You can make a test for this.  Reduce the quota to 10 seconds.  Put a train on a station with 2+ s88's between it and the target.  Manually trigger the first s88, and then wait the timeout duration plus the startup delay as configured, plus a small buffer.  Then, check the log and popup activation.  
+
+The app should be in debug/simulate mode, but the autonomy should not be, as otherwise the s88's get auto triggered.
+
+Normally, I would test this just by clicking on s88's in the track diagram, not by running a real train.
+
 ---
 
 ## Added 2026-08-21, from the independent pass
