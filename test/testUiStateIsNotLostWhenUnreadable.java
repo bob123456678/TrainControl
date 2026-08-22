@@ -159,6 +159,14 @@ public class testUiStateIsNotLostWhenUnreadable
             // There was none before, and this class is the one that made it
             live.delete();
         }
+
+        // And the staging file, if the save that this test provokes did not get as far as moving it
+        // into place.  Harmless where it lies - the next write overwrites it - but it is litter in the
+        // project root, and litter beside a data file is the sort of thing somebody later has to work
+        // out the meaning of.
+        File staging = new File(DATA + ".part");
+
+        if (staging.exists()) staging.delete();
     }
 
     private static java.util.Set<String> listBackups()
