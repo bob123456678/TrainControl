@@ -1,5 +1,21 @@
 # Manual test plan, 18 August 2026
 
+**Status:** open
+
+> **The tiered tests have moved.** All 24 of them, with Adam's answers, are in
+> [../manual-tests/tests.md](../manual-tests/tests.md) as MT-065 to MT-088 - carried across word for
+> word when the manual tests were consolidated on 2026-08-22.
+>
+> They arrived there as **needs test**, not as passes. His answers were given on 18 August and four
+> hundred and fifty commits have landed since, including most of the autonomy editor; a result from
+> before that is not a result about this build.
+>
+> **What is still only here** is the history the tracker has no place for: the two KNOWN GOOD markers,
+> the feature backlog of 18 August, the manual review items closed that day, and the stuck-train
+> diagnosis. That is why this document stays open rather than being archived - the backlog in it has
+> not been picked up. Anything from it that you want built can go in
+> [../manual-tests/feature-requests.md](../manual-tests/feature-requests.md).
+
 For the autonomy-diagram work on `autonomy-diagram-r0`. Work top to bottom; later tiers assume earlier
 ones passed.
 

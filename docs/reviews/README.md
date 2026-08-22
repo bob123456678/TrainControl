@@ -24,6 +24,63 @@ here.
 
 ---
 
+## Archiving
+
+The main folder is for work that still needs somebody. Everything else lives in
+[archive/](archive/README.md).
+
+### Every document carries an overall status
+
+A line near the top, under the title:
+
+```
+**Status:** open
+```
+
+Three values, and no others:
+
+| | |
+|---|---|
+| **open** | At least one finding in it is not closed, or it is a plan that has not been carried out. |
+| **closed** | Every finding has a disposition that is finished, and nothing outstanding cites it. |
+| **reopened** | It was closed and something came back - a regression, or a finding that turned out not to be fixed. Say underneath WHICH finding and why. |
+
+**A document with no status line is open.** That default is deliberate: the failure that matters is
+archiving something that still needs attention, and forgetting to write a line is far more likely than
+writing the wrong one.
+
+### Moving
+
+- `open` -> stays in `docs/reviews/`.
+- `closed` -> moved to `docs/reviews/archive/`, and a row added to the table in its README saying when
+  and why.
+- `reopened` -> moved straight back out of the archive, whatever else is true.
+
+Nothing is renamed when it moves. Identifiers are cited from commits and from other documents, and a
+document that changes name breaks those silently - which is the same rule the findings themselves
+follow.
+
+### Three kinds of document, not one
+
+The folder holds three things, and only the first is a review:
+
+1. **Reviews** - findings with severities and dispositions. Closed when every finding is.
+2. **Plans and proposals** - a decision written down before the work. Closed when the work is done, or
+   when the plan is abandoned; say which in the status line.
+3. **Generated reports** - output from a harness, kept for a person to read. These are not documents at
+   all in the sense above: they have no findings and no dispositions, they go stale silently, and they
+   are regenerable by definition. They do not belong in this folder. Either fold the conclusion into a
+   review and delete the dump, or leave the harness to write it to a temporary directory - which is what
+   `testRouteInventory` now does.
+
+### What this is not
+
+It is not a way of tidying up work nobody wants to look at. A finding is closed when it is fixed,
+withdrawn, or explicitly declined by Adam - never because it has been open a long time, and never
+because a later document covers the same area.
+
+---
+
 ## The document
 
 **Findings are lettered A, B, C, D by severity - never by topic, phase, or reviewer.**

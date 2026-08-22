@@ -192,6 +192,24 @@ public class DiagramTileRegistry
     /**
      * @return how many squares are registered, for diagnostics
      */
+    /**
+     * The labels currently showing this square, if any.
+     *
+     * A copy, because the caller walks it while the grid may be rebuilding underneath - and a set that
+     * is rebuilt during a walk is the ConcurrentModificationException this class exists to have already
+     * dealt with once.
+     *
+     * @param key the square
+     * @return its labels, possibly empty, never null
+     */
+    public Set<LayoutLabel> labelsFor(TileKey key)
+    {
+        Set<LayoutLabel> here = key == null ? null : tiles.get(key);
+
+        return here == null ? java.util.Collections.<LayoutLabel>emptySet()
+            : new java.util.LinkedHashSet<>(here);
+    }
+
     public int size()
     {
         return tiles.size();

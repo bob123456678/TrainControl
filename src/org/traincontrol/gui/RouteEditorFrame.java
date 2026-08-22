@@ -277,11 +277,24 @@ public class RouteEditorFrame extends JFrame
         // railway is in a state while the editor is open - so the sensors can be read and the
         // expression evaluated against them, which is a great deal quicker than shunting a train
         // over a sensor to find out.
-        testButton = button(I18n.t("ui.test"), this::testAgainstTheRailway);
+        testButton = button(I18n.t("route.ui.testCondition"), this::testAgainstTheRailway);
 
         testButton.setToolTipText(I18n.t("route.ui.tooltipTestConditions"));
 
         buttonsOf(conditionSection).add(testButton);
+
+        // Where the route IS, drawn on the railway rather than listed in a window.
+        //
+        // A route is a list of addresses, and an address is not a place - so reading one and knowing
+        // where on the layout it happens means looking each number up on the diagram by hand.  Two
+        // colours because a route has two kinds of square and they answer different questions: yellow
+        // for what it COMMANDS, orange for what it CHECKS before commanding anything.
+        highlightButton = button(I18n.t("route.ui.highlightOnDiagram"), this::highlightOnDiagram);
+
+        highlightButton.setToolTipText(
+            AutonomyEditorPanel.wrapped(I18n.t("route.ui.tooltipHighlightOnDiagram")));
+
+        buttonsOf(conditionSection).add(highlightButton);
 
         // Help beside Test rather than down beside Cancel.
         //
@@ -2222,6 +2235,62 @@ public class RouteEditorFrame extends JFrame
      * Ported from the old editor, which read the expression out of a text box; this one asks the
      * outline, so what is tested is what the table shows rather than what was last typed.
      */
+    /**
+     * Lights this route on the track diagram: what it commands in yellow, what it checks in orange.
+     *
+     * Read off the WINDOW rather than off the saved route, so it answers about what is on screen -
+     * including rows typed a moment ago and not yet saved, which is when somebody most wants to know
+     * where they are.
+     *
+     * Held for five seconds.  Long enough to look from here to the diagram and back, short enough that
+     * nothing has to be cleared afterwards - a highlight that stays until it is dismissed is a highlight
+     * somebody leaves on.
+     */
+    private void highlightOnDiagram()
+    {
+        if (parent == null) return;
+
+        java.util.Set<Integer> commanded = new java.util.LinkedHashSet<>();
+        java.util.Set<Integer> checked = new java.util.LinkedHashSet<>();
+
+        for (Entry entry : commands.rows)
+        {
+            org.traincontrol.base.RouteCommand command = entry.toCommand();
+
+            if (command != null && command.getAddress() > 0) commanded.add(command.getAddress());
+        }
+
+        for (ConditionOutline.Row row : conditions.rows)
+        {
+            if (row.isJoiner() || row.getCommand() == null) continue;
+
+            if (row.getCommand().getAddress() > 0) checked.add(row.getCommand().getAddress());
+        }
+
+        // A square that is BOTH commanded and checked is drawn as commanded.  It is the stronger of the
+        // two statements - the route does something to it - and two washes on one tile is a colour
+        // neither of them chose.
+        checked.removeAll(commanded);
+
+        int lit = parent.highlightAddresses(commanded, org.traincontrol.util.ImageUtil.HIGHLIGHT,
+            HIGHLIGHT_HOLD_MS);
+
+        lit += parent.highlightAddresses(checked,
+            org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
+
+        // Nothing lit is an answer too, and a silent button is not.  It happens for a real reason: a
+        // route can name accessories that are not drawn anywhere on the diagram.
+        if (lit == 0)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.infoNothingToHighlight"));
+        }
+    }
+
+    /** Five seconds: long enough to look from this window to the diagram and back */
+    private static final int HIGHLIGHT_HOLD_MS = 5000;
+
+    private JButton highlightButton;
+
     private void testAgainstTheRailway()
     {
         if (parent == null || parent.getModel() == null) return;

@@ -205,6 +205,23 @@ public class ImageUtil
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon)
     {
+        return addHighlightOverlay(originalIcon, HIGHLIGHT);
+    }
+
+    /**
+     * The same wash in a colour of the caller's choosing.
+     *
+     * A second colour exists because a route has two kinds of square: the ones it COMMANDS and the ones
+     * it LOOKS AT.  Drawn in one colour they are one list, and the question a reader has - which of
+     * these does it change, and which does it merely check - is exactly the one the picture cannot then
+     * answer.
+     *
+     * @param originalIcon the tile as it is drawn
+     * @param wash the colour to lay over it, alpha included
+     * @return a new icon; the original is not touched
+     */
+    public static ImageIcon addHighlightOverlay(ImageIcon originalIcon, Color wash)
+    {
         int width = originalIcon.getIconWidth();
         int height = originalIcon.getIconHeight();
 
@@ -214,12 +231,18 @@ public class ImageUtil
         // Draw the original image
         g2d.drawImage(originalIcon.getImage(), 0, 0, null);
 
-        // Draw the yellow overlay
-        g2d.setColor(new Color(255, 255, 0, 128)); // Semi-transparent yellow
+        g2d.setColor(wash == null ? HIGHLIGHT : wash);
+
         g2d.fillRect(0, 0, width, height);
 
         g2d.dispose();
 
         return new ImageIcon(highlightedImage);
     }
+
+    /** The diagram's ordinary flash: what a square does when something happens to it */
+    public static final Color HIGHLIGHT = new Color(255, 255, 0, 128);
+
+    /** And what a route only looks at */
+    public static final Color HIGHLIGHT_CONDITION = new Color(255, 140, 0, 140);
 }

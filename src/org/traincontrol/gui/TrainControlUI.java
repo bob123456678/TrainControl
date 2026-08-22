@@ -3981,6 +3981,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * an existing grid keeps its registrations rather than losing them.
      * @return
      */
+    /**
+     * Lights every diagram square that carries one of these addresses.
+     *
+     * For the route editor's "Highlight on Diagram", which asks the same question twice in two colours:
+     * what does this route COMMAND, and what does it merely CHECK.  A route names accessories by
+     * address, and an address can be drawn on several squares and on several pages - the whole point of
+     * the registry - so this lights all of them rather than the first one found.
+     *
+     * Squares that are not on screen are lit anyway.  The flash restores itself, the label is real
+     * whether or not its page is showing, and a caller cannot know which page the reader is on.
+     *
+     * @param addresses the accessory addresses to light, by logical address as a route records them
+     * @param wash the colour
+     * @param holdMs how long to hold it
+     * @return how many squares were lit, so the caller can say when the answer is none
+     */
+    public int highlightAddresses(java.util.Set<Integer> addresses, java.awt.Color wash, int holdMs)
+    {
+        if (addresses == null || addresses.isEmpty()) return 0;
+
+        int lit = 0;
+
+        for (String page : this.model.getLayoutList())
+        {
+            org.traincontrol.base.LayoutDiagram diagram = this.model.getLayout(page);
+
+            if (diagram == null) continue;
+
+            for (org.traincontrol.base.LayoutDiagramComponent tile : diagram.getAll())
+            {
+                if (tile == null || !addresses.contains(tile.getRawAddress())) continue;
+
+                org.traincontrol.automationui.TileGraph.TileKey key =
+                    new org.traincontrol.automationui.TileGraph.TileKey(page, tile.getX(), tile.getY());
+
+                for (LayoutLabel label : getDiagramTileRegistry().labelsFor(key))
+                {
+                    label.flashHighlight(wash, holdMs);
+
+                    lit++;
+                }
+            }
+        }
+
+        return lit;
+    }
+
     public DiagramTileRegistry getDiagramTileRegistry()
     {
         if (diagramTileRegistry == null) diagramTileRegistry = new DiagramTileRegistry();

@@ -841,6 +841,21 @@ public final class LayoutLabel extends JLabel
      */
     public void flashHighlight()
     {
+        flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_DURATION);
+    }
+
+    /**
+     * The same flash, in a colour and for a length the caller chooses.
+     *
+     * Both are the caller's because both mean something: the route editor lights what a route COMMANDS
+     * in the ordinary yellow and what it merely CHECKS in orange, and holds them long enough to look
+     * from the window to the diagram and back.
+     *
+     * @param wash the colour to lay over the tile
+     * @param holdMs how long to hold it
+     */
+    public void flashHighlight(java.awt.Color wash, int holdMs)
+    {
         // An empty square carries an EmptyIcon, which is not null and not an ImageIcon - so the cast
         // below threw where the null check passed, and it escaped mid-action because the menu's flash
         // sits outside its own try/catch.
@@ -859,9 +874,9 @@ public final class LayoutLabel extends JLabel
             flashRestore = this.getIcon();
         }
 
-        this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) flashRestore));
+        this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) flashRestore, wash));
 
-        flashTimer = new javax.swing.Timer(HIGHLIGHT_DURATION, (event) ->
+        flashTimer = new javax.swing.Timer(holdMs, (event) ->
         {
             this.setIcon(flashRestore);
 

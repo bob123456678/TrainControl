@@ -62,6 +62,27 @@ or adding a note to it is fine, and Claude will not overwrite a note it did not 
 
 ---
 
+## Asking for something new
+
+[feature-requests.md](feature-requests.md) is the inbox. Adam writes what he wants there, in whatever
+form suits him; Claude empties it at the start of the next round.
+
+**Emptying it means:** each item becomes an entry in `tests.md` with a new `MT-###` tag and the
+disposition **needs test**, its **From** line reads `feature request`, and its **What to do** is what a
+person would have to see to agree it was built. A one-line receipt goes in the table at the bottom of
+the inbox, and the Inbox section goes back to empty.
+
+**Filing is not asking for it to be built.** A request that has been picked up sits in the ledger like
+anything else and is worked when Adam asks for it. The two are separated on purpose: it lets him write
+something down the moment he thinks of it without having to decide then and there whether it is worth
+doing now, and it stops Claude reordering his priorities by picking up whatever is newest.
+
+A feature request reaches **fixed validated** the same way every other entry does - by Adam saying it
+works. "Built" is not "validated", and a feature nobody has used is exactly the kind of thing that gets
+marked finished and turns out to be half of what was wanted.
+
+---
+
 ## Working from it
 
 **For Adam.** Read the ledger. Work down it. Write what happened under the entry's Comments - "OK",

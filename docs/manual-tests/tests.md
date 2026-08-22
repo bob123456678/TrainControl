@@ -19,6 +19,30 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-065](#mt-065) | 2026-08-18 | Arrival marks look right | needs test | Tier 1 |
+| [MT-066](#mt-066) | 2026-08-18 | Arrivals menu placement | needs test | Tier 1 |
+| [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
+| [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
+| [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
+| [MT-070](#mt-070) | 2026-08-18 | Page switching keeps captions live | needs test | Tier 2 |
+| [MT-071](#mt-071) | 2026-08-18 | Popup diagram captions | needs test | Tier 2 |
+| [MT-072](#mt-072) | 2026-08-18 | Cancel in the track diagram editor | needs test | Tier 2 |
+| [MT-073](#mt-073) | 2026-08-18 | Undo covers captions | needs test | Tier 2 |
+| [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | needs test | Tier 2 |
+| [MT-075](#mt-075) | 2026-08-18 | Page files | needs test | Tier 2 |
+| [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
+| [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | Tier 3 |
+| [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | Tier 3 |
+| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | needs test | Tier 3 |
+| [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | Tier 4 |
+| [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | Tier 4 |
+| [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | Tier 4 |
+| [MT-083](#mt-083) | 2026-08-18 | Run a new-only route in simulation | needs test | Tier 4 |
+| [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | Tier 5 |
+| [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | Tier 5 |
+| [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | needs test | Tier 5 |
+| [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | Tier 5 |
+| [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | Tier 6 |
 | [MT-001](#mt-001) | 2026-08-20 | A station moved with its tile | fixed unvalidated | LT-A2, LT-A3, LT-A4, LT-F1 |
 | [MT-003](#mt-003) | 2026-08-20 | A route round-trips unchanged | fixed unvalidated | LT-C4 |
 | [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
@@ -68,14 +92,488 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-061](#mt-061) | 2026-08-22 | Graceful stop timing | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
 | [MT-063](#mt-063) | 2026-08-22 | A second copy of TrainControl says so | needs test | AR-16 |
+| [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
 
-Everything else - 14 of 63 - is **fixed validated** and needs nothing from you unless the
+Everything else - 14 of 88 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
 
 ## The tests
 
+
+<a id="mt-065"></a>
+
+### MT-065 - 2026-08-18 - Arrival marks look right
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
+**Written:** 2026-08-18
+
+**What to do.** Arrival marks look right. Autonomy editor, visibility dropdown set to **Station Arrivals**.
+   Every station with two or more ways in shows small yellow inward chevrons at its edges. Are they
+   legible at your tile size, and clearly not overlapping the red/green direction arrows?
+
+#### Comments
+
+Icons are OK but the offset is odd.  Also, [---] station labels are propagating into some of the stations in the editor, which overlaps.  
+
+Idea: make station shapes semantic.  A triangle that points in the way it accepts arrivals.  We just need a way to differentiate "can reverse" and "must reverse" then.
+
+
+Bug: clicking on the arrows to cycle in the editor affects an unrelated tile.  Changing in menu works.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-066"></a>
+
+### MT-066 - 2026-08-18 - Arrivals menu placement
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
+**Written:** 2026-08-18
+
+**What to do.** Arrivals menu placement. Right-click a station with two ways in. **"Trains may arrive…"** is on
+   the top level of the menu, beside the usage choice, not inside it. Untick one side; the last
+   remaining side should refuse to be unticked.
+
+#### Comments
+
+Works
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-067"></a>
+
+### MT-067 - 2026-08-18 - Arrival marks in the viewer
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
+**Written:** 2026-08-18
+
+**What to do.** Arrival marks in the viewer. Close the editor. A restricted station shows its marks on the
+   running diagram; an unrestricted one shows nothing. (Deliberate - no clutter for the default.)
+
+#### Comments
+
+Works, but overlap with the labels makes it suboptimal.  station icon may fix this.  Side requirement: left clicking a station icon should propagate the click to the s88 and back.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-068"></a>
+
+### MT-068 - 2026-08-18 - Switched-off link
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
+**Written:** 2026-08-18
+
+**What to do.** Switched-off link. Switch a link off. It is greyed on the main diagram, not only in the editor.
+
+#### Comments
+
+Looks right in the track diagram.  But not greyed out in the editor.  Also, move the "use this link" option out of the submenu into the top level.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-069"></a>
+
+### MT-069 - 2026-08-18 - Remove a locomotive from a non-station
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
+**Written:** 2026-08-18
+
+**What to do.** Remove a locomotive from a non-station. Right-click a point holding a loco that is not a
+   station. **Remove** is present.
+
+#### Comments
+
+Works.  For the 3 type options (trains can stop, trains can pass through, neither, prefix with "Yes, No, No".  Out of service -> nothing can pass.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-070"></a>
+
+### MT-070 - 2026-08-18 - Page switching keeps captions live
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Page switching keeps captions live. Note a caption on page A. Go to page B, then C, then back to
+   A. A's captions still update.
+
+#### Comments
+
+They do- but I didn't test running with autonomy.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-071"></a>
+
+### MT-071 - 2026-08-18 - Popup diagram captions
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Popup diagram captions. Pop out a page window, then repaint the main window. The popup's
+   captions still update.
+
+#### Comments
+
+Works, but I noticed that some locomotives get a V > suffix, not just V or >.  Also, when moving a locomotive from one point to the other, it would be ideal if its natural direction could be preserved, compatible with the entrance direction to the station.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-072"></a>
+
+### MT-072 - 2026-08-18 - Cancel in the track diagram editor
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Cancel in the track diagram editor. Delete two sensor squares that carry names, lengths or
+   arrival settings, then press **Cancel**. The track comes back AND those squares keep their autonomy
+   settings.
+
+#### Comments
+
+Labels disappear, stations stay.  Bug!  Confirmed the labels stay gone after reload.
+
+Also, the confirm dialog in the diagram editor says 'are you sure you want to exit without saving', but the autonomy is 'save before existing?'  make the latter consistent.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-073"></a>
+
+### MT-073 - 2026-08-18 - Undo covers captions
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Undo covers captions. Delete a captioned sensor, Ctrl+Z: tile and name both return. Drag a
+   captioned tile, Ctrl+Z: the caption follows it back.
+
+#### Comments
+
+Bug- caption says, but content changes from the name itself to [---].  
+
+Also: still don't see a way to move labels in the layout editor.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-074"></a>
+
+### MT-074 - 2026-08-18 - Export / import round trip
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Export / import round trip. Export the autonomy JSON, re-import it. It loads, and Tier 4 step
+    19 still holds afterwards. (This was broken until 18 August - the block field was not written.)
+
+#### Comments
+
+Seems fine.  Not sure what the block field is.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-075"></a>
+
+### MT-075 - 2026-08-18 - Page files
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 2 - data safety  
+**Written:** 2026-08-18
+
+**What to do.** Page files. After a save, `config/gleisbilder/` holds a one-time `.bak` beside a rewritten
+    page, and nothing is corrupted.
+
+#### Comments
+
+I don't see the .bak, but check on your end.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-076"></a>
+
+### MT-076 - 2026-08-18 - Running path drawing
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
+**Written:** 2026-08-18
+
+**What to do.** Running path drawing. The route is a line along the track - red ahead of the train, green
+    behind - with black arrowheads for direction. The train marker sits on the tile it has actually
+    reached, not one ahead.
+
+#### Comments
+
+Looks OK for now, couldn't test much.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-077"></a>
+
+### MT-077 - 2026-08-18 - Caption direction arrow
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
+**Written:** 2026-08-18
+
+**What to do.** Caption direction arrow. The `>` `<` `^` `v` arrow appears consistently, both for a train you
+    placed by hand and for one autonomy drove there.
+
+#### Comments
+
+No, see above.  The arrow is sometimes duplicated.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-078"></a>
+
+### MT-078 - 2026-08-18 - Barred arrival is honoured
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
+**Written:** 2026-08-18
+
+**What to do.** Barred arrival is honoured. Bar one side of a two-ended station, reload, run. Trains only pull
+    in from the allowed side, and the station is still reachable.
+
+#### Comments
+
+Honored.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-079"></a>
+
+### MT-079 - 2026-08-18 - Barred terminus loads
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
+**Written:** 2026-08-18
+
+**What to do.** Barred terminus loads. Mark a terminus "trains may turn round here", bar one of its sides,
+    reload. It loads - no "configuration is invalid and must be reloaded".
+
+#### Comments
+
+Correct. And reversible locomotives are enforced.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-080"></a>
+
+### MT-080 - 2026-08-18 - Collect what the new model offers
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
+**Written:** 2026-08-18
+
+**What to do.** Collect what the new model offers. Load the derived configuration. For each of a sample of
+    stations - pick ones with a reversing point, a double curve, a one-way section, and a busy junction
+    - place a locomotive there and write down every destination offered (the locomotive panel's path
+    list, or the station's right-click menu).
+
+#### Comments
+
+Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1.  I will then validate.
+
+Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-081"></a>
+
+### MT-081 - 2026-08-18 - Collect what the old model offered
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
+**Written:** 2026-08-18
+
+**What to do.** Collect what the old model offered. Load the v2.8.1 hand-authored `autonomy.json`. Place the
+    same locomotive at the same station. Write down the destinations offered.
+
+#### Comments
+
+Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1.  I will then validate.
+
+Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-082"></a>
+
+### MT-082 - 2026-08-18 - Compare, and scrutinise the NEW-ONLY entries
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
+**Written:** 2026-08-18
+
+**What to do.** Compare, and scrutinise the NEW-ONLY entries. A destination the new model offers and the old
+    one did not is the dangerous direction - it may be a journey no train can physically make. For each
+    one, ask: does the route reverse at a square where a train cannot reverse? Does it change track
+    mid-square at a double curve? If yes, that is a routing bug and the most valuable thing you can
+    report.
+    - Old-only entries (offered before, not now) matter less, but note them: they are lost capability
+      rather than an unsafe move.
+18b. **The known-bad journey.** Specifically check whether the new model offers
+    **BottomMainA -> BottomSecondary** directly. Adam: it should NOT - a red signal after the end
+    requires a stop at TopMainR1 or TopMainR2, a constraint that lived in the hand-authored edge
+    config commands and that the derivation cannot currently express.  If it is offered, that is the
+    clearest example of the gap, and worth reporting first.
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-083"></a>
+
+### MT-083 - 2026-08-18 - Run a new-only route in simulation
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most)  
+**Written:** 2026-08-18
+
+**What to do.** Run a new-only route in simulation. Pick one and execute it. Watch the train: does it do
+    anything physically impossible? This is the strongest single test in the plan.
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-084"></a>
+
+### MT-084 - 2026-08-18 - Two trains, shared junction
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
+**Written:** 2026-08-18
+
+**What to do.** Two trains, shared junction. Run two trains whose routes cross a junction. They never receive
+    conflicting routes through it; the second waits.
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-085"></a>
+
+### MT-085 - 2026-08-18 - Collision refusal
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
+**Written:** 2026-08-18
+
+**What to do.** Collision refusal. Try to get autonomy to send a second train to an occupied platform,
+    including when the occupant arrived from the other direction (the split-copy case, which was
+    broken).
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-086"></a>
+
+### MT-086 - 2026-08-18 - Manual displacement still works
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
+**Written:** 2026-08-18
+
+**What to do.** Manual displacement still works. Right-click-place a train onto an occupied station: it
+    displaces the previous occupant. This is intended - you are telling the model where a train is.
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-087"></a>
+
+### MT-087 - 2026-08-18 - Long run
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
+**Written:** 2026-08-18
+
+**What to do.** Long run. Three or four trains for twenty minutes or more. No train silently stops and stays
+    stopped; no gradual gridlock; CPU stays low when a train is boxed in.
+
+#### Comments
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
+
+<a id="mt-088"></a>
+
+### MT-088 - 2026-08-18 - Path-integrity failure
+
+**Disposition:** needs test  
+**From:** 2026-08-18 manual test plan, Tier 6 - real hardware, optional  
+**Written:** 2026-08-18
+
+**What to do.** Path-integrity failure. Let an accessory fail to confirm. The train stops, its track is
+    released, and it resumes on the next cycle rather than dropping out of autonomy until a reload.
+
+#### Comments
+
+---
+
+**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+---
 
 <a id="mt-001"></a>
 
@@ -1180,6 +1678,33 @@ many there are.
 
 ---
 
+<a id="mt-064"></a>
+
+### MT-064 - 2026-08-22 - Highlight on Diagram, and Test Condition
+
+**Disposition:** needs test  
+**From:** feature request  
+**Written:** 2026-08-22
+
+**What to do.** Open a route that has both commands and conditions, and press **Highlight on Diagram**.
+Every square the route COMMANDS - its switches, signals and uncouplers - must light in the diagram's
+ordinary yellow, and every square its CONDITIONS name must light in orange, both for five seconds and
+then go back to normal by themselves. A route with no conditions lights only in yellow.
+
+The button beside it, which used to say **Test**, must now say **Test Condition** - it evaluates the
+conditions, which is not what "test" suggests when there is a whole route on screen.
+
+#### Comments
+
+**Claude, 2026-08-22.** Filed through `feature-requests.md`, and built in the same round - Adam gave
+the whole specification with the request, so there was nothing to wait for.
+
+Two colours because they answer different questions: yellow is "this is what the route DOES", orange is
+"this is what it LOOKS AT before doing it". Five seconds and self-clearing, so it can be pressed while
+reading the route without leaving the diagram marked up afterwards.
+
+---
+
 <a id="mt-060"></a>
 
 ### MT-060 - 2026-08-22 - testAutoDetect needs a Central Station
@@ -1254,6 +1779,6 @@ The detailed error should still be in the console and the stack trace should sti
 
 #### Comments
 
-*(none yet)*
+It currently says "close the other window". There could also be a test process or CLI version running, so just say window or background process.
 
 ---
