@@ -688,6 +688,16 @@ public class TileGraph
 
             if (!tiles.containsKey(from)) continue;
 
+            // A link the user has switched off is not autonomy's business, and every problem this loop
+            // raises is BLOCKING.  The field's own javadoc says why: a diagram can carry a link that
+            // belongs to the drawing rather than to the railway, and refusing to build until it is
+            // paired would be autonomy insisting on something the user has already decided against.
+            //
+            // exits() honours this, and so does the never-paired loop twenty lines below.  This loop
+            // did not - so switching a link off stopped trains going through it and did NOT stop it
+            // failing the build, which is the one combination that leaves the user nothing to do.
+            if (disabledPortals.contains(from)) continue;
+
             if (!tiles.containsKey(to))
             {
                 // the target is gone, or lives on a page excluded from autonomy
@@ -1177,7 +1187,11 @@ public class TileGraph
         // every route on the far square is open, exactly as at the square the walk started from.
         TileKey partner = portals.get(here.tile);
 
-        if (partner != null && tiles.containsKey(partner))
+        // Not through a link that is switched off.  exits() declines to offer a way through one, so a
+        // walk that crossed it anyway believed it could reach pages no train can actually get to - and
+        // a path search that answers "reachable" for somewhere unreachable is worse than one that says
+        // nothing, because something then plans a move on it.
+        if (partner != null && !disabledPortals.contains(here.tile) && tiles.containsKey(partner))
         {
             out.add(new Step(partner, null));
         }

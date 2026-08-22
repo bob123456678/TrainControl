@@ -35,6 +35,70 @@ public class testMultiUnitMembership
 {
     private static MarklinControlStation model;
 
+    /**
+     * A member whose name contains a comma and a space keeps it, and is still found.
+     *
+     * The array block of a CS2 file used to be flattened by calling HashMap.toString() and then
+     * rewriting its ", " entry separator back to ",".  That rewrite cannot tell the separator from a
+     * ", " INSIDE a value, and exactly one array key carries free text: lokname, the name of a
+     * multi-unit member.  "BR 50, Ep. III" was stored as "BR 50,Ep. III", matched no locomotive in the
+     * database, and was dropped from its consist with a log line for company - so commanding the head
+     * moved one engine of two.
+     *
+     * The twin of this, four lines further up in the same block, was fixed when a member named
+     * "BR 50 = Ep.III" was lost the same way.
+     *
+     * Driven through parseFile rather than a whole sync: the defect is in the flattening, and the
+     * recovery below is the exact expression parseLocomotives uses to read it back.
+     */
+    @Test
+    public void testAMemberNameWithACommaSurvivesTheParse() throws Exception
+    {
+        String awkward = "BR 50, Ep. III";
+
+        String file = "[lokomotive]\n"
+            + "lokomotive\n"
+            + " .name=Doppeltraktion\n"
+            + " .uid=0x4001\n"
+            + " .traktion\n"
+            + " ..lok=0x400b\n"
+            + " ..lokname=" + awkward + "\n"
+            + " .traktion\n"
+            + " ..lok=0x400a\n"
+            + " ..lokname=1043 001-5 OeBB\n"
+            + "lokomotive\n"
+            + " .name=Something Else\n"
+            + " .uid=0x4002\n";
+
+        java.util.List<java.util.Map<String, String>> parsed =
+            org.traincontrol.marklin.file.CS2File.parseFile(new java.io.BufferedReader(
+                new java.io.StringReader(file)));
+
+        String traktion = null;
+
+        for (java.util.Map<String, String> one : parsed)
+        {
+            if ("Doppeltraktion".equals(one.get("name"))) traktion = one.get("traktion");
+        }
+
+        assertNotNull(traktion, "the multi-unit was not parsed at all");
+
+        // The exact expression parseLocomotives uses to recover the member names
+        java.util.List<String> members = new java.util.ArrayList<>();
+
+        for (String part : traktion.replace("{", "").replace("}", "").split("\\|"))
+        {
+            members.add(part.split(",lok=")[0].replace("lokname=", ""));
+        }
+
+        assertTrue(members.contains(awkward),
+            "the member came back as " + members + ".  A name with a comma and a space in it is not "
+            + "found in the locomotive database, so the member is dropped from its consist and "
+            + "commanding the head moves one engine of two");
+
+        assertEquals(members.size(), 2, "the other member went missing: " + members);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {

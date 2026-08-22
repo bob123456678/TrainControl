@@ -505,17 +505,22 @@ withdrawn on that check.  What follows is what was done, in the same order.
 |---|---|
 | A1 | **Fixed.**  `restoreState` now tells "no file" from "would not read" - it sets `uiStateLoadFailed` when the file exists - and `saveState` copies an unreadable file aside as `unreadable<timestamp>UIState.data` before replacing it, logging where it went.  Straight from the locomotive database, which is the sibling that already had it. |
 | B1 | **Open.**  Confirmed as a mismatch between the two importers; NOT fixed here.  Which way `stellung` maps and which drive is the base address are facts about the ironwork, and the wrong choice throws a real three-way into a position it cannot hold.  That wants the railway, not a reading. |
-| B2 | **Open.**  Confirmed.  Fixing it changes what BLOCKS an autonomy build, which is a decision about what the setup insists on rather than a defect in how it counts - and a build that stops blocking is a build that starts running on a graph somebody may not have meant.  Worth doing, worth doing deliberately. |
+| B2 | **Fixed.**  Adam settled the intent: *"If it's off, the link doesn't matter or exist logically."*  That is what the field's own javadoc says, and what `exits()` and the never-paired loop already did; the pairing loop in the same method and `continuations()` did not.  Both now skip a link the user has switched off, so a disabled link neither blocks the build nor appears in the path search as a way through. |
 | B3 | **Fixed.**  The page names are the last entry of the saved list whatever the page count is, so the restore is now gated on the list being non-empty rather than on the preference agreeing with the file.  `LOC_MAPPING_PAGES_PREF` also gained the folder hash every other per-folder preference carries; it was added this cycle and unreleased, so nothing had to be migrated.  The page loop stops at the pages instead of reading the names map as one. |
 | B4 | **Fixed for the page, open for the element.**  The page loop now guards each page: one that will not parse is logged and skipped, the rest of the layout loads, and the folder preference survives.  `pageIndex` is advanced before the guard so a skipped page does not renumber the others - the autonomy setup is keyed by page id.  A per-ELEMENT guard, which would save the rest of a page rather than the rest of the layout, is not done. |
 | C1 | **Fixed.**  The timetable thread catches `Throwable`, as the autonomy dispatcher already did for the same call and for the reason written above it. |
 | C2 | **Fixed.**  `noteOnce` filters on tile and key before recording, which is `TileGraph.validatePortals`\'s rule and its comment, applied where the same reasoning holds. |
 | C3 | **Fixed.**  `sanitizeFilename` moved to `Util` so that all three writers can reach it - `LayoutDiagram` is in `base` and must not reach into the Marklin package - and `CS2File` delegates, so every existing caller is untouched.  `saveChanges` applies it to the name it writes and to its staging path. |
-| C4 | **Open.**  Confirmed by reading.  The fix is in `parseFile`\'s value splitting, which every CS2 and CS3 file in the application goes through, and the failing input is a locomotive name containing a comma followed by a space.  Narrow enough to be worth a test written first, and that test wants a real file to be written against. |
+| C4 | **Fixed.**  The array block is joined by hand rather than run through `HashMap.toString()` and repaired, so the entry separator is never confused with a `", "` inside a value.  The map is still walked in its own iteration order, because `parseLocomotives` recovers members by splitting on `",lok="` and that works only while `lokname` comes first.  `testAMemberNameWithACommaSurvivesTheParse` drives a `traktion` block through `parseFile` and recovers the members with the same expression `parseLocomotives` uses; it fails on the old code. |
 
 **Tests.**  A1, B3, B4, C1, C2 and C3 are all changes to failure paths that need a real file, a real
 window or a real Error to exercise, and none has an automated test.  That is a gap and is recorded as
 one rather than papered over; the hands-on tests below are what stands in for them today.
+
+**Still open: B1 only, and it is a "needs testing" rather than a "needs deciding".**  What would settle
+it is one CS2 `fahrstrassen.cs2` from a layout with a three-way turnout inside a route, beside the same
+route exported from a CS3.  If `stellung 2` turns out to appear only on two-red signals, there is
+nothing to fix and the entry becomes a D.
 
 **At the layout, for these:**
 

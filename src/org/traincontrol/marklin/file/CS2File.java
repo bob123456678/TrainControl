@@ -490,11 +490,35 @@ public final class CS2File
                         current = item.get(lastKey);
                     }
                     
-                    String arrayString = current + array.toString();
+                    // Joined by hand rather than through HashMap.toString().
+                    //
+                    // toString() separates entries with ", ", and the repair that turned that back into
+                    // "," could not tell the separator from a ", " INSIDE a value.  Exactly one array
+                    // key carries free text - lokname, the name of a multi-unit member - so a member
+                    // called "BR 50, Ep. III" was stored as "BR 50,Ep. III", matched no locomotive in
+                    // the database, and was dropped from its consist with only a log line.  Commanding
+                    // the head then moved one engine of two.
+                    //
+                    // This is the twin of the defect the split limit above was added for, in the same
+                    // block: that one was a name containing "=", this one a name containing ", ".
+                    //
+                    // The map is still walked in ITS order, not insertion order, because parseLocomotives
+                    // recovers the members by splitting on ",lok=" - which needs lokname to come first,
+                    // and it does only because that is how these two keys hash.  Building the string
+                    // from the same iteration keeps that exactly as it was.
+                    StringBuilder entries = new StringBuilder();
+
+                    for (Map.Entry<String, String> pair : array.entrySet())
+                    {
+                        if (entries.length() > 0) entries.append(',');
+
+                        entries.append(pair.getKey()).append('=').append(pair.getValue());
+                    }
+
+                    String arrayString = current + "{" + entries + "}";
                     
                     // A dirty but effective workaround
                     arrayString = arrayString.replace("}{", "|");
-                    arrayString = arrayString.replace(", ", ",");
 
                     item.put(lastKey, arrayString);
                     
