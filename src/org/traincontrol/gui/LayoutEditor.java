@@ -2263,16 +2263,15 @@ public class LayoutEditor extends PositionAwareJFrame
                 rememberAutonomy(autonomy);
             }
 
-            // The selection travels with the tiles, so a group can be nudged twice
-            java.util.List<org.traincontrol.base.TileSelection.At> landed =
-                this.selection.movedBy(dx, dy);
-
+            // The move is finished, so the selection is finished with.
+            //
+            // It used to travel with the tiles, on the reasoning that a group could then be dragged
+            // twice - and dragging is the only thing that calls this, so that was the whole of the
+            // argument.  Adam asked for the opposite after using it: a selection that outlives its
+            // move is a selection still armed when the user has moved on, and the next Delete or
+            // Control+X is aimed at squares they stopped thinking about.  Picking again is three
+            // clicks; noticing that twenty squares are still picked is luck.
             this.selection.clear();
-
-            for (org.traincontrol.base.TileSelection.At at : landed)
-            {
-                this.selection.add(at.getX(), at.getY());
-            }
         }
         catch (IOException ex)
         {

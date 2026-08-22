@@ -1290,6 +1290,9 @@ public class Layout
         {
             this.running = true;
         }
+
+        // The signals are about a railway that has since been arranged by hand
+        refreshAllProtectingSignals();
         
         // Start locomotives
         this.locomotivesToRun.forEach(loc ->
@@ -3538,6 +3541,9 @@ public class Layout
         {
             this.running = true;
         }
+
+        // See runLocomotives: the signals are about a railway that has since been arranged by hand
+        refreshAllProtectingSignals();
         
         // Written from an entry's own thread, read here once they have all finished
         final AtomicBoolean abandoned = new AtomicBoolean(false);
@@ -4583,6 +4589,18 @@ public class Layout
     {
         if (point == null || this.control == null) return;
 
+        // Only while trains are actually being run.
+        //
+        // Every occupancy change comes through here, and placing a train by hand is an occupancy
+        // change - so arranging the railway before a run threw real signals: cutting a locomotive off
+        // a platform with Control+X drove its protecting signals on the spot, which is hardware moving
+        // in response to a setup gesture.  Nobody asked for the railway to be commanded while they were
+        // still deciding what it should look like.
+        //
+        // isRunning rather than isAutoRunning: a train under a driving thread is being run whether or
+        // not the whole layout is, and its arrival still has to protect its platform.
+        if (!this.isRunning()) return;
+
         List<String> accessories = point.getProtectingSignals();
 
         if (accessories.isEmpty()) return;
@@ -4675,6 +4693,41 @@ public class Layout
      */
     private final java.util.Map<String, Boolean> signalAspects =
         new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Brings every protecting signal into line with where the trains actually are.
+     *
+     * Called when a run begins, and forgetting the memo is not enough on its own.  While nothing is
+     * running the refresh is silent - trains are placed and taken off by hand then, and driving real
+     * signals from a setup gesture is what that silence exists to prevent - so two things are true at
+     * the moment a run starts: what the signals were last told describes a railway that has since been
+     * rearranged, and no occupancy CHANGE is coming for a train that was already put on its platform.
+     *
+     * Only clearing the memo leaves that second train unprotected for the whole run: nothing calls the
+     * refresh for a square whose occupancy has not changed, so its signal simply stays as it was.  So
+     * the memo is dropped AND every signal is asked again from current occupancy.
+     *
+     * The cost is one command per signal at the start of a run.  Set against a platform standing green
+     * with a train in it, that is nothing.
+     */
+    public void refreshAllProtectingSignals()
+    {
+        this.signalAspects.clear();
+
+        if (this.control == null) return;
+
+        java.util.Set<String> seen = new LinkedHashSet<>();
+
+        for (Point point : this.points.values())
+        {
+            seen.addAll(point.getProtectingSignals());
+        }
+
+        for (String accessory : seen)
+        {
+            refreshOneSignal(accessory);
+        }
+    }
 
     Locomotive locomotiveInBlock(String block, Point except)
     {

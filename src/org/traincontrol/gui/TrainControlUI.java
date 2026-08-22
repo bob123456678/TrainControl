@@ -3159,7 +3159,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return true;
         }
 
-        org.traincontrol.automation.Point point = getAutonomyPointForTile(over);
+        // The square under the pointer, or the station its LABEL is about.
+        //
+        // A station's name is drawn on a square of its own beside the platform, and pointing at the
+        // name is pointing at the station - it is the only part of a station big enough to aim at
+        // without hunting for the sensor tile.  Without this the keys worked over the platform and
+        // said "autonomy does not know this square" over the name beside it, which reads as the
+        // feature half working.
+        org.traincontrol.automationui.TileGraph.TileKey aimed = over;
+
+        org.traincontrol.automation.Point point = getAutonomyPointForTile(aimed);
+
+        if (point == null)
+        {
+            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+            org.traincontrol.automationui.TileGraph.TileKey captioned =
+                session == null ? null : session.getCaptionTarget(over);
+
+            if (captioned != null)
+            {
+                aimed = captioned;
+                point = getAutonomyPointForTile(aimed);
+            }
+        }
 
         if (point == null)
         {
@@ -3194,7 +3217,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // And into the SETUP, so the next build puts the train where it now is.  A placement made
         // only in the running layout goes back where it was the next time a configuration is loaded.
-        rememberPlacement(point, over);
+        //
+        // Against the square that was AIMED at rather than the one hovered: pointing at a station's
+        // name means the station, and the setup records trains against sensors.
+        rememberPlacement(point, aimed);
 
         this.updateVisiblePoints();
         this.repaintAutoLocList(false);

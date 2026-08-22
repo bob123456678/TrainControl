@@ -90,6 +90,15 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             everything.addActionListener(event -> edit.selectAll());
             selectionMenu.add(everything);
 
+            // And the way out, beside the three ways in.  Escape does it too, but a keystroke is only
+            // a way out for somebody who already knows it is - and this menu is where a user who has
+            // picked twenty squares by mistake comes looking.
+            JMenuItem deselect = new JMenuItem(I18n.t("layout.ui.menuDeselectAll"));
+            deselect.addActionListener(event -> edit.clearSelection());
+            deselect.setToolTipText("Escape");
+            deselect.setEnabled(!edit.getSelection().isEmpty());
+            selectionMenu.add(deselect);
+
 
             // Only reachable on a grid square - the palette has no row to speak of
             boolean onDiagram = edit.getGridX(label) >= 0 && edit.getGridY(label) >= 0;

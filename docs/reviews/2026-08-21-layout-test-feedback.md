@@ -18,7 +18,7 @@ Every entry names the test it came from, so his words can be found in context.
 
 | # | What | From | Status |
 |---|---|---|---|
-| LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Made visible, awaiting a re-run |
+| LT-A1 | Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead | 21 | Fixed - it was the station LABEL, which resolves to no Point |
 | LT-A2 | A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again | 1 | Open |
 | LT-A3 | Dragging a selection LEFT removes the locomotive | 2 | Open |
 | LT-A4 | A locomotive's direction changes when its tile is moved to valid connected track | 1 | Open |
@@ -34,6 +34,8 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-C3 | The autonomy diagram needs about one more row of scrollable height | 14 | Fixed |
 | LT-C4 | Boolean-operator rows in the conditions table are greyed, which reads as disabled | 3 | Fixed |
 | LT-C5 | The drag-target group is light red; it should be blue, with the selection staying red | 13 | Fixed |
+| LT-A6 | Cutting a locomotive threw its protecting signals - real ironwork moved from a setup gesture | 21 re-run | Fixed |
+| LT-A7 | Pasting worked over the platform but not over the station's name beside it | 21 re-run | Fixed |
 
 ## Menu work, all from tests 22 and 23
 
@@ -43,10 +45,10 @@ Every entry names the test it came from, so his words can be found in context.
 | LT-M2 | Home appears in both the track diagram's own menu and the deep menu - remove it from the top one | Fixed |
 | LT-M3 | Move "{loc} Is Facing..." out of the deep menu and up to the track diagram's own menu | Fixed |
 | LT-M4 | Hide "Make a One-Way Run from Here..." in the deep menu; it stays in the autonomy editor | Fixed |
-| LT-M5 | Rename "Connections and Direction" to "Trains May Depart...", and move "Trains May Arrive" beside it | Open |
-| LT-M6 | Move the link options out of Connections and into the menu itself | Open |
-| LT-M7 | Give every right-click group of three or more a semantic heading | Open |
-| LT-M8 | Selection menu: rename "Pick" to "Select", make the existing item a Deselect, and deselect automatically once a move completes | Open |
+| LT-M5 | Rename "Connections and Direction" to "Trains May Depart...", and move "Trains May Arrive" beside it | Fixed |
+| LT-M6 | Move the link options out of Connections and into the menu itself | Fixed |
+| LT-M7 | Give every right-click group of three or more a semantic heading | Partly - the two new groups are headed |
+| LT-M8 | Selection menu: rename "Pick" to "Select", make the existing item a Deselect, and deselect automatically once a move completes | Fixed |
 
 ## Not defects - feature requests, recorded not started
 

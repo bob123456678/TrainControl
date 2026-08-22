@@ -772,6 +772,10 @@ public class AutonomyEditorPanel extends JPanel
         title(menu, isPoint ? pointTitle(target) : component == null
             ? target.getX() + "," + target.getY() : component.getUserFriendlyTypeName());
 
+        // Built where the station settings are and added beside its other half further down - see the
+        // note there.  Null when the square has only one way in, which is not a question worth asking.
+        javax.swing.JMenu arrivals = null;
+
         if (isPoint)
         {
             // Locomotives first, because placing one is the commonest reason to open this menu once a
@@ -953,7 +957,7 @@ public class AutonomyEditorPanel extends JPanel
 
             if (isStation && ways.size() > 1)
             {
-                javax.swing.JMenu arrivals = new javax.swing.JMenu(
+                arrivals = new javax.swing.JMenu(
                     I18n.t("autosetup.ui.menuArrivalsGroup"));
 
                 arrivals.setToolTipText(wrapped(I18n.t("autosetup.ui.hintArrivals")));
@@ -976,7 +980,12 @@ public class AutonomyEditorPanel extends JPanel
                     arrivals.add(allow);
                 }
 
-                menu.add(arrivals);
+                // Held rather than added here.  It is one half of a pair - which ends trains may come
+                // IN by, which ends they may go OUT by - and the two were a dozen items apart with the
+                // station settings between them.  Added together, below.
+                //
+                // (Nothing else is deferred: everything between here and there is about the square
+                // itself rather than about the track either side of it.)
             }
 
             // The signal that is thrown to red while this platform is claimed.
@@ -1059,6 +1068,9 @@ public class AutonomyEditorPanel extends JPanel
         // link's pairing - and each is a different sentence about the same subject.  Read as a list
         // they looked like unrelated leftovers after the point settings.
         javax.swing.JMenu connections = new javax.swing.JMenu(I18n.t("autosetup.ui.menuConnections"));
+
+        // Headed, because there are four kinds of thing in here once a square has several arms
+        title(connections, I18n.t("autosetup.ui.menuDepartHeading"));
 
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
@@ -1158,42 +1170,44 @@ public class AutonomyEditorPanel extends JPanel
             }));
         }
 
-        // A link's pairing is the longest-range connection on the diagram - it joins two pages - so it
-        // belongs here rather than on its own at the end.
+        // The two halves of the same question, side by side: which ends trains may arrive by, and
+        // which ends they may leave by.  "Connections and Direction" described the machinery rather
+        // than the question, and sat nowhere near its other half.
+        if (arrivals != null) menu.add(arrivals);
+
+        menu.add(connections);
+
+        // A link's own settings, on the menu ITSELF rather than inside the departures submenu.
+        //
+        // They have been walking up this menu one level at a time, and this is where they stop.  A
+        // link is not a piece of track with directions: it is a jump to another page, and the three
+        // things anybody does to one - use it or not, pair it, unpair it - are the whole reason to
+        // right-click a link at all.  Putting them under a heading about which way trains may depart
+        // asked the user to read past a question that does not apply to a link before reaching the
+        // ones that do.
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
         {
-            connections.addSeparator();
+            menu.addSeparator();
+
+            title(menu, I18n.t("autosetup.ui.menuLinkHeading"));
 
             // Autonomy can be told to leave a link alone entirely.  A diagram can carry one that
             // belongs to the drawing rather than to the railway autonomy runs, and refusing to build
             // until it is paired would be insisting on something the user has decided against.
-            connections.add(toggle(I18n.t("autosetup.ui.menuUseLink"),
+            menu.add(toggle(I18n.t("autosetup.ui.menuUseLink"),
                 "autosetup.ui.hintUseLink",
                 !session.getStore().isPortalDisabled(target),
                 on -> session.setPortalDisabled(target, !on)));
 
-            connections.addSeparator();
-
-            // A link's settings, out here rather than in a submenu of their own.
-            //
-            // They were one level down, on the reasoning that loose in Connections they sat beside
-            // "make a one-way run from here" - which is about track and means nothing on a link, so
-            // two unrelated subjects shared a level and one of them did not apply.  True, and not
-            // worth what it cost: there are only three of them, they are the only reason to
-            // right-click a link at all, and a submenu put each of them two clicks away.
-            //
-            // Naming has gone up again, out of Connections altogether - see below.
-            connections.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
+            menu.add(item(I18n.t("autosetup.ui.menuPairLink"), () -> pairFromList(target)));
 
             if (session.getStore().getPortalPartner(target) != null)
             {
-                connections.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
+                menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () -> session.unpairPortal(target)));
             }
         }
-
-        menu.add(connections);
 
         // Naming a link, on the menu itself rather than inside Connections.
         //
