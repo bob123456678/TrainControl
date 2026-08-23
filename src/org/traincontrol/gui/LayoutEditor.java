@@ -4421,40 +4421,62 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
     {
-        javax.swing.JPanel column = new javax.swing.JPanel();
-        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+        // A list, since OB-004.  It was a column of toggle buttons, which is what the comment above
+        // said would happen: "exactly the sort of thing that gets decided again after somebody has
+        // used it".  Twenty buttons down the side of a window read as twenty things to press; twenty
+        // rows read as a list of pages, which is what they are.
+        pageList = new javax.swing.JList<>(pages.toArray(new String[0]));
 
-        pageButtons = new java.util.LinkedHashMap<>();
+        pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pageList.setSelectedValue(layout.getName(), true);
 
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+        // docs/UI-standards.md: list rows are Segoe UI 12, black
+        pageList.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        pageList.setForeground(java.awt.Color.BLACK);
+        pageList.setFixedCellHeight(22);
+        pageList.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        pageList.setFocusable(false);
 
-        for (final String page : pages)
+        // The whole name for whichever row the pointer is on, since a long one is cut off by the
+        // strip's fixed width - the tooltip the buttons carried, per row.
+        pageList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
-            javax.swing.JToggleButton tab = tab(page);
-
-            tab.setSelected(page.equals(layout.getName()));
-
-            // The whole name, for the one that has been cut short
-            tab.setToolTipText(page);
-
-            tab.addActionListener(e ->
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e)
             {
-                if (switching || page.equals(layout.getName()))
-                {
-                    syncSidebar();
-                    return;
-                }
+                int row = pageList.locationToIndex(e.getPoint());
+
+                pageList.setToolTipText(row < 0 ? null : pageList.getModel().getElementAt(row));
+            }
+        });
+
+        // On the CLICK, not on the selection change.
+        //
+        // A ListSelectionListener also fires when the selection is set in code - which syncSidebar
+        // does on every cancelled switch - and the switching guard would have to carry that. Worse,
+        // the arrow keys would move the selection and start a switch per row travelled through.
+        // A click is the gesture that means "go here", so it is the one that is listened for.
+        pageList.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {
+                int row = pageList.locationToIndex(e.getPoint());
+
+                if (row < 0 || switching) return;
+
+                String page = pageList.getModel().getElementAt(row);
+
+                if (page.equals(layout.getName())) return;
 
                 leaveFor(page, isAutonomyMode());
-            });
+            }
+        });
 
-            group.add(tab);
-            column.add(tab);
+        pageList.setMaximumSize(
+            new java.awt.Dimension(SIDEBAR_WIDTH - 20, Short.MAX_VALUE));
 
-            pageButtons.put(page, tab);
-        }
-
-        return column;
+        return pageList;
     }
 
     /**
@@ -4501,7 +4523,18 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
     private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
     {
-        javax.swing.JToggleButton tab = tab(text);
+        // A radio button since OB-004, which is what this pair always meant: two mutually exclusive
+        // views of one diagram.  A JRadioButton IS a JToggleButton, so the group, the fields and
+        // syncSidebar are all unchanged - only what it looks like.
+        javax.swing.JToggleButton tab = new javax.swing.JRadioButton(text);
+
+        // docs/UI-standards.md: buttons are Segoe UI Bold 12, black
+        tab.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        tab.setForeground(java.awt.Color.BLACK);
+
+        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        tab.setFocusable(false);
+        tab.setOpaque(false);
 
         tab.setSelected(isAutonomyMode() == autonomy);
 
@@ -4618,14 +4651,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         try
         {
-            if (pageButtons != null)
-            {
-                for (java.util.Map.Entry<String, javax.swing.JToggleButton> tab
-                    : pageButtons.entrySet())
-                {
-                    tab.getValue().setSelected(tab.getKey().equals(layout.getName()));
-                }
-            }
+            if (pageList != null) pageList.setSelectedValue(layout.getName(), true);
 
             if (trackModeButton != null) trackModeButton.setSelected(!isAutonomyMode());
             if (autonomyModeButton != null) autonomyModeButton.setSelected(isAutonomyMode());
@@ -4642,7 +4668,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     /** The strip down the side, or null when it would have nothing to offer */
     private javax.swing.JPanel sidebar;
 
-    private java.util.Map<String, javax.swing.JToggleButton> pageButtons;
+    /** Which page, as a list - see buildPageControl */
+    private javax.swing.JList<String> pageList;
 
     private javax.swing.JToggleButton trackModeButton;
 

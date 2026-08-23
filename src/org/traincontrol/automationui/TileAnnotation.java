@@ -589,10 +589,27 @@ public class TileAnnotation
      * Whether this would paint anything at all.
      * @return
      */
+    /**
+     * Whether there is nothing here worth drawing.
+     *
+     * paint() opens with this, so anything missing from the list below is a thing that never gets
+     * painted when it is the ONLY thing on a square.
+     *
+     * `occupied` was missing, which is OB-007: the train mark had been written and drawn for a while,
+     * and was invisible on exactly the squares the request was about - the ones with nothing else to
+     * say. A station carrying a badge was never blank, so the star appeared there and the gap looked
+     * like it did not exist.
+     *
+     * The field had been added to equals and to hashCode. It is the method that decides whether the
+     * object is worth drawing at all that tends to be missed, because it is not one anybody is looking
+     * at while adding a field.
+     *
+     * @return whether this annotation would draw nothing
+     */
     public boolean isBlank()
     {
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
-            && traces.isEmpty() && arrivals.isEmpty();
+            && traces.isEmpty() && arrivals.isEmpty() && !occupied;
     }
 
     public List<Trace> getTraces()

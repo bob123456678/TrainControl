@@ -68,6 +68,33 @@ looked, so I know this is not already here."
 
 when clicking an autonomy tile with all things displayed off, the user doesn't know what is happening.  ensure that at least "restrictions only" gets enabled with the click.
 
+### OB-009 - 2026-08-22 - adding new locomotives doesn't work
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 18:17  
+**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+adding a locomotive to the graph doesn't corretly place it at the station where it belongs.  also, deprecate the "move locomotive" option in favor of just "edit locomotive", since the latter lets you switch.  Bug: the station labels are not updated when locomotive placements are changed or when moves happen.
+
+### OB-010 - 2026-08-22 - label inconsistency in autonomy editor GUI
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 18:20  
+**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Change the "show track lengths" jlabel text to just "Track Lengths"
+
+### OB-011 - 2026-08-22 - autonomy jmenu title
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 18:27  
+**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Change "Route Choice" to "Choose Routing Logic..."
+
 ---
 
 ## What has been picked up
@@ -82,13 +109,22 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
-| 2026-08-22 | OB-007 | feature request | A white * on the station icon where a train is set up to be standing | needs test | - |
-| 2026-08-22 | OB-006 | feature request | Move "make a one way run from here" off the right-click menu and onto a button that asks for both points and a direction | needs test | - |
+| 2026-08-22 | OB-007 | feature request | A white * on the station icon where a train is set up to be standing | - | [MT-099](tests.md#mt-099) |
+| 2026-08-22 | OB-006 | feature request | Move "make a one way run from here" off the right-click menu and onto a button that asks for both points and a direction | - | [MT-098](tests.md#mt-098) |
 | 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | - | [MT-095](tests.md#mt-095) |
-| 2026-08-22 | OB-004 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | needs test | - |
+| 2026-08-22 | OB-004 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | - | [MT-097](tests.md#mt-097) |
 | 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
 | 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
 | 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+
+**All five are fixed, 2026-08-22.** The three feature requests earned an `MT-###` after all, for the
+same reason the two bugs did: each changed something only a person at the railway can confirm.
+
+`OB-007` was the interesting one - what it asked for was already built and had been for a while. The
+star is drawn by `paintTrainMark`; `paint()` just never got that far, because `isBlank()` did not count
+a train as content and a square with only a train on it was therefore "nothing to draw". It appeared on
+stations, which carry a badge and so were never blank, and was missing on exactly the squares the
+request was about.
 
 **`OB-003` and `OB-005` are fixed, 2026-08-22, on Adam's "fix all the bugs".** Both earned an
 `MT-###` after all, which is the rule working rather than an exception to it: each one changed

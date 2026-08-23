@@ -70,7 +70,20 @@ public class AutonomyEditorPanel extends JPanel
          * The only thing here that genuinely needs a mode, because it takes two clicks to say one
          * thing.  Everything else names one tile and belongs on that tile's menu.
          */
-        TEST
+        TEST,
+
+        /**
+         * Close a run of track in one direction, from one square to another.
+         *
+         * The second thing that takes two clicks, and it used to be offered from a tile's right-click
+         * menu - which is where the comment above says such a thing does not belong.  Same shape as
+         * TEST, and now in the same place.
+         *
+         * Unlike TEST this one WRITES, so it asks before it does: two squares name a run, and the run
+         * has two directions.  Which one is being closed is the whole decision, and it is not
+         * recoverable by looking at the diagram afterwards without reading every arrow on it.
+         */
+        ONE_WAY
     }
 
     private final AutonomySession session;
@@ -223,6 +236,9 @@ public class AutonomyEditorPanel extends JPanel
     private Runnable onDiagramChanged;
 
     private TileKey testFrom;
+
+    /** The one-way run tool, since OB-006 moved it off the right-click menu */
+    private JToggleButton oneWayButton;
 
     private javax.swing.JToggleButton whyButton;
 
@@ -397,6 +413,9 @@ public class AutonomyEditorPanel extends JPanel
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
         whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
+        oneWayButton = toolButton(Tool.ONE_WAY, I18n.t("autosetup.ui.toolOneWay"));
+        oneWayButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipOneWay")));
+
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
@@ -528,6 +547,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (testButton != null) testButton.setSelected(false);
         if (whyButton != null) whyButton.setSelected(false);
+        if (oneWayButton != null) oneWayButton.setSelected(false);
 
         say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
 
@@ -581,6 +601,7 @@ public class AutonomyEditorPanel extends JPanel
 
             say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
+                : tool == Tool.ONE_WAY ? I18n.t("autosetup.ui.promptOneWayFrom")
                 : I18n.t("autosetup.ui.hintClickToCycle"));
 
             refresh();
@@ -1166,22 +1187,15 @@ public class AutonomyEditorPanel extends JPanel
                 connections.add(all);
             }
 
-            connections.addSeparator();
         }
 
-        // Editor only.  It is a two-click gesture - this square, then the far one - and the deep menu
-        // has no diagram of its own to take the second click on, so from there it could only ever jump
-        // the user to the page and abandon what they had started.
-        if (!menuOnly)
-        {
-            connections.add(item(I18n.t("autosetup.ui.menuOneWayRun"), () ->
-            {
-                if (needsTheGrid(target)) return;
-
-                oneWayFrom = target;
-                waitFor(I18n.t("autosetup.ui.promptOneWayTo"));
-            }));
-        }
+        // "Make a One-Way Run from Here" used to be here, with a separator above it (OB-006).
+        //
+        // It never belonged on a tile menu.  Everything else on this menu names ONE square and acts on
+        // it; that named one square and then waited for a second click somewhere else, which is a mode,
+        // and a mode advertised from a menu that closes the moment you pick it gives the user no way to
+        // see that they are in one.  It is a button beside Test and Why now, where the other gesture
+        // that takes two clicks already lives.
 
         // The two halves of the same question, side by side: which ends trains may arrive by, and
         // which ends they may leave by.  "Connections and Direction" described the machinery rather
@@ -2973,16 +2987,83 @@ public class AutonomyEditorPanel extends JPanel
 
         rememberIfStation(tile);
 
-        // A one-way run was started from a right-click menu and is waiting for its far end.
+        // The one-way tool: the first click names one end.
+        if (tool == Tool.ONE_WAY && oneWayFrom == null)
+        {
+            if (needsTheGrid(tile)) return;
+
+            oneWayFrom = tile;
+
+            say(hint, I18n.f("autosetup.ui.promptOneWayTo", describeTile(tile)));
+
+            refresh();
+            return;
+        }
+
+        // ... and the second names the other, after which it asks which way round it goes.
         if (oneWayFrom != null)
         {
             TileKey from = oneWayFrom;
+
+            // Cleared before the dialog, not after: a modal dialog runs its own event loop, and a
+            // second click landing while it is open would otherwise start a third square.
             oneWayFrom = null;
 
-            int changed = session.setOneWayRun(from, tile);
+            if (from.equals(tile))
+            {
+                say(hint, I18n.t("autosetup.ui.oneWaySameSquare"));
+
+                oneWayFrom = from;
+
+                refresh();
+                return;
+            }
+
+            // WHICH WAY, asked rather than assumed (OB-006).
+            //
+            // Two squares describe a run; they do not describe a direction, and the direction is the
+            // entire content of the decision.  Picking the order the user happened to click in is a
+            // guess, and a wrong guess here closes a stretch of railway the wrong way round and leaves
+            // no trace on the diagram saying which way the user meant.
+            //
+            // Named by the squares themselves, in the same words the rest of this panel uses for a
+            // square, so the answer can be checked against what is on screen.
+            String there = I18n.f("autosetup.ui.oneWayLeaving",
+                describeTile(from), describeTile(tile));
+
+            String back = I18n.f("autosetup.ui.oneWayLeaving",
+                describeTile(tile), describeTile(from));
+
+            Object[] answers = { there, back, I18n.t("autosetup.ui.oneWayCancel") };
+
+            int answer = javax.swing.JOptionPane.showOptionDialog(this,
+                I18n.t("autosetup.ui.oneWayWhichWay"),
+                I18n.t("autosetup.ui.oneWayTitle"),
+                javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE,
+                null, answers, answers[0]);
+
+            if (answer != 0 && answer != 1)
+            {
+                say(hint, I18n.t("autosetup.ui.promptOneWayFrom"));
+
+                refresh();
+                return;
+            }
+
+            int changed = answer == 0
+                ? session.setOneWayRun(from, tile)
+                : session.setOneWayRun(tile, from);
 
             say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
                 : I18n.f("autosetup.ui.oneWayDone", changed));
+
+            // Armed for the next one.  Closing a run is rarely a single act - a yard is several - and
+            // the alternative is pressing the button again between each.
+            if (changed >= 0 && tool == Tool.ONE_WAY)
+            {
+                say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
+            }
 
             refresh();
             return;

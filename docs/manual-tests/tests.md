@@ -22,10 +22,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
 | [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
-| [MT-070](#mt-070) | 2026-08-18 | Page switching keeps captions live | needs test | Tier 2 |
-| [MT-071](#mt-071) | 2026-08-18 | Popup diagram captions | needs test | Tier 2 |
 | [MT-072](#mt-072) | 2026-08-18 | Cancel in the track diagram editor | needs test | Tier 2 |
-| [MT-073](#mt-073) | 2026-08-18 | Undo covers captions | needs test | Tier 2 |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | needs test | Tier 2 |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | needs test | Tier 2 |
 | [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
@@ -98,8 +95,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as OB-001 in issues.md, not a test.** | needs test | OB-001/OB-002 |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
+| [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | OB-004 |
+| [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | OB-006 |
+| [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | OB-007 |
 
-Everything else - 17 of 96 - is **fixed validated** and needs nothing from you unless the
+Everything else - 20 of 99 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -240,7 +240,7 @@ Present in the autonomy editor but not in the track diagram.
 
 ### MT-070 - 2026-08-18 - Page switching keeps captions live
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -253,13 +253,17 @@ They do- but I didn't test running with autonomy.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-071"></a>
 
 ### MT-071 - 2026-08-18 - Popup diagram captions
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -272,13 +276,17 @@ Works, but I noticed that some locomotives get a V > suffix, not just V or >.  A
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-072"></a>
 
 ### MT-072 - 2026-08-18 - Cancel in the track diagram editor
 
-**Disposition:** needs test  
+**Disposition:** needs test
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -294,13 +302,49 @@ Also, the confirm dialog in the diagram editor says 'are you sure you want to ex
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+stations stay, locomotives are removed and no longer shown in the labels.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Confirmed as a real defect, and I have narrowed it without closing it. Saying
+where I got to rather than guessing, because the honest answer is that I could not reproduce it.
+
+**What I proved does work.** `testCancelRestoresPlacements` drives the session the way the editor does -
+name a square, make it a station, place a locomotive, take the snapshot the window takes when it opens,
+call the same `forgetTiles` the editor calls to delete a square, then restore the snapshot. Both the
+station and the locomotive come back, and they are still there when a second session reads the folder
+off disk. So `snapshotSetup`, `restoreSetup` and `save` are not where this is.
+
+That test is worth having either way - it pins the half of Cancel that is correct, so whatever the
+cause turns out to be, the fix cannot quietly break it.
+
+**What I eliminated by reading.** `snapshotSetup` deep-copies every configuration, so the placements
+are in the snapshot. `reconcile` never touches a configuration's points, so it is not pruning them.
+`save` writes setup.json and every configuration file, so a restore does reach disk. `rememberAutonomy`
+only saves - it does not re-take the snapshot.
+
+**What is left, and what would settle it.** The snapshot is taken once, when the window opens, and
+three places set it to null: `saveBeforeLeaving`, and two others. If it is null when Cancel runs, Cancel
+restores nothing - and stations would then "stay" only because they were already written.
+
+Two questions I cannot answer from here:
+
+1. Did you press **Save** at any point in that editor session before pressing Cancel? If so this is
+   explained, and the fix is that Save must re-take the snapshot rather than discard it - Save means
+   "keep what I have done so far", not "there is nothing to undo from here on".
+2. Was the locomotive placed **before** you opened the editor, or during that session?
+
+If the answer to 1 is no, I will build the editor-level test rather than reason about it further.
 ---
 
 <a id="mt-073"></a>
 
 ### MT-073 - 2026-08-18 - Undo covers captions
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -315,13 +359,17 @@ Also: still don't see a way to move labels in the layout editor.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-074"></a>
 
 ### MT-074 - 2026-08-18 - Export / import round trip
 
-**Disposition:** needs test  
+**Disposition:** needs test
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -334,13 +382,26 @@ Seems fine.  Not sure what the block field is.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Write a test for this yourself and validate that the source files are unchanged afterwards.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Taking this one on, as you asked. Not written yet - it is the next thing after
+the three feature requests and MT-072 - and it is recorded here so it is not lost between rounds.
+
+What the test has to do that a hands-on run would: export, re-import, and then compare the FILES rather
+than the screen, because "the source files are unchanged afterwards" is the actual requirement and the
+only way to check it honestly is byte-for-byte against a copy taken before.
 ---
 
 <a id="mt-075"></a>
 
 ### MT-075 - 2026-08-18 - Page files
 
-**Disposition:** needs test  
+**Disposition:** needs test
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -353,6 +414,19 @@ I don't see the .bak, but check on your end.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Write a test for this yourself and validate.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Taking this one on, as you asked. Not written yet - it is the next thing after
+the three feature requests and MT-072 - and it is recorded here so it is not lost between rounds.
+
+What the test has to do that a hands-on run would: export, re-import, and then compare the FILES rather
+than the screen, because "the source files are unchanged afterwards" is the actual requirement and the
+only way to check it honestly is byte-for-byte against a copy taken before.
 ---
 
 <a id="mt-076"></a>
@@ -2212,5 +2286,101 @@ now computed for any page with no remembered bounds, on a switch as well as on o
 And capped: a diagram wider than the screen produced a window wider than the screen, with its
 right-hand edge and the scrollbar that would have reached it both off the side. The window is also
 nudged back on screen if the new size pushed it off an edge it was already sitting near.
+
+---
+
+<a id="mt-097"></a>
+
+### MT-097 - 2026-08-22 - Sidebar: pages are a list, modes are radio buttons
+
+**Disposition:** fixed unvalidated  
+**From:** OB-004  
+**Written:** 2026-08-22
+
+**What to do.** In the editor sidebar, the pages are now a **list** - click a row to go to that page. The mode is a
+pair of **radio buttons**, Track and Autonomy.
+
+Check: hovering a row whose name is cut off shows the whole name; the current page is the selected row
+and stays selected if you cancel a switch; arrow keys do NOT switch pages (only a click does); and with
+one page the sidebar is still hidden entirely.
+
+#### Comments
+
+**Claude, 2026-08-22.** The comment on the old control said the type "lives here and nowhere else -
+swap the body and the rest of the window does not notice", which turned out to be true: both changes
+are confined to `buildPageControl` and `modeTab`.
+
+One decision worth knowing. The list listens for a **click**, not for a selection change. A
+`ListSelectionListener` also fires when the selection is set in code - which `syncSidebar` does on
+every cancelled switch - and the arrow keys would then start a switch for every row travelled through.
+A click is the gesture that means "go here".
+
+---
+
+<a id="mt-098"></a>
+
+### MT-098 - 2026-08-22 - One-Way Run is a button, and asks which way
+
+**Disposition:** fixed unvalidated  
+**From:** OB-006  
+**Written:** 2026-08-22
+
+**What to do.** The right-click menu should no longer offer **Make a One-Way Run from Here**, and the divider that
+sat above it should be gone with it - check the menu does not end with a stray separator.
+
+In the autonomy editor there is a **One-Way Run** button beside Test Condition and Why. Press it, click
+one end of a run, then the other. It must then ASK which way trains may run, naming both squares, with
+a Cancel. Check:
+
+- Choosing the first option closes the run one way; choosing the second closes it the other way. Look
+  at the arrows to confirm it did what you picked.
+- Cancel leaves the track alone and puts you back at "click one end".
+- Clicking the same square twice says so and waits, rather than doing something odd.
+- After one run is set the button stays armed, so you can do a yard without pressing it each time.
+- Pressing another tool button, or right-clicking, disarms it.
+
+#### Comments
+
+**Claude, 2026-08-22.** Moved rather than rebuilt: the two-click machinery was already there, and
+this puts it where the other two-click gesture lives. The Tool enum's own comment said a mode "genuinely
+needs a mode, because it takes two clicks to say one thing. Everything else names one tile and belongs
+on that tile's menu" - which is precisely why this one did not belong on the menu.
+
+**The direction question is new, and is the part I would look at hardest.** Two squares describe a run;
+they do not describe a direction. The old menu version took the direction from the order you happened to
+click in, which is a guess, and a wrong guess closes a stretch of railway the wrong way round and leaves
+nothing on the diagram saying which way you meant. It asks now.
+
+---
+
+<a id="mt-099"></a>
+
+### MT-099 - 2026-08-22 - A train mark shows on a station with nothing else on it
+
+**Disposition:** fixed unvalidated  
+**From:** OB-007  
+**Written:** 2026-08-22
+
+**What to do.** In the autonomy editor, look at a square where the setup places a locomotive. It carries a small
+white star.
+
+The case to check is a square with **nothing else** on it - no badge, no arrival marks, no length, not
+selected. Set the visibility dropdown to a mode that draws no marks if you need to. The star must still
+be there.
+
+#### Comments
+
+**Claude, 2026-08-22.** The mark you asked for already existed - `paintTrainMark` draws exactly a
+small white six-armed star with a dark edge under it, and has for a while. It was invisible on precisely
+the squares your request is about.
+
+`paint()` opens with `if (isBlank()) return;`, and `isBlank()` lists every field that counts as
+content: marks, length, selected, badge, ignored, traces, arrivals. It did not list `occupied`. So an
+annotation carrying nothing but a train was blank and the star was never painted - and a station with a
+badge was never blank, so it appeared there and the gap looked like it did not exist.
+
+The field had been added to `equals` and to `hashCode`. The method that decides whether the object is
+worth drawing at all is the one that gets missed, because it is not one anybody is looking at while
+adding a field. `testTrainMarkIsNotBlank` pins it.
 
 ---
