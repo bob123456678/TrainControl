@@ -78,11 +78,16 @@ an entry in `tests.md` with a new `MT-###` tag and the disposition **needs test*
 repeatable hands-on check that the regression stays fixed, which is exactly what `tests.md` is for.
 
 A **feature request** is tracked directly in the receipt table instead: a **State** column, in the
-same three words `tests.md`'s disposition uses, set by Claude the same way. It gets an `MT-###` tag
-only if the eventual work turns out to need a genuine repeatable hands-on test the way a bug fix
-does - not as the default. `MT-094` is what the default used to produce: a feature nobody had even
-designed yet, filed the moment it was picked up as if it were a regression test, sitting in the Tests
-ledger indistinguishable from one. See its own entry for the retirement.
+same three words `tests.md`'s disposition uses (plus a fourth - see cancelling, below), set by Claude
+the same way. It gets an `MT-###` tag only if the eventual work turns out to need a genuine repeatable
+hands-on test the way a bug fix does - not as the default. `MT-094` is what the default used to
+produce: a feature nobody had even designed yet, filed the moment it was picked up as if it were a
+regression test, sitting in the Tests ledger indistinguishable from one. See its own entry for the
+retirement.
+
+**A bug's ref is `OB-###`; a feature request's is `FR-###`** - separate counters, so the ref alone
+says which of the two paths above an item is on. `OB` is the older of the two and kept its numbering
+when the split happened; nothing already filed was renumbered.
 
 **Filing is not asking for it to be built.** An item that has been picked up sits in the ledger like
 anything else and is worked when Adam asks for it. The two are separated on purpose: it lets him write
@@ -93,6 +98,12 @@ exception is his own judgement - an item that says it is urgent in its own text 
 An issue reaches **fixed validated** the same way every other entry does - by Adam saying it works.
 "Built" is not "validated", and a feature nobody has used is exactly the kind of thing that gets marked
 finished and turns out to be half of what was wanted.
+
+**Cancelling one works the same way filing does - request, then Claude acts.** **Request cancel…** in
+triage.py's Feature requests/Bugs tabs files a new structured item naming what it is cancelling and
+why (optional). Nothing changes immediately - the target's State (or, for an already-promoted bug,
+its `MT-###` entry) is only set to **declined** once Claude reads the request at the start of the next
+round, the same rule as every other write to either file's authoritative fields.
 
 **Before filing anything - by hand, through the app, or as an automated round working through the
 tracker on its own - check whether it is already there.** `py -3 docs\manual-tests\triage.py issues`
@@ -120,10 +131,11 @@ items of that kind, pending ones first, then the ones already picked up - colore
 disposition applies, same colors as the Tests tab either way: a linked test's actual disposition for
 something that got an `MT-###` tag (with an **Open in Tests tab** button to jump straight there), or
 the item's own **State** for something tracked directly, which is the normal path for a feature
-request now. Selecting a row shows it read-only underneath. Nothing is written from these two tabs -
-filing still goes through **New issue** or the Inbox itself, and answering still goes through the
-Tests tab or a Comment on the receipt table; they exist to be looked at, not to be a second way to
-write to either file.
+request now. Selecting a row shows it read-only underneath, alongside **Request cancel…** - the one
+exception to "nothing is written from these two tabs": it files a new item asking that the selected
+one be cancelled, the same request-then-Claude-acts shape as everything else here, so it does not
+touch the target's State itself. Filing still goes through **New issue** or the Inbox directly, and
+answering still goes through the Tests tab or a Comment on the receipt table.
 
 Pick an entry from the Tests tab, say whether it worked, write what happened, add anything else
 noticed along the way, and submit. **New issue** files a bug or a feature request that has nothing to
@@ -196,16 +208,20 @@ does that from what you wrote.
    hurry to file rather than to check first, and it is exactly how one idea gets two tags: a round
    reads a comment, doesn't find a matching entry because it never looked, and files a duplicate that
    the NEXT round then also has to notice and merge.
-6. Run `triage.py issues` for anything filed as an `OB-###` that is not already referenced from a
-   test's Comments - a **New issue** has nowhere else to be found. **Before picking one up, check the
-   OTHER pending items and the existing `MT-###` entries for the same idea already there** - two
-   pending items with the same summary are a sign a previous round already filed this and the check in
-   step 5 was skipped, not a sign there are two separate things to build. Pick up the survivor; note
-   the collision in the other one's place instead of pretending both are independent. A bug gets an
-   `MT-###` tag; a feature request gets a **State** in the receipt table instead, and only gets a tag
-   if the work turns out to need a genuine hands-on test - see "Asking for something new" above.
-7. Run `triage.py verify-ledger` after the ledger is updated, to catch a row that was missed.
-8. Never mark anything validated. Never edit an instruction. Never reorder. Never write into
+6. Run `triage.py issues` for anything filed as an `OB-###` or `FR-###` that is not already
+   referenced from a test's Comments - a **New issue** has nowhere else to be found. **Before
+   picking one up, check the OTHER pending items and the existing `MT-###` entries for the same idea
+   already there** - two pending items with the same summary are a sign a previous round already
+   filed this and the check in step 5 was skipped, not a sign there are two separate things to build.
+   Pick up the survivor; note the collision in the other one's place instead of pretending both are
+   independent. A bug gets an `MT-###` tag; a feature request gets a **State** in the receipt table
+   instead, and only gets a tag if the work turns out to need a genuine hands-on test - see "Asking
+   for something new" above.
+7. Watch for a cancellation request among the items step 6 surfaces - filed from **Request cancel…**,
+   it names what it is cancelling. Set that target's State to **declined** (or record the decision in
+   its `MT-###` entry, for a bug already promoted), then close out both the request and the target.
+8. Run `triage.py verify-ledger` after the ledger is updated, to catch a row that was missed.
+9. Never mark anything validated. Never edit an instruction. Never reorder. Never write into
    `tests.md` or `issues.md` by any path that skips these files' own rules - a script, a bulk edit, or
    a hand-patch that "just adds the row" is exactly how the append-only guarantee and the ledger's
    accuracy both quietly stop being true. If a tool other than `triage.py` needs to touch either file,

@@ -228,6 +228,12 @@ Works.  For the 3 type options (trains can stop, trains can pass through, neithe
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Present in the autonomy editor but not in the track diagram.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-070"></a>

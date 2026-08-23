@@ -52,7 +52,7 @@ import time
 import datetime
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 
 
 # --------------------------------------------------------------------------------------------
@@ -1198,6 +1198,71 @@ class Triage(tk.Tk):
         self._fill(detail, text)
         widgets["open_tag"] = None
         open_button.config(state=tk.DISABLED)
+
+    def request_cancel(self, kind):
+        """Adam's half of cancelling something: a request, not a decision - only Claude sets
+        State, same as everywhere else it appears, so this files a note for the next round
+        rather than writing 'declined' itself.  Works on a pending item or an already-picked-up
+        one the same way, since both are things a feature request can need cancelling from.
+        """
+
+        widgets = self.issue_widgets[kind]
+        tree = widgets["tree"]
+
+        selection = tree.selection()
+
+        if not selection or not self.issues_doc:
+            return
+
+        iid = selection[0]
+
+        if iid.startswith("pending:"):
+            ref = iid[len("pending:"):]
+            it = next((x for x in self.issues_doc.pending if x.ref == ref), None)
+            summary = it.summary if it else ref
+            target_kind = it.kind if it else kind
+        else:
+            ref = iid[len("picked:"):]
+            row = next((r for r in self.issues_doc.picked if r.get("ref") == ref), None)
+            summary = row.get("what", "") if row else ref
+            target_kind = row.get("kind") if row else kind
+
+        reason = simpledialog.askstring(
+            "Request cancel",
+            "Cancel %s - %s?\n\n"
+            "Optional reason.  This files a request; Claude reads it next round and marks %s "
+            "declined - nothing changes here until then." % (ref, summary, ref),
+            parent=self)
+
+        if reason is None:
+            return
+
+        new_ref = format_ref(target_kind, next_ref_number(target_kind))
+
+        block = (
+            "### %s - %s - Cancel %s\n\n"
+            "**Kind:** %s  \n"
+            "**Raised from:** cancellation request for %s - %s  \n"
+            "**Filed:** %s  \n"
+            "**Build:** %s\n\n"
+            "%s"
+        ) % (
+            new_ref,
+            datetime.date.today().isoformat(),
+            ref,
+            target_kind,
+            ref,
+            summary,
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            self._build_note(),
+            reason.strip() or "(no reason given)",
+        )
+
+        append_to_inbox(ISSUES_MD, block)
+
+        self._refresh_issue_tabs()
+
+        self._say("Cancellation requested for %s - filed as %s." % (ref, new_ref))
 
     def _jump_to_test(self, tag):
         if not tag:

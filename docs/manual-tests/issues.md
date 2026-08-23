@@ -19,14 +19,32 @@ tell yet, say so and Claude will sort it out.
 request, a one-line summary, and detail. It writes a structured entry here - `triage.py issues` can
 then list every open one without anyone re-reading the file by hand.
 
-**What happens next:** at the start of the next round, Claude picks up everything in the Inbox, gives
-each item an `MT-###` tag in `tests.md` with the disposition **needs test**, its **From** line naming
-the item's `OB-###` reference, notes a receipt here, and removes it from the Inbox.
+**A bug is `OB-###`; a feature request is `FR-###`.** Separate counters - a glance at the ref says
+which lifecycle an item is on. `OB` kept counting from before the split existed; nothing already
+filed was renumbered.
+
+**What happens next:** at the start of the next round, Claude picks up everything in the Inbox and
+gives it a receipt row here. A **bug** also gets an `MT-###` tag in `tests.md`, disposition **needs
+test** - a fix needs a repeatable hands-on check that the regression stays fixed, so that tag is
+handed out immediately, not earned. A **feature request** is tracked directly instead, by default:
+its receipt row gets a **State** in the same three words `tests.md`'s disposition uses (plus a
+fourth, **declined**, for something cancelled - see below), set by Claude and only by Claude. It
+only gets promoted to an `MT-###` tag if the eventual work turns out to need a genuine hands-on
+test the way a bug fix does.
 
 **Filing is not asking for it to be worked.** Filing puts it on the list; asking gets it built. That
 split is deliberate - it lets you write something down the moment you think of it without deciding
 then and there whether it is worth doing now. The exception is your own judgement: say a bug is urgent
 in its own text and it is treated that way.
+
+**Cancelling something already filed works the same way filing does: you request it, Claude acts on
+it.** The **Request cancel…** button in triage.py's Feature requests/Bugs tabs - on a pending item or
+an already-picked-up one - opens a small prompt for an optional reason and files a new structured
+item naming what it is cancelling. Nothing changes immediately: at the start of the next round,
+Claude reads that request, sets the target's State to **declined** (or, for a bug already promoted,
+records the decision in its `MT-###` entry instead, since a promoted bug's own Comments are where its
+outcome lives), and closes both items out. Only Claude sets State, the same rule as everywhere else -
+this is how you ask, not how you decide.
 
 **Before adding to the Inbox below - by hand, through the app, or as an automated round reading this
 file to decide what to do - check whether it is already there.** `py -3 docs\manual-tests\triage.py
