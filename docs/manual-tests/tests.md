@@ -91,12 +91,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
-| [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as OB-001 in issues.md, not a test.** | needs test | OB-001/OB-002 |
+| [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as FR-002 in issues.md, not a test.** | needs test | FR-002 |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
-| [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | OB-004 |
-| [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | OB-006 |
-| [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | OB-007 |
+| [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | FR-003 |
+| [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | FR-004 |
+| [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | FR-005 |
 | [MT-100](#mt-100) | 2026-08-22 | An invisible edit turns the arrows back on | fixed unvalidated | OB-008 |
 | [MT-101](#mt-101) | 2026-08-22 | Placing a locomotive updates the labels, and there is one way to do it | fixed unvalidated | OB-009 |
 | [MT-102](#mt-102) | 2026-08-22 | Two labels renamed | fixed unvalidated | OB-010, OB-011 |
@@ -385,7 +385,7 @@ tests were saying all along, and why none of them could be made to fail.
 
 **What was almost certainly happening.** The white star that marks "a train is set up to be standing
 here" was not being drawn, and that is a defect I found and fixed independently on the same day, filed
-as `OB-007` and covered by [MT-099](#mt-099): `TileAnnotation.isBlank()` listed every field that counts
+as `FR-005` and covered by [MT-099](#mt-099): `TileAnnotation.isBlank()` listed every field that counts
 as content except `occupied`, so `paint()` returned before drawing anything on a square whose only
 annotation was a train. It appeared on stations, which carry a badge and so were never blank, and was
 missing on exactly the squares with nothing else on them.
@@ -2028,6 +2028,10 @@ Page" lists every page and opens the one you pick, in whichever editor you used 
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-056"></a>
 
@@ -2044,6 +2048,12 @@ the buttons bold black.
 #### Comments
 
 *(none yet)*
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+There is room for many more than 8 pages- make the limit be 20.  Stretch the list down to the editor mode selector.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-057"></a>
@@ -2471,7 +2481,7 @@ cheap move is to diff the two paths, not to reason about the one that is broken.
 ### MT-094 - 2026-08-22 - Station marks and arrows say what they mean
 
 **Disposition:** needs test  
-**From:** OB-001 / OB-002 (feature request), raised from MT-065  
+**From:** FR-002 (feature request, filed as OB-001 / OB-002), raised from MT-065  
 **Written:** 2026-08-22
 
 **What to do.** Not a test yet - a design decision that has to be made first.
@@ -2507,7 +2517,7 @@ README.md says to do with an obsolete test rather than removing it. Its disposit
 test** for the same reason: there is no fourth state for "will never be tested" and inventing one
 was not part of what was asked.
 
-**The live record is `OB-001` in [issues.md](issues.md), tracked directly rather than promoted.**
+**The live record is `FR-002` in [issues.md](issues.md), tracked directly rather than promoted.**
 Feature requests get a **State** field of their own now - the same three words tests.md's
 disposition uses, set by Claude the same way, but living in `issues.md` and never becoming an
 `MT-###` tag unless the work genuinely needs a repeatable hands-on test the way a bug fix does. See
@@ -2629,7 +2639,7 @@ It is still too small- but I think the window persistence is getting in the way.
 ### MT-097 - 2026-08-22 - Sidebar: pages are a list, modes are radio buttons
 
 **Disposition:** fixed unvalidated  
-**From:** OB-004  
+**From:** FR-003  
 **Written:** 2026-08-22
 
 **What to do.** In the editor sidebar, the pages are now a **list** - click a row to go to that page. The mode is a
@@ -2663,7 +2673,7 @@ Looks good.  Reduce padding to the right of the table.
 ### MT-098 - 2026-08-22 - One-Way Run is a button, and asks which way
 
 **Disposition:** fixed unvalidated  
-**From:** OB-006  
+**From:** FR-004  
 **Written:** 2026-08-22
 
 **What to do.** The right-click menu should no longer offer **Make a One-Way Run from Here**, and the divider that
@@ -2705,7 +2715,7 @@ I don't see such a button.
 ### MT-099 - 2026-08-22 - A train mark shows on a station with nothing else on it
 
 **Disposition:** fixed unvalidated  
-**From:** OB-007  
+**From:** FR-005  
 **Written:** 2026-08-22
 
 **What to do.** In the autonomy editor, look at a square where the setup places a locomotive. It carries a small
