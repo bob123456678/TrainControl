@@ -5362,22 +5362,44 @@ public class AutonomyEditorPanel extends JPanel
 
             if (!report.isClean())
             {
+                // Say WHAT happened and WHY, not just a list of names (OB-052).
+                //
+                // This showed the names alone, with no title and no sentence - Adam: "I got a popup
+                // message with no context and just a list of stations. unclear why." Worse, the two
+                // lists mean opposite things: one names stations that have been FORGOTTEN, the other
+                // names stations that have been KEPT because something still refers to them. Run
+                // together with no headings, the reader cannot tell which of their stations they have
+                // just lost.
                 StringBuilder text = new StringBuilder();
 
-                for (Map.Entry<String, List<String>> entry
-                    : report.getNamesStillReferenced().entrySet())
+                if (!report.getForgottenNames().isEmpty())
                 {
-                    text.append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+                    text.append(I18n.t("autosetup.ui.infoNamesForgotten")).append("\n\n");
+
+                    for (String forgotten : report.getForgottenNames())
+                    {
+                        text.append("    ").append(forgotten).append("\n");
+                    }
                 }
 
-                for (String forgotten : report.getForgottenNames())
+                if (!report.getNamesStillReferenced().isEmpty())
                 {
-                    text.append(forgotten).append("\n");
+                    if (text.length() > 0) text.append("\n");
+
+                    text.append(I18n.t("autosetup.ui.infoNamesStillReferenced")).append("\n\n");
+
+                    for (Map.Entry<String, List<String>> entry
+                        : report.getNamesStillReferenced().entrySet())
+                    {
+                        text.append("    ").append(entry.getKey())
+                            .append(" - ").append(entry.getValue()).append("\n");
+                    }
                 }
 
                 if (text.length() > 0)
                 {
-                    JOptionPane.showMessageDialog(owner(), text.toString());
+                    JOptionPane.showMessageDialog(owner(), text.toString(),
+                        I18n.t("autosetup.ui.titleSetupTidied"), JOptionPane.INFORMATION_MESSAGE);
                 }
             }
 

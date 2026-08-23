@@ -227,6 +227,52 @@ public class AutonomyMenu extends JMenu
                 choose.add(choice);
             }
 
+            // Import and Export, under a divider, with the configurations they act on (OB-051).
+            //
+            // They lived in the management submenu one level further down, where Adam could not find
+            // them: "the option is just buried and I didn't see it." Correct and unreachable is the
+            // same outcome as disabled.
+            //
+            // Here because this is the menu somebody opens to think about configurations - it is
+            // headed with the one that is running - and bringing one in from a file or writing one out
+            // is the same kind of thought as choosing between them.
+            choose.addSeparator();
+
+            // Import is never greyed. It does not act on the configuration that is running; it brings
+            // one in - and the moment it is most needed is when the current setup will not load, which
+            // is repaired by importing one that will.
+            choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    actions.importConfiguration();
+
+                    ui.autonomyMenuActed();
+                }
+            }));
+
+            // Export keeps the greying it had: it writes out the configuration that is RUNNING, so
+            // with none running there is nothing for it to write.
+            JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    actions.exportConfiguration();
+                }
+            });
+
+            exportItem.setEnabled(running != null);
+
+            if (running == null)
+            {
+                exportItem.setToolTipText(
+                    AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded")));
+            }
+
+            choose.add(exportItem);
+
             add(choose);
 
             // Manage acts on the configuration that is RUNNING, so it means nothing until one is.
@@ -457,33 +503,12 @@ public class AutonomyMenu extends JMenu
             }
         }));
 
-        manage.addSeparator();
-
-        // Held, so the greying below can skip it.  Import does NOT act on the configuration that
-        // is running - it brings one in from a file - so gating it on something being loaded locked
-        // the door in exactly the situation it exists for: a setup that will not load, which is
-        // repaired by importing one that will.  The same argument the comment below makes for adding.
-        JMenuItem importItem = item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                actions.importConfiguration();
-
-                ui.autonomyMenuActed();
-            }
-        });
-
-        manage.add(importItem);
-
-        manage.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                actions.exportConfiguration();
-            }
-        }));
+        // Import and Export are NOT here any more (OB-051).
+        //
+        // They were correct and unfindable. Adam: "the option is just buried and I didn't see it" -
+        // which is the same outcome as being disabled, arrived at by a different route. They sit in
+        // the Configuration submenu now, under a divider, beside the list of configurations they are
+        // about.
 
         // Everything above except adding acts on the configuration that is RUNNING, so it means nothing
         // until one is.  Greyed one at a time rather than the whole submenu, so that adding - and
@@ -491,7 +516,7 @@ public class AutonomyMenu extends JMenu
         // somebody wants them.
         for (int i = 2; i < manage.getItemCount(); i++)
         {
-            if (manage.getItem(i) == null || manage.getItem(i) == importItem) continue;
+            if (manage.getItem(i) == null) continue;
 
             manage.getItem(i).setEnabled(loaded);
 
