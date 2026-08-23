@@ -2,6 +2,21 @@
 
 **Status:** open
 
+**Read this first, 2026-08-22 (later the same day).** Five findings have been closed since this was
+written, four of them by work that was already under way when the pass ran - so the tables below have
+been updated in place rather than left to mislead. What changed:
+
+| | |
+|---|---|
+| **DD-A2, DD-A3, DD-A4** | Closed in `ae94421a`. These were rank 1 and 2 on the list below. |
+| **DD-B1** | Closed in `6a8948d4`, arriving independently as Adam's own note on MT-086. |
+| **DD-B4** | Closed in `c0c9055d`, arriving as a user-visible defect (MT-093) - three rounds of it. See the finding for what is left. |
+
+**DD-B4 is worth reading even though it is closed.** It predicted the defect, in the right file, with
+the right cause - "the next change to how a train's name reads on the diagram will be made in one of
+these and not the other" - and it was written the same day the change was made in one and not the
+other. The report was on the shelf while three rounds were spent rediscovering it.
+
 **Prefix for citing this document: `DD`.**
 
 **Reviewed at `915ed88e`** (`autonomy-diagram-r0` HEAD), 2026-08-22. The working tree was already dirty
@@ -62,9 +77,9 @@ not the order they are numbered in.
 | # | Finding | Status |
 |---|---|---|
 | DD-A1 | `AutonomyCompanionStore`: eleven collections, fourteen per-collection sites, and the four commits it took to finish adding the eleventh | Open |
-| DD-A2 | The matrix test that guards DD-A1 is one of thirty-five test classes `ant test` never runs | Open |
-| DD-A3 | `RouteEditorFrame`: the greying fix `27261d16` claims to have landed is overwritten six lines later | Open |
-| DD-A4 | `RouteEditorFrame`: `asShown` is applied in one of the conditions table's four paths, in the direction its own javadoc says loses a signal | Open |
+| DD-A2 | The matrix test that guards DD-A1 is one of thirty-five test classes `ant test` never runs | Closed `ae94421a` - 34 classes added, `ant test` runs 75 |
+| DD-A3 | `RouteEditorFrame`: the greying fix `27261d16` claims to have landed is overwritten six lines later | Closed `ae94421a` - greying applied after the table's own renderer |
+| DD-A4 | `RouteEditorFrame`: `asShown` is applied in one of the conditions table's four paths, in the direction its own javadoc says loses a signal | Closed `ae94421a` - `asShown` in all four paths |
 | DD-A5 | A pruning rule lifted between two registries without its precondition stopped two of three real signal tiles updating | Fixed in `d6b9b00c`; the copies are still unequal |
 | DD-A6 | `HomeLocomotiveMenu` lost four of its five callers; two safety warnings are now unreachable and their tests still pass | Open |
 | DD-A7 | The checker re-implements rules the builder enforces; it disagreed with the railway once, and two of the copies have drifted again since | Open |
@@ -571,10 +586,10 @@ test `db1db789` should have left behind, and it is the only thing that stops a f
 
 | # | Finding | Status |
 |---|---|---|
-| DD-B1 | Two facing submenus, computed from two sources, in one popup | Open |
+| DD-B1 | Two facing submenus, computed from two sources, in one popup | Closed `6a8948d4` - the viewer's own Facing menu removed (MT-086) |
 | DD-B2 | `menuOnly` is one boolean deciding four unrelated questions | Open |
 | DD-B3 | Four grid-construction sites; `discard()` reaches three of them | Open |
-| DD-B4 | The station caption's text is computed twice and the copies have drifted | Open |
+| DD-B4 | The station caption's text is computed twice and the copies have drifted | Mostly closed `c0c9055d` - one speller, both callers; `crowdedLabel` still single-sided |
 | DD-B5 | The right-click entry point is written four times; the guard is on three | Open |
 | DD-B6 | No test harness: 47 copies of the control-station init, six of a recursive delete, and leaked globals | Open |
 | DD-B7 | `item(text, Runnable)` exists three times with three different failure behaviours | Open |
