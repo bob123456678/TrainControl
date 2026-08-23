@@ -1997,16 +1997,10 @@ public class AutonomyEditorPanel extends JPanel
             facingMenu.add(radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
                 recorded == null ? facing == facings.get(0) : facing == recorded,
-                () ->
-                {
-                    session.setFacing(target, facing);
-
-                    // OB-039. Which way a train is pointing is drawn on its caption - the arrow beside
-                    // the name - so a facing that is recorded and not redrawn leaves the diagram
-                    // stating the opposite of what was just chosen. Same seam as OB-034 and OB-035:
-                    // the setup is written here, and the caption is drawn from the RUNNING layout.
-                    placementChanged();
-                }));
+                // The redraw is in radio() itself now (TD-1), which is where every one of these
+                // answers gets it. OB-039 fixed it here, on the one radio that had been reported, and
+                // left the station and turning radios beside it still telling nobody.
+                () -> session.setFacing(target, facing)));
         }
 
         return facingMenu;
@@ -2098,7 +2092,19 @@ public class AutonomyEditorPanel extends JPanel
         menuItem.addActionListener(e ->
         {
             action.run();
-            refresh();
+
+            // placementChanged, not refresh (TD-1).
+            //
+            // These radios write the SETUP - whether trains may stop here, whether they may turn round
+            // - and the captions and the running railway are built from the RUNNING layout. refresh()
+            // redraws this panel and tells the other surface nothing, so a change made from the track
+            // diagram's menu was written and never appeared.
+            //
+            // Exactly the shape of OB-039, which was the facing radio one submenu along. That one was
+            // fixed in its own lambda, which left its two neighbours - sitting in the same helper,
+            // reached by the same gesture - still calling refresh(). The redraw belongs HERE, where
+            // every radio gets it, rather than in whichever lambda somebody reported.
+            placementChanged();
 
             flashMenuTarget();
         });

@@ -1764,4 +1764,39 @@ public class testAutonomyDiagramSampleLayout
 
         return out.toString();
     }
+    /**
+     * A doorway switched off at one end is shut at both.
+     *
+     * TD-2, from the three-day history review. OB-041 made the WRITER mutual on 2026-08-23 - switching
+     * a paired link off switches its partner off - but the readers went on asking about the near end
+     * alone, and there is no migration. So every setup saved before that date holds one-ended disables,
+     * and autonomy went on routing through a doorway the operator had excluded, in one direction.
+     *
+     * This is what those files look like: a pairing with only one end in the disabled set. The graph
+     * has to treat it as shut, which repairs them without anybody running anything.
+     */
+    @Test
+    public void testALinkSwitchedOffAtOneEndIsShutAtBoth()
+    {
+        TileKey here = findLink("1 - Main", 15, 5);
+        TileKey there = findLink("2 - Bottom", 10, 9);
+
+        assertNotNull(here, "no link tile on Main at 15,5");
+        assertNotNull(there, "no link tile on Bottom at 10,9");
+
+        graph.pairPortals(here, there);
+
+        // Only ONE end, which is what a file written before 2026-08-23 contains
+        graph.disablePortal(here);
+
+        assertTrue(graph.isPortalDisabled(here), "the end that was switched off is not off");
+
+        assertTrue(graph.isPortalDisabled(there),
+            "the far end of a switched-off pairing is still open. A pair of links is one doorway with "
+            + "an end in two places and autonomy walks through it both ways, so this is a route that "
+            + "exists going one way and not the other - and it is the state every setup saved before "
+            + "2026-08-23 is in (TD-2)");
+    }
+
+
 }

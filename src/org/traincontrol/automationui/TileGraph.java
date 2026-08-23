@@ -329,7 +329,34 @@ public class TileGraph
 
     public boolean isPortalDisabled(TileKey tile)
     {
-        return disabledPortals.contains(tile);
+        return portalClosed(tile);
+    }
+
+    /**
+     * Whether this doorway is shut - asked at EITHER end.
+     *
+     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both
+     * directions, so a doorway shut at one end and open at the other is not half shut: it is a route
+     * that exists going one way and not the other.
+     *
+     * The writer makes both ends match (OB-041). This is the reading half, and it is not redundant -
+     * every setup saved before 2026-08-23 has one-ended disables in it, and there is no migration. A
+     * reader that asks about both is a repair for those files that costs nothing and needs nobody to
+     * run anything. Found by a reviewer reading three days of commits (TD-2), who noticed that the fix
+     * had gone in on the writer alone.
+     *
+     * @param tile either end
+     * @return whether autonomy should ignore this link
+     */
+    private boolean portalClosed(TileKey tile)
+    {
+        if (tile == null) return false;
+
+        if (disabledPortals.contains(tile)) return true;
+
+        TileKey partner = portals.get(tile);
+
+        return partner != null && disabledPortals.contains(partner);
     }
     public static final String ERROR_PORTAL_EXCLUDED = "autosetup.ui.errorPortalTargetsExcludedPage";
     public static final String WARN_TURNTABLE = "autosetup.ui.warnTurntableNotRoutable";
@@ -571,7 +598,7 @@ public class TileGraph
         {
             Side stub = stubSide(component);
 
-            if (stub != null && portals.containsKey(tile) && !disabledPortals.contains(tile))
+            if (stub != null && portals.containsKey(tile) && !portalClosed(tile))
             {
                 if (entrySide == stub)
                 {
@@ -696,7 +723,7 @@ public class TileGraph
             // exits() honours this, and so does the never-paired loop twenty lines below.  This loop
             // did not - so switching a link off stopped trains going through it and did NOT stop it
             // failing the build, which is the one combination that leaves the user nothing to do.
-            if (disabledPortals.contains(from)) continue;
+            if (portalClosed(from)) continue;
 
             if (!tiles.containsKey(to))
             {
@@ -734,7 +761,7 @@ public class TileGraph
 
             if (portals.containsKey(entry.getKey())) continue;
 
-            if (disabledPortals.contains(entry.getKey())) continue;
+            if (portalClosed(entry.getKey())) continue;
 
             // Worth saying, never blocking.  An unpaired link leads nowhere, and exits() already
             // declines to offer a way through one - so the track running into it simply ends, exactly as
@@ -1200,7 +1227,7 @@ public class TileGraph
         // walk that crossed it anyway believed it could reach pages no train can actually get to - and
         // a path search that answers "reachable" for somewhere unreachable is worse than one that says
         // nothing, because something then plans a move on it.
-        if (partner != null && !disabledPortals.contains(here.tile) && tiles.containsKey(partner))
+        if (partner != null && !portalClosed(here.tile) && tiles.containsKey(partner))
         {
             out.add(new Step(partner, null));
         }

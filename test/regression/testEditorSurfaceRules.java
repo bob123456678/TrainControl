@@ -69,9 +69,17 @@ public class testEditorSurfaceRules
 
             writes++;
 
-            for (int j = i; j < Math.min(lines.size(), i + 12); j++)
+            // The redraw lives in radio(), the helper every one of these answers is built with -
+            // not beside this particular write. It was beside this one once, which is exactly how
+            // TD-1 happened: the station and turning radios sat in the same helper and got nothing.
+            for (int j = 0; j < lines.size(); j++)
             {
-                if (lines.get(j).contains("placementChanged()")) redrawn = true;
+                if (!lines.get(j).contains("private javax.swing.JMenuItem radio(")) continue;
+
+                for (int k = j; k < Math.min(lines.size(), j + 30); k++)
+                {
+                    if (lines.get(k).contains("placementChanged()")) redrawn = true;
+                }
             }
         }
 

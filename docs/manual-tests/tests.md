@@ -40,8 +40,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
 | [MT-134](#mt-134) | 2026-08-23 | Four things the night review found | fixed unvalidated | NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md) |
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
+| [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 
-Everything else - 111 of 135 - is **fixed validated** and needs nothing from you unless the
+Everything else - 111 of 136 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5698,5 +5699,50 @@ legitimately have none. Mutation-checked: removing the call I just added fails i
 
 **Duplicating a page is not covered by this.** A duplicate should probably COPY the setup onto the new
 page, and today it does not - worth its own item if you want it.
+
+---
+
+<a id="mt-136"></a>
+
+### MT-136 - 2026-08-23 - Two more of one shape, from the history review
+
+**Disposition:** fixed unvalidated  
+**From:** TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046  
+**Written:** 2026-08-23
+
+**What to do.** **1. From the TRACK DIAGRAM's right-click menu** - not the editor - make a square a
+station, and separately change whether trains may turn round there. Each must show on the diagram at
+once, without closing anything.
+
+**2. A link switched off before today.** Open a setup you saved earlier in the week that has a
+switched-off link, and check autonomy will not route through it **in either direction** - the old files
+only recorded it at one end.
+
+**3. Going to a link's other end** with unsaved work asks Save / Discard / Cancel, and each answer does
+what it says.
+
+#### Comments
+
+**Claude, 2026-08-23.** Three findings, and two of them are the same mistake I made twice.
+
+**TD-1.** `radio()` - the helper that builds all three "what may a train do here" answers, and the
+facing answer - called `refresh()` and nothing else. That redraws this panel and tells the other surface
+nothing, so a station or a turning rule set from the track diagram was written and never appeared.
+
+That is exactly OB-039, which was the FACING radio one submenu along. I fixed OB-039 in its own lambda
+and left its two neighbours - in the same helper, reached by the same gesture - still calling
+`refresh()`. The redraw is in the helper now, where every answer gets it, and the test that guards it
+looks at the helper rather than at whichever write was reported.
+
+**TD-2.** OB-041 made switching a paired link off mutual - on the WRITER. The readers went on asking
+about the near end alone, and there is no migration, so every setup saved before today holds one-ended
+disables and autonomy went on routing through a doorway you had excluded, in one direction.
+
+A doorway is shut if EITHER end is shut now. That repairs the old files without anybody running
+anything, which is why it is the reading half rather than a migration.
+
+**Both were found by a reviewer reading three days of commits**, not by a test - and neither would have
+been found by reading the end state, which is what the other two reviews did. A fix applied to one of
+several call sites looks complete in the diff that contains it.
 
 ---
