@@ -323,16 +323,23 @@ public final class LayoutLabel extends JLabel
                                             options[0]
                                         );
 
+                                        // Anything that is not one of the two YESES is a no.
+                                        //
+                                        // showOptionDialog answers CLOSED_OPTION (-1) when the dialog is
+                                        // dismissed with Escape or the window's close box, and -1 fell
+                                        // through `default` to the same place as "proceed". So closing
+                                        // this dialog threw the accessory - the opposite of what closing
+                                        // a confirmation means.
                                         switch (choice)
                                         {
-                                            case 0: // Power on
+                                            case 0: // Power on, then proceed
                                                 // Done on the worker below, with the wait that follows it
                                                 powerOnFirst = true;
                                                 break;
-                                            case 2: // No
-                                                return;
-                                            default:
+                                            case 1: // Proceed with the power off
                                                 break;
+                                            default: // Cancel, Escape, or the close box
+                                                return;
                                         }
                                     }
                                     // Warn user of switching accessories along active routes
@@ -359,14 +366,15 @@ public final class LayoutLabel extends JLabel
                                                 options[0]
                                             );
                                             
+                                            // As above, and this one matters more: the accessory is
+                                            // part of a route that is running RIGHT NOW, with a train
+                                            // on it. Escape threw the turnout under that train.
                                             switch (choice)
                                             {
                                                 case 0: // ok
                                                     break;
-                                                case 1: // cancel
-                                                    return;                                                    
-                                                default:
-                                                    break;
+                                                default: // cancel, Escape, or the close box
+                                                    return;
                                             }
                                         }                                
                                     }

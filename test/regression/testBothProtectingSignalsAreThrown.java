@@ -118,6 +118,49 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * Deleting a locomotive takes it off the railway, not just out of the lists.
+     *
+     * UR-3, from the uninformed review. `locDeleted` sweeps six things - the run list, the active
+     * locomotives, the milestones, each Point's exclusions, each Point's home, and the home claims -
+     * and does not clear the locomotive STANDING on a Point.
+     *
+     * Two consequences, both bad. The square stays occupied by a train that no longer exists, so
+     * nothing can ever be routed through it again; and `Point.toJSON` writes the name back out, so the
+     * next load reports a locomotive that is not in the database and **invalidates the whole
+     * configuration** - which answers null for every point in it, so the railway simply stops working.
+     *
+     * The same shape as the exclusions and the home two lines above it, both of which had to be added
+     * later for exactly this reason. Their own comments say so.
+     */
+    @Test
+    public void testDeletingALocomotiveTakesItOffThePointItStandsOn() throws Exception
+    {
+        Layout layout = Layout.fromJSON(twoSignalLayout(), model);
+
+        assertTrue(layout.isValid(), "the layout is invalid: " + Layout.getLastError());
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        assertNotNull(standing, "no locomotive to stand on the platform");
+
+        layout.getPoint("PLATFORM").setLocomotive(standing);
+
+        assertEquals(layout.getPoint("PLATFORM").getCurrentLocomotive(), standing,
+            "the locomotive was not placed, so nothing below tests anything");
+
+        layout.locDeleted(standing);
+
+        assertNull(layout.getPoint("PLATFORM").getCurrentLocomotive(),
+            "a deleted locomotive is still standing on the platform. The square is occupied by a train "
+            + "that does not exist, so nothing can be routed through it again (UR-3)");
+
+        assertFalse(layout.getPoint("PLATFORM").toJSON().toString().contains(standing.getName()),
+            "the deleted locomotive's name is still written into the configuration. On the next load "
+            + "that is a locomotive not in the database, which invalidates the WHOLE configuration - "
+            + "every point in it then answers null and the railway stops working");
+    }
+
+    /**
      * A layout with one platform guarded at each end.
      *
      * The s88 numbers and the run-wide delays are here because `fromJSON` invalidates the WHOLE layout

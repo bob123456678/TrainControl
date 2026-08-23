@@ -735,6 +735,20 @@ public class Layout
             // reported on every load as a locomotive that is not in the database - and until then the
             // menus go on offering a station assigned to something that no longer exists.
             if (l.getName().equals(p.getHomeLoc())) p.setHomeLoc(null);
+
+            // And the locomotive STANDING here, which is the sixth thing this sweep did not clear
+            // (UR-3).
+            //
+            // Left behind, the square is occupied by a train that does not exist: nothing can ever be
+            // routed through it again, and there is no way to take the train off because the train is
+            // gone. Worse, Point.toJSON writes the name back out, so the next load reports a locomotive
+            // that is not in the database - and that invalidates the WHOLE configuration, which then
+            // answers null for every point in it.
+            //
+            // Exactly the shape of the two lines above, both of which had to be added later for the
+            // same reason. A sweep over "everything that names this locomotive" is a list, and a list
+            // is a thing one can be missing from.
+            if (l.equals(p.getCurrentLocomotive())) p.setLocomotive(null);
         }
 
         // Releases the home claim too.  Without this the station stays claimed by a locomotive that no
