@@ -545,24 +545,60 @@ class State(object):
 # Launching TrainControl
 # --------------------------------------------------------------------------------------------
 
+TARGET_JAVA_VERSION = "1.8"       # nbproject/project.properties: javac.source=1.8, javac.target=1.8
+
+
+def _java_version_report(path):
+    """'java -version' prints to stderr, e.g. 'java version "1.8.0_361"'.  Empty on any failure."""
+
+    try:
+        out = subprocess.run([path, "-version"], capture_output=True, text=True, timeout=5)
+        return (out.stderr or "") + (out.stdout or "")
+    except Exception:
+        return ""
+
+
 def find_java():
+    """The java to launch TrainControl with, verified rather than assumed.
+
+    JAVA_HOME is not safe to trust blindly on a real dev machine.  On this one it points at
+    Android Studio's bundled JetBrains Runtime - JDK 21, with its own IDE-tuned HiDPI scaling -
+    because Android Studio sets it machine-wide for its own use.  Nothing about that is specific
+    to TrainControl, so launching an old Java 8 Swing app under it is exactly how a launch works
+    but "the display scaling is completely off": right app, wrong runtime, one nobody built or
+    tested it against.
+
+    So every candidate is checked with its own `-version` rather than trusted for existing, in
+    the order most likely to actually be the project's JDK 8: the known-good install this
+    project's own test harness already uses, then PATH, then JAVA_HOME last - and only ever
+    returned if it reports 1.8.  If nothing on the machine verifies as 1.8, the first candidate
+    that exists is still returned so a launch remains possible, but the caller is told the
+    version was never confirmed, since guessing silently is exactly the bug being fixed here.
+    """
+
+    candidates = []
+
+    if os.path.exists(FALLBACK_JAVA):
+        candidates.append(FALLBACK_JAVA)
+
+    found = shutil.which("java")
+
+    if found and found not in candidates:
+        candidates.append(found)
+
     home = os.environ.get("JAVA_HOME")
 
     if home:
         candidate = os.path.join(home, "bin", "java.exe")
 
-        if os.path.exists(candidate):
-            return candidate
+        if os.path.exists(candidate) and candidate not in candidates:
+            candidates.append(candidate)
 
-    found = shutil.which("java")
+    for c in candidates:
+        if TARGET_JAVA_VERSION in _java_version_report(c):
+            return c, True
 
-    if found:
-        return found
-
-    if os.path.exists(FALLBACK_JAVA):
-        return FALLBACK_JAVA
-
-    return None
+    return (candidates[0], False) if candidates else (None, False)
 
 
 def newest_mtime(folder):
@@ -622,10 +658,14 @@ def launch_plan():
     recorded against a stale jar is the exact failure the disposition rule exists to stop.
     """
 
-    java = find_java()
+    java, verified = find_java()
 
     if not java:
         return None, "No java found.  Set JAVA_HOME, or put java on the PATH."
+
+    java_note = java if verified else (
+        "%s - COULD NOT CONFIRM THIS IS JAVA 8, the version TrainControl is built for; if the "
+        "display looks wrong after launch, this is the first thing to check" % java)
 
     classes = os.path.join(ROOT, "build", "classes")
     jar = os.path.join(ROOT, "dist", "TrainControl.jar")
@@ -641,7 +681,8 @@ def launch_plan():
 
             return (
                 [java, "-cp", classpath, "TrainControl"] + args,
-                "build\\classes, compiled %s" % time.strftime("%d %b %H:%M", time.localtime(stamp)),
+                "build\\classes, compiled %s - java: %s"
+                % (time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
             )
 
     if os.path.exists(jar):
@@ -649,8 +690,8 @@ def launch_plan():
 
         return (
             [java, "-jar", jar] + args,
-            "dist\\TrainControl.jar, built %s (build\\classes is missing - this may be old)"
-            % time.strftime("%d %b %H:%M", time.localtime(stamp)),
+            "dist\\TrainControl.jar, built %s (build\\classes is missing - this may be old) - "
+            "java: %s" % (time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
         )
 
     return None, "Neither build\\classes nor dist\\TrainControl.jar exists.  Build in NetBeans first."
@@ -1361,6 +1402,16 @@ class Triage(tk.Tk):
 
         if not command:
             messagebox.showerror("Cannot launch", note, parent=self)
+            return
+
+        if "COULD NOT CONFIRM" in note and not messagebox.askokcancel(
+                "Java version not confirmed",
+                "TrainControl is built for Java 8, and the java this would launch with did not "
+                "report itself as 1.8 (see the status bar for which one).  This is exactly what "
+                "wrong display scaling looks like - a different runtime, tuned for something "
+                "else, drawing an old Swing app.\n\n"
+                "Launch anyway, or fix JAVA_HOME / PATH first and try again?", parent=self):
+            self._say("Launch cancelled - java version unconfirmed.")
             return
 
         if not os.path.isdir(RUN_DIR):
