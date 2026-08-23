@@ -2993,9 +2993,46 @@ public class AutonomySession
             }
         }
 
+        Set<Side> out = new java.util.LinkedHashSet<>();
+
+        for (Side arrival : arrivals) out.addAll(onwardFrom(tile, arrival));
+
+        return new ArrayList<>(out);
+    }
+
+    /**
+     * Where a train that came in by this side is pointing.
+     *
+     * The other end of the piece of track it is standing on - NOT the opposite compass point, which is
+     * what this used to answer.
+     *
+     * MT-125, Adam: "feedback 1016/1015 offer south and west as facing directions, instead of north and
+     * east." Those are curved squares. On a curve joining north to east, a train entering by the north
+     * side leaves by the EAST side: it is pointing east, and south is a direction that square has no
+     * track in at all. On a straight the two rules agree, which is why this survived everywhere anybody
+     * looked - "a train that came in by the west side is pointing east" is true, and true by accident.
+     *
+     * Where the square offers a choice - a switch, a double curve - every road out of the side it came
+     * in by is offered, because each is somewhere the train could genuinely be pointing and nothing
+     * here knows which road it took.
+     *
+     * @param tile the square
+     * @param arrival the side the train came in by
+     * @return the ways it could be pointing, falling back to the reverse of the arrival where the
+     *         square's track is not known
+     */
+    private List<Side> onwardFrom(TileKey tile, Side arrival)
+    {
         List<Side> out = new ArrayList<>();
 
-        for (Side arrival : arrivals) out.add(arrival.opposite());
+        for (Route route : getRoutes(tile).values())
+        {
+            if (route.getA() == arrival && route.getB() != null) out.add(route.getB());
+            else if (route.getB() == arrival && route.getA() != null) out.add(route.getA());
+        }
+
+        // A square whose track nothing can describe - the old answer is still the best guess
+        if (out.isEmpty()) out.add(arrival.opposite());
 
         return out;
     }

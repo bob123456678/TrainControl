@@ -24,12 +24,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-005](#mt-005) | 2026-08-20 | A signal address typed into a switch row | fixed unvalidated | LT-B6 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-014](#mt-014) | 2026-08-20 | Growing the diagram | fixed unvalidated | LT-C3 |
-| [MT-019](#mt-019) | 2026-08-20 | Pairing a tunnel or a link | fixed unvalidated | LT-B3, LT-F2 |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
-| [MT-024](#mt-024) | 2026-08-21 | Two signals on the railway | fixed unvalidated | LT-B4 |
 | [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | hands-on testing |
-| [MT-026](#mt-026) | 2026-08-21 | Shift Up and Shift Left at the edges | needs test | AR-17 |
 | [MT-029](#mt-029) | 2026-08-21 | The command table's marks | fixed unvalidated | AR-18 |
 | [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19 |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
@@ -45,10 +42,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-056](#mt-056) | 2026-08-22 | The sidebar with a long page name | fixed unvalidated | AR-6, AR-7, AR-8 |
 | [MT-057](#mt-057) | 2026-08-22 | A train marker and its name | fixed unvalidated | AR-13, AR-14 |
 | [MT-058](#mt-058) | 2026-08-22 | Show autonomy hides the names | fixed unvalidated | AR-15 |
-| [MT-059](#mt-059) | 2026-08-22 | Why is it not moving, on an addressed layout | needs test | AR-12 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | fixed unvalidated | hands-on testing |
-| [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | FR-009 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | fixed unvalidated | 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
@@ -75,28 +70,21 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
 | [MT-108](#mt-108) | 2026-08-22 | Route editor: Save in the corner, and Cancel asks | fixed unvalidated | OB-018 |
 | [MT-109](#mt-109) | 2026-08-22 | Track lengths: hotkey, focus, and size | fixed unvalidated | OB-019 |
-| [MT-110](#mt-110) | 2026-08-22 | The autonomy column is narrower, and three labels changed | fixed unvalidated | OB-020 |
 | [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
 | [MT-112](#mt-112) | 2026-08-22 | Home assignments: the three rules that were unreachable | fixed unvalidated | OB-022 (DD-A6) |
-| [MT-113](#mt-113) | 2026-08-22 | Tool labels, and a heading with nothing under it | fixed unvalidated | OB-027, OB-032 |
 | [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
-| [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
 | [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | fixed unvalidated | OB-026 |
-| [MT-120](#mt-120) | 2026-08-23 | Tooltips on the Autonomy menu wrap | fixed unvalidated | OB-030 |
 | [MT-121](#mt-121) | 2026-08-23 | Pairing a link switches both ends on | fixed unvalidated | OB-031 |
 | [MT-122](#mt-122) | 2026-08-23 | Adding a locomotive to autonomy from the track diagram | needs test | OB-035 |
-| [MT-123](#mt-123) | 2026-08-23 | How a warning names another page | fixed unvalidated | OB-036 |
 | [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
 | [MT-125](#mt-125) | 2026-08-23 | The arrow on a caption follows the orientation you chose | fixed unvalidated | OB-039 |
 | [MT-126](#mt-126) | 2026-08-23 | The diagram gets out of the way while you pick a signal | fixed unvalidated | OB-040 |
 | [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
-| [MT-128](#mt-128) | 2026-08-23 | Two guards that now reach every site | fixed unvalidated | OB-023 |
-| [MT-129](#mt-129) | 2026-08-23 | Two names one letter apart, and a table that was kept in step by hand | fixed unvalidated | OB-024 |
 | [MT-130](#mt-130) | 2026-08-23 | A setting must not outlive its track | fixed unvalidated | OB-025 |
 | [MT-131](#mt-131) | 2026-08-23 | Switching a paired link off switches its partner off | fixed unvalidated | OB-041 |
 
-Everything else - 53 of 131 - is **fixed validated** and needs nothing from you unless the
+Everything else - 65 of 131 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1396,7 +1384,7 @@ OK.  But the bar at the top of the editor has an odd border- give it a light gra
 
 ### MT-019 - 2026-08-20 - Pairing a tunnel or a link
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-B3, LT-F2  
 **Written:** 2026-08-20
 
@@ -1413,6 +1401,9 @@ Future feature request: make the autonomy editor and track diagram editor be on 
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-019: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 <a id="mt-020"></a>
 
@@ -1525,7 +1516,7 @@ Does not work- only first is set to red.  Selection process is ok.
 
 ### MT-024 - 2026-08-21 - Two signals on the railway
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-B4  
 **Written:** 2026-08-21
 
@@ -1543,6 +1534,9 @@ We need unnamed stations (default) to throw an error, not a warning.
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-024: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 <a id="mt-025"></a>
 
@@ -1572,7 +1566,7 @@ Check this programmatically.  I previously found an issue where locomotives do n
 
 ### MT-026 - 2026-08-21 - Shift Up and Shift Left at the edges
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** AR-17  
 **Written:** 2026-08-21
 
@@ -1602,6 +1596,9 @@ pointer was, and the two squares the link joined** - with those I can reproduce 
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-026: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 <a id="mt-027"></a>
 
@@ -2481,7 +2478,7 @@ Works, but rename "Show Autonomy" to "Autonomy Controls"
 
 ### MT-059 - 2026-08-22 - Why is it not moving, on an addressed layout
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** AR-12  
 **Written:** 2026-08-22
 
@@ -2498,13 +2495,16 @@ many there are.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-059: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-064"></a>
 
 ### MT-064 - 2026-08-22 - Highlight on Diagram, and Test Condition
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** FR-009  
 **Written:** 2026-08-22
 
@@ -2529,6 +2529,9 @@ reading the route without leaving the diagram marked up afterwards.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-064: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-060"></a>
@@ -3773,7 +3776,7 @@ Control+G works, but control +L does not in the autonomy editor.
 
 ### MT-110 - 2026-08-22 - The autonomy column is narrower, and three labels changed
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-020  
 **Written:** 2026-08-22
 
@@ -3801,6 +3804,9 @@ is exact.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-110: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-111"></a>
@@ -3898,7 +3904,7 @@ Make a test case for this, you should be able to validate it.
 
 ### MT-113 - 2026-08-22 - Tool labels, and a heading with nothing under it
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-027, OB-032  
 **Written:** 2026-08-22
 
@@ -3924,6 +3930,9 @@ Same reasoning as the popup guard in `LayoutLabel`, where an empty menu "reads a
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-113: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-114"></a>
@@ -3965,7 +3974,7 @@ Filed from this test: OB-038 (bug - locomotive placement on export).  They are i
 
 ### MT-115 - 2026-08-22 - Both menus decline while an editor is open, and lead back to it
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-033  
 **Written:** 2026-08-22
 
@@ -3997,6 +4006,9 @@ always right.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-115: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-116"></a>
@@ -4269,7 +4281,7 @@ past it. On a straight nothing should have changed at all.
 
 ### MT-120 - 2026-08-23 - Tooltips on the Autonomy menu wrap
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-030  
 **Written:** 2026-08-23
 
@@ -4288,6 +4300,9 @@ tooltips go through it now.
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-120: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-121"></a>
@@ -4356,7 +4371,7 @@ still not fully placed.  label doesn't update, loc isn't there on restart. loc n
 
 ### MT-123 - 2026-08-23 - How a warning names another page
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-036  
 **Written:** 2026-08-23
 
@@ -4373,6 +4388,9 @@ Wording only.
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-123: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-124"></a>
@@ -4419,13 +4437,27 @@ OK on regular tiles.
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Noted, and not yet answered.
+
+The train DOT that the running overlay draws was still centred on the tile while the star and the badge
+were on `trackCentre`, and that was fixed a few commits ago - after MT-124 was filed. So the first thing
+to establish is whether you were looking at a build that has it.
+
+If you were, then something else on a curved station is placed by the square's geometry rather than by
+its track, and the picture harness can now show which: it renders a real page through the same grid the
+window uses, so a locomotive on `TopMainR2Inter` - a curved station in the sample layout - can be looked
+at directly rather than reasoned about.
+
+That needs the CS2 port, which TrainControl has. Queued for the next time it is free rather than
+guessed at, because guessing at this exact question is what made OB-037 take three rounds.
 ---
 
 <a id="mt-125"></a>
 
 ### MT-125 - 2026-08-23 - The arrow on a caption follows the orientation you chose
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-039  
 **Written:** 2026-08-23
 
@@ -4459,6 +4491,37 @@ Critical: also, feedback 1016/1015 offer south and west as facing directions, in
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Two separate faults, both fixed.
+
+**"Does not refresh in the viewer. Works in the autonomy editor."** `placementChanged` refreshed the
+editor's grid where there was one and rebuilt the running layout only where there was not - either/or,
+on the reasoning that whoever made the change was looking at the surface it came from. They are not:
+both are on screen at once, so a change made from the track diagram while Autonomy Setup is open went
+to the editor and left the diagram under the pointer stating the old answer. It does both now. Asking
+for the rebuild unconditionally is safe - it declines while autonomy is busy.
+
+**"Critical: feedback 1016/1015 offer south and west as facing directions, instead of north and east."**
+This one is worth reading twice, because the old rule was true by accident everywhere anybody looked.
+
+The choices were "the side the train came in by, reversed" - enter by the west, point east. On a curve
+joining north to east, a train entering by the north side leaves by the **east** side. It is pointing
+east. South is a direction that square has no track in at all.
+
+So the rule is not "the opposite compass point", it is "the other end of the piece of track I am
+standing on" - which *happens to be* the opposite compass point on a straight. Every square anybody
+checked was a straight.
+
+Where a square offers a choice - a switch, a double curve - every road out of the arriving side is
+offered now, because each is somewhere the train could genuinely be pointing and nothing there knows
+which road it took.
+
+`testFacingFollowsTheTrack` states the rule rather than a table of answers: every facing offered for a
+square must be a side that square's own track actually uses. It refuses to pass unless it has checked a
+curved square, so it cannot go quietly green on a layout of straights.
+
+**Not yet run** - it needs the CS2 port and TrainControl has it. Compile-checked only, and it will be
+run before this is asked of you again.
 ---
 
 <a id="mt-126"></a>
@@ -4508,7 +4571,7 @@ Looks great!
 
 ### MT-127 - 2026-08-23 - No grey grid in the autonomy editor
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-028  
 **Written:** 2026-08-23
 
@@ -4548,13 +4611,37 @@ the BUG where the VIEWER gets a grid is still there!
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Both halves, and the second one was the older and worse bug.
+
+**The white grid.** I used an EMPTY border of the same thickness, to keep the insets so a hover could
+not shift the artwork underneath. An inset with nothing drawn in it shows the panel behind it, so the
+grey grid became a white one - which is not what "as it appears in the viewer" means. It is no border at
+all now. The shift I was guarding against cannot happen: `receiveMoveEvent` returns immediately in
+autonomy mode - "hover previews what a diagram edit would place; in autonomy mode nothing is being
+placed" - so nothing ever swaps that border for another one. The care was real and aimed at the wrong
+mode; FR-006 still wants it for the layout editor.
+
+**"The BUG where the VIEWER gets a grid is still there."** It was, and it was never about borders.
+`LayoutGrid` asked `layout.getEdit()` in seven places, and that flag is the one the two editors SHARE
+for their mutual exclusion - it says an editor is open, not that this grid is in one. So while either
+editor was up, the viewer built its squares in edit mode: the editor's grey grid drawn round them, its
+captions greyed, its hand cursors and tooltips dropped, and mouse listeners attached that cast their
+parent to `LayoutEditor` - which the viewer is not.
+
+One line of that constructor already asked the question properly, as a conjunction with the host, and
+was right. The other six asked the short version. There is one answer now, worked out once, and
+`testEditorSurfaceRules.testTheViewerIsNotToldItIsAnEditor` fails if the short version comes back.
+
+This is the remaining half of the graph-and-clickability finding GC-A1 raised, closed here because you
+found the same flag from the other end.
 ---
 
 <a id="mt-128"></a>
 
 ### MT-128 - 2026-08-23 - Two guards that now reach every site
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-023  
 **Written:** 2026-08-23
 
@@ -4588,13 +4675,16 @@ Covered by `testDiagramExport.testANewGridRetiresTheOneItReplaces`.
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-128: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-129"></a>
 
 ### MT-129 - 2026-08-23 - Two names one letter apart, and a table that was kept in step by hand
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-024  
 **Written:** 2026-08-23
 
@@ -4633,6 +4723,9 @@ against the artwork by eye is a different kind of evidence from a test.
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Closed on your word - "MT-129: Works." with nothing else attached, so there is
+nothing left to do and nothing left to check.
 ---
 
 <a id="mt-130"></a>

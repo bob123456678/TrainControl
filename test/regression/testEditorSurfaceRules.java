@@ -180,11 +180,14 @@ public class testEditorSurfaceRules
      *
      * OB-028. The rule is small enough to state as a function and is tested as one: the palette keeps
      * its visible border in both modes, the layout editor keeps its grey grid, and autonomy mode gets
-     * a border that takes up the same room and draws nothing.
+     * no border at all.
      *
-     * The "same room" half is the part worth guarding. Returning null would also hide the grid, and
-     * would move every icon by a pixel the moment the pointer crossed its tile - because hovering swaps
-     * the resting border for a coloured line, and a line has insets that nothing had.
+     * **No border, not an invisible one.** The first version returned an empty border of the same
+     * thickness, to keep the insets so a hover could not shift the artwork. Adam: "The grid is
+     * correctly gone, but now there is a gap between tiles (essentially a white grid)" - an inset with
+     * nothing drawn in it shows the panel behind, so a grey grid became a white one. The shift it
+     * guarded against cannot happen anyway: `receiveMoveEvent` returns immediately in autonomy mode,
+     * so nothing swaps this border for another.
      */
     @Test
     public void testTheAutonomyEditorHasNoVisibleGrid()
@@ -201,20 +204,56 @@ public class testEditorSurfaceRules
         assertTrue(editing instanceof javax.swing.border.LineBorder,
             "the layout editor lost its grid - OB-028 asks for the borders to RETURN in the editor");
 
-        assertFalse(autonomy instanceof javax.swing.border.LineBorder,
-            "the autonomy editor still draws a line around every tile (OB-028)");
+        assertNull(autonomy,
+            "the autonomy editor's tiles must sit flush, exactly as they do in the viewer. A border "
+            + "that draws nothing still takes up room, and the room shows the panel behind it - which "
+            + "is a white grid where the grey one used to be (MT-127)");
 
         assertTrue(palette instanceof javax.swing.border.LineBorder,
             "the palette needs its borders in both modes - those tiles are a menu of things to place, "
             + "and the border is what separates one from the next");
-
-        java.awt.Insets grid = editing.getBorderInsets(new javax.swing.JLabel());
-        java.awt.Insets quiet = autonomy.getBorderInsets(new javax.swing.JLabel());
-
-        assertEquals(quiet.top, grid.top, "the invisible border must take the same room as the grid "
-            + "it replaces, or hovering a tile shifts the artwork under it");
-        assertEquals(quiet.left, grid.left, "same, horizontally");
     }
 
+    /**
+     * A grid knows whether IT is in an editor, not whether an editor is open somewhere.
+     *
+     * `layout.getEdit()` is the flag the two editors share for their mutual exclusion. While either was
+     * open, every grid on screen answered yes to it - the viewer included - so the viewer drew the
+     * editor's grey grid, greyed its captions, dropped its hand cursors and tooltips, and attached
+     * mouse listeners that cast their parent to `LayoutEditor`, which the viewer is not.
+     *
+     * One line of that constructor already asked the question properly, as a conjunction with the
+     * host; the other six asked the short version. This requires the short version to be gone.
+     */
+    @Test
+    public void testTheViewerIsNotToldItIsAnEditor() throws Exception
+    {
+        File grid = new File("src/org/traincontrol/gui/LayoutGrid.java");
+
+        if (!grid.isFile()) return;
+
+        List<String> lines = Files.readAllLines(grid.toPath(), StandardCharsets.UTF_8);
+
+        List<String> bare = new java.util.ArrayList<>();
+
+        for (String line : lines)
+        {
+            if (!line.contains("layout.getEdit()")) continue;
+
+            String trimmed = line.trim();
+
+            if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
+
+            // The one place it is legitimately asked: working out the answer everything else uses
+            if (line.contains("inEditor =")) continue;
+
+            bare.add(trimmed);
+        }
+
+        assertEquals(bare, new java.util.ArrayList<String>(),
+            "LayoutGrid asks layout.getEdit() directly. That flag says an editor is OPEN, not that this "
+            + "grid is in one, and the difference is everything the viewer looked like while the "
+            + "autonomy editor was up. Use the inEditor answer computed once at the top");
+    }
 
 }

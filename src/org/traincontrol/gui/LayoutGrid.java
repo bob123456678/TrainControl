@@ -154,6 +154,18 @@ public class LayoutGrid
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {
+        // Is THIS grid inside an editor - not "is an editor open somewhere".
+        //
+        // layout.getEdit() alone is the second question. It is the flag the two editors share for their
+        // mutual exclusion, so while either was open every grid on screen answered yes, the viewer
+        // included: it drew the editor's grey grid around its squares (Adam: "the BUG where the VIEWER
+        // gets a grid is still there"), greyed its captions, dropped its hand cursors and its tooltips,
+        // and attached mouse listeners that cast their parent to LayoutEditor - which the viewer is not.
+        //
+        // One line above already asked it this way, as a conjunction, and was right. Everything else in
+        // this constructor asked the short version and was wrong in the viewer.
+        final boolean inEditor = layout.getEdit() && master instanceof LayoutEditor;
+
         // Before anything else touches the panel: whatever was drawn here is being replaced, and a
         // replaced grid with timers still armed fires into a panel that is no longer its own.
         if (parent != null)
@@ -207,7 +219,7 @@ public class LayoutGrid
             //
             // So this asks whether THIS grid is in an editor, which is the question it was always
             // trying to ask.
-            if (LayoutDiagram.IGNORE_PADDING || (layout.getEdit() && master instanceof LayoutEditor))
+            if (LayoutDiagram.IGNORE_PADDING || inEditor)
             {
                 parent.setLayout(new FlowLayout());
             }
@@ -269,7 +281,7 @@ public class LayoutGrid
                     ui == null ? null : ui.autonomyCaptionAt(square);
 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
-                grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
+                grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor);
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 
                 boolean drawsText = captioned != null
@@ -321,7 +333,7 @@ public class LayoutGrid
                     // looking for something that was never built.  The name is still drawn, below, as
                     // ordinary text: leaving the platform nameless would be a stranger answer than
                     // leaving it unwired.
-                    if (captioned != null && !layout.getEdit()
+                    if (captioned != null && !inEditor
                         && !ui.isPageExcludedFromAutonomy(layout.getName()))
                     {
                         // Blank until autonomy says otherwise.
@@ -470,7 +482,7 @@ public class LayoutGrid
                             // is edited.
                             text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
 
-                            if (layout.getEdit()) labelColour = new Color(150, 150, 150);
+                            if (inEditor) labelColour = new Color(150, 150, 150);
                         }
                         else if (own != null && own.startsWith(LAYOUT_STATION_PREFIX))
                         {
@@ -540,7 +552,7 @@ public class LayoutGrid
                         }
 
                         // Show the correct cursor
-                        if (c.isClickable() && !layout.getEdit()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        if (c.isClickable() && !inEditor) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     else
                     {
@@ -563,7 +575,7 @@ public class LayoutGrid
                     // Cascade click event
                     final JLabel outer = grid[x][y];
                     
-                    if (!layout.getEdit())
+                    if (!inEditor)
                     {
                         text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
@@ -597,7 +609,7 @@ public class LayoutGrid
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
                     
                     // To avoid a bug where feedback doesn't yet exist, turn off tooltips in the editor
-                    if (!layout.getEdit())
+                    if (!inEditor)
                     {
                         text.setToolTipText(c.toSimpleString());
                     }

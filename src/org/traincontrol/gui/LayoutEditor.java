@@ -3095,11 +3095,18 @@ public class LayoutEditor extends PositionAwareJFrame
      * OB-028: "in the autonomy editor, the gray grid is not needed. show the track diagram as it appears
      * in the viewer, without the tile borders. make sure the borders return in the editor."
      *
-     * An EMPTY border of the same thickness rather than no border at all, and that is the whole of the
-     * care needed here. The grey lines go, which is what was asked; the tile keeps the insets it had, so
-     * hovering - which swaps this for a coloured line - does not move the artwork underneath. A null
-     * border would have shifted every icon by a pixel the moment the pointer crossed it, which is the
-     * complaint FR-006 makes about the layout editor's own grid.
+     * NO border at all in autonomy mode, so the tiles sit flush exactly as they do in the viewer.
+     *
+     * The first attempt used an empty border of the same thickness, reasoning that keeping the insets
+     * would stop the artwork shifting when a hover swapped it for a coloured line. Adam: "The grid is
+     * correctly gone, but now there is a gap between tiles (essentially a white grid)." Of course it
+     * is - an inset with nothing drawn in it shows the panel behind, so the grey grid was replaced by
+     * a white one, which is not what "as it appears in the viewer" means.
+     *
+     * The shift it was guarding against cannot happen: `receiveMoveEvent` returns immediately in
+     * autonomy mode - "hover previews what a diagram edit would place; in autonomy mode nothing is
+     * being placed" - so nothing ever swaps this border for another one. The care was real and aimed
+     * at the wrong mode; FR-006's version of it, for the layout editor, still applies.
      *
      * The palette keeps its visible border in both modes: those tiles are a menu of things to place, not
      * a picture of a railway, and the border is what separates one from the next.
@@ -3116,9 +3123,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 NEW_COMPONENT_BORDER_WIDTH);
         }
 
-        return autonomy
-            ? new javax.swing.border.EmptyBorder(1, 1, 1, 1)
-            : BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, 1);
+        return autonomy ? null : BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, 1);
     }
 
     private void highlightLabel(JLabel label, Color color)
@@ -3140,7 +3145,11 @@ public class LayoutEditor extends PositionAwareJFrame
                     JLabel label = (JLabel) component;
                     
                     // Don't reset components without a border, because they might be something else...
-                    if (label.getBorder() != null)
+                    //
+                    // Except in autonomy mode, where the resting border IS null: a label already put
+                    // back to nothing must not be skipped on the way to being given a highlight and
+                    // back again, or the first hover would leave a line behind for good.
+                    if (label.getBorder() != null || isAutonomyMode())
                     {
                         label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));
                     }

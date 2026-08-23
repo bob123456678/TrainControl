@@ -227,3 +227,21 @@ they were filed under, and this mapping is how to trace one to the other.*
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
+
+### OB-042 - 2026-08-23 - curved tracks cannot carry autonomy label
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-23 01:04  
+**Build:** commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the option to place a station label is not shown in the curved track right click menu.
+
+### OB-043 - 2026-08-23 - segment length entry
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-23 01:05  
+**Build:** commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if the segment length is cleared and submitted, treat it as 0.  force the field to only allow numeric entry.

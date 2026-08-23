@@ -2621,8 +2621,22 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placementChanged()
     {
+        // BOTH, not one or the other.
+        //
+        // It used to refresh the editor's own grid where there was one and rebuild the running layout
+        // only where there was not - on the reasoning that whoever made the change was looking at
+        // whichever surface it came from. They are not: the two are on screen at the same time, and a
+        // change made from the track diagram while Autonomy Setup is open went to the editor and left
+        // the diagram under the pointer stating the old answer.
+        //
+        // MT-125, Adam, on changing which way a locomotive faces: "Does not refresh in the viewer.
+        // Works in the autonomy editor." Exactly that seam.
+        //
+        // Rebuilding the running layout is safe to ask for unconditionally: it declines while autonomy
+        // is busy, and it is what every placement made from the diagram has always done.
         if (onDiagramChanged != null) onDiagramChanged.run();
-        else if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
+
+        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
 
         refresh();
     }
