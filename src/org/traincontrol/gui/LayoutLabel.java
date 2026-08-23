@@ -974,6 +974,21 @@ public final class LayoutLabel extends JLabel
             if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
 
             if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
+
+            // And the badge back on top of the line (MT-076).
+            //
+            // The order above is about the ARROWS, and is right about them. It is wrong about the
+            // station badges: a station is where the train is GOING, and the line is how it gets
+            // there, so burying the landmark under the route loses the thing being watched. Adam,
+            // watching a run: "I like being able to see progress - keep them on top after being
+            // reached."
+            //
+            // Only where there is an overlay to have covered it, so an ordinary diagram still paints
+            // its badge exactly once.
+            if (overlay != null && annotation != null)
+            {
+                annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
+            }
         }
         finally
         {

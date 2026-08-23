@@ -855,9 +855,22 @@ public class RouteEditorFrame extends JFrame
      */
     private CommandRow asShown(CommandRow row)
     {
-        if (row == null || row.getKind() != CommandRow.Kind.ACCESSORY) return row;
+        // THREE_WAY as well as ACCESSORY (MT-005).
+        //
+        // Adam: "Works for signals and switches. Does not work for 3-ways though." It could not: this
+        // returned any row that was not an ACCESSORY untouched, so a three-way row given a signal's
+        // address stayed a three-way pointing at a signal - a row standing for a PAIR of commands
+        // aimed at something that has no pair.
+        //
+        // The other direction is not available and is worth writing down so nobody looks for it: the
+        // model has no isThreeWay. A three-way is two accessories that this editor treats as one row,
+        // so nothing at an address can say "I am a three-way" the way isSignal() says it is a signal.
+        // An ACCESSORY row can therefore never become THREE_WAY by typing, only by being chosen.
+        if (row == null
+            || (row.getKind() != CommandRow.Kind.ACCESSORY
+                && row.getKind() != CommandRow.Kind.THREE_WAY)) return row;
 
-        if (kindAtAddress(row.getTarget(), row.getProtocol(), CommandRow.Kind.ACCESSORY)
+        if (kindAtAddress(row.getTarget(), row.getProtocol(), row.getKind())
             != CommandRow.Kind.SIGNAL)
         {
             return row;
@@ -871,6 +884,17 @@ public class RouteEditorFrame extends JFrame
 
         if ("turn".equalsIgnoreCase(said)) said = "red";
         else if ("straight".equalsIgnoreCase(said)) said = "green";
+        else if (!"red".equalsIgnoreCase(said) && !"green".equalsIgnoreCase(said))
+        {
+            // Anything else - which is every word a THREE_WAY row can be carrying - becomes RED.
+            //
+            // It has to become one of the two, because a setting the signal's own dropdown does not
+            // contain is the MT-089 defect: a combo whose model lacks its current value falls back to
+            // its first entry, and one click in and out commits that. Red rather than green because
+            // this is a guess about somebody's railway, and the guess that stops a train is the one
+            // that cannot cause a collision.
+            said = "red";
+        }
 
         return new CommandRow(CommandRow.Kind.SIGNAL, row.getTarget(), said,
             row.getProtocol(), row.getDelay());

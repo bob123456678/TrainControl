@@ -22,7 +22,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
-| [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
+| [MT-076](#mt-076) | 2026-08-18 | Running path drawing | fixed unvalidated | Tier 3 |
 | [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | Tier 3 |
 | [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | Tier 3 |
 | [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | Tier 3 |
@@ -509,7 +509,7 @@ first".
 
 ### MT-076 - 2026-08-18 - Running path drawing
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
 **Written:** 2026-08-18
 
@@ -529,6 +529,23 @@ Looks good, but the intermediate stations overlap above just when reached, and t
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** The station badges are drawn again on top of the run line.
+
+The order was deliberate and its comment says why: the annotation is painted first and the path over
+it, because "the path a train is actually taking is the more urgent of the two: the arrows say what is
+permitted, which is worth reading while a layout is being set up rather than while it is running."
+
+That reasoning is right about the ARROWS and wrong about the badges, which is what you noticed. A
+station is where the train is GOING; the line is how it gets there. Burying the landmark under the
+route loses the thing being watched.
+
+So the arrows stay under the line and the badge - with the train star on it - comes back over. Only
+where there is a line to have covered it, so an ordinary diagram still paints its badge once.
+
+**The train icon you suggested is not in this.** "Why not put a little train icon (simple black steam
+engine)" is a different and larger idea than fixing an overlap, and it wants deciding rather than
+slipping in beside a fix. Say the word and I will file it as a feature request through the inbox.
 ---
 
 <a id="mt-077"></a>
@@ -554,14 +571,26 @@ Loc name and icon at the end may be truncated in the autonomy view.  Make sure t
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** I need one more detail before touching this, because the truncation you asked
+for is already there and I would rather ask than change the wrong label.
+
+The autonomy EDITOR's caption goes through `LayoutGrid.stationCaption`, the same method the running
+diagram uses, and has since `c0c9055d` - bracketed, cut to `LAYOUT_STATION_MAX_LENGTH`, facing arrow
+inside the brackets. That was the MT-093 fix, and your build for this run included it.
+
+So the label I think you mean is already truncated identically. **Which view is cutting off the name
+and icon?** The candidates are the Auto tab's locomotive list, the findings list at the foot of the
+editor, and the graph window's own labels - all of which draw a locomotive name and none of which
+shares that method. Name the one you saw and it is a small change.
 ---
 
 <a id="mt-078"></a>
 
 ### MT-078 - 2026-08-18 - Barred arrival is honoured
 
-**Disposition:** needs test  
-**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
+**Disposition:** needs test
+**From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train; **reopened** 2026-08-22  
 **Written:** 2026-08-18
 
 **What to do.** Barred arrival is honoured. Bar one side of a two-ended station, reload, run. Trains only pull
@@ -603,6 +632,15 @@ train is standing there. It carries a facing arrow - `[V 200 150 >]` - and that 
 train is pointing, which tells you which end it came in by. If the arrow says it came from the west,
 this is a real defect and I will have somewhere to start. If it came from the east, the restriction is
 working and the entry can be closed.
+
+**Claude, 2026-08-22.** Marked **reopened** at Adam's instruction and left at **needs test**, which is
+the honest state: nobody has run it since it was answered, and what I did was test the rule rather than
+reproduce the report.
+
+Recording the distinction so a later reader does not mistake one for the other. The BUILD is proven -
+`testBarredArrivalIsNotADestination`, verified by mutation. What is unproven is the railway, and the
+railway is what the report was about. A passing unit test is not an answer to "I watched a train do
+this", and this entry stays open until somebody watches one not do it.
 ---
 
 <a id="mt-079"></a>
@@ -999,7 +1037,7 @@ Make a test case for this, all 3 possible directions.  Enable the echo packets o
 
 ### MT-005 - 2026-08-20 - A signal address typed into a switch row
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** LT-B6  
 **Written:** 2026-08-20
 
@@ -1016,6 +1054,21 @@ Works for signals and switches.  Does not work for 3-ways though.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Found. `asShown` returned any row that was not an `ACCESSORY` untouched, so a
+THREE_WAY row given a signal's address stayed a three-way pointing at a signal - a row standing for a
+PAIR of commands aimed at something that has no pair. It re-infers for three-ways now.
+
+**And the setting, which is where this could have gone quietly wrong.** A three-way's words are not
+"straight" and "turn", so the existing mapping had nothing to translate. A signal row carrying a word
+its own dropdown does not contain is exactly the MT-089 defect - the combo falls back to its first
+entry and one click in and out commits it. Anything unrecognised becomes **red**: this is a guess about
+your railway, and the guess that stops a train is the one that cannot cause a collision.
+
+**The other direction does not exist, and is worth knowing so nobody hunts for it.** The model has no
+`isThreeWay` - a three-way is two accessories this editor draws as one row - so nothing at an address
+can announce itself as a three-way the way `isSignal()` announces a signal. An ACCESSORY row can only
+become THREE_WAY by being chosen, never by typing.
 ---
 <a id="mt-006"></a>
 
@@ -1843,6 +1896,10 @@ carries no name and press it: nothing should happen and the log should say why.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 21:54 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-043"></a>
 
@@ -2630,7 +2687,7 @@ would leave those pointing at nothing.
 
 ### MT-095 - 2026-08-22 - The editor stays open when you switch page or mode
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-005  
 **Written:** 2026-08-22
 
@@ -2685,13 +2742,23 @@ Looks good, but the window location memory is messing with the single window vie
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** There is one remembered entry for the editor window now, whatever page it is
+showing.
+
+It was the page name and the tile size, so every page had its own remembered position AND its own
+remembered size. That was defensible while a page change meant a new window. Once the window stopped
+closing, clicking a tab picked the window up and moved it, because the page you clicked remembered
+somewhere else - which is exactly "the window location memory is messing with the single window view".
+
+The window no longer moves on a switch. Only the size changes, and only upwards - see MT-096.
 ---
 
 <a id="mt-096"></a>
 
 ### MT-096 - 2026-08-22 - The editor opens at the size of its diagram
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-003  
 **Written:** 2026-08-22
 
@@ -2727,6 +2794,21 @@ It is still too small- but I think the window persistence is getting in the way.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22, second pass.** You were right that the persistence was in the way, and it was
+the per-page part of it.
+
+Two changes together. There is one remembered entry for the whole window rather than one per page
+(MT-095), and the fit now runs on **every** arrival rather than only on a brand-new window - so a page
+that needs more room gets it whenever you switch to it.
+
+**And the fit only ever grows.** Running it on every arrival means it has to be able to leave a window
+alone as well as enlarge it, or switching from a big page to a small one would shrink the window under
+somebody who had just made it bigger on purpose. So a size you chose is a floor, and a diagram that
+needs more than that raises it, capped at the screen.
+
+Worth testing on a fresh layout as you suggested, and also on your own: the old per-page entries are
+still in the preferences and are simply no longer read.
 ---
 
 <a id="mt-097"></a>

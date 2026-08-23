@@ -1341,6 +1341,57 @@ public class TileAnnotation
      *
      * Unnamed points are drawn hollow, which remains the only cue that one still needs a name.
      */
+    /**
+     * The badge, and the train mark on it, drawn again over whatever has been laid on top (MT-076).
+     *
+     * The running path is a line along the rails and is painted after this whole annotation, which is
+     * deliberate - see LayoutLabel.paintComponent, where the reasoning is that a path a train is
+     * actually taking matters more than the arrows saying what is permitted.
+     *
+     * That reasoning is about the ARROWS. It is wrong about the badges: Adam, watching a run - "the
+     * intermediate stations overlap above just when reached, and then are under the green line after.
+     * I like being able to see progress - keep them on top after being reached." A station is where the
+     * train is going; burying it under the line to it is burying the landmark under the route.
+     *
+     * So the arrows stay under the line and the badge comes back over it. Called by LayoutLabel only
+     * when there is an overlay to have covered it, so an ordinary diagram paints its badge once.
+     *
+     * @param g the tile's graphics, already translated to its own origin
+     * @param width
+     * @param height
+     */
+    public void paintBadgeOverRun(Graphics2D g, int width, int height)
+    {
+        if (badge == null && !occupied) return;
+
+        Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        Stroke oldStroke = g.getStroke();
+        Color oldColor = g.getColor();
+        java.awt.Composite oldComposite = g.getComposite();
+
+        try
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+            if (badge != null) paintBadge(g, width, height);
+
+            // And the train mark with it, for the same reason it goes over the badge in the first
+            // place - it is the most changeable fact on the square.
+            if (occupied) paintTrainMark(g, width, height);
+        }
+        finally
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint == null
+                ? RenderingHints.VALUE_ANTIALIAS_DEFAULT : oldHint);
+
+            g.setStroke(oldStroke);
+            g.setColor(oldColor);
+            g.setComposite(oldComposite);
+        }
+    }
+
     private void paintBadge(Graphics2D g, int width, int height)
     {
         Color colour = badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;

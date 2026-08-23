@@ -3905,9 +3905,22 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             Math.min(550 + sideways + (this.size == 60 ? 200 : 0), usable.width),
             Math.min(630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0), usable.height)));
 
+        // Never SMALLER than the window already is (MT-096).
+        //
+        // "It is still too small - but I think the window persistence is getting in the way." It was:
+        // with one entry per page, a page sized once on a small diagram handed that size to every
+        // later visit, and the fit was only computed for a brand-new window.
+        //
+        // Now there is one entry and the fit runs on every arrival, so it has to be able to leave a
+        // window alone as well as grow it - otherwise switching from a big page to a small one would
+        // shrink the window under somebody who had just made it bigger on purpose. Growing only means
+        // a page that needs room gets it, and a size you chose is a floor rather than a suggestion.
+        int wide = Math.max(getWidth(), grid.maxWidth + 210 + sideways);
+        int high = Math.max(getHeight(), grid.maxHeight + 160);
+
         this.setPreferredSize(new Dimension(
-            Math.min(grid.maxWidth + 210 + sideways, usable.width),
-            Math.min(grid.maxHeight + 160, usable.height)));
+            Math.min(wide, usable.width),
+            Math.min(high, usable.height)));
 
         pack();
 
@@ -3942,11 +3955,18 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName())
             );
 
-            // The index FIRST, because everything below is asked per page.
+            // The index FIRST, because everything below asks what has been remembered.
             //
-            // It used to be set after the sizing, which was survivable only because the sizing did not
-            // ask anything about what had been remembered.  It does now.
-            this.setWindowIndex(this.layout.getName() + "_editor_" + this.getLayoutSize());
+            // ONE entry for the whole window, not one per page (MT-095). It was the page name and the
+            // tile size, so every page had its own remembered position and its own remembered size -
+            // which was defensible when a page change meant a new window, and became "the window
+            // location memory is messing with the single window view" the moment the window stopped
+            // closing: clicking a tab moved the window and resized it, because the tab you clicked
+            // had its own idea of where the editor lives.
+            //
+            // There is one editor window now. It should be where you left it, whatever page it is
+            // showing.
+            this.setWindowIndex(EDITOR_WINDOW_KEY);
 
             if (!this.isLoaded())
             {
@@ -4334,12 +4354,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // is the mode arrived at, because a fallback is not a choice.
             if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
 
-            // Per page, exactly as on the way in - which is the whole of OB-003 as it applies here:
-            // a page with a size the user chose keeps it, and one without is fitted to its diagram.
-            setWindowIndex(this.layout.getName() + "_editor_" + getLayoutSize());
+            // The same one entry as on the way in - see EDITOR_WINDOW_KEY.
+            //
+            // The window does NOT move on a switch. Only the size is allowed to change, and only
+            // upwards: sizeForDiagram grows it if the arriving page needs more room and leaves it
+            // alone if it does not.
+            setWindowIndex(EDITOR_WINDOW_KEY);
 
-            if (hasRememberedBounds()) loadWindowBounds();
-            else sizeForDiagram();
+            sizeForDiagram();
 
             saveWindowBounds();
 
@@ -4722,6 +4744,16 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
     /** One width for the strip, so a long page name cannot take it off the diagram */
     private static final int SIDEBAR_WIDTH = 150;
+
+    /**
+     * One remembered position and size for the editor, whatever page it is showing (MT-095).
+     *
+     * It used to be the page name and the tile size, which gave every page its own entry. That was
+     * defensible while a page change meant a new window; once the window stopped closing, switching
+     * tabs picked the window up and put it somewhere else, because the arriving page remembered
+     * somewhere else.
+     */
+    private static final String EDITOR_WINDOW_KEY = "editor";
 
     /** Beyond this many pages the tabs scroll rather than running off the bottom of the window */
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 8;
