@@ -68,14 +68,6 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
-### OB-018 - 2026-08-22 - route editor buttons
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 19:53  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-move the save button to the bottom right corner, and cancel just left of it.
 
 ---
 
@@ -91,6 +83,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-018 | bug | Route editor: Save to the bottom right corner, Cancel beside it | - | [MT-108](tests.md#mt-108) |
 | 2026-08-22 | OB-017 | bug | The track palette was empty after autonomy mode, under the wrong heading | - | [MT-107](tests.md#mt-107) |
 | 2026-08-22 | OB-016 | bug | The track diagram viewer was drawn in edit mode while the editor was open | - | [MT-106](tests.md#mt-106) |
 | 2026-08-22 | OB-015 | bug | The mode buttons are text-sized, not bold | - | [MT-105](tests.md#mt-105) |

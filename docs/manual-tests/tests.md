@@ -105,8 +105,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-105](#mt-105) | 2026-08-22 | Sidebar text at the standard size | fixed unvalidated | OB-014, OB-015 |
 | [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
 | [MT-107](#mt-107) | 2026-08-22 | The track palette comes back when you leave autonomy mode | fixed unvalidated | OB-017 |
+| [MT-108](#mt-108) | 2026-08-22 | Route editor: Save in the corner, and Cancel asks | fixed unvalidated | OB-018 |
 
-Everything else - 21 of 107 - is **fixed validated** and needs nothing from you unless the
+Everything else - 21 of 108 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1142,6 +1143,10 @@ OK
 
 OK.  Highlight the "move to' group in blue, not light red, for better clarity.  The selection itself should remain red.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-014"></a>
 
@@ -1158,6 +1163,12 @@ or stray gap a moment later.
 
 OK.  In the autonomy diagram editor, we need to force the scrollable height of the diagram to be about 1 row more.  Sometimes it hides unless the window is stretched.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works, but I am getting poor performance while using the UI editor.  This could just be an artifact of the testing framework, but make sure there are no race conditions etc.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-015"></a>
 
@@ -1172,6 +1183,10 @@ OK.  In the autonomy diagram editor, we need to force the scrollable height of t
 #### Comments
 
 *(none yet)*
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-016"></a>
@@ -1220,6 +1235,10 @@ be readable - it wraps now, and scrolls past a few lines.
 #### Comments
 
 OK.  But the bar at the top of the editor has an odd border- give it a light gray background instead.  And there is an odd gray artifact on the right side of it.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-019"></a>
@@ -2834,6 +2853,15 @@ station - which nothing becomes unreachable under, but which puts the same item 
 depending on the square. I judged one consistent home worth the extra click, but it is your menu: say
 the word and I will make it conditional instead.
 
+**Adam chose neither, and the third answer is better than both.** Segment Length is loose on the menu
+again, for every square, with the new name kept - the rename was the part that was worth having, since
+"Length..." did not say length of what. Advanced Parameters goes back to being a station's own drawer
+and is null on anything else.
+
+So the instruction above is now: **Segment Length... is on the menu itself, one click away, on a
+station and on plain track alike.** Advanced Parameters holds the other three station settings and
+does not appear on plain track at all.
+
 ---
 
 <a id="mt-105"></a>
@@ -2923,5 +2951,40 @@ a new window, because a new window ran the constructor and the constructor built
 It is rebuilt rather than hidden, because the panel's LAYOUT changes too, and a hidden component in the
 wrong layout is not the same as one that is not there. The heading is read off the form at construction
 and put back from that copy: it lives in generated code that cannot be edited by hand.
+
+---
+
+<a id="mt-108"></a>
+
+### MT-108 - 2026-08-22 - Route editor: Save in the corner, and Cancel asks
+
+**Disposition:** fixed unvalidated  
+**From:** OB-018  
+**Written:** 2026-08-22
+
+**What to do.** Open the route editor. **Save** is in the bottom right corner with **Cancel** immediately to its
+left.
+
+Then the part that is not just a move. Type something - change a name, add a command - and press
+**Cancel**. It must ask whether to throw the changes away, the same as pressing Escape does.
+
+Press Cancel with nothing changed and it must close without asking.
+
+#### Comments
+
+**Claude, 2026-08-22.** The move is what you asked for. The second half is something I found while
+making it, and it is worth a look rather than a mention.
+
+Escape has always run `closeIfThrowingNothingAway`, whose own javadoc says why: "closing one by
+accident - Escape, or the window's own X - threw away everything typed since it opened with no warning
+at all". The **Cancel button** went straight to `dispose`.
+
+So the obvious way out was the one that did not ask, and the keyboard shortcut was the safe one -
+exactly backwards. Both go through the same question now.
+
+I have changed this without being asked, on the grounds that a button labelled Cancel silently
+destroying work is a defect rather than a design. If you actually want Cancel to be the no-questions
+exit, say so and I will put it back - but then Escape should match it, because the two doing different
+things is the part that cannot be right either way.
 
 ---

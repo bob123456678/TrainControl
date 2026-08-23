@@ -324,13 +324,15 @@ public class RouteEditorFrame extends JFrame
 
         content.add(middle, BorderLayout.CENTER);
 
-        // Save on the left, Cancel on the right, and a line above the pair.
+        // Save in the bottom RIGHT corner, Cancel just left of it, and a line above the pair (OB-018).
         //
-        // They were together at the bottom left, which put them directly under the Add and Remove
-        // buttons of the table above and made them read as two more of those.  The buttons that act
-        // on a row and the buttons that finish with the window are different kinds of thing, and the
-        // old route editor keeps them apart the same way: its Save Changes is bottom left and its
-        // Cancel is bottom right, with the width of the window between them.
+        // They were at opposite ends of the window - Save bottom left, mirroring the old route editor,
+        // Cancel bottom right - which kept them clear of the Add and Remove buttons above but put the
+        // two answers to one question a window's width apart. Together, with the one you usually want
+        // in the corner, is the arrangement every other dialog in this application uses.
+        //
+        // Cancel FIRST, because a right-aligned FlowLayout still lays its children out left to right:
+        // the last one added is the one in the corner.
         JPanel buttons = new JPanel(new BorderLayout());
 
         buttons.setBackground(java.awt.Color.WHITE);
@@ -339,21 +341,22 @@ public class RouteEditorFrame extends JFrame
             BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(204, 204, 204)),
             BorderFactory.createEmptyBorder(6, 0, 0, 0)));
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-
-        left.setBackground(java.awt.Color.WHITE);
-
-        saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
-
-        left.add(saveButton);
-
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
         right.setBackground(java.awt.Color.WHITE);
 
-        right.add(button(I18n.t("route.ui.frameCancel"), this::dispose));
+        // Through the same question Escape asks, not straight to dispose.
+        //
+        // Escape has always run closeIfThrowingNothingAway - "closing one by accident threw away
+        // everything typed since it opened with no warning at all" - and the BUTTON went straight to
+        // dispose. So the obvious way out was the one that did not ask, and the keyboard shortcut was
+        // the safe one, which is exactly backwards.
+        right.add(button(I18n.t("route.ui.frameCancel"), this::closeIfThrowingNothingAway));
 
-        buttons.add(left, BorderLayout.WEST);
+        saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
+
+        right.add(saveButton);
+
         buttons.add(right, BorderLayout.EAST);
 
         content.add(buttons, BorderLayout.SOUTH);

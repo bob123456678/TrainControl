@@ -797,15 +797,13 @@ public class AutonomyEditorPanel extends JPanel
         // note there.  Null when the square has only one way in, which is not a question worth asking.
         javax.swing.JMenu arrivals = null;
 
-        // Everything a square can be TUNED with, under one heading, and added LAST (OB-013).
+        // Everything a STATION can be tuned with, under one heading, and added LAST (OB-013).
         //
-        // Built here rather than inside the station block because Segment Length belongs in it and
-        // belongs on every square - a plain piece of track has a length, and it is the same setting.
-        // A station appends its own four to this further down.
-        javax.swing.JMenu advanced = new javax.swing.JMenu(
-            I18n.t("autolayout.ui.menuEditAdvancedParameters"));
-
-        advanced.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
+        // Null on a square that is not a station, which is what it was before and is again: this held
+        // Segment Length for a day, which meant building it for every square so that a length could
+        // still be set on plain track - and the cost was an extra click for the commonest setting
+        // there is. Segment Length is loose on the menu again, where it can be reached in one.
+        javax.swing.JMenu advanced = null;
 
         if (isPoint)
         {
@@ -1128,6 +1126,9 @@ public class AutonomyEditorPanel extends JPanel
             //
             // Every label carries its current value, as the graph window's did: a menu that says
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.
+            advanced = new javax.swing.JMenu(
+                I18n.t("autolayout.ui.menuEditAdvancedParameters"));
+
             int priority = number(target, "priority", 0);
 
             advanced.add(item(I18n.f("autolayout.ui.menuStationPriority",
@@ -1254,7 +1255,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // Last (OB-013).  Everything above it is a decision about this square; this is the drawer of
         // numbers that change how well those decisions work, and a drawer belongs at the bottom.
-        menu.add(advanced);
+        if (advanced != null) menu.add(advanced);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.
         //
@@ -1323,6 +1324,15 @@ public class AutonomyEditorPanel extends JPanel
         {
             menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
         }
+
+        // On the menu itself rather than inside Advanced Parameters (OB-013, revised).
+        //
+        // It went in there for a day. Advanced Parameters belongs to a STATION, and a length belongs
+        // to any square, so keeping it there meant building that submenu for plain track too - which
+        // put the commonest setting on the menu one click further away on every square that has
+        // nothing else to tune. The name is the part that was worth keeping: "Length..." did not say
+        // length of what.
+        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
 
         // A station name can go on any square whose track runs straight through, not only on a text
