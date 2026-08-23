@@ -1503,6 +1503,12 @@ Move all the link options out of this submenu, into the main one.
 
 Give the each of the right click menu groups semantic labels where there are 3+ options.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Does not work- only first is set to red.  Selection process is ok.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-024"></a>
 
@@ -1522,6 +1528,10 @@ Works.
 
 We need unnamed stations (default) to throw an error, not a warning.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-025"></a>
 
@@ -1539,6 +1549,12 @@ array.
 #### Comments
 
 No need to test, not deployed.
+
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Check this programmatically.  I previously found an issue where locomotives do not transfer.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-026"></a>
@@ -1570,6 +1586,10 @@ correct and is pinned by its own test.
 So either the links you saw were the ones written over, or the setup was already in the state the
 earlier rounds left it in. **If it happens again, the useful details are: which direction, where the
 pointer was, and the two squares the link joined** - with those I can reproduce it exactly.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-027"></a>
@@ -1852,6 +1872,12 @@ this test. That is the leak it exists for.
 
 Your procedure above has moved to MT-036, which is the test it describes; this entry keeps the negative
 half, which is the regression guard.
+
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Add a test for this. many simultaneous auto routes, trigger them synthetically, short duration.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-038"></a>
@@ -4055,6 +4081,14 @@ anything, and the newer statement is the one they mean.
 **OB-030.** `wrapped()` already existed and wraps at 320px; the Autonomy menu did not use it once. All
 eight tooltips go through it now.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+037- Stars work, but are offcenter on curve stations.
+035- ADDING TO AUTONOMY here still doesn't take effect.  placing is OK.
+031, 030, 036 - file under new MTs.  One test per MT ticket.
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-118"></a>
@@ -4139,4 +4173,31 @@ used for the badges; the work is getting the component to the overlay.
 tile to a PNG, so this can be looked at before and after rather than reasoned about - which is what the
 last three drawing defects needed and did not have.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+not fixed.  test the current config from BottomMainB to TopMainR2Inter
+
+*Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22, later - confirmed by picture rather than by reading.**
+
+`testDiagramLooksRight.testARealPathToACurvedStationIsDrawn` now renders it. A locomotive is placed and
+asked for a real destination, and the run that comes back is laid and drawn exactly as the running
+overlay would draw it: `02 0314-1 DDR` from BottomMainC to `TopMainR2Inter (southbound)`, 48 contiguous
+squares, ending on the FEEDBACK_CURVE at `1 - Main:0,11`.
+
+Both halves of your report are in that one picture:
+
+- **The arrival.** The trace comes down the vertical rail, runs straight PAST the point where the rail
+  turns right, and stops with a rounded cap in the middle of the square. The black track is plainly
+  heading off to the right underneath it. That is the stub ending at the tile centre, and the centre of
+  a curve is not on the rail.
+- **A curve it runs through** (the corner at `1 - Main:0,1`) hugs the rail round the elbow and matches
+  the art exactly - so the through-case really must not be touched, as the comment above says.
+
+The diagnosis in the preceding comment stands, and the fix stays scoped to the end stub alone.
+
+Adam supplied the destinations - "TopMainR2Inter or TopMainR1Inter", then "Place at BottomMainB or A" -
+which is the only reason this got off the ground; see the note below about what I got wrong first.
 ---

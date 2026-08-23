@@ -161,6 +161,24 @@ it should be possible to initially load autonomy from an import, not just forcin
 
 This was completed, clean up the disposition and give this a proper FR- index for the record.
 
+### OB-039 - 2026-08-22 - orientation of loc
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 23:34  
+**Build:** commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when changing the orientation of a loc from the track diagram, the direction on the label is not updated.
+
+### OB-040 - 2026-08-22 - selecing guarding signals in autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 23:35  
+**Build:** commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+while the window is open, de-clutter the diagram as much as possible so users can clearly see the signals.  turn off arrows, labels, etc.
+
 ---
 
 ## What has been picked up
