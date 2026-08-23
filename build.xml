@@ -208,6 +208,8 @@
         <test-one-class class="testFacingFollowsTheTrack"/>
         <test-one-class class="testBothProtectingSignalsAreThrown"/>
         <test-one-class class="testCommandTableMarks"/>
+        <test-one-class class="testHomeAssignmentRules"/>
+        <test-one-class class="testTriggerWaitsSayNothing"/>
         <test-one-class class="testNonReversibleTrains"/>
         <test-one-class class="testRenderingCost"/>
         <test-one-class class="testRouteCapture"/>

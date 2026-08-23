@@ -2294,21 +2294,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         String current = homeOf(tile);
 
-        List<String> names = new java.util.ArrayList<>();
-        names.add(I18n.t("autosetup.ui.labelNone"));
-        names.addAll(placedLocomotives());
-
-        // The CURRENT home, even when it is not on the graph any more (OB-022, from DD-A6).
-        //
-        // An assignment may name a locomotive autonomy no longer runs, and it stays that way until
-        // somebody changes it. Leaving that name out made the existing assignment the one thing that
-        // could not be chosen: a non-editable combo cannot preselect a value its model does not hold,
-        // so the dialog opened showing "None" and pressing OK cleared a station's home without anyone
-        // asking for it.
-        //
-        // HomeLocomotiveMenu wrote that trap down in words - "opening this dialog and pressing OK
-        // would then quietly reassign the station" - and then lost the callers that ran the code.
-        if (current != null && !names.contains(current)) names.add(1, current);
+        List<String> names = homeChoices(I18n.t("autosetup.ui.labelNone"), placedLocomotives(), current);
 
         if (names.size() == 1)
         {
@@ -2775,8 +2761,23 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String homeBrokenBy(TileKey tile, List<String> excluded)
     {
-        String home = homeOf(tile);
+        return homeBrokenBy(homeOf(tile), excluded);
+    }
 
+    /**
+     * The home this exclusion list would break, or null.
+     *
+     * Static and public so the rule can be tested without a window (MT-112). Excluding a locomotive
+     * from the station it is homed at is not forbidden - somebody may mean it - but it is a
+     * contradiction the user should be shown rather than left to discover when a train has nowhere to
+     * go at the end of a run.
+     *
+     * @param home the locomotive homed at this station, or null
+     * @param excluded the locomotives being shut out of it
+     * @return the home that would be broken, or null
+     */
+    public static String homeBrokenBy(String home, List<String> excluded)
+    {
         if (home == null || excluded == null) return null;
 
         for (String name : excluded)
@@ -2785,6 +2786,42 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return null;
+    }
+
+    /**
+     * What the "home for a locomotive" list offers.
+     *
+     * Static and public so the rule can be tested without a window (MT-112, from OB-022 / DD-A6).
+     *
+     * "None" first, then the locomotives autonomy runs, and then - if it is not already among them -
+     * the home this station HAS. That last clause is the whole of the fix: an assignment may name a
+     * locomotive autonomy no longer runs, and it stays that way until somebody changes it. Leaving the
+     * name out made the existing assignment the one thing that could not be chosen, because a
+     * non-editable combo cannot preselect a value its model does not hold. The dialog opened showing
+     * "None", and pressing OK cleared the station's home without anyone asking for it.
+     *
+     * `HomeLocomotiveMenu` wrote that trap down in words - "opening this dialog and pressing OK would
+     * then quietly reassign the station" - and then lost the callers that ran the code.
+     *
+     * Second in the list rather than last: it is the current answer, so it belongs where the eye
+     * lands, next to the only other answer that is not a locomotive.
+     *
+     * @param none the label for "no home"
+     * @param placed the locomotives autonomy runs
+     * @param current the home this station has, or null
+     * @return what the list should offer, in order
+     */
+    public static List<String> homeChoices(String none, List<String> placed, String current)
+    {
+        List<String> names = new java.util.ArrayList<>();
+
+        names.add(none);
+
+        if (placed != null) names.addAll(placed);
+
+        if (current != null && !names.contains(current)) names.add(1, current);
+
+        return names;
     }
 
     private void promptName(TileKey tile)

@@ -1918,7 +1918,7 @@ raised something on screen, say so and it is a small change.
 
 ### MT-037 - 2026-08-21 - An automatic route says nothing about its trigger
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** AR-20  
 **Written:** 2026-08-21
 
@@ -1958,6 +1958,30 @@ Add a test for this. many simultaneous auto routes, trigger them synthetically, 
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - written, as you asked.** "Add a test for this. Many simultaneous auto routes,
+trigger them synthetically, short duration."
+
+`testTriggerWaitsSayNothing`, in two halves.
+
+**The behaviour.** The advisory quota is shrunk to a fraction of a second, five waits are put on sensors
+that never fire, and they are left sitting for many times that quota. Nothing may be logged about any of
+them. Ten minutes of watching is not a test; this is the same question asked in a second.
+
+**The rule that keeps it.** Only the dispatch loop in `Layout` may call the advising, three-argument
+`waitForOccupiedFeedback`. Everything else - route monitors included - comes in by the silent
+two-argument door, and that door is SHARED: `MarklinRoute` builds a locomotive called "Dummy Loc"
+purely to borrow these utilities, so an advisory added there is said once per route, for ever, about a
+train that does not exist. The test reads the source and requires `Layout.java` to be the only file that
+asks for one.
+
+**Worth recording: the first version of this test passed while the bug was present.** I made the shared
+door advise, and it stayed green - because I had looked for the word "dummy" in the log, and the
+advisory names whichever locomotive is actually waiting. The test could only ever have caught a fault
+in a locomotive genuinely called "Dummy Loc", which is the one string a test cannot produce. It looks
+for the advisory's own words now, and for the sensors being waited on, and the same mutation fails it.
+
+That is the second time this session a mutation check earned its keep by failing to fail.
 ---
 <a id="mt-038"></a>
 
@@ -4023,7 +4047,7 @@ not read as two different rules.
 
 ### MT-112 - 2026-08-22 - Home assignments: the three rules that were unreachable
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-022 (DD-A6)  
 **Written:** 2026-08-22
 
@@ -4073,6 +4097,34 @@ Make a test case for this, you should be able to validate it.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - written, as you asked.** "Make a test case for this, you should be able to
+validate it."
+
+`testHomeAssignmentRules`, and the shape of it is decided by what went wrong here. All three rules
+existed, were commented, and were believed to work; what had gone was every caller that ran them. DD-A6
+put it plainly: `HomeLocomotiveMenu` lost four of its five callers, "two safety warnings are now
+unreachable and their tests still pass."
+
+**So a test that only proves the rule proves nothing.** Two of the three are pure functions now -
+`homeChoices` and `homeBrokenBy`, lifted out of the dialog code where they were tangled with a
+JOptionPane - and each is tested directly. And there is a fourth test that asserts all three are still
+WIRED: the dialog builds its list with `homeChoices`, the exclusion warning asks `homeBrokenBy` about
+the station's actual home, and the unreachable-home warning still consults `HomeStaging.canBeHome`.
+
+The rules themselves:
+
+1. **A home naming a locomotive autonomy no longer runs stays in the list**, second, where the eye
+   lands. A non-editable combo cannot preselect a value its model does not hold, so leaving it out made
+   the existing assignment the one thing that could not be chosen - the dialog opened on "None" and OK
+   cleared a home nobody asked to clear.
+2. **A home the locomotive cannot reach** is `HomeStaging.canBeHome`, which has its own tests in
+   `testHomeStaging`; what is checked here is that the panel still asks it.
+3. **Excluding a locomotive from its own home** is reported by name. Not forbidden - somebody may mean
+   it - but shown, rather than discovered when a train has nowhere to go at the end of a run.
+
+The hands-on instruction above is still worth running: none of this can see a menu item that is never
+built, and "is the warning actually shown" is a question about a window.
 ---
 
 <a id="mt-113"></a>
