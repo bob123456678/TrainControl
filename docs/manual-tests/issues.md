@@ -57,8 +57,37 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-007 | feature request | A white * on the station icon where a train is set up to be standing | needs test | - |
+| 2026-08-22 | OB-006 | feature request | Move "make a one way run from here" off the right-click menu and onto a button that asks for both points and a direction | needs test | - |
+| 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | needs test | - |
+| 2026-08-22 | OB-004 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | needs test | - |
+| 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | needs test | - |
 | 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
 | 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+
+**On the five filed 2026-08-22, and the Kind field.** All five arrived as `bug`; two of them are, and
+three are feature requests. `OB-004`, `OB-006` and `OB-007` do not describe anything behaving wrongly -
+they ask for a control to be built differently, moved, or added. `OB-003` and `OB-005` are behaviour:
+a window that comes up the wrong size, and a switch that visibly closes and reopens.
+
+Recorded by substance rather than by the dropdown, because the two routes differ - a bug earns an
+`MT-###` regression check once it is fixed, a feature request does not by default. Nothing is lost
+either way: the Kind as filed is above, and if I have called one wrong, say so and it moves.
+
+**None of the five has an `MT-###`, deliberately.** That is the `MT-094` lesson applied - a tag is
+earned when the work turns out to need a repeatable hands-on check, not handed out at pick-up. `OB-003`
+and `OB-005` are the two most likely to earn one when they are built.
+
+**`OB-007` may already be half-built.** `AutonomyEditorPanel` already calls `annotation.withTrain()`
+for any square the setup puts a locomotive on, so the editor is already drawing *a* mark there. Worth
+looking at what it currently draws before adding a second one - the request may be to change that mark
+to a white `*` rather than to add one. Flagged rather than assumed.
+
+**`OB-005` is the cost of a decision, not an accident.** The F2 sidebar was specified as "switching
+tabs or mode is the same as the old exit and reopen: prompt for save/discard, then regenerate", and
+the flash is that regeneration being visible. Removing it means keeping the window and swapping its
+contents, which is a different design from the one that was asked for - worth saying before it is
+built, not after.
 
 **`OB-001` is retired-and-relit, not new.** It was promoted to `MT-094` on 2026-08-22, which turned
 out to be the wrong call - a feature request that had not even been designed yet, sitting in the

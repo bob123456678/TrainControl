@@ -19,7 +19,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-066](#mt-066) | 2026-08-18 | Arrivals menu placement | needs test | Tier 1 |
 | [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
 | [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
@@ -96,10 +95,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
-| [MT-093](#mt-093) | 2026-08-22 | A placed locomotive is named, not JSON | fixed unvalidated | Adam, screenshot |
 | [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as OB-001 in issues.md, not a test.** | needs test | OB-001/OB-002 |
 
-Everything else - 15 of 94 - is **fixed validated** and needs nothing from you unless the
+Everything else - 17 of 94 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -144,7 +142,7 @@ Filed from this test: OB-002 (feature request - Appearance of stations and incom
 
 ### MT-066 - 2026-08-18 - Arrivals menu placement
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
 **Written:** 2026-08-18
 
@@ -157,6 +155,12 @@ Filed from this test: OB-002 (feature request - Appearance of stations and incom
 Works
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+List itself seems OK.
+
+*Run against commit 058d2385.*
 
 ---
 
@@ -1949,7 +1953,7 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
 
 ### MT-093 - 2026-08-22 - A placed locomotive is named, not JSON
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** Adam, screenshot  
 **Written:** 2026-08-22
 
@@ -2028,6 +2032,31 @@ I still see a large white rectangle overlay with the name of the locomotive, rat
 
 *Run against commit cd27e285, build\classes, compiled 22 Aug 17:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22, third pass - and this is what fixed it.**
+
+Adam, in conversation: *"Labels look great in the main track diagram, all I'm asking for is for the
+autonomy editor [---] labels to follow the same appearance in the editor"*, and afterwards
+*"Finally works."* Recording his word here because it arrived in conversation rather than through the
+app; moving to **fixed validated** on it.
+
+The third cause. It is the same `JLabel`, with the same styling, in the same grid - what differed was
+the STRING.
+
+On the running diagram the caption is registered EMPTY and its text set afterwards by
+`updateStationLabels`, so it never reaches the on-tile "multiline hack" thirty lines below, which
+rewrites a label as `"<html><br>" + text` with spaces as `&nbsp;`. The editor has no run to wait for,
+so it sets the text at construction and picked the wrap up on the way past. The leading `<br>` makes
+the label two lines tall and the `&nbsp;` stops it wrapping - and this is the **only opaque label on
+the diagram**, so it was the only one whose background painted that area as a solid block. Every other
+label gets the same wrap and nobody has ever noticed, because none of them paints a background.
+
+**Why this took three rounds, which is the part worth keeping.** Twice I established that both views
+share the same `JLabel` objects and concluded from it that the appearance could not be the difference.
+Sharing the object made the difference *invisible, not impossible* - the two views put different
+strings in it, and all three causes lived in the string. "It looks right over there" was the question
+that solved it, and I should have asked it first: when one surface is correct and another is not, the
+cheap move is to diff the two paths, not to reason about the one that is broken.
 ---
 
 <a id="mt-094"></a>

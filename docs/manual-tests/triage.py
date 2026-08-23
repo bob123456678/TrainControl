@@ -2326,7 +2326,28 @@ def run_cli(argv):
         print(json.dumps({"error": str(bad)}), file=sys.stderr)
         return 1
 
-    print(json.dumps(out, indent=2, ensure_ascii=False, sort_keys=False))
+    # Written as BYTES, in UTF-8, rather than printed.
+    #
+    # On Windows a redirected or piped stdout defaults to the ANSI codepage, cp1252 here, and
+    # json.dumps with ensure_ascii=False hands it whatever the file holds.  One U+2212 MINUS SIGN in
+    # one entry was enough to take `tests --open` down with a UnicodeEncodeError - and that is the
+    # command the SOP tells a round to use INSTEAD of reading the ledger by eye, so the failure mode
+    # was a round falling back to scanning the table by hand, which is what the command exists to
+    # avoid.  `stats` and `issues` were fine only because nothing in them happened to be non-ASCII.
+    #
+    # ensure_ascii stays False: escaping the output would keep it parseable but make the human-read
+    # half of it - which is most of what these commands are for - unreadable.
+    text = json.dumps(out, indent=2, ensure_ascii=False, sort_keys=False) + "\n"
+
+    stream = getattr(sys.stdout, "buffer", None)
+
+    if stream is None:
+        # A stdout with no byte layer under it - a GUI console, or a test capturing it.  Nothing to
+        # be done but hand it the string and let its own encoding decide.
+        sys.stdout.write(text)
+    else:
+        stream.write(text.encode("utf-8"))
+        stream.flush()
 
     return code
 
