@@ -1572,7 +1572,19 @@ public class TileAnnotation
         return Math.abs(sideA.ordinal() - sideB.ordinal()) != 2;
     }
 
-    private int[] trackCentre(int width, int height)
+    /**
+     * The midpoint of this tile's own two track sides - the tile centre for a straight, and on the
+     * rails for anything else.
+     *
+     * Public because the running overlay needs it too: the end of a run has one side and a null, and
+     * without this it stopped in the middle of the square (OB-026).  The badges have been placed by it
+     * since MT-057, so the run line and the badge now agree about where the track is.
+     *
+     * @param width
+     * @param height
+     * @return x and y within the tile
+     */
+    public int[] trackCentre(int width, int height)
     {
         // the badge's own route where it has one, otherwise the first route drawn, otherwise centre
         Side sideA = badge != null && badge.getA() != null ? badge.getA()

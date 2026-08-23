@@ -378,4 +378,70 @@ public class testAutonomyDiagramMonitor
     {
         return new TileOverlay(a, false).merge(new TileOverlay(b, false));
     }
+    /**
+     * The line at the END of a run stops on the rail, not in the middle of the square.
+     *
+     * OB-026, reported by Adam and then confirmed in a rendered picture: "when arriving at a curved
+     * station the red trace draws a straight line on the tile, rather than following the shape of the
+     * station. Running through curves looks OK."
+     *
+     * A segment is drawn from the midpoint of the side it came in by to the midpoint of the side it
+     * leaves by. At the end of a run there is no side it leaves by, so the line ran to the tile's
+     * geometric centre - which is ON the rail for a straight and nowhere near it for a curve, where the
+     * track cuts the corner and never passes through the middle.
+     *
+     * The tile here is the shape that broke: track entering at the TOP and leaving at the EAST, which is
+     * the curve at `1 - Main:0,11` the picture was taken of. Its rail runs from (30,0) to (60,30), so
+     * the point half way along it is (45,15). The tile centre, (30,30), is well clear of the rail - far
+     * enough that a line reaching it cannot be mistaken for one that stopped on the track.
+     *
+     * Painted rather than computed, because "where does the line stop" is a question about the picture,
+     * and the three drawing defects before this one were all missed by reasoning about the code.
+     */
+    @Test
+    public void testTheStubAtTheEndOfARunStopsOnTheRail()
+    {
+        int size = 60;
+
+        TileOverlay overlay = new TileOverlay(State.ACTIVE, false,
+            Arrays.asList(new TileOverlay.Segment(Side.N, null, State.ACTIVE)));
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        // The rail's own midpoint, which is what the label knows and the overlay did not
+        overlay.paint(g, size, size, new int[] {45, 15});
+
+        g.dispose();
+
+        assertTrue(painted(image, 45, 15), "nothing was drawn where the rail actually runs");
+
+        // The stroke is a seventh of the tile with a round cap, so it reaches a few pixels past where
+        // the line ends.  Anything as far down as the tile centre is the old straight-down stub.
+        int lowest = -1;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (painted(image, x, y)) lowest = y;
+            }
+        }
+
+        assertTrue(lowest < 26,
+            "the line runs down to y=" + lowest + ", past the rail and towards the tile centre at "
+            + "(30,30) - which is the straight chord across a curve that OB-026 reported");
+    }
+
+    /**
+     * Whether the overlay drew anything at this pixel.
+     */
+    private boolean painted(java.awt.image.BufferedImage image, int x, int y)
+    {
+        return (image.getRGB(x, y) >>> 24) > 0;
+    }
+
+
 }

@@ -973,7 +973,14 @@ public final class LayoutLabel extends JLabel
             // is worth reading while a layout is being set up rather than while it is running.
             if (annotation != null) annotation.paint(g2, getWidth(), getHeight());
 
-            if (overlay != null) overlay.paint(g2, getWidth(), getHeight());
+            // Told where the track runs, so a run that ENDS here stops on the rail rather than in the
+            // middle of the square (OB-026).  The annotation is the only thing that knows: it holds the
+            // sides this tile's route uses, and it is already what places the badges.
+            if (overlay != null)
+            {
+                overlay.paint(g2, getWidth(), getHeight(),
+                    annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
+            }
 
             // And the badge back on top of the line (MT-076).
             //

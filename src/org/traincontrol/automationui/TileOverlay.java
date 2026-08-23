@@ -266,6 +266,16 @@ public class TileOverlay
      */
     public void paint(Graphics2D g, int width, int height)
     {
+        paint(g, width, height, null);
+    }
+
+    /**
+     * The same, told where this tile's track actually runs.
+     *
+     * @param trackCentre the midpoint of the tile's own two track sides, or null if it is not known
+     */
+    public void paint(Graphics2D g, int width, int height, int[] trackCentre)
+    {
         if (isBlank()) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
@@ -285,7 +295,7 @@ public class TileOverlay
             // would read as track that was never claimed.
             Color outline = segments.isEmpty() ? colourOf(state) : null;
 
-            if (!segments.isEmpty()) paintRun(g, width, height);
+            if (!segments.isEmpty()) paintRun(g, width, height, trackCentre);
 
             if (outline != null)
             {
@@ -346,10 +356,23 @@ public class TileOverlay
      * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
      * two different times - which way does this route run - so it is worth only learning to read once.
      */
-    private void paintRun(Graphics2D g, int width, int height)
+    private void paintRun(Graphics2D g, int width, int height, int[] trackCentre)
     {
         int span = Math.min(width, height);
-        int[] centre = new int[] {width / 2, height / 2};
+        // Where a line stops when it has no side to leave by - the END of a run.
+        //
+        // OB-026: this was always the tile's geometric centre, which is on the rail for a straight and
+        // nowhere near it for a curve, where the track cuts the corner and never passes through the
+        // middle.  So a train arriving at a curved station drew a stub across the tile instead of along
+        // it, while a curve the run passed THROUGH looked right - because that case has two sides and
+        // never comes here at all.
+        //
+        // The caller supplies the midpoint of this tile's own two track sides, which is the tile centre
+        // for a straight and lands on the rails for anything else.  That keeps the through-case exactly
+        // as it was, which matters: bending the line through the centre was tried once before and put
+        // it at forty-five degrees to the track underneath.
+        int[] centre = trackCentre != null && trackCentre.length == 2
+            ? trackCentre : new int[] {width / 2, height / 2};
 
         // Held track is paled out first, under everything else.
         //

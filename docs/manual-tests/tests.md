@@ -19,37 +19,21 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | fixed unvalidated | Tier 1 |
-| [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
-| [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
-| [MT-076](#mt-076) | 2026-08-18 | Running path drawing | fixed unvalidated | Tier 3 |
-| [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | Tier 3 |
-| [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | Tier 3 |
-| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | Tier 3 |
-| [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | Tier 4 |
-| [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | Tier 4 |
-| [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | Tier 4 |
-| [MT-083](#mt-083) | 2026-08-18 | Run a new-only route in simulation | needs test | Tier 4 |
-| [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | Tier 5 |
-| [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | Tier 5 |
-| [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | fixed unvalidated | Tier 5 |
-| [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | Tier 5 |
-| [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | Tier 6 |
 | [MT-003](#mt-003) | 2026-08-20 | A route round-trips unchanged | fixed unvalidated | LT-C4 |
 | [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-005](#mt-005) | 2026-08-20 | A signal address typed into a switch row | fixed unvalidated | LT-B6 |
-| [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | - |
+| [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-014](#mt-014) | 2026-08-20 | Growing the diagram | fixed unvalidated | LT-C3 |
 | [MT-019](#mt-019) | 2026-08-20 | Pairing a tunnel or a link | fixed unvalidated | LT-B3, LT-F2 |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
 | [MT-024](#mt-024) | 2026-08-21 | Two signals on the railway | fixed unvalidated | LT-B4 |
-| [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | - |
+| [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | hands-on testing |
 | [MT-026](#mt-026) | 2026-08-21 | Shift Up and Shift Left at the edges | needs test | AR-17 |
 | [MT-029](#mt-029) | 2026-08-21 | The command table's marks | fixed unvalidated | AR-18 |
-| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19, DD |
+| [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19 |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
-| [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
+| [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
 | [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | fixed unvalidated | AR-20 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
 | [MT-040](#mt-040) | 2026-08-21 | A page the folder does not hold | fixed unvalidated | AR-23 |
@@ -65,6 +49,22 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | fixed unvalidated | hands-on testing |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
+| [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | fixed unvalidated | 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running |
+| [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
+| [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
+| [MT-076](#mt-076) | 2026-08-18 | Running path drawing | fixed unvalidated | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train |
+| [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train |
+| [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train; **reopened** 2026-08-22 |
+| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train |
+| [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
+| [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
+| [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
+| [MT-083](#mt-083) | 2026-08-18 | Run a new-only route in simulation | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
+| [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
+| [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
+| [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | fixed unvalidated | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
+| [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
+| [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | 2026-08-18 manual test plan, Tier 6 - real hardware, optional |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
 | [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | FR-003 |
@@ -83,9 +83,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
 | [MT-117](#mt-117) | 2026-08-22 | The train star is visible again, and five smaller fixes | fixed unvalidated | OB-030, OB-031, OB-035, OB-036, OB-037 |
-| [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | needs test | OB-026 |
+| [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | fixed unvalidated | OB-026 |
 
-Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
+Everything else - 53 of 119 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -4124,7 +4124,7 @@ the interesting case would be a bundle written by an older build.
 
 ### MT-119 - 2026-08-22 - The trace arriving at a curved station
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** OB-026  
 **Written:** 2026-08-22
 
@@ -4200,4 +4200,33 @@ The diagnosis in the preceding comment stands, and the fix stays scoped to the e
 
 Adam supplied the destinations - "TopMainR2Inter or TopMainR1Inter", then "Place at BottomMainB or A" -
 which is the only reason this got off the ground; see the note below about what I got wrong first.
+
+**Claude, 2026-08-23 - fixed.** Adam: "Fix the curved line - I confirmed the bug is still there per your
+0,11 screenshot."
+
+Three lines, in the three places that each knew one third of it:
+
+- `TileAnnotation.trackCentre` is public now. It was already computing exactly the right point - "the
+  midpoint of the route's own two sides, which is the tile centre for a straight and lands on the rails
+  for anything else" - and had been placing the station badges by it since MT-057.
+- `TileOverlay.paint` takes that point and uses it wherever a segment has no side to leave by.
+- `LayoutLabel` hands it over, because the label is the only thing holding both the annotation and the
+  overlay for a square.
+
+**The through-case is untouched, and that was the constraint.** `centre` is read at exactly four places
+in `paintRun`, and every one of them is guarded by a null side - which only happens at the two ends of a
+run. A curve the run passes through has two real sides and never reads it. The picture confirms it: the
+elbow at `1 - Main:0,1` is pixel-for-pixel what it was.
+
+Red before green. `testAutonomyDiagramMonitor.testTheStubAtTheEndOfARunStopsOnTheRail` paints a stub
+into an image on a tile whose track runs N-E and requires the ink to reach (45,15), the rail's midpoint,
+and to stop well short of (30,30), the tile centre. It failed with "nothing was drawn where the rail
+actually runs" before the change. It is painted rather than computed on purpose: the last three drawing
+defects were all missed by reasoning about the code.
+
+Lite battery green afterwards - 76 classes, no failures.
+
+**Still worth your eye**, which is why this is unvalidated: on a curve the stub now ends underneath the
+station badge, so what you should see is the trace stopping cleanly AT the badge rather than shooting
+past it. On a straight nothing should have changed at all.
 ---
