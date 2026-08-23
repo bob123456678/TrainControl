@@ -18045,6 +18045,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(newLayoutName);
 
+                // The autonomy setup keys everything by PAGE NAME, so it has to be told (OB-049).
+                //
+                // AutonomyCompanionStore.renamePage rekeys all eleven collections and the tile keys
+                // inside every configuration, and its comments record two earlier defects it was
+                // extended to cover. It had no caller. Nothing in the application had ever invoked it,
+                // so a rename left every key pointing at a page that no longer exists - and the next
+                // reconcile, doing exactly what it should with a square that has been deleted, removed
+                // the point name and the station for every one of them.
+                //
+                // Adam: "CRITICAL: renaming a layout page disconnects its autonomy config. stations and
+                // links are broken." Renaming back could not undo it, because they were already gone.
+                //
+                // Here rather than after saveChanges succeeds: the rename has to reach the store before
+                // layoutEditingComplete below rebuilds the session from the renamed pages, because that
+                // rebuild is what reconciles - and reconciling against a store still keyed by the old
+                // name is the whole of the bug.
+                if (rename && getAutonomySession() != null)
+                {
+                    getAutonomySession().getStore().renamePage(currentLayout, newLayoutName);
+
+                    try
+                    {
+                        getAutonomySession().save();
+                    }
+                    catch (java.io.IOException e)
+                    {
+                        // The rekey stands in memory either way; only the record of it is at risk, and
+                        // failing to write it must not stop the page being renamed.
+                        this.model.log(e);
+                    }
+                }
+
                 LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                 // Selecting the new page has to wait for the page list to be rebuilt, which now
