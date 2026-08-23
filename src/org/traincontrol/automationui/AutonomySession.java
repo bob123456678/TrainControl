@@ -3187,9 +3187,28 @@ public class AutonomySession
         touched();
     }
 
+    /**
+     * Pairs two portals, and switches BOTH ends on (OB-031).
+     *
+     * A pairing is one fact about two squares, and being switched off is a fact about one - so a pair
+     * whose far end was disabled read as connected on the diagram and refused every train, with
+     * nothing on the near end to say why. Adam: "when an active link from one page pairs with a link
+     * on another, both must be marked as active. right now, the target doesn't have to be."
+     *
+     * Enabling rather than refusing the pairing. Somebody pairing two links is saying they are joined;
+     * a disabled far end is a setting made earlier about a square that was not joined to anything, and
+     * the newer statement is the one they mean.
+     *
+     * @param a one end
+     * @param b the other
+     */
     public void pairPortals(TileKey a, TileKey b)
     {
         store.pairPortals(a, b);
+
+        store.setPortalDisabled(a, false);
+        store.setPortalDisabled(b, false);
+
         touched();
     }
 

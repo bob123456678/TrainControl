@@ -161,32 +161,6 @@ in the editor, make the gray grid an option you can toggle in the visibile eleme
 
 it should be possible to initially load autonomy from an import, not just forcing the creation of a new one.
 
-### OB-030 - 2026-08-22 - tooltip lengths in the Autonomy top Jmenu
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:43  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-many tooltips are very wide.  split them.
-
-### OB-031 - 2026-08-22 - link pairing
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 22:12  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
-
-### OB-035 - 2026-08-22 - unable to add locs to autonomy via right click option in track diagram viewer
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 22:48  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-if adding a locomtoive to autonomy via the right click menu in the track diagram viewer, the locomotive and label are not updated.  it does show up in the 'facing' menu, which suggest an inconsistency.
 
 ---
 
@@ -202,6 +176,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-038 | bug | Export/import restoring a placement - already covered by a test | - | [MT-118](tests.md#mt-118) |
+| 2026-08-22 | OB-037 | bug | The train star was drawn too small for its own outline | - | [MT-117](tests.md#mt-117) |
+| 2026-08-22 | OB-036 | bug | Findings read "(Page 2)" rather than "On 2 -" | - | [MT-117](tests.md#mt-117) |
+| 2026-08-22 | OB-035 | bug | Placing from the viewer did not update the caption | - | [MT-117](tests.md#mt-117) |
+| 2026-08-22 | OB-031 | bug | Pairing a link now switches both ends on | - | [MT-117](tests.md#mt-117) |
+| 2026-08-22 | OB-030 | bug | The Autonomy menu's tooltips wrap | - | [MT-117](tests.md#mt-117) |
 | 2026-08-22 | OB-034 | bug | Renaming a station blanked its label until renamed back | - | [MT-116](tests.md#mt-116) |
 | 2026-08-22 | OB-033 | bug | The Layouts menu declines while an editor is open, and both lead back | - | [MT-115](tests.md#mt-115) |
 | 2026-08-22 | OB-029 | bug | Findings shown for a configuration nobody had loaded | - | [MT-114](tests.md#mt-114) |

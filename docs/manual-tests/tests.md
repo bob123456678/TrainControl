@@ -82,6 +82,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
 | [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
+| [MT-117](#mt-117) | 2026-08-22 | The train star is visible again, and five smaller fixes | fixed unvalidated | OB-030, OB-031, OB-035, OB-036, OB-037 |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -1931,6 +1932,12 @@ Also, when the user sees this error: "Error occurred: Address already in use: Ca
 ASlashSurvivesASave`. The separate request in your comment - the "Address already in use" popup - is
 now MT-063.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+The UI does not allow slashes to be entered.  Make a programmatic test to validate safety.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-040"></a>
 
@@ -1950,6 +1957,12 @@ You should write a test for this.
 
 **Claude, 2026-08-22.** Automated as `testLayoutFolderRobustness.testAMissingPage
 DoesNotStopTheOthers`.
+
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+make a test for this.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-041"></a>
@@ -2439,6 +2452,10 @@ many there are.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-064"></a>
@@ -2465,6 +2482,10 @@ the whole specification with the request, so there was nothing to wait for.
 Two colours because they answer different questions: yellow is "this is what the route DOES", orange is
 "this is what it LOOKS AT before doing it". Five seconds and self-clearing, so it can be pressed while
 reading the route without leaving the diagram marked up afterwards.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -3698,6 +3719,12 @@ correct, mutually exclusive.
 
 It is handled above the guard now, which is where it belongs: it is the one shortcut that is FOR
 autonomy mode. The rest of MT-109 - the focus and the font - was unaffected.
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Control+G works, but control +L does not in the autonomy editor.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-110"></a>
@@ -3728,6 +3755,10 @@ tiles it is wider than the autonomy column now is. "Match the track diagram edit
 changes with the zoom, so I picked the fixed strip instead and am telling you rather than implying it
 is exact.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-111"></a>
@@ -3756,6 +3787,12 @@ would be a fact about the generated form - it moves the next time somebody adds 
 designer, and a hard-coded one would then delete a divider that was doing its job. The sweep asks the
 menu what it is holding and drops any separator that no longer separates anything, including leading
 and trailing ones.
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works, but Layout greys out all options while Autonomy hides them.  Grey them out in Autonomy instead.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -3807,6 +3844,12 @@ duplication, small and deliberate.
 longer MISLEADING - the live path has the rules now - but they are still dead, and the report is right
 that leaving them is not free. Deferred rather than done while Adam is testing.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Make a test case for this, you should be able to validate it.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-113"></a>
@@ -3834,6 +3877,10 @@ what it does now. A heading is a promise that something follows it; alone it rea
 failed to load rather than as a square with no choices.
 
 Same reasoning as the popup guard in `LayoutLabel`, where an empty menu "reads as a fault".
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -3863,6 +3910,12 @@ the editor causing it.
 
 It now also requires a configuration to be loaded. A finding is a statement about the configuration
 being run; with none chosen, there is nothing to make a statement about.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+Filed from this test: OB-038 (bug - locomotive placement on export).  They are in `issues.md` until they are picked up.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -3897,6 +3950,10 @@ talking about may well be behind this one - which is exactly why somebody reache
 The guard runs when the menu is OPENED rather than when an editor opens. There is no single moment
 "an editor opened" is known to that menu, and asking at the moment somebody looks is both simpler and
 always right.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -3935,5 +3992,91 @@ the label goes blank."*
 **Not while trains are moving**, for the reason the original rebuild gives: rebuilding underneath a
 running railway is what `prepareAutonomyReload` exists to refuse. So during a run the rename is stored
 and the label catches up when the run ends.
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Weird- the label moves around to adjacent cells on rename.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-117"></a>
+
+### MT-117 - 2026-08-22 - The train star is visible again, and five smaller fixes
+
+**Disposition:** fixed unvalidated  
+**From:** OB-030, OB-031, OB-035, OB-036, OB-037  
+**Written:** 2026-08-22
+
+**What to do.** **The star (OB-037).** With a locomotive on a station, the white star must be clearly white - a mark
+ON the badge, not a dark smudge. Check a 30px tile as well as a 60px one; the small size is where this
+went wrong.
+
+**Placing from the VIEWER (OB-035).** Right-click a station on the track diagram - not in the editor -
+and add a locomotive to autonomy. The caption must update at once, without closing anything.
+
+**Link pairing (OB-031).** Switch a link off, then pair another link to it. Both ends must come out
+switched on.
+
+**Tooltips (OB-030).** Hover the items on the Autonomy menu. Long tooltips must wrap rather than run
+off the screen.
+
+**Warnings (OB-036).** A finding about another page reads `(Page 2) ...` rather than `On 2 - ...`.
+
+#### Comments
+
+**Claude, 2026-08-22.**
+
+**OB-037 was mine, and twice over.** MT-057 shrank the star from a sixth of the tile to an eighth - but
+the two stroke widths that draw it are floored at 3.0 and 1.6, and those floors were chosen when the arm
+was a sixth. At a 30px tile an eighth gives an arm of 3.75, so a 3px dark outline was drawn around a
+1.6px white core: the outline swallowed the star and left a dark smudge.
+
+Three numbers that have to agree. The arm is a seventh now and both floors came down with it, and the
+comment says so, because shrinking one of the three is exactly what I did.
+
+**OB-035** is the same shape as MT-101 on a different surface. Placing from the deep menu writes the
+setup, and the caption being looked at belongs to the main diagram, which draws from the RUNNING
+layout - so the setup gained a locomotive and nothing on screen changed, while the facing menu, which
+reads the setup, listed it happily. That is the inconsistency you spotted, and it is the two surfaces
+disagreeing about where the truth lives. The placement now rebuilds the running layout when there is no
+editor grid to redraw - the same seam OB-034 uses.
+
+**OB-031.** Pairing switches both ends on rather than refusing. Somebody pairing two links is saying
+they are joined; a disabled far end is a setting made earlier about a square that was not joined to
+anything, and the newer statement is the one they mean.
+
+**OB-030.** `wrapped()` already existed and wraps at 320px; the Autonomy menu did not use it once. All
+eight tooltips go through it now.
+
+---
+
+<a id="mt-118"></a>
+
+### MT-118 - 2026-08-22 - Export and import restore a locomotive placement
+
+**Disposition:** fixed validated
+**From:** OB-038
+**Written:** 2026-08-22
+
+**What to do.** Nothing by hand - this is covered by a test, and the entry exists so the question has a
+recorded answer rather than being asked again.
+
+#### Comments
+
+**Claude, 2026-08-22.** Already covered, by `testDataSafetyRoundTrips.testTheExportedBundleComesBackWholeAndChangesNothing`
+- written for MT-074 on the same day you asked this.
+
+It exports a setup carrying a name, a station designation **and a locomotive placement**, checks the
+files are byte-for-byte unchanged by the export, then imports the bundle into a folder that has never
+seen it and requires all three to arrive - the placement by name, asserted directly.
+
+Validated on the test rather than on my word: it ran green in the full battery of 2026-08-22, 83
+classes clean.
+
+If you have a bundle that does NOT restore a placement, that is a different defect from the one this
+covers and worth its own entry with the file attached - the round trip through the code is proven, so
+the interesting case would be a bundle written by an older build.
 
 ---

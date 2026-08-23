@@ -977,7 +977,16 @@ public class TileAnnotation
 
         // A sixth of the tile was too much once the mark moved on top of the badge (MT-057): over a
         // station circle it read as a shape in its own right rather than as a mark ON one.
-        double arm = Math.max(2.5, span / 8.0);
+        //
+        // A SEVENTH, not an eighth. An eighth made it disappear (OB-037), and the reason is the two
+        // stroke widths below: they are proportional to the arm but floored at 3.0 and 1.6, and those
+        // floors were chosen when the arm was span/6. At a 30px tile an eighth gives an arm of 3.75,
+        // so the dark outline came out 3px wide around a 1.6px white core - the outline swallowed the
+        // star and left a dark smudge.
+        //
+        // The floors moved with it. Three numbers that have to agree, and shrinking one of them is
+        // what this comment exists to stop somebody doing again.
+        double arm = Math.max(2.5, span / 7.0);
 
         // On the TRACK, not on the tile (MT-057).
         //
@@ -1009,12 +1018,12 @@ public class TileAnnotation
         g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
 
         // The dark edge first, as a wider stroke of the same shape underneath
-        g.setStroke(new BasicStroke((float) Math.max(3.0, arm / 1.6),
+        g.setStroke(new BasicStroke((float) Math.max(1.8, arm / 1.6),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(TRAIN_MARK_EDGE);
         g.draw(star);
 
-        g.setStroke(new BasicStroke((float) Math.max(1.6, arm / 3.0),
+        g.setStroke(new BasicStroke((float) Math.max(1.0, arm / 3.0),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(TRAIN_MARK);
         g.draw(star);

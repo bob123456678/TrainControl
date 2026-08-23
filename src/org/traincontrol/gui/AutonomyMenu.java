@@ -85,8 +85,8 @@ public class AutonomyMenu extends JMenu
 
         setEnabled(hasLayout && local);
 
-        setToolTipText(!hasLayout ? I18n.t("autosetup.ui.tooltipNoLayout")
-            : !local ? I18n.t("autosetup.ui.tooltipNeedsLocalLayout") : null);
+        setToolTipText(AutonomyEditorPanel.wrapped(!hasLayout ? I18n.t("autosetup.ui.tooltipNoLayout")
+            : !local ? I18n.t("autosetup.ui.tooltipNeedsLocalLayout") : null));
     }
 
     /**
@@ -247,9 +247,9 @@ public class AutonomyMenu extends JMenu
 
             settings.setEnabled(loaded);
 
-            settings.setToolTipText(loaded
+            settings.setToolTipText(AutonomyEditorPanel.wrapped(loaded
                 ? I18n.t("autosetup.ui.tooltipGlobalSettings")
-                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
 
             add(settings);
 
@@ -261,8 +261,8 @@ public class AutonomyMenu extends JMenu
 
             JMenu edit = editMenu(session);
             edit.setEnabled(chosen && edit.getItemCount() > 0);
-            edit.setToolTipText(chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
-                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            edit.setToolTipText(AutonomyEditorPanel.wrapped(chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
             add(edit);
 
             // Directly under the editor, because it answers the question the editor list raises.
@@ -273,8 +273,8 @@ public class AutonomyMenu extends JMenu
             JMenu pages = pagesMenu(session);
             lastPagesMenu = pages;
             pages.setEnabled(chosen);
-            pages.setToolTipText(chosen ? I18n.t("autosetup.ui.promptExcludePage")
-                : I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            pages.setToolTipText(AutonomyEditorPanel.wrapped(chosen ? I18n.t("autosetup.ui.promptExcludePage")
+                : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
             add(pages);
 
             addSeparator();
@@ -332,7 +332,7 @@ public class AutonomyMenu extends JMenu
             }
         });
 
-        add.setToolTipText(I18n.t("autosetup.ui.tooltipAddConfiguration"));
+        add.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipAddConfiguration")));
 
         return add;
     }
@@ -458,7 +458,7 @@ public class AutonomyMenu extends JMenu
 
             manage.getItem(i).setEnabled(loaded);
 
-            if (!loaded) manage.getItem(i).setToolTipText(I18n.t("autosetup.ui.tooltipNeedsLoaded"));
+            if (!loaded) manage.getItem(i).setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded")));
         }
 
         manage.addSeparator();
@@ -475,7 +475,7 @@ public class AutonomyMenu extends JMenu
             }
         });
 
-        forget.setToolTipText(I18n.t("autosetup.ui.hintDeleteSetup"));
+        forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
         manage.add(forget);
 
@@ -491,7 +491,7 @@ public class AutonomyMenu extends JMenu
         });
 
         unload.setEnabled(loaded);
-        unload.setToolTipText(I18n.t("autosetup.ui.hintUnloadAutonomy"));
+        unload.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintUnloadAutonomy")));
 
         manage.add(unload, manage.getItemCount() - 1);
 

@@ -875,10 +875,7 @@ public class AutonomyEditorPanel extends JPanel
                     {
                         session.placeLocomotive(target, null);
 
-                        // The caption is tile art, so the grid is rebuilt - see placeLocomotive.
-                        if (onDiagramChanged != null) onDiagramChanged.run();
-
-                        refresh();
+                        placementChanged();
                     }));
             }
 
@@ -2601,13 +2598,30 @@ public class AutonomyEditorPanel extends JPanel
         // over the configuration, which is complete.
         session.placeLocomotive(tile, name);
 
-        // The grid is REBUILT, not repainted (OB-009, second pass).
-        //
-        // refresh() was not enough and MT-101 said so: it ends in the annotation refresh, and
-        // applyCaption twenty lines up already says why that is the wrong tool - "the caption is part
-        // of the tile art, and the annotation refresh that follows every other edit does not touch
-        // it". A placement changes the caption, so it needs what a caption change needs.
+        placementChanged();
+    }
+
+    /**
+     * Redraws whatever is showing this placement - which is not the same surface in both modes.
+     *
+     * In the EDITOR the caption is tile art in this window's own grid, so the grid is rebuilt.
+     * applyCaption says why refresh() is the wrong tool for it: "the caption is part of the tile art,
+     * and the annotation refresh that follows every other edit does not touch it" (OB-009, MT-101).
+     *
+     * From the track diagram's DEEP MENU there is no grid of ours to rebuild - onDiagramChanged is
+     * null, because this panel is a menu builder with no window - and the caption being looked at
+     * belongs to the main diagram, which draws from the RUNNING layout rather than from the setup. So
+     * the setup gained a locomotive and nothing on screen changed, while the facing menu - which reads
+     * the setup - listed it happily. That is OB-035, and the inconsistency Adam spotted is exactly the
+     * two surfaces disagreeing about where the truth lives.
+     *
+     * Rebuilding the running layout is what makes them agree, and is the same seam OB-034 uses. Not
+     * done while an editor is open, because the editor defers that to closing on purpose.
+     */
+    private void placementChanged()
+    {
         if (onDiagramChanged != null) onDiagramChanged.run();
+        else if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
 
         refresh();
     }
