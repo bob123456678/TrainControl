@@ -183,6 +183,10 @@ Works, but overlap with the labels makes it suboptimal.  station icon may fix th
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-068"></a>
@@ -200,6 +204,10 @@ Works, but overlap with the labels makes it suboptimal.  station icon may fix th
 Looks right in the track diagram.  But not greyed out in the editor.  Also, move the "use this link" option out of the submenu into the top level.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2107,50 +2115,6 @@ Feature requests get a **State** field of their own now - the same three words t
 disposition uses, set by Claude the same way, but living in `issues.md` and never becoming an
 `MT-###` tag unless the work genuinely needs a repeatable hands-on test the way a bug fix does. See
 `issues.md`'s "What has been picked up" table and the **Feature requests** tab in `triage.py`.
-
----
-
-<a id="mt-095"></a>
-
-### MT-095 - 2026-08-22 - The editor window opens at a sensible size
-
-**Disposition:** needs test  
-**From:** OB-003 (bug)  
-**Written:** 2026-08-22
-
-**What to do.** Open the track diagram or autonomy editor on a page you have not sized by hand. The window
-should default to roughly the diagram's own width and height, not whatever size the last-opened page
-happened to leave it at, and not so small that the diagram is mostly scrollbars. Switch to a page of a
-very different size (much larger or much smaller) and confirm the window follows, still capped so it
-never exceeds the screen.
-
-If you have already resized the window by hand for a page, that preference should still win - this is
-about the DEFAULT for a page nobody has sized yet, not a rule that fights a size you chose.
-
-#### Comments
-
----
-
-<a id="mt-096"></a>
-
-### MT-096 - 2026-08-22 - Switching editor mode does not flash
-
-**Disposition:** needs test  
-**From:** OB-005 (bug)  
-**Written:** 2026-08-22
-
-**What to do.** With a page open in the editor, switch between track diagram and autonomy mode (and between
-pages) several times. The window should not visibly close and reopen - no flash, no flicker of the
-desktop behind it. A brief loading indicator while the new view builds is fine; the window disappearing
-and reappearing is not.
-
-#### Comments
-
-**Claude, 2026-08-22.** Flagged before building: the F2 sidebar's own specification says switching
-tabs or mode is "the same as the old exit and reopen: prompt for save/discard, then regenerate" - the
-flash is that regeneration being visible. Removing it means keeping the window and swapping its
-contents in place, which is a different design from the one that was asked for, not a bug in the one
-that was built. Worth confirming that is still what's wanted before changing it.
 
 ---
 

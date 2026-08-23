@@ -17,8 +17,9 @@ What it writes, and where:
 
   A test result             appended under that entry's "#### Comments" in tests.md, dated, signed,
                             and stamped with the build it was run against.
-  A bug or feature request  an OB-### item in issues.md - one inbox for both, told apart by a Kind
-                            field - cross-referenced from the test's comments if it came from one.
+  A bug or feature request  an OB-### (bug) or FR-### (feature request) item in issues.md - one
+                            inbox for both, cross-referenced from the test's comments if it came
+                            from one.
 
 It also has a query API: run it with an argument (stats, tests, test TAG, issues, verify-ledger) and
 it prints JSON to stdout and exits, no window involved.  See --help.
@@ -88,6 +89,12 @@ DISPOSITION_COLORS = {
     "fixed-unvalidated": "#8a5a00",    # Claude believes it, nobody on the railway has confirmed it
     "fixed-validated": "#7a7a7a",      # done; dimmed rather than removed, so it stays in the list
 }
+
+# issues.md's State column has one more word than tests.md's disposition ever needs: a REQUEST can
+# be declined, where a TEST - which by definition is already being worked - cannot.  Kept separate
+# from DISPOSITION_COLORS on purpose, so tests.md's three-word rule stays exactly three words.
+ISSUE_STATE_COLORS = dict(DISPOSITION_COLORS)
+ISSUE_STATE_COLORS["declined"] = "#8a3a3a"         # closed, deliberately not built - not grey (=validated)
 
 
 def disposition_slug(disposition):
@@ -303,8 +310,21 @@ class TestsDoc(object):
         self.load()
 
 
-def next_observation_number():
-    """The next OB-### across the issue inbox and tests.md, so a tag is never reused."""
+# A bug is OB-###; a feature request is FR-###.  Separate counters, because they used to share
+# one - which was fine for telling entries apart, but meant a glance at the ref alone couldn't
+# tell a reader which lifecycle an item was on (bugs promoted to a test, most feature requests
+# tracked directly with their own State - see the retirement of MT-094).  OB keeps counting from
+# where it already was; nothing already filed is renumbered.
+ISSUE_PREFIXES = {"bug": "OB", "feature request": "FR"}
+
+
+def next_ref_number(kind):
+    """The next free number for this kind, across the issue inbox and tests.md - a plain int, so
+    a caller filing several of the same kind in one go can increment it locally without re-reading
+    the files after every one.
+    """
+
+    prefix = ISSUE_PREFIXES.get(kind, "OB")
 
     highest = 0
 
@@ -314,10 +334,14 @@ def next_observation_number():
 
         text, _ = read_text(path)
 
-        for found in re.findall(r'\bOB-(\d+)\b', text):
+        for found in re.findall(r'\b%s-(\d+)\b' % prefix, text):
             highest = max(highest, int(found))
 
     return highest + 1
+
+
+def format_ref(kind, number):
+    return "%s-%03d" % (ISSUE_PREFIXES.get(kind, "OB"), number)
 
 
 INBOX_EMPTY = "*(empty)*"
@@ -355,11 +379,13 @@ def append_to_inbox(path, block):
 # --------------------------------------------------------------------------------------------
 
 ISSUE_ITEM_RE = re.compile(
-    r'^### (OB-\d+) - (\d{4}-\d{2}-\d{2}) - (.*)$', re.M)
+    r'^### ((?:OB|FR)-\d+) - (\d{4}-\d{2}-\d{2}) - (.*)$', re.M)
 
 
 class IssueItem(object):
-    """One structured OB-### entry sitting in the Inbox, not yet picked up."""
+    """One structured OB-### (bug) or FR-### (feature request) entry sitting in the Inbox, not
+    yet picked up.
+    """
 
     def __init__(self, ref, filed_date, summary, block):
         self.ref = ref
@@ -451,15 +477,19 @@ class IssuesDoc(object):
         # Whatever is left once every structured item is cut out - free-hand notes Adam dropped
         # straight into the Inbox, which follow no format on purpose (see README.md).  Never
         # discarded, only set aside, so an API caller sees it exists without having to parse it.
+        #
+        # Reuses the SAME boundaries the first loop computed, rather than re-searching for a
+        # literal "### OB-" - that string stopped being the only way a block starts the moment
+        # FR-### existed, and re-deriving boundaries from scratch is exactly how the two would
+        # drift.  Removed in reverse so each cut's positions, taken from the untouched 'section',
+        # stay valid regardless of earlier cuts (all of which are further to the right).
         leftover = section
 
-        for m in reversed(marks):
-            block_end = leftover.find("\n### OB-", m.start() + 1)
+        for i in range(len(marks) - 1, -1, -1):
+            start = marks[i].start()
+            end = marks[i + 1].start() if i + 1 < len(marks) else len(section)
 
-            if block_end < 0:
-                block_end = len(leftover)
-
-            leftover = leftover[:m.start()] + leftover[block_end:]
+            leftover = leftover[:start] + leftover[end:]
 
         leftover = leftover.replace(INBOX_EMPTY, "").strip()
 
@@ -1010,10 +1040,17 @@ class Triage(tk.Tk):
         # it the other way round - tree first - was the previous bug: 'tree' had ended up a direct
         # child of 'frame' rather than of 'rows' (its scrollbar's actual parent), so it was
         # competing with 'rows' as an unrelated sibling instead of living inside it, and lost.
-        open_button = ttk.Button(frame, text="Open in Tests tab", state=tk.DISABLED,
+        button_row = ttk.Frame(frame)
+        button_row.pack(side=tk.BOTTOM, fill=tk.X, pady=(4, 0))
+
+        request_cancel_button = ttk.Button(button_row, text="Request cancel…", state=tk.DISABLED,
+                                           command=lambda: self.request_cancel(kind))
+        request_cancel_button.pack(side=tk.LEFT)
+
+        open_button = ttk.Button(button_row, text="Open in Tests tab", state=tk.DISABLED,
                                  command=lambda: self._jump_to_test(
                                      self.issue_widgets[kind].get("open_tag")))
-        open_button.pack(side=tk.BOTTOM, anchor=tk.E, pady=(4, 0))
+        open_button.pack(side=tk.RIGHT)
 
         detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
                          background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
@@ -1041,13 +1078,14 @@ class Triage(tk.Tk):
         tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         bar.pack(side=tk.LEFT, fill=tk.Y)
 
-        for slug, color in DISPOSITION_COLORS.items():
+        for slug, color in ISSUE_STATE_COLORS.items():
             tree.tag_configure(slug, foreground=color)
 
         tree.tag_configure("pending", foreground=DISPOSITION_COLORS["needs-test"])
 
         self.issue_widgets[kind] = {
             "tree": tree, "detail": detail, "open_button": open_button, "open_tag": None,
+            "request_cancel_button": request_cancel_button,
         }
 
         tree.bind("<<TreeviewSelect>>", lambda e, k=kind: self._on_issue_select(k))
@@ -1098,7 +1136,7 @@ class Triage(tk.Tk):
                 slug = disposition_slug(state_text) if state_text else None
                 state_shown = state_text or "(no state recorded)"
 
-            row_tags = (slug,) if slug in DISPOSITION_COLORS else ()
+            row_tags = (slug,) if slug in ISSUE_STATE_COLORS else ()
 
             tree.insert("", tk.END, iid="picked:%s" % ref, tags=row_tags,
                        values=(state_shown, ref, row.get("filed", ""), row.get("what", "")))
@@ -1111,8 +1149,11 @@ class Triage(tk.Tk):
         tree = widgets["tree"]
         detail = widgets["detail"]
         open_button = widgets["open_button"]
+        cancel_button = widgets["request_cancel_button"]
 
         selection = tree.selection()
+
+        cancel_button.config(state=tk.NORMAL if selection else tk.DISABLED)
 
         if not selection:
             self._fill(detail, "")
@@ -1494,27 +1535,27 @@ class Triage(tk.Tk):
         if not got:
             return
 
-        number = next_observation_number()
+        ref = format_ref(got["kind"], next_ref_number(got["kind"]))
 
-        self._file_observation(got, number, None)
+        self._file_observation(got, ref, None)
 
-        messagebox.showinfo("Filed", "Filed as OB-%03d in issues.md." % number, parent=self)
+        messagebox.showinfo("Filed", "Filed as %s in issues.md." % ref, parent=self)
 
-        self._say("OB-%03d filed." % number)
+        self._say("%s filed." % ref)
 
-    def _file_observation(self, ob, number, from_entry):
+    def _file_observation(self, ob, ref, from_entry):
         raised = ("%s (%s)" % (from_entry.tag, from_entry.title)) if from_entry else \
                  "noticed while testing - not from a particular test"
 
         block = (
-            "### OB-%03d - %s - %s\n\n"
+            "### %s - %s - %s\n\n"
             "**Kind:** %s  \n"
             "**Raised from:** %s  \n"
             "**Filed:** %s  \n"
             "**Build:** %s\n\n"
             "%s"
         ) % (
-            number,
+            ref,
             datetime.date.today().isoformat(),
             ob["summary"],
             ob["kind"],
@@ -1569,12 +1610,20 @@ class Triage(tk.Tk):
         receipts = []
 
         try:
-            number = next_observation_number()
+            counters = {}       # kind -> next free number, so two of the same kind in one
+                                # submit don't collide without re-scanning the files each time
 
             for ob in self.observations:
-                self._file_observation(ob, number, entry)
-                receipts.append((number, ob))
-                number += 1
+                kind = ob["kind"]
+
+                if kind not in counters:
+                    counters[kind] = next_ref_number(kind)
+
+                ref = format_ref(kind, counters[kind])
+                counters[kind] += 1
+
+                self._file_observation(ob, ref, entry)
+                receipts.append((ref, ob))
 
         except Exception as bad:
             messagebox.showerror("Could not file an observation", str(bad), parent=self)
@@ -1620,7 +1669,7 @@ class Triage(tk.Tk):
             lines.append("")
 
             listed = ", ".join(
-                "OB-%03d (%s - %s)" % (n, ob["kind"], ob["summary"]) for n, ob in receipts)
+                "%s (%s - %s)" % (ref, ob["kind"], ob["summary"]) for ref, ob in receipts)
 
             lines.append("Filed from this test: %s.  They are in `issues.md` until they are picked up."
                          % listed)
@@ -1894,7 +1943,7 @@ class Triage(tk.Tk):
             "Work down the list.  For each test: say whether it works, write what happened, add "
             "anything else you noticed, then Submit.\n\n"
             "Submit appends your words under that test's Comments in tests.md, dated and stamped "
-            "with the build.  Bugs and feature requests go to issues.md as OB-### items, "
+            "with the build.  Bugs go to issues.md as OB-### items, feature requests as FR-###, "
             "cross-referenced from the test.\n\n"
             "New issue files something that has nothing to do with the entry on screen - it goes to "
             "issues.md the same way, without a test to reference.\n\n"
