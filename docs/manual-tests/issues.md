@@ -68,7 +68,122 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
+### OB-019 - 2026-08-22 - appearance of track lengths in autonomy editor
 
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 20:41  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Add a hotkey for showing track lengths in the autonomy editor.  make the checkbox not focusable, like the others.  increase the font size of the track lengths to match that of address labels.
+
+### OB-020 - 2026-08-22 - width of autonomy tools sidebar area
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 20:43  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+try to make the autonomy tools sidebar narrower to match that of the track diagram editor.  change Visible Track Directions to "Track Directions", "None" to Hide All, "All" to  "Show All"
+
+### OB-021 - 2026-08-22 - location of menu option in layouts
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 20:59  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the Layouts top JMenu, the Edit Layout Page option should be just below manage pages.  Also, inside manage pages, there is an set of orphan consecutive dividers.  remove one of them.
+
+
+### OB-022 - 2026-08-22 - DD-A6: three safety rules are in code nothing calls
+
+**Kind:** bug
+**Raised from:** the duplication and design review, at Adam's request
+**Filed:** 2026-08-22
+
+**From [DD-A6](../reviews/2026-08-22-duplication-and-design.md).** Filed by Claude at Adam's request
+after reviewing the duplication report; ranked first of four.
+
+`HomeLocomotiveMenu` had five callers and has one. The graph window was deleted (`d8db4879`) and took
+four of them with it, leaving the RULES in the abandoned copy and the USE in the surviving 24-line one.
+Verified by grep 2026-08-22: `addStationItem`, `addClearAllItem`, `editHomeLocomotive`,
+`confirmExclusion`, `HomeStaging.canBeHome` and `HomeStaging.homeBrokenByExcluding` have **zero**
+production callers between them.
+
+Three rules are therefore unreachable:
+
+- `canBeHome` - without it, a home that cannot be reached makes every future Return Home report
+  IMPOSSIBLE, and the advice that dialog gives is to check the track, which is the wrong remedy.
+- `homeBrokenByExcluding` - excluding a locomotive from the station that is its home now silently
+  leaves a station and a locomotive disagreeing about each other.
+- The "keep an assignment naming a locomotive not on the graph" rule - a station whose home names a
+  since-removed locomotive opens showing "None", and pressing OK clears it.
+
+**And the tests still pass, because they call the dead code directly** - so the suite reports the
+guards as working. That is the part that makes this worth doing before the tidier-looking items.
+
+Two ways to finish it, and the report is right that doing neither is the only option that is definitely
+wrong: re-wire the live paths through the abandoned ones (~80 lines, three rules come back, their tests
+start pinning something a user can reach), or delete the ~200 unreachable lines and their tests and
+record that three rules were consciously dropped.
+
+### OB-023 - 2026-08-22 - DD-B3 and DD-B5: two guards that reach three of four sites
+
+**Kind:** bug
+**Raised from:** the duplication and design review, at Adam's request
+**Filed:** 2026-08-22
+
+**From [DD-B3 and DD-B5](../reviews/2026-08-22-duplication-and-design.md).** Ranked second.
+
+Two of a kind, worth one pass:
+
+- **DD-B3** - four places construct a `LayoutGrid`; three of them call `discard()` on the outgoing one
+  first. A grid that is not discarded leaves two timers armed that still hold the panel, which drops a
+  spinner into the middle of the new grid.
+- **DD-B5** - the right-click entry point is written four times and the empty-menu guard is on three,
+  so one surface can show an empty popup.
+
+~55 lines between them, and the point is to make both impossible to forget rather than to fix the
+fourth site. Worth doing in the editor area specifically because that is where this month's defects
+have been.
+
+### OB-024 - 2026-08-22 - DD-C9 and DD-C10: two ten-minute cleanups
+
+**Kind:** bug
+**Raised from:** the duplication and design review, at Adam's request
+**Filed:** 2026-08-22
+
+**From [DD-C9 and DD-C10](../reviews/2026-08-22-duplication-and-design.md).** Ranked third, and
+only because they are nearly free.
+
+- **DD-C9** - `TileGraph` has `sideTowards` and `sideToward`: two methods one letter apart answering
+  one question two ways. Confirmed still both present, nine call sites between them.
+- **DD-C10** - the port table exists three times, one of them a Python script whose javadoc asks you to
+  hand-edit it in step with the Java.
+
+Neither has produced a defect. They are here because a name one letter from another name is a defect
+waiting for a tired reader, and a table maintained by hand in two languages is one that will disagree.
+
+### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
+
+**Kind:** bug
+**Raised from:** the duplication and design review, at Adam's request
+**Filed:** 2026-08-22
+
+**From [DD-A1](../reviews/2026-08-22-duplication-and-design.md).** Ranked last of the four
+deliberately - biggest win, biggest blast radius.
+
+`AutonomyCompanionStore` holds eleven collections and repeats the same per-collection shape fourteen
+times. The report traces the four commits it took to finish adding the eleventh, which is the cost
+stated as a fact rather than a worry.
+
+**Its precondition is now met.** The report says to do this only after DD-A2 - the matrix test that
+guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was closed in `ae94421a`.
+`ant test` now runs 75 classes including `testAutonomyStoreSettingsMatrix`.
+
+**Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
+hand-written even if this lands.
 ---
 
 ## What has been picked up
