@@ -41,7 +41,14 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-*(empty)*
+### OB-008 - 2026-08-22 - confusing behavior when clicking autonomy tile
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 18:10  
+**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when clicking an autonomy tile with all things displayed off, the user doesn't know what is happening.  ensure that at least "restrictions only" gets enabled with the click.
 
 ---
 
@@ -59,11 +66,17 @@ not, never both.
 |---|---|---|---|---|---|
 | 2026-08-22 | OB-007 | feature request | A white * on the station icon where a train is set up to be standing | needs test | - |
 | 2026-08-22 | OB-006 | feature request | Move "make a one way run from here" off the right-click menu and onto a button that asks for both points and a direction | needs test | - |
-| 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | needs test | - |
+| 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | - | [MT-095](tests.md#mt-095) |
 | 2026-08-22 | OB-004 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | needs test | - |
-| 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | needs test | - |
+| 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
 | 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
 | 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+
+**`OB-003` and `OB-005` are fixed, 2026-08-22, on Adam's "fix all the bugs".** Both earned an
+`MT-###` after all, which is the rule working rather than an exception to it: each one changed
+behaviour that only a person at the railway can confirm, and `OB-005` in particular introduced three
+new ways to lose work that no automated test can see the whole of. The three feature requests filed
+alongside them - `OB-004`, `OB-006`, `OB-007` - are untouched and still have no tag.
 
 **On the five filed 2026-08-22, and the Kind field.** All five arrived as `bug`; two of them are, and
 three are feature requests. `OB-004`, `OB-006` and `OB-007` do not describe anything behaving wrongly -

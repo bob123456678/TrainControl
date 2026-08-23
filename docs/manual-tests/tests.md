@@ -96,8 +96,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
 | [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as OB-001 in issues.md, not a test.** | needs test | OB-001/OB-002 |
+| [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
+| [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
 
-Everything else - 17 of 94 - is **fixed validated** and needs nothing from you unless the
+Everything else - 17 of 96 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -2105,5 +2107,140 @@ Feature requests get a **State** field of their own now - the same three words t
 disposition uses, set by Claude the same way, but living in `issues.md` and never becoming an
 `MT-###` tag unless the work genuinely needs a repeatable hands-on test the way a bug fix does. See
 `issues.md`'s "What has been picked up" table and the **Feature requests** tab in `triage.py`.
+
+---
+
+<a id="mt-095"></a>
+
+### MT-095 - 2026-08-22 - The editor window opens at a sensible size
+
+**Disposition:** needs test  
+**From:** OB-003 (bug)  
+**Written:** 2026-08-22
+
+**What to do.** Open the track diagram or autonomy editor on a page you have not sized by hand. The window
+should default to roughly the diagram's own width and height, not whatever size the last-opened page
+happened to leave it at, and not so small that the diagram is mostly scrollbars. Switch to a page of a
+very different size (much larger or much smaller) and confirm the window follows, still capped so it
+never exceeds the screen.
+
+If you have already resized the window by hand for a page, that preference should still win - this is
+about the DEFAULT for a page nobody has sized yet, not a rule that fights a size you chose.
+
+#### Comments
+
+---
+
+<a id="mt-096"></a>
+
+### MT-096 - 2026-08-22 - Switching editor mode does not flash
+
+**Disposition:** needs test  
+**From:** OB-005 (bug)  
+**Written:** 2026-08-22
+
+**What to do.** With a page open in the editor, switch between track diagram and autonomy mode (and between
+pages) several times. The window should not visibly close and reopen - no flash, no flicker of the
+desktop behind it. A brief loading indicator while the new view builds is fine; the window disappearing
+and reappearing is not.
+
+#### Comments
+
+**Claude, 2026-08-22.** Flagged before building: the F2 sidebar's own specification says switching
+tabs or mode is "the same as the old exit and reopen: prompt for save/discard, then regenerate" - the
+flash is that regeneration being visible. Removing it means keeping the window and swapping its
+contents in place, which is a different design from the one that was asked for, not a bug in the one
+that was built. Worth confirming that is still what's wanted before changing it.
+
+---
+
+<a id="mt-095"></a>
+
+### MT-095 - 2026-08-22 - The editor stays open when you switch page or mode
+
+**Disposition:** fixed unvalidated  
+**From:** OB-005  
+**Written:** 2026-08-22
+
+**What to do.** In the editor, click through every page tab in the sidebar, and toggle between track and autonomy.
+The window must **stay on screen** the whole time - no flash, no disappearing and coming back.
+
+Then check the save/discard logic still holds, because that is the half that must not have changed:
+
+- Make an edit, click another tab, and choose **Save** - the edit is written and the new page opens.
+- Make an edit, click another tab, and choose **Discard** - the edit is gone and the new page opens.
+- Make an edit, click another tab, and choose **Cancel** - nothing moves, and the sidebar goes back to
+  showing the page you are actually on.
+
+Then three things that are new hazards because the window survives:
+
+- Edit page A, switch to page B, press **Ctrl+Z**. It must not undo anything - and in particular must
+  not put page A's track onto page B.
+- Save on page A, switch to page B, make an edit, and **Cancel** out of the window. Page A's saved work
+  must still be there.
+- Switch to page B and make an edit, then Cancel. That edit must be undone.
+
+#### Comments
+
+**Claude, 2026-08-22.** Switching no longer disposes the window; it re-points it. The teardown is
+unchanged and still runs in full - the diagram is re-read from disk, the setup is put back as it was
+found, and the main window is told - so a switch is still an exit as far as the rest of the
+application is concerned. Only the frame survives.
+
+**The three checks at the bottom are the ones I would fail.** Making the window survive turns a set of
+per-WINDOW fields into per-PAGE fields in one stroke, and every one of them was correct before:
+
+- The undo history is a stack of snapshots of a page's components with **nothing in it naming the
+  page** - it never needed one. Left alone, one Ctrl+Z after a switch writes the old page's track over
+  the new one, from the user's own undo key.
+- `autonomyAsOpened` is what Cancel restores, taken when the window opened. Arriving from the setup
+  editor it survived untouched, so Cancel would have undone the setup past work the user was asked
+  about and chose to save on the way there. Arriving from the track editor the teardown had already
+  consumed it, so Cancel would have had nothing to put back.
+- The three tile selections name squares by page, so a selection carried across named squares on a
+  page no longer on screen.
+
+All four are cleared or re-taken in `arriveAt`, and `testEditorSwitchClearsPageState` pins that -
+verified by mutation, not just by passing.
+
+The one behaviour I could not preserve exactly: `LayoutEditor.layout` had to stop being `final`. Every
+read of it is live, so nothing else changes, but it does mean the window is no longer built around one
+diagram - which was the assumption the old close-and-reopen was resting on.
+
+---
+
+<a id="mt-096"></a>
+
+### MT-096 - 2026-08-22 - The editor opens at the size of its diagram
+
+**Disposition:** fixed unvalidated  
+**From:** OB-003  
+**Written:** 2026-08-22
+
+**What to do.** With **remember window location** switched OFF, open the editor on several pages in turn - a big
+diagram and a small one. Each should come up sized to fit its own diagram, not to whatever the last
+page needed.
+
+On a diagram bigger than your screen, the window must stop at the screen edge - the right-hand side
+and the bottom must both be reachable, and the scrollbars must be on screen.
+
+With **remember window location** switched ON: resize the editor on one page, close it, and open it
+there again. Your size must come back. Then switch to a page you have never sized by hand - that one
+should be fitted to its diagram, not given the size you chose for the other page.
+
+#### Comments
+
+**Claude, 2026-08-22.** Both halves of your report were the same cause. Window bounds are
+remembered **per page** - the key is the page name and the tile size - so every page came up at
+whatever size it was last left at, which for a page opened once on a smaller diagram is too small for
+what is on it now.
+
+That is right when the user chose that size and wrong when nobody ever did, and the two were
+indistinguishable, because the fit-to-diagram was only ever computed for a **brand new window**. It is
+now computed for any page with no remembered bounds, on a switch as well as on opening.
+
+And capped: a diagram wider than the screen produced a window wider than the screen, with its
+right-hand edge and the scrollbar that would have reached it both off the side. The window is also
+nudged back on screen if the new size pushed it off an edge it was already sitting near.
 
 ---

@@ -2653,6 +2653,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param autonomy TRUE for the setup, FALSE for the track, or null for whichever was used last
      * @param reveal a square to scroll to and flash, or null
      */
+    /**
+     * Selects the page being edited, for an editor that is switching to it in place.
+     *
+     * The same line openLayoutEditor runs before it builds a window - "the editor edits one page, so
+     * the page has to be selected before it is opened" - reachable by an editor that is not being
+     * built because it never closed.
+     *
+     * @param page the page name
+     */
+    public void selectLayoutPage(String page)
+    {
+        if (page != null) this.LayoutList.setSelectedItem(page);
+    }
+
+    /**
+     * Whether the Edit button may be pressed.
+     *
+     * One editor at a time is enforced by this button being disabled while one is open, and both
+     * teardowns hand it back because for every caller they ever had, an editor really had closed. An
+     * editor switching page or mode runs the same teardown and does NOT close, so it puts the button
+     * back the way it was.
+     *
+     * @param enabled
+     */
+    public void setEditLayoutEnabled(boolean enabled)
+    {
+        this.editLayoutButton.setEnabled(enabled);
+    }
+
+    /**
+     * Remembers which editor the user last chose, for a switch made from the sidebar.
+     *
+     * Picking a mode from the sidebar is the user saying which editor they want, in the plainest way
+     * there is - the same thing openLayoutEditor records when it is passed remember. Not called for a
+     * mode that was forced back to the track: a fallback is not a choice, and writing one down turns a
+     * week of setting autonomy up into "you last used the track editor" the moment a train starts.
+     *
+     * @param autonomy whether the setup editor was chosen
+     */
+    public void rememberEditorChoice(boolean autonomy)
+    {
+        prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
+    }
+
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal)
     {

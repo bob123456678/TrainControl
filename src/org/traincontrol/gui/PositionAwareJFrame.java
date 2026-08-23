@@ -174,6 +174,54 @@ public class PositionAwareJFrame extends JFrame
     }
 
     /**
+     * Whether this window has a size and position the user has actually set.
+     *
+     * Asked rather than inferred from whether loadWindowBounds did anything, because "nothing was
+     * remembered" and "something was remembered and applied" are the two cases a caller wants to tell
+     * apart BEFORE calling it - a window with no preference of its own should be sized to fit its
+     * contents, and one with a preference should be left exactly where the user put it.
+     *
+     * The same three keys loadWindowBounds requires, and the same preference gate: with
+     * "remember window location" switched off there is no preference for anything, whatever is
+     * still sitting in the store from when it was on.
+     *
+     * @return whether a remembered size exists for this window's current index
+     */
+    protected boolean hasRememberedBounds()
+    {
+        if (!prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false)) return false;
+
+        String windowName = this.getWindowName();
+
+        return prefs.get(windowName + "_x", null) != null
+            && prefs.get(windowName + "_width", null) != null
+            && prefs.get(windowName + "_height", null) != null;
+    }
+
+    /**
+     * The area a window can actually occupy on the screen it is on - the screen minus its taskbar.
+     *
+     * @return the usable bounds
+     */
+    protected Rectangle usableScreen()
+    {
+        Rectangle bounds = getGraphicsConfiguration() != null
+            ? getGraphicsConfiguration().getBounds()
+            : GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+
+        java.awt.Insets insets = getGraphicsConfiguration() != null
+            ? java.awt.Toolkit.getDefaultToolkit().getScreenInsets(getGraphicsConfiguration())
+            : new java.awt.Insets(0, 0, 0, 0);
+
+        return new Rectangle(
+            bounds.x + insets.left,
+            bounds.y + insets.top,
+            bounds.width - insets.left - insets.right,
+            bounds.height - insets.top - insets.bottom);
+    }
+
+    /**
      * Checks if the loadWindowBounds method has previously been called
      * @return 
      */

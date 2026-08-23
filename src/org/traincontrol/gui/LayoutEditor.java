@@ -53,7 +53,15 @@ public class LayoutEditor extends PositionAwareJFrame
     
     private final TrainControlUI parent;
     private final int size;
-    private final LayoutDiagram layout;
+    /**
+     * The page being edited.
+     *
+     * NOT final since 2026-08-22, when switching pages stopped closing the window (OB-005). It is read
+     * live everywhere, including from the listeners the grid installs, so a switch is a matter of
+     * pointing this at the new page and redrawing - but anything CACHED from it has to be rebuilt in
+     * the same breath, which is what arriveAt does and why nothing else may assign to this.
+     */
+    private LayoutDiagram layout;
     private LayoutGrid grid;
     
     private int lastX = -1;
@@ -3777,6 +3785,52 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         }
     }
     
+    /**
+     * Sizes the window to the diagram it is showing, within what the screen can hold.
+     *
+     * The default when the user has expressed no preference for this page. Reported 2026-08-22
+     * (OB-003): "when switching between different pages in the editor, the window size varies and is
+     * often too small".
+     *
+     * Both halves of that are the same cause. Window bounds are remembered PER PAGE - the index is
+     * the page name and the tile size - so every page comes up at whatever size it was last left at,
+     * which for a page opened once months ago on a smaller diagram is too small for what is on it
+     * now. That is right when the user chose that size and wrong when nobody ever did, and the two
+     * were indistinguishable because the fit was only ever computed for a brand-new window.
+     *
+     * So the fit is computed for any page with no remembered bounds, and CAPPED: a diagram wider than
+     * the screen used to produce a window wider than the screen, with its right-hand edge and the
+     * scrollbar that would have reached it both off the side.
+     *
+     * The minimum is set here rather than beside the preferred size because pack() honours it, and a
+     * floor taller than the screen would defeat the cap - hence the clamp on both.
+     */
+    private void sizeForDiagram()
+    {
+        // The sidebar takes width from the diagram unless it is asked for as well
+        int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
+
+        java.awt.Rectangle usable = usableScreen();
+
+        this.setMinimumSize(new Dimension(
+            Math.min(550 + sideways + (this.size == 60 ? 200 : 0), usable.width),
+            Math.min(630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0), usable.height)));
+
+        this.setPreferredSize(new Dimension(
+            Math.min(grid.maxWidth + 210 + sideways, usable.width),
+            Math.min(grid.maxHeight + 160, usable.height)));
+
+        pack();
+
+        // Back on screen if the fit pushed it off the bottom or the right, which it can when the
+        // window was already sitting near an edge - the size changed under a position chosen for the
+        // old one.
+        int x = Math.max(usable.x, Math.min(getX(), usable.x + usable.width - getWidth()));
+        int y = Math.max(usable.y, Math.min(getY(), usable.y + usable.height - getHeight()));
+
+        if (x != getX() || y != getY()) setLocation(x, y);
+    }
+
     public void render()
     {        
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -3799,19 +3853,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName())
             );
 
-            // Scale the popup according to the size of the layout
+            // The index FIRST, because everything below is asked per page.
+            //
+            // It used to be set after the sizing, which was survivable only because the sizing did not
+            // ask anything about what had been remembered.  It does now.
+            this.setWindowIndex(this.layout.getName() + "_editor_" + this.getLayoutSize());
+
             if (!this.isLoaded())
             {
-                // The sidebar takes width from the diagram unless it is asked for as well
-                int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
+                sizeForDiagram();
 
-                this.setPreferredSize(
-                    new Dimension(grid.maxWidth + 210 + sideways, grid.maxHeight + 160));
-                this.setMinimumSize(new Dimension(
-                        550 + sideways + (this.size == 60 ? 200 : 0),
-                        630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0))
-                );
-                pack();
+                // Applied over the top, and only if the user actually set one.  A remembered size is a
+                // decision; the diagram fit is what to do in the absence of one.
+                loadWindowBounds();
             }
             else
             {
@@ -3824,15 +3878,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
                 this.setMinimumSize(new Dimension(getMinimumSize().width + sideways,
                     Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
-            }
-
-            // Remember window location for different layouts and sizes
-            this.setWindowIndex(this.layout.getName() + "_editor_" + this.getLayoutSize());
-
-            // Only load location once
-            if (!this.isLoaded())
-            {
-                loadWindowBounds();
             }
 
             saveWindowBounds();
@@ -4051,19 +4096,25 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             }
         }
 
+        // The window STAYS.
+        //
+        // Everything above this line is unchanged - the same three answers, the same save, the same
+        // discard of a shared setup.  What changed is what happens after them: this used to dispose()
+        // and ask the main window to open a fresh editor, and the gap between the two was a visible
+        // flash of the desktop on a gesture as small as clicking a tab.
+        //
+        // The teardown still runs in full.  A switch is still an exit as far as the rest of the
+        // application is concerned: the diagram is re-read from disk, the setup is put back as it was
+        // found, and the main window is told.  Only the frame survives.
         if (isAutonomyMode())
         {
             layout.setEdit(false);
-
-            dispose();
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 parent.autonomyEditorClosed();
 
-                // Remembered: picking a mode from the sidebar is the user saying which editor they
-                // want, in the plainest way there is.
-                parent.openLayoutEditor(page, autonomy, null, true);
+                arriveAt(page, autonomy);
             });
 
             return;
@@ -4073,9 +4124,167 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         undoAutonomyEdits();
 
         javax.swing.SwingUtilities.invokeLater(() ->
-            parent.layoutEditingComplete(() -> parent.openLayoutEditor(page, autonomy, null, true)));
+            parent.layoutEditingComplete(() -> arriveAt(page, autonomy)));
+    }
 
-        this.dispose();
+    /**
+     * Re-points this window at another page, or the other mode, without closing it.
+     *
+     * What openLayoutEditor does to a NEW frame, done to this one - and it has to do the same things,
+     * because the checks it makes are not about the window.  A setup can stop being editable between
+     * one click and the next: unloaded, or a train started.  Opening used to answer that by refusing
+     * and leaving the old window shut; here there is a window on screen either way, so an impossible
+     * mode falls back to the track and the sidebar is put back to say so.
+     *
+     * @param page the page to show
+     * @param autonomy whether to show the setup rather than the track
+     */
+    private void arriveAt(String page, boolean wanted)
+    {
+        try
+        {
+            boolean autonomy = wanted;
+
+            // Still editable?  Asked again rather than assumed from the click, for the same reason
+            // openLayoutEditor asks: the answer can change while a save dialog is on screen.
+            org.traincontrol.automationui.AutonomySession session =
+                autonomy ? parent.editableAutonomySession() : null;
+
+            if (autonomy && (session == null || parent.isAutonomyBusy()))
+            {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                    I18n.t(session == null ? "autosetup.ui.errorNoSetupToEdit"
+                        : "autolayout.errorCannotEditWhileRunning"));
+
+                autonomy = false;
+                session = null;
+            }
+
+            // The main window's own idea of which page is being edited, which the editor has always
+            // taken from it rather than the other way round.
+            parent.selectLayoutPage(page);
+
+            LayoutDiagram arriving = parent.getModel().getLayout(page);
+
+            if (arriving == null)
+            {
+                // The page went away while the dialog was up - renamed, or deleted by a reload.  There
+                // is nothing to show and nothing to be done about it here.
+                confirmExitWithoutAsking();
+
+                return;
+            }
+
+            // Everything remembered about squares on the page being LEFT.
+            //
+            // A TileKey is a page name and a pair of coordinates, and a selection carried across a
+            // switch would name squares on a page that is no longer on screen - the same class of bug
+            // as the setup keys that outlive a move.  Cleared before the diagram changes underneath
+            // them, not after.
+            this.selection.clear();
+            this.previewSelection.clear();
+            this.landingSelection.clear();
+
+            this.toolFlag = null;
+
+            // The undo history goes with the page, and this one would have been a data-loss bug.
+            //
+            // Each entry is a snapshot of a page's COMPONENTS, with nothing in it that says which page
+            // it came from - it did not need one, because the window edited a single page for its whole
+            // life. Carried across a switch, one Ctrl+Z on the new page would have written the old
+            // page's track over it.
+            //
+            // Cleared rather than kept per page: the diagram has just been re-read from disk by the
+            // teardown, so every snapshot in here describes a file state that no longer exists anyway.
+            this.previousLayoutComponents.clear();
+            this.previousLayoutComponentsRedo.clear();
+
+            this.layout = arriving;
+
+            // Leaving the mode BEFORE the new diagram is drawn.
+            //
+            // setAutonomyMode(null) takes the setup panel and its banner out of the window; run after
+            // the grid, it would be tearing down controls that the new grid has already been wired to.
+            setAutonomyMode(null);
+
+            // The grid, the sidebar, the title and the size - the parts of render() that are about
+            // WHICH diagram this is.  Not the parts that are about being a window: no pack of a
+            // remembered size, no second window listener, no setVisible on something already visible.
+            layout.setEdit();
+
+            mountSidebar();
+
+            drawGrid();
+
+            setTitle(I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName()));
+
+            if (session != null) setAutonomyMode(session);
+
+            // Remembered, exactly as opening one used to record it - and only when the mode asked for
+            // is the mode arrived at, because a fallback is not a choice.
+            if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
+
+            // Per page, exactly as on the way in - which is the whole of OB-003 as it applies here:
+            // a page with a size the user chose keeps it, and one without is fitted to its diagram.
+            setWindowIndex(this.layout.getName() + "_editor_" + getLayoutSize());
+
+            if (hasRememberedBounds()) loadWindowBounds();
+            else sizeForDiagram();
+
+            saveWindowBounds();
+
+            // The editor is still open, so the button that opens one stays shut.  Both teardowns above
+            // hand it back - autonomyEditorClosed directly, layoutEditingComplete through the refresh
+            // it finishes with - because both of them are telling the application an editor CLOSED,
+            // which for every other caller it had.
+            parent.setEditLayoutEnabled(false);
+
+            // The undo point moves with the switch, and this is the part a reused window gets wrong
+            // if nobody moves it.
+            //
+            // autonomyAsOpened is what Cancel restores, and it was taken when the WINDOW opened. That
+            // is right for a window that edits one page and then closes, and wrong in both directions
+            // once it can carry on:
+            //
+            //   - arriving from the track editor, undoAutonomyEdits above has just consumed it, so
+            //     Cancel on the new page would have had nothing to put back;
+            //   - arriving from the setup editor it survives untouched, so Cancel on the new page
+            //     would have undone the setup all the way to when the window opened - including work
+            //     the user was explicitly asked about and chose to SAVE on the way here.
+            //
+            // The prompt at the top of leaveFor has already settled what happens to the previous
+            // page's edits. Whatever the setup says now is what this page found.
+            org.traincontrol.automationui.AutonomySession live = parent.getAutonomySession();
+
+            this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
+
+            syncSidebar();
+
+            revalidate();
+            repaint();
+        }
+        catch (RuntimeException failed)
+        {
+            // A half-switched window is worse than none: it is showing one page and wired to another.
+            if (parent.getModel() != null) parent.getModel().log(failed);
+
+            confirmExitWithoutAsking();
+        }
+    }
+
+    /**
+     * Gives up on this window when a switch cannot be completed, without asking anything.
+     *
+     * The questions have already been asked and answered by the time a switch gets this far - asking
+     * again would be asking about work that is no longer anywhere.
+     */
+    private void confirmExitWithoutAsking()
+    {
+        layout.setEdit(false);
+
+        parent.setEditLayoutEnabled(true);
+
+        dispose();
     }
 
     /**
