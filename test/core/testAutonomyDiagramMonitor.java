@@ -444,4 +444,41 @@ public class testAutonomyDiagramMonitor
     }
 
 
+    /**
+     * The dot marking where the train is sits on the rail too.
+     *
+     * Adam, triaging MT-117: "037 - Stars work, but are offcenter on curve stations." The star itself
+     * has been on `trackCentre` since MT-057 - but the RUNNING overlay draws its own mark, the dot that
+     * says which square of a claimed path actually holds the train, and that one was still centred on
+     * the tile. On a straight the two agree; on a curve the badge and star sit on the corner the rail
+     * cuts and the dot sits in the middle of the square, and what you see is a mark beside its own
+     * station.
+     *
+     * Same cause as OB-026 and the same answer, one method along.
+     */
+    @Test
+    public void testTheTrainDotSitsOnTheRail()
+    {
+        int size = 60;
+
+        // No segments: the dot and the claim outline, nothing else to confuse the pixels
+        TileOverlay overlay = new TileOverlay(State.ACTIVE, true, new ArrayList<TileOverlay.Segment>());
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        overlay.paint(g, size, size, new int[] {45, 15});
+
+        g.dispose();
+
+        assertTrue(painted(image, 45, 15), "the train dot is not on the rail");
+
+        assertFalse(painted(image, 30, 30),
+            "the train dot is still in the middle of the square, which on a curve is off the track "
+            + "and away from the badge it is meant to mark");
+    }
+
+
 }

@@ -322,6 +322,8 @@ public class TileOverlay
 
             if (train)
             {
+                int[] on = middle(trackCentre, width, height);
+
                 // An outline says which track is claimed; it cannot say which part of it holds the
                 // train.  The dot is the diagram's equivalent of the graph labelling its node.
                 int diameter = Math.max(6, Math.min(width, height) / 3);
@@ -329,10 +331,10 @@ public class TileOverlay
                 g.setComposite(java.awt.AlphaComposite.getInstance(
                     java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
                 g.setColor(Color.BLACK);
-                g.fillOval((width - diameter) / 2, (height - diameter) / 2, diameter, diameter);
+                g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
 
                 g.setColor(Color.WHITE);
-                g.drawOval((width - diameter) / 2, (height - diameter) / 2, diameter, diameter);
+                g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
             }
         }
         finally
@@ -356,6 +358,22 @@ public class TileOverlay
      * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
      * two different times - which way does this route run - so it is worth only learning to read once.
      */
+    /**
+     * Where the middle of this tile IS, for anything that has to sit on the track.
+     *
+     * The geometric centre is on the rail for a straight and nowhere near it for a curve, where the
+     * track cuts the corner.  Two things here need the answer - the end of a run (OB-026) and the dot
+     * marking which square holds the train ("stars work, but are offcenter on curve stations") - and
+     * they were wrong in the same way for the same reason, so they ask the same question now.
+     *
+     * @param trackCentre the midpoint of the tile's own two track sides, or null if it is not known
+     */
+    private static int[] middle(int[] trackCentre, int width, int height)
+    {
+        return trackCentre != null && trackCentre.length == 2
+            ? trackCentre : new int[] {width / 2, height / 2};
+    }
+
     private void paintRun(Graphics2D g, int width, int height, int[] trackCentre)
     {
         int span = Math.min(width, height);
@@ -371,8 +389,7 @@ public class TileOverlay
         // for a straight and lands on the rails for anything else.  That keeps the through-case exactly
         // as it was, which matters: bending the line through the centre was tried once before and put
         // it at forty-five degrees to the track underneath.
-        int[] centre = trackCentre != null && trackCentre.length == 2
-            ? trackCentre : new int[] {width / 2, height / 2};
+        int[] centre = middle(trackCentre, width, height);
 
         // Held track is paled out first, under everything else.
         //
