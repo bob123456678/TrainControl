@@ -510,6 +510,10 @@ class State(object):
         self.data["marks"][tag] = value
         self.save()
 
+    def clear_mark(self, tag):
+        self.data["marks"].pop(tag, None)
+        self.save()
+
     def draft(self, tag, value=None):
         if value is None:
             return self.data["drafts"].get(tag)
@@ -891,7 +895,9 @@ class Triage(tk.Tk):
 
         ttk.Button(buttons, text="Submit and next   (Ctrl+Enter)", style="Big.TButton",
                    command=self.submit).pack(side=tk.RIGHT)
-        ttk.Button(buttons, text="Skip", command=self.skip).pack(side=tk.RIGHT, padx=6)
+
+        self.skip_button = ttk.Button(buttons, text="Skip", command=self.toggle_skip)
+        self.skip_button.pack(side=tk.RIGHT, padx=6)
 
         return outer
 
@@ -1008,6 +1014,7 @@ class Triage(tk.Tk):
             self.meta_label.config(text="Change the filter, or clear the search box.")
             self._fill(self.what_text, "")
             self._fill(self.comments_text, "")
+            self._sync_skip_button()
             return
 
         self.head_label.config(text="%s  \u2014  %s" % (entry.tag, entry.title))
@@ -1028,7 +1035,22 @@ class Triage(tk.Tk):
         self.observations = list(draft.get("observations", []))
         self._refresh_observations()
 
+        self._sync_skip_button()
+
         self.book.select(0)
+
+    def _sync_skip_button(self):
+        """The one button toggles between Skip and Unskip, so undoing a skip is exactly as easy
+        as making one - no separate control to remember, no way to be unsure which state you're in.
+        """
+
+        if not self.current:
+            self.skip_button.config(text="Skip", state=tk.DISABLED)
+            return
+
+        skipped = self.state_.mark(self.current.tag) == "skipped"
+
+        self.skip_button.config(text="Unskip" if skipped else "Skip", state=tk.NORMAL)
 
     def _fill(self, widget, text):
         widget.config(state=tk.NORMAL)
@@ -1227,14 +1249,26 @@ class Triage(tk.Tk):
 
         return "\n".join(lines)
 
-    def skip(self):
+    def toggle_skip(self):
         if not self.current:
             return
 
-        self._stash_draft()
-        self.state_.mark(self.current.tag, "skipped")
+        tag = self.current.tag
 
-        self._say("%s skipped - nothing written." % self.current.tag)
+        if self.state_.mark(tag) == "skipped":
+            # Undo only, not a submit: stay put rather than jumping to the next row, so unskipping
+            # something puts you right back in front of the thing you meant to unskip.
+            self.state_.clear_mark(tag)
+            self._sync_skip_button()
+            self._refresh_list()
+            self._say("%s unskipped." % tag)
+            return
+
+        self._stash_draft()
+        self.state_.mark(tag, "skipped")
+
+        self._say("%s skipped - nothing written.  The Skip button is now Unskip if that was a "
+                  "mistake." % tag)
         self._advance()
 
     def _advance(self):
@@ -1250,7 +1284,16 @@ class Triage(tk.Tk):
             self._show(None)
             return
 
-        target = rows[min(here, len(rows) - 1)] if here >= 0 else rows[0]
+        if self.current and self.current.tag in rows:
+            # The row just answered is still in view - a skip no longer hides its row, so "the
+            # same index" would just be the row itself.  Step to the next one instead, so Skip
+            # still moves forward the way it always did.
+            idx = rows.index(self.current.tag)
+            target = rows[idx + 1] if idx + 1 < len(rows) else rows[idx]
+        else:
+            # It dropped out of view (a Submit, under a filter that hides done) - whatever now
+            # sits at its old position is the next thing to look at.
+            target = rows[min(here, len(rows) - 1)] if here >= 0 else rows[0]
 
         self.tree.selection_set(target)
         self.tree.see(target)
@@ -1381,7 +1424,9 @@ class Triage(tk.Tk):
             "cross-referenced from the test.\n\n"
             "New issue files something that has nothing to do with the entry on screen - it goes to "
             "issues.md the same way, without a test to reference.\n\n"
-            "Skip writes nothing at all.\n\n"
+            "Skip writes nothing at all - it just marks the row so you can find it again, and stays "
+            "in the list rather than disappearing.  The same button becomes Unskip when you're back "
+            "on a skipped row.\n\n"
             "This app never changes a Disposition or the ledger - Claude sets those from what you "
             "wrote, which is the rule that makes the file mean anything.\n\n"
             "Every write backs the file up first, into .triage-backups.  From a terminal, run this "
