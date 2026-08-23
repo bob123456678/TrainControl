@@ -256,4 +256,64 @@ public class testDiagramExport
     }
 
 
+    /**
+     * A replaced grid is not kept alive by the table that retires it.
+     *
+     * MT-134, third item: "write a test case for this." The table that lets a new grid retire the old
+     * one is a WeakHashMap keyed by the panel - and a WeakHashMap only collects an entry when nothing
+     * else reaches the KEY. A LayoutGrid reaches its own panel: it holds `container` and adds it to the
+     * parent. So while the value was the grid itself, every entry kept its own key alive and none was
+     * ever collected: one page retained per editor, popup or export, for the life of the session.
+     *
+     * Found in review (NR-3) rather than by anybody noticing, which is how a leak of this size behaves -
+     * it costs nothing anyone can see until the day it does.
+     *
+     * The collection itself is asked for rather than assumed: a bounded loop, because a garbage
+     * collector is entitled to take its time and a test that demands the first `gc()` collect is a test
+     * that fails on a fast machine for no reason.
+     */
+    @Test
+    public void testAReplacedGridIsNotRetained() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+
+        assertNotNull(page, "no page to draw");
+
+        final javax.swing.JPanel panel = new javax.swing.JPanel();
+        final org.traincontrol.gui.LayoutGrid[] built = new org.traincontrol.gui.LayoutGrid[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui);
+        });
+
+        java.lang.ref.WeakReference<org.traincontrol.gui.LayoutGrid> outgoing =
+            new java.lang.ref.WeakReference<>(built[0]);
+
+        built[0] = null;
+
+        // A second grid over the same panel: the first is retired and should now be reachable from
+        // nothing at all.
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            panel.removeAll();
+
+            new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui);
+        });
+
+        for (int attempt = 0; attempt < 20 && outgoing.get() != null; attempt++)
+        {
+            System.gc();
+
+            Thread.sleep(50);
+        }
+
+        assertNull(outgoing.get(),
+            "a grid that has been replaced is still reachable. The table that retires it is keyed by "
+            + "the panel and a grid holds its own panel, so a strong value there keeps its own key "
+            + "alive and nothing is ever collected - one page retained per editor, popup or export "
+            + "(MT-134, NR-3)");
+    }
+
+
 }

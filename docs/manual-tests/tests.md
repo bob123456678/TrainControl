@@ -38,11 +38,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains |
 | [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | 2026-08-18 manual test plan, Tier 6 - real hardware, optional |
 | [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
-| [MT-130](#mt-130) | 2026-08-23 | A setting must not outlive its track | fixed unvalidated | OB-025 |
 | [MT-134](#mt-134) | 2026-08-23 | Four things the night review found | fixed unvalidated | NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md) |
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 
-Everything else - 110 of 135 - is **fixed validated** and needs nothing from you unless the
+Everything else - 111 of 135 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -689,6 +688,29 @@ make a test case for this on a contrive autonomy layout by changing the settings
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - I need a decision from you before writing this one, and here is why.**
+
+"Make a test case for this on a contrived autonomy layout by changing the settings programmatically."
+That much I can do. What I cannot settle from the code is WHAT the test should assert, because the
+codebase already holds a deliberate answer that contradicts the report.
+
+Your finding was that in MANUAL operation you could send a train from Tunnel to BottomMainA although
+BottomMainA bars arrivals from the west. But manual dispatch and autonomy are filtered differently ON
+PURPOSE - the tiering is deliberate, and a destination excluded from what autonomy would choose is not
+refused when a person asks for it by hand. On that reading what you saw is the design working.
+
+So there are two possible rules and they need different tests:
+
+1. **Barred arrivals are advisory for a person.** Autonomy will not route into a barred side; a manual
+   dispatch may, because the operator is looking at the railway and has said what they want. The test
+   asserts autonomy never offers it, and says nothing about manual.
+2. **Barred arrivals are a property of the TRACK.** Nothing may arrive that way, whoever asked - the
+   restriction describes something about the approach rather than a preference. The test asserts both,
+   and the manual path needs a fix.
+
+I have not guessed, because the two differ in what the railway does with a train you dispatched by hand,
+and that is your call rather than mine. Tell me which and the test follows in either case.
 ---
 
 <a id="mt-079"></a>
@@ -1127,6 +1149,27 @@ Use DEBUG_SIMULATE_PACKETS = true to simulate that there is a station, and confi
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - partly done, and the rest needs one thing I do not have.**
+
+"Use DEBUG_SIMULATE_PACKETS = true to simulate that there is a station, and confirm that way." That flag
+does let a test drive accessories without hardware, and the first half of this entry - a three-way in a
+route stays one row and stays LEFT across a save and reopen - is covered by
+`testCommandRow.testEveryEditableKindRoundTrips` and `testTheKindsWithNoTargetSaySo`.
+
+The second half is the interesting one and is not covered: "the motor that ends up straight should move
+first, and the other should follow after a pause." That is an assertion about the ORDER of two commands
+and the gap between them, and `Accessory.isThrow`'s own comment says why it matters - "a three-way
+turnout is two drives, and its diverging drive has to be commanded after the other has been released,
+never before".
+
+To test it I have to observe the order in which the two motors were commanded, and nothing in the model
+records that today: the accessories carry their state, not a history. The honest options are to add a
+small recording seam - a list of (accessory, aspect, time) written only under DEBUG_SIMULATE_PACKETS -
+or to leave this as a hands-on check with a real three-way in front of you.
+
+I would rather add the seam than leave an ordering rule untested, but it is a change to production code
+for a test's benefit, so I am asking first.
 ---
 <a id="mt-005"></a>
 
@@ -5336,7 +5379,7 @@ nothing left to do and nothing left to check.
 
 ### MT-130 - 2026-08-23 - A setting must not outlive its track
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-025  
 **Written:** 2026-08-23
 
@@ -5395,6 +5438,17 @@ Make a test case for this.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** "Make a test case for this" - written when the fix went in, and named in the
+comment above: `testAutonomyDiagramStore.testADeletedTileTakesItsLinkNameAndItsDisabledFlag`.
+
+It gives a square a link name and switches the link off, deletes the square from the diagram, and
+requires both to be gone - and requires them to be REPORTED, because a diagram edit that quietly takes a
+link name should be visible rather than discovered later. Seen failing first.
+
+The build-failing guard that stops the next collection being left out of a bookkeeping site is
+`testStoreCollectionsAreHandledEverywhere`, and since OB-049 it also requires every rule the store
+offers to have a caller.
 ---
 
 <a id="mt-131"></a>
