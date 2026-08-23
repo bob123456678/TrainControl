@@ -37,6 +37,7 @@ of clobbering.  Nothing is ever deleted or reordered.
 Single file, no dependencies beyond the standard library.
 """
 
+import glob
 import io
 import json
 import os
@@ -697,6 +698,53 @@ def launch_plan():
     return None, "Neither build\\classes nor dist\\TrainControl.jar exists.  Build in NetBeans first."
 
 
+# NetBeans' own bundled ant - the one "Build Project" (F11) itself runs.  Versioned installs are
+# tried newest first; this machine has NetBeans-18, but nothing here should break for whoever
+# upgrades it later.
+ANT_GLOB = r"C:\Program Files\NetBeans-*\netbeans\extide\ant\bin\ant.bat"
+
+
+def find_ant():
+    found = sorted(glob.glob(ANT_GLOB), reverse=True)
+
+    if found:
+        return found[0]
+
+    return shutil.which("ant")
+
+
+def compile_plan():
+    """The same thing NetBeans' own Build Project runs: 'ant compile' - not 'clean', which is the
+    one step that fights OneDrive over a directory it may still be syncing (see
+    traincontrol-cli-test-harness in Claude's memory).  Ordinary incremental compile just
+    overwrites .class files in place and has never shown that problem.
+
+    Forces JAVA_HOME to the same verified JDK 8 launch_plan() insists on, for the same reason:
+    Ant is a JVM too, and this machine's ambient JAVA_HOME is Android Studio's JBR, not this
+    project's compiler.
+    """
+
+    ant = find_ant()
+
+    if not ant:
+        return None, None, "No NetBeans ant found (looked for %s) and none on PATH." % ANT_GLOB
+
+    java, verified = find_java()
+
+    if not java:
+        return None, None, "No java found to run Ant with.  Set JAVA_HOME, or put java on PATH."
+
+    env = dict(os.environ)
+    env["JAVA_HOME"] = os.path.dirname(os.path.dirname(java))     # .../bin/java.exe -> ...
+
+    note = "ant compile, java: %s" % java
+
+    if not verified:
+        note += " (COULD NOT CONFIRM this is Java 8)"
+
+    return [ant, "compile"], env, note
+
+
 def port_held(port=CS2_PORT):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -741,6 +789,9 @@ class Triage(tk.Tk):
         self.process = None
         self.log_path = None
         self.launched_from = None
+
+        self.compile_process = None
+        self.compile_log_path = None
 
         self.current = None
         self.observations = []       # pending, for the entry on screen
@@ -822,13 +873,18 @@ class Triage(tk.Tk):
         bar = ttk.Frame(self, padding=(PAD, PAD, PAD, 4))
         bar.pack(fill=tk.X)
 
+        self.compile_button = ttk.Button(bar, text="Compile", command=self.compile)
+        self.compile_button.pack(side=tk.LEFT)
+
         ttk.Button(bar, text="\u25b6  Launch TrainControl", style="Big.TButton",
-                   command=self.launch).pack(side=tk.LEFT)
+                   command=self.launch).pack(side=tk.LEFT, padx=(6, 0))
 
         self.run_label = ttk.Label(bar, text="not started", style="Sub.TLabel")
         self.run_label.pack(side=tk.LEFT, padx=(8, 0))
 
         ttk.Button(bar, text="Output\u2026", command=self.show_output).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Button(bar, text="Compile output\u2026",
+                   command=self.show_compile_output).pack(side=tk.LEFT, padx=(4, 0))
 
         ttk.Button(bar, text="New issue\u2026", style="Big.TButton",
                    command=self.free_observation).pack(side=tk.RIGHT)
@@ -1491,6 +1547,88 @@ class Triage(tk.Tk):
 
         LogWindow(self, self.log_path)
 
+    def compile(self):
+        """Runs the same 'ant compile' NetBeans' own Build Project button runs, so Launch picks
+        up a change without switching to the IDE first.  Not a Clean and Build - see compile_plan().
+        """
+
+        if self.compile_process and self.compile_process.poll() is None:
+            messagebox.showinfo("Already compiling",
+                                "A compile is still running.  Check Compile output… if it's "
+                                "taking a while.", parent=self)
+            return
+
+        command, env, note = compile_plan()
+
+        if not command:
+            messagebox.showerror("Cannot compile", note, parent=self)
+            return
+
+        if "COULD NOT CONFIRM" in note and not messagebox.askokcancel(
+                "Java version not confirmed",
+                "%s\n\nCompile anyway, or fix JAVA_HOME / PATH first and try again?" % note,
+                parent=self):
+            self._say("Compile cancelled - java version unconfirmed.")
+            return
+
+        if not os.path.isdir(RUN_DIR):
+            os.makedirs(RUN_DIR)
+
+        self.compile_log_path = os.path.join(
+            RUN_DIR, "compile-%s.log" % datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+
+        handle = io.open(self.compile_log_path, "wb")
+
+        handle.write(("%s\n%s\n\n" % (note, " ".join(command))).encode("utf-8"))
+        handle.flush()
+
+        try:
+            self.compile_process = subprocess.Popen(
+                command, cwd=ROOT, env=env, stdout=handle, stderr=subprocess.STDOUT)
+
+        except Exception as bad:
+            handle.close()
+            messagebox.showerror("Cannot compile", str(bad), parent=self)
+            return
+
+        self.compile_button.config(text="Compiling…", state=tk.DISABLED)
+        self._say("Compiling - ant compile, same as NetBeans' own Build Project…")
+
+        threading.Thread(target=self._watch_compile, args=(handle,), daemon=True).start()
+
+    def _watch_compile(self, handle):
+        process = self.compile_process
+
+        process.wait()
+
+        try:
+            handle.close()
+        except Exception:
+            pass
+
+        code = process.returncode
+
+        self.after(0, lambda: self._compile_finished(code))
+
+    def _compile_finished(self, code):
+        self.compile_button.config(text="Compile", state=tk.NORMAL)
+
+        if code == 0:
+            self._say("Compile finished cleanly.  Launch will pick up the new build/classes.")
+        else:
+            self._say("Compile failed (exit %s) - see Compile output…" % code)
+            messagebox.showerror(
+                "Compile failed",
+                "ant compile exited %s.  See Compile output… for what javac said." % code,
+                parent=self)
+
+    def show_compile_output(self):
+        if not self.compile_log_path or not os.path.exists(self.compile_log_path):
+            messagebox.showinfo("No output yet", "Run Compile from here first.", parent=self)
+            return
+
+        LogWindow(self, self.compile_log_path)
+
     # -- odds and ends -----------------------------------------------------------------------
 
     def reload(self):
@@ -1555,6 +1693,13 @@ class Triage(tk.Tk):
                     "TrainControl is still running",
                     "TrainControl was started from here and is still running.  Leave it running "
                     "and close this window?", parent=self):
+                return
+
+        if self.compile_process and self.compile_process.poll() is None:
+            if not messagebox.askyesno(
+                    "A compile is still running",
+                    "ant compile hasn't finished.  Close anyway and let it keep running "
+                    "unattended?", parent=self):
                 return
 
         self.destroy()
