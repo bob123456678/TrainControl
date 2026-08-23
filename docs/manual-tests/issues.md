@@ -262,3 +262,136 @@ they were filed under, and this mapping is how to trace one to the other.*
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
+
+### FR-010 - 2026-08-23 - home locomotive searching
+
+**Kind:** feature request  
+**Raised from:** MT-112 (Home assignments: the three rules that were unreachable)  
+**Filed:** 2026-08-23 11:22  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the home locomotives window should have a textbox to allow filtering the list, making it easier to find a locomotive when there are many.  Also, add a "use current" button there.
+
+### OB-045 - 2026-08-23 - disable autonomy editing while running
+
+**Kind:** bug  
+**Raised from:** MT-116 (Renaming a station keeps its label)  
+**Filed:** 2026-08-23 11:24  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+track viewer autonomy editing controls aren't (or shouldn't be) accessible while trains are running.  We need to disable the "autonomy setup" entry while running.
+
+### FR-011 - 2026-08-23 - add to autonomy filtering
+
+**Kind:** feature request  
+**Raised from:** MT-122 (Adding a locomotive to autonomy from the track diagram)  
+**Filed:** 2026-08-23 11:25  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+similar to home locomotives, make it so that the add to autonomy list of locomotives can be filtered using a textbox.  if it makes sense, reuse the same component as "home locomotives" while disabling its "use current" button.
+
+### OB-046 - 2026-08-23 - go to the other end quirk
+
+**Kind:** bug  
+**Raised from:** MT-131 (Switching a paired link off switches its partner off)  
+**Filed:** 2026-08-23 11:30  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when you use "go to the other end" from link tiles in the autonomy editor, the same save/discard/cancel confirmation prompt as switching pages is not used.  settings should be saved or discarded before leaving.
+
+### OB-047 - 2026-08-23 - layout editor openable while autonomy running
+
+**Kind:** bug  
+**Raised from:** MT-133 (Segment length: blank means none, and only digits go in)  
+**Filed:** 2026-08-23 11:54  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the layout editor can be opened while autonomy is running when the edit button is pressed.  neither it nor the autonomy editor should be allowed- just pop up an error.
+
+### OB-048 - 2026-08-23 - uncapped segment lengths
+
+**Kind:** bug  
+**Raised from:** MT-133 (Segment length: blank means none, and only digits go in)  
+**Filed:** 2026-08-23 11:54  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+cap segment lengths at 3 digits (up to 0 to 999).
+
+### FR-012 - 2026-08-23 - test case for memory usage
+
+**Kind:** feature request  
+**Raised from:** MT-134 (Four things the night review found)  
+**Filed:** 2026-08-23 12:01  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+open and close the aditor a dozen times on a big layout and watch memory.  nothing to see if this is right.
+
+### OB-049 - 2026-08-23 - page rename effectively deletes autonomy config.
+
+**Kind:** bug  
+**Raised from:** MT-056 (The sidebar with a long page name)  
+**Filed:** 2026-08-23 12:05  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+CRITICAL: renaming a layout page disconnects its autonomy config.  stations and links are broken.  it is impossible to recover the old autonomy config once the name is changed back.
+
+**Claude, 2026-08-23 - diagnosed, not yet fixed.**
+
+`AutonomyCompanionStore.renamePage(from, to)` exists, is thorough, and rekeys all eleven collections -
+point names, stations, captions on both sides, portals on both sides, link names, directions, lengths,
+barred arrivals, the disabled links, the excluded page, and the tile keys inside every configuration.
+Its comments record two earlier defects it was extended to cover.
+
+**Nothing calls it.** `grep -rn "renamePage" src/` returns the declaration and one comment. The only
+callers in the repository are two tests, which call it directly and pass.
+
+So renaming a page leaves every key in the setup pointing at the old page name while the diagram now
+answers to the new one. The next `reconcile` compares the two, finds that no stored square exists any
+more, and does what it is supposed to do with a square that has been deleted:
+
+```java
+pointNames.remove(key);
+stations.remove(key);
+```
+
+Every station on that page, gone - and renaming the page back cannot bring them back, because they were
+deleted on the save that happened while the new name was current. That matches the report exactly,
+including "after changing it back, there are no stations".
+
+**This is the third instance of one shape**, after DD-A6 (`HomeLocomotiveMenu` lost four of five callers,
+with two safety warnings left unreachable and their tests still green) and MT-112. A correct,
+well-commented rule with nobody calling it.
+
+**And my own guard did not catch it.** `testStoreCollectionsAreHandledEverywhere` asserts that
+`renamePage` handles every collection - which it does, perfectly. It never asks whether anything calls
+`renamePage`. The test is green and the feature is dead.
+
+**Fix, when Adam is finished testing:** call it from wherever a page is renamed, and add the missing
+half of the guard - a rule with no caller is not implemented, however well it is written.
+
+### OB-050 - 2026-08-23 - right click menu when autonomy is invalid
+
+**Kind:** bug  
+**Raised from:** MT-051 (The sidebar with nothing to offer)  
+**Filed:** 2026-08-23 12:09  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the track diagram right click menu still offers "start autonomy" when the config is in an invalid "fix it" state. grey it out.
+
+### OB-051 - 2026-08-23 - autonomy cannot be imported if there is a bug in the current config
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-23 12:11  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+an alternate config cannot be imported if there the current autonomy config is in "fix it" status.  make importing be a first class citizen, both when loaded and unloaded.
+
+### OB-052 - 2026-08-23 - odd popup.
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-23 12:15  
+**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when switching from autonomy setup to track diagram editor after adding one station to a fresh/invalid autonomy config, I got a popup message with no context and just a list of stations.  unclear why. the state that triggered it is what the current files show.
