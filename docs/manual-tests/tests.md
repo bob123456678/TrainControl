@@ -80,6 +80,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
 | [MT-112](#mt-112) | 2026-08-22 | Home assignments: the three rules that were unreachable | fixed unvalidated | OB-022 (DD-A6) |
 | [MT-113](#mt-113) | 2026-08-22 | Tool labels, and a heading with nothing under it | fixed unvalidated | OB-027, OB-032 |
+| [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
+| [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -3786,5 +3788,68 @@ what it does now. A heading is a promise that something follows it; alone it rea
 failed to load rather than as a square with no choices.
 
 Same reasoning as the popup guard in `LayoutLabel`, where an empty menu "reads as a fault".
+
+---
+
+<a id="mt-114"></a>
+
+### MT-114 - 2026-08-22 - No findings while autonomy is unloaded
+
+**Disposition:** fixed unvalidated  
+**From:** OB-029  
+**Written:** 2026-08-22
+
+**What to do.** With a setup on disk but **unloaded**, open the diagram editor and close it again. The
+strip above the track diagram must show no error or warning counts at all.
+
+Then load a configuration and confirm the counts come back.
+
+#### Comments
+
+**Claude, 2026-08-22.** The guard was there and asked the wrong question. It skipped the findings when
+there was no setup **on disk** - `session.exists()` - and Unload does not delete anything. Its own
+tooltip says so: "unloads the running configuration without deleting anything, so the diagram stops
+showing stations and trains until you load one again".
+
+So the diagram stopped showing stations and trains, and went on counting errors about a configuration
+nobody was running - and closing the editor put the count back every time, which is why it looked like
+the editor causing it.
+
+It now also requires a configuration to be loaded. A finding is a statement about the configuration
+being run; with none chosen, there is nothing to make a statement about.
+
+---
+
+<a id="mt-115"></a>
+
+### MT-115 - 2026-08-22 - Both menus decline while an editor is open, and lead back to it
+
+**Disposition:** fixed unvalidated  
+**From:** OB-033  
+**Written:** 2026-08-22
+
+**What to do.** Open the diagram editor, then put the main window in front of it.
+
+Open the **Layouts** menu: everything in it must be greyed, with one item at the top saying an editor
+has the diagram. **Click that item** - the editor must come to the front.
+
+Do the same from the **Autonomy** menu, whose equivalent item was already there but did nothing when
+clicked.
+
+Close the editor and confirm the Layouts menu is fully usable again and the item is gone.
+
+#### Comments
+
+**Claude, 2026-08-22.** The Autonomy menu already declined, for reasons its own comment gives: every
+item saves the setup or rebuilds the main window, and an open editor makes both unsafe - saving commits
+edits that editor has not saved, so its Cancel then has nothing to take back. The Layouts menu does the
+same work and had no such guard.
+
+**And both now lead back.** A disabled item states the problem and offers nothing, and the window it is
+talking about may well be behind this one - which is exactly why somebody reached for the menu.
+
+The guard runs when the menu is OPENED rather than when an editor opens. There is no single moment
+"an editor opened" is known to that menu, and asking at the moment somebody looks is both simpler and
+always right.
 
 ---

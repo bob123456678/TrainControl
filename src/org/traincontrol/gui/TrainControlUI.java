@@ -1962,6 +1962,48 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Rebuilt whole on every mount, because the pages change under it.
      */
+    /**
+     * Greys the Layout menu while an editor has the diagram, and offers the way back (OB-033).
+     *
+     * The same rule the Autonomy menu already followed, and for the same reasons its comment gives:
+     * every item here saves the layout or rebuilds the main window, and an open editor makes both
+     * unsafe - saving commits edits that editor has not saved, so its Cancel then has nothing to take
+     * back.
+     *
+     * Applied when the menu is opened rather than when the editor is, because there is no single
+     * moment "an editor opened" is known to this menu - and asking at the moment somebody looks is
+     * both simpler and always right.
+     */
+    private void guardLayoutMenu()
+    {
+        if (layoutMenu == null) return;
+
+        boolean busy = isLayoutEditorOpen();
+
+        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
+        {
+            java.awt.Component child = layoutMenu.getMenuComponent(i);
+
+            if (child == goToEditorItem) continue;
+
+            child.setEnabled(!busy);
+        }
+
+        if (goToEditorItem == null)
+        {
+            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+
+            goToEditorItem.addActionListener(e -> showOpenEditor());
+
+            layoutMenu.add(goToEditorItem, 0);
+        }
+
+        goToEditorItem.setVisible(busy);
+    }
+
+    /** The "an editor has this diagram" item on the Layout menu - see guardLayoutMenu */
+    private javax.swing.JMenuItem goToEditorItem;
+
     private void mountEditPageMenu()
     {
         if (layoutMenu == null) return;
@@ -2258,6 +2300,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addCombinePagesItem();
 
         mountEditPageMenu();
+
+        // Asked every time the menu is opened, which is the only moment the answer is certainly
+        // current - see guardLayoutMenu. Added once; mountEditPageMenu runs on every mount.
+        if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
+        {
+            layoutMenu.addMenuListener(new javax.swing.event.MenuListener()
+            {
+                @Override
+                public void menuSelected(javax.swing.event.MenuEvent e)
+                {
+                    guardLayoutMenu();
+                }
+
+                @Override
+                public void menuDeselected(javax.swing.event.MenuEvent e) { }
+
+                @Override
+                public void menuCanceled(javax.swing.event.MenuEvent e) { }
+            });
+        }
 
         // And the tab it used to fill goes.  Removed here rather than left out of the form, because
         // the form is generated - and it comes BACK below when there is no local layout, where the
@@ -2860,7 +2922,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                LayoutEditor editor = new LayoutEditor(
+                LayoutEditor editor = openEditor = new LayoutEditor(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
                     this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
                     this,
@@ -3380,6 +3442,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return editLayoutButton != null && !editLayoutButton.isEnabled();
     }
 
+    /**
+     * The editor window, so a menu that has to refuse can offer the way back instead (OB-033).
+     *
+     * Held rather than found: a JFrame has no owner, so there is no window tree to walk from here to
+     * it - which is the same reason the editor has to be handed this window rather than looking it up.
+     */
+    private LayoutEditor openEditor;
+
+    /**
+     * Brings the open editor forward, for a menu item that exists to say "it is over there".
+     *
+     * Every menu that refuses while an editor is open used to say so with a disabled item, which
+     * states the problem and offers nothing. The window may well be behind this one, which is exactly
+     * why somebody reached for the menu.
+     */
+    public void showOpenEditor()
+    {
+        if (openEditor == null || !openEditor.isDisplayable()) return;
+
+        openEditor.setVisible(true);
+        openEditor.toFront();
+        openEditor.requestFocus();
+    }
+
     public void autonomyEditorClosed()
     {
         // reapplies the stored preference, which is what the diagram path does here too
@@ -3733,7 +3819,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // entirely, the strip went on showing a count of unnamed stations belonging to a setup that no
         // longer existed.  Findings describe a setup; with none, the banner’s offer to make one is
         // the only thing worth saying.
-        if (session == null || session.getReducer() == null || !session.exists())
+        // Nor where there is a setup on disk that nobody has LOADED (OB-029).
+        //
+        // session.exists() asks whether a setup is on disk, which stays true after Unload - and Unload
+        // says what it does: "the diagram stops showing stations and trains until you load one again".
+        // The findings kept going, so a diagram with no stations, no trains and no configuration
+        // carried a count of errors about a setup that was not in use, and closing the editor put it
+        // back every time.
+        //
+        // A finding is a statement about the configuration being run. With none chosen there is
+        // nothing being run, and the banner's offer to load one is the only thing worth saying.
+        if (session == null || session.getReducer() == null || !session.exists()
+            || this.activeDiagramConfiguration == null)
         {
             autonomyOverlayToggle.setFindings(0, 0, 0, 0, null);
             return;

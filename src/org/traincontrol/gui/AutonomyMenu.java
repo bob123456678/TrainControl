@@ -156,8 +156,13 @@ public class AutonomyMenu extends JMenu
         // shared page, after which every tile there tries to talk to a window that is not its parent.
         if (ui.isLayoutEditorOpen())
         {
+            // Clickable, and it brings the editor forward (OB-033).
+            //
+            // It was disabled, which states the problem and offers nothing - and the window it is
+            // talking about may well be behind this one, which is exactly why somebody reached for
+            // this menu.
             JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
-            busy.setEnabled(false);
+            busy.addActionListener(e -> ui.showOpenEditor());
             add(busy);
 
             return;

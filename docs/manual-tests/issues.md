@@ -152,15 +152,6 @@ in the autonomy editor, the gray grid is not needed.  show the track diagram as 
 
 in the editor, make the gray grid an option you can toggle in the visibile elements.  on by default, but persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths when it is off.
 
-### OB-029 - 2026-08-22 - autonomy error bar
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:39  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-with autonomy completely unloaded, I am still shown x/y errors on this page at the top of the track diagram after closing the diagram  editor.
-
 ### FR-007 - 2026-08-22 - loading autonomy
 
 **Kind:** feature request  
@@ -188,15 +179,6 @@ many tooltips are very wide.  split them.
 
 when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
 
-### OB-033 - 2026-08-22 - layout menu while editor is open
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 22:21  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-similra to the autonomy menu, the layout menu should be disabled while the editor is open.  make both, when clicked, take the user to the editor.
-
 ### OB-034 - 2026-08-22 - renaming a station removes its autonomy label
 
 **Kind:** bug  
@@ -220,6 +202,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-033 | bug | The Layouts menu declines while an editor is open, and both lead back | - | [MT-115](tests.md#mt-115) |
+| 2026-08-22 | OB-029 | bug | Findings shown for a configuration nobody had loaded | - | [MT-114](tests.md#mt-114) |
 | 2026-08-22 | OB-032 | bug | An empty "Trains May Depart" heading is hidden | - | [MT-113](tests.md#mt-113) |
 | 2026-08-22 | OB-027 | bug | Three tool labels renamed | - | [MT-113](tests.md#mt-113) |
 | 2026-08-22 | OB-022 | bug | DD-A6: three safety rules in code nothing called | - | [MT-112](tests.md#mt-112) |
