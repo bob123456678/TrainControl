@@ -1005,9 +1005,26 @@ class Triage(tk.Tk):
 
         frame = ttk.Frame(parent)
 
+        # Anchored widgets are packed FIRST, from the bottom, so they claim only their natural
+        # size; the tree is packed LAST with fill+expand so it gets everything left over.  Doing
+        # it the other way round - tree first - was the previous bug: 'tree' had ended up a direct
+        # child of 'frame' rather than of 'rows' (its scrollbar's actual parent), so it was
+        # competing with 'rows' as an unrelated sibling instead of living inside it, and lost.
+        open_button = ttk.Button(frame, text="Open in Tests tab", state=tk.DISABLED,
+                                 command=lambda: self._jump_to_test(
+                                     self.issue_widgets[kind].get("open_tag")))
+        open_button.pack(side=tk.BOTTOM, anchor=tk.E, pady=(4, 0))
+
+        detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
+                         background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
+        detail.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
+
+        rows = ttk.Frame(frame)
+        rows.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
         columns = ("state", "ref", "date", "what")
 
-        tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
+        tree = ttk.Treeview(rows, columns=columns, show="headings", selectmode="browse")
 
         for name, title, width in (
             ("state", "State", 92),
@@ -1017,9 +1034,6 @@ class Triage(tk.Tk):
         ):
             tree.heading(name, text=title)
             tree.column(name, width=width, anchor=tk.W, stretch=(name == "what"))
-
-        rows = ttk.Frame(frame)
-        rows.pack(fill=tk.BOTH, expand=True)
 
         bar = ttk.Scrollbar(rows, orient=tk.VERTICAL, command=tree.yview)
         tree.configure(yscrollcommand=bar.set)
@@ -1031,15 +1045,6 @@ class Triage(tk.Tk):
             tree.tag_configure(slug, foreground=color)
 
         tree.tag_configure("pending", foreground=DISPOSITION_COLORS["needs-test"])
-
-        detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
-                         background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
-        detail.pack(fill=tk.BOTH, expand=False, pady=(6, 4))
-
-        open_button = ttk.Button(frame, text="Open in Tests tab", state=tk.DISABLED,
-                                 command=lambda: self._jump_to_test(
-                                     self.issue_widgets[kind].get("open_tag")))
-        open_button.pack(anchor=tk.E)
 
         self.issue_widgets[kind] = {
             "tree": tree, "detail": detail, "open_button": open_button, "open_tag": None,
@@ -1220,14 +1225,16 @@ class Triage(tk.Tk):
 
         ttk.Label(obs, text="Other things you noticed:", style="Sub.TLabel").pack(side=tk.LEFT)
 
-        ttk.Button(obs, text="Remove", command=self.remove_observation).pack(side=tk.RIGHT)
         ttk.Button(obs, text="+ Feature request",
                    command=lambda: self.add_observation("feature request")).pack(side=tk.RIGHT, padx=4)
         ttk.Button(obs, text="+ Bug",
                    command=lambda: self.add_observation("bug")).pack(side=tk.RIGHT)
 
-        self.obs_list = tk.Listbox(answer, height=3, font=("Segoe UI", 9))
-        self.obs_list.pack(fill=tk.X, pady=(4, 0))
+        # Rows are built fresh in _refresh_observations() - one line per queued observation, each
+        # with its own x to remove just that one, rather than a Listbox plus a Remove button that
+        # only acts on whichever row happened to be selected.
+        self.obs_rows_frame = ttk.Frame(answer)
+        self.obs_rows_frame.pack(fill=tk.X, pady=(4, 0))
 
         buttons = ttk.Frame(outer, padding=(0, PAD, 0, 0))
         buttons.pack(fill=tk.X)
@@ -1404,10 +1411,23 @@ class Triage(tk.Tk):
         widget.config(state=tk.DISABLED)
 
     def _refresh_observations(self):
-        self.obs_list.delete(0, tk.END)
+        for child in self.obs_rows_frame.winfo_children():
+            child.destroy()
 
-        for ob in self.observations:
-            self.obs_list.insert(tk.END, "[%s]  %s" % (ob["kind"], ob["summary"]))
+        if not self.observations:
+            ttk.Label(self.obs_rows_frame, text="(none yet)", style="Sub.TLabel").pack(anchor=tk.W)
+            return
+
+        for index, ob in enumerate(self.observations):
+            row = ttk.Frame(self.obs_rows_frame)
+            row.pack(fill=tk.X)
+
+            ttk.Label(row, text="[%s]  %s" % (ob["kind"], ob["summary"]), anchor=tk.W,
+                     font=("Segoe UI", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+            remove = tk.Label(row, text="✕", fg="#a33333", font=("Segoe UI", 9), cursor="hand2")
+            remove.pack(side=tk.RIGHT, padx=(6, 0))
+            remove.bind("<Button-1>", lambda _e, i=index: self._remove_observation_at(i))
 
     # -- drafts ------------------------------------------------------------------------------
 
@@ -1444,11 +1464,9 @@ class Triage(tk.Tk):
             self._stash_draft()
             self._refresh_list()
 
-    def remove_observation(self):
-        picked = self.obs_list.curselection()
-
-        if picked:
-            del self.observations[picked[0]]
+    def _remove_observation_at(self, index):
+        if 0 <= index < len(self.observations):
+            del self.observations[index]
             self._refresh_observations()
             self._stash_draft()
 
