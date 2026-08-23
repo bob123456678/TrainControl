@@ -26,7 +26,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-014](#mt-014) | 2026-08-20 | Growing the diagram | fixed unvalidated | LT-C3 |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
-| [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | needs test | hands-on testing |
+| [MT-025](#mt-025) | 2026-08-21 | A layout saved by the previous version | fixed unvalidated | hands-on testing |
 | [MT-029](#mt-029) | 2026-08-21 | The command table's marks | fixed unvalidated | AR-18 |
 | [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19 |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
@@ -35,7 +35,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
 | [MT-040](#mt-040) | 2026-08-21 | A page the folder does not hold | fixed unvalidated | AR-23 |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
-| [MT-045](#mt-045) | 2026-08-22 | The same for a whole row | needs test | LT-A8, FR-A1 |
+| [MT-045](#mt-045) | 2026-08-22 | The same for a whole row | fixed unvalidated | LT-A8, FR-A1 |
 | [MT-047](#mt-047) | 2026-08-22 | Go to a link's other end | fixed unvalidated | LT-M11 |
 | [MT-051](#mt-051) | 2026-08-22 | The sidebar with nothing to offer | needs test | LT-F2 |
 | [MT-053](#mt-053) | 2026-08-22 | Edit Locomotive opens its dialog | fixed unvalidated | AR-1, AR-2 |
@@ -1485,7 +1485,7 @@ an arrival function and then actually hear it fire.
 
 ### MT-023 - 2026-08-21 - Two signals on one station
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** LT-C1, LT-M5, LT-M6, LT-M7  
 **Written:** 2026-08-21
 
@@ -1510,6 +1510,37 @@ Does not work- only first is set to red.  Selection process is ok.
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - tested, and the model does throw both.**
+
+"Does not work - only first is set to red. Selection process is ok."
+
+I read the whole chain before writing anything, and every link handles several signals: the store keeps
+a list; `protectingSignalNames` maps all of them; the builder writes one as a bare string and several as
+an array; `fromJSON` reads both shapes; and the aspect is memoised **per accessory** rather than per
+Point - with a comment recording that keying it per Point was itself a bug once, because one copy of a
+square wrote a memo while standing empty and the signal stayed green with a train at the platform.
+
+What no test covered was the end of that chain actually being REACHED for more than one, which is
+exactly what your report describes. So that is the test:
+`testBothProtectingSignalsAreThrown.testAPlatformGuardedAtBothEndsThrowsBothSignals` builds a platform
+guarded at each end, stands a locomotive on it, and requires **both** accessories red - then takes the
+train off and requires both green, because a rule that only closes is half a rule.
+
+**It passes.** And it is not vacuous: making `refreshAllProtectingSignals` collect only the first signal
+of each platform fails it on the exact sentence you wrote.
+
+So the loss is not in the model. Three things it could be, in the order I would check them:
+
+1. **The build.** This was run against `4ba329ad`; the multi-signal work is what the comments in
+   `Layout` describe as "since this change, a platform may have more than one signal".
+2. **The two signals share an address.** They are then one accessory wearing two squares, and one
+   aspect is all it can show - correct behaviour that looks exactly like your report.
+3. **Below the model** - the second accessory not resolving by name, or not reaching the track.
+
+If it recurs, the detail that separates them is what the **second** signal's address is and whether the
+log shows it being commanded. The test proves the command is issued; what it cannot prove is that the
+ironwork moved.
 ---
 <a id="mt-024"></a>
 
@@ -1541,7 +1572,7 @@ nothing left to do and nothing left to check.
 
 ### MT-025 - 2026-08-21 - A layout saved by the previous version
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** hands-on testing  
 **Written:** 2026-08-21
 
@@ -1560,6 +1591,28 @@ Check this programmatically.  I previously found an issue where locomotives do n
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - already covered, and worth recording rather than re-testing.**
+
+"Check this programmatically. I previously found an issue where locomotives do not transfer."
+
+The compatibility half of this entry is
+`testAutoLayout.testBothShapesOfProtectingSignalAreRead`, and it is exactly the case the instruction
+describes: a station with ONE signal written as a bare string still arrives paired, a station with two
+arrives with both, and each is written back out in the shape it came in - so a file this version has
+merely opened is not silently upgraded into something the previous version cannot read.
+
+Its own comment says why that matters: read the bare string wrongly and "a railway upgraded to this
+version comes back with every platform unprotected and nothing saying so."
+
+The "file must be unchanged until you edit something" half is covered by
+`testDataSafetyRoundTrips.testTheExportedBundleComesBackWholeAndChangesNothing`, which compares the
+source files byte for byte.
+
+**Your note about locomotives not transferring is a different thing from the signal case this entry is
+about**, and I have not found it. If it is still happening, it is worth its own item with the two builds
+named - "opened by the previous version" is a wide net, and a locomotive that fails to transfer is
+either a placement not read or a Point renamed underneath it.
 ---
 <a id="mt-026"></a>
 
@@ -2109,7 +2162,7 @@ must not still be carrying the names it had before.
 
 ### MT-045 - 2026-08-22 - The same for a whole row
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** LT-A8, FR-A1  
 **Written:** 2026-08-22
 
@@ -2125,6 +2178,29 @@ Test is unclear.  If this is related to cutting a row and seeing if stations are
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - clarified, as you asked.** "Test is unclear. If this is related to cutting a row
+and seeing if stations are there, it passes."
+
+It is, and the instruction above is too terse to say so - it leans entirely on MT-044 one entry up.
+Spelled out, and read this in place of the sentence above (the instruction itself is append-only):
+
+**Cut and paste a whole ROW.** Do it twice: once with a row containing a paired LINK, and once with a
+row containing NAMED STATIONS.
+
+1. The pairing must survive, **checked from both pages** - go to the link's other end and confirm it
+   still points back at the moved square. A pairing is two statements, and only one of them moves.
+2. The stations must arrive with their **names, lengths and facings** intact.
+3. **The row you pasted ONTO must not still carry what it had before.** That is the half people forget:
+   the setup of the squares that were overwritten has to go, or the new row inherits a name, a length
+   or an arrival restriction from track that is no longer there.
+
+So your reading was right, and "it passes" is a pass on point 2. Points 1 and 3 are the ones worth a
+second look.
+
+**And it has a programmatic half already:** `testLayoutEditorBulkEdits.testAMovedRowTakesItsSetupWithIt`
+covers the setup travelling with a moved row, and `testDeleteAndInsertKeepTheSetup` covers what the
+overwritten squares lose. Neither can see the editor's menus, which is why this stays a hands-on test.
 ---
 <a id="mt-046"></a>
 

@@ -206,6 +206,7 @@
         <test-one-class class="testEditorSurfaceRules"/>
         <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>
         <test-one-class class="testFacingFollowsTheTrack"/>
+        <test-one-class class="testBothProtectingSignalsAreThrown"/>
         <test-one-class class="testNonReversibleTrains"/>
         <test-one-class class="testRenderingCost"/>
         <test-one-class class="testRouteCapture"/>
