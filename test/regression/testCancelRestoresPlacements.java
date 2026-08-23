@@ -115,6 +115,67 @@ public class testCancelRestoresPlacements
             + "goes - which is what was reported on 18 August");
     }
 
+    /**
+     * The order Cancel actually happens in, which is not the order the tests above use.
+     *
+     * The editor works on the LIVE LayoutDiagram objects the session is holding, so while an edit is in
+     * progress the session's idea of the page is the half-finished one - and Cancel reverts by re-
+     * reading the pages from disk into NEW objects, leaving the session holding the discarded version.
+     * That is written down in testDiscardedEditsDoNotDeleteSetup's javadoc; this asks whether a
+     * PLACEMENT survives it, which that test does not cover.
+     *
+     * So: place a train, take the snapshot the window takes, empty the page the way the editor's delete
+     * does, save the way an edit saves as it goes, then restore the snapshot - and read the answer off
+     * disk, because that is where the next session reads it from.
+     */
+    @Test
+    public void testCancelSurvivesTheSessionHoldingTheEmptiedPage() throws IOException
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Bahnhof");
+        session.getStore().setStation(sensor, true);
+        session.placeLocomotive(sensor, "BR 218");
+
+        org.json.JSONObject asOpened = session.snapshotSetup();
+
+        // The editor deleting the squares: the setup is told, and the PAGE THE SESSION HOLDS is emptied
+        session.forgetTiles(Collections.singletonList(sensor));
+
+        // The same way testDiscardedEditsDoNotDeleteSetup empties one: a null component per square,
+        // which is what the editor's delete leaves behind in the object the session is holding.
+        for (org.traincontrol.base.LayoutDiagramComponent component
+            : new java.util.LinkedList<>(page.getAll()))
+        {
+            page.addComponent((org.traincontrol.base.LayoutDiagramComponent) null,
+                component.getX(), component.getY());
+        }
+
+        // Every gesture writes the setup as it goes - rememberAutonomy
+        session.saveWithoutReconciling();
+
+        // Cancel
+        session.restoreSetup(asOpened);
+
+        AutonomySession reloaded = new AutonomySession(layout);
+
+        reloaded.open(Arrays.asList(pageOnDisk()));
+
+        assertTrue(reloaded.getStore().isStation(sensor),
+            "the station did not survive Cancel with the session holding the emptied page");
+
+        assertEquals(reloaded.getLocomotiveNameAt(sensor), "BR 218",
+            "the placement did not survive Cancel - MT-072 reports exactly this, stations staying "
+            + "and locomotives going");
+    }
+
     // ------------------------------------------------------------------------------------------
 
     /**

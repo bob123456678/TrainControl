@@ -23,8 +23,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
 | [MT-072](#mt-072) | 2026-08-18 | Cancel in the track diagram editor | needs test | Tier 2 |
-| [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | needs test | Tier 2 |
-| [MT-075](#mt-075) | 2026-08-18 | Page files | needs test | Tier 2 |
+| [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
+| [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
 | [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
 | [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | Tier 3 |
 | [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | Tier 3 |
@@ -338,6 +338,35 @@ Two questions I cannot answer from here:
 2. Was the locomotive placed **before** you opened the editor, or during that session?
 
 If the answer to 1 is no, I will build the editor-level test rather than reason about it further.
+
+**Claude, 2026-08-22, later.** I built the tests instead of waiting, and they all pass - so I still
+cannot reproduce this below the window, and I am going to stop guessing at it.
+
+`testCancelRestoresPlacements` now covers three orderings:
+
+1. snapshot, delete the square through `forgetTiles`, restore - both come back;
+2. the same, then read a SECOND session off disk - both are in the files;
+3. the same, but with the page the session is holding **emptied** first, which is the state the editor
+   really leaves it in. That third one is the case `testDiscardedEditsDoNotDeleteSetup` documents as
+   the hazard - "Cancel reverts by re-reading the pages from disk into NEW objects, so the session is
+   left holding the discarded version" - and the placement survives it too.
+
+So `snapshotSetup`, `restoreSetup`, `save`, `saveWithoutReconciling` and `reconcile` are all
+eliminated, in the order the editor uses them. The tests are worth keeping either way: they pin the
+half that is correct, so whatever the cause turns out to be, the fix cannot quietly break it.
+
+**What I need from you, and it is one look rather than another run.** Do the test again, and before
+touching anything else open `cs2_sample_layout/config/autonomy/configuration-<name>.json` and search it
+for the locomotive's name.
+
+- **It is there** - the data is fine and this is a stale VIEW. The label reads the running layout
+  rather than the file, and the track-editor close path rebuilds that differently from the autonomy
+  one.
+- **It is not there** - the data really is being lost, above every layer I have tested, and I will
+  instrument the editor itself.
+
+Those two need completely different fixes, and I have now spent three passes reasoning about which one
+it is. One look at that file decides it.
 ---
 
 <a id="mt-073"></a>
@@ -369,7 +398,7 @@ Also: still don't see a way to move labels in the layout editor.
 
 ### MT-074 - 2026-08-18 - Export / import round trip
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -395,13 +424,22 @@ the three feature requests and MT-072 - and it is recorded here so it is not los
 What the test has to do that a hands-on run would: export, re-import, and then compare the FILES rather
 than the screen, because "the source files are unchanged afterwards" is the actual requirement and the
 only way to check it honestly is byte-for-byte against a copy taken before.
+
+**Claude, 2026-08-22.** Written, in `testDataSafetyRoundTrips`. Export the setup, check the files are
+**byte-for-byte unchanged** by the export - your requirement, and the one a person at the screen cannot
+check - then import the bundle into a folder that has never seen it and confirm the name, the station
+designation and the placement all arrive.
+
+The named regression is covered by asserting the square key is in the bundle: an export that drops it
+drops the Point's identity, and the way that fails is silent - the file is valid JSON and imports
+without complaint.
 ---
 
 <a id="mt-075"></a>
 
 ### MT-075 - 2026-08-18 - Page files
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -427,6 +465,22 @@ the three feature requests and MT-072 - and it is recorded here so it is not los
 What the test has to do that a hands-on run would: export, re-import, and then compare the FILES rather
 than the screen, because "the source files are unchanged afterwards" is the actual requirement and the
 only way to check it honestly is byte-for-byte against a copy taken before.
+
+**Claude, 2026-08-22.** Written, in `testDataSafetyRoundTrips`. A page with a marker in it that no
+save writes, saved twice; the `.bak` must still hold that marker afterwards, and no `.tmp` may be left
+beside it.
+
+**Two passes, because the first was vacuous.** It compared the backup's bytes against a copy taken
+after the first save, and passed against a mutant that rewrote the backup every time. Rewritten to
+assert on the marker.
+
+Then the mutant passed again - and that turned out to be a fact about the code rather than the test:
+`Files.copy` without `REPLACE_EXISTING` **refuses** to overwrite, and the failure is swallowed by the
+catch below it. So the `!Files.exists(backup)` guard is belt-and-braces; the copy would refuse anyway.
+Confirmed by mutating the copy itself to replace, which the test does catch.
+
+Worth knowing if that catch is ever narrowed: it is currently the thing actually enforcing "only the
+first".
 ---
 
 <a id="mt-076"></a>
@@ -447,6 +501,12 @@ Looks OK for now, couldn't test much.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Looks good, but the intermediate stations overlap above just when reached, and then are under the green line afer.  I like being able to see progress- keep them on top after being reached.  Also, why not put a little train icon (simple black steam engine with a white outlined) on top of the current location?
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-077"></a>
@@ -466,6 +526,12 @@ No, see above.  The arrow is sometimes duplicated.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Loc name and icon at the end may be truncated in the autonomy view.  Make sure the same truncation logic is applied to the locomotive in the autonomy editor.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-078"></a>
@@ -484,6 +550,12 @@ No, see above.  The arrow is sometimes duplicated.
 Honored.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Not always honored.  In manual operation, I was able to send a train from Tunnel to BottomMainA in the current track digram setup.  BottomMainA had barred arrivals from the west.
+
+*Run against commit 058d2385, build\classes, compiled 22 Aug 18:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

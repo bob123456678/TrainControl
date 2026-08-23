@@ -95,6 +95,15 @@ Change the "show track lengths" jlabel text to just "Track Lengths"
 
 Change "Route Choice" to "Choose Routing Logic..."
 
+### OB-012 - 2026-08-22 - what happens when starting autonomy
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 18:28  
+**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when starting autonomy from the TRACK DIAGRAM right click menu, the user gets teleported to the autonomy tab.  don't do this- keep them where they were.
+
 ---
 
 ## What has been picked up
