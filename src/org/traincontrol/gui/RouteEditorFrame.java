@@ -311,11 +311,21 @@ public class RouteEditorFrame extends JFrame
         // row was still a child of the panel with nothing laying it out, so it had no size and never
         // appeared.  Nobody noticed while the conditions section had no buttons of its own; adding
         // Test to it is what made an invisible row visible as a missing feature.
-        JPanel below = new JPanel(new BorderLayout(4, 4));
+        JPanel below = new JPanel(new BorderLayout(4, 0));
 
         below.setBackground(java.awt.Color.WHITE);
 
-        below.add(readsAs, BorderLayout.NORTH);
+        // The reading goes ABOVE the table, under the heading (MT-108).
+        //
+        // "Stretch the condition window to end right above the test condition button." It could not,
+        // because the reading sat between the two and took a line plus two gaps out of the middle. Up
+        // here it costs the same line once, at the top, and the table runs all the way down to the
+        // buttons that act on it.
+        //
+        // It reads as a subtitle to the section rather than as a footnote to the table, which is what
+        // it is: a plain-English restatement of the whole condition, not of the selected row.
+        conditionSection.add(readsAs, BorderLayout.NORTH);
+
         below.add(buttonsOf(conditionSection), BorderLayout.SOUTH);
 
         conditionSection.add(below, BorderLayout.SOUTH);
@@ -337,9 +347,13 @@ public class RouteEditorFrame extends JFrame
 
         buttons.setBackground(java.awt.Color.WHITE);
 
-        buttons.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(204, 204, 204)),
-            BorderFactory.createEmptyBorder(6, 0, 0, 0)));
+        // No rule above them (MT-108).
+        //
+        // It was drawn to separate the buttons that finish with the window from the ones that act on a
+        // row. They are at opposite ends of the window now - Save in the corner, the table's own
+        // buttons up beside the table - so the line was separating two things that no longer touch,
+        // and a line with nothing on the other side of it reads as an edge that is not there.
+        buttons.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 

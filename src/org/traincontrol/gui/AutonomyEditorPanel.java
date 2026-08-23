@@ -2660,6 +2660,17 @@ public class AutonomyEditorPanel extends JPanel
 
             if (component.getType() != from.getType()) continue;
 
+            // A TUNNEL pairs only within its own page (MT-047).
+            //
+            // The two portal kinds are the same thing to autonomy, and that is exactly why they need
+            // different rules about WHAT they may point at. A link is how a train leaves one page and
+            // arrives on another - crossing pages is its whole purpose. A tunnel is a piece of track
+            // that goes behind the scenery and comes out further along the SAME diagram; paired to
+            // another page it would draw a train entering a hillside on one page and emerging from a
+            // hillside on another, which is not what the symbol says and not what the track does.
+            if (from.getType() == LayoutDiagramComponent.componentType.TUNNEL
+                && !entry.getKey().getPage().equals(tile.getPage())) continue;
+
             String named = session.getStore().getLinkName(entry.getKey());
 
             candidates.add(entry.getKey());

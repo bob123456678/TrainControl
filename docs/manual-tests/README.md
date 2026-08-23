@@ -29,16 +29,28 @@ all of them silently.
 `AR-12`, `TR-A22` - or "hands-on testing" when nobody found it, somebody just tried it. This is what
 makes a test traceable back to the defect that earned it.
 
-**4. Every entry has a disposition, set by Claude and only by Claude.** Three states, and no others:
+**4. Every entry has a disposition, set by Claude and only by Claude.** Four states, and no others:
 
 | | |
 |---|---|
 | **needs test** | Nobody has run it since it was written, or it was run and deferred, or it is waiting on something that does not exist yet. |
 | **fixed unvalidated** | The code changed after the last run, so the previous result no longer stands. Claude believes it is right; nobody has confirmed it on the railway. |
 | **fixed validated** | Run by Adam AFTER the change, and correct. This is the only state that means anything is finished. |
+| **superseded** | This should never have been an entry, or another entry has replaced it. It is not run, not counted, and not on the ledger - but it stays in the file, because its tag is cited elsewhere. |
 
 A test moves to **fixed validated** only on Adam's word in the Comments. Claude never promotes its own
 work to validated, however sure it is - that is the whole point of the state existing.
+
+**superseded** was added 2026-08-22, after MT-094 had nowhere to go twice. It was a feature request
+promoted to a test entry by a rule that has since been retired; the live tracking moved to a receipt in
+[issues.md](issues.md) with its own State, and the test entry stayed on the ledger asking Adam to run
+something nobody would ever run. The three states above had no honest answer: it is not waiting to be
+tested, it is not fixed, and calling it validated would have been a lie to get it off a list.
+
+**It is not a way to retire work nobody fancies.** An entry is superseded when it is the WRONG SHAPE -
+tracked in the wrong place, or replaced by a later entry that covers the same ground - never because it
+is hard or unwelcome. Say which entry or receipt took it over, by tag, in the Comments. If nothing
+took it over, it is not superseded; it is outstanding.
 
 **5. Append only.** Entries are never deleted, never reordered, and their instructions are never
 rewritten. Two things may change on an existing entry: its **Disposition** line, and its **Comments**
@@ -53,7 +65,7 @@ dated, not over the top.
 
 ### The ledger
 
-At the top of the file, a table of every entry NOT in **fixed validated**: tag, date, one line about
+At the top of the file, a table of every entry NOT in **fixed validated** and not **superseded**: tag, date, one line about
 it, its disposition and where it came from. That is the whole of the outstanding work in one place,
 and it is where to start.
 

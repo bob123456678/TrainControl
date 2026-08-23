@@ -58,7 +58,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
 | [MT-044](#mt-044) | 2026-08-22 | Cut and paste a whole column | needs test | LT-A8, FR-A1 |
 | [MT-045](#mt-045) | 2026-08-22 | The same for a whole row | needs test | LT-A8, FR-A1 |
-| [MT-047](#mt-047) | 2026-08-22 | Go to a link's other end | needs test | LT-M11 |
+| [MT-047](#mt-047) | 2026-08-22 | Go to a link's other end | fixed unvalidated | LT-M11 |
 | [MT-049](#mt-049) | 2026-08-22 | The Edit button no longer asks | needs test | LT-F2 |
 | [MT-050](#mt-050) | 2026-08-22 | The sidebar | needs test | LT-F2 |
 | [MT-051](#mt-051) | 2026-08-22 | The sidebar with nothing to offer | needs test | LT-F2 |
@@ -74,14 +74,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-061](#mt-061) | 2026-08-22 | Graceful stop timing | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
-| [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as FR-002 in issues.md, not a test.** | needs test | FR-002 |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
 | [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | FR-003 |
 | [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | FR-004 |
 | [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | FR-005 |
 | [MT-101](#mt-101) | 2026-08-22 | Placing a locomotive updates the labels, and there is one way to do it | fixed unvalidated | OB-009 |
-| [MT-102](#mt-102) | 2026-08-22 | Two labels renamed | fixed unvalidated | OB-010, OB-011 |
 | [MT-104](#mt-104) | 2026-08-22 | The tile menu, reordered | fixed unvalidated | OB-013 |
 | [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
 | [MT-108](#mt-108) | 2026-08-22 | Route editor: Save in the corner, and Cancel asks | fixed unvalidated | OB-018 |
@@ -581,6 +579,30 @@ Not always honored.  In manual operation, I was able to send a train from Tunnel
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 18:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** I could not reproduce this, and rather than guess a fourth time today I
+tested the rule and am bringing you the one question that settles it.
+
+**What I proved.** `testBarredArrivalIsNotADestination` bars one side of a two-ended platform, builds,
+and reads the emitted Points: the barred copy comes out **not a station**, and the other copy still
+stops. Verified by mutation - removing `arrivalAllowed` from the build fails the test - so this is a
+real check, not a passing one.
+
+That is the half that decides. A square trains can reach from two sides is emitted as two Points, which
+is how the model records which way a train faces, and barring a side makes THAT copy a non-station.
+`getPossiblePaths` - which builds the manual list as well as the automatic one - filters on
+`end.isDestination()`, so a copy that is not a station cannot be the end of any path, offered or taken.
+
+**So what did you see?** The most likely answer is that the train arrived at the OTHER copy, legally.
+The two copies share a base name, so "sent a train to BottomMainA" cannot tell them apart by name -
+and if Tunnel can reach BottomMainA's eastern end, that journey is correct and barring the west has
+worked exactly as intended.
+
+**The one thing that settles it:** when it happens again, look at the caption on BottomMainA once the
+train is standing there. It carries a facing arrow - `[V 200 150 >]` - and that arrow says which way the
+train is pointing, which tells you which end it came in by. If the arrow says it came from the west,
+this is a real defect and I will have somewhere to start. If it came from the east, the restriction is
+working and the entry can be closed.
 ---
 
 <a id="mt-079"></a>
@@ -1477,6 +1499,12 @@ OK - but don't grey out cells in the + row in the condition editor.
 because nothing in it can be edited - which is true, and is not what the shading means: it is not a
 row yet, it is the control that makes one.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+seems to work in the UI, but this should have a programmatic test.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-030"></a>
 
@@ -1523,6 +1551,12 @@ keeps the + row unshaded.
 **What to look for:** open a route with a mixed list. On a signal command, the function-number cell
 should carry a faint grey wash rather than just being empty; the same for the protocol cell on a stop.
 The + row at the bottom must not be washed at all.
+
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+I don't know what "at danger" means.  Clarify and reopen.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-031"></a>
@@ -1726,6 +1760,12 @@ writes them back unconditionally and asserts that what is on disk afterwards mat
 deletes a file when it knows it created one. The two stray `unreadable...` artefacts my runs left in
 `tc_backup` have been removed - they held the test's own rubbish, nothing of yours.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+make a test case for this if you haven't already, or validate that the test case passes if so.  only reopen if it does not.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-039"></a>
 
@@ -1880,7 +1920,7 @@ and in use must be solid and carry its two arrows.  Before this round it was the
 
 ### MT-047 - 2026-08-22 - Go to a link's other end
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** LT-M11  
 **Written:** 2026-08-22
 
@@ -1898,6 +1938,17 @@ Works.  Ensure that tunnels can only be paired with other tunnels on the same pa
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Tunnels now pair only within their own page.
+
+Like-with-like was already enforced - a link could not pair to a tunnel - and the same-page rule for
+tunnels was not. The reason the two kinds need different rules is the reason they look identical to
+autonomy: both are portals, both traverse the same way. A LINK exists to take a train from one page to
+another; that is its whole purpose. A TUNNEL is track that goes behind the scenery and comes out
+further along the SAME diagram, so a cross-page tunnel would draw a train entering a hillside on one
+page and leaving one on another.
+
+Links are unchanged and may still pair across pages.
 ---
 <a id="mt-048"></a>
 
@@ -2510,7 +2561,7 @@ cheap move is to diff the two paths, not to reason about the one that is broken.
 
 ### MT-094 - 2026-08-22 - Station marks and arrows say what they mean
 
-**Disposition:** needs test  
+**Disposition:** superseded
 **From:** FR-002 (feature request, filed as OB-001 / OB-002), raised from MT-065  
 **Written:** 2026-08-22
 
@@ -2559,6 +2610,20 @@ This should not be a MT.  Re-file correctly as a feature request.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Agreed, and it took a new state to say so honestly.
+
+This was a feature request promoted to a test entry by a rule that has since been retired. The live
+tracking moved to the `OB-001`/`OB-002` receipt in [issues.md](issues.md), which carries its own State -
+so this entry has been asking you to run something nobody would ever run.
+
+The three dispositions had no honest answer for that: it is not waiting to be tested, it is not fixed,
+and marking it validated would have been a lie told to get it off a list. So there is a fourth,
+**superseded**, defined in the README with a deliberately narrow rule - an entry is superseded when it
+is the WRONG SHAPE, never because it is unwelcome, and the thing that took it over has to be named.
+
+The entry stays, because its tag is cited by two commits and by the receipt table, and deleting it
+would leave those pointing at nothing.
 ---
 
 <a id="mt-095"></a>
@@ -2924,7 +2989,7 @@ comment above it said what that precondition was.
 
 ### MT-102 - 2026-08-22 - Two labels renamed
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-010, OB-011  
 **Written:** 2026-08-22
 
@@ -2944,6 +3009,16 @@ Works.  Make sure the chosen routing logic is saved in a preference and persiste
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** The routing logic already persists, and has since before this entry - so
+there is nothing to build and nothing to re-run.
+
+Choosing an option calls `prefs.put(PATH_PREFERENCE_PREF, option.name())`, and `buildPathPreferenceMenu`
+reads it back at startup and applies it with `Layout.setPathPreference` before the menu is shown. If it
+ever appears not to stick, that is a defect rather than a missing feature, and worth its own entry.
+
+Validated on your "Works" for the labels themselves; the note attached to it needed an answer rather
+than a change.
 ---
 
 <a id="mt-103"></a>
@@ -3240,6 +3315,21 @@ Good, but remove the horizontal rule just above the cancel and save buttons.  St
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22, second pass.** Both notes done, and the second one needed a decision you may
+want to reverse.
+
+The rule above the buttons is gone. It was drawn to separate the buttons that finish with the window
+from the ones that act on a row, and those are at opposite ends of the window now - so it was
+separating two things that no longer touch.
+
+**"Stretch the condition window to end right above the test condition button"** could not be done by
+stretching alone: the plain-English reading sat between the table and the buttons and took a line plus
+two gaps out of the middle. It is above the table now, under the section heading, so the table runs all
+the way down to the buttons that act on it. It reads as a subtitle to the section rather than a
+footnote to the table - which is what it is, since it restates the whole condition rather than the
+selected row. If you would rather have it back underneath, say so and the table keeps whatever is
+left.
 ---
 
 <a id="mt-109"></a>

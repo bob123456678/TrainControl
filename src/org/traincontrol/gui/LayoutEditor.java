@@ -4486,7 +4486,12 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         sidebar = new javax.swing.JPanel();
         sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
-        sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 8));
+        // Less on the right than the left (MT-097).
+        //
+        // Even padding looked wrong once the pages became a LIST: a list has its own inset before the
+        // text and a selection bar that runs to its edge, so the eight on the right read as sixteen
+        // and pushed the strip away from the diagram it belongs to.
+        sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 2));
 
         if (offersPages)
         {
@@ -4587,7 +4592,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         });
 
         pageList.setMaximumSize(
-            new java.awt.Dimension(SIDEBAR_WIDTH - 20, Short.MAX_VALUE));
+            new java.awt.Dimension(SIDEBAR_WIDTH - 14, Short.MAX_VALUE));
 
         return pageList;
     }

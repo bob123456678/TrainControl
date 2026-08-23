@@ -81,13 +81,18 @@ FALLBACK_JAVA = r"C:\Program Files\Java\jdk1.8.0_361\bin\java.exe"
 
 VALIDATED = "fixed validated"
 
-# One color per disposition (README.md's three states), used for the dot in the list legend and
+# Not run, not counted, not on the ledger - see README.md rule 4.  Kept in the file because its tag is
+# cited from commits and other entries, so deleting it would break a reference to explain a number.
+SUPERSEDED = "superseded"
+
+# One color per disposition (README.md's four states), used for the dot in the list legend and
 # for the row text itself - color plus the word both, not color alone, since the Comments tab and
 # the meta line under the title always spell the disposition out too.
 DISPOSITION_COLORS = {
     "needs-test": "#1a5fb4",           # has not been looked at, or was deferred - still to do
     "fixed-unvalidated": "#8a5a00",    # Claude believes it, nobody on the railway has confirmed it
     "fixed-validated": "#7a7a7a",      # done; dimmed rather than removed, so it stays in the list
+    "superseded": "#9a9a9a",           # wrong shape - tracked elsewhere, or replaced by a later entry
 }
 
 # issues.md's State column has one more word than tests.md's disposition ever needs: a REQUEST can
@@ -238,7 +243,16 @@ class Entry(object):
 
     @property
     def is_open(self):
-        return self.disposition.strip().lower() != VALIDATED
+        """Whether this entry is still asking somebody for something.
+
+        Superseded counts as closed. It is not finished in the sense fixed validated is - nobody ran
+        it and nothing was proved - but it is not outstanding either, and the ledger is a list of what
+        is outstanding. See README.md rule 4 for when that state may be used, which is narrower than it
+        looks.
+        """
+        state = self.disposition.strip().lower()
+
+        return state != VALIDATED and state != SUPERSEDED
 
     def with_comment(self, comment):
         """This entry's block with a comment appended at the bottom of its Comments section.
@@ -992,6 +1006,7 @@ class Triage(tk.Tk):
             ("needs-test", "needs test"),
             ("fixed-unvalidated", "fixed unvalidated"),
             ("fixed-validated", "fixed validated"),
+            ("superseded", "superseded"),
         ):
             dot = tk.Label(legend, text="●", fg=DISPOSITION_COLORS[slug],
                           font=("Segoe UI", 10))

@@ -204,6 +204,24 @@ in the editor, make the gray grid an option you can toggle in the visibile eleme
 
 with autonomy completely unloaded, I am still shown x/y errors on this page at the top of the track diagram after closing the diagram  editor.
 
+### FR-007 - 2026-08-22 - loading autonomy
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:41  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+it should be possible to initially load autonomy from an import, not just forcing the creation of a new one.
+
+### OB-030 - 2026-08-22 - tooltip lengths in the Autonomy top Jmenu
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:43  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+many tooltips are very wide.  split them.
+
 ---
 
 ## What has been picked up
