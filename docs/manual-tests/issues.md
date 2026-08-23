@@ -28,6 +28,15 @@ split is deliberate - it lets you write something down the moment you think of i
 then and there whether it is worth doing now. The exception is your own judgement: say a bug is urgent
 in its own text and it is treated that way.
 
+**Before adding to the Inbox below - by hand, through the app, or as an automated round reading this
+file to decide what to do - check whether it is already there.** `py -3 docs\manual-tests\triage.py
+issues` lists every pending item in one command. OB-001 and OB-002 in the receipt table below are
+what skipping this looks like: the same observation, filed twice, two minutes apart, because nothing
+checked whether the first filing had already happened before the second one ran. A round that reads
+this tracker to decide what needs doing has to read the Inbox and the ledger BEFORE writing to either,
+not just before reporting back - "I looked, so I know what to build" is not the same claim as "I
+looked, so I know this is not already here."
+
 ---
 
 ## Inbox

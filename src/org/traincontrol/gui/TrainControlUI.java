@@ -2893,6 +2893,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The CAPTION for a square the setup puts a locomotive on - what the diagram draws, not the name.
+     *
+     * The name alone was what the autonomy editor drew, and a caption is not a name: it is bracketed
+     * and cut to length so that every platform is the same width whatever is standing on it. Drawn as
+     * a bare name it was as wide as the name and covered its neighbours.
+     *
+     * The facing comes from the SQUARE rather than from a running Point, because in the editor there
+     * may be no run at all - which is the whole reason this view exists.
+     *
+     * @param station the sensor's square
+     * @return the caption, or null when the setup puts no locomotive there
+     */
+    public String autonomyCaptionTextAt(org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        String name = autonomyLocomotiveAt(station);
+
+        return name == null ? null : LayoutGrid.stationCaption(name, facingArrow(station));
+    }
+
+    /**
      * What to write on a caption when no train is standing there - the station’s own name.
      *
      * @param station the sensor’s square
@@ -3146,8 +3166,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // own stored facing here, which is only written when somebody places a train
                         // by hand - so the arrow appeared for a train you had placed and vanished for
                         // one autonomy had driven there, on the same platform, minutes apart.
-                        j.setText("[" + current.getName().substring(0, Math.min(current.getName().length(), LayoutGrid.LAYOUT_STATION_MAX_LENGTH)).trim()
-                            + facingArrowOf(p, square) + "]");
+                        j.setText(LayoutGrid.stationCaption(
+                            current.getName(), facingArrowOf(p, square)));
 
                         if (milestones != null)
                         {                                 

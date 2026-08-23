@@ -135,6 +135,61 @@ public class testAutonomyLabelShowsLocomotiveName
             "a bare name is still a name");
     }
 
+    /**
+     * A caption is bracketed and cut to length, whatever is standing on the platform.
+     *
+     * Reported 2026-08-22, after the JSON above was fixed: the editor still drew "a large white
+     * rectangle overlay with the name of the locomotive, rather than seeing its name inside [---]".
+     * Both halves of that are one cause - the editor set the NAME where the running diagram sets a
+     * CAPTION, and a caption is bracketed and cut to LAYOUT_STATION_MAX_LENGTH precisely so that a
+     * platform is the same width whatever is on it.
+     */
+    @Test
+    public void testACaptionIsBracketedAndCutToLength()
+    {
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", ""), "[EN57-203]",
+            "a caption is bracketed - this is the [---] the name goes inside");
+
+        String longName = "065 001-0 DB Baureihe";
+
+        String caption = org.traincontrol.gui.LayoutGrid.stationCaption(longName, "");
+
+        assertTrue(caption.length()
+            <= org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_MAX_LENGTH + 2,
+            "a caption must not grow with the name - that is what covered the neighbouring tiles. "
+            + "Got " + caption);
+
+        assertTrue(longName.startsWith(caption.substring(1, caption.length() - 1)),
+            "what survives the cut is the beginning of the name: " + caption);
+    }
+
+    /**
+     * The facing arrow lives INSIDE the brackets, and is paid for out of the same width.
+     */
+    @Test
+    public void testTheFacingArrowIsPartOfTheCaption()
+    {
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", " >"), "[EN57-203 >]",
+            "the arrow belongs inside the brackets, after the name");
+
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", null), "[EN57-203]",
+            "no facing recorded is not the word null");
+    }
+
+    /**
+     * An empty platform is the placeholder, spelled by the same method.
+     *
+     * So that the two cannot drift into different widths, which is the drift this whole entry is
+     * about.
+     */
+    @Test
+    public void testAnEmptyPlatformIsThePlaceholder()
+    {
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption(null, " >"),
+            org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY,
+            "nothing standing there is the placeholder, arrow or no arrow");
+    }
+
     // ------------------------------------------------------------------------------------------
 
     private TileKey placedAt(String name) throws IOException

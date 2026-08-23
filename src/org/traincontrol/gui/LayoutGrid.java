@@ -47,6 +47,31 @@ public class LayoutGrid
     public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
     public static final int LAYOUT_STATION_OPACITY = 210;
+
+    /**
+     * How a station caption is spelled when a train is standing on it.
+     *
+     * Square brackets, a name cut to LAYOUT_STATION_MAX_LENGTH, then the facing arrow - the brackets
+     * being the point: a caption is about the same width whatever is in it, which is what lets
+     * "[---]" and "[EN57-203 >]" sit on the same platform without the tile changing shape underneath.
+     *
+     * Written down here because it was written down in the running diagram only, and the autonomy
+     * editor - added later, drawing the same placements - spelled it as a bare untruncated name. That
+     * label was as wide as the name, so it covered the tiles either side of it, and did not look like
+     * the diagram it was meant to match.
+     *
+     * @param name the locomotive
+     * @param arrow the facing arrow, already carrying its own leading space, or "" for none
+     * @return the caption
+     */
+    public static String stationCaption(String name, String arrow)
+    {
+        if (name == null) return LAYOUT_STATION_EMPTY;
+
+        String cut = name.substring(0, Math.min(name.length(), LAYOUT_STATION_MAX_LENGTH)).trim();
+
+        return "[" + cut + (arrow == null ? "" : arrow) + "]";
+    }
     public static final int LAYOUT_ADDRESS_OPACITY = 200;
 
     // Component that holds the layout
@@ -225,6 +250,10 @@ public class LayoutGrid
                 {
                     JLabel text = new JLabel();
 
+                    // Set by the autonomy editor's placed-train branch below, and read after the
+                    // generic label styling, which would otherwise take the translucency back.
+                    boolean standingTrain = false;
+
                     // Black unless something below has a reason to say otherwise
                     Color labelColour = Color.BLACK;
                     
@@ -354,7 +383,7 @@ public class LayoutGrid
                             // no run at all, and a platform with a train assigned to it was drawing the
                             // empty placeholder - so the one view where placements are made was the one
                             // view that did not show them.
-                            String placed = ui.autonomyLocomotiveAt(captioned);
+                            String placed = ui.autonomyCaptionTextAt(captioned);
 
                             if (placed != null)
                             {
@@ -362,11 +391,13 @@ public class LayoutGrid
 
                                 // The running diagram's own style for a named train: black on
                                 // translucent white, so it reads over whatever tile art is underneath.
-                                // Set on the label rather than through labelColour, which the greying
-                                // below would otherwise take back.
-                                text.setOpaque(true);
-                                text.setBackground(
-                                    new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+                                //
+                                // Applied AFTER the generic setBackground(WHITE) below rather than
+                                // here.  Set here it was overwritten by it - and because this is the
+                                // one branch that also turns opacity ON, the result was the only
+                                // label on the diagram painting a solid white rectangle, which is the
+                                // exact thing a translucent style exists to avoid.
+                                standingTrain = true;
 
                                 labelColour = Color.BLACK;
                             }
@@ -429,6 +460,15 @@ public class LayoutGrid
                     text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
+
+                    // The one label drawn ON something rather than beside it.  Opaque, so the name
+                    // reads over the tile art; translucent, so the tile art still shows through.  It
+                    // has to come after the WHITE above, which is the whole reason it is down here.
+                    if (standingTrain)
+                    {
+                        text.setOpaque(true);
+                        text.setBackground(new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+                    }
                     
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
