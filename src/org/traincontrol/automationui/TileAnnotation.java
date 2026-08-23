@@ -727,13 +727,24 @@ public class TileAnnotation
 
             paintArrivals(g, width, height);
 
-            if (occupied) paintTrainMark(g, width, height);
-
-            // The badge last, and so over the arrows - which is where it started, and where it can go
-            // back now that a badge on a bend has moved off into the corner.  It was put underneath
-            // because the two were landing on the same few pixels; they no longer do, and a badge
-            // drawn last keeps a clean outline instead of having an arrowhead laid across it.
+            // The badge over the arrows - which is where it started, and where it can go back now that
+            // a badge on a bend has moved off into the corner.  It was put underneath because the two
+            // were landing on the same few pixels; they no longer do, and a badge drawn last keeps a
+            // clean outline instead of having an arrowhead laid across it.
             if (badge != null) paintBadge(g, width, height);
+
+            // And the train mark over the badge (MT-099).
+            //
+            // It was drawn before, and on a STATION that made it invisible: both are centred on the
+            // tile, and a station's badge is half the tile across while the star's arms are a sixth -
+            // so the badge covered it completely. Adam: "I can't see it - but it should overlay on top
+            // of the middle of the sensor."
+            //
+            // On top is also the right reading. The badge says what the square IS, which does not
+            // change; the star says a train is standing on it now, which does. The changing fact
+            // belongs on top of the fixed one, and the star is small enough and outlined darkly
+            // enough not to hide what it sits on.
+            if (occupied) paintTrainMark(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 

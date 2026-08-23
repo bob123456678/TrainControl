@@ -158,7 +158,21 @@ public class LayoutGrid
             container.setBackground(Color.white);
             
             // Things mess up without this
-            if (LayoutDiagram.IGNORE_PADDING || layout.getEdit())
+            //
+            // "Being edited" is a fact about the DIAGRAM and is therefore true in both windows at once
+            // - the main window shares the LayoutDiagram with the editor. That is right for
+            // clickability below, where the viewer's tiles must stop routing clicks while an editor
+            // owns the page, and wrong for LAYOUT, which is only about how this particular grid is
+            // arranged.
+            //
+            // MT-106: the two were the same flag, so any repaint of the viewer while an editor was
+            // open re-laid the viewer the editor's way. It went unnoticed while the viewer was only
+            // ever rebuilt after the editor closed; the editor now stays open across a page or mode
+            // switch, and the teardown that runs on each one rebuilds it.
+            //
+            // So this asks whether THIS grid is in an editor, which is the question it was always
+            // trying to ask.
+            if (LayoutDiagram.IGNORE_PADDING || (layout.getEdit() && master instanceof LayoutEditor))
             {
                 parent.setLayout(new FlowLayout());
             }

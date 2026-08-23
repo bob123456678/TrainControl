@@ -19,8 +19,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
-| [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
@@ -37,19 +35,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | fixed unvalidated | Tier 5 |
 | [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | Tier 5 |
 | [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | Tier 6 |
-| [MT-001](#mt-001) | 2026-08-20 | A station moved with its tile | fixed unvalidated | LT-A2, LT-A3, LT-A4, LT-F1 |
 | [MT-003](#mt-003) | 2026-08-20 | A route round-trips unchanged | fixed unvalidated | LT-C4 |
 | [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-005](#mt-005) | 2026-08-20 | A signal address typed into a switch row | fixed unvalidated | LT-B6 |
-| [MT-006](#mt-006) | 2026-08-20 | Duplicating a command row | fixed unvalidated | LT-B1 |
-| [MT-010](#mt-010) | 2026-08-20 | Capture into commands and conditions | fixed unvalidated | LT-A5, LT-B2 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | - |
-| [MT-013](#mt-013) | 2026-08-20 | The orange grip and group drag | fixed unvalidated | LT-C5 |
 | [MT-014](#mt-014) | 2026-08-20 | Growing the diagram | fixed unvalidated | LT-C3 |
-| [MT-015](#mt-015) | 2026-08-20 | Shift Down and Shift Right, then undo | needs test | - |
-| [MT-018](#mt-018) | 2026-08-20 | Why is it not moving - readability | fixed unvalidated | LT-C2, AR-11 |
 | [MT-019](#mt-019) | 2026-08-20 | Pairing a tunnel or a link | fixed unvalidated | LT-B3, LT-F2 |
-| [MT-021](#mt-021) | 2026-08-21 | Control+X and Control+V on the diagram | fixed unvalidated | LT-A1, LT-A6, LT-A7 |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
 | [MT-024](#mt-024) | 2026-08-21 | Two signals on the railway | fixed unvalidated | LT-B4 |
@@ -59,7 +50,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-030](#mt-030) | 2026-08-21 | A route holding a signal command | fixed unvalidated | AR-19, DD |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
-| [MT-036](#mt-036) | 2026-08-21 | A train stopped by hand | fixed unvalidated | hands-on testing |
 | [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | fixed unvalidated | AR-20 |
 | [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | fixed unvalidated | IP-*, AR-21 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
@@ -68,9 +58,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
 | [MT-044](#mt-044) | 2026-08-22 | Cut and paste a whole column | needs test | LT-A8, FR-A1 |
 | [MT-045](#mt-045) | 2026-08-22 | The same for a whole row | needs test | LT-A8, FR-A1 |
-| [MT-046](#mt-046) | 2026-08-22 | A link switched off goes grey | needs test | LT-B3 |
 | [MT-047](#mt-047) | 2026-08-22 | Go to a link's other end | needs test | LT-M11 |
-| [MT-048](#mt-048) | 2026-08-22 | Double-click a train's name | needs test | LT-F1 |
 | [MT-049](#mt-049) | 2026-08-22 | The Edit button no longer asks | needs test | LT-F2 |
 | [MT-050](#mt-050) | 2026-08-22 | The sidebar | needs test | LT-F2 |
 | [MT-051](#mt-051) | 2026-08-22 | The sidebar with nothing to offer | needs test | LT-F2 |
@@ -85,26 +73,17 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
 | [MT-061](#mt-061) | 2026-08-22 | Graceful stop timing | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
-| [MT-063](#mt-063) | 2026-08-22 | A second copy of TrainControl says so | fixed unvalidated | AR-16 |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
-| [MT-089](#mt-089) | 2026-08-22 | A signal CONDITION offers red and green | needs test | DD - live defect |
-| [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
-| [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
-| [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
 | [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as FR-002 in issues.md, not a test.** | needs test | FR-002 |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
 | [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | FR-003 |
 | [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | FR-004 |
 | [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | FR-005 |
-| [MT-100](#mt-100) | 2026-08-22 | An invisible edit turns the arrows back on | fixed unvalidated | OB-008 |
 | [MT-101](#mt-101) | 2026-08-22 | Placing a locomotive updates the labels, and there is one way to do it | fixed unvalidated | OB-009 |
 | [MT-102](#mt-102) | 2026-08-22 | Two labels renamed | fixed unvalidated | OB-010, OB-011 |
-| [MT-103](#mt-103) | 2026-08-22 | Starting autonomy leaves you where you were | fixed unvalidated | OB-012 |
 | [MT-104](#mt-104) | 2026-08-22 | The tile menu, reordered | fixed unvalidated | OB-013 |
-| [MT-105](#mt-105) | 2026-08-22 | Sidebar text at the standard size | fixed unvalidated | OB-014, OB-015 |
 | [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
-| [MT-107](#mt-107) | 2026-08-22 | The track palette comes back when you leave autonomy mode | fixed unvalidated | OB-017 |
 | [MT-108](#mt-108) | 2026-08-22 | Route editor: Save in the corner, and Cancel asks | fixed unvalidated | OB-018 |
 | [MT-109](#mt-109) | 2026-08-22 | Track lengths: hotkey, focus, and size | fixed unvalidated | OB-019 |
 | [MT-110](#mt-110) | 2026-08-22 | The autonomy column is narrower, and three labels changed | fixed unvalidated | OB-020 |
@@ -181,7 +160,7 @@ List itself seems OK.
 
 ### MT-067 - 2026-08-18 - Arrival marks in the viewer
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
 **Written:** 2026-08-18
 
@@ -198,13 +177,15 @@ Works, but overlap with the labels makes it suboptimal.  station icon may fix th
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-068"></a>
 
 ### MT-068 - 2026-08-18 - Switched-off link
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
 **Written:** 2026-08-18
 
@@ -220,6 +201,8 @@ Looks right in the track diagram.  But not greyed out in the editor.  Also, move
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-069"></a>
@@ -897,7 +880,7 @@ We have a test case for this already, the long running one.
 
 ### MT-001 - 2026-08-20 - A station moved with its tile
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-A2, LT-A3, LT-A4, LT-F1  
 **Written:** 2026-08-20
 
@@ -920,6 +903,8 @@ Make double clicking a locomotive label in the track diagram open the loc placem
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-002"></a>
 
@@ -1014,7 +999,7 @@ Works for signals and switches.  Does not work for 3-ways though.
 
 ### MT-006 - 2026-08-20 - Duplicating a command row
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-B1  
 **Written:** 2026-08-20
 
@@ -1029,6 +1014,8 @@ Editing a route, after sync, teleports the user to the track diagram tab.  Don't
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-007"></a>
 
@@ -1081,7 +1068,7 @@ Works.
 
 ### MT-010 - 2026-08-20 - Capture into commands and conditions
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-A5, LT-B2  
 **Written:** 2026-08-20
 
@@ -1099,6 +1086,8 @@ Rest works.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-011"></a>
 
@@ -1136,7 +1125,7 @@ OK
 
 ### MT-013 - 2026-08-20 - The orange grip and group drag
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-C5  
 **Written:** 2026-08-20
 
@@ -1150,6 +1139,8 @@ OK.  Highlight the "move to' group in blue, not light red, for better clarity.  
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-014"></a>
 
@@ -1177,7 +1168,7 @@ Works, but I am getting poor performance while using the UI editor.  This could 
 
 ### MT-015 - 2026-08-20 - Shift Down and Shift Right, then undo
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** hands-on testing  
 **Written:** 2026-08-20
 
@@ -1191,6 +1182,8 @@ Works, but I am getting poor performance while using the UI editor.  This could 
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-016"></a>
 
@@ -1228,7 +1221,7 @@ OK
 
 ### MT-018 - 2026-08-20 - Why is it not moving - readability
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-C2, AR-11  
 **Written:** 2026-08-20
 
@@ -1243,6 +1236,8 @@ OK.  But the bar at the top of the editor has an odd border- give it a light gra
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-019"></a>
 
@@ -1285,7 +1280,7 @@ OK
 
 ### MT-021 - 2026-08-21 - Control+X and Control+V on the diagram
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-A1, LT-A6, LT-A7  
 **Written:** 2026-08-21
 
@@ -1303,12 +1298,14 @@ Doesn't work- only goes to the default route.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-022"></a>
 
 ### MT-022 - 2026-08-21 - A locomotive's settings from the tile menu
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** LT-M1, LT-M2, LT-M3, LT-M4  
 **Written:** 2026-08-21
 
@@ -1331,6 +1328,11 @@ This vanished, I reported it in another item too.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Same cause as [MT-101](#mt-101), and you were right that it was reported
+twice - the edit-locomotive item was suppressed by a gate whose precondition OB-009 had removed. Fixed
+there; this entry is worth running again because it goes further than MT-101 does: it asks you to set
+an arrival function and then actually hear it fire.
 ---
 <a id="mt-023"></a>
 
@@ -1611,7 +1613,7 @@ Defer for later.
 
 ### MT-036 - 2026-08-21 - A train stopped by hand
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** hands-on testing  
 **Written:** 2026-08-21
 
@@ -1642,6 +1644,8 @@ raised something on screen, say so and it is a small change.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-037"></a>
 
@@ -1854,7 +1858,7 @@ must not still be carrying the names it had before.
 
 ### MT-046 - 2026-08-22 - A link switched off goes grey
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-B3  
 **Written:** 2026-08-22
 
@@ -1869,6 +1873,8 @@ and in use must be solid and carry its two arrows.  Before this round it was the
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-047"></a>
 
@@ -1897,7 +1903,7 @@ Works.  Ensure that tunnels can only be paired with other tunnels on the same pa
 
 ### MT-048 - 2026-08-22 - Double-click a train's name
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-F1  
 **Written:** 2026-08-22
 
@@ -1912,6 +1918,8 @@ view must open at that station.  With autonomy RUNNING, it must do nothing at al
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 <a id="mt-049"></a>
 
@@ -2072,6 +2080,12 @@ Regular text labels must stay grey.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+The white star is too big and slightly off center relative to the midpoint of the station.  Be careful with curved stations.  Loc names look OK.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-058"></a>
 
@@ -2209,7 +2223,7 @@ Make a test for this.
 
 ### MT-063 - 2026-08-22 - A second copy of TrainControl says so
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** AR-16  
 **Written:** 2026-08-22
 
@@ -2228,13 +2242,15 @@ because the sentence you read is not the sentence that is there now.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-089"></a>
 
 ### MT-089 - 2026-08-22 - A signal CONDITION offers red and green
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** DD - live defect  
 **Written:** 2026-08-22
 
@@ -2263,13 +2279,15 @@ four words.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-090"></a>
 
 ### MT-090 - 2026-08-22 - Add Locomotive refuses address 0
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** DD appendix A3.3 - verified  
 **Written:** 2026-08-22
 
@@ -2293,13 +2311,15 @@ hands-on check is what covers the delegation.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-091"></a>
 
 ### MT-091 - 2026-08-22 - ant test runs the whole suite
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** DD-A2 - verified  
 **Written:** 2026-08-22
 
@@ -2331,13 +2351,15 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-092"></a>
 
 ### MT-092 - 2026-08-22 - The triage app
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** feature request  
 **Written:** 2026-08-22
 
@@ -2364,6 +2386,8 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-093"></a>
@@ -2672,7 +2696,7 @@ Looks good.  Reduce padding to the right of the table.
 
 ### MT-098 - 2026-08-22 - One-Way Run is a button, and asks which way
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** FR-004  
 **Written:** 2026-08-22
 
@@ -2708,13 +2732,20 @@ I don't see such a button.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** You are right and the cause is embarrassing: the button was built, given a
+tooltip, wired into the `Tool` enum and into the disarm path - and never added to anything.
+
+Nothing failed and nothing warned. An unmounted Swing component is just a live object with no parent,
+so every test of the machinery around it passed. It is on the panel now, sized to the column like the
+two above it.
 ---
 
 <a id="mt-099"></a>
 
 ### MT-099 - 2026-08-22 - A train mark shows on a station with nothing else on it
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** FR-005  
 **Written:** 2026-08-22
 
@@ -2746,13 +2777,23 @@ I can't see it- but it should overlay on top of the middle of the sensor, not so
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Found, and your instinct about where it should be is what located it.
+
+The star WAS being drawn, in the middle of the tile - underneath the badge. Both are centred, and a
+station's badge is half the tile across while the star's arms are a sixth, so on exactly the squares
+this is about the badge covered it completely.
+
+It is drawn after the badge now, which is also the right reading: the badge says what the square IS,
+which does not change; the star says a train is standing on it now, which does. The changing fact
+belongs on top.
 ---
 
 <a id="mt-100"></a>
 
 ### MT-100 - 2026-08-22 - An invisible edit turns the arrows back on
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-008  
 **Written:** 2026-08-22
 
@@ -2784,13 +2825,15 @@ the other direction.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-101"></a>
 
 ### MT-101 - 2026-08-22 - Placing a locomotive updates the labels, and there is one way to do it
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-009  
 **Written:** 2026-08-22
 
@@ -2845,6 +2888,30 @@ Critical: I no longer see the option to edit the locomotive.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Both halves, and both were mine.
+
+**The label.** I added `refresh()` and that was the wrong tool. `applyCaption`, twenty lines further up
+the same file, already says why: "the editor's own grid has to be REBUILT, not repainted: the caption
+is part of the tile art, and the annotation refresh that follows every other edit does not touch it."
+A placement changes the caption, so it needs what a caption change needs - `onDiagramChanged`, which
+already existed. Placing and removing both use it now.
+
+**The edit option, which you rightly called critical.** Its gate was `point.getCurrentLocomotive() ==
+null`, and the comment above that gate named the precondition that made it safe: the item was
+suppressed when empty because "Add a Locomotive to Autonomy..." and "Move a Locomotive to This
+Station..." were both directly above it. OB-009 retired Move, so two doors became one, and the gate
+closed the one that was left.
+
+Worse, the gate asks the RUNNING layout what is standing there while the editor writes to the SETUP -
+so a train placed from that very menu is not on the running layout yet, and the item vanished at
+exactly the moment somebody had placed a train and wanted to set its arrival function.
+
+The gate is gone. `menuLabelFor` already says the right thing either way - "Place Locomotive At..." or
+"Edit Locomotive At..." - so nothing needed deciding.
+
+This is the second time today a rule outlived the precondition that made it safe. Both times the
+comment above it said what that precondition was.
 ---
 
 <a id="mt-102"></a>
@@ -2877,7 +2944,7 @@ Works.  Make sure the chosen routing logic is saved in a preference and persiste
 
 ### MT-103 - 2026-08-22 - Starting autonomy leaves you where you were
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-012  
 **Written:** 2026-08-22
 
@@ -2906,13 +2973,15 @@ wrong decision again.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-104"></a>
 
 ### MT-104 - 2026-08-22 - The tile menu, reordered
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-013  
 **Written:** 2026-08-22
 
@@ -2978,13 +3047,24 @@ Put - **Maximum Train Length** back into the advanced parameters.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Reordered to your list. Three moves from what I had:
+
+- **home for a locomotive** to the bottom of the locomotive group. Your order is the better reading: a
+  home is a fact about a LOCOMOTIVE, so it belongs with the items about the train rather than with the
+  ones about the platform.
+- **Maximum Train Length** back inside Advanced Parameters.
+- **protected by signal** down to the foot, after a divider, beside Advanced Parameters.
+
+So the tail now reads: divider, Trains May Arrive, Trains May Depart, divider, protected by signal,
+Advanced Parameters.
 ---
 
 <a id="mt-105"></a>
 
 ### MT-105 - 2026-08-22 - Sidebar text at the standard size
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-014, OB-015  
 **Written:** 2026-08-22
 
@@ -3008,13 +3088,15 @@ is gone.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-106"></a>
 
 ### MT-106 - 2026-08-22 - The viewer keeps its own appearance while an editor is open
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-016  
 **Written:** 2026-08-22
 
@@ -3049,13 +3131,24 @@ When switching to autonomy, the autonomy grid view still appears in the viewer.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** My first fix was half of it, and this is the other half.
+
+The ordering fix stopped `arriveAt` jumping ahead of the queued repaint, which was real - but the flag
+it sets is on the DIAGRAM, and the main window shares that diagram. So any later repaint of the viewer,
+from any cause, still re-laid it the editor's way.
+
+The flag was answering two questions at once. "Being edited" should stop the VIEWER'S TILES routing
+clicks - that is right, and unchanged. It should not change how the viewer is LAID OUT, which is a fact
+about one grid rather than about the diagram. That decision now asks whether this particular grid is
+inside an editor, which is the question it was always trying to ask.
 ---
 
 <a id="mt-107"></a>
 
 ### MT-107 - 2026-08-22 - The track palette comes back when you leave autonomy mode
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-017  
 **Written:** 2026-08-22
 
@@ -3082,6 +3175,8 @@ and put back from that copy: it lives in generated code that cannot be edited by
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word in the round of 22 August. Nothing outstanding on this entry.
 ---
 
 <a id="mt-108"></a>

@@ -442,12 +442,18 @@ public class AutonomyEditorPanel extends JPanel
         excludePage.setFont(FONT_CONTROL);
         excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
 
-        // Both the width of the column, like the window's own Save and Cancel below them
+        // All three the width of the column, like the window's own Save and Cancel below them
         fillWidth(testButton, nameAll);
         fillWidth(whyButton, nameAll);
+        fillWidth(oneWayButton, nameAll);
 
         panel.add(row(testButton));
         panel.add(row(whyButton));
+
+        // MT-098: this was built, given a tooltip, wired into the Tool enum and into the disarm path,
+        // and never added to anything. Adam: "I don't see such a button." Nothing failed and nothing
+        // warned - an unmounted Swing component is simply a live object with no parent.
+        panel.add(row(oneWayButton));
         panel.add(row(nameAll));
         panel.add(row(excludePage));
 
@@ -818,6 +824,9 @@ public class AutonomyEditorPanel extends JPanel
         // there is. Segment Length is loose on the menu again, where it can be reached in one.
         javax.swing.JMenu advanced = null;
 
+        // Held and added at the foot of the menu - see where it is built
+        javax.swing.JMenuItem signalItem = null;
+
         if (isPoint)
         {
             // Locomotives first, because placing one is the commonest reason to open this menu once a
@@ -848,10 +857,9 @@ public class AutonomyEditorPanel extends JPanel
                     {
                         session.placeLocomotive(target, null);
 
-                        // OB-009: taking a train off changed the setup and left the caption saying it
-                        // was still there.  Every other edit on this menu refreshes; these two did not,
-                        // and a placement is the one kind of edit whose whole visible result IS the
-                        // label.
+                        // The caption is tile art, so the grid is rebuilt - see placeLocomotive.
+                        if (onDiagramChanged != null) onDiagramChanged.run();
+
                         refresh();
                     }));
             }
@@ -916,6 +924,21 @@ public class AutonomyEditorPanel extends JPanel
                     }
 
                     menu.add(facingMenu);
+                }
+
+                // Last of the locomotive group (MT-104).
+                //
+                // It sat beside the signal, on the reasoning that both are answers about a station.
+                // Adam's order puts it here instead, and it is the better reading: a home is a fact
+                // about a LOCOMOTIVE - which one belongs here - so it belongs with the items that are
+                // about the train rather than with the ones about the platform.
+                if (isStation)
+                {
+                    String home = homeOf(target);
+
+                    menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
+                                               : I18n.f("autosetup.ui.menuHomeFor", home),
+                        () -> promptHome(target)));
                 }
             }
 
@@ -1097,37 +1120,19 @@ public class AutonomyEditorPanel extends JPanel
             {
                 java.util.List<TileKey> paired = session.getProtectingSignals(target);
 
-                menu.add(item(
+                // HELD rather than added (MT-104).  It goes at the foot of the menu, under the
+                // arrive/depart pair and beside Advanced Parameters - which is where Adam put it, and
+                // it reads as the last of the platform's own settings rather than as an afterthought
+                // to the station designation.
+                signalItem = item(
                     paired.isEmpty()
                         ? I18n.t("autosetup.ui.menuPairSignal")
                         : I18n.f(paired.size() == 1
                             ? "autosetup.ui.menuPairedSignal" : "autosetup.ui.menuPairedSignals",
                             signalAddresses(paired)),
-                    () -> pairProtectingSignal(target)));
+                    () -> pairProtectingSignal(target));
             }
 
-            // Directly under the signal (OB-013).  Both are answers about a station rather than
-            // settings to tune it with, so they belong together above the divider rather than either
-            // side of it.
-            String home = homeOf(target);
-
-            menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
-                                       : I18n.f("autosetup.ui.menuHomeFor", home),
-                () -> promptHome(target)));
-
-            // One level up, out of Advanced Parameters (OB-013).
-            //
-            // It is not a tuning setting in the way the other three are: a train too long for a
-            // platform is refused outright, so this decides whether a station can be used at all
-            // rather than how well.
-            int maxLength = number(target, "maxTrainLength", 0);
-
-            menu.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
-                maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
-                () -> promptNumber(target, "maxTrainLength",
-                    "autolayout.ui.promptEnterMaxTrainLength", 0)));
-
-            menu.addSeparator();
 
             // Everything a station can be TUNED with, under one heading.
             //
@@ -1141,6 +1146,19 @@ public class AutonomyEditorPanel extends JPanel
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.
             advanced = new javax.swing.JMenu(
                 I18n.t("autolayout.ui.menuEditAdvancedParameters"));
+
+            // Back inside Advanced Parameters (MT-104).
+            //
+            // OB-013 brought it out on the reasoning that a train too long for a platform is refused
+            // outright, so it decides whether a station can be used at all rather than how well. Adam
+            // put it back, and his order is the one that ships: it is a number you set once and rarely
+            // look at, which is what that submenu is for.
+            int maxLength = number(target, "maxTrainLength", 0);
+
+            advanced.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
+                maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
+                () -> promptNumber(target, "maxTrainLength",
+                    "autolayout.ui.promptEnterMaxTrainLength", 0)));
 
             int priority = number(target, "priority", 0);
 
@@ -1266,8 +1284,14 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(connections);
 
-        // Last (OB-013).  Everything above it is a decision about this square; this is the drawer of
-        // numbers that change how well those decisions work, and a drawer belongs at the bottom.
+        // Then a divider, the signal, and the drawer of numbers (MT-104).
+        //
+        // Everything above is a decision about this square. What is left is the platform's protection
+        // and the settings that change how well those decisions work, and both belong at the bottom.
+        if (signalItem != null || advanced != null) menu.addSeparator();
+
+        if (signalItem != null) menu.add(signalItem);
+
         if (advanced != null) menu.add(advanced);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.
@@ -2310,13 +2334,22 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return;
 
-        // Only when there is a train to EDIT.
+        // Offered whether or not a train is standing here - the gate that used to stop it has lost the
+        // thing that made it safe (MT-101, MT-022).
         //
-        // With the square empty this item reads "Place Locomotive...", which is the third way of
-        // saying the same thing on one menu - "Add a Locomotive to Autonomy..." and "Move a Locomotive
-        // to This Station..." are both directly above it and both ask which locomotive, which this
-        // does not.  Editing what is already standing there is the part that has no other door.
-        if (point.getCurrentLocomotive() == null) return;
+        // It read: "Only when there is a train to EDIT. With the square empty this item reads 'Place
+        // Locomotive...', which is the third way of saying the same thing on one menu - 'Add a
+        // Locomotive to Autonomy...' and 'Move a Locomotive to This Station...' are both directly
+        // above it." That was true, and then OB-009 retired Move, so there were two doors and now one.
+        //
+        // Worse, the gate asks the RUNNING layout what is standing here, and the editor writes to the
+        // SETUP. A train just placed from this very menu is in the setup and not yet on the running
+        // layout, so the item disappeared at precisely the moment somebody had placed a train and
+        // wanted to set its arrival function. Adam: "Critical: I no longer see the option to edit the
+        // locomotive."
+        //
+        // menuLabelFor already says the right thing either way - "Place Locomotive At..." or "Edit
+        // Locomotive At..." - so nothing has to be decided here.
 
         menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
         {
@@ -2473,8 +2506,14 @@ public class AutonomyEditorPanel extends JPanel
         // over the configuration, which is complete.
         session.placeLocomotive(tile, name);
 
-        // OB-009: the placement was made and nothing redrew, so the caption went on showing whatever
-        // was there before - which reads exactly like the placement not having worked.
+        // The grid is REBUILT, not repainted (OB-009, second pass).
+        //
+        // refresh() was not enough and MT-101 said so: it ends in the annotation refresh, and
+        // applyCaption twenty lines up already says why that is the wrong tool - "the caption is part
+        // of the tile art, and the annotation refresh that follows every other edit does not touch
+        // it". A placement changes the caption, so it needs what a caption change needs.
+        if (onDiagramChanged != null) onDiagramChanged.run();
+
         refresh();
     }
 
