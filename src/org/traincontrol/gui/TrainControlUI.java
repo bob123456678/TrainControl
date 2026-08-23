@@ -3462,7 +3462,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (activeDiagramConfiguration != null && !isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
-            getAutonomyViewerPanel().load(activeDiagramConfiguration, false);
+            // WITHOUT capturing the running layout's state first.
+            //
+            // Both callers of this shape reach it BECAUSE the setup just changed, so the setup is the
+            // newer of the two by definition. An ordinary load folds the running layout's placements,
+            // homes and facings back into the configuration before replacing it - which here writes
+            // the stale answer back over the edit that asked for the rebuild, and then regenerates
+            // from the reverted configuration. The edit is undone on its way to being redrawn.
+            //
+            // An explicit edit beats an inferred one. A facing learned by watching where a train ended
+            // up is a guess; somebody choosing one is not.
+            getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
         }
     }
 
@@ -3530,7 +3540,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (activeDiagramConfiguration != null && !isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
-            getAutonomyViewerPanel().load(activeDiagramConfiguration, false);
+            // WITHOUT capturing the running layout's state first.
+            //
+            // Both callers of this shape reach it BECAUSE the setup just changed, so the setup is the
+            // newer of the two by definition. An ordinary load folds the running layout's placements,
+            // homes and facings back into the configuration before replacing it - which here writes
+            // the stale answer back over the edit that asked for the rebuild, and then regenerates
+            // from the reverted configuration. The edit is undone on its way to being redrawn.
+            //
+            // An explicit edit beats an inferred one. A facing learned by watching where a train ended
+            // up is a guess; somebody choosing one is not.
+            getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
         }
     }
 

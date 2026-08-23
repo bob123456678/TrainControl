@@ -1653,7 +1653,21 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean mayCarryACaption(LayoutDiagramComponent component)
     {
-        return component == null || !component.isClickable();
+        if (component == null) return true;
+
+        // Switches and signals, and NOT everything isClickable() covers.
+        //
+        // The first version of this asked isClickable(), which reads like Adam's sentence and is not
+        // it: that method also counts feedback, uncouplers, links, lamps and routes. Feedback is the
+        // platform road - the square the comment above recommends for a station name, and the one the
+        // old rule explicitly allowed - so widening the rule for curves and bumpers quietly took away
+        // the commonest place of all. Caught in review before he saw it.
+        //
+        // A switch and a signal are refused because a click on them throws real ironwork, and a
+        // caption over a control is a caption in the way of it. A sensor's click toggles a feedback
+        // reading, which is a different kind of thing: nothing moves, and the platform road is where
+        // the name belongs.
+        return !component.isSwitch() && !component.isSignal();
     }
 
     /**

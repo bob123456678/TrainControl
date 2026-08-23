@@ -76,9 +76,12 @@ public class testEditorSurfaceRules
         }
 
         assertEquals(writes, 1,
-            "the facing is written to the setup from " + writes + " places in AutonomyEditorPanel. Two "
+            "the facing MENU writes to the setup from " + writes + " places in AutonomyEditorPanel. Two "
             + "copies of this menu is how OB-039 survived being fixed: the redraw goes on the copy "
-            + "somebody is looking at, and the other one keeps the bug");
+            + "somebody is looking at, and the other one keeps the bug. "
+            + "Scoped to this file on purpose. LayoutRightclickAutonomyMenu also writes a facing, as "
+            + "part of MOVING a locomotive to a station, and it saves and repaints on its own - a "
+            + "different operation that happens to set the same field, not a second copy of this menu");
 
         assertTrue(redrawn,
             "the facing is recorded but nothing redraws (OB-039). The caption carries the arrow saying "

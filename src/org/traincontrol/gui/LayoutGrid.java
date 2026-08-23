@@ -106,8 +106,17 @@ public class LayoutGrid
      * Weak keys: a panel that has gone away takes its entry with it, and nothing here keeps a window
      * alive that the application has finished with.
      */
-    private static final java.util.Map<JPanel, LayoutGrid> LIVE =
-        java.util.Collections.synchronizedMap(new java.util.WeakHashMap<JPanel, LayoutGrid>());
+    /**
+     * Weakly on BOTH sides.
+     *
+     * A WeakHashMap only collects an entry when nothing else reaches the key, and a LayoutGrid reaches
+     * its own panel - it holds `container` and adds it to the parent. So a plain grid as the value kept
+     * its own key alive and no entry was ever collected: one page retained per editor, popup or export.
+     * Found in review, before it grew into anything.
+     */
+    private static final java.util.Map<JPanel, java.lang.ref.WeakReference<LayoutGrid>> LIVE =
+        java.util.Collections.synchronizedMap(
+            new java.util.WeakHashMap<JPanel, java.lang.ref.WeakReference<LayoutGrid>>());
 
     /**
      * @return whether this grid has been retired and should not touch its panel again
@@ -170,7 +179,10 @@ public class LayoutGrid
         // replaced grid with timers still armed fires into a panel that is no longer its own.
         if (parent != null)
         {
-            LayoutGrid outgoing = LIVE.put(parent, this);
+            java.lang.ref.WeakReference<LayoutGrid> was =
+                LIVE.put(parent, new java.lang.ref.WeakReference<>(this));
+
+            LayoutGrid outgoing = was == null ? null : was.get();
 
             if (outgoing != null && outgoing != this) outgoing.discard();
         }

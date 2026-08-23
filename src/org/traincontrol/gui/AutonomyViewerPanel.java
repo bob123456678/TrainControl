@@ -726,6 +726,31 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void load(String name, boolean interactive)
     {
+        load(name, interactive, true);
+    }
+
+    /**
+     * The same, told whether the running layout's state is worth keeping.
+     *
+     * Loading normally CAPTURES first - placements, homes and facings set while the outgoing
+     * configuration ran go back into it before anything is replaced. That is right when the running
+     * layout is the newer of the two.
+     *
+     * It is exactly wrong when the SETUP is newer, which is the case whenever a rebuild is asked for
+     * BECAUSE the setup just changed. There the capture writes the running layout's stale answer back
+     * over the edit that provoked the rebuild, and the reload then regenerates from the reverted
+     * configuration - so setting a facing, placing a train or removing one would be undone on the way
+     * to being redrawn.
+     *
+     * An explicit edit beats an inferred one, which is the same precedence the rest of this applies:
+     * a facing learned by watching where a train ended up is a guess, and somebody typing one is not.
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     */
+    public void load(String name, boolean interactive, boolean captureRunningState)
+    {
         // The same gate the JSON path applies before replacing the layout: confirm, then stop whatever
         // is moving.  Owned by the main window because stopping trains is its business, not a panel's.
         if (!ui.prepareAutonomyReload())
@@ -738,7 +763,7 @@ public class AutonomyViewerPanel extends JPanel
         // into THAT configuration, by name, before anything is replaced.  By name because store-active
         // and what-is-running can disagree after a refused load, and capturing into the store's idea
         // of active would overwrite a configuration with another one's state.
-        if (ui.getActiveDiagramConfiguration() != null && ui.getModel() != null
+        if (captureRunningState && ui.getActiveDiagramConfiguration() != null && ui.getModel() != null
             && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
         {
             try

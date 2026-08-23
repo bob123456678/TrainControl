@@ -82,8 +82,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-131](#mt-131) | 2026-08-23 | Switching a paired link off switches its partner off | fixed unvalidated | OB-041 |
 | [MT-132](#mt-132) | 2026-08-23 | A station name can go on almost any square | fixed unvalidated | OB-042 and OB-044 |
 | [MT-133](#mt-133) | 2026-08-23 | Segment length: blank means none, and only digits go in | fixed unvalidated | OB-043 |
+| [MT-134](#mt-134) | 2026-08-23 | Four things the night review found | fixed unvalidated | NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md) |
 
-Everything else - 68 of 133 - is **fixed validated** and needs nothing from you unless the
+Everything else - 68 of 134 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5163,5 +5164,63 @@ empty field as the only special case, and clearing a field is how somebody says 
 more". 0 is exactly what "no length" is stored as everywhere else here.
 
 The error box for a non-number is unreachable now and the parse cannot throw, so both are gone.
+
+---
+
+<a id="mt-134"></a>
+
+### MT-134 - 2026-08-23 - Four things the night review found
+
+**Disposition:** fixed unvalidated  
+**From:** NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md)  
+**Written:** 2026-08-23
+
+**What to do.** **1. The one that matters.** With Autonomy Setup OPEN, change a locomotive's facing from
+the TRACK DIAGRAM. Then close everything and reopen: the facing must be the one you chose. Do the same
+for placing a locomotive and for removing one. Then repeat with the editor CLOSED.
+
+**2. Station labels.** Right-click the platform road itself - the sensor - and check **Show Station
+Here...** is offered. It must also be offered on curves, bumpers, crossings and uncouplers, and must NOT
+be offered on switches or signals.
+
+**3.** Open and close the editor a dozen times on a big layout and watch memory. Nothing to see if this
+is right; it is here because the fault would be invisible until it was not.
+
+#### Comments
+
+**Claude, 2026-08-23.** An independent reviewer read tonight's diff. Four of its nine findings were
+real; two of them were mine from earlier tonight, and one of those was serious.
+
+**NR-1 - a rebuild that undid the edit that asked for it.** MT-125 made `placementChanged` refresh both
+surfaces instead of one. But `rebuildRunningLayoutFromSetup` goes through `AutonomyViewerPanel.load`,
+which CAPTURES the running layout's state back into the configuration before replacing it - `loc`,
+`home` and the facing are all keys it overwrites. The running layout is stale at exactly that moment,
+because the edit that provoked the rebuild went to the setup. So the fresh answer was written, captured
+away, and regenerated from the reverted file.
+
+That capture is right when the running layout is newer, and exactly wrong when the setup is. Both
+rebuild-from-setup callers now skip it. `captureFromLayout`'s own comment states the precondition that
+was broken - the rule did not move, the call site did, which is the shape I have been writing tests
+against all night and still walked into.
+
+**And the reviewer found one site; there were two.** The other is `autonomyEditorClosed`, which had the
+same latent revert since long before tonight.
+
+**NR-2 - my caption rule took away the platform road.** OB-042/044 replaced `isStraightThrough` with
+`!isClickable()`, which reads like your sentence - "the only fair place to disallow them are clickable
+elements like switches and signals" - and is not it: `isClickable()` also counts feedback, uncouplers,
+links and lamps. Feedback is the platform road, the square the surrounding comment recommends and the
+old rule allowed. So a fix that widened the rule for curves and bumpers quietly removed the commonest
+place of all. It refuses switches and signals now, which is what you actually said.
+
+**NR-3 - the grid registry never released a page.** `WeakHashMap<JPanel, LayoutGrid>` collects nothing
+when the value reaches the key, and a grid holds its own panel. One page retained per editor, popup or
+export. The value is a `WeakReference` now.
+
+**NR-4** was a test whose message claimed more than it checked; the message says what it checks.
+
+**Five findings I have not acted on** - NR-5 to NR-9, mostly comments that now contradict their code,
+an unguarded `parseInt` on an 11-digit length, and a fair point that several new tests pass silently
+when their source file is not found. They are in the report and worth a pass, none of them urgent.
 
 ---
