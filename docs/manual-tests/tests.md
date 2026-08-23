@@ -97,8 +97,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-097](#mt-097) | 2026-08-22 | Sidebar: pages are a list, modes are radio buttons | fixed unvalidated | OB-004 |
 | [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | OB-006 |
 | [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | OB-007 |
+| [MT-100](#mt-100) | 2026-08-22 | An invisible edit turns the arrows back on | fixed unvalidated | OB-008 |
+| [MT-101](#mt-101) | 2026-08-22 | Placing a locomotive updates the labels, and there is one way to do it | fixed unvalidated | OB-009 |
+| [MT-102](#mt-102) | 2026-08-22 | Two labels renamed | fixed unvalidated | OB-010, OB-011 |
+| [MT-103](#mt-103) | 2026-08-22 | Starting autonomy leaves you where you were | fixed unvalidated | OB-012 |
 
-Everything else - 21 of 99 - is **fixed validated** and needs nothing from you unless the
+Everything else - 21 of 103 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -2352,6 +2356,12 @@ The one behaviour I could not preserve exactly: `LayoutEditor.layout` had to sto
 read of it is live, so nothing else changes, but it does mean the window is no longer built around one
 diagram - which was the assumption the old close-and-reopen was resting on.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Looks good, but the window location memory is messing with the single window view now.  Have a single memory entry for the whole window, with only the size being variable.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-096"></a>
@@ -2388,6 +2398,12 @@ And capped: a diagram wider than the screen produced a window wider than the scr
 right-hand edge and the scrollbar that would have reached it both off the side. The window is also
 nudged back on screen if the new size pushed it off an edge it was already sitting near.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+It is still too small- but I think the window persistence is getting in the way.  Would probably be OK on a fresh layout- test offline.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-097"></a>
@@ -2415,6 +2431,12 @@ One decision worth knowing. The list listens for a **click**, not for a selectio
 `ListSelectionListener` also fires when the selection is set in code - which `syncSidebar` does on
 every cancelled switch - and the arrow keys would then start a switch for every row travelled through.
 A click is the gesture that means "go here".
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Looks good.  Reduce padding to the right of the table.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2452,6 +2474,12 @@ they do not describe a direction. The old menu version took the direction from t
 click in, which is a guess, and a wrong guess closes a stretch of railway the wrong way round and leaves
 nothing on the diagram saying which way you meant. It asks now.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+I don't see such a button.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-099"></a>
@@ -2483,5 +2511,149 @@ badge was never blank, so it appeared there and the gap looked like it did not e
 The field had been added to `equals` and to `hashCode`. The method that decides whether the object is
 worth drawing at all is the one that gets missed, because it is not one anybody is looking at while
 adding a field. `testTrainMarkIsNotBlank` pins it.
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+I can't see it- but it should overlay on top of the middle of the sensor, not somewhere else.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-100"></a>
+
+### MT-100 - 2026-08-22 - An invisible edit turns the arrows back on
+
+**Disposition:** fixed unvalidated  
+**From:** OB-008  
+**Written:** 2026-08-22
+
+**What to do.** In the autonomy editor set the visibility control to **None**, then click a square to change its
+direction.
+
+The control must jump to **Restrictions** so you can see what just happened, and the hint line should
+say it did. Check that it only does this from **None** - set it to **All** or **Arrivals**, click a
+square, and it must leave your choice alone.
+
+Also check it fires for the other two ways of shutting a direction: a click on a switch or crossing,
+and the One-Way Run button.
+
+#### Comments
+
+**Claude, 2026-08-22.** With directions hidden, the click worked, the hint line said so, and the
+diagram - which is where you were looking - was identical before and after. That reads as a broken
+control, and the natural response to a control that does nothing is to click it again, which cycles the
+square on to a state nobody asked for.
+
+Restrictions rather than All, because that is the default for the same reason: open track is most of a
+layout and its arrows say what a reader can already assume.
+
+Only from None, and only on an edit that actually changed something. Somebody who chose All or Arrivals
+has chosen a view that already shows their edit, and moving them off it would be the same rudeness in
+the other direction.
+
+---
+
+<a id="mt-101"></a>
+
+### MT-101 - 2026-08-22 - Placing a locomotive updates the labels, and there is one way to do it
+
+**Disposition:** fixed unvalidated  
+**From:** OB-009  
+**Written:** 2026-08-22
+
+**What to do.** In the autonomy editor, right-click a station and use **Add a Locomotive to Autonomy...**.
+
+- The caption must update **immediately** - no closing and reopening, no page switch.
+- **Remove** must update it immediately too.
+- The list should now offer the whole roster. Locomotives autonomy already runs appear first, marked
+  *(already in autonomy - will be moved here)*; choosing one of those must move it, and it must
+  disappear from where it was.
+- **Move a Locomotive to This Station...** should no longer be on the menu.
+
+Then re-check the first part of your report - whether a locomotive lands at the station it belongs to.
+See the note below: I think that was this same bug, but I want your eyes on it.
+
+#### Comments
+
+**Claude, 2026-08-22.** Your OB-009 had three parts; two are definitely fixed and the third I think
+is the same bug wearing a different description.
+
+**The labels.** `placeLocomotive` ended with `session.placeLocomotive(tile, name)` and no `refresh()`.
+Every other edit on that menu refreshes. So the placement was written and nothing redrew - and a
+placement is the one kind of edit whose entire visible result IS the label. Remove had the same gap.
+
+**Move, retired.** Three items on that menu asked which locomotive: Add, Move, and the edit dialog
+underneath them - which does the same job and more, since it can also change what the train does once
+it is there. The one that went is the one whose only advantage was a shorter list. Add now offers the
+whole roster, marking the trains already in autonomy, so it can still do what Move did.
+
+While rewriting it I removed a second lift-off loop that walked `getReducer().getPoints()`. That is not
+the same set as the configuration - **the reduction omits excluded pages** - so a train standing on an
+excluded page was not lifted, the build emitted it at two Points, and `fromJSON` answers that by
+invalidating the whole layout. The session's own `placeLocomotive` already does this over the
+configuration, which is complete.
+
+**"Doesn't correctly place it at the station where it belongs" - please re-check.** I could not find a
+placement going to the wrong square, and I want to say what I did NOT change rather than quietly leave
+it. Placing from the **track diagram** menu picks among the copies of that square at random, on
+purpose: a split square has several Points, the first is whichever side the build walked in by, and
+always taking it would face every train on a platform the same way. It is the same square either way,
+so the caption should be right.
+
+My guess is that this was the missing refresh - a placement that does not appear looks exactly like a
+placement that went somewhere else. If it still happens with the labels updating, tell me the station
+and which copy it landed on, and that is a different bug.
+
+---
+
+<a id="mt-102"></a>
+
+### MT-102 - 2026-08-22 - Two labels renamed
+
+**Disposition:** fixed unvalidated  
+**From:** OB-010, OB-011  
+**Written:** 2026-08-22
+
+**What to do.** Autonomy editor: the lengths checkbox reads **Track Lengths** rather than "Show track lengths".
+
+Autonomy menu: **Choose Routing Logic...** rather than "Route Choice".
+
+#### Comments
+
+**Claude, 2026-08-22.** Both changed in all eight message bundles, ASCII-escaped as they have to be.
+The English is the only one that was actually translated - the others carried the English string
+already.
+
+---
+
+<a id="mt-103"></a>
+
+### MT-103 - 2026-08-22 - Starting autonomy leaves you where you were
+
+**Disposition:** fixed unvalidated  
+**From:** OB-012  
+**Written:** 2026-08-22
+
+**What to do.** Right-click a station on the **track diagram** and start autonomy. You must stay on the track
+diagram - no jump to the autonomy tab.
+
+Then check the thing that jump was there for: while autonomy is running, right-click again and confirm
+**Stop Autonomy Gracefully** is on that same menu, so there is still a visible way to stop it from
+where you are.
+
+#### Comments
+
+**Claude, 2026-08-22.** Removed, and the reason it was added is worth recording since it was not a
+whim: started from the track diagram, autonomy began "with nothing on screen to say so and no visible
+way to stop it again".
+
+Both halves of that turned out to be wrong about this surface. The diagram itself shows the trains
+moving, which is a better answer than a list of them; and the same right-click menu that started
+autonomy carries Stop Autonomy Gracefully the moment it is running. What was left was the cost - being
+moved off the page you were looking at, by a menu you opened on that page.
+
+The second half of the test is there because if that Stop item ever stops appearing, this becomes the
+wrong decision again.
 
 ---

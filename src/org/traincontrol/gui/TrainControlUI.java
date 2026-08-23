@@ -16432,13 +16432,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             startAutonomyActionPerformed(null);
 
-            // And bring up the view that shows what is running.
+            // The user STAYS where they are (OB-012).
             //
-            // Started from the button, the user is already looking at that tab.  Started from the
-            // track diagram - a right-click on a station, which is the natural place to set a railway
-            // going - they were not, so autonomy began with nothing on screen to say so and no visible
-            // way to stop it again.
-            showAutonomyRunTab();
+            // This used to bring up the run tab, on the reasoning that somebody starting autonomy from
+            // the track diagram would otherwise have nothing on screen to say it had started and no
+            // visible way to stop it again. Both halves of that turned out to be wrong about this
+            // surface: the diagram itself shows the trains moving, which is a better answer than a
+            // list of them, and the same right-click menu that started autonomy carries Stop Autonomy
+            // Gracefully the moment it is running.
+            //
+            // What was left was the cost - being moved off the page you were looking at, by a menu you
+            // opened ON that page. Somebody who right-clicks a station has said where they want to be.
         }
         else
         {

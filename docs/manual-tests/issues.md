@@ -59,50 +59,7 @@ looked, so I know this is not already here."
 
 ## Inbox
 
-### OB-008 - 2026-08-22 - confusing behavior when clicking autonomy tile
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 18:10  
-**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when clicking an autonomy tile with all things displayed off, the user doesn't know what is happening.  ensure that at least "restrictions only" gets enabled with the click.
-
-### OB-009 - 2026-08-22 - adding new locomotives doesn't work
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 18:17  
-**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-adding a locomotive to the graph doesn't corretly place it at the station where it belongs.  also, deprecate the "move locomotive" option in favor of just "edit locomotive", since the latter lets you switch.  Bug: the station labels are not updated when locomotive placements are changed or when moves happen.
-
-### OB-010 - 2026-08-22 - label inconsistency in autonomy editor GUI
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 18:20  
-**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-Change the "show track lengths" jlabel text to just "Track Lengths"
-
-### OB-011 - 2026-08-22 - autonomy jmenu title
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 18:27  
-**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-Change "Route Choice" to "Choose Routing Logic..."
-
-### OB-012 - 2026-08-22 - what happens when starting autonomy
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 18:28  
-**Build:** commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when starting autonomy from the TRACK DIAGRAM right click menu, the user gets teleported to the autonomy tab.  don't do this- keep them where they were.
+*(empty)*
 
 ---
 
@@ -118,6 +75,11 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-012 | bug | Starting autonomy from the track diagram menu jumped to the autonomy tab | - | [MT-103](tests.md#mt-103) |
+| 2026-08-22 | OB-011 | bug | "Route Choice" reads "Choose Routing Logic..." | - | [MT-102](tests.md#mt-102) |
+| 2026-08-22 | OB-010 | bug | "Show track lengths" reads "Track Lengths" | - | [MT-102](tests.md#mt-102) |
+| 2026-08-22 | OB-009 | bug | Placing a locomotive did not update the labels; Move retired in favour of the edit dialog | - | [MT-101](tests.md#mt-101) |
+| 2026-08-22 | OB-008 | bug | A direction edit with the arrows hidden happened invisibly | - | [MT-100](tests.md#mt-100) |
 | 2026-08-22 | OB-007 | feature request | A white * on the station icon where a train is set up to be standing | - | [MT-099](tests.md#mt-099) |
 | 2026-08-22 | OB-006 | feature request | Move "make a one way run from here" off the right-click menu and onto a button that asks for both points and a direction | - | [MT-098](tests.md#mt-098) |
 | 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | - | [MT-095](tests.md#mt-095) |
@@ -125,6 +87,17 @@ not, never both.
 | 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
 | 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
 | 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+
+**OB-008 to OB-012 are fixed, 2026-08-22.** Two of them share `MT-102`, because they are the same
+test: read two labels and check they say the right thing. Splitting that into two entries would mean
+two trips to the same screen.
+
+**One part of `OB-009` is answered rather than fixed, and it is called out in `MT-101`.** "Adding a
+locomotive to the graph doesn't correctly place it at the station where it belongs" - I could not find
+a placement going to the wrong square, and the likeliest explanation is the missing refresh that was
+the third part of the same report: a placement that does not appear looks exactly like a placement that
+went somewhere else. `MT-101` asks Adam to re-check that specific half now the labels update, and says
+what to tell me if it still happens.
 
 **All five are fixed, 2026-08-22.** The three feature requests earned an `MT-###` after all, for the
 same reason the two bugs did: each changed something only a person at the railway can confirm.

@@ -823,7 +823,16 @@ public class AutonomyEditorPanel extends JPanel
             if (standing != null && !menuOnly)
             {
                 menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
-                    () -> session.placeLocomotive(target, null)));
+                    () ->
+                    {
+                        session.placeLocomotive(target, null);
+
+                        // OB-009: taking a train off changed the setup and left the caption saying it
+                        // was still there.  Every other edit on this menu refreshes; these two did not,
+                        // and a placement is the one kind of edit whose whole visible result IS the
+                        // label.
+                        refresh();
+                    }));
             }
 
             if (!menuOnly) addLocomotiveSettings(menu, target);
@@ -837,13 +846,17 @@ public class AutonomyEditorPanel extends JPanel
                 // asks which locomotive, so it is not the same answer under different words - it is the
                 // only way to put a train on a square from the diagram without selecting it first.
                 menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
-                    () -> placeLocomotive(target, true)));
+                    () -> placeLocomotive(target)));
 
-                if (!menuOnly)
-                {
-                    menu.add(item(I18n.t("autosetup.ui.menuAddToStation"),
-                        () -> placeLocomotive(target, false)));
-                }
+                // "Move a Locomotive to This Station..." used to sit here (OB-009).
+                //
+                // Three items on one menu asked which locomotive: this one, that one, and the edit
+                // dialog below - which does the same job and more, since it can also change what the
+                // train is set up to do once it is there.  Two of the three are enough, and the one
+                // that went is the one whose only advantage was a shorter list.
+                //
+                // The list this one offers is the whole roster now rather than only the locomotives
+                // autonomy has never run, so it can still do what Move did.
 
                 // Which way round the train is standing.
                 //
@@ -2338,52 +2351,90 @@ public class AutonomyEditorPanel extends JPanel
      * One at a time, and only where it is not already: a locomotive standing in two places at once is
      * a state the running layout cannot represent, so it is removed from wherever it was first.
      */
-    private void placeLocomotive(TileKey tile, boolean fromRoster)
+    /**
+     * Puts a locomotive on a square, asked for by name.
+     *
+     * One question rather than the two this used to be (OB-009). Bringing a train INTO autonomy and
+     * moving one already in it were separate items with separate lists, on the reasoning that a roster
+     * of forty should not have to be read through to find the four that matter. The cost was that the
+     * two were indistinguishable on the menu unless you already knew the difference, and the edit
+     * dialog - which can do both, and more - sat directly underneath them.
+     *
+     * So the list is the whole roster, with the locomotives autonomy already runs marked as such and
+     * sorted to the top. Choosing one of those moves it, which is what the item that went used to do.
+     *
+     * @param tile the square, which is a station or this item is not offered
+     */
+    private void placeLocomotive(TileKey tile)
     {
-        // Two different questions, which the old menu also kept apart.  Bringing a locomotive INTO
-        // autonomy offers everything the control station knows and it has never run.  Moving one
-        // offers only the locomotives autonomy already runs, so a roster of forty does not have to be
-        // read through to find the four that matter.
+        List<String> placed = placedLocomotives();
+
+        String here = locomotiveAt(tile);
+
         List<String> names = new java.util.ArrayList<>();
 
-        if (fromRoster)
+        // Already in autonomy first, and said so. A move is the commoner gesture once a railway is set
+        // up, and a name on its own does not say whether choosing it will take a train off somewhere
+        // else - which is the one consequence worth knowing before answering.
+        for (String name : placed)
         {
-            for (String name : allLocomotives())
-            {
-                if (!placedLocomotives().contains(name)) names.add(name);
-            }
+            if (!name.equals(here)) names.add(I18n.f("autosetup.ui.locomotiveElsewhere", name));
         }
-        else
+
+        for (String name : allLocomotives())
         {
-            names.addAll(placedLocomotives());
-            names.remove(locomotiveAt(tile));
+            if (!placed.contains(name)) names.add(name);
         }
 
         if (names.isEmpty())
         {
-            JOptionPane.showMessageDialog(owner(), I18n.t(fromRoster
-                ? "autosetup.ui.infoAllLocomotivesInAutonomy" : "error.noLocs"));
+            JOptionPane.showMessageDialog(owner(),
+                I18n.t("autosetup.ui.infoAllLocomotivesInAutonomy"));
             return;
         }
 
         Object chosen = JOptionPane.showInputDialog(owner(),
-            I18n.t(fromRoster ? "autosetup.ui.promptAddToAutonomy"
-                              : "autosetup.ui.promptAddToStation"),
-            I18n.t(fromRoster ? "autosetup.ui.menuAddToAutonomy"
-                              : "autosetup.ui.menuAddToStation"),
+            I18n.t("autosetup.ui.promptAddToAutonomy"),
+            I18n.t("autosetup.ui.menuAddToAutonomy"),
             JOptionPane.PLAIN_MESSAGE, null, names.toArray(), names.get(0));
 
         if (chosen == null) return;
 
-        String name = String.valueOf(chosen);
+        String name = unmark(String.valueOf(chosen), placed);
 
-        // lift it off wherever it was standing before
-        for (TileKey other : session.getReducer().getPoints().keySet())
+        if (name == null) return;
+
+        // Taking it off wherever it was is the SESSION's job, and it does it in placeLocomotive.
+        //
+        // This used to do it here as well, by walking the reducer's Points - which is not the same set:
+        // the reduction omits excluded pages, so a train standing on one of those was not lifted, and
+        // the build then emitted it at two Points and invalidated the whole layout. The session works
+        // over the configuration, which is complete.
+        session.placeLocomotive(tile, name);
+
+        // OB-009: the placement was made and nothing redrew, so the caption went on showing whatever
+        // was there before - which reads exactly like the placement not having worked.
+        refresh();
+    }
+
+    /**
+     * The plain name behind a row of the list above.
+     *
+     * The marked-up rows are built from the same names they mark, so this matches rather than parses:
+     * a locomotive called "BR 218 (elsewhere)" would defeat anything that trusted the suffix.
+     *
+     * @param chosen what the user picked
+     * @param placed the locomotives autonomy already runs
+     * @return the locomotive's real name, or null if the row matched nothing
+     */
+    private String unmark(String chosen, List<String> placed)
+    {
+        for (String name : placed)
         {
-            if (name.equals(locomotiveAt(other))) session.placeLocomotive(other, null);
+            if (chosen.equals(I18n.f("autosetup.ui.locomotiveElsewhere", name))) return name;
         }
 
-        session.placeLocomotive(tile, name);
+        return chosen;
     }
 
     /**
@@ -3058,6 +3109,8 @@ public class AutonomyEditorPanel extends JPanel
             say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
                 : I18n.f("autosetup.ui.oneWayDone", changed));
 
+            if (changed >= 0) showRestrictionsIfHidden();
+
             // Armed for the next one.  Closing a run is rarely a single act - a yard is several - and
             // the alternative is pressing the button again between each.
             if (changed >= 0 && tool == Tool.ONE_WAY)
@@ -3142,6 +3195,32 @@ public class AutonomyEditorPanel extends JPanel
      * Whatever is clicked, the change lands on the run - clicking any tile of a straight run sets the
      * whole run, which is what makes one click enough.
      */
+    /**
+     * Turns the arrows back on when an edit would otherwise happen invisibly.
+     *
+     * OB-008: with the visibility control set to None, clicking a square changed its direction and
+     * nothing on screen moved. The click worked, the hint line said so, and the diagram - which is
+     * where the user was looking - was identical before and after. That reads as a broken control, and
+     * the natural response to a control that does nothing is to click it again, which cycles the
+     * square on to a state nobody asked for.
+     *
+     * Restrictions rather than All, because it is the default for the same reason: open track is most
+     * of a layout and its arrows say what the reader can already assume. It shows the decision that
+     * has just been made without burying it.
+     *
+     * Only from None, and only on an edit. Somebody who has chosen All or Arrivals has chosen
+     * something that already shows their edit, and moving them off it would be the same rudeness in
+     * the other direction.
+     */
+    private void showRestrictionsIfHidden()
+    {
+        if (directions.getSelectedIndex() != 2) return;
+
+        directions.setSelectedIndex(1);
+
+        say(hint, I18n.t("autosetup.ui.infoDirectionsShownAgain"));
+    }
+
     private void cycle(TileKey tile)
     {
         TileKey target = leaderOf(tile);
@@ -3186,6 +3265,8 @@ public class AutonomyEditorPanel extends JPanel
         // could not be set - a dead end, in the days when that was possible - reported success.
         say(hint, changed == 0 ? I18n.t("autosetup.ui.oneWayNoPath")
             : I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
+
+        if (changed != 0) showRestrictionsIfHidden();
     }
 
     /**
@@ -3236,6 +3317,8 @@ public class AutonomyEditorPanel extends JPanel
         applyArmMask(target, routes, sides, next);
 
         say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
+
+        showRestrictionsIfHidden();
 
         refresh();
     }
