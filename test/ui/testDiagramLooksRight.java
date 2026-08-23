@@ -116,6 +116,103 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A claimed path drawn across a CURVED tile, which is what OB-026 is about.
+     *
+     * "When arriving at a curved station the red trace draws a straight line on the tile, rather than
+     * following the shape of the station."
+     *
+     * `DiagramMonitor.lay` is public for exactly this - "so the geometry can be tested without a
+     * railway. Everything above it needs a running Layout with trains on it and cannot be reached from
+     * a test at all; this needs a list of squares." So the run is built by hand from real squares of
+     * the real layout, laid the way the monitor lays it, and published to the registry the way the
+     * monitor publishes it. What comes out is the picture the running diagram would draw.
+     *
+     * The tile has to be a CURVE and it has to be in the middle of the run: a segment's two sides come
+     * from the neighbouring squares, so an end tile draws a stub rather than a crossing.
+     */
+    @Test
+    public void testAClaimedPathAcrossACurveIsDrawn() throws Exception
+    {
+        for (String name : model.getLayoutList())
+        {
+            LayoutDiagram page = model.getLayout(name);
+
+            if (page == null) continue;
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> run = curveWithNeighbours(page);
+
+            if (run == null) continue;
+
+            java.util.List<org.traincontrol.automationui.TileOverlay.State> states =
+                java.util.Arrays.asList(
+                    org.traincontrol.automationui.TileOverlay.State.REACHED,
+                    org.traincontrol.automationui.TileOverlay.State.REACHED,
+                    org.traincontrol.automationui.TileOverlay.State.ACTIVE);
+
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                org.traincontrol.automationui.TileOverlay> overlays = new java.util.LinkedHashMap<>();
+
+            org.traincontrol.automationui.DiagramMonitor.lay(overlays, run, states);
+
+            assertEquals(overlays.size(), 3, "the run did not lay three squares: " + run);
+
+            // Published BEFORE the grid is built: a label picks up the last published overlay for its
+            // square as it registers, which is how a page coming back from the cache is redrawn with
+            // the run still on it.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                ui.getDiagramTileRegistry().publish(overlays));
+
+            BufferedImage shot = DiagramExport.render(page, 60, ui);
+
+            File to = new File(OUT, "curve-run-" + name.replaceAll("[^A-Za-z0-9]+", "-") + ".png");
+
+            javax.imageio.ImageIO.write(shot, "png", to);
+
+            System.out.println("claimed path across a curve at " + run.get(1) + " -> " + to);
+
+            return;
+        }
+
+        throw new SkipException("no curved tile with two neighbours on this layout");
+    }
+
+    /**
+     * A curved square with track either side of it, as a three-square run.
+     */
+    private java.util.List<org.traincontrol.automationui.TileGraph.TileKey> curveWithNeighbours(
+        LayoutDiagram page)
+    {
+        for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
+        {
+            if (c == null || !isCurve(c.getType())) continue;
+
+            // Left and right of it, which is the commonest shape and the one Adam described
+            org.traincontrol.base.LayoutDiagramComponent before =
+                page.getComponent(c.getX() - 1, c.getY());
+
+            org.traincontrol.base.LayoutDiagramComponent after =
+                page.getComponent(c.getX(), c.getY() + 1);
+
+            if (before == null || after == null) continue;
+
+            return java.util.Arrays.asList(
+                new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), c.getX() - 1, c.getY()),
+                new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), c.getX(), c.getY()),
+                new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), c.getX(), c.getY() + 1));
+        }
+
+        return null;
+    }
+
+    private boolean isCurve(org.traincontrol.base.LayoutDiagramComponent.componentType type)
+    {
+        return type == org.traincontrol.base.LayoutDiagramComponent.componentType.CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+    }
+
+    /**
      * How many distinct colours, up to the point where the answer stops mattering.
      */
     private int colours(BufferedImage image)

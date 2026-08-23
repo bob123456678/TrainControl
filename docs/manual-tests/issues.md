@@ -125,15 +125,6 @@ guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was cl
 **Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
 hand-written even if this lands.
 
-### OB-026 - 2026-08-22 - route tracing
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:14  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-When arriving at a curved station (specifically s88 1015 from the north), the red trace draws a straight line on the tile, rather than following the shape of the station.  Running through curves looks OK.  Verify that this bug doesn't also exist elsewhere.
-
 ### OB-028 - 2026-08-22 - grid in autonomy editor
 
 **Kind:** bug  
@@ -161,6 +152,14 @@ in the editor, make the gray grid an option you can toggle in the visibile eleme
 
 it should be possible to initially load autonomy from an import, not just forcing the creation of a new one.
 
+### FR-008 - 2026-08-22 - Cancel -
+
+**Kind:** feature request  
+**Raised from:** cancellation request for - - Highlight on Diagram button in the route editor, and rename Test to Test Condition  
+**Filed:** 2026-08-22 23:21  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+This was completed, clean up the disposition and give this a proper FR- index for the record.
 
 ---
 
@@ -176,6 +175,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-026 | bug | The trace stub at the end of a run cuts across a curved tile | - | [MT-119](tests.md#mt-119) |
 | 2026-08-22 | OB-038 | bug | Export/import restoring a placement - already covered by a test | - | [MT-118](tests.md#mt-118) |
 | 2026-08-22 | OB-037 | bug | The train star was drawn too small for its own outline | - | [MT-117](tests.md#mt-117) |
 | 2026-08-22 | OB-036 | bug | Findings read "(Page 2)" rather than "On 2 -" | - | [MT-117](tests.md#mt-117) |

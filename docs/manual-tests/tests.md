@@ -83,6 +83,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
 | [MT-117](#mt-117) | 2026-08-22 | The train star is visible again, and five smaller fixes | fixed unvalidated | OB-030, OB-031, OB-035, OB-036, OB-037 |
+| [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | needs test | OB-026 |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -1396,6 +1397,10 @@ not only after pressing OK.
 OK.  Minor bug though: linked, active tile is greyed out.
 
 Future feature request: make the autonomy editor and track diagram editor be on two tabs in one window.  Easy to flip between them if state is saved in one.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-020"></a>
@@ -4078,5 +4083,60 @@ classes clean.
 If you have a bundle that does NOT restore a placement, that is a different defect from the one this
 covers and worth its own entry with the file attached - the round trip through the code is proven, so
 the interesting case would be a bundle written by an older build.
+
+---
+
+<a id="mt-119"></a>
+
+### MT-119 - 2026-08-22 - The trace arriving at a curved station
+
+**Disposition:** needs test  
+**From:** OB-026  
+**Written:** 2026-08-22
+
+**What to do.** Not fixed - **diagnosed**, and filed here because the fix touches geometry that has
+already been got wrong once and wants your eye before I change it.
+
+When you next run a train to a curved station, look at the LAST tile of the trace and at a curve the
+train merely passes THROUGH. The reported difference should be visible: the one it stops on cuts across
+the tile, the one it runs through follows the rail.
+
+#### Comments
+
+**Claude, 2026-08-22.** Your "running through curves looks OK" is the half of the report that located
+this.
+
+A run is drawn one segment per square, from the midpoint of the edge it came in by to the midpoint of
+the edge it leaves by. On the LAST square there is no edge it leaves by, so the line runs to the
+tile's geometric **centre**:
+
+```java
+int[] b = segment.getTo() == null ? centre : midpoint(segment.getTo(), width, height);
+```
+
+On a straight, the centre is on the rail and the stub looks right. On a curve the rail hugs the corner
+and never passes through the centre, so the stub cuts across the tile - which is exactly "draws a
+straight line on the tile, rather than following the shape of the station". Running THROUGH a curve
+uses two edge midpoints and matches the art, which is why that case looks fine.
+
+**Why I have not just fixed it.** The straight chord is deliberate, and the comment beside it records
+what happened when somebody changed this geometry before:
+
+> "Bending the run line through the tile centre instead put it at forty-five degrees to the track under
+> it - two strokes cutting across the corner the rail cuts through - so on every turn of a route the
+> highlight and the railway disagreed about where the train was going."
+
+So the through-case must not be touched. What needs to change is only the END stub, and to end it on
+the rail the overlay has to know which sides this tile's track actually uses - which it does not: it
+knows the segment it was given, and at the end of a run that is one side and a null.
+
+**What I would do.** Give the end stub the tile's own track sides, the way `TileAnnotation.trackCentre`
+already does - "the midpoint of the route's own two sides, which is the tile centre for a straight and
+lands on the rails for anything else". That sentence is the fix, and it is already written and already
+used for the badges; the work is getting the component to the overlay.
+
+**And there is now a way to check it.** `testDiagramLooksRight` renders a claimed run across a curved
+tile to a PNG, so this can be looked at before and after rather than reasoned about - which is what the
+last three drawing defects needed and did not have.
 
 ---
