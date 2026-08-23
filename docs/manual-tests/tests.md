@@ -88,8 +88,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-122](#mt-122) | 2026-08-23 | Adding a locomotive to autonomy from the track diagram | needs test | OB-035 |
 | [MT-123](#mt-123) | 2026-08-23 | How a warning names another page | fixed unvalidated | OB-036 |
 | [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
+| [MT-125](#mt-125) | 2026-08-23 | The arrow on a caption follows the orientation you chose | fixed unvalidated | OB-039 |
+| [MT-126](#mt-126) | 2026-08-23 | The diagram gets out of the way while you pick a signal | fixed unvalidated | OB-040 |
+| [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
 
-Everything else - 53 of 124 - is **fixed validated** and needs nothing from you unless the
+Everything else - 53 of 127 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -4383,5 +4386,112 @@ the change.
 
 Unvalidated rather than validated because the second half has never been seen working - his "stars
 work" was about visibility, which is not what this now asks you to look at.
+
+---
+
+<a id="mt-125"></a>
+
+### MT-125 - 2026-08-23 - The arrow on a caption follows the orientation you chose
+
+**Disposition:** fixed unvalidated  
+**From:** OB-039  
+**Written:** 2026-08-23
+
+**What to do.** Right-click a station with a locomotive on it, on the TRACK DIAGRAM, and change which way the
+locomotive is facing. The arrow on its caption must change with it, at once.
+
+Then do the same from inside Autonomy Setup and check the caption again - the two menus used to be
+separate pieces of code and are now one, so they should behave identically.
+
+#### Comments
+
+**Claude, 2026-08-23.** Adam: "when changing the orientation of a loc from the track diagram, the
+direction on the label is not updated."
+
+The facing was written to the setup and nothing repainted, so the caption went on stating the opposite
+of what had just been chosen. Same seam as OB-034 and OB-035: the setup is written, and the caption is
+drawn from the RUNNING layout, so `placementChanged()` is what carries one to the other.
+
+**The reason this took a test.** The facing menu existed TWICE in `AutonomyEditorPanel` - once for the
+deep menu inside Autonomy Setup, once handed to the track diagram - about forty lines apart and already
+drifting. Adding the redraw to the copy in front of me would have fixed the surface I was looking at and
+left the other one carrying the bug. So the deep menu now calls `buildFacingMenu` like everything else,
+and `testEditorSurfaceRules` requires the setup to be told about a facing from exactly one place, and
+that place to redraw. Mutation-checked by deleting the redraw.
+
+---
+
+<a id="mt-126"></a>
+
+### MT-126 - 2026-08-23 - The diagram gets out of the way while you pick a signal
+
+**Disposition:** fixed unvalidated  
+**From:** OB-040  
+**Written:** 2026-08-23
+
+**What to do.** Right-click a station, ask which signals protect it, and leave that window open. While it is up,
+the diagram behind must be quiet: no direction arrows, no tile lengths, and everything that is not a
+pairable signal greyed out.
+
+**Then close it every way there is** - Done, Escape, the window's close box, and "click it on the
+diagram" - and check each time that the arrows, lengths and colour all come back.
+
+#### Comments
+
+**Claude, 2026-08-23.** Adam: "while the window is open, de-clutter the diagram as much as possible
+so users can clearly see the signals. turn off arrows, labels, etc."
+
+The greying already existed, but only for the click half of the gesture - so the one moment somebody is
+being asked to FIND a particular square left the two things most likely to cover it, arrows and lengths,
+switched on.
+
+One predicate now, `isFocusedOnSignals()`, asked once in `annotationFor` and used by all three. Three
+separate conditions that have to agree is the shape that produced OB-037, and it is not worth repeating.
+
+**The risk here is not the feature, it is the flag.** An editor stuck grey and arrowless looks broken
+and nothing on screen says why, so it is cleared in the `finally` around the window rather than in any
+handler - the window has four ways out and only the finally sees all of them. The test asserts exactly
+that, because moving it into a handler is the natural-looking edit that would break it.
+
+**What I did not do:** the station captions are still drawn. They come from the grid rather than from
+the annotation, so switching them off is a different piece of work; say the word if they are in the way.
+
+---
+
+<a id="mt-127"></a>
+
+### MT-127 - 2026-08-23 - No grey grid in the autonomy editor
+
+**Disposition:** fixed unvalidated  
+**From:** OB-028  
+**Written:** 2026-08-23
+
+**What to do.** Open Autonomy Setup. The diagram must look like the viewer's - no grey line around every tile.
+
+Then switch to the layout editor on the same page: the grid must be back.
+
+**And hover a few tiles in autonomy mode.** The artwork must not shift or resize as the pointer crosses
+them.
+
+#### Comments
+
+**Claude, 2026-08-23.** Adam: "in the autonomy editor, the gray grid is not needed. show the track
+diagram as it appears in the viewer, without the tile borders. make sure the borders return in the
+editor."
+
+An EMPTY border of the same thickness rather than no border at all, and that is the whole of the care
+needed. The grey lines go, which is what was asked; the tile keeps the insets it had, so hovering -
+which swaps the resting border for a coloured line - does not move the artwork underneath. A null border
+would have shifted every icon by a pixel the moment the pointer crossed it, which is the complaint
+FR-006 makes about the layout editor's own grid.
+
+The palette keeps its visible border in both modes: those tiles are a menu of things to place rather
+than a picture of a railway, and the border is what separates one from the next.
+
+Small enough to state as a function, so it is tested as one - `LayoutEditor.restingBorder(palette,
+autonomy)` - including that the invisible border takes the same room as the grid it replaces.
+
+**FR-006 is still open and still yours to call.** It asks for the layout editor's grid to become a
+toggle in Visible Elements, persisted, which is a different piece of work from this.
 
 ---

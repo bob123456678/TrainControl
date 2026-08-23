@@ -3089,6 +3089,38 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
+    /**
+     * What a tile's border looks like when nothing is happening to it.
+     *
+     * OB-028: "in the autonomy editor, the gray grid is not needed. show the track diagram as it appears
+     * in the viewer, without the tile borders. make sure the borders return in the editor."
+     *
+     * An EMPTY border of the same thickness rather than no border at all, and that is the whole of the
+     * care needed here. The grey lines go, which is what was asked; the tile keeps the insets it had, so
+     * hovering - which swaps this for a coloured line - does not move the artwork underneath. A null
+     * border would have shifted every icon by a pixel the moment the pointer crossed it, which is the
+     * complaint FR-006 makes about the layout editor's own grid.
+     *
+     * The palette keeps its visible border in both modes: those tiles are a menu of things to place, not
+     * a picture of a railway, and the border is what separates one from the next.
+     *
+     * @param palette whether this is the palette of new components rather than the diagram
+     * @param autonomy whether the editor is in autonomy mode
+     * @return the border to leave the tile with
+     */
+    public static Border restingBorder(boolean palette, boolean autonomy)
+    {
+        if (palette)
+        {
+            return BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR,
+                NEW_COMPONENT_BORDER_WIDTH);
+        }
+
+        return autonomy
+            ? new javax.swing.border.EmptyBorder(1, 1, 1, 1)
+            : BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, 1);
+    }
+
     private void highlightLabel(JLabel label, Color color)
     {
         if (label != null)
@@ -3110,7 +3142,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     // Don't reset components without a border, because they might be something else...
                     if (label.getBorder() != null)
                     {
-                        label.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, newComponents.equals(panel) ? NEW_COMPONENT_BORDER_WIDTH : 1));
+                        label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));
                     }
                 }
             }

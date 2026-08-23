@@ -125,15 +125,6 @@ guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was cl
 **Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
 hand-written even if this lands.
 
-### OB-028 - 2026-08-22 - grid in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:35  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the autonomy editor, the gray grid is not needed.  show the track diagram as it appears in the viewer, without the tile borders.  make sure the borders return in the editor.
-
 ### FR-006 - 2026-08-22 - editor grids
 
 **Kind:** feature request  
@@ -161,26 +152,6 @@ it should be possible to initially load autonomy from an import, not just forcin
 
 This was completed, clean up the disposition and give this a proper FR- index for the record.
 
-### OB-039 - 2026-08-22 - orientation of loc
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 23:34  
-**Build:** commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when changing the orientation of a loc from the track diagram, the direction on the label is not updated.
-
-### OB-040 - 2026-08-22 - selecing guarding signals in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 23:35  
-**Build:** commit 4ba329ad, build\classes, compiled 22 Aug 23:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-while the window is open, de-clutter the diagram as much as possible so users can clearly see the signals.  turn off arrows, labels, etc.
-
----
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -193,6 +164,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-23 | OB-039 | bug | Changing a locomotive's orientation updates its label | - | [MT-125](tests.md#mt-125) |
+| 2026-08-23 | OB-040 | bug | Picking a guarding signal de-clutters the diagram | - | [MT-126](tests.md#mt-126) |
+| 2026-08-23 | OB-028 | bug | The autonomy editor draws the railway, not a grid over it | - | [MT-127](tests.md#mt-127) |
 | 2026-08-22 | OB-026 | bug | The trace stub at the end of a run cuts across a curved tile | - | [MT-119](tests.md#mt-119) |
 | 2026-08-22 | OB-038 | bug | Export/import restoring a placement - already covered by a test | - | [MT-118](tests.md#mt-118) |
 | 2026-08-22 | OB-037 | bug | The train star was drawn too small for its own outline | - | [MT-124](tests.md#mt-124) |

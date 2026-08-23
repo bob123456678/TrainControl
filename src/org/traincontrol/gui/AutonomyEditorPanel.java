@@ -279,6 +279,9 @@ public class AutonomyEditorPanel extends JPanel
     // The station whose protecting signal is being picked by clicking one, waiting for that click
     private TileKey signalFor;
 
+    /** Whether the "which signals protect this station" window is on screen - see isFocusedOnSignals */
+    private boolean signalWindowOpen;
+
     // The signals drawn outlined, so that "protected by signal 12" can be pointed at rather than read
     private final java.util.Set<TileKey> highlightedSignals = new java.util.LinkedHashSet<>();
 
@@ -903,31 +906,20 @@ public class AutonomyEditorPanel extends JPanel
                 // autonomy runs, where the train ends up says which way it was pointing and that is
                 // written back.  This is the escape hatch for the first run, and for a train somebody
                 // put on the rails backwards.
-                final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
-                    session.facingChoices(target);
-
                 // Not in the deep menu: it is offered by the track diagram's own menu instead, beside
                 // the other things about the train standing there - see buildFacingMenu.
-                if (standing != null && facings.size() > 1 && !menuOnly)
+                // Built by buildFacingMenu rather than here.
+                //
+                // This was a second copy of it, and the copies drifted the way copies do: OB-039 - "when
+                // changing the orientation of a loc from the track diagram, the direction on the label is
+                // not updated" - was a missing redraw that had to be added to both, and only one of them
+                // was in front of anybody. buildFacingMenu already returns null on exactly the two
+                // conditions this used to test itself, so nothing here needs to know them.
+                if (!menuOnly)
                 {
-                    javax.swing.JMenu facingMenu = new javax.swing.JMenu(
-                        I18n.f("autosetup.ui.menuFacingGroup", standing));
+                    javax.swing.JMenu facingMenu = buildFacingMenu(target);
 
-                    facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
-
-                    javax.swing.ButtonGroup facingGroup = new javax.swing.ButtonGroup();
-
-                    org.traincontrol.automationui.TilePorts.Side recorded = session.getFacing(target);
-
-                    for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
-                    {
-                        facingMenu.add(radio(facingGroup,
-                            I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
-                            recorded == null ? facing == facings.get(0) : facing == recorded,
-                            () -> session.setFacing(target, facing)));
-                    }
-
-                    menu.add(facingMenu);
+                    if (facingMenu != null) menu.add(facingMenu);
                 }
 
                 // Last of the locomotive group (MT-104).
@@ -1970,7 +1962,16 @@ public class AutonomyEditorPanel extends JPanel
             facingMenu.add(radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
                 recorded == null ? facing == facings.get(0) : facing == recorded,
-                () -> session.setFacing(target, facing)));
+                () ->
+                {
+                    session.setFacing(target, facing);
+
+                    // OB-039. Which way a train is pointing is drawn on its caption - the arrow beside
+                    // the name - so a facing that is recorded and not redrawn leaves the diagram
+                    // stating the opposite of what was just chosen. Same seam as OB-034 and OB-035:
+                    // the setup is written here, and the caption is drawn from the RUNNING layout.
+                    placementChanged();
+                }));
         }
 
         return facingMenu;
@@ -2940,12 +2941,21 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void pairProtectingSignal(TileKey station)
     {
+        signalWindowOpen = true;
+
         try
         {
             askAboutProtectingSignals(station);
         }
         finally
         {
+            // Cleared HERE, in the finally, and not in the button handlers.
+            //
+            // The window has four ways out - Done, Escape, the close box, and "click it on the diagram"
+            // - and a flag that quietens the whole diagram is one that strands the editor grey and
+            // arrowless if any one of them forgets.  This is the only place all four pass through.
+            signalWindowOpen = false;
+
             highlightedSignals.clear();
             refresh();
         }
@@ -4288,6 +4298,24 @@ public class AutonomyEditorPanel extends JPanel
         return directions.getSelectedIndex() < 2;
     }
 
+    /**
+     * Whether the diagram is currently being used to point at a signal.
+     *
+     * True while the protecting-signals window is up, and while the click it hands back is being waited
+     * for.  OB-040: "while the window is open, de-clutter the diagram as much as possible so users can
+     * clearly see the signals.  turn off arrows, labels, etc."
+     *
+     * The greying was already conditional on the click half of this.  Arrows and lengths were not, so
+     * the one gesture that asks somebody to FIND a particular square left the two things most likely to
+     * cover it switched on.
+     *
+     * @return whether everything that is not a signal should get out of the way
+     */
+    public boolean isFocusedOnSignals()
+    {
+        return signalFor != null || signalWindowOpen;
+    }
+
     public boolean isShowingLengths()
     {
         return showLengths.isSelected();
@@ -4342,6 +4370,12 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
+        // Everything that is not a signal gets out of the way - greyed, and below, no arrows and no
+        // lengths (OB-040).  Asked once and used three times, because a de-clutter that is on for one
+        // of the three and off for the others is worse than not having it: the diagram then looks
+        // deliberately half-dressed rather than focused.
+        final boolean focused = isFocusedOnSignals();
+
         // While a signal is being picked, everything that is not one is greyed.
         //
         // The gesture is "click the signal", and on a diagram of several hundred squares that is a
@@ -4349,7 +4383,7 @@ public class AutonomyEditorPanel extends JPanel
         // ones left in colour.  It inverts the usual meaning of grey here - a signal is normally the
         // greyed thing, because autonomy runs no trains through one - which is exactly why the two
         // states cannot be on screen at once.
-        if (signalFor != null) ignored = !isPairableSignal(componentAt(tile));
+        if (focused) ignored = !isPairableSignal(componentAt(tile));
 
         // A link autonomy has been told to ignore carries no trains, so it carries no arrows either.
         // Its route is still a stub the port map knows about, and drawn from that it kept an arrow
@@ -4368,7 +4402,7 @@ public class AutonomyEditorPanel extends JPanel
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
-        if (isShowingDirections() && session.getGraph() != null && !ignored && !follower)
+        if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower)
         {
             Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -4418,7 +4452,7 @@ public class AutonomyEditorPanel extends JPanel
         // 0 means "does not count" and is the default everywhere, so drawing it would number every tile
         int length = -1;
 
-        if (showLengths.isSelected())
+        if (showLengths.isSelected() && !focused)
         {
             int stored = session.getStore().getTileLength(tile);
 
