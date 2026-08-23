@@ -1688,7 +1688,7 @@ OK
 
 ### MT-029 - 2026-08-21 - The command table's marks
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** AR-18  
 **Written:** 2026-08-21
 
@@ -1709,6 +1709,25 @@ seems to work in the UI, but this should have a programmatic test.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - written, as you asked.** "Seems to work in the UI, but this should have a
+programmatic test."
+
+`testCommandTableMarks.testEachMarkActsOnExactlyOneRow`. Three rows, each identifiable by its accessory
+address, then: move one down and check the other two are where they were; move it back and check it
+stays where it was put rather than springing back; duplicate and check there is exactly ONE more row and
+that the copy sits directly under its original; delete and check exactly one went, and the right one.
+
+**"Exactly one" is the whole entry**, and it is not cosmetic: a route is a sequence of commands sent to
+real hardware, so a doubled row is a second throw of the same accessory.
+
+The marks are values the table PAINTS rather than buttons in a cell, so there is nothing to click. The
+test goes through the same private methods the cell editor calls - via a `...ForTest` hook, the
+convention this frame already uses for `commandRowForTest` and `setCommandKindForTest` - which keeps it
+from becoming a second implementation of move and delete that could agree with itself while the real one
+is wrong.
+
+Mutation-checked: making duplicate insert twice fails it on the sentence about copies.
 ---
 <a id="mt-030"></a>
 
@@ -2006,7 +2025,7 @@ that safeguard exists because an earlier version of it destroyed the file for re
 
 ### MT-039 - 2026-08-21 - A page named with a slash
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** AR-22  
 **Written:** 2026-08-21
 
@@ -2029,12 +2048,20 @@ The UI does not allow slashes to be entered.  Make a programmatic test to valida
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - already covered.**
+
+`testLayoutFolderRobustness.testAPageNamedWithASlashSurvivesASave` is exactly this instruction, and its
+own comment says why the case exists: "Up/Down" is an ordinary name for a page on a two-level railway
+and an impossible one for a file.
+
+Recorded rather than re-tested. It runs in the battery, which is green.
 ---
 <a id="mt-040"></a>
 
 ### MT-040 - 2026-08-21 - A page the folder does not hold
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** AR-23  
 **Written:** 2026-08-21
 
@@ -2055,6 +2082,13 @@ make a test for this.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - already covered.**
+
+`testLayoutFolderRobustness.testAMissingPageDoesNotStopTheOthers` is this instruction: every other page
+loads, the missing one is named, and the folder is still the one being pointed at afterwards.
+
+Recorded rather than re-tested. It runs in the battery, which is green.
 ---
 <a id="mt-041"></a>
 

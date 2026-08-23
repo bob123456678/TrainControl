@@ -1328,6 +1328,46 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * @return how many rows the command table holds, the plus not counted
+     */
+    public int commandRowCountForTest()
+    {
+        return commands.rows.size();
+    }
+
+    /**
+     * The three marks at the end of a command row, driven the way a click drives them.
+     *
+     * For tests (MT-029). The marks are values the table PAINTS rather than buttons in a cell, so
+     * there is no component to click - the same reason `commandPlusShowingForTest` exists. Going
+     * through the same private methods the cell editor calls keeps this from becoming a second
+     * implementation of move and delete that could agree with itself while the real one is wrong.
+     *
+     * @param row which row
+     * @param mark MOVE_UP, MOVE_DOWN, DELETE_ROW or COPY_ROW
+     */
+    public void clickCommandMarkForTest(int row, String mark)
+    {
+        if (MOVE_UP.equals(mark)) moveRow(commands, row, -1);
+        else if (MOVE_DOWN.equals(mark)) moveRow(commands, row, 1);
+        else if (DELETE_ROW.equals(mark)) deleteRow(commands, row);
+        else if (COPY_ROW.equals(mark)) duplicateRow(commands, row);
+        else throw new IllegalArgumentException("no such mark: " + mark);
+    }
+
+    /** The marks, so a test names them the way the table does */
+    public static String markMoveUp() { return MOVE_UP; }
+
+    /** @return the move-down mark */
+    public static String markMoveDown() { return MOVE_DOWN; }
+
+    /** @return the delete mark */
+    public static String markDelete() { return DELETE_ROW; }
+
+    /** @return the duplicate mark */
+    public static String markCopy() { return COPY_ROW; }
+
+    /**
      * Whether the command list is showing its plus.
      *
      * For tests.  The plus is a value the table paints rather than a button in a cell, so there is
