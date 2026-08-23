@@ -41,8 +41,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-134](#mt-134) | 2026-08-23 | Four things the night review found | fixed unvalidated | NR-1, NR-2, NR-3, NR-4 (2026-08-23-night-review.md) |
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
+| [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
 
-Everything else - 111 of 136 - is **fixed validated** and needs nothing from you unless the
+Everything else - 111 of 137 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5744,5 +5745,52 @@ anything, which is why it is the reading half rather than a migration.
 **Both were found by a reviewer reading three days of commits**, not by a test - and neither would have
 been found by reading the end state, which is what the other two reviews did. A fix applied to one of
 several call sites looks complete in the diff that contains it.
+
+---
+
+<a id="mt-137"></a>
+
+### MT-137 - 2026-08-23 - The round of bugs from Adam's last test pass
+
+**Disposition:** fixed unvalidated  
+**From:** OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052  
+**Written:** 2026-08-23
+
+**What to do.** With trains RUNNING: the Autonomy menu's setup entry must be greyed, and pressing the
+Edit button must open **neither** editor - an error instead. With a configuration in the fix-it state,
+the diagram's right-click menu must show **Start Autonomy** greyed.
+
+Then, with trains stopped: **Length...** must refuse anything but digits and refuse a fourth one; clear
+it and press OK and the length becomes 0. **Import** and **Export** are in the Configuration submenu
+under a divider - Export greyed with nothing loaded, Import never greyed. Going to a link's other end
+with unsaved work asks Save / Discard / Cancel and each answer does what it says.
+
+Finally, make a diagram edit that costs a station its square and save: the report must be headed and
+explained, not a bare list of names.
+
+#### Comments
+
+**Claude, 2026-08-23.** Seven items from the same pass, all small, three of them the same shape - a rule
+that was enforced only after the user had committed to the gesture.
+
+**OB-047** was the one with teeth: `openLayoutEditor` asked whether autonomy was busy only for the
+AUTONOMY editor and fell back to the track one, so pressing Edit during a run opened the diagram editor -
+where a tile can be moved, retextured or deleted under a train on its way to it. Neither opens now, and
+with no fallback: falling back means opening SOMETHING, and while trains are running the answer is
+nothing at all.
+
+**OB-045 and OB-050** are the greying half of the same idea - saying "not now" before the click rather
+than after it. Only the setup entry is greyed, not the whole Autonomy menu: what somebody with trains
+running most needs to reach is the way to stop them.
+
+**OB-051 was not a bug.** Both Import controls were ungated and the menu's one is deliberately exempt
+from the greying. Adam: "the option is just buried and I didn't see it" - which is the same outcome as
+disabled, reached by a different route. They sit under a divider in the Configuration submenu now,
+beside the list of configurations they act on. Export keeps its greying; Import never gets it, because
+the moment it is most needed is when the current setup will not load.
+
+**OB-052.** The tidy-up report ran two lists together that mean opposite things - stations FORGOTTEN and
+stations KEPT because something still names them - with no title and no sentence. A reader could not tell
+which of their stations they had just lost.
 
 ---
