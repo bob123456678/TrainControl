@@ -222,6 +222,15 @@ it should be possible to initially load autonomy from an import, not just forcin
 
 many tooltips are very wide.  split them.
 
+### OB-031 - 2026-08-22 - link pairing
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 22:12  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
+
 ---
 
 ## What has been picked up

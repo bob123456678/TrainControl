@@ -19,7 +19,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
+| [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | fixed unvalidated | Tier 1 |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
 | [MT-076](#mt-076) | 2026-08-18 | Running path drawing | fixed unvalidated | Tier 3 |
@@ -207,7 +207,7 @@ Looks right in the track diagram.  But not greyed out in the editor.  Also, move
 
 ### MT-069 - 2026-08-18 - Remove a locomotive from a non-station
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
 **Written:** 2026-08-18
 
@@ -226,6 +226,24 @@ Present in the autonomy editor but not in the track diagram.
 
 *Run against commit 058d2385, build\classes, compiled 22 Aug 17:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Found, and it is the same trap the menu already had a comment about - one level
+further up.
+
+The track diagram's menu is built with two squares: `station`, from `autonomyStationAt`, and `here`,
+the square itself. **`autonomyStationAt` returns null unless the square has been DESIGNATED a station.**
+The whole locomotive block - Remove, the paths, the facing - hung off `station`, so on a pass-through
+Point with a train standing on it there was nothing at all. The autonomy editor works from the square,
+which is why it had them and the diagram did not.
+
+Fifteen lines below the line I changed, this comment was already there:
+
+> "Gated on being a destination alone, a locomotive on a copy that is not one had no menu at all - no
+> remove, no paths, nothing ... It is the same trap the autonomy editor had, where the remove item
+> hung off the designation rather than off the locomotive."
+
+That fix was applied to the inner test and not to where the square comes from, so the designation was
+still deciding, one step earlier. The block reads from the square now when there is no station.
 ---
 
 <a id="mt-070"></a>
@@ -990,7 +1008,7 @@ Also, when selecting, add a deselect option to the right click menu (just change
 
 ### MT-003 - 2026-08-20 - A route round-trips unchanged
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** LT-C4  
 **Written:** 2026-08-20
 
@@ -1009,6 +1027,18 @@ Add a test case for this into the suite.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Written, in `testRouteEditorRoundTripCases`.
+
+It builds `(A OR B) AND C` from objects, renders it the way the editor does, parses it back, and
+requires all three terms to survive - then renders and parses once more, which is what saving actually
+does. A second test does the same with the bracket in the MIDDLE, which always worked: if both fail the
+parser is broken generally, and if only the first fails it is the leading bracket specifically, which
+is what your note describes.
+
+Built from objects rather than typed as text on purpose. The text form is the editor's business, and a
+hand-written string would pin my spelling of it rather than its behaviour - the first draft of this
+test failed for exactly that reason, on syntax I had invented.
 ---
 <a id="mt-004"></a>
 
@@ -1032,6 +1062,23 @@ Make a test case for this, all 3 possible directions.  Enable the echo packets o
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Half written, and the half that is missing is the half you described.
+
+`testRouteEditorRoundTripCases` covers all three positions: each expands to a PAIR of commands, the
+three pairs are genuinely different - two positions expanding alike would send a train to the wrong
+road - and each keeps its order through the route text, since the release has to precede the throw or
+the point settles wherever the hardware happens to finish.
+
+**What it cannot cover.** "Enable the echo packets option in the main class, and then see if the
+accessory status is correctly set, and the icon matches" is a round trip through a Central Station:
+commands out, echo back, model updated, icon redrawn. There is no station on this machine, and the one
+test that talks to real hardware - `testAutoDetect` - is excluded from the battery for that reason and
+recorded as the single deliberate omission in `testEveryTestIsInTheBattery`.
+
+So this entry stays open for the echo half. The instruction above is still the right thing to do; what
+has changed is that the model half underneath it is now pinned, so if the icon is wrong you will know
+the commands were right.
 ---
 <a id="mt-005"></a>
 
@@ -1238,6 +1285,28 @@ Works, but I am getting poor performance while using the UI editor.  This could 
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Looked into rather than changed, and here is what I found - including the one
+thing I would fix if it persists.
+
+**The repainting is already guarded.** `LayoutLabel.setAutonomyAnnotation` compares the new annotation
+with the old and returns without repainting when they are equal, which is what `TileAnnotation.equals`
+exists for. So the per-edit walk over every tile does not repaint tiles that did not change.
+
+**The candidate is the checker.** `refresh()` runs after every edit and rebuilds the findings list,
+which runs `AutonomyChecks` over the whole setup - so every click on a square re-checks the entire
+railway. On a large layout that is the expensive thing in this loop, and it is not obviously necessary
+after an edit that changed one tile's direction.
+
+**On races specifically,** which is what you asked about: the annotation walk and `refresh()` both run
+on the event thread, so there is no cross-thread hazard in that path. The asynchronous one is
+`repaintLayout`, which submits to a single-thread executor - and that IS a real ordering problem, found
+independently as `GC-A1` and still open. It is about which of two repaints wins rather than about
+speed, but it is the only genuine race in this area and it is written down.
+
+I have not debounced the checker, because that is a behaviour change - findings would lag an edit - and
+it wants deciding rather than doing quietly. Say the word if the editor still feels slow and I will
+put a proposal in front of you.
 ---
 <a id="mt-015"></a>
 
@@ -1916,6 +1985,12 @@ right one, and down one and right two: the name must survive all three.  This is
 #### Comments
 
 *(none yet)*
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works-ish.  The label persists, but when I move it back and when it was on a cell that was disconnected, the station name briefly changes to [---].  Changes back once connected.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 21:54 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-044"></a>

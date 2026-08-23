@@ -106,8 +106,22 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui);
 
-                // The Point standing on that square, preferring one with a train on it
-                Point current = ui.getAutonomyPointForTile(station);
+                // The Point standing on that square, preferring one with a train on it.
+                //
+                // From the SQUARE rather than from the station, since MT-069.
+                //
+                // `station` is autonomyStationAt, which returns null unless the square has been
+                // DESIGNATED a station - so on a pass-through Point with a locomotive on it, this was
+                // null and the whole block below vanished: no Remove, no paths, no facing. Adam:
+                // "Present in the autonomy editor but not in the track diagram." The editor works from
+                // the square, which is why it had them.
+                //
+                // The comment fifteen lines down already describes this trap one level in - "a
+                // locomotive on a copy that is not [a destination] had no menu at all ... the same
+                // trap the autonomy editor had, where the remove item hung off the designation rather
+                // than off the locomotive". That fix was applied to the inner test and not to where
+                // the square comes from, so the designation was still deciding, one step earlier.
+                Point current = ui.getAutonomyPointForTile(station != null ? station : here);
 
                 // A destination, or anywhere a train is actually standing.
                 //

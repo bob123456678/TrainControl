@@ -116,6 +116,7 @@
         </macrodef>
 
         <test-one-class class="testAccessory"/>
+        <test-one-class class="testRouteEditorRoundTripCases"/>
         <test-one-class class="testBarredArrivalIsNotADestination"/>
         <test-one-class class="testEveryTestIsInTheBattery"/>
         <test-one-class class="testAutonomyLabelShowsLocomotiveName"/>
