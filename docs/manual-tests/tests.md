@@ -93,8 +93,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
 | [MT-128](#mt-128) | 2026-08-23 | Two guards that now reach every site | fixed unvalidated | OB-023 |
 | [MT-129](#mt-129) | 2026-08-23 | Two names one letter apart, and a table that was kept in step by hand | fixed unvalidated | OB-024 |
+| [MT-130](#mt-130) | 2026-08-23 | A setting must not outlive its track | fixed unvalidated | OB-025 |
+| [MT-131](#mt-131) | 2026-08-23 | Switching a paired link off switches its partner off | fixed unvalidated | OB-041 |
 
-Everything else - 53 of 129 - is **fixed validated** and needs nothing from you unless the
+Everything else - 53 of 131 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -4282,6 +4284,10 @@ off the side of the screen.
 `wrapped()` already existed and wraps at 320px; the Autonomy menu did not use it once. All eight
 tooltips go through it now.
 
+**Adam, 2026-08-23 (triage).** Works.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-121"></a>
@@ -4301,6 +4307,12 @@ tooltips go through it now.
 
 Somebody pairing two links is saying they are joined; a disabled far end is a setting made earlier
 about a square that was not joined to anything, and the newer statement is the one they mean.
+
+**Adam, 2026-08-23 (triage).** Works.
+
+Filed from this test: OB-041 (bug - linked links turned off).  They are in `issues.md` until they are picked up.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -4332,6 +4344,12 @@ The shape to look at first is the one the original fix was about: the deep menu 
 the caption being watched belongs to the main diagram, which draws from the RUNNING layout. Placing now
 rebuilds the running layout; adding to autonomy evidently does not go through the same seam.
 
+**Adam, 2026-08-23 (triage).** Does not work.
+
+still not fully placed.  label doesn't update, loc isn't there on restart. loc not in list of autonomy locs.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-123"></a>
@@ -4350,6 +4368,10 @@ rebuilds the running layout; adding to autonomy evidently does not go through th
 "031, 030, 036 - file under new MTs. One test per MT ticket."
 
 Wording only.
+
+**Adam, 2026-08-23 (triage).** Works.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -4388,6 +4410,14 @@ the change.
 
 Unvalidated rather than validated because the second half has never been seen working - his "stars
 work" was about visibility, which is not what this now asks you to look at.
+
+**Adam, 2026-08-23 (triage).** Does not work.
+
+Still off on a curve, for example s88 1015 and 1016
+
+OK on regular tiles.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -4554,6 +4584,10 @@ did not." Nothing to remember now: building IS retiring.
 
 Covered by `testDiagramExport.testANewGridRetiresTheOneItReplaces`.
 
+**Adam, 2026-08-23 (triage).** Works.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-129"></a>
@@ -4594,5 +4628,101 @@ Python and then run against `TilePorts`. **It agreed on all twenty-eight**, whic
 the script was written to give and had stopped being able to give. Adding a tile type without stating
 its ports now fails the build. The script is deleted; the PNG it drew is kept, because a picture checked
 against the artwork by eye is a different kind of evidence from a test.
+
+**Adam, 2026-08-23 (triage).** Works.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-130"></a>
+
+### MT-130 - 2026-08-23 - A setting must not outlive its track
+
+**Disposition:** fixed unvalidated  
+**From:** OB-025  
+**Written:** 2026-08-23
+
+**What to do.** **By hand:** draw a link on a square, give it a name, switch it off, then delete that square from
+the diagram and draw a NEW link on the same square. It must arrive unnamed and switched on.
+
+Then check a rename, a move, a page snapshot and a discard still keep every setting they should - the
+usual round: name a station, set a length, bar an arrival, pair a signal, switch a link off, exclude a
+page, and put each through a page rename and a block move.
+
+#### Comments
+
+**Claude, 2026-08-23.** DD-A1, and it names two live defects as well as a shape.
+
+**The defects, both fixed.** `reconcile` handled nine of the eleven kept collections and said nothing
+about `linkNames` or `disabledPortals` - with no comment claiming that was deliberate, while there is
+one for every other decision in that method. So a link's name and its switched-off flag stayed in the
+file after its square was deleted, and **the next link drawn on that square inherited both**, arriving
+pre-named and already disabled with nothing saying why. Covered by
+`testADeletedTileTakesItsLinkNameAndItsDisabledFlag`, seen failing first.
+
+And `forgetSquares` carried a dead line: `tileDirections.remove(key)`, written because the other ten
+were there and unable ever to match, since those keys are suffixed with the route. It is gone, and the
+loop that does the work now handles a bare key too, so nothing depends on every direction having been
+written with a suffix.
+
+**The shape, and what I did about it.** The review's recommendation is a registry of kept collections,
+each knowing how to do the bookkeeping to itself - about 830 lines restructured. I have not done that,
+and the reason is worth stating plainly rather than dressing up: it is the largest blast radius in the
+file, it touches the code that reads and writes your setup, and I could not run the full battery while
+it was in progress because the application had the CS2 port. Restructuring a store I cannot fully test
+is how a data-loss bug gets written.
+
+What I did instead closes the same defect class for a fraction of the risk.
+`testStoreCollectionsAreHandledEverywhere` reads the store's source and fails the build when a kept
+collection is missing from one of its twelve bookkeeping sites, naming the site. **Every omission DD-A1
+lists would have been caught by it on the commit that introduced it** - the four that `disabledPortals`
+took five days and five commits to finish, `clear()` missing `stationSignals` (which threw a cancelled
+signal on real hardware), and `captions` missing from `KNOWN_SHARED` (which reverted every caption edit
+on the next save). A new collection has to be classified as kept or explained away, and a kept one has
+to be handled everywhere or exempted in writing.
+
+**The exemptions are the other half.** DD-A1's complaint about `reconcile` was not only that two
+collections were missing but that "there is no comment claiming this is deliberate." There are now
+fifteen such statements - why `excludedPages` has nothing to say to a square-level site, why
+`applyTo` is the one place where "handled everywhere" is the wrong rule (it populates the tile GRAPH,
+which models track; a caption is not a property of track) - and a third test fails if one of them stops
+being true. Mutation-checked: taking `disabledPortals` out of `forgetSquares` fails it.
+
+**Still open, and yours to schedule:** the registry refactor itself. It is a better end state than a
+test that reads source, and it wants a quiet tree and a full battery either side.
+
+---
+
+<a id="mt-131"></a>
+
+### MT-131 - 2026-08-23 - Switching a paired link off switches its partner off
+
+**Disposition:** fixed unvalidated  
+**From:** OB-041  
+**Written:** 2026-08-23
+
+**What to do.** Pair two links. Switch one of them off. The other must go off with it - check both the menu tick and
+the greying on the diagram, on both pages.
+
+Then switch either one back on and check the pair comes back on together.
+
+An UNPAIRED link must still switch on and off entirely by itself.
+
+#### Comments
+
+**Claude, 2026-08-23.** Adam: "if a linked link is turned off, its target isn't."
+
+A pair of links is one doorway with an end in two places, and autonomy walks through it in both
+directions. A doorway shut at one end and open at the other is not half shut - it is a route that exists
+going one way and not the other, which nothing on the diagram says and no train can be told.
+
+Same reasoning as OB-031, where pairing two links switches both ends ON rather than refusing because one
+of them was off: once two squares are paired, a statement about one of them is a statement about the
+pair. That rule went in and its mirror image did not, which is the half-a-rule shape.
+
+Fixed in the STORE rather than beside the menu that reported it, because that is where the partner is
+known - and a rule kept beside one caller is a rule the next caller does not get. Seen failing first;
+the test also pins that an unpaired link is nobody else's business.
 
 ---

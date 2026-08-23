@@ -68,26 +68,6 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
-### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
-
-**Kind:** bug
-**Raised from:** the duplication and design review, at Adam's request
-**Filed:** 2026-08-22
-
-**From [DD-A1](../reviews/2026-08-22-duplication-and-design.md).** Ranked last of the four
-deliberately - biggest win, biggest blast radius.
-
-`AutonomyCompanionStore` holds eleven collections and repeats the same per-collection shape fourteen
-times. The report traces the four commits it took to finish adding the eleventh, which is the cost
-stated as a fact rather than a worry.
-
-**Its precondition is now met.** The report says to do this only after DD-A2 - the matrix test that
-guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was closed in `ae94421a`.
-`ant test` now runs 75 classes including `testAutonomyStoreSettingsMatrix`.
-
-**Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
-hand-written even if this lands.
-
 ### FR-006 - 2026-08-22 - editor grids
 
 **Kind:** feature request  
@@ -127,6 +107,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-23 | OB-041 | bug | Switching a paired link off switches its partner off | - | [MT-131](tests.md#mt-131) |
+| 2026-08-23 | OB-025 | bug | Two settings that outlived their track, and a guard against the next one | - | [MT-130](tests.md#mt-130) |
 | 2026-08-23 | OB-023 | bug | The right-click menu and grid teardown, unified | - | [MT-128](tests.md#mt-128) |
 | 2026-08-23 | OB-024 | bug | Port map and side-lookup cleanups | - | [MT-129](tests.md#mt-129) |
 | 2026-08-23 | OB-039 | bug | Changing a locomotive's orientation updates its label | - | [MT-125](tests.md#mt-125) |
@@ -238,8 +220,6 @@ same real number everything else here has.*
 are feature requests that predate the split. The table above and the `MT-###` entries they link to
 use the new refs; older prose in this file and in commit messages still names them by the OB number
 they were filed under, and this mapping is how to trace one to the other.*
-
----
 
 ## Where the older backlog is
 

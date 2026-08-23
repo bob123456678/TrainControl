@@ -673,7 +673,36 @@ public class AutonomyCompanionStore
         return disabledPortals.contains(tile.toString());
     }
 
+    /**
+     * Switches a link in or out of the railway, and its partner with it.
+     *
+     * OB-041, Adam: "if a linked link is turned off, its target isn't."
+     *
+     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both
+     * directions. A doorway shut at one end and open at the other is not half shut - it is a route that
+     * exists going one way and not the other, which nothing on the diagram says and no train can be
+     * told.
+     *
+     * Here rather than in AutonomySession, where pairPortals's "both ends on" rule lives, because this
+     * is where the partner is known - and because a rule kept beside the caller is a rule the next
+     * caller does not get. (`pairPortals` above still switches both ends on explicitly; that call now
+     * does the second end twice, which costs nothing and says what it means.)
+     *
+     * @param tile the link
+     * @param disabled true to leave it out of the railway entirely
+     */
     public void setPortalDisabled(TileKey tile, boolean disabled)
+    {
+        set(tile, disabled);
+
+        TileKey partner = getPortalPartner(tile);
+
+        // Directly, not by calling this again: the pairing is mutual, so recursing would come straight
+        // back here for the square it started from.
+        if (partner != null) set(partner, disabled);
+    }
+
+    private void set(TileKey tile, boolean disabled)
     {
         if (disabled)
         {
@@ -1752,7 +1781,6 @@ public class AutonomyCompanionStore
         {
             pointNames.remove(key);
             tileLengths.remove(key);
-            tileDirections.remove(key);
             barredArrivals.remove(key);
             linkNames.remove(key);
             stationSignals.remove(key);
@@ -1769,13 +1797,19 @@ public class AutonomyCompanionStore
             disabledPortals.remove(key);
         }
 
-        // A direction is keyed by the square and a route across it, so it is stored suffixed
+        // A direction is keyed by the square and a route across it, so it is stored suffixed.
+        //
+        // This loop is the only thing that removes them. The list above used to carry a
+        // `tileDirections.remove(key)` as its eleventh member - written because everything else was
+        // there, and dead from the day it was written, because a bare square never matches a suffixed
+        // key (DD-A1). It is gone, and this handles a bare key too, so nothing depends on every
+        // direction having been written with a suffix.
         for (java.util.Iterator<String> keys = tileDirections.keySet().iterator(); keys.hasNext();)
         {
             String key = keys.next();
             int at = key.lastIndexOf('#');
 
-            if (at >= 0 && squares.contains(key.substring(0, at))) keys.remove();
+            if (squares.contains(at >= 0 ? key.substring(0, at) : key)) keys.remove();
         }
 
         // And what named them
@@ -2022,6 +2056,22 @@ public class AutonomyCompanionStore
         report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
         report.droppedTileProperties.addAll(dropMissing(barredArrivals, keys, false));
         report.droppedTileProperties.addAll(dropMissing(stationSignals, keys, false));
+
+        // linkNames and disabledPortals, which were the only two of the eleven kept collections this
+        // method said nothing about (DD-A1).
+        //
+        // Not untidiness. Both are remembered BY SQUARE, so a name and a switched-off flag for track
+        // that no longer exists sat in the file indefinitely and were INHERITED by the next link drawn
+        // on that square - which arrived pre-named and already disabled, with nothing saying why.
+        //
+        // Reported like everything else here, because a diagram edit that quietly costs a link name
+        // should be visible rather than discovered later.
+        report.droppedTileProperties.addAll(dropMissing(linkNames, keys, false));
+
+        for (String key : dropMissingMembers(disabledPortals, keys))
+        {
+            report.droppedTileProperties.add("link switched off at " + key);
+        }
 
         // A caption goes when either end of it does - the square it is drawn on, or the sensor it is
         // about.  Text pointing at track that no longer exists is the orphan this whole change removes.
@@ -2783,6 +2833,27 @@ public class AutonomyCompanionStore
 
             entry.setValue(out);
         }
+    }
+
+    /**
+     * The same, for a plain set of squares.
+     *
+     * @param members squares the set remembers
+     * @param existing the squares the diagram still has
+     * @return the ones that were dropped
+     */
+    private static List<String> dropMissingMembers(Set<String> members, Set<String> existing)
+    {
+        List<String> gone = new ArrayList<>();
+
+        for (String key : members)
+        {
+            if (!existing.contains(key)) gone.add(key);
+        }
+
+        members.removeAll(gone);
+
+        return gone;
     }
 
     private static <T> List<String> dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)

@@ -582,6 +582,96 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * Switching a paired link off switches its partner off too.
+     *
+     * OB-041, Adam: "if a linked link is turned off, its target isn't."
+     *
+     * A pair of links is one doorway with an end in two places. Autonomy walks through it in both
+     * directions, so a doorway that is closed at one end and open at the other is not a half-closed
+     * doorway - it is a route that exists going one way and not the other, which nothing on the diagram
+     * says and no train can be told.
+     *
+     * The same reasoning as OB-031, where pairing two links switches both ends ON rather than refusing
+     * because one of them was off: once two squares are paired, a statement about one of them is a
+     * statement about the pair.
+     */
+    @Test
+    public void testSwitchingAPairedLinkOffSwitchesItsPartnerOff() throws IOException
+    {
+        TileKey here = new TileKey("1 - Main", 2, 2);
+        TileKey there = new TileKey("2 - Yard", 5, 5);
+        TileKey lonely = new TileKey("1 - Main", 8, 8);
+
+        store.pairPortals(here, there);
+
+        store.setPortalDisabled(here, true);
+
+        assertTrue(store.isPortalDisabled(here), "the end that was switched off is off");
+
+        assertTrue(store.isPortalDisabled(there),
+            "the far end of the pair is still switched on. The doorway is now open one way and shut "
+            + "the other, which is a route no train can be told about (OB-041)");
+
+        // And back on again, from the other end, because a rule that only closes is half a rule
+        store.setPortalDisabled(there, false);
+
+        assertFalse(store.isPortalDisabled(there), "the end that was switched on is on");
+
+        assertFalse(store.isPortalDisabled(here),
+            "switching a pair back on from one end left the other end off");
+
+        // An unpaired link is nobody else's business
+        store.setPortalDisabled(lonely, true);
+
+        assertTrue(store.isPortalDisabled(lonely));
+        assertFalse(store.isPortalDisabled(here), "an unpaired link took an unrelated one with it");
+    }
+
+    /**
+     * A deleted tile takes its link name and its switched-off flag too.
+     *
+     * DD-A1 found these two missing from `reconcile` - the only two of the eleven kept collections it
+     * says nothing about, with no comment claiming that is deliberate while there is one for every
+     * other decision in the method.
+     *
+     * The consequence is not merely untidy. Both are remembered BY SQUARE, so a name and a "this link
+     * is switched off" flag for track that no longer exists sit in the file indefinitely, and **a link
+     * later drawn on that square inherits both** - arriving pre-named and already disabled, with
+     * nothing anywhere saying why.
+     *
+     * That is the same shape as the four defects `disabledPortals` produced while it was being added:
+     * a collection is easy to leave out of one site of fourteen, and the omission shows up as a setting
+     * that comes back from the dead.
+     */
+    @Test
+    public void testADeletedTileTakesItsLinkNameAndItsDisabledFlag() throws IOException
+    {
+        TileKey kept = new TileKey("1 - Main", 1, 1);
+        TileKey removed = new TileKey("1 - Main", 9, 9);
+
+        store.setLinkName(kept, "To the yard");
+        store.setLinkName(removed, "To nowhere");
+        store.setPortalDisabled(removed, true);
+
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(only(kept));
+
+        assertEquals(store.getLinkName(kept), "To the yard", "a tile still on the diagram keeps its name");
+
+        assertNull(store.getLinkName(removed),
+            "the name of a link whose square has been deleted is still in the store. The next link "
+            + "drawn there inherits it (DD-A1)");
+
+        assertFalse(store.isPortalDisabled(removed),
+            "a square with no tile on it is still remembered as a switched-off link. The next link "
+            + "drawn there arrives already disabled, and nothing says why (DD-A1)");
+
+        assertTrue(report.getDroppedTileProperties().size() >= 2,
+            "both were dropped without being reported. A diagram edit that quietly took a link name "
+            + "should be visible rather than discovered later - which is the rule every other "
+            + "collection in reconcile already follows");
+    }
+
+    /**
      * A name whose tile is gone, that nothing refers to, is forgotten - but said out loud, so a diagram
      * edit that quietly cost a page of names is visible rather than discovered later.
      */
