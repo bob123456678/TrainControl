@@ -72,21 +72,18 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-109](#mt-109) | 2026-08-22 | Track lengths: hotkey, focus, and size | fixed unvalidated | OB-019 |
 | [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
 | [MT-112](#mt-112) | 2026-08-22 | Home assignments: the three rules that were unreachable | fixed unvalidated | OB-022 (DD-A6) |
-| [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
 | [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | fixed unvalidated | OB-026 |
-| [MT-121](#mt-121) | 2026-08-23 | Pairing a link switches both ends on | fixed unvalidated | OB-031 |
 | [MT-122](#mt-122) | 2026-08-23 | Adding a locomotive to autonomy from the track diagram | needs test | OB-035 |
 | [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
 | [MT-125](#mt-125) | 2026-08-23 | The arrow on a caption follows the orientation you chose | fixed unvalidated | OB-039 |
-| [MT-126](#mt-126) | 2026-08-23 | The diagram gets out of the way while you pick a signal | fixed unvalidated | OB-040 |
 | [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
 | [MT-130](#mt-130) | 2026-08-23 | A setting must not outlive its track | fixed unvalidated | OB-025 |
 | [MT-131](#mt-131) | 2026-08-23 | Switching a paired link off switches its partner off | fixed unvalidated | OB-041 |
 | [MT-132](#mt-132) | 2026-08-23 | A station name can go on almost any square | fixed unvalidated | OB-042 and OB-044 |
 | [MT-133](#mt-133) | 2026-08-23 | Segment length: blank means none, and only digits go in | fixed unvalidated | OB-043 |
 
-Everything else - 65 of 133 - is **fixed validated** and needs nothing from you unless the
+Everything else - 68 of 133 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -3979,7 +3976,7 @@ nothing left to do and nothing left to check.
 
 ### MT-114 - 2026-08-22 - No findings while autonomy is unloaded
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-029  
 **Written:** 2026-08-22
 
@@ -4008,6 +4005,8 @@ Filed from this test: OB-038 (bug - locomotive placement on export).  They are i
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Works, and the bug you filed from it - OB-038 - was answered: the export/import round trip was already covered by a test, which is recorded at MT-118.
 ---
 
 <a id="mt-115"></a>
@@ -4349,7 +4348,7 @@ nothing left to do and nothing left to check.
 
 ### MT-121 - 2026-08-23 - Pairing a link switches both ends on
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-031  
 **Written:** 2026-08-23
 
@@ -4369,6 +4368,8 @@ Filed from this test: OB-041 (bug - linked links turned off).  They are in `issu
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Works, and the bug you filed from it - OB-041, a paired link switched off leaving its partner on - is fixed and recorded at MT-131.
 ---
 
 <a id="mt-122"></a>
@@ -4588,7 +4589,7 @@ run before this is asked of you again.
 
 ### MT-126 - 2026-08-23 - The diagram gets out of the way while you pick a signal
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** OB-040  
 **Written:** 2026-08-23
 
@@ -4625,6 +4626,8 @@ Looks great!
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** "Looks great!" - closed.
 ---
 
 <a id="mt-127"></a>

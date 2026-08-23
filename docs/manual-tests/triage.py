@@ -204,6 +204,33 @@ class Entry(object):
         self.what = self._section_what()
         self.comments = self._section_comments()
 
+    @property
+    def reopened(self):
+        """Whether this is waiting on Adam AGAIN - he judged it, and something has changed since.
+
+        The Tests list could not tell these apart from entries nobody has ever run, which are the two
+        things he most needs to tell apart: one is "look at this again, it should be different now" and
+        the other is "nobody has ever tried this". Adam: "I can't easily find reopened MT's in the
+        triage view."
+
+        There is no fifth disposition for it and there should not be - the four states say what is TRUE
+        of an entry, and "he looked at it before" is a fact about its history rather than its state. So
+        it is computed from the comments, which already record that history: the newest comment is
+        Claude's and there is an Adam verdict above it.
+        """
+
+        if not self.is_open:
+            return False
+
+        mine = [m.start() for m in re.finditer(r"\*\*Adam,[^*]*\(triage\)\.\*\*", self.block)]
+
+        if not mine:
+            return False
+
+        theirs = [m.start() for m in re.finditer(r"\*\*Claude,[^*]*\*\*", self.block)]
+
+        return bool(theirs) and max(theirs) > max(mine)
+
     def _field(self, name):
         m = re.search(FIELD_RE % name, self.block, re.M)
         return m.group(1).strip() if m else None
@@ -961,6 +988,7 @@ class Triage(tk.Tk):
         picker = ttk.Combobox(bar, textvariable=self.filter_var, width=26, state="readonly",
                               values=["open - not yet answered here",
                                       "open - everything not validated",
+                                      "reopened - changed since your verdict",
                                       "answered this session",
                                       "everything, validated included"])
 
@@ -1014,12 +1042,13 @@ class Triage(tk.Tk):
 
             ttk.Label(legend, text=label, style="Sub.TLabel").pack(side=tk.LEFT, padx=(0, 10))
 
-        columns = ("mark", "tag", "date", "what")
+        columns = ("mark", "again", "tag", "date", "what")
 
         self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
 
         for name, title, width, anchor in (
             ("mark", "", 26, tk.CENTER),
+            ("again", "", 22, tk.CENTER),
             ("tag", "ID", 68, tk.W),
             ("date", "Date", 82, tk.W),
             ("what", "What", 200, tk.W),
@@ -1462,6 +1491,11 @@ class Triage(tk.Tk):
             elif mode.startswith("open - everything"):
                 if not e.is_open:
                     continue
+            elif mode.startswith("reopened"):
+                # The ones he has already judged and which have moved since - a retest queue rather
+                # than a first pass.
+                if not e.reopened or mark == "done":
+                    continue
             elif mode.startswith("answered"):
                 if mark != "done":
                     continue
@@ -1502,8 +1536,13 @@ class Triage(tk.Tk):
             slug = disposition_slug(e.disposition)
             tags = (slug,) if slug in DISPOSITION_COLORS else ()
 
+            # An entry he has judged before and which has moved since.  Marked rather than
+            # recoloured: the colour already says the disposition, and two meanings in one colour is
+            # how a legend stops being read.
+            again = "↺" if e.reopened else ""
+
             self.tree.insert("", tk.END, iid=e.tag, tags=tags,
-                             values=(glyph, e.tag, e.date, e.title))
+                             values=(glyph, again, e.tag, e.date, e.title))
 
         rows = self.tree.get_children()
 
@@ -1521,8 +1560,11 @@ class Triage(tk.Tk):
         openn = sum(1 for e in self.doc.entries if e.is_open)
         done = sum(1 for e in self.doc.entries if self.state_.mark(e.tag) == "done")
 
-        self._say("%d entries, %d not validated, %d answered here this session.  Showing %d."
-                  % (total, openn, done, len(self.tree.get_children())))
+        again = sum(1 for e in self.doc.entries if e.reopened)
+
+        self._say("%d entries, %d not validated, %d of those changed since you judged them, "
+                  "%d answered here this session.  Showing %d."
+                  % (total, openn, again, done, len(self.tree.get_children())))
 
     def _on_select(self, _event=None):
         selection = self.tree.selection()
@@ -2331,6 +2373,9 @@ def cli_tests(args):
 
     wanted = doc.entries if args.all else [e for e in doc.entries if e.is_open]
 
+    if getattr(args, "reopened", False):
+        wanted = [e for e in wanted if e.reopened]
+
     return [entry_dict(e, full=args.full) for e in wanted], 0
 
 
@@ -2467,6 +2512,8 @@ def build_arg_parser():
                          help="Include What/Comments text (default).")
     p_tests.add_argument("--brief", dest="full", action="store_false",
                          help="Tag/date/title/disposition only, no body text.")
+    p_tests.add_argument("--reopened", action="store_true",
+                         help="Only entries Adam has judged before that have changed since.")
 
     p_test = sub.add_parser("test", help="Look up one entry by tag, in full.")
     p_test.add_argument("tag")
