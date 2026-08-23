@@ -68,38 +68,6 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
-### OB-022 - 2026-08-22 - DD-A6: three safety rules are in code nothing calls
-
-**Kind:** bug
-**Raised from:** the duplication and design review, at Adam's request
-**Filed:** 2026-08-22
-
-**From [DD-A6](../reviews/2026-08-22-duplication-and-design.md).** Filed by Claude at Adam's request
-after reviewing the duplication report; ranked first of four.
-
-`HomeLocomotiveMenu` had five callers and has one. The graph window was deleted (`d8db4879`) and took
-four of them with it, leaving the RULES in the abandoned copy and the USE in the surviving 24-line one.
-Verified by grep 2026-08-22: `addStationItem`, `addClearAllItem`, `editHomeLocomotive`,
-`confirmExclusion`, `HomeStaging.canBeHome` and `HomeStaging.homeBrokenByExcluding` have **zero**
-production callers between them.
-
-Three rules are therefore unreachable:
-
-- `canBeHome` - without it, a home that cannot be reached makes every future Return Home report
-  IMPOSSIBLE, and the advice that dialog gives is to check the track, which is the wrong remedy.
-- `homeBrokenByExcluding` - excluding a locomotive from the station that is its home now silently
-  leaves a station and a locomotive disagreeing about each other.
-- The "keep an assignment naming a locomotive not on the graph" rule - a station whose home names a
-  since-removed locomotive opens showing "None", and pressing OK clears it.
-
-**And the tests still pass, because they call the dead code directly** - so the suite reports the
-guards as working. That is the part that makes this worth doing before the tidier-looking items.
-
-Two ways to finish it, and the report is right that doing neither is the only option that is definitely
-wrong: re-wire the live paths through the abandoned ones (~80 lines, three rules come back, their tests
-start pinning something a user can reach), or delete the ~200 unreachable lines and their tests and
-record that three rules were consciously dropped.
-
 ### OB-023 - 2026-08-22 - DD-B3 and DD-B5: two guards that reach three of four sites
 
 **Kind:** bug
@@ -231,6 +199,15 @@ many tooltips are very wide.  split them.
 
 when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
 
+### OB-032 - 2026-08-22 - unliked tiles
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 22:16  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+on unlinked tiles (not connected to anything), the "trains may depart" submenu is empty.  hide the parent heading when this is the case.
+
 ---
 
 ## What has been picked up
@@ -245,6 +222,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-022 | bug | DD-A6: three safety rules in code nothing called | - | [MT-112](tests.md#mt-112) |
 | 2026-08-22 | OB-021 | bug | Layouts menu: Edit Layout Page under Manage Pages, and a doubled divider | - | [MT-111](tests.md#mt-111) |
 | 2026-08-22 | OB-020 | bug | The autonomy tools column is narrower, and three labels changed | - | [MT-110](tests.md#mt-110) |
 | 2026-08-22 | OB-019 | bug | Track lengths: a hotkey, the focus theft, and the font size | - | [MT-109](tests.md#mt-109) |

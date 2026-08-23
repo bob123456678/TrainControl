@@ -86,6 +86,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-109](#mt-109) | 2026-08-22 | Track lengths: hotkey, focus, and size | fixed unvalidated | OB-019 |
 | [MT-110](#mt-110) | 2026-08-22 | The autonomy column is narrower, and three labels changed | fixed unvalidated | OB-020 |
 | [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
+| [MT-112](#mt-112) | 2026-08-22 | Home assignments: the three rules that were unreachable | fixed unvalidated | OB-022 (DD-A6) |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -2010,6 +2011,10 @@ must not still be carrying the names it had before.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-045"></a>
 
@@ -3604,5 +3609,55 @@ would be a fact about the generated form - it moves the next time somebody adds 
 designer, and a hard-coded one would then delete a divider that was doing its job. The sweep asks the
 menu what it is holding and drops any separator that no longer separates anything, including leading
 and trailing ones.
+
+---
+
+<a id="mt-112"></a>
+
+### MT-112 - 2026-08-22 - Home assignments: the three rules that were unreachable
+
+**Disposition:** fixed unvalidated  
+**From:** OB-022 (DD-A6)  
+**Written:** 2026-08-22
+
+**What to do.** Three checks, all in the autonomy editor's tile menu.
+
+**1. A home naming a locomotive autonomy no longer runs.** Set a station's home to some locomotive,
+then take that locomotive out of autonomy. Open **home for a locomotive** on that station again: it
+must still show the old name, not "None". Press **Cancel** and the home must be unchanged.
+
+Before this, the name was missing from the list, the combo fell back to "None", and pressing **OK**
+cleared the station's home without anyone asking for it.
+
+**2. A home the locomotive cannot reach.** Assign a home to a station that locomotive cannot rest at -
+a platform it is too long for, or one it cannot reach. It must **warn**, defaulting to No, and let you
+say yes anyway.
+
+**3. Excluding a locomotive from its own home.** Set a station's home to a locomotive, then use
+**Advanced Parameters -> excluded locomotives** on that same station and exclude it. It must warn,
+defaulting to No.
+
+#### Comments
+
+**Claude, 2026-08-22.** `OB-022`, from `DD-A6`. The three rules existed and had no production caller
+between them - the graph window was deleted and took four of `HomeLocomotiveMenu`'s five callers with
+it, leaving the RULES in the abandoned copy and the USE in the surviving 24-line one. And the tests
+passed the whole time, because they call the dead code directly.
+
+**The report's preferred fix does not quite fit, and it is worth saying why.** It suggested re-wiring
+the live paths through `editHomeLocomotive` and `confirmExclusion`. Those write the RUNNING LAYOUT -
+`setHomeLocomotive` on the Layout - while this editor writes the SETUP. They are not two doors to one
+room; they are two rooms. So the rules came to the live door instead of the door being re-pointed.
+
+**What that means for each.** `HomeStaging.canBeHome` now has a production caller for the first time
+since the graph window went. The preselect rule is implemented where the list is built. The third I
+reimplemented rather than called: `homeBrokenByExcluding` takes a running `Point` and `Locomotive`
+objects, and the editor has a square and some names, and the rule itself is one comparison - so calling
+it would have meant building objects to ask a question about strings. Said out loud because it is a
+duplication, small and deliberate.
+
+**Still outstanding from DD-A6:** roughly 200 unreachable lines in `HomeLocomotiveMenu`. They are no
+longer MISLEADING - the live path has the rules now - but they are still dead, and the report is right
+that leaving them is not free. Deferred rather than done while Adam is testing.
 
 ---

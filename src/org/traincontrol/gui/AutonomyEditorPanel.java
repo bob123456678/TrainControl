@@ -2244,17 +2244,29 @@ public class AutonomyEditorPanel extends JPanel
 
     private void promptHome(TileKey tile)
     {
+        String current = homeOf(tile);
+
         List<String> names = new java.util.ArrayList<>();
         names.add(I18n.t("autosetup.ui.labelNone"));
         names.addAll(placedLocomotives());
+
+        // The CURRENT home, even when it is not on the graph any more (OB-022, from DD-A6).
+        //
+        // An assignment may name a locomotive autonomy no longer runs, and it stays that way until
+        // somebody changes it. Leaving that name out made the existing assignment the one thing that
+        // could not be chosen: a non-editable combo cannot preselect a value its model does not hold,
+        // so the dialog opened showing "None" and pressing OK cleared a station's home without anyone
+        // asking for it.
+        //
+        // HomeLocomotiveMenu wrote that trap down in words - "opening this dialog and pressing OK
+        // would then quietly reassign the station" - and then lost the callers that ran the code.
+        if (current != null && !names.contains(current)) names.add(1, current);
 
         if (names.size() == 1)
         {
             JOptionPane.showMessageDialog(owner(), I18n.t("error.noLocs"));
             return;
         }
-
-        String current = homeOf(tile);
 
         Object chosen = JOptionPane.showInputDialog(owner(),
             I18n.t("autosetup.ui.promptHomeFor"), I18n.t("autosetup.ui.menuHomeNone"),
@@ -2263,8 +2275,62 @@ public class AutonomyEditorPanel extends JPanel
 
         if (chosen == null) return;
 
-        session.setPointProperty(tile, "home",
-            names.get(0).equals(chosen) ? null : String.valueOf(chosen));
+        String picked = names.get(0).equals(chosen) ? null : String.valueOf(chosen);
+
+        // And a home this locomotive cannot actually rest at is worth saying out loud (OB-022).
+        //
+        // Warned, not refused. The same state is reachable by editing the station afterwards, so
+        // refusing at this one door would be arbitrary, and setting homes before finishing the track
+        // is not a mistake. What IS a mistake is finding out later from a dialog that blames the
+        // track: without this, every future Return Home reports IMPOSSIBLE and advises checking the
+        // rails, when nothing about the rails is at fault.
+        if (picked != null && !mayRestHere(tile, picked) && !confirmedAnyway(picked, tile)) return;
+
+        session.setPointProperty(tile, "home", picked);
+
+        refresh();
+    }
+
+    /**
+     * Whether this locomotive could actually come to rest at this square.
+     *
+     * Asked of the RUNNING layout, because that is what HomeStaging reasons about and what Return Home
+     * will use when the time comes. Unanswerable before a configuration is loaded - there is no graph
+     * to reason over - and an unanswerable question is not a warning, so it says yes.
+     */
+    private boolean mayRestHere(TileKey tile, String locomotive)
+    {
+        org.traincontrol.automation.Layout layout =
+            layoutSource == null ? null : layoutSource.get();
+
+        if (layout == null || parentWindow() == null) return true;
+
+        org.traincontrol.automation.Point point = pointOnTheLayout(layout, tile);
+
+        if (point == null) return true;
+
+        org.traincontrol.base.Locomotive loc =
+            parentWindow().getModel() == null ? null
+                : parentWindow().getModel().getLocByName(locomotive);
+
+        if (loc == null) return true;
+
+        return org.traincontrol.automation.HomeStaging.canBeHome(loc, point);
+    }
+
+    /**
+     * Asks whether to set a home that cannot be reached, defaulting to NO.
+     *
+     * Defaulted to no unlike the other confirmations here, because this one answers a question the
+     * operator did not ask, about a choice that cannot work as things stand.
+     */
+    private boolean confirmedAnyway(String locomotive, TileKey tile)
+    {
+        return JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmCannotBeHomeHere", locomotive, describeTile(tile)),
+            I18n.t("autolayout.ui.dialogSetHomeLocomotive"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == JOptionPane.YES_OPTION;
     }
 
     /**
@@ -2587,8 +2653,59 @@ public class AutonomyEditorPanel extends JPanel
 
         List<String> picked = list.getSelectedValuesList();
 
+        // Excluding a locomotive from the station that is its HOME contradicts the home (OB-022).
+        //
+        // The rule existed - HomeStaging.homeBrokenByExcluding - and had no production caller: its only
+        // one went with the graph window, so the live path wrote straight through and left a station
+        // and a locomotive disagreeing about each other, silently, until Return Home could not explain
+        // itself.
+        //
+        // Warned rather than refused, like the home warning: an operator may well mean it, and the
+        // same state is reachable from the other side by assigning a home the station already
+        // excludes.
+        if ("excludedLocs".equals(key))
+        {
+            String broken = homeBrokenBy(tile, picked);
+
+            if (broken != null && JOptionPane.showOptionDialog(owner(),
+                I18n.f("autolayout.ui.confirmExcludingHome", broken, describeTile(tile)),
+                I18n.t("autosetup.ui.labelExcludedLocs"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+            {
+                return;
+            }
+        }
+
         session.setPointProperty(tile, key,
             picked.isEmpty() ? null : new org.json.JSONArray(picked));
+
+        refresh();
+    }
+
+    /**
+     * The home assignment that excluding these locomotives from this square would contradict.
+     *
+     * Read off the SETUP rather than the running layout, because that is where this editor's home
+     * assignments live - the running Point's getHomeLoc is only populated once a configuration has
+     * been built, and a setup being edited may never have been.
+     *
+     * @param tile the square
+     * @param excluded the locomotives about to be shut out of it
+     * @return the home that would be contradicted, or null
+     */
+    private String homeBrokenBy(TileKey tile, List<String> excluded)
+    {
+        String home = homeOf(tile);
+
+        if (home == null || excluded == null) return null;
+
+        for (String name : excluded)
+        {
+            if (home.equals(name)) return home;
+        }
+
+        return null;
     }
 
     private void promptName(TileKey tile)
