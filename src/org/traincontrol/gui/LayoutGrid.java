@@ -477,8 +477,24 @@ public class LayoutGrid
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
-                        text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");      
-                        
+
+                        // A caption with a train on it is left as PLAIN text, which is the one thing
+                        // that made the editor's version of this label look different from the running
+                        // diagram's.  It is the same label, with the same styling; what differed was
+                        // the string.
+                        //
+                        // On the running diagram the caption is registered EMPTY here and its text set
+                        // afterwards by updateStationLabels, so it never reaches the wrap below.  The
+                        // editor has no run to wait for, so it sets the text now - and picked up the
+                        // wrap on the way past.  A leading <br> makes the label two lines tall and the
+                        // &nbsp; stops it wrapping, so an OPAQUE label - which this is the only one of
+                        // - painted its background as a block a tile tall and three wide, over
+                        // whatever was beside it.
+                        if (!standingTrain)
+                        {
+                            text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");
+                        }
+
                         // Show the correct cursor
                         if (c.isClickable() && !layout.getEdit()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
