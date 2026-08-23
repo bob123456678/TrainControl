@@ -135,6 +135,17 @@ the same thing anyway, say so in whichever is read second rather than leaving bo
 alt-tabbing between a long markdown document and the running railway. `py -3 docs\manual-tests\triage.py`
 - no build step, no dependency beyond the Python standard library.
 
+**Reopened entries are marked, and can be filtered to.** An entry Adam has already judged, and which
+has been worked on since, is the one thing the list could not tell apart from an entry nobody has ever
+run - and they mean opposite things: "look at this again, it should be different now" versus "nobody has
+tried this yet". Both sit at **fixed unvalidated**, and rightly: the four dispositions say what is TRUE
+of an entry, and "he looked at it before" is a fact about its history rather than about its state.
+
+So it is computed from the Comments, which already hold that history - the newest comment is Claude's,
+and there is an Adam verdict above it. Shown as a mark in its own column, offered as a **"reopened -
+changed since your verdict"** filter, counted in the status line, and available as `tests --reopened`.
+Added 2026-08-23, when 41 of the 63 open entries were in that state and nothing on screen said so.
+
 **Three tabs on the left: Tests, Feature requests, Bugs.** A feature request used to be reachable only
 by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
@@ -186,6 +197,7 @@ involved - this is what a round should call instead of re-reading `tests.md` or 
 py -3 docs\manual-tests\triage.py stats                 # counts: tests by disposition, issues pending
 py -3 docs\manual-tests\triage.py tests --open          # every entry not fixed validated
 py -3 docs\manual-tests\triage.py tests --all           # every entry, validated included
+py -3 docs\manual-tests\triage.py tests --reopened      # ... only those changed since you judged them
 py -3 docs\manual-tests\triage.py test MT-089           # one entry in full, including its Comments
 py -3 docs\manual-tests\triage.py issues                # every Inbox item not yet picked up
 py -3 docs\manual-tests\triage.py issues --kind bug     # ... just the bugs (or --kind feature)
