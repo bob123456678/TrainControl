@@ -2652,7 +2652,7 @@ public class testAutonomyDiagramSession
         // The side facing the track that is about to be taken up, so the restriction is the one that
         // goes stale.  Barring the other would leave a live restriction, which is a different test.
         org.traincontrol.automationui.TilePorts.Side doomed =
-            org.traincontrol.automationui.TileGraph.sideTowards(station, new TileKey("main", 2, 1));
+            org.traincontrol.automationui.TileGraph.gridSideTowards(station, new TileKey("main", 2, 1));
 
         assertTrue(both.contains(doomed), "precondition: trains arrive from that side today");
 

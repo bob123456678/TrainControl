@@ -374,8 +374,8 @@ public class DiagramMonitor
             TileKey at = run.get(i);
 
             TileOverlay.Segment segment = new TileOverlay.Segment(
-                i == 0 ? null : TileGraph.sideTowards(at, run.get(i - 1)),
-                i == run.size() - 1 ? null : TileGraph.sideTowards(at, run.get(i + 1)),
+                i == 0 ? null : TileGraph.gridSideTowards(at, run.get(i - 1)),
+                i == run.size() - 1 ? null : TileGraph.gridSideTowards(at, run.get(i + 1)),
                 states.get(i));
 
             TileOverlay overlay = new TileOverlay(states.get(i), false,

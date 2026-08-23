@@ -91,8 +91,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-125](#mt-125) | 2026-08-23 | The arrow on a caption follows the orientation you chose | fixed unvalidated | OB-039 |
 | [MT-126](#mt-126) | 2026-08-23 | The diagram gets out of the way while you pick a signal | fixed unvalidated | OB-040 |
 | [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
+| [MT-128](#mt-128) | 2026-08-23 | Two guards that now reach every site | fixed unvalidated | OB-023 |
+| [MT-129](#mt-129) | 2026-08-23 | Two names one letter apart, and a table that was kept in step by hand | fixed unvalidated | OB-024 |
 
-Everything else - 53 of 127 - is **fixed validated** and needs nothing from you unless the
+Everything else - 53 of 129 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -4419,6 +4421,14 @@ left the other one carrying the bug. So the deep menu now calls `buildFacingMenu
 and `testEditorSurfaceRules` requires the setup to be told about a facing from exactly one place, and
 that place to redraw. Mutation-checked by deleting the redraw.
 
+**Adam, 2026-08-23 (triage).** Does not work.
+
+Does not refresh in the viewer. Works in the autonomy editor.
+
+Critical: also, feedback 1016/1015 offer south and west as facing directions, instead of north and east.
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-126"></a>
@@ -4455,6 +4465,12 @@ that, because moving it into a handler is the natural-looking edit that would br
 
 **What I did not do:** the station captions are still drawn. They come from the grid rather than from
 the annotation, so switching them off is a different piece of work; say the word if they are in the way.
+
+**Adam, 2026-08-23 (triage).** Works.
+
+Looks great!
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -4493,5 +4509,90 @@ autonomy)` - including that the invisible border takes the same room as the grid
 
 **FR-006 is still open and still yours to call.** It asks for the layout editor's grid to become a
 toggle in Visible Elements, persisted, which is a different piece of work from this.
+
+**Adam, 2026-08-23 (triage).** Does not work.
+
+The grid is correctly gone, but now there is a gap between tiles (essentially a white grid).
+
+the BUG where the VIEWER gets a grid is still there!
+
+*Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-128"></a>
+
+### MT-128 - 2026-08-23 - Two guards that now reach every site
+
+**Disposition:** fixed unvalidated  
+**From:** OB-023  
+**Written:** 2026-08-23
+
+**What to do.** **The right-click menu.** Right-click in four places: a tile on the track diagram, a station's
+caption, the main window's empty diagram area, and the pop-out diagram window. Each must open the
+autonomy menu - and where there is genuinely nothing to offer (plain track, autonomy running, no setup
+to reach) **no menu should appear at all**, rather than a one-item-high grey box.
+
+**The grid.** Switch pages, resize the window, and open and close the editor a few times. No spinner
+should ever appear in the middle of a drawn diagram, and no row of tiles should come out short.
+
+#### Comments
+
+**Claude, 2026-08-23.** Both from the duplication review, and both the same shape: a rule that had
+to be remembered at four call sites and was remembered at three.
+
+**DD-B5.** The four surfaces each wrote out hop-to-the-event-thread, build, show. Three also checked
+whether the menu had come out empty; the fourth - `LayoutGrid`, added later by `a4651d20` - did not.
+There is one entry point now, `LayoutRightclickAutonomyMenu.showFor`, and **the constructor is private**,
+so the menu cannot be shown any other way. That the whole application still compiles is the proof there
+were no other callers.
+
+**DD-B3.** Building a grid over a panel now retires whatever grid was there, from a weak per-panel
+table inside `LayoutGrid` itself. `174178c5` had to add the third `discard()` call and wrote the finding
+into its own comment - "both other places that build a grid over an existing panel call this; this one
+did not." Nothing to remember now: building IS retiring.
+
+Covered by `testDiagramExport.testANewGridRetiresTheOneItReplaces`.
+
+---
+
+<a id="mt-129"></a>
+
+### MT-129 - 2026-08-23 - Two names one letter apart, and a table that was kept in step by hand
+
+**Disposition:** fixed unvalidated  
+**From:** OB-024  
+**Written:** 2026-08-23
+
+**What to do.** Nothing to do by hand - this is covered by tests, and the entry exists so the change has a
+recorded home. Worth a glance at the autonomy editor's arrows and at a three-way switch after the
+next build, since both go through the code that moved.
+
+#### Comments
+
+**Claude, 2026-08-23.**
+
+**DD-C9 - `sideTowards` and `sideToward`.** They were not duplicates, which is the interesting part:
+one is grid arithmetic on coordinates, the other asks the graph what it counts as a neighbour. Two
+different questions with names one letter apart is a defect waiting for a tired reader, so they are
+`gridSideTowards` and `sideTowardNeighbour` now, and the instance method's javadoc - which claimed it
+answered for paired portals, the opposite of what its own code does - says what it does.
+
+**DD-C10 - the port table in three places.** `TilePorts.numOrientations` was a verbatim copy of
+`LayoutDiagramComponent.getNumOrientations`; the rule is now static on the latter and the former asks
+it. The two agreed only for as long as nobody added a tile type with an axis of symmetry, which is a
+promise about the future rather than a property of the code.
+
+The third copy was `docs/plans/portmap-verification.py`, and `TilePorts`'s javadoc instructed the reader
+to keep it in step BY HAND. It had already gone stale - still marking the LINK side "UNCONFIRMED" long
+after `d4d5b7ba` confirmed it. **A verification that must be hand-synchronised with the thing it
+verifies is a second opinion with the same author.**
+
+Its table - all twenty-eight tile types, the only complete statement of the port map anywhere - is now
+`testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs`, transcribed by hand from the
+Python and then run against `TilePorts`. **It agreed on all twenty-eight**, which is the confirmation
+the script was written to give and had stopped being able to give. Adding a tile type without stating
+its ports now fails the build. The script is deleted; the PNG it drew is kept, because a picture checked
+against the artwork by eye is a different kind of evidence from a test.
 
 ---

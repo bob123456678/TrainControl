@@ -3,6 +3,8 @@ package core;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -530,6 +532,93 @@ public class testAutonomyDiagramPorts
     /**
      * The single open side of a stub tile.
      */
+
+    /**
+     * The whole port table, every tile type at once.
+     *
+     * This is `docs/plans/portmap-verification.py` brought into the suite (DD-C10). That script held
+     * the only complete statement of the port map anywhere - all twenty-eight tile types, their routes
+     * and their branches - and drew a picture of it for a person to check against the artwork. The
+     * trouble was how it stayed true: `TilePorts`'s javadoc instructed the reader to keep the Python
+     * copy in step BY HAND. A verification that has to be hand-synchronised with the thing it verifies
+     * is not a verification, it is a second opinion with the same author - and that copy had already
+     * gone stale, still marking the LINK side "UNCONFIRMED" long after `d4d5b7ba` confirmed it.
+     *
+     * So the table is here, in the language it describes, where it is executed rather than remembered.
+     *
+     * **The union across every state, not state 0.** A three-way has two addresses and therefore more
+     * states than a simple switch, and numbering them is `TilePorts`'s business; what a reader wants
+     * to know is which pieces of track this tile joins in any position at all. The per-state and
+     * per-orientation behaviour is pinned by the tests above, which is the right division: those say
+     * how the tile TURNS, this says what it IS.
+     *
+     * A stub - a tile with one open side, like an end, a tunnel mouth or a link - is a route whose two
+     * sides are the same, so it appears here doubled: "NN".
+     */
+    @Test
+    public void testTheWholePortTableIsWhatTheMapSaysItIs()
+    {
+        Map<componentType, String[]> table = new LinkedHashMap<>();
+
+        table.put(componentType.STRAIGHT,              new String[] {"EW"});
+        table.put(componentType.CURVE,                 new String[] {"ES"});
+        table.put(componentType.DOUBLE_CURVE,          new String[] {"NW", "ES"});
+        table.put(componentType.FEEDBACK,              new String[] {"EW"});
+        table.put(componentType.FEEDBACK_CURVE,        new String[] {"ES"});
+        table.put(componentType.FEEDBACK_DOUBLE_CURVE, new String[] {"NW", "ES"});
+        table.put(componentType.SIGNAL,                new String[] {"EW"});
+        table.put(componentType.UNCOUPLER,             new String[] {"EW"});
+
+        // Stubs: one open side, so the route's two ends are the same side
+        table.put(componentType.END,                   new String[] {"NN"});
+        table.put(componentType.TUNNEL,                new String[] {"SS"});
+        table.put(componentType.LINK,                  new String[] {"WW"});
+
+        table.put(componentType.CROSSING,              new String[] {"NS", "EW"});
+        table.put(componentType.OVERPASS,              new String[] {"NS", "EW"});
+
+        // Switches: the straight road and whatever the blades offer
+        table.put(componentType.SWITCH_LEFT,           new String[] {"NS", "SW"});
+        table.put(componentType.SWITCH_RIGHT,          new String[] {"NS", "ES"});
+        table.put(componentType.SWITCH_Y,              new String[] {"SW", "ES"});
+        table.put(componentType.SWITCH_THREE,          new String[] {"NS", "SW", "ES"});
+        table.put(componentType.SWITCH_CROSSING,       new String[] {"NS", "EW", "NW", "ES"});
+
+        // Permanent ways: every road open at once, no address to throw
+        table.put(componentType.CUSTOM_PERM_LEFT,      new String[] {"NS", "SW"});
+        table.put(componentType.CUSTOM_PERM_RIGHT,     new String[] {"NS", "ES"});
+        table.put(componentType.CUSTOM_PERM_Y,         new String[] {"SW", "ES"});
+        table.put(componentType.CUSTOM_PERM_THREEWAY,  new String[] {"NS", "SW", "ES"});
+
+        // Carries no trains: decorative, disqualified, or transparent to its neighbours
+        table.put(componentType.CUSTOM_SCISSORS,       new String[] {});
+        table.put(componentType.CUSTOM_PERM_SCISSORS,  new String[] {});
+        table.put(componentType.TURNTABLE,             new String[] {});
+        table.put(componentType.LAMP,                  new String[] {});
+        table.put(componentType.ROUTE,                 new String[] {});
+        table.put(componentType.TEXT,                  new String[] {});
+
+        assertEquals(table.size(), componentType.values().length,
+            "the table above names " + table.size() + " tile types and the enum has "
+            + componentType.values().length + ". A type added without a line here is a type whose port "
+            + "map nothing states - which is how the Python copy this replaces went stale");
+
+        for (Map.Entry<componentType, String[]> row : table.entrySet())
+        {
+            Set<String> found = new HashSet<>();
+
+            for (int state = 0; state < Math.max(1, TilePorts.getStateCount(row.getKey())); state++)
+            {
+                for (Route r : TilePorts.ports(row.getKey(), 0, state))
+                {
+                    found.add(canonical(r.getA(), r.getB()));
+                }
+            }
+
+            assertEquals(found, pairs(row.getValue()), row.getKey()
+                + " joins different pieces of track than the port map says it does");
+        }
+    }
     private Side singleStub(componentType type, int orientation)
     {
         List<Route> routes = TilePorts.ports(type, orientation, 0);

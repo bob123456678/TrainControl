@@ -106,7 +106,7 @@ public class TileGraph
      * @param to the next square
      * @return the side of {@code from} that {@code to} lies beyond
      */
-    public static Side sideTowards(TileKey from, TileKey to)
+    public static Side gridSideTowards(TileKey from, TileKey to)
     {
         if (from == null || to == null) return null;
 
@@ -1025,14 +1025,23 @@ public class TileGraph
     /**
      * Which side of a tile faces one of its neighbours.
      *
-     * Geometric, not routing: it answers "which way is that square from this one", including through a
-     * paired portal, where the two squares are neighbours without touching.
+     * Geometric, not routing: it answers "which way is that square from this one".
+     *
+     * Named apart from the static `gridSideTowards` because they are NOT the same question, however
+     * alike they read. That one is grid arithmetic - two squares whose coordinates differ by one - and
+     * knows nothing about the layout. This one asks the graph, so it answers for whatever the graph
+     * counts as a neighbour. They were `sideTowards` and `sideToward`, one letter apart, which is a
+     * defect waiting for a tired reader (DD-C9).
+     *
+     * A portal's partner is not reachable here: the two squares are neighbours in the graph without
+     * touching, so there is no side to name, and callers that care use landing() instead. The javadoc
+     * used to claim the opposite of what the code does.
      *
      * @param tile
      * @param other
      * @return the side, or null when the two are not adjacent
      */
-    public Side sideToward(TileKey tile, TileKey other)
+    public Side sideTowardNeighbour(TileKey tile, TileKey other)
     {
         if (tile == null || other == null) return null;
 

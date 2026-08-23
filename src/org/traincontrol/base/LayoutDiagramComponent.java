@@ -1044,16 +1044,31 @@ public class LayoutDiagramComponent
      * @return 
      */
     public int getNumOrientations()
-    {        
+    {
+        return getNumOrientations(this.type);
+    }
+
+    /**
+     * The same, for a type with no instance to hand.
+     *
+     * Static because the port map needs the answer while it is BUILDING the table, before any component
+     * exists - and it had a verbatim copy of the rule to get it (DD-C10). Two copies of "how many ways
+     * up can this tile be" is two chances to disagree about a tile somebody has just added.
+     *
+     * @param type the tile type
+     * @return how many distinct orientations it has
+     */
+    public static int getNumOrientations(componentType type)
+    {
         // y axis symmetry - limit rotation options
-        if (this.type == componentType.STRAIGHT || this.type == componentType.FEEDBACK 
-                || this.type == componentType.ROUTE || this.type == componentType.SWITCH_CROSSING
-                || this.type == componentType.OVERPASS)
+        if (type == componentType.STRAIGHT || type == componentType.FEEDBACK
+                || type == componentType.ROUTE || type == componentType.SWITCH_CROSSING
+                || type == componentType.OVERPASS)
         {
             return 2;
         }
         // x and y symmetry - rotation not needed
-        else if (this.type == componentType.TURNTABLE || this.type == componentType.CROSSING)
+        else if (type == componentType.TURNTABLE || type == componentType.CROSSING)
         {
             return 1;
         }

@@ -18560,15 +18560,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // itself, and the moment somebody most needs to reach the setup is when there is not one
             // yet - gating it on a valid layout meant the way in appeared only once you were already
             // through the door.  The menu decides what it has to offer; an empty one is not shown.
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(this, null, null);
-
-                if (menu.getComponentCount() > 0)
-                {
-                    menu.show(evt.getComponent(), evt.getX(), evt.getY());
-                }
-            });
+            LayoutRightclickAutonomyMenu.showFor(this, null, null,
+                evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
 

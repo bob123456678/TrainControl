@@ -620,19 +620,8 @@ public final class LayoutLabel extends JLabel
         final org.traincontrol.automationui.TileGraph.TileKey here =
             tcUI.autonomyTileAt(autonomyPage, component.getX(), component.getY());
 
-        final java.awt.Component at = e.getComponent();
-        final int atX = e.getX();
-        final int atY = e.getY();
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(tcUI, station, here);
-
-            // An empty menu is not worth showing.  Over a plain piece of track with autonomy running
-            // and no setup to reach, there is genuinely nothing to offer, and a one-item-high grey box
-            // appearing under the pointer reads as a fault.
-            if (menu.getComponentCount() > 0) menu.show(at, atX, atY);
-        });
+        LayoutRightclickAutonomyMenu.showFor(tcUI, station, here,
+            e.getComponent(), e.getX(), e.getY());
 
         return true;
     }

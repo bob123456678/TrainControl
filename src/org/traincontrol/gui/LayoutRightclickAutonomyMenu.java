@@ -41,13 +41,46 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     private final org.traincontrol.automationui.AutonomySession session;
     
     /**
+     * Builds this menu for a square and shows it, if it has anything to say.
+     *
+     * The one way in (DD-B5). The four surfaces that offer this menu - a tile, a station caption, the
+     * main window's panel and the popup window's panel - each used to write out the same three steps:
+     * hop to the event thread, build the menu, show it. Three of them also checked whether the menu had
+     * come out empty. The fourth, added later, did not, and over a plain piece of track with autonomy
+     * running and nothing to offer it opened a one-item-high grey box under the pointer - which, as
+     * LayoutLabel's comment puts it, "reads as a fault".
+     *
+     * A guard that has to be remembered at four call sites is a guard that will be missing at one of
+     * them. There is nothing to remember now: the constructor is private, so this is the only way the
+     * menu can be shown at all.
+     *
+     * @param ui the application
+     * @param station the sensor the caption is about, or null for the diagram-wide menu
+     * @param here the square that was clicked, or null where the click was not on one
+     * @param at the component the click landed on
+     * @param x where in it
+     * @param y where in it
+     */
+    static void showFor(TrainControlUI ui, org.traincontrol.automationui.TileGraph.TileKey station, org.traincontrol.automationui.TileGraph.TileKey here,
+        final java.awt.Component at, final int x, final int y)
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here);
+
+            // An empty menu is not worth showing.
+            if (menu.getComponentCount() > 0) menu.show(at, x, y);
+        });
+    }
+
+    /**
      * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square
      *        rather than a name: a station is several Points now and none of them is called what the
      *        caption says, so resolving one by its text found nothing and the menu silently lost every
      *        item below the lookup.
      * @param here the square that was clicked, or null where the click was not on one
      */
-    public LayoutRightclickAutonomyMenu(TrainControlUI ui,
+    private LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
         org.traincontrol.automationui.TileGraph.TileKey here)
     {

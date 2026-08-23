@@ -4228,7 +4228,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private org.traincontrol.automationui.TilePorts.Side towards(TileKey from, TileKey to)
     {
-        return org.traincontrol.automationui.TileGraph.sideTowards(from, to);
+        return org.traincontrol.automationui.TileGraph.gridSideTowards(from, to);
     }
 
     /**

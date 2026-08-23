@@ -212,14 +212,14 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testAJumpBetweenPagesHasNoSide()
     {
-        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(
+        assertNull(org.traincontrol.automationui.TileGraph.gridSideTowards(
             tile(0, 0), new TileKey("other", 1, 0)),
             "two pages were treated as one grid");
 
-        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(tile(0, 0), tile(1, 1)),
+        assertNull(org.traincontrol.automationui.TileGraph.gridSideTowards(tile(0, 0), tile(1, 1)),
             "a diagonal is not a side");
 
-        assertNull(org.traincontrol.automationui.TileGraph.sideTowards(tile(0, 0), tile(0, 0)),
+        assertNull(org.traincontrol.automationui.TileGraph.gridSideTowards(tile(0, 0), tile(0, 0)),
             "a square is not beside itself");
     }
 

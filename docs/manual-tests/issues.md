@@ -68,43 +68,6 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
-### OB-023 - 2026-08-22 - DD-B3 and DD-B5: two guards that reach three of four sites
-
-**Kind:** bug
-**Raised from:** the duplication and design review, at Adam's request
-**Filed:** 2026-08-22
-
-**From [DD-B3 and DD-B5](../reviews/2026-08-22-duplication-and-design.md).** Ranked second.
-
-Two of a kind, worth one pass:
-
-- **DD-B3** - four places construct a `LayoutGrid`; three of them call `discard()` on the outgoing one
-  first. A grid that is not discarded leaves two timers armed that still hold the panel, which drops a
-  spinner into the middle of the new grid.
-- **DD-B5** - the right-click entry point is written four times and the empty-menu guard is on three,
-  so one surface can show an empty popup.
-
-~55 lines between them, and the point is to make both impossible to forget rather than to fix the
-fourth site. Worth doing in the editor area specifically because that is where this month's defects
-have been.
-
-### OB-024 - 2026-08-22 - DD-C9 and DD-C10: two ten-minute cleanups
-
-**Kind:** bug
-**Raised from:** the duplication and design review, at Adam's request
-**Filed:** 2026-08-22
-
-**From [DD-C9 and DD-C10](../reviews/2026-08-22-duplication-and-design.md).** Ranked third, and
-only because they are nearly free.
-
-- **DD-C9** - `TileGraph` has `sideTowards` and `sideToward`: two methods one letter apart answering
-  one question two ways. Confirmed still both present, nine call sites between them.
-- **DD-C10** - the port table exists three times, one of them a Python script whose javadoc asks you to
-  hand-edit it in step with the Java.
-
-Neither has produced a defect. They are here because a name one letter from another name is a defect
-waiting for a tired reader, and a table maintained by hand in two languages is one that will disagree.
-
 ### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
 
 **Kind:** bug
@@ -164,6 +127,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-23 | OB-023 | bug | The right-click menu and grid teardown, unified | - | [MT-128](tests.md#mt-128) |
+| 2026-08-23 | OB-024 | bug | Port map and side-lookup cleanups | - | [MT-129](tests.md#mt-129) |
 | 2026-08-23 | OB-039 | bug | Changing a locomotive's orientation updates its label | - | [MT-125](tests.md#mt-125) |
 | 2026-08-23 | OB-040 | bug | Picking a guarding signal de-clutters the diagram | - | [MT-126](tests.md#mt-126) |
 | 2026-08-23 | OB-028 | bug | The autonomy editor draws the railway, not a grid over it | - | [MT-127](tests.md#mt-127) |

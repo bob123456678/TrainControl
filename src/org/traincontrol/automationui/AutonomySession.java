@@ -3146,8 +3146,8 @@ public class AutonomySession
         {
             TileKey tile = path.get(i);
 
-            Side cameFrom = graph.sideToward(tile, path.get(i - 1));
-            Side goingTo = graph.sideToward(tile, path.get(i + 1));
+            Side cameFrom = graph.sideTowardNeighbour(tile, path.get(i - 1));
+            Side goingTo = graph.sideTowardNeighbour(tile, path.get(i + 1));
 
             if (cameFrom == null || goingTo == null) continue;
 
@@ -3252,8 +3252,8 @@ public class AutonomySession
             TileKey next = at + 1 < path.size() ? path.get(at + 1).getTile() : edge.getEnd();
             TileKey previous = at > 0 ? path.get(at - 1).getTile() : edge.getStart();
 
-            Side toward = graph.sideToward(tile, next);
-            Side from = graph.sideToward(tile, previous);
+            Side toward = graph.sideTowardNeighbour(tile, next);
+            Side from = graph.sideTowardNeighbour(tile, previous);
 
             if (toward == null || from == null) continue;
 

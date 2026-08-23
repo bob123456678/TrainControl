@@ -208,4 +208,52 @@ public class testDiagramExport
             "the same page drawn twice produced " + differences + " differing pixels, so the export is "
             + "not deterministic and the active-page shortcut cannot be trusted to match");
     }
+    /**
+     * Building a grid over a panel retires the grid that was there.
+     *
+     * DD-B3. Four places in the application build a `LayoutGrid` over an existing panel, and three of
+     * them called `discard()` on the outgoing one first. A grid that is not discarded keeps two timers
+     * armed, and those timers go on firing into a panel that now belongs to somebody else - the grace
+     * timer drops a spinner into the middle of the page the NEW grid has just drawn, and because the
+     * panel is a FlowLayout the extra component pushes the tiles along and the last row comes out
+     * short.
+     *
+     * `174178c5` had to add the third call and wrote the finding into its own comment: "both other
+     * places that build a grid over an existing panel call this; this one did not." Three out of four
+     * is what a rule looks like just before it is missed at the fourth, so the rule moved into the
+     * constructor and this checks it is there.
+     */
+    @Test
+    public void testANewGridRetiresTheOneItReplaces() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+
+        assertNotNull(page, "no page to draw");
+
+        final javax.swing.JPanel panel = new javax.swing.JPanel();
+        final org.traincontrol.gui.LayoutGrid[] built = new org.traincontrol.gui.LayoutGrid[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui);
+        });
+
+        assertFalse(built[0].isDiscarded(), "a grid retired itself as it was built");
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            panel.removeAll();
+
+            built[1] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui);
+        });
+
+        assertTrue(built[0].isDiscarded(),
+            "the outgoing grid was left armed when a new one was built over its panel. Its timers fire "
+            + "into a panel that is no longer its own, which is a spinner dropped into the middle of "
+            + "the page the new grid just drew (DD-B3)");
+
+        assertFalse(built[1].isDiscarded(), "the incoming grid was retired instead of the outgoing one");
+    }
+
+
 }

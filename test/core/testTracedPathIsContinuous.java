@@ -103,7 +103,7 @@ public class testTracedPathIsContinuous
                 // them, so a run built by concatenation names it twice and the drawing skips it
                 if (previous.equals(here)) continue;
 
-                if (TileGraph.sideTowards(previous, here) != null) continue;
+                if (TileGraph.gridSideTowards(previous, here) != null) continue;
 
                 breaks.add(previous + " -> " + here + " (" + describe(previous)
                     + " to " + describe(here) + ")");

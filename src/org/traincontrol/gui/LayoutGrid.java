@@ -91,6 +91,32 @@ public class LayoutGrid
      */
     private volatile boolean discarded = false;
 
+    /**
+     * The grid currently drawn into each panel, so that building a new one can retire the old one.
+     *
+     * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
+     * the outgoing one first. The fourth was found by `174178c5`, whose comment is the finding - "both
+     * other places that build a grid over an existing panel call this; this one did not" - and the
+     * symptom was a spinner dropped into the middle of the page the NEW grid had just drawn.
+     *
+     * Being remembered at three of four call sites is what a rule looks like just before it is missed
+     * at the fourth. So the rule lives here instead, where building a grid IS retiring the one it
+     * replaces and there is nothing left to remember.
+     *
+     * Weak keys: a panel that has gone away takes its entry with it, and nothing here keeps a window
+     * alive that the application has finished with.
+     */
+    private static final java.util.Map<JPanel, LayoutGrid> LIVE =
+        java.util.Collections.synchronizedMap(new java.util.WeakHashMap<JPanel, LayoutGrid>());
+
+    /**
+     * @return whether this grid has been retired and should not touch its panel again
+     */
+    public boolean isDiscarded()
+    {
+        return discarded;
+    }
+
     private javax.swing.Timer failsafe;
 
     private javax.swing.Timer grace;
@@ -127,7 +153,16 @@ public class LayoutGrid
      * @param ui
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
-    {          
+    {
+        // Before anything else touches the panel: whatever was drawn here is being replaced, and a
+        // replaced grid with timers still armed fires into a panel that is no longer its own.
+        if (parent != null)
+        {
+            LayoutGrid outgoing = LIVE.put(parent, this);
+
+            if (outgoing != null && outgoing != this) outgoing.discard();
+        }
+
         // Which editor this is.  layout.getEdit() is true in BOTH - the autonomy editor borrows the
         // diagram editor's edit flag for its mutual exclusion - so keying label rendering on it changed
         // the track diagram editor as well, where the raw "Point:" text is exactly what the user needs
@@ -356,13 +391,8 @@ public class LayoutGrid
 
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
-                                    javax.swing.SwingUtilities.invokeLater(() ->
-                                    {
-                                        LayoutRightclickAutonomyMenu menu =
-                                            new LayoutRightclickAutonomyMenu(ui, station, station);
-
-                                        menu.show(e.getComponent(), e.getX(), e.getY());
-                                    });
+                                    LayoutRightclickAutonomyMenu.showFor(ui, station, station,
+                                        e.getComponent(), e.getX(), e.getY());
                                 }
                                 // Left-clicking a station will activate its locomotive
                                 else
