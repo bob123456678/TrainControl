@@ -54,24 +54,16 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | fixed unvalidated | IP-*, AR-21 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
 | [MT-040](#mt-040) | 2026-08-21 | A page the folder does not hold | fixed unvalidated | AR-23 |
-| [MT-042](#mt-042) | 2026-08-22 | Hovering a station's name to paste | needs test | LT-A7 |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
-| [MT-044](#mt-044) | 2026-08-22 | Cut and paste a whole column | needs test | LT-A8, FR-A1 |
 | [MT-045](#mt-045) | 2026-08-22 | The same for a whole row | needs test | LT-A8, FR-A1 |
 | [MT-047](#mt-047) | 2026-08-22 | Go to a link's other end | fixed unvalidated | LT-M11 |
-| [MT-049](#mt-049) | 2026-08-22 | The Edit button no longer asks | needs test | LT-F2 |
-| [MT-050](#mt-050) | 2026-08-22 | The sidebar | needs test | LT-F2 |
 | [MT-051](#mt-051) | 2026-08-22 | The sidebar with nothing to offer | needs test | LT-F2 |
-| [MT-052](#mt-052) | 2026-08-22 | A remembered window size with a sidebar | needs test | FR-D2 |
-| [MT-053](#mt-053) | 2026-08-22 | Edit Locomotive opens its dialog | needs test | AR-1, AR-2 |
-| [MT-054](#mt-054) | 2026-08-22 | Combine Linked Pages appears once | needs test | AR-3, AR-4 |
-| [MT-055](#mt-055) | 2026-08-22 | Manage Pages and Edit Layout Page | needs test | AR-5 |
-| [MT-056](#mt-056) | 2026-08-22 | The sidebar with a long page name | needs test | AR-6, AR-7, AR-8 |
-| [MT-057](#mt-057) | 2026-08-22 | A train marker and its name | needs test | AR-13, AR-14 |
-| [MT-058](#mt-058) | 2026-08-22 | Show autonomy hides the names | needs test | AR-15 |
+| [MT-053](#mt-053) | 2026-08-22 | Edit Locomotive opens its dialog | fixed unvalidated | AR-1, AR-2 |
+| [MT-056](#mt-056) | 2026-08-22 | The sidebar with a long page name | fixed unvalidated | AR-6, AR-7, AR-8 |
+| [MT-057](#mt-057) | 2026-08-22 | A train marker and its name | fixed unvalidated | AR-13, AR-14 |
+| [MT-058](#mt-058) | 2026-08-22 | Show autonomy hides the names | fixed unvalidated | AR-15 |
 | [MT-059](#mt-059) | 2026-08-22 | Why is it not moving, on an addressed layout | needs test | AR-12 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
-| [MT-061](#mt-061) | 2026-08-22 | Graceful stop timing | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
@@ -87,6 +79,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-110](#mt-110) | 2026-08-22 | The autonomy column is narrower, and three labels changed | fixed unvalidated | OB-020 |
 | [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
 | [MT-112](#mt-112) | 2026-08-22 | Home assignments: the three rules that were unreachable | fixed unvalidated | OB-022 (DD-A6) |
+| [MT-113](#mt-113) | 2026-08-22 | Tool labels, and a heading with nothing under it | fixed unvalidated | OB-027, OB-032 |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -1954,7 +1947,7 @@ All OK.
 
 ### MT-042 - 2026-08-22 - Hovering a station's name to paste
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-A7  
 **Written:** 2026-08-22
 
@@ -1970,6 +1963,8 @@ carries no name and press it: nothing should happen and the log should say why.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 21:54 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-043"></a>
 
@@ -1993,12 +1988,26 @@ Works-ish.  The label persists, but when I move it back and when it was on a cel
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 21:54 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** "The station name briefly changes to [---]" while the square is disconnected
+is correct, and worth explaining rather than changing.
+
+`[---]` is what a caption says when the setup has a station here and nothing is standing on it. While a
+sensor is off the track - mid-move, or on a square joined to nothing - there is no Point behind the
+caption for a locomotive to be standing on, so the honest answer is the placeholder. It comes back the
+moment the square is connected again, which is what you saw.
+
+The alternative would be to keep drawing the last train we saw there, which is the one thing a caption
+must never do: it would assert that a locomotive is on track that is not connected to anything.
+
+Left as it is deliberately. If the flicker itself is the annoyance rather than the wording, say so and
+I will look at holding the previous caption for the duration of a drag.
 ---
 <a id="mt-044"></a>
 
 ### MT-044 - 2026-08-22 - Cut and paste a whole column
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-A8, FR-A1  
 **Written:** 2026-08-22
 
@@ -2015,6 +2024,8 @@ must not still be carrying the names it had before.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-045"></a>
 
@@ -2113,7 +2124,7 @@ view must open at that station.  With autonomy RUNNING, it must do nothing at al
 
 ### MT-049 - 2026-08-22 - The Edit button no longer asks
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-F2  
 **Written:** 2026-08-22
 
@@ -2125,12 +2136,18 @@ you to the setup editor whatever you used last.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-050"></a>
 
 ### MT-050 - 2026-08-22 - The sidebar
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** LT-F2  
 **Written:** 2026-08-22
 
@@ -2142,6 +2159,12 @@ actually on.  Switch modes the same way.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-051"></a>
 
@@ -2165,12 +2188,20 @@ The position of the window still moves around when changing pages.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** "The position of the window still moves around when changing pages" was fixed
+after the build you ran this against - your run was 20:32 and the change landed later.
+
+The cause was one remembered window entry PER PAGE, so clicking a tab restored the position that page
+had last been left at. There is one entry for the whole window now and it does not move on a switch;
+only the size changes, and only upwards. Worth re-running rather than taking my word for it - see
+MT-095, which is the entry that carries the change.
 ---
 <a id="mt-052"></a>
 
 ### MT-052 - 2026-08-22 - A remembered window size with a sidebar
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** FR-D2  
 **Written:** 2026-08-22
 
@@ -2181,12 +2212,18 @@ have squeezed the diagram now that there is a sidebar taking width from it.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-053"></a>
 
 ### MT-053 - 2026-08-22 - Edit Locomotive opens its dialog
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** AR-1, AR-2  
 **Written:** 2026-08-22
 
@@ -2198,12 +2235,31 @@ item at all - "Add a Locomotive to Autonomy..." is what places one.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+works, but rearrange the menu options as follows:
+-add loc to autonomy
+-edit loc
+-remove loc
+-loc is facing...
+-home for a locomotive
+
+Also, rename home for a locomotive to "Set Home Locomotive...."
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Reordered to your list - Add, Edit, Remove, facing, home - and "Home for a
+Locomotive" is now **Set Home Locomotive...**, naming the locomotive when there is one.
+
+The group reads as the life of a locomotive on the square now: put one here, edit what is here, take it
+away, then which way round it faces and which station it belongs to.
 ---
 <a id="mt-054"></a>
 
 ### MT-054 - 2026-08-22 - Combine Linked Pages appears once
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** AR-3, AR-4  
 **Written:** 2026-08-22
 
@@ -2214,12 +2270,18 @@ Pages..." must appear once.  Its tooltip must wrap instead of running off the sc
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-055"></a>
 
 ### MT-055 - 2026-08-22 - Manage Pages and Edit Layout Page
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** AR-5  
 **Written:** 2026-08-22
 
@@ -2234,12 +2296,14 @@ Page" lists every page and opens the one you pick, in whichever editor you used 
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 <a id="mt-056"></a>
 
 ### MT-056 - 2026-08-22 - The sidebar with a long page name
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** AR-6, AR-7, AR-8  
 **Written:** 2026-08-22
 
@@ -2257,12 +2321,18 @@ There is room for many more than 8 pages- make the limit be 20.  Stretch the lis
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Twenty before it scrolls, and the list runs down to the mode selector.
+
+Eight was right when the pages were toggle BUTTONS at 26px with their own borders. They are list rows
+at 24px now and the strip is the height of the window, so eight was leaving most of the column empty
+and scrolling a railway of twelve pages for no reason.
 ---
 <a id="mt-057"></a>
 
 ### MT-057 - 2026-08-22 - A train marker and its name
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** AR-13, AR-14  
 **Written:** 2026-08-22
 
@@ -2280,12 +2350,26 @@ The white star is too big and slightly off center relative to the midpoint of th
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Both halves, and "be careful with curved stations" is what found the real
+cause.
+
+The star is smaller - an eighth of the tile rather than a sixth. It was sized when it sat under the
+badge; on top of one it read as a shape in its own right rather than as a mark ON it.
+
+**And it was centred on the wrong thing.** The badge is centred on `trackCentre` - "the midpoint of the
+route's own two sides, which is the tile centre for a straight and lands on the rails for anything
+else" - and the star was centred on the TILE. On a straight they agree, which is why it looked only
+slightly off. On a bend the track leaves the middle of the square and they part company completely.
+
+It is on the track now, so it sits on the badge it is drawn over whatever shape the tile is - which is
+also the right answer on its own terms, since the star marks a train standing on the RAILS.
 ---
 <a id="mt-058"></a>
 
 ### MT-058 - 2026-08-22 - Show autonomy hides the names
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** AR-15  
 **Written:** 2026-08-22
 
@@ -2296,6 +2380,14 @@ page and come back: still gone.  Tick it again and they return.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works, but rename "Show Autonomy" to "Autonomy Controls"
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Renamed to **Autonomy Controls**.
 ---
 <a id="mt-059"></a>
 
@@ -2366,7 +2458,7 @@ the old file. It has been red in every run this week for this reason.
 
 ### MT-061 - 2026-08-22 - Graceful stop timing
 
-**Disposition:** needs test  
+**Disposition:** fixed validated
 **From:** hands-on testing  
 **Written:** 2026-08-22
 
@@ -2384,6 +2476,8 @@ the old file.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Validated on Adam's word. Nothing outstanding on this entry.
 ---
 
 <a id="mt-062"></a>
@@ -2923,6 +3017,11 @@ Looks good.  Reduce padding to the right of the table.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 18:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** The padding was reduced after the build you ran this against - yours was 18:46
+and the change landed later. The strip's right inset went from eight to two, and the list is wider by
+the same amount: a list has its own inset before the text and a selection bar to its edge, so eight on
+the right read as sixteen.
 ---
 
 <a id="mt-098"></a>
@@ -3659,5 +3758,33 @@ duplication, small and deliberate.
 **Still outstanding from DD-A6:** roughly 200 unreachable lines in `HomeLocomotiveMenu`. They are no
 longer MISLEADING - the live path has the rules now - but they are still dead, and the report is right
 that leaving them is not free. Deferred rather than done while Adam is testing.
+
+---
+
+<a id="mt-113"></a>
+
+### MT-113 - 2026-08-22 - Tool labels, and a heading with nothing under it
+
+**Disposition:** fixed unvalidated  
+**From:** OB-027, OB-032  
+**Written:** 2026-08-22
+
+**What to do.** In the autonomy editor's tools column: **Why not Moving?**, **Name Everything...**,
+**Exclude Page**.
+
+Then right-click a square connected to nothing - an unlinked link, or a piece of track with no route
+through it. **Trains May Depart...** must not appear at all. On an ordinary square it must still be
+there with its usual contents.
+
+#### Comments
+
+**Claude, 2026-08-22.** The three labels are straightforward.
+
+The heading is worth a word. A submenu built by `title()` starts with one disabled item, so "is it
+empty" asked as `getItemCount() == 0` is never true - the check has to ignore the heading, which is
+what it does now. A heading is a promise that something follows it; alone it reads as a list that
+failed to load rather than as a square with no choices.
+
+Same reasoning as the popup guard in `LayoutLabel`, where an empty menu "reads as a fault".
 
 ---

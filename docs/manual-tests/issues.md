@@ -134,17 +134,6 @@ hand-written even if this lands.
 
 When arriving at a curved station (specifically s88 1015 from the north), the red trace draws a straight line on the tile, rather than following the shape of the station.  Running through curves looks OK.  Verify that this bug doesn't also exist elsewhere.
 
-### OB-027 - 2026-08-22 - Autonomy tools buttons
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:33  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-"Why is it not moving" -> Why not Moving?
-Name everything -> Name Everything...
-Leave this page out -> Exclude Page
-
 ### OB-028 - 2026-08-22 - grid in autonomy editor
 
 **Kind:** bug  
@@ -199,14 +188,23 @@ many tooltips are very wide.  split them.
 
 when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
 
-### OB-032 - 2026-08-22 - unliked tiles
+### OB-033 - 2026-08-22 - layout menu while editor is open
 
 **Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 22:16  
+**Filed:** 2026-08-22 22:21  
 **Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-on unlinked tiles (not connected to anything), the "trains may depart" submenu is empty.  hide the parent heading when this is the case.
+similra to the autonomy menu, the layout menu should be disabled while the editor is open.  make both, when clicked, take the user to the editor.
+
+### OB-034 - 2026-08-22 - renaming a station removes its autonomy label
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 22:27  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+renaming a station removes its autonomy label.  it gets restored if renamed back. tested from the track diagram viewer.  make sure the changes propagate.
 
 ---
 
@@ -222,6 +220,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-032 | bug | An empty "Trains May Depart" heading is hidden | - | [MT-113](tests.md#mt-113) |
+| 2026-08-22 | OB-027 | bug | Three tool labels renamed | - | [MT-113](tests.md#mt-113) |
 | 2026-08-22 | OB-022 | bug | DD-A6: three safety rules in code nothing called | - | [MT-112](tests.md#mt-112) |
 | 2026-08-22 | OB-021 | bug | Layouts menu: Edit Layout Page under Manage Pages, and a doubled divider | - | [MT-111](tests.md#mt-111) |
 | 2026-08-22 | OB-020 | bug | The autonomy tools column is narrower, and three labels changed | - | [MT-110](tests.md#mt-110) |

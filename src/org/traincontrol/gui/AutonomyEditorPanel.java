@@ -850,6 +850,24 @@ public class AutonomyEditorPanel extends JPanel
             // locomotive's settings, one level up from here - so inside "Autonomy Setup" they were the
             // same four answers a second time, under different words.  In the editor, where there is no
             // menu above this one, they are the only way to reach them and they stay.
+            // Adam's order (MT-053): put one here, edit what is here, take it away - then which way
+            // round it faces, then which station it belongs to. The group reads as the life of a
+            // locomotive on this square, which is how somebody arrives at it.
+            //
+            // This one stays in the deep menu.
+            //
+            // The diagram's own menu places the locomotive selected on the KEYBOARD, which is the fast
+            // way when that is the train being worked on and no way at all otherwise.  This asks which
+            // locomotive, so it is not the same answer under different words - it is the only way to
+            // put a train on a square from the diagram without selecting it first.
+            if (isStation)
+            {
+                menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
+                    () -> placeLocomotive(target)));
+            }
+
+            if (!menuOnly) addLocomotiveSettings(menu, target);
+
             if (standing != null && !menuOnly)
             {
                 menu.add(item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
@@ -864,19 +882,8 @@ public class AutonomyEditorPanel extends JPanel
                     }));
             }
 
-            if (!menuOnly) addLocomotiveSettings(menu, target);
-
             if (isStation)
             {
-                // This one stays in the deep menu.
-                //
-                // The diagram's own menu places the locomotive selected on the KEYBOARD, which is the
-                // fast way when that is the train being worked on and no way at all otherwise.  This
-                // asks which locomotive, so it is not the same answer under different words - it is the
-                // only way to put a train on a square from the diagram without selecting it first.
-                menu.add(item(I18n.t("autosetup.ui.menuAddToAutonomy"),
-                    () -> placeLocomotive(target)));
-
                 // "Move a Locomotive to This Station..." used to sit here (OB-009).
                 //
                 // Three items on one menu asked which locomotive: this one, that one, and the edit
@@ -1473,6 +1480,28 @@ public class AutonomyEditorPanel extends JPanel
      * run the square that changes is the head of the run rather than the one right-clicked - so
      * without it the one square that moved was the one the user could not see.
      */
+    /**
+     * Whether a submenu holds anything but its own heading (OB-032).
+     *
+     * title() adds a disabled item at the top, so a submenu with nothing in it has a count of one
+     * rather than zero - and "is it empty" asked as getItemCount() == 0 is therefore always false.
+     *
+     * @param menu the submenu
+     * @return true when there is something under the heading
+     */
+    private boolean hasItemsBesidesTitle(javax.swing.JMenu menu)
+    {
+        for (int i = 0; i < menu.getItemCount(); i++)
+        {
+            javax.swing.JMenuItem child = menu.getItem(i);
+
+            // A separator comes back as null from getItem, and a separator is not content either
+            if (child != null && child.isEnabled()) return true;
+        }
+
+        return false;
+    }
+
     private javax.swing.JMenuItem item(String text, final Runnable action)
     {
         javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);

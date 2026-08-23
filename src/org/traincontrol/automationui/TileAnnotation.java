@@ -975,10 +975,25 @@ public class TileAnnotation
     {
         int span = Math.min(width, height);
 
-        double arm = Math.max(3.0, span / 6.0);
+        // A sixth of the tile was too much once the mark moved on top of the badge (MT-057): over a
+        // station circle it read as a shape in its own right rather than as a mark ON one.
+        double arm = Math.max(2.5, span / 8.0);
 
-        double centreX = width / 2.0;
-        double centreY = height / 2.0;
+        // On the TRACK, not on the tile (MT-057).
+        //
+        // Adam: "slightly off center relative to the midpoint of the station. Be careful with curved
+        // stations." Both halves are the same cause. The badge is centred on trackCentre - "the
+        // midpoint of the route's own two sides, which is the tile centre for a straight and lands on
+        // the rails for anything else" - and this was centred on the tile.
+        //
+        // On a straight they agree, which is why it looked only slightly off; on a bend the track
+        // leaves the middle of the square and they part company completely. The star marks a train
+        // standing on the RAILS, so the rails are what it belongs on - and it now sits on the badge it
+        // is drawn over, whatever shape the tile is.
+        int[] on = trackCentre(width, height);
+
+        double centreX = on[0];
+        double centreY = on[1];
 
         java.awt.geom.Path2D star = new java.awt.geom.Path2D.Double();
 

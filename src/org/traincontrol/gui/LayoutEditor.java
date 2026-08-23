@@ -4756,7 +4756,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     private static final String EDITOR_WINDOW_KEY = "editor";
 
     /** Beyond this many pages the tabs scroll rather than running off the bottom of the window */
-    private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 8;
+    /**
+     * How many pages the strip shows before it starts scrolling.
+     *
+     * Eight when the pages were toggle BUTTONS, each 26px tall with its own border. They are rows of a
+     * list now at 24px, and the strip runs the height of the window - so eight was leaving most of the
+     * column empty and scrolling a railway of twelve pages for no reason (MT-056).
+     */
+    private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
 
     /**
      * The air under a blue heading, and between the checkboxes in the visibility column.
