@@ -466,12 +466,19 @@ class IssuesDoc(object):
         return items, leftover
 
     def _parse_picked(self):
+        """The receipt table, as dicts keyed by its own header - Filed/Ref/Kind/What/Became -
+        rather than fixed positions, so a column added later doesn't silently misalign every
+        reader of this method. 'became_tag' pulls the bare MT-### out of Became's markdown link,
+        for anything that wants to jump straight to that entry in tests.md.
+        """
+
         marker = "## What has been picked up"
         at = self.text.find(marker)
 
         if at < 0:
             return []
 
+        header = None
         rows = []
 
         for line in self.text[at:].splitlines():
@@ -482,13 +489,23 @@ class IssuesDoc(object):
 
             cells = [c.strip() for c in line.strip("|").split("|")]
 
-            if not cells or set("".join(cells)) <= set("-: "):
+            if not cells:
                 continue
 
-            if cells and cells[0].lower() == "filed":
+            if set("".join(cells)) <= set("-: "):
                 continue
 
-            rows.append(cells)
+            if header is None:
+                header = [c.lower() for c in cells]
+                continue
+
+            row = dict(zip(header, cells))
+
+            became = row.get("became", "")
+            m = re.search(r'\[(MT-\d+)\]', became)
+            row["became_tag"] = m.group(1) if m else None
+
+            rows.append(row)
 
         return rows
 
@@ -796,8 +813,12 @@ class Triage(tk.Tk):
         self.current = None
         self.observations = []       # pending, for the entry on screen
 
+        self.issues_doc = None
+        self.issue_widgets = {}      # kind -> {tree, detail, open_button, open_tag}
+
         self._build_ui()
         self._refresh_list(select_first=True)
+        self._refresh_issue_tabs()
 
         geometry = self.state_.data.get("geometry")
 
@@ -832,7 +853,7 @@ class Triage(tk.Tk):
         panes = ttk.Panedwindow(self, orient=tk.HORIZONTAL)
         panes.pack(fill=tk.BOTH, expand=True, padx=PAD, pady=(0, PAD))
 
-        panes.add(self._build_list(panes), weight=0)
+        panes.add(self._build_left(panes), weight=0)
         panes.add(self._build_detail(panes), weight=1)
 
         self.status = ttk.Label(self, anchor=tk.W, relief=tk.SUNKEN, padding=(6, 3))
@@ -905,6 +926,22 @@ class Triage(tk.Tk):
         if self.filter_var.get() not in picker["values"]:
             self.filter_var.set("open - not yet answered here")
 
+    def _build_left(self, parent):
+        """A tab per kind of thing this app tracks, so a feature request never has to borrow the
+        Tests list to be seen - it was showing up there as an MT-### row the moment it was picked
+        up, indistinguishable from an actual hands-on test, which is exactly the complaint that
+        led to this.
+        """
+
+        self.left_book = ttk.Notebook(parent)
+
+        self.left_book.add(self._build_list(self.left_book), text="  Tests  ")
+        self.left_book.add(self._build_issue_list(self.left_book, "feature request"),
+                           text="  Feature requests  ")
+        self.left_book.add(self._build_issue_list(self.left_book, "bug"), text="  Bugs  ")
+
+        return self.left_book
+
     def _build_list(self, parent):
         frame = ttk.Frame(parent, width=380)
 
@@ -958,6 +995,166 @@ class Triage(tk.Tk):
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
 
         return frame
+
+    def _build_issue_list(self, parent, kind):
+        """One tab's worth: a list of that kind's Inbox items (pending, then already picked up
+        into a test), and a read-only pane underneath showing whichever one is selected. Read-only
+        on purpose - filing and answering both already have a home (New issue, and the Tests tab),
+        so this tab is for seeing what is there, not a second way to write to either file.
+        """
+
+        frame = ttk.Frame(parent)
+
+        columns = ("state", "ref", "date", "what")
+
+        tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
+
+        for name, title, width in (
+            ("state", "State", 92),
+            ("ref", "Ref", 92),
+            ("date", "Filed", 82),
+            ("what", "What", 220),
+        ):
+            tree.heading(name, text=title)
+            tree.column(name, width=width, anchor=tk.W, stretch=(name == "what"))
+
+        rows = ttk.Frame(frame)
+        rows.pack(fill=tk.BOTH, expand=True)
+
+        bar = ttk.Scrollbar(rows, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=bar.set)
+
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        bar.pack(side=tk.LEFT, fill=tk.Y)
+
+        for slug, color in DISPOSITION_COLORS.items():
+            tree.tag_configure(slug, foreground=color)
+
+        tree.tag_configure("pending", foreground=DISPOSITION_COLORS["needs-test"])
+
+        detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
+                         background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
+        detail.pack(fill=tk.BOTH, expand=False, pady=(6, 4))
+
+        open_button = ttk.Button(frame, text="Open in Tests tab", state=tk.DISABLED,
+                                 command=lambda: self._jump_to_test(
+                                     self.issue_widgets[kind].get("open_tag")))
+        open_button.pack(anchor=tk.E)
+
+        self.issue_widgets[kind] = {
+            "tree": tree, "detail": detail, "open_button": open_button, "open_tag": None,
+        }
+
+        tree.bind("<<TreeviewSelect>>", lambda e, k=kind: self._on_issue_select(k))
+
+        return frame
+
+    def _refresh_issue_tabs(self):
+        self.issues_doc = IssuesDoc(ISSUES_MD) if os.path.exists(ISSUES_MD) else None
+
+        for kind in self.issue_widgets:
+            self._populate_issue_tree(kind)
+
+    def _populate_issue_tree(self, kind):
+        widgets = self.issue_widgets[kind]
+        tree = widgets["tree"]
+
+        selected = tree.selection()
+
+        tree.delete(*tree.get_children())
+
+        if not self.issues_doc:
+            return
+
+        for it in self.issues_doc.pending:
+            if it.kind != kind:
+                continue
+
+            tree.insert("", tk.END, iid="pending:%s" % it.ref, tags=("pending",),
+                       values=("pending", it.ref, it.filed, it.summary))
+
+        for row in self.issues_doc.picked:
+            if row.get("kind") != kind:
+                continue
+
+            tag = row.get("became_tag")
+            entry = self.doc.by_tag.get(tag) if tag else None
+
+            slug = disposition_slug(entry.disposition) if entry else None
+            row_tags = (slug,) if slug in DISPOSITION_COLORS else ()
+
+            state = "-> %s" % tag if tag else "picked up"
+            iid = "picked:%s" % (tag or row.get("ref", ""))
+
+            tree.insert("", tk.END, iid=iid, tags=row_tags,
+                       values=(state, row.get("ref", ""), row.get("filed", ""), row.get("what", "")))
+
+        if selected and selected[0] in tree.get_children():
+            tree.selection_set(selected[0])
+
+    def _on_issue_select(self, kind, _event=None):
+        widgets = self.issue_widgets[kind]
+        tree = widgets["tree"]
+        detail = widgets["detail"]
+        open_button = widgets["open_button"]
+
+        selection = tree.selection()
+
+        if not selection:
+            self._fill(detail, "")
+            widgets["open_tag"] = None
+            open_button.config(state=tk.DISABLED)
+            return
+
+        iid = selection[0]
+
+        if iid.startswith("picked:"):
+            tag = iid[len("picked:"):]
+            row = next((r for r in self.issues_doc.picked if r.get("became_tag") == tag), None) \
+                if self.issues_doc else None
+
+            text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                tag or "(no test tag on record)", row.get("ref", "") if row else "",
+                row.get("filed", "") if row else "", row.get("what", "") if row else "")
+
+            self._fill(detail, text)
+            widgets["open_tag"] = tag
+            open_button.config(state=tk.NORMAL if tag and tag in self.doc.by_tag else tk.DISABLED)
+            return
+
+        ref = iid[len("pending:"):]
+        it = next((x for x in self.issues_doc.pending if x.ref == ref), None) \
+            if self.issues_doc else None
+
+        if not it:
+            return
+
+        text = ("Pending - not yet picked up into tests.md.\n\n"
+               "Kind: %s\nRaised from: %s\nFiled: %s\nBuild: %s\n\n%s") % (
+                   it.kind, it.raised_from, it.filed_at, it.build, it.detail)
+
+        self._fill(detail, text)
+        widgets["open_tag"] = None
+        open_button.config(state=tk.DISABLED)
+
+    def _jump_to_test(self, tag):
+        if not tag:
+            return
+
+        if tag not in self.doc.by_tag:
+            messagebox.showinfo("Not found", "%s is not in tests.md (yet)." % tag, parent=self)
+            return
+
+        self.left_book.select(0)
+
+        if tag not in self.tree.get_children():
+            # Whatever filter is active right now doesn't include it - the point of the button is
+            # to get there, not to first explain why it's hidden.
+            self.filter_var.set("everything, validated included")
+            self._refresh_list()
+
+        self.tree.selection_set(tag)
+        self.tree.see(tag)
 
     def _build_detail(self, parent):
         outer = ttk.Frame(parent)
@@ -1294,6 +1491,8 @@ class Triage(tk.Tk):
         )
 
         append_to_inbox(ISSUES_MD, block)
+
+        self._refresh_issue_tabs()
 
     def _build_note(self):
         bits = []
@@ -1642,6 +1841,7 @@ class Triage(tk.Tk):
 
         self.current = None
         self._refresh_list(select_first=True)
+        self._refresh_issue_tabs()
         self._say("Reloaded.")
 
     def clear_marks(self):

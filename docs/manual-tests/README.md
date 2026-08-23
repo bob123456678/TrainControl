@@ -85,6 +85,16 @@ An issue reaches **fixed validated** the same way every other entry does - by Ad
 "Built" is not "validated", and a feature nobody has used is exactly the kind of thing that gets marked
 finished and turns out to be half of what was wanted.
 
+**Before filing anything - by hand, through the app, or as an automated round working through the
+tracker on its own - check whether it is already there.** `py -3 docs\manual-tests\triage.py issues`
+lists every pending item; read it, or read the Inbox section of `issues.md` directly, before adding to
+it. This is not a courtesy - it is how two `OB-###` entries for one idea happen: a round reads the
+tracker, decides something is missing, files it, and a later round (or the same one, run again) reads
+the tracker again and reaches the same conclusion, because nothing recorded that the first round had
+already acted. Filing is cheap and irreversible-by-convention (Inbox items are append-only, same as
+`tests.md`), so the check has to happen before the write, not after. If two items turn out to describe
+the same thing anyway, say so in whichever is read second rather than leaving both to look independent.
+
 ---
 
 ## The triage app
@@ -93,11 +103,22 @@ finished and turns out to be half of what was wanted.
 alt-tabbing between a long markdown document and the running railway. `py -3 docs\manual-tests\triage.py`
 - no build step, no dependency beyond the Python standard library.
 
-Pick an entry from the list, say whether it worked, write what happened, add anything else noticed
-along the way, and submit. **New issue** files a bug or a feature request that has nothing to do with
-the entry on screen - a problem spotted in passing, or an idea, with nowhere else that fits it. It has
-a button that starts TrainControl itself, using the Simulate + Debug configuration, so the two windows
-can sit side by side.
+**Three tabs on the left: Tests, Feature requests, Bugs.** A feature request used to be reachable only
+by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
+test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
+are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
+items of that kind, pending ones first, then the ones already picked up (shown against whatever
+disposition their linked test actually has, same colors as the Tests tab). Selecting one shows it
+read-only underneath; a picked-up item gets an **Open in Tests tab** button that jumps straight to its
+entry. Nothing is written from these two tabs - filing still goes through **New issue** or the Inbox
+itself, and answering still goes through the Tests tab; they exist to be looked at, not to be a second
+way to write to either file.
+
+Pick an entry from the Tests tab, say whether it worked, write what happened, add anything else
+noticed along the way, and submit. **New issue** files a bug or a feature request that has nothing to
+do with the entry on screen - a problem spotted in passing, or an idea, with nowhere else that fits it.
+It has a button that starts TrainControl itself, using the Simulate + Debug configuration, so the two
+windows can sit side by side.
 
 **What it writes, and to where.** A result is appended under that entry's `#### Comments` in
 `tests.md` - dated, signed, and stamped with the commit it was run against - the same shape a comment
@@ -149,7 +170,7 @@ what to change, then change it the same way as always.
 or what went wrong, or a change you want instead. There is no need to update the disposition; Claude
 does that from what you wrote.
 
-**For Claude, at the start of a round:**
+**For Claude, or any automated round working from this file, at the start of a round:**
 
 1. Run `triage.py stats` and `triage.py tests --open` rather than reading the ledger table by eye -
    the table is for Adam; the command is the same information without a chance of a mis-scan.
@@ -158,12 +179,25 @@ does that from what you wrote.
 4. A comment describing something wrong becomes a finding in `docs/reviews/` under that round's prefix,
    fixed there, and the entry moves to **fixed unvalidated** with the new finding tag added to its
    **From** line.
-5. A comment asking for something new gets a NEW entry at the bottom, referencing the tag it came from.
+5. **Before a comment asking for something new becomes a new entry, run `triage.py issues` and check
+   the existing ledger for one that already covers it.** Only if nothing does, add a NEW entry at the
+   bottom, referencing the tag it came from. This is the step that goes missing when a round is in a
+   hurry to file rather than to check first, and it is exactly how one idea gets two tags: a round
+   reads a comment, doesn't find a matching entry because it never looked, and files a duplicate that
+   the NEXT round then also has to notice and merge.
 6. Run `triage.py issues` for anything filed as an `OB-###` that is not already referenced from a
-   test's Comments - a **New issue** has nowhere else to be found. Pick it up the same way a direct
-   entry in `issues.md` would be.
+   test's Comments - a **New issue** has nowhere else to be found. **Before picking one up, check the
+   OTHER pending items and the existing `MT-###` entries for the same idea already there** - two
+   pending items with the same summary are a sign a previous round already filed this and the check in
+   step 5 was skipped, not a sign there are two separate things to build. Pick up the survivor; note
+   the collision in the other one's place instead of pretending both are independent.
 7. Run `triage.py verify-ledger` after the ledger is updated, to catch a row that was missed.
-8. Never mark anything validated. Never edit an instruction. Never reorder.
+8. Never mark anything validated. Never edit an instruction. Never reorder. Never write into
+   `tests.md` or `issues.md` by any path that skips these files' own rules - a script, a bulk edit, or
+   a hand-patch that "just adds the row" is exactly how the append-only guarantee and the ledger's
+   accuracy both quietly stop being true. If a tool other than `triage.py` needs to touch either file,
+   it must follow the same shapes: **6.** for `tests.md`, and the Inbox format in `issues.md` for a new
+   item - not a shortcut that happens to parse.
 
 **When a fix lands that changes behaviour a validated test covered**, move that test back to
 **fixed unvalidated** and say why in its Comments. A test validated against code that has since changed
