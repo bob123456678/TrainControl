@@ -415,6 +415,24 @@ the track diagram right click menu still offers "start autonomy" when the config
 
 an alternate config cannot be imported if there the current autonomy config is in "fix it" status.  make importing be a first class citizen, both when loaded and unloaded.
 
+**Claude, 2026-08-23 - needs one detail before I can fix it.**
+
+I traced both ways in and neither is gated:
+
+- The Autonomy menu's Import is deliberately EXEMPTED from the greying that hides the rest of the
+  management items when nothing is loaded, and the comment beside it makes exactly your argument:
+  "gating it on something being loaded locked the door in exactly the situation it exists for - a setup
+  that will not load, which is repaired by importing one that will."
+- The viewer panel's own manage menu offers Import with no condition at all.
+
+And `importConfiguration()` has no guard on the current configuration's validity - it opens a chooser,
+asks for a name, and reads the file.
+
+So the block is somewhere I have not found, and guessing at it would mean changing code that is already
+right. **What would settle it:** which control you used - the Autonomy menu, or the manage menu inside
+the Autonomy tab - and what actually happened: was the item greyed, did nothing happen, or did a message
+appear? If a message appeared, its exact words will name the guard.
+
 ### OB-052 - 2026-08-23 - odd popup.
 
 **Kind:** bug  

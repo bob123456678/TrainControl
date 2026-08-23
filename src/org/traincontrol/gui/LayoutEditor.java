@@ -4079,21 +4079,12 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         if (tile == null) return;
 
-        if (isAutonomyMode() && autonomyPanel != null && autonomyPanel.isDirty())
-        {
-            int result = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("autosetup.ui.confirmJumpWithUnsavedEdits"),
-                I18n.t("layout.ui.dialogExitConfirmation"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0]
-            );
-
-            if (result != JOptionPane.YES_OPTION) return;
-        }
+        // The same question the sidebar asks, and the same three answers (OB-046).
+        //
+        // This used to ask its own YES/NO, and "yes" neither saved nor discarded - it just left, and
+        // because the setup is shared the edits survived into the window that opened next. So the user
+        // was asked about their unsaved work and nothing was done with it either way.
+        if (!settleUnsavedWork()) return;
 
         layout.setEdit(false);
 
@@ -4169,28 +4160,28 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * Closes this window and opens the editor again, on another page or in the other mode.
+     * Save, discard, or stay - asked once, wherever a page is being left with work on it.
      *
-     * The same exit and reopen the user used to do by hand, which is what the sidebar replaces.  It is
-     * not a lighter operation than closing: the window is built around one diagram and one mode, the
-     * diagram is re-read from disk on the way out, and the setup is put back as it was - so switching
-     * asks what closing asks, and for the same reason.
+     * Three answers, not two. Closing offers two because closing is final: the window is going whatever
+     * happens, and the only question is whether the work goes with it. LEAVING a page is not final -
+     * the user is coming straight back to the same editor somewhere else - and a two-button "throw it
+     * away or stay here" makes them close the window, save, and reopen it, which is the whole thing the
+     * sidebar exists to stop them doing.
      *
-     * @param page the page to open
-     * @param autonomy whether to open the setup rather than the track
+     * Save is the default because it is the answer that cannot lose anything, and this appears on a
+     * gesture as small as clicking a tab.
+     *
+     * Shared with the link jump since OB-046. That path asked its own YES/NO question - and its "yes"
+     * neither saved nor discarded, it simply left. The setup is SHARED, so the edits then survived into
+     * the window that opened next: the user had answered a question about their unsaved work and
+     * nothing had been done with it either way. Adam: "settings should be saved or discarded before
+     * leaving."
+     *
+     * @return whether the caller may go ahead; false means the user chose to stay, or the save or the
+     *         discard failed and said so
      */
-    private void leaveFor(String page, boolean autonomy)
+    private boolean settleUnsavedWork()
     {
-        // Save, discard, or stay - three answers, not two.
-        //
-        // Closing offers two because closing is final: the window is going whatever happens, and the
-        // only question is whether the work goes with it.  Switching is not final - the user is coming
-        // straight back to the same editor on a different page - and a two-button "throw it away or
-        // stay here" makes them close the window, save, and reopen it, which is the whole thing the
-        // sidebar exists to stop them doing.
-        //
-        // Save is the default because it is the answer that cannot lose anything, and this dialog
-        // appears on a gesture as small as clicking a tab.
         boolean unsaved = isAutonomyMode() ? autonomyPanel.isDirty() : canUndo();
 
         if (unsaved)
@@ -4218,13 +4209,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             if (answer != 0 && answer != 1)
             {
                 syncSidebar();
-                return;
+                return false;
             }
 
             if (answer == 0 && !saveBeforeLeaving())
             {
                 syncSidebar();
-                return;
+                return false;
             }
 
             // Discarding the SETUP has to happen here, because the setup is shared: the window that
@@ -4241,11 +4232,40 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                         I18n.f("autosetup.ui.errorDiscardFailed", failed));
 
                     syncSidebar();
-                    return;
+                    return false;
                 }
             }
         }
 
+
+
+        return true;
+    }
+
+    /**
+     * Closes this window and opens the editor again, on another page or in the other mode.
+     *
+     * The same exit and reopen the user used to do by hand, which is what the sidebar replaces.  It is
+     * not a lighter operation than closing: the window is built around one diagram and one mode, the
+     * diagram is re-read from disk on the way out, and the setup is put back as it was - so switching
+     * asks what closing asks, and for the same reason.
+     *
+     * @param page the page to open
+     * @param autonomy whether to open the setup rather than the track
+     */
+    private void leaveFor(String page, boolean autonomy)
+    {
+        // Save, discard, or stay - three answers, not two.
+        //
+        // Closing offers two because closing is final: the window is going whatever happens, and the
+        // only question is whether the work goes with it.  Switching is not final - the user is coming
+        // straight back to the same editor on a different page - and a two-button "throw it away or
+        // stay here" makes them close the window, save, and reopen it, which is the whole thing the
+        // sidebar exists to stop them doing.
+        //
+        // Save is the default because it is the answer that cannot lose anything, and this dialog
+        // appears on a gesture as small as clicking a tab.
+        if (!settleUnsavedWork()) return;
         // The window STAYS.
         //
         // Everything above this line is unchanged - the same three answers, the same save, the same
