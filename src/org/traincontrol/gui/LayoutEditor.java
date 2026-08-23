@@ -468,6 +468,36 @@ public class LayoutEditor extends PositionAwareJFrame
         this.setFocusable(true);
         this.requestFocusInWindow();
         
+        // What the form calls the palette, before autonomy mode can rename it.
+        //
+        // Read rather than restated: the text lives in the generated form, which cannot be edited by
+        // hand, so anything that wants to put it back has to have kept a copy.
+        this.paletteHeading = this.jLabel1.getText();
+
+        buildPalette();
+
+        // So the heading reads correctly before anything has been pressed
+        showDiagramSize();
+    }
+
+    /**
+     * The palette of track pieces, in the panel the form built for it.
+     *
+     * Extracted from the constructor for OB-017. Autonomy mode EMPTIES this panel and gives it a
+     * BorderLayout to hold the setup column, and leaving that mode used only to remove the column -
+     * which was enough for as long as coming back meant a new window, because a new window ran the
+     * constructor. Since the editor stopped closing to switch (OB-005), leaving autonomy mode is the
+     * first time that teardown has ever had to put anything back, and it put back nothing: an empty
+     * palette under a heading still reading "Autonomy Tools".
+     *
+     * Rebuilt rather than hidden, because the panel's LAYOUT changes too - a GridBagLayout of tiles
+     * against a BorderLayout of one column - and a hidden component in the wrong layout is not the
+     * same as one that is not there.
+     */
+    private void buildPalette()
+    {
+        this.newComponents.removeAll();
+
         // Display the items in a grid
         this.newComponents.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -507,9 +537,14 @@ public class LayoutEditor extends PositionAwareJFrame
         filler.setMinimumSize(new Dimension(0, 0));   // no minimum height
         this.newComponents.add(filler, gbc);
 
-        // So the heading reads correctly before anything has been pressed
-        showDiagramSize();
+        if (this.paletteHeading != null) this.jLabel1.setText(this.paletteHeading);
+
+        this.newComponents.revalidate();
+        this.newComponents.repaint();
     }
+
+    /** What the palette heading says when this is a track diagram editor - see buildPalette */
+    private String paletteHeading;
 
     public boolean hasToolFlag()
     {
@@ -1146,6 +1181,9 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.newComponents.remove(autonomyPanel);
                 autonomyPanel = null;
+
+                // And the track pieces come back, under their own heading (OB-017).
+                buildPalette();
             }
 
             if (autonomyBanner != null)
@@ -4106,6 +4144,18 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // The teardown still runs in full.  A switch is still an exit as far as the rest of the
         // application is concerned: the diagram is re-read from disk, the setup is put back as it was
         // found, and the main window is told.  Only the frame survives.
+        // BEHIND the repaint the teardown has already queued, in both directions.  OB-016.
+        //
+        // autonomyEditorClosed and layoutRefreshComplete both end by calling repaintLayout, which does
+        // not repaint - it POSTS the work and builds the main window's grid inside that task. arriveAt
+        // sets layout.setEdit(true), and the main window shares the LayoutDiagram, so a repaint that
+        // runs after that flag is set builds the VIEWER in edit mode: grid lines, greying, dead
+        // clicks, until the editor is closed.
+        //
+        // Running arriveAt straight from the callback put it in front of that queued repaint, which is
+        // a race the old close-and-reopen never had - openLayoutEditor posted, and its render() posted
+        // again, so the flag was always set two events after the repaint. This is that ordering, kept
+        // deliberately rather than by accident.
         if (isAutonomyMode())
         {
             layout.setEdit(false);
@@ -4114,7 +4164,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             {
                 parent.autonomyEditorClosed();
 
-                arriveAt(page, autonomy);
+                javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy));
             });
 
             return;
@@ -4124,7 +4174,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         undoAutonomyEdits();
 
         javax.swing.SwingUtilities.invokeLater(() ->
-            parent.layoutEditingComplete(() -> arriveAt(page, autonomy)));
+            parent.layoutEditingComplete(() ->
+                javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy))));
     }
 
     /**
@@ -4430,10 +4481,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         pageList.setSelectedValue(layout.getName(), true);
 
-        // docs/UI-standards.md: list rows are Segoe UI 12, black
-        pageList.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black.
+        //
+        // 12 when this became a list (OB-014), carried over from the toggle buttons it replaced -
+        // where 12 was right, because those were BUTTONS. Rows of a list are text.
+        pageList.setFont(new java.awt.Font("Segoe UI", 0, 14));
         pageList.setForeground(java.awt.Color.BLACK);
-        pageList.setFixedCellHeight(22);
+        pageList.setFixedCellHeight(24);
         pageList.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         pageList.setFocusable(false);
 
@@ -4528,8 +4582,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // syncSidebar are all unchanged - only what it looks like.
         javax.swing.JToggleButton tab = new javax.swing.JRadioButton(text);
 
-        // docs/UI-standards.md: buttons are Segoe UI Bold 12, black
-        tab.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black.
+        //
+        // Bold 12 until OB-015, which was the button rule applied to something that had stopped being
+        // a button: a radio button's label is a choice written out, and the standard reads it as text.
+        tab.setFont(new java.awt.Font("Segoe UI", 0, 14));
         tab.setForeground(java.awt.Color.BLACK);
 
         tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -4553,33 +4610,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * A tab in the strip: bold black, one width, and cut short rather than widened.
-     *
-     * Both controls come through here, so the two kinds of tab cannot drift apart - and it is the one
-     * place to change if these should be a list or a drop-down instead.
-     */
-    private javax.swing.JToggleButton tab(String text)
-    {
-        javax.swing.JToggleButton tab = new javax.swing.JToggleButton(text);
-
-        // docs/UI-standards.md: buttons are Segoe UI Bold 12, black
-        tab.setFont(new java.awt.Font("Segoe UI", 1, 12));
-        tab.setForeground(java.awt.Color.BLACK);
-
-        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        tab.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        tab.setFocusable(false);
-
-        // Maximum AND preferred: the maximum alone still let the button ask for the width of its text,
-        // which is what BoxLayout gives the strip as a whole
-        tab.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 20, 26));
-        tab.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 20, 26));
-        tab.setMinimumSize(new java.awt.Dimension(0, 26));
-
-        return tab;
-    }
-
-    /**
      * The page tabs, scrolling when there are more of them than the strip can show.
      *
      * A railway of twenty pages is a railway of twenty pages; without this the strip simply grows past
@@ -4598,9 +4628,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         scroll.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        scroll.getVerticalScrollBar().setUnitIncrement(26);
+        scroll.getVerticalScrollBar().setUnitIncrement(24);
 
-        int height = SIDEBAR_TABS_BEFORE_SCROLLING * 26;
+        // Rows, not buttons: 24 to match pageList.setFixedCellHeight, so the strip shows a whole
+        // number of pages rather than most of one.
+        int height = SIDEBAR_TABS_BEFORE_SCROLLING * 24;
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
         scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));

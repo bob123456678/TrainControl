@@ -131,6 +131,57 @@ public class testEditorSwitchClearsPageState
             + "flash OB-005 reported");
     }
 
+    /**
+     * Leaving autonomy mode puts the track palette back.
+     *
+     * OB-017, and the same shape as everything else in this class. Autonomy mode EMPTIES the palette
+     * panel and gives it a different layout; leaving used only to remove the autonomy column, which
+     * was enough for as long as coming back meant a new window - a new window runs the constructor,
+     * and the constructor built the palette.
+     *
+     * Since the editor stopped closing in order to switch, that teardown is reached for the first
+     * time, and it put back nothing: an empty palette under a heading still reading "Autonomy Tools".
+     */
+    @Test
+    public void testLeavingAutonomyModeRebuildsThePalette() throws Exception
+    {
+        String source = methodSource("setAutonomyMode");
+
+        assertTrue(source.contains("buildPalette()"),
+            "setAutonomyMode does not rebuild the palette, so switching back to the track editor "
+            + "leaves an empty New Components panel under the autonomy heading");
+    }
+
+    /**
+     * And the switch waits for the repaint the teardown queued.
+     *
+     * OB-016. repaintLayout does not repaint - it POSTS the work, and builds the main window's grid
+     * inside that task. The main window shares the LayoutDiagram with the editor, so an arriveAt that
+     * runs before that task sets layout.setEdit(true) first and the VIEWER is built in edit mode:
+     * grid lines, greying, dead clicks, until the editor closes.
+     *
+     * The old close-and-reopen never hit it, because openLayoutEditor posted and its render() posted
+     * again - the flag landed two events after the repaint by accident. This is that ordering kept on
+     * purpose, which is why it is worth a test: it looks like a redundant invokeLater.
+     */
+    @Test
+    public void testTheSwitchLandsBehindTheQueuedRepaint() throws Exception
+    {
+        String source = methodSource("leaveFor");
+
+        // Counted by scanning rather than by split(), which takes a REGEX - and the string being
+        // looked for is full of parentheses.
+        String wanted = "invokeLater(() -> arriveAt";
+
+        int posted = 0;
+
+        for (int at = source.indexOf(wanted); at >= 0; at = source.indexOf(wanted, at + 1)) posted++;
+
+        assertEquals(posted, 2,
+            "both directions of the switch must post arriveAt behind the repaint their teardown "
+            + "queued - found " + posted + " of the 2 expected");
+    }
+
     // ------------------------------------------------------------------------------------------
 
     private String arriveAtSource() throws Exception
