@@ -912,8 +912,26 @@ class Triage(tk.Tk):
         self.head_label = ttk.Label(head, text="", style="Tag.TLabel", anchor=tk.W)
         self.head_label.pack(fill=tk.X)
 
-        self.meta_label = ttk.Label(head, text="", style="Sub.TLabel", anchor=tk.W)
-        self.meta_label.pack(fill=tk.X, pady=(0, 6))
+        meta = ttk.Frame(head)
+        meta.pack(fill=tk.X, pady=(0, 6))
+
+        self.meta_written = ttk.Label(meta, text="", style="Sub.TLabel")
+        self.meta_written.pack(side=tk.LEFT)
+
+        # The oval echoes the same color as the row's dot in the list, so the two views never
+        # disagree about what a disposition looks like - one legend, read two ways.
+        bg = ttk.Style(self).lookup("TFrame", "background") or "SystemButtonFace"
+
+        self.disp_dot = tk.Canvas(meta, width=12, height=12, highlightthickness=0, bd=0,
+                                  background=bg)
+        self.disp_dot.pack(side=tk.LEFT, padx=(10, 4))
+        self.disp_dot_oval = self.disp_dot.create_oval(1, 1, 11, 11, fill="", outline="")
+
+        self.meta_disposition = ttk.Label(meta, text="", style="Sub.TLabel")
+        self.meta_disposition.pack(side=tk.LEFT)
+
+        self.meta_from = ttk.Label(meta, text="", style="Sub.TLabel")
+        self.meta_from.pack(side=tk.LEFT, padx=(14, 0))
 
         book = ttk.Notebook(outer)
         book.pack(fill=tk.BOTH, expand=True)
@@ -1078,7 +1096,10 @@ class Triage(tk.Tk):
 
         if entry is None:
             self.head_label.config(text="Nothing to show")
-            self.meta_label.config(text="Change the filter, or clear the search box.")
+            self.meta_written.config(text="Change the filter, or clear the search box.")
+            self.meta_disposition.config(text="")
+            self.meta_from.config(text="")
+            self.disp_dot.itemconfig(self.disp_dot_oval, fill="", outline="")
             self._fill(self.what_text, "")
             self._fill(self.comments_text, "")
             self._sync_skip_button()
@@ -1086,8 +1107,12 @@ class Triage(tk.Tk):
 
         self.head_label.config(text="%s  \u2014  %s" % (entry.tag, entry.title))
 
-        self.meta_label.config(text="written %s     disposition: %s     from: %s"
-                               % (entry.written, entry.disposition, entry.origin))
+        self.meta_written.config(text="written %s" % entry.written)
+        self.meta_disposition.config(text="disposition: %s" % entry.disposition)
+        self.meta_from.config(text="from: %s" % entry.origin)
+
+        dot_color = DISPOSITION_COLORS.get(disposition_slug(entry.disposition), "")
+        self.disp_dot.itemconfig(self.disp_dot_oval, fill=dot_color, outline=dot_color)
 
         self._fill(self.what_text, entry.what)
         self._fill(self.comments_text, entry.comments or "(nothing yet)")
