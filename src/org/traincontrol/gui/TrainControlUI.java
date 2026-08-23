@@ -3437,6 +3437,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
 
+    /**
+     * Rebuilds the running layout from what the setup now says (OB-034).
+     *
+     * The same thing autonomyEditorClosed does at the end, lifted out so that an edit made from the
+     * DIAGRAM's own menu can ask for it too. Closing the editor was the only door to it, and a setup
+     * can be changed without ever opening one - renaming a station from the track diagram is the case
+     * that found this.
+     *
+     * The reason it matters is written down beside the original call: "anything that changes how a
+     * square SPLITS ... changes how many copies that square becomes and what they are called, and from
+     * that moment the running layout holds names the setup no longer knows. Everything that goes
+     * through those names then quietly stops working. The caption looks up its station and finds
+     * nothing, so the label goes blank."
+     *
+     * A rename does not change how a square splits; it changes what the copies are CALLED, which is
+     * the same sentence with the same consequence.
+     *
+     * Not while trains are moving, for the reason the original gives: rebuilding underneath a running
+     * railway is what prepareAutonomyReload exists to refuse.
+     */
+    public void rebuildRunningLayoutFromSetup()
+    {
+        if (activeDiagramConfiguration != null && !isAutonomyBusy()
+            && getAutonomyViewerPanel() != null)
+        {
+            getAutonomyViewerPanel().load(activeDiagramConfiguration, false);
+        }
+    }
+
     public boolean isLayoutEditorOpen()
     {
         return editLayoutButton != null && !editLayoutButton.isEnabled();

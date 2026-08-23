@@ -51,7 +51,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | - |
 | [MT-037](#mt-037) | 2026-08-21 | An automatic route says nothing about its trigger | fixed unvalidated | AR-20 |
-| [MT-038](#mt-038) | 2026-08-21 | An unreadable UIState.data is kept | fixed unvalidated | IP-*, AR-21 |
 | [MT-039](#mt-039) | 2026-08-21 | A page named with a slash | fixed unvalidated | AR-22 |
 | [MT-040](#mt-040) | 2026-08-21 | A page the folder does not hold | fixed unvalidated | AR-23 |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
@@ -64,7 +63,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-058](#mt-058) | 2026-08-22 | Show autonomy hides the names | fixed unvalidated | AR-15 |
 | [MT-059](#mt-059) | 2026-08-22 | Why is it not moving, on an addressed layout | needs test | AR-12 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
-| [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | needs test | hands-on testing |
+| [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | fixed unvalidated | hands-on testing |
 | [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
 | [MT-095](#mt-095) | 2026-08-22 | The editor stays open when you switch page or mode | fixed unvalidated | OB-005 |
 | [MT-096](#mt-096) | 2026-08-22 | The editor opens at the size of its diagram | fixed unvalidated | OB-003 |
@@ -82,6 +81,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-113](#mt-113) | 2026-08-22 | Tool labels, and a heading with nothing under it | fixed unvalidated | OB-027, OB-032 |
 | [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
 | [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
+| [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
 
 Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -1676,6 +1676,16 @@ I don't know what "at danger" means.  Clarify and reopen.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Clarified, as you asked. "At danger" is signalling usage for a signal showing
+**red** - stop. The opposite is "clear", which is green.
+
+So the sentence in the instruction means: a route that sets a signal to RED must not quietly become one
+that sets it to GREEN. That is the whole risk in this entry, and it is not a small one - it is the
+difference between a route that holds a train and one that waves it through.
+
+**Reworded here rather than in the instruction above,** which is append-only: read every "at danger" in
+that instruction as "showing red", and "cleared" as "showing green".
 ---
 <a id="mt-031"></a>
 
@@ -1842,7 +1852,7 @@ half, which is the regression guard.
 
 ### MT-038 - 2026-08-21 - An unreadable UIState.data is kept
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** IP-*, AR-21  
 **Written:** 2026-08-21
 
@@ -1884,6 +1894,21 @@ make a test case for this if you haven't already, or validate that the test case
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Checked as you asked - "validate that the test case passes if so, only reopen
+if it does not" - and it passes, so this is closed rather than reopened.
+
+`testUiStateIsNotLostWhenUnreadable.testAnUnreadableStateFileIsKept` does exactly what the instruction
+above describes: writes something unreadable over `UIState.data`, builds the main window, lets it fail
+to read the file, saves, and requires a new `unreadable<timestamp>UIState.data` in the backup folder.
+It ran green in the full battery of 2026-08-22 - 83 classes clean, no failures.
+
+Validated on your conditional word rather than on my own say-so, and the run is named so a later reader
+can check the claim.
+
+**One thing worth knowing about that test:** it writes to your REAL `UIState.data`, which is why it is
+on the slow list and out of the fast battery. It takes a byte-for-byte copy first and restores it, and
+that safeguard exists because an earlier version of it destroyed the file for real.
 ---
 <a id="mt-039"></a>
 
@@ -2042,6 +2067,12 @@ must not still be carrying the names it had before.
 #### Comments
 
 *(none yet)*
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Test is unclear.  If this is related to cutting a row and seeing if stations are there, it passes.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-046"></a>
@@ -2486,7 +2517,7 @@ the old file.
 
 ### MT-062 - 2026-08-22 - Delete, shift and insert have not had the move audit
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** hands-on testing  
 **Written:** 2026-08-22
 
@@ -2507,6 +2538,21 @@ Make a test for this.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-22.** Written, in `testDeleteAndInsertKeepTheSetup`.
+
+Three checks. Deleting a square takes its own setup and **nothing else** - both halves matter, since a
+delete that leaves the setup behind puts a station on track that is not there, and one that takes more
+than its square is straightforward data loss. Inserting a line carries the setup of everything it
+pushes along. And `planBulkLine` reports both halves of a move while a COPY reports only its landings,
+because two squares cannot both be one station.
+
+The rules themselves are pinned by `testAutonomyStoreSettingsMatrix`; what was missing was that delete
+and insert produce the right moves and losses for those rules to act on - the half between the editor
+and the store. Verified by mutation: making `forgetTiles` tell the setup nothing fails it.
+
+The hands-on instruction above is still worth running, because the test drives the session rather than
+the window - it cannot see a menu item that calls the wrong thing.
 ---
 
 <a id="mt-063"></a>
@@ -3851,5 +3897,43 @@ talking about may well be behind this one - which is exactly why somebody reache
 The guard runs when the menu is OPENED rather than when an editor opens. There is no single moment
 "an editor opened" is known to that menu, and asking at the moment somebody looks is both simpler and
 always right.
+
+---
+
+<a id="mt-116"></a>
+
+### MT-116 - 2026-08-22 - Renaming a station keeps its label
+
+**Disposition:** fixed unvalidated  
+**From:** OB-034  
+**Written:** 2026-08-22
+
+**What to do.** With a configuration loaded, rename a station from the **track diagram's** right-click
+menu - not from inside the editor. Its label must still be on the diagram afterwards, showing the new
+name.
+
+Then do it while trains are running: the rename must still be accepted, and the label may lag until the
+run stops. That is deliberate - see below.
+
+#### Comments
+
+**Claude, 2026-08-22.** Found, and the codebase had already written down what would happen.
+
+A rename rebuilds the SETUP's graph, so the station index now maps that square to the new name. The
+RUNNING layout was built from the configuration as it was and still holds the old one - so everything
+that goes through those names looks up a Point the running layout has never heard of, the caption finds
+nothing, and the label goes blank. Rename it back and it matches again, which is exactly what you saw.
+
+`autonomyEditorClosed` has rebuilt the running layout all along, which is why the editor never showed
+this: closing was the only door to that rebuild, and a station can be renamed from the diagram's own
+menu without opening an editor at all. The rename asks for the same rebuild now.
+
+The failure was described in advance, in that method's own comment: *"from that moment the running
+layout holds names the setup no longer knows ... The caption looks up its station and finds nothing, so
+the label goes blank."*
+
+**Not while trains are moving**, for the reason the original rebuild gives: rebuilding underneath a
+running railway is what `prepareAutonomyReload` exists to refuse. So during a run the rename is stored
+and the label catches up when the run ends.
 
 ---

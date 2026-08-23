@@ -179,14 +179,14 @@ many tooltips are very wide.  split them.
 
 when an active link from one page pairs with a link on another, both must be marked as active. right now, the target does't have to be
 
-### OB-034 - 2026-08-22 - renaming a station removes its autonomy label
+### OB-035 - 2026-08-22 - unable to add locs to autonomy via right click option in track diagram viewer
 
 **Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 22:27  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 22:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**Filed:** 2026-08-22 22:48  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-renaming a station removes its autonomy label.  it gets restored if renamed back. tested from the track diagram viewer.  make sure the changes propagate.
+if adding a locomtoive to autonomy via the right click menu in the track diagram viewer, the locomotive and label are not updated.  it does show up in the 'facing' menu, which suggest an inconsistency.
 
 ---
 
@@ -202,6 +202,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-034 | bug | Renaming a station blanked its label until renamed back | - | [MT-116](tests.md#mt-116) |
 | 2026-08-22 | OB-033 | bug | The Layouts menu declines while an editor is open, and both lead back | - | [MT-115](tests.md#mt-115) |
 | 2026-08-22 | OB-029 | bug | Findings shown for a configuration nobody had loaded | - | [MT-114](tests.md#mt-114) |
 | 2026-08-22 | OB-032 | bug | An empty "Trains May Depart" heading is hidden | - | [MT-113](tests.md#mt-113) |

@@ -2739,6 +2739,7 @@ public class AutonomyEditorPanel extends JPanel
 
     private void promptName(TileKey tile)
     {
+
         String current = session.getStore().getPointName(tile);
 
         String name = JOptionPane.showInputDialog(owner(),
@@ -2761,6 +2762,23 @@ public class AutonomyEditorPanel extends JPanel
         // Marking a square as a station cannot do it on its own: a new one has no name yet, only the
         // coordinate the reducer invented, and nobody wants that on their track plan.
         if (session.getStore().isStation(tile)) placeLabelFor(tile);
+
+        // And the RUNNING layout is rebuilt, or the label goes blank (OB-034).
+        //
+        // A rename rebuilds the setup's own graph - touched() does that - so the station index now
+        // maps this square to the NEW name. The running layout was built from the configuration as it
+        // was, and still holds the old one. Everything that goes through those names then looks up a
+        // Point the running layout has never heard of, so the caption finds nothing and draws nothing.
+        // Rename it back and it works again, which is exactly what Adam saw.
+        //
+        // autonomyEditorClosed has done this rebuild all along, which is why the editor never showed
+        // it: closing was the only door to it, and a station can be renamed from the diagram's own
+        // menu without opening an editor at all.
+        //
+        // The failure is written down in that method's comment, in advance: "from that moment the
+        // running layout holds names the setup no longer knows ... The caption looks up its station
+        // and finds nothing, so the label goes blank."
+        if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup();
     }
 
     private void promptLinkName(TileKey tile)
