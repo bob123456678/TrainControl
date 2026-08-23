@@ -79,6 +79,22 @@ FALLBACK_JAVA = r"C:\Program Files\Java\jdk1.8.0_361\bin\java.exe"
 
 VALIDATED = "fixed validated"
 
+# One color per disposition (README.md's three states), used for the dot in the list legend and
+# for the row text itself - color plus the word both, not color alone, since the Comments tab and
+# the meta line under the title always spell the disposition out too.
+DISPOSITION_COLORS = {
+    "needs-test": "#1a5fb4",           # has not been looked at, or was deferred - still to do
+    "fixed-unvalidated": "#8a5a00",    # Claude believes it, nobody on the railway has confirmed it
+    "fixed-validated": "#7a7a7a",      # done; dimmed rather than removed, so it stays in the list
+}
+
+
+def disposition_slug(disposition):
+    """'fixed unvalidated' -> 'fixed-unvalidated', a lookup key and a tag name in one."""
+
+    return disposition.strip().lower().replace(" ", "-")
+
+
 RESULTS = [
     ("works", "Works - does what the test says"),
     ("works with notes", "Works, with notes - right, but something about it is off"),
@@ -805,6 +821,20 @@ class Triage(tk.Tk):
         box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
         box.bind("<KeyRelease>", lambda e: self._refresh_list())
 
+        legend = ttk.Frame(frame)
+        legend.pack(fill=tk.X, pady=(0, 4))
+
+        for slug, label in (
+            ("needs-test", "needs test"),
+            ("fixed-unvalidated", "fixed unvalidated"),
+            ("fixed-validated", "fixed validated"),
+        ):
+            dot = tk.Label(legend, text="●", fg=DISPOSITION_COLORS[slug],
+                          font=("Segoe UI", 10))
+            dot.pack(side=tk.LEFT, padx=(0, 2))
+
+            ttk.Label(legend, text=label, style="Sub.TLabel").pack(side=tk.LEFT, padx=(0, 10))
+
         columns = ("mark", "tag", "date", "what")
 
         self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
@@ -825,8 +855,8 @@ class Triage(tk.Tk):
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         bar.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.tree.tag_configure("validated", foreground="#7a7a7a")
-        self.tree.tag_configure("unvalidated", foreground="#8a5a00")
+        for slug, color in DISPOSITION_COLORS.items():
+            self.tree.tag_configure(slug, foreground=color)
 
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
 
@@ -963,12 +993,8 @@ class Triage(tk.Tk):
             if not glyph and self.state_.draft(e.tag):
                 glyph = "\u2022"
 
-            tags = ()
-
-            if not e.is_open:
-                tags = ("validated",)
-            elif e.disposition.strip().lower() == "fixed unvalidated":
-                tags = ("unvalidated",)
+            slug = disposition_slug(e.disposition)
+            tags = (slug,) if slug in DISPOSITION_COLORS else ()
 
             self.tree.insert("", tk.END, iid=e.tag, tags=tags,
                              values=(glyph, e.tag, e.date, e.title))
