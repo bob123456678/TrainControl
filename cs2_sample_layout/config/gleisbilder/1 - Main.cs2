@@ -504,9 +504,9 @@ element
  .artikel=-1
 element
  .id=0x607
- .typ=gerade
+ .typ=s88kontakt
  .drehung=1
- .artikel=-1
+ .artikel=1032
 element
  .id=0x608
  .typ=s88kontakt
@@ -593,9 +593,9 @@ element
  .artikel=56
 element
  .id=0x707
- .typ=s88kontakt
+ .typ=gerade
  .drehung=1
- .artikel=1032
+ .artikel=0
 element
  .id=0x708
  .typ=bogen
@@ -737,7 +737,7 @@ element
  .id=0x901
  .typ=gerade
  .drehung=1
- .artikel=-1
+ .artikel=0
 element
  .id=0x905
  .typ=s88kontakt
@@ -816,7 +816,7 @@ element
 element
  .id=0xa03
  .typ=gerade
- .artikel=-1
+ .artikel=0
 element
  .id=0xa04
  .typ=signal
@@ -918,7 +918,7 @@ element
 element
  .id=0xb03
  .typ=gerade
- .artikel=-1
+ .artikel=0
 element
  .id=0xb04
  .typ=gerade
@@ -1071,7 +1071,7 @@ element
 element
  .id=0xc13
  .typ=gerade
- .artikel=-1
+ .artikel=0
 element
  .id=0xc14
  .typ=s88kontakt
@@ -1092,7 +1092,7 @@ element
  .typ=fahrstrasse
  .artikel=20
 element
- .id=0xd03
+ .id=0xd02
  .artikel=-1
  .text=Reset
 element
@@ -1208,7 +1208,7 @@ element
 element
  .id=0xe13
  .typ=gerade
- .artikel=-1
+ .artikel=0
 element
  .id=0xe14
  .typ=s88kontakt
