@@ -2473,6 +2473,9 @@ Works, but rename "Show Autonomy" to "Autonomy Controls"
 
 
 **Claude, 2026-08-22.** Renamed to **Autonomy Controls**.
+
+**Claude, 2026-08-23.** Done - the checkbox reads **Autonomy Controls** in all eight language bundles.
+Ready for your tick.
 ---
 <a id="mt-059"></a>
 
