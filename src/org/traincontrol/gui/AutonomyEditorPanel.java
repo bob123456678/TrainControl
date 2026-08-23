@@ -797,6 +797,16 @@ public class AutonomyEditorPanel extends JPanel
         // note there.  Null when the square has only one way in, which is not a question worth asking.
         javax.swing.JMenu arrivals = null;
 
+        // Everything a square can be TUNED with, under one heading, and added LAST (OB-013).
+        //
+        // Built here rather than inside the station block because Segment Length belongs in it and
+        // belongs on every square - a plain piece of track has a length, and it is the same setting.
+        // A station appends its own four to this further down.
+        javax.swing.JMenu advanced = new javax.swing.JMenu(
+            I18n.t("autolayout.ui.menuEditAdvancedParameters"));
+
+        advanced.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
+
         if (isPoint)
         {
             // Locomotives first, because placing one is the commonest reason to open this menu once a
@@ -1000,7 +1010,29 @@ public class AutonomyEditorPanel extends JPanel
             final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
                 session.arrivalSides(target);
 
-            if (isStation && ways.size() > 1)
+            // Shown GREYED where there is only one way in, rather than left out (MT-079).
+            //
+            // Adam, testing BottomInner: "I don't even see the Trains May Arrive menu (only depart).
+            // But this is OK because it's implicit since it's not connected to anything else - it
+            // would be clearer to show it as greyed out."
+            //
+            // Exactly right, and the reason is that an absent menu and a menu with nothing to offer
+            // look identical from the outside. A reader who knows this menu exists and does not find
+            // it has to work out whether the square is special or the application is broken; a greyed
+            // one with a tooltip answers that without them asking.
+            if (isStation && ways.size() == 1)
+            {
+                javax.swing.JMenu only = new javax.swing.JMenu(
+                    I18n.t("autosetup.ui.menuArrivalsGroup"));
+
+                only.setEnabled(false);
+
+                only.setToolTipText(wrapped(I18n.f("autosetup.ui.hintOneWayIn",
+                    I18n.t("autosetup.ui.side" + ways.get(0).name()))));
+
+                arrivals = only;
+            }
+            else if (isStation && ways.size() > 1)
             {
                 arrivals = new javax.swing.JMenu(
                     I18n.t("autosetup.ui.menuArrivalsGroup"));
@@ -1063,6 +1095,27 @@ public class AutonomyEditorPanel extends JPanel
                     () -> pairProtectingSignal(target)));
             }
 
+            // Directly under the signal (OB-013).  Both are answers about a station rather than
+            // settings to tune it with, so they belong together above the divider rather than either
+            // side of it.
+            String home = homeOf(target);
+
+            menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
+                                       : I18n.f("autosetup.ui.menuHomeFor", home),
+                () -> promptHome(target)));
+
+            // One level up, out of Advanced Parameters (OB-013).
+            //
+            // It is not a tuning setting in the way the other three are: a train too long for a
+            // platform is refused outright, so this decides whether a station can be used at all
+            // rather than how well.
+            int maxLength = number(target, "maxTrainLength", 0);
+
+            menu.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
+                maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
+                () -> promptNumber(target, "maxTrainLength",
+                    "autolayout.ui.promptEnterMaxTrainLength", 0)));
+
             menu.addSeparator();
 
             // Everything a station can be TUNED with, under one heading.
@@ -1075,16 +1128,6 @@ public class AutonomyEditorPanel extends JPanel
             //
             // Every label carries its current value, as the graph window's did: a menu that says
             // "Speed multiplier" and nothing else makes the user open it to find out what it is.
-            javax.swing.JMenu advanced = new javax.swing.JMenu(
-                I18n.t("autolayout.ui.menuEditAdvancedParameters"));
-
-            int length = number(target, "maxTrainLength", 0);
-
-            advanced.add(item(I18n.f("autolayout.ui.menuMaxTrainLength",
-                length == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(length)),
-                () -> promptNumber(target, "maxTrainLength",
-                    "autolayout.ui.promptEnterMaxTrainLength", 0)));
-
             int priority = number(target, "priority", 0);
 
             advanced.add(item(I18n.f("autolayout.ui.menuStationPriority",
@@ -1098,14 +1141,6 @@ public class AutonomyEditorPanel extends JPanel
             advanced.add(item(I18n.f("autolayout.ui.menuExcludedLocomotives",
                 strings(target, "excludedLocs").size()),
                 () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
-
-            menu.add(advanced);
-
-            String home = homeOf(target);
-
-            menu.add(item(home == null ? I18n.t("autosetup.ui.menuHomeNone")
-                                       : I18n.f("autosetup.ui.menuHomeFor", home),
-                () -> promptHome(target)));
 
             menu.addSeparator();
         }
@@ -1217,6 +1252,10 @@ public class AutonomyEditorPanel extends JPanel
 
         menu.add(connections);
 
+        // Last (OB-013).  Everything above it is a decision about this square; this is the drawer of
+        // numbers that change how well those decisions work, and a drawer belongs at the bottom.
+        menu.add(advanced);
+
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.
         //
         // They have been walking up this menu one level at a time, and this is where they stop.  A
@@ -1285,7 +1324,6 @@ public class AutonomyEditorPanel extends JPanel
             menu.add(item(I18n.t("autosetup.ui.menuSetName"), () -> promptLinkName(target)));
         }
 
-        menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
         // A station name can go on any square whose track runs straight through, not only on a text
         // square: a straight, a sensor, a signal, an uncoupler.  The label is drawn beside the tile

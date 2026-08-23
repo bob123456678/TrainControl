@@ -27,14 +27,14 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
 | [MT-077](#mt-077) | 2026-08-18 | Caption direction arrow | needs test | Tier 3 |
 | [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | Tier 3 |
-| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | needs test | Tier 3 |
+| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | Tier 3 |
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | Tier 4 |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | Tier 4 |
 | [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | Tier 4 |
 | [MT-083](#mt-083) | 2026-08-18 | Run a new-only route in simulation | needs test | Tier 4 |
 | [MT-084](#mt-084) | 2026-08-18 | Two trains, shared junction | needs test | Tier 5 |
 | [MT-085](#mt-085) | 2026-08-18 | Collision refusal | needs test | Tier 5 |
-| [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | needs test | Tier 5 |
+| [MT-086](#mt-086) | 2026-08-18 | Manual displacement still works | fixed unvalidated | Tier 5 |
 | [MT-087](#mt-087) | 2026-08-18 | Long run | needs test | Tier 5 |
 | [MT-088](#mt-088) | 2026-08-18 | Path-integrity failure | needs test | Tier 6 |
 | [MT-001](#mt-001) | 2026-08-20 | A station moved with its tile | fixed unvalidated | LT-A2, LT-A3, LT-A4, LT-F1 |
@@ -101,8 +101,12 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-101](#mt-101) | 2026-08-22 | Placing a locomotive updates the labels, and there is one way to do it | fixed unvalidated | OB-009 |
 | [MT-102](#mt-102) | 2026-08-22 | Two labels renamed | fixed unvalidated | OB-010, OB-011 |
 | [MT-103](#mt-103) | 2026-08-22 | Starting autonomy leaves you where you were | fixed unvalidated | OB-012 |
+| [MT-104](#mt-104) | 2026-08-22 | The tile menu, reordered | fixed unvalidated | OB-013 |
+| [MT-105](#mt-105) | 2026-08-22 | Sidebar text at the standard size | fixed unvalidated | OB-014, OB-015 |
+| [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
+| [MT-107](#mt-107) | 2026-08-22 | The track palette comes back when you leave autonomy mode | fixed unvalidated | OB-017 |
 
-Everything else - 21 of 103 - is **fixed validated** and needs nothing from you unless the
+Everything else - 21 of 107 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -596,7 +600,7 @@ Not always honored.  In manual operation, I was able to send a train from Tunnel
 
 ### MT-079 - 2026-08-18 - Barred terminus loads
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
 **Written:** 2026-08-18
 
@@ -609,6 +613,34 @@ Correct. And reversible locomotives are enforced.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+No errors.  For BottomInner, I don't even see the Trains May Arrive menu (only depart).  But this is OK because it's implicit since it's not connected to anything else, but it would be clearer to show it as greyed out.  That said, no error.  Make it be a warning instead.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** You are right about BottomInner, and the reason is worth stating: an absent
+menu and a menu with nothing to offer look identical from outside. A reader who knows the menu exists
+and does not find it has to work out whether the square is special or the application is broken.
+
+**Trains May Arrive** is now shown greyed on a square with only one way in, with a tooltip naming that
+side and pointing at the choice that does exist - making the square a pass-through, which is the real
+way to stop trains being sent there.
+
+**On "make it be a warning instead" - I have not done this, because I am not sure which thing you
+mean, and both readings change behaviour.** The only ERROR that fits the situation is
+`NO_ARRIVALS_LEFT`, raised when every arrival side of a station is barred. Downgrading it to a warning
+would stop it blocking a configuration from loading, which is a real change and not one to guess at.
+
+Two possibilities:
+
+1. **You saw that error on BottomInner** and think it should be a warning, since a station with one
+   way in that nobody bars is fine. Say so and I will downgrade `NO_ARRIVALS_LEFT`.
+2. **You meant something else was an error** - a dialog, a log line, a red row in the findings. Tell me
+   what it said and I will find it.
+
+You wrote "no error" in the same breath, which is why I would rather ask than pick.
 ---
 
 <a id="mt-080"></a>
@@ -632,6 +664,16 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Defer- we will do an end to end test later.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Deferred on Adam's word - "we will do an end to end test later". Left at
+**needs test** rather than anything softer: a deferred test is one nobody has run, which is exactly
+what that state means.
 ---
 
 <a id="mt-081"></a>
@@ -653,6 +695,16 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Likely no longer needed, defer and revisit.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Deferred - "likely no longer needed, defer and revisit". Not retired, because
+"likely" is not "certainly" and retiring it would take it off the ledger where the revisit would have
+to be remembered from.
 ---
 
 <a id="mt-082"></a>
@@ -680,6 +732,15 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Defer
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** Deferred on Adam's word. It reads the output of MT-080 and MT-081, so it could
+not run before them in any case.
 ---
 
 <a id="mt-083"></a>
@@ -738,7 +799,7 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 ### MT-086 - 2026-08-18 - Manual displacement still works
 
-**Disposition:** needs test  
+**Disposition:** fixed unvalidated
 **From:** 2026-08-18 manual test plan, Tier 5 - autonomy in simulation, several trains  
 **Written:** 2026-08-18
 
@@ -749,6 +810,31 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works, but there are two facing menus in the track diagram viewer: "Facing" and "{name} is facing".  I like the second one more, but ensure this doesn't affect any other menus.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-08-22.** The plain **Facing** menu is gone from the track diagram's right-click; the one
+that names the train - **"{name} Is Facing..."** - stays. They were built in different places and both
+added to the same menu.
+
+The kept one is the better of the two for a reason beyond preference: it is the same menu the setup
+editor offers, built by the same method, so the two surfaces cannot drift into disagreeing about one
+square. The one that went was a second implementation of the same question.
+
+**What it did that the other does not,** since you asked me to check for knock-on effects: it also
+chose which COPY of a split square the train stands on. That is the same decision from the other end -
+a copy is a side to arrive from - so setting the facing reaches it. Nothing a user could say before is
+unsayable now.
+
+Two message keys went with it, and the local that fed it. `placeFacing` itself stays: it is still what
+places a train from the menu above.
+
+**Nothing else was touched.** The setup editor's own facing menu is the same object and is unchanged;
+the only other caller of the removed code path was the placement item above it, which still works.
 ---
 
 <a id="mt-087"></a>
@@ -781,9 +867,25 @@ Sample 5 locs, some reversing, and connect only stations to each other.  Activat
 
 #### Comments
 
+
+**Claude, 2026-08-22.** Adam: "We have a test case for this already, the long running one." That is
+`testReturnHomeOnRealLayout`, which is on the slow list and runs in the full battery rather than the
+fast one.
+
+Left at **needs test** rather than closed, and the distinction matters: the automated test covers the
+PATH INTEGRITY check itself, and this entry is about what the application does when that check fails
+in front of a user - the message, and whether the run stops safely. An automated test of the rule does
+not answer the question about the surface. See the entry two above this one for the same distinction
+drawn about address validation.
 ---
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+We have a test case for this already, the long running one.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -809,6 +911,10 @@ If moved so it's disconnected from the graph: everything disappears.  No longer 
 If moved to a valid connected track: everything else is OK, except that the locomotive direction suddently changed.
 
 Make double clicking a locomotive label in the track diagram open the loc placement view IF autonomy isn't running.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-002"></a>
@@ -848,6 +954,12 @@ short version and nothing flagged red.
 
 Looks OK.  But don't grey out cells on boolean operators, since it makes it look a bit confusing.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Add a test case for this into the suite.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-004"></a>
 
@@ -865,6 +977,12 @@ and the other should follow after a pause.
 
 Works.  But it still syncs with CS2 on close- is that sync still needed for consistency?  Perhaps only sync if there exist central station sourced routes.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Make a test case for this, all 3 possible directions.  Enable the echo packets option in the main class, and then see if the accessory status is correctly set, and the icon matches.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-005"></a>
 
@@ -881,6 +999,12 @@ setting box should offer red and green rather than straight and turn.
 
 Works.  But add a "discard unsaved changes" confirmation to the new route window.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Works for signals and switches.  Does not work for 3-ways though.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-006"></a>
 
@@ -896,6 +1020,10 @@ address, save, reopen.
 #### Comments
 
 Editing a route, after sync, teleports the user to the track diagram tab.  Don't do this.  This may be due to the autonomy load, etc.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-007"></a>
@@ -962,6 +1090,10 @@ Feedback events do not capture into CONDITIONS.  Switches do.
 Signal auto-update does not work on conditions.
 
 Rest works.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-011"></a>
@@ -2655,5 +2787,141 @@ moved off the page you were looking at, by a menu you opened on that page.
 
 The second half of the test is there because if that Stop item ever stops appearing, this becomes the
 wrong decision again.
+
+---
+
+<a id="mt-104"></a>
+
+### MT-104 - 2026-08-22 - The tile menu, reordered
+
+**Disposition:** fixed unvalidated  
+**From:** OB-013  
+**Written:** 2026-08-22
+
+**What to do.** Right-click a station in the autonomy editor. Top to bottom, the station part should now read:
+
+- what the square is, and which way trains turn on it (unchanged)
+- **protected by signal**
+- **home for a locomotive**
+- **Maximum Train Length** - now on the menu itself, not inside Advanced Parameters
+- *divider*
+- **Trains May Arrive...**
+- **Trains May Depart...**
+- **Advanced Parameters...** - last
+
+Inside **Advanced Parameters** there should now be **Segment Length...** (renamed from "Length...")
+where Maximum Train Length used to be, plus station priority, speed multiplier and excluded
+locomotives.
+
+Then right-click a piece of **plain track** - not a station. It should also have an **Advanced
+Parameters** submenu, holding only **Segment Length...**. See the note below: this is the one part I
+would push back on.
+
+#### Comments
+
+**Claude, 2026-08-22.** All five moves are in.
+
+**One consequence to look at, because it is a judgement call I made on your behalf.** You asked for
+Length to move into Advanced Parameters. Advanced Parameters only existed for STATIONS, and a length
+applies to any square - so if I had moved it there and left it there, setting a length on plain track
+would have become impossible.
+
+So Advanced Parameters is now built for every square. On a station it holds four settings; on plain
+track it holds one, and reaching Segment Length costs an extra click it did not cost before.
+
+The alternative is to leave Segment Length loose on the menu for plain track and inside Advanced for a
+station - which nothing becomes unreachable under, but which puts the same item in two different places
+depending on the square. I judged one consistent home worth the extra click, but it is your menu: say
+the word and I will make it conditional instead.
+
+---
+
+<a id="mt-105"></a>
+
+### MT-105 - 2026-08-22 - Sidebar text at the standard size
+
+**Disposition:** fixed unvalidated  
+**From:** OB-014, OB-015  
+**Written:** 2026-08-22
+
+**What to do.** In the editor sidebar, the page list and the **Track Diagram** / **Autonomy Setup** buttons should
+be at the same size as ordinary text elsewhere in the window, and not bold.
+
+Check a page name that is too long for the strip still shows in full as a tooltip, and that the list
+still shows a whole number of rows before it starts scrolling.
+
+#### Comments
+
+**Claude, 2026-08-22.** Both were Segoe UI Bold 12, which is `docs/UI-standards.md`'s rule for
+BUTTONS - correct for what they used to be, and carried over unnoticed when one became a list and the
+other a pair of radio buttons. Both are Plain 14 now, the rule for text.
+
+The list's row height went from 22 to 24 to match, and the scroll pane's height with it, so the strip
+still shows whole rows. The `tab()` helper that built the old toggle buttons had no callers left and
+is gone.
+
+---
+
+<a id="mt-106"></a>
+
+### MT-106 - 2026-08-22 - The viewer keeps its own appearance while an editor is open
+
+**Disposition:** fixed unvalidated  
+**From:** OB-016  
+**Written:** 2026-08-22
+
+**What to do.** Open the **track diagram editor**, then switch to **autonomy** using the sidebar. Now look at the
+main window's track diagram behind it.
+
+It must look exactly as it did before you opened the editor - no grid lines, no greying, and clicking a
+tile behaves as it always does. It must not change until the editor is CLOSED.
+
+Try it in both directions, and more than once: this was a race, so a single pass proving nothing is a
+real possibility.
+
+#### Comments
+
+**Claude, 2026-08-22.** Mine, from the change that stopped the editor closing to switch.
+
+`repaintLayout` does not repaint - it POSTS the work and builds the main window's grid inside that
+task. The main window shares the `LayoutDiagram` with the editor, so an `arriveAt` that runs before
+that task sets `layout.setEdit(true)` first, and the viewer is then built in edit mode.
+
+The old close-and-reopen never hit it: `openLayoutEditor` posted, and its `render()` posted again, so
+the flag landed two events after the repaint. That ordering was an accident of the indirection. Both
+directions post now, deliberately - and it is covered by a test, because it otherwise reads as a
+redundant `invokeLater` that somebody would tidy away.
+
+**Worth doing more than one pass on.** It is a race, and the fix is an ordering, so "it looked right
+once" is weaker evidence here than usual.
+
+---
+
+<a id="mt-107"></a>
+
+### MT-107 - 2026-08-22 - The track palette comes back when you leave autonomy mode
+
+**Disposition:** fixed unvalidated  
+**From:** OB-017  
+**Written:** 2026-08-22
+
+**What to do.** Open the **track diagram editor**, switch to **autonomy**, then switch **back to track**.
+
+The **New Components** panel must be full of track pieces again, and its heading must read what it
+always read - not "Autonomy Tools". Place a piece from it to confirm the palette is live and not just
+drawn.
+
+#### Comments
+
+**Claude, 2026-08-22.** Also mine, and the same cause as MT-106: a fresh window was hiding a
+teardown that had never run.
+
+Autonomy mode EMPTIES the palette panel and gives it a different layout to hold the setup column.
+Leaving removed the column and put nothing back - which was invisible for as long as coming back meant
+a new window, because a new window ran the constructor and the constructor built the palette.
+
+It is rebuilt rather than hidden, because the panel's LAYOUT changes too, and a hidden component in the
+wrong layout is not the same as one that is not there. The heading is read off the form at construction
+and put back from that copy: it lives in generated code that cannot be edited by hand.
 
 ---

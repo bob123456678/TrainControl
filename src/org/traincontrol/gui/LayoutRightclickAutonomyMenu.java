@@ -276,41 +276,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // move.
                     if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
                     {
-                        java.util.List<String> ways = placeableCopies();
-
-                        // The train standing here, captured now.  Autonomy is not running - the menu
-                        // is gated on that - so nothing but the user can move it between opening the
-                        // menu and choosing from it.
-                        final String standing = current.getCurrentLocomotive().getName();
-
-                        if (ways.size() > 1)
-                        {
-                            javax.swing.JMenu facing = new javax.swing.JMenu(
-                                I18n.t("layout.ui.menuFacing"));
-
-                            java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> all =
-                                session.facingsFor(station);
-
-                            for (String name : ways)
-                            {
-                                final org.traincontrol.automationui.TilePorts.Side side = all.get(name);
-
-                                if (side == null) continue;
-
-                                final String copy = name;
-
-                                javax.swing.JCheckBoxMenuItem which =
-                                    new javax.swing.JCheckBoxMenuItem(
-                                        I18n.f("layout.ui.menuPlaceFacing", side.toString()),
-                                        side == session.getFacing(station));
-
-                                which.addActionListener(event -> placeFacing(standing, copy, side));
-
-                                facing.add(which);
-                            }
-
-                            if (facing.getItemCount() > 0) add(facing);
-                        }
+                        // A second "Facing" menu used to be built here (MT-086).
+                        //
+                        // Two facing menus on one right-click, "Facing" and "<name> Is Facing...",
+                        // which is one more than the question has answers.  The one further down is
+                        // kept: it names the train it is about, it reads as a choice rather than a
+                        // list of places, and it is the same menu the setup editor offers, so the two
+                        // surfaces cannot drift into disagreeing about the same square.
+                        //
+                        // What this one did that the other does not is choose which COPY of a split
+                        // square the train stands on. That is the same decision arrived at from the
+                        // other end - a copy IS a side to arrive from - so setting the facing reaches
+                        // it, which is why removing this loses nothing a user could not still say.
 
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
