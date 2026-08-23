@@ -858,7 +858,7 @@ class Triage(tk.Tk):
         self.observations = []       # pending, for the entry on screen
 
         self.issues_doc = None
-        self.issue_widgets = {}      # kind -> {tree, detail, open_button, open_tag}
+        self.issue_widgets = {}      # kind -> {tree, detail, request_cancel_button}
 
         self._build_ui()
         self._refresh_list(select_first=True)
@@ -1042,10 +1042,12 @@ class Triage(tk.Tk):
         return frame
 
     def _build_issue_list(self, parent, kind):
-        """One tab's worth: a list of that kind's Inbox items (pending, then already picked up
-        into a test), and a read-only pane underneath showing whichever one is selected. Read-only
-        on purpose - filing and answering both already have a home (New issue, and the Tests tab),
-        so this tab is for seeing what is there, not a second way to write to either file.
+        """One tab's worth: pending items of that kind, plus the ones tracked directly by their
+        own State once picked up - never one that got promoted to an MT-### tag, since that one's
+        real home is the Tests tab now. A read-only pane underneath shows whichever row is
+        selected. Read-only on purpose - filing and answering both already have a home (New
+        issue, and the Tests tab), so this tab is for seeing what is there, not a second way to
+        write to either file.
         """
 
         frame = ttk.Frame(parent)
@@ -1061,11 +1063,6 @@ class Triage(tk.Tk):
         request_cancel_button = ttk.Button(button_row, text="Request cancel…", state=tk.DISABLED,
                                            command=lambda: self.request_cancel(kind))
         request_cancel_button.pack(side=tk.LEFT)
-
-        open_button = ttk.Button(button_row, text="Open in Tests tab", state=tk.DISABLED,
-                                 command=lambda: self._jump_to_test(
-                                     self.issue_widgets[kind].get("open_tag")))
-        open_button.pack(side=tk.RIGHT)
 
         detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
                          background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
@@ -1099,8 +1096,7 @@ class Triage(tk.Tk):
         tree.tag_configure("pending", foreground=DISPOSITION_COLORS["needs-test"])
 
         self.issue_widgets[kind] = {
-            "tree": tree, "detail": detail, "open_button": open_button, "open_tag": None,
-            "request_cancel_button": request_cancel_button,
+            "tree": tree, "detail": detail, "request_cancel_button": request_cancel_button,
         }
 
         tree.bind("<<TreeviewSelect>>", lambda e, k=kind: self._on_issue_select(k))
@@ -1157,25 +1153,23 @@ class Triage(tk.Tk):
             if row.get("kind") != kind:
                 continue
 
-            ref = row.get("ref", "")
-            tag = row.get("became_tag")
+            # Promoted to a test - it belongs in the Tests tab now, full stop.  Showing it here
+            # too, alongside the things that were NEVER going to become a test, is the exact
+            # bug/feature-request conflation this whole tabbed view exists to end; the row's
+            # entire life from here is in tests.md, findable there by its tag or its title.
+            if row.get("became_tag"):
+                continue
 
-            if tag:
-                # Promoted to a test - its real state lives there now, so read it from there
-                # rather than trusting a State column that would have to be kept in sync by hand.
-                entry = self.doc.by_tag.get(tag)
-                slug = disposition_slug(entry.disposition) if entry else None
-                state_shown = "-> %s" % tag
-                is_open = entry.is_open if entry else True
-            else:
-                # Tracked directly: State IS the disposition, same three words tests.md uses,
-                # Claude-set the same way - there is no linked entry to defer to.  Closed the
-                # same way fixed validated closes a test: declined is the request-track's own
-                # terminal state, so it hides under the same filter that hides fixed validated.
-                state_text = (row.get("state") or "").strip()
-                slug = disposition_slug(state_text) if state_text else None
-                state_shown = state_text or "(no state recorded)"
-                is_open = state_text.lower() not in ("fixed validated", "declined")
+            ref = row.get("ref", "")
+
+            # Tracked directly: State IS the disposition, same three words tests.md uses,
+            # Claude-set the same way.  Closed the same way fixed validated closes a test:
+            # declined is the request-track's own terminal state, so it hides under the same
+            # filter that hides fixed validated.
+            state_text = (row.get("state") or "").strip()
+            slug = disposition_slug(state_text) if state_text else None
+            state_shown = state_text or "(no state recorded)"
+            is_open = state_text.lower() not in ("fixed validated", "declined")
 
             if not self._issue_include(is_open):
                 continue
@@ -1192,7 +1186,6 @@ class Triage(tk.Tk):
         widgets = self.issue_widgets[kind]
         tree = widgets["tree"]
         detail = widgets["detail"]
-        open_button = widgets["open_button"]
         cancel_button = widgets["request_cancel_button"]
 
         selection = tree.selection()
@@ -1201,31 +1194,23 @@ class Triage(tk.Tk):
 
         if not selection:
             self._fill(detail, "")
-            widgets["open_tag"] = None
-            open_button.config(state=tk.DISABLED)
             return
 
         iid = selection[0]
 
         if iid.startswith("picked:"):
+            # Never a promoted (became_tag) row - _populate_issue_tree skips those, since a
+            # promoted item's real home is the Tests tab, not here.
             ref = iid[len("picked:"):]
             row = next((r for r in self.issues_doc.picked if r.get("ref") == ref), None) \
                 if self.issues_doc else None
 
-            tag = row.get("became_tag") if row else None
-
-            if tag:
-                text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
-                    tag, ref, row.get("filed", "") if row else "", row.get("what", "") if row else "")
-            else:
-                state_text = (row.get("state") if row else "") or "(no state recorded)"
-                text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
-                    state_text, ref, row.get("filed", "") if row else "",
-                    row.get("what", "") if row else "")
+            state_text = (row.get("state") if row else "") or "(no state recorded)"
+            text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                state_text, ref, row.get("filed", "") if row else "",
+                row.get("what", "") if row else "")
 
             self._fill(detail, text)
-            widgets["open_tag"] = tag
-            open_button.config(state=tk.NORMAL if tag and tag in self.doc.by_tag else tk.DISABLED)
             return
 
         ref = iid[len("pending:"):]
@@ -1240,8 +1225,6 @@ class Triage(tk.Tk):
                    it.kind, it.raised_from, it.filed_at, it.build, it.detail)
 
         self._fill(detail, text)
-        widgets["open_tag"] = None
-        open_button.config(state=tk.DISABLED)
 
     def request_cancel(self, kind):
         """Adam's half of cancelling something: a request, not a decision - only Claude sets
@@ -1307,25 +1290,6 @@ class Triage(tk.Tk):
         self._refresh_issue_tabs()
 
         self._say("Cancellation requested for %s - filed as %s." % (ref, new_ref))
-
-    def _jump_to_test(self, tag):
-        if not tag:
-            return
-
-        if tag not in self.doc.by_tag:
-            messagebox.showinfo("Not found", "%s is not in tests.md (yet)." % tag, parent=self)
-            return
-
-        self.left_book.select(0)
-
-        if tag not in self.tree.get_children():
-            # Whatever filter is active right now doesn't include it - the point of the button is
-            # to get there, not to first explain why it's hidden.
-            self.filter_var.set("everything, validated included")
-            self._refresh_list()
-
-        self.tree.selection_set(tag)
-        self.tree.see(tag)
 
     def _build_detail(self, parent):
         outer = ttk.Frame(parent)

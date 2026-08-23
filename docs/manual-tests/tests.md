@@ -48,7 +48,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-059](#mt-059) | 2026-08-22 | Why is it not moving, on an addressed layout | needs test | AR-12 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
 | [MT-062](#mt-062) | 2026-08-22 | Delete, shift and insert have not had the move audit | fixed unvalidated | hands-on testing |
-| [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | feature request |
+| [MT-064](#mt-064) | 2026-08-22 | Highlight on Diagram, and Test Condition | needs test | FR-009 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | fixed unvalidated | 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | 2026-08-18 manual test plan, Tier 2 - data safety |
@@ -82,10 +82,14 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-114](#mt-114) | 2026-08-22 | No findings while autonomy is unloaded | fixed unvalidated | OB-029 |
 | [MT-115](#mt-115) | 2026-08-22 | Both menus decline while an editor is open, and lead back to it | fixed unvalidated | OB-033 |
 | [MT-116](#mt-116) | 2026-08-22 | Renaming a station keeps its label | fixed unvalidated | OB-034 |
-| [MT-117](#mt-117) | 2026-08-22 | The train star is visible again, and five smaller fixes | fixed unvalidated | OB-030, OB-031, OB-035, OB-036, OB-037 |
 | [MT-119](#mt-119) | 2026-08-22 | The trace arriving at a curved station | fixed unvalidated | OB-026 |
+| [MT-120](#mt-120) | 2026-08-23 | Tooltips on the Autonomy menu wrap | fixed unvalidated | OB-030 |
+| [MT-121](#mt-121) | 2026-08-23 | Pairing a link switches both ends on | fixed unvalidated | OB-031 |
+| [MT-122](#mt-122) | 2026-08-23 | Adding a locomotive to autonomy from the track diagram | needs test | OB-035 |
+| [MT-123](#mt-123) | 2026-08-23 | How a warning names another page | fixed unvalidated | OB-036 |
+| [MT-124](#mt-124) | 2026-08-23 | The train star, and the mark that says where the train is | fixed unvalidated | OB-037 |
 
-Everything else - 53 of 119 - is **fixed validated** and needs nothing from you unless the
+Everything else - 53 of 124 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -2494,7 +2498,7 @@ many there are.
 ### MT-064 - 2026-08-22 - Highlight on Diagram, and Test Condition
 
 **Disposition:** needs test  
-**From:** feature request  
+**From:** FR-009  
 **Written:** 2026-08-22
 
 **What to do.** Open a route that has both commands and conditions, and press **Highlight on Diagram**.
@@ -4036,7 +4040,7 @@ Weird- the label moves around to adjacent cells on rename.
 
 ### MT-117 - 2026-08-22 - The train star is visible again, and five smaller fixes
 
-**Disposition:** fixed unvalidated  
+**Disposition:** superseded
 **From:** OB-030, OB-031, OB-035, OB-036, OB-037  
 **Written:** 2026-08-22
 
@@ -4089,6 +4093,29 @@ eight tooltips go through it now.
 
 *Run against commit 4ba329ad, build\classes, compiled 22 Aug 23:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - superseded, and it should never have been one entry.**
+
+Adam: "031, 030, 036 - file under new MTs. One test per MT ticket." He is right, and the bundle cost
+exactly what bundling costs: five fixes under one disposition, so a verdict on any of them was a verdict
+on all of them. He could not mark the three that work as working without also blessing the two that do
+not, so the whole thing sat at "does not work" and told nobody which two.
+
+Taken over in full, one OB each:
+
+| | |
+|---|---|
+| [MT-120](#mt-120) | OB-030, the Autonomy menu's tooltips |
+| [MT-121](#mt-121) | OB-031, pairing a link switches both ends on |
+| [MT-122](#mt-122) | OB-035, adding to autonomy from the track diagram - **not fixed** |
+| [MT-123](#mt-123) | OB-036, how a warning names another page |
+| [MT-124](#mt-124) | OB-037, the star, and the mark that says where the train is |
+
+His verdicts travel with them rather than being restated here, and the receipts in `issues.md` now point
+at the successor rather than at this.
+
+The rule this broke is in the SOP already - "a bug becomes ... an entry in tests.md with a new MT-###
+tag", singular, one per bug. Nothing needed changing except doing it.
 ---
 
 <a id="mt-118"></a>
@@ -4229,4 +4256,132 @@ Lite battery green afterwards - 76 classes, no failures.
 **Still worth your eye**, which is why this is unvalidated: on a curve the stub now ends underneath the
 station badge, so what you should see is the trace stopping cleanly AT the badge rather than shooting
 past it. On a straight nothing should have changed at all.
+---
+
+<a id="mt-120"></a>
+
+### MT-120 - 2026-08-23 - Tooltips on the Autonomy menu wrap
+
+**Disposition:** fixed unvalidated  
+**From:** OB-030  
+**Written:** 2026-08-23
+
+**What to do.** Hover every item on the Autonomy menu. A long tooltip must wrap onto several lines rather than run
+off the side of the screen.
+
+#### Comments
+
+**Claude, 2026-08-23.** Split out of MT-117, which bundled five separate fixes into one ticket. Adam:
+"031, 030, 036 - file under new MTs. One test per MT ticket."
+
+`wrapped()` already existed and wraps at 320px; the Autonomy menu did not use it once. All eight
+tooltips go through it now.
+
+---
+
+<a id="mt-121"></a>
+
+### MT-121 - 2026-08-23 - Pairing a link switches both ends on
+
+**Disposition:** fixed unvalidated  
+**From:** OB-031  
+**Written:** 2026-08-23
+
+**What to do.** Switch a link off. Then pair another link to it. Both ends must come out switched ON.
+
+#### Comments
+
+**Claude, 2026-08-23.** Split out of MT-117, which bundled five separate fixes into one ticket. Adam:
+"031, 030, 036 - file under new MTs. One test per MT ticket."
+
+Somebody pairing two links is saying they are joined; a disabled far end is a setting made earlier
+about a square that was not joined to anything, and the newer statement is the one they mean.
+
+---
+
+<a id="mt-122"></a>
+
+### MT-122 - 2026-08-23 - Adding a locomotive to autonomy from the track diagram
+
+**Disposition:** needs test  
+**From:** OB-035  
+**Written:** 2026-08-23
+
+**What to do.** Right-click a station on the TRACK DIAGRAM - not in the editor - and add a locomotive to autonomy.
+The caption must update at once, without closing anything.
+
+Then check the two halves separately, because Adam reports they behave differently: **placing** a
+locomotive works, **adding one to autonomy** does not take effect.
+
+#### Comments
+
+**Claude, 2026-08-23.** Split out of MT-117, which bundled five separate fixes into one ticket. Adam:
+"031, 030, 036 - file under new MTs. One test per MT ticket."
+
+**Adam, triaging MT-117:** "035 - ADDING TO AUTONOMY here still doesn't take effect. placing is OK."
+
+So the fix that went in for OB-035 covered placing and not adding, and this is not fixed. Split out of
+MT-117 with the disposition it has actually earned rather than the one the bundle was carrying.
+
+The shape to look at first is the one the original fix was about: the deep menu writes the SETUP, while
+the caption being watched belongs to the main diagram, which draws from the RUNNING layout. Placing now
+rebuilds the running layout; adding to autonomy evidently does not go through the same seam.
+
+---
+
+<a id="mt-123"></a>
+
+### MT-123 - 2026-08-23 - How a warning names another page
+
+**Disposition:** fixed unvalidated  
+**From:** OB-036  
+**Written:** 2026-08-23
+
+**What to do.** A finding about a square on another page must read `(Page 2) ...` rather than `On 2 - ...`.
+
+#### Comments
+
+**Claude, 2026-08-23.** Split out of MT-117, which bundled five separate fixes into one ticket. Adam:
+"031, 030, 036 - file under new MTs. One test per MT ticket."
+
+Wording only.
+
+---
+
+<a id="mt-124"></a>
+
+### MT-124 - 2026-08-23 - The train star, and the mark that says where the train is
+
+**Disposition:** fixed unvalidated  
+**From:** OB-037  
+**Written:** 2026-08-23
+
+**What to do.** With a locomotive on a station, the white star must be clearly white - a mark ON the badge, not a
+dark smudge. Check a 30px tile as well as a 60px one; the small size is where this went wrong.
+
+Then do it again at a station on a CURVE, and look at where the marks sit relative to the badge. The
+star, the badge and the dot that appears during a run must all be on the same spot - on the rail, which
+on a curve is not the middle of the square.
+
+#### Comments
+
+**Claude, 2026-08-23.** Split out of MT-117, which bundled five separate fixes into one ticket. Adam:
+"031, 030, 036 - file under new MTs. One test per MT ticket."
+
+**Adam, triaging MT-117:** "037 - Stars work, but are offcenter on curve stations."
+
+The star half is his word that OB-037 is fixed. The off-centre half was a second defect hiding behind
+it, and it is the same one as OB-026: the star has been centred on `trackCentre` since MT-057, but the
+RUNNING overlay draws its own mark - the dot saying which square of a claimed path holds the train - and
+that was still centred on the tile. On a straight they agree. On a curve the badge and star sit on the
+corner the rail cuts and the dot sits in the middle of the square, so the marks disagree with each other
+about where the train is.
+
+Fixed 2026-08-23, in the same method as OB-026 and now asking the same question through one helper:
+`testTheTrainDotSitsOnTheRail` requires ink on the rail and none at the tile centre, and failed before
+the change.
+
+Unvalidated rather than validated because the second half has never been seen working - his "stars
+work" was about visibility, which is not what this now asks you to look at.
+
 ---

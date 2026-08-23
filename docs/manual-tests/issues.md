@@ -195,11 +195,11 @@ not, never both.
 |---|---|---|---|---|---|
 | 2026-08-22 | OB-026 | bug | The trace stub at the end of a run cuts across a curved tile | - | [MT-119](tests.md#mt-119) |
 | 2026-08-22 | OB-038 | bug | Export/import restoring a placement - already covered by a test | - | [MT-118](tests.md#mt-118) |
-| 2026-08-22 | OB-037 | bug | The train star was drawn too small for its own outline | - | [MT-117](tests.md#mt-117) |
-| 2026-08-22 | OB-036 | bug | Findings read "(Page 2)" rather than "On 2 -" | - | [MT-117](tests.md#mt-117) |
-| 2026-08-22 | OB-035 | bug | Placing from the viewer did not update the caption | - | [MT-117](tests.md#mt-117) |
-| 2026-08-22 | OB-031 | bug | Pairing a link now switches both ends on | - | [MT-117](tests.md#mt-117) |
-| 2026-08-22 | OB-030 | bug | The Autonomy menu's tooltips wrap | - | [MT-117](tests.md#mt-117) |
+| 2026-08-22 | OB-037 | bug | The train star was drawn too small for its own outline | - | [MT-124](tests.md#mt-124) |
+| 2026-08-22 | OB-036 | bug | Findings read "(Page 2)" rather than "On 2 -" | - | [MT-123](tests.md#mt-123) |
+| 2026-08-22 | OB-035 | bug | Placing from the viewer did not update the caption | - | [MT-122](tests.md#mt-122) |
+| 2026-08-22 | OB-031 | bug | Pairing a link now switches both ends on | - | [MT-121](tests.md#mt-121) |
+| 2026-08-22 | OB-030 | bug | The Autonomy menu's tooltips wrap | - | [MT-120](tests.md#mt-120) |
 | 2026-08-22 | OB-034 | bug | Renaming a station blanked its label until renamed back | - | [MT-116](tests.md#mt-116) |
 | 2026-08-22 | OB-033 | bug | The Layouts menu declines while an editor is open, and both lead back | - | [MT-115](tests.md#mt-115) |
 | 2026-08-22 | OB-029 | bug | Findings shown for a configuration nobody had loaded | - | [MT-114](tests.md#mt-114) |
@@ -226,7 +226,7 @@ not, never both.
 | 2026-08-22 | FR-003 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | - | [MT-097](tests.md#mt-097) |
 | 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
 | 2026-08-22 | FR-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
-| 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+| 2026-08-22 | FR-009 | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
 
 **OB-008 to OB-012 are fixed, 2026-08-22.** Two of them share `MT-102`, because they are the same
 test: read two labels and check they say the right thing. Splitting that into two entries would mean
@@ -290,8 +290,9 @@ and cd27e285. Recorded as one entry - a duplicate is a duplicate, and two ledger
 is exactly the noise the ledger exists to avoid. If the second was meant to say something the first did
 not, put the difference back in the Inbox and it gets its own entry.*
 
-*Ref is `-` for MT-064: it was filed before the `OB-###` numbering existed, directly as a sentence in
-what was then `feature-requests.md`. Everything filed from here on gets a real `OB-###`.*
+*`MT-064` is `FR-009` now - it was filed before any numbering existed at all, directly as a sentence
+in what was then `feature-requests.md`, and its ref sat as `-` until 2026-08-22, when it got the
+same real number everything else here has.*
 
 *`OB-001`/`OB-002`, `OB-004`, `OB-006` and `OB-007` are now `FR-002`, `FR-003`, `FR-004` and
 `FR-005` - renamed 2026-08-22 once bugs and feature requests got separate counters, since all four

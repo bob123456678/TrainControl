@@ -139,14 +139,15 @@ alt-tabbing between a long markdown document and the running railway. `py -3 doc
 by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
-items of that kind, pending ones first, then the ones already picked up - colored by whichever
-disposition applies, same colors as the Tests tab either way: a linked test's actual disposition for
-something that got an `MT-###` tag (with an **Open in Tests tab** button to jump straight there), or
-the item's own **State** for something tracked directly, which is the normal path for a feature
-request now. Selecting a row shows it read-only underneath, alongside **Request cancel…** - the one
-exception to "nothing is written from these two tabs": it files a new item asking that the selected
-one be cancelled, the same request-then-Claude-acts shape as everything else here, so it does not
-touch the target's State itself. Filing still goes through **New issue** or the Inbox directly, and
+items of that kind: pending ones, and picked-up ones tracked directly by their own **State** -
+colored the same way the Tests tab colors a disposition, same three words (plus **declined**). **A
+picked-up item that got promoted to an `MT-###` tag is not shown here at all** - it belongs to the
+Tests tab now, the same as any other test, and showing it in both places is the exact conflation
+this tabbed view exists to end. Selecting a row shows it read-only underneath, alongside
+**Request cancel…** - the one exception to "nothing is written from these two tabs": it files a new
+item asking that the selected one be cancelled, the same request-then-Claude-acts shape as
+everything else here, so it does not touch the target's State itself. Filing still goes through
+**New issue** or the Inbox directly, and
 answering still goes through the Tests tab or a Comment on the receipt table.
 
 Pick an entry from the Tests tab, say whether it worked, write what happened, add anything else
