@@ -906,8 +906,6 @@ public class AutonomyEditorPanel extends JPanel
                 // autonomy runs, where the train ends up says which way it was pointing and that is
                 // written back.  This is the escape hatch for the first run, and for a train somebody
                 // put on the rails backwards.
-                // Not in the deep menu: it is offered by the track diagram's own menu instead, beside
-                // the other things about the train standing there - see buildFacingMenu.
                 // Built by buildFacingMenu rather than here.
                 //
                 // This was a second copy of it, and the copies drifted the way copies do: OB-039 - "when

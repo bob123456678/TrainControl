@@ -3524,6 +3524,21 @@ Put - **Maximum Train Length** back into the advanced parameters.
 
 So the tail now reads: divider, Trains May Arrive, Trains May Depart, divider, protected by signal,
 Advanced Parameters.
+
+**Claude, 2026-08-23.** All three points are in, and were in before your run - this is one of several
+verdicts recorded against an older build.
+
+- The order is **... divider, Trains May Arrive..., Trains May Depart..., divider, protected by signal,
+  Advanced Parameters...**, which is your spec.
+- **Home for a locomotive** is the last item of the locomotive group. It used to sit beside the signal,
+  on the reasoning that both are answers about a station; your order is the better reading, because a
+  home is a fact about a LOCOMOTIVE - which one belongs here - so it belongs with the items about the
+  train rather than with the ones about the platform.
+- **Maximum Train Length** is inside Advanced Parameters.
+
+Worth one look on a current build. If the order still comes out wrong there, the useful detail is which
+two items are the wrong way round - the code adds them in one sequence, so a difference means something
+is being added from somewhere else.
 ---
 
 <a id="mt-105"></a>
