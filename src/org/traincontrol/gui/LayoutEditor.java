@@ -481,6 +481,29 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Shows or hides the track lengths, from the keyboard (OB-019).
+     *
+     * G because the letters that mean anything were taken: Ctrl+D is aDdresses and Ctrl+L is Labels,
+     * and lengths are the third number this diagram can write on a tile. lenGth is the best of what
+     * was left.
+     *
+     * Only in autonomy mode, because that is the only mode with lengths to show, and silently in the
+     * other one. A dialog would be the wrong answer to a key nobody meant to press: every other
+     * shortcut in this dispatcher that has nothing to act on does nothing, and a modal that has to be
+     * dismissed is a worse interruption than the one it is complaining about.
+     *
+     * Through doClick rather than setSelected: the checkbox's own listener writes the preference and
+     * redraws, and a shortcut that set the field directly would toggle the display without remembering
+     * it - the sort of difference nobody finds until they wonder why the setting keeps resetting.
+     */
+    private void toggleTrackLengths()
+    {
+        if (autonomyPanel == null) return;
+
+        autonomyPanel.getShowLengths().doClick();
+    }
+
+    /**
      * The palette of track pieces, in the panel the form built for it.
      *
      * Extracted from the constructor for OB-017. Autonomy mode EMPTIES this panel and gives it a
@@ -5007,6 +5030,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
                 this.toggleText();
+            }
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
+            {
+                this.toggleTrackLengths();
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
             {

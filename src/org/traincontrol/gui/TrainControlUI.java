@@ -1987,8 +1987,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         editPageMenu.setEnabled(!pages.isEmpty() && isLocalLayout());
 
-        // Beside Manage Pages rather than inside it
-        layoutMenu.add(editPageMenu);
+        // Directly under Manage Pages rather than at the end of the menu (OB-021).
+        //
+        // "Beside Manage Pages rather than inside it" was the decision, and add() puts it at the
+        // BOTTOM - which is beside nothing. The two are halves of one subject: managing pages is
+        // adding, renaming and deleting them, and this is opening one to work on.
+        int under = -1;
+
+        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
+        {
+            if (layoutMenu.getMenuComponent(i) == modifyLocalLayoutMenu)
+            {
+                under = i;
+                break;
+            }
+        }
+
+        if (under >= 0) layoutMenu.add(editPageMenu, under + 1);
+        else layoutMenu.add(editPageMenu);
     }
 
     /** The one Edit Layout Page menu, rebuilt rather than duplicated - see mountEditPageMenu */
@@ -2006,6 +2022,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (modifyLocalLayoutMenu != null && editCurrentPageActionPerformed != null)
         {
             modifyLocalLayoutMenu.remove(editCurrentPageActionPerformed);
+        }
+
+        tidySeparators(modifyLocalLayoutMenu);
+    }
+
+    /**
+     * Drops separators that no longer separate anything (OB-021).
+     *
+     * Taking an item off a menu built by the form leaves the dividers that were around it, and two of
+     * those end up next to each other - a gap twice the size, in a menu whose groups no longer mean
+     * what the gaps say they mean.
+     *
+     * Swept rather than removed by index, because the index is a fact about the generated form: it
+     * moves the next time somebody adds an item in the designer, and a hard-coded one would then take
+     * out a divider that was doing its job. This asks the menu what it is holding.
+     *
+     * Leading and trailing separators go too. A menu that opens with a gap looks like something failed
+     * to load above it.
+     *
+     * @param menu the menu to tidy, or null
+     */
+    private void tidySeparators(javax.swing.JMenu menu)
+    {
+        if (menu == null) return;
+
+        boolean previousWasSeparator = true;
+
+        for (int i = 0; i < menu.getMenuComponentCount(); )
+        {
+            boolean separator = menu.getMenuComponent(i) instanceof javax.swing.JSeparator;
+
+            if (separator && previousWasSeparator)
+            {
+                menu.remove(i);
+                continue;
+            }
+
+            previousWasSeparator = separator;
+
+            i++;
+        }
+
+        while (menu.getMenuComponentCount() > 0
+            && menu.getMenuComponent(menu.getMenuComponentCount() - 1)
+                instanceof javax.swing.JSeparator)
+        {
+            menu.remove(menu.getMenuComponentCount() - 1);
         }
     }
 

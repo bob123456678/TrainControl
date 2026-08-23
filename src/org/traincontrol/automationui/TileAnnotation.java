@@ -1522,7 +1522,12 @@ public class TileAnnotation
     {
         String text = String.valueOf(length);
 
-        int size = Math.max(8, Math.min(width, height) / 4);
+        // A third of the tile, which is what LayoutGrid gives an address label (OB-019).
+        //
+        // It was a quarter, and the two numbers sit in opposite corners of the same square in the same
+        // colour - so the smaller one read as a footnote to the larger rather than as the same kind of
+        // fact about the tile.
+        int size = Math.max(8, Math.min(width, height) / 3);
 
         g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, (float) size));
 

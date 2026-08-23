@@ -127,8 +127,13 @@ public class AutonomyEditorPanel extends JPanel
      * Narrower than it was, because nothing in it needs the room any more: the findings moved to the
      * foot of the window, the direction toggles moved into the window's own visibility box, and the
      * standing instruction that was three lines wide has gone.  What is left is two buttons and a hint.
+     *
+     * 150 since OB-019, matching LayoutEditor.SIDEBAR_WIDTH - the other fixed strip in this window, and
+     * the nearest thing there is to a right answer. The palette this column replaces has no fixed width
+     * at all: it is three columns of tile icons, so it is as wide as the tile size makes it, and
+     * "match the track diagram editor" is therefore a number that changes with the zoom.
      */
-    private static final int WIDTH = 170;
+    private static final int WIDTH = 150;
 
     // The EDITOR window's own conventions, which are not quite the main window's: its headings are
     // Semibold 13 in rgb(0,0,155) (jLabel1 "New Components", jLabel2 "Toggle Visibility") and its
@@ -460,6 +465,14 @@ public class AutonomyEditorPanel extends JPanel
             Math.max(0, Math.min(VIEW_ARRIVALS, VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT))));
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
+
+        // Not focusable, like every other control in this window (OB-019).
+        //
+        // It went through control(), which sets the font and nothing else, while excludePage beside it
+        // sets this explicitly. A focusable control in here takes the focus off the FRAME, and the
+        // frame is what the editor's keyboard shortcuts are bound to - so ticking this box quietly
+        // turned Ctrl+Z and Delete off until something else was clicked.
+        showLengths.setFocusable(false);
 
         directions.addActionListener(e ->
         {

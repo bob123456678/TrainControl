@@ -106,8 +106,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-106](#mt-106) | 2026-08-22 | The viewer keeps its own appearance while an editor is open | fixed unvalidated | OB-016 |
 | [MT-107](#mt-107) | 2026-08-22 | The track palette comes back when you leave autonomy mode | fixed unvalidated | OB-017 |
 | [MT-108](#mt-108) | 2026-08-22 | Route editor: Save in the corner, and Cancel asks | fixed unvalidated | OB-018 |
+| [MT-109](#mt-109) | 2026-08-22 | Track lengths: hotkey, focus, and size | fixed unvalidated | OB-019 |
+| [MT-110](#mt-110) | 2026-08-22 | The autonomy column is narrower, and three labels changed | fixed unvalidated | OB-020 |
+| [MT-111](#mt-111) | 2026-08-22 | Layouts menu: order, and one divider too many | fixed unvalidated | OB-021 |
 
-Everything else - 21 of 108 - is **fixed validated** and needs nothing from you unless the
+Everything else - 21 of 111 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1296,6 +1299,10 @@ locomotive buttons exactly as before.
 
 Doesn't work- only goes to the default route.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-022"></a>
 
@@ -1317,6 +1324,12 @@ In autonomy editor: Remove one-way run from the right-click menu and put it into
 In track diagram right click autonomy deep menu only: Hide entries that manipulate the diagram, such as "show a station name here".  Hide edit locomotive, since it's already in the top menu. Hide home locomotive appears twice, remove the one in the top menu. Hide signal protecting this station. Hide clear this square. Hide place locomotive, hide place locomotive. 
 
 In track diagram right click autonomy deep menu only: add the loc is facing menu to the parent level, and hide it in the deep menu.
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+This vanished, I reported it in another item too.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-023"></a>
@@ -1625,6 +1638,10 @@ the right number for watching a real railway do nothing.
 There is no popup, by design: the advisory is a log line and nothing acts on it. If you would rather it
 raised something on screen, say so and it is a small change.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-037"></a>
 
@@ -1848,6 +1865,10 @@ and in use must be solid and carry its two arrows.  Before this round it was the
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-047"></a>
 
@@ -1865,6 +1886,12 @@ lose the pairing you just made.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works.
+
+Works.  Ensure that tunnels can only be paired with other tunnels on the same page (not with links or tunnels on other pages).
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-048"></a>
 
@@ -1880,6 +1907,10 @@ view must open at that station.  With autonomy RUNNING, it must do nothing at al
 #### Comments
 
 *(none yet)*
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-049"></a>
@@ -2131,6 +2162,10 @@ can make.
 **Claude, 2026-08-22.** Carried over from the "Still untested, and known" list at the bottom of
 the old file.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-062"></a>
@@ -2152,6 +2187,12 @@ covered by `testDiagramShiftKeepsSetup`, and delete is covered by the landing ru
 `testAutonomyStoreSettingsMatrix`. What is still not covered anywhere is the editor CALLING them,
 which is the gap that produced LT-A8 and FR-A1 - see MT-044.
 
+**Adam, 2026-08-22 (triage).** Could not run this.
+
+Make a test for this.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-063"></a>
@@ -2172,6 +2213,10 @@ Works OK. But it currently says "close the other window". There could also be a 
 **Claude, 2026-08-22.** Reworded: "Close the other window - or the background process, if you have one
 running from a script or a test - and try again." Left as **fixed unvalidated** rather than validated,
 because the sentence you read is not the sentence that is there now.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2204,6 +2249,10 @@ has always done by storing the shown row.
 Nothing stored changes: `toCommand` treats SIGNAL and ACCESSORY identically and has always accepted all
 four words.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-090"></a>
@@ -2229,6 +2278,10 @@ It now asks `MarklinLocomotive.validateNewAddress`, which is the rule, and picks
 type. `testLocomotiveAddressRules` pins the rule - including that zero and negatives are refused for
 every decoder type - but note it pins the RULE, not the dialog: the dialog is a Swing screen and this
 hands-on check is what covers the delegation.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2264,6 +2317,10 @@ from the scratchpad.** That is the whole finding.
 `build.xml` needed no change, because it matches on a file pattern that already spans subfolders. If
 you have the test folder open in NetBeans it will look rearranged; nothing was deleted.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-092"></a>
@@ -2292,6 +2349,10 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
   but not submitted) are still there.
 
 #### Comments
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2451,6 +2512,12 @@ Feature requests get a **State** field of their own now - the same three words t
 disposition uses, set by Claude the same way, but living in `issues.md` and never becoming an
 `MT-###` tag unless the work genuinely needs a repeatable hands-on test the way a bug fix does. See
 `issues.md`'s "What has been picked up" table and the **Feature requests** tab in `triage.py`.
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+This should not be a MT.  Re-file correctly as a feature request.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2703,6 +2770,10 @@ Only from None, and only on an edit that actually changed something. Somebody wh
 has chosen a view that already shows their edit, and moving them off it would be the same rudeness in
 the other direction.
 
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-101"></a>
@@ -2756,6 +2827,14 @@ My guess is that this was the missing refresh - a placement that does not appear
 placement that went somewhere else. If it still happens with the labels updating, tell me the station
 and which copy it landed on, and that is a different bug.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Placement works, but label is not updated.
+
+Critical: I no longer see the option to edit the locomotive.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-102"></a>
@@ -2775,6 +2854,12 @@ Autonomy menu: **Choose Routing Logic...** rather than "Route Choice".
 **Claude, 2026-08-22.** Both changed in all eight message bundles, ASCII-escaped as they have to be.
 The English is the only one that was actually translated - the others carried the English string
 already.
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Works.  Make sure the chosen routing logic is saved in a preference and persisted across sessions.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2806,6 +2891,10 @@ moved off the page you were looking at, by a menu you opened on that page.
 
 The second half of the test is there because if that Stop item ever stops appearing, this becomes the
 wrong decision again.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2862,6 +2951,23 @@ So the instruction above is now: **Segment Length... is on the menu itself, one 
 station and on plain track alike.** Advanced Parameters holds the other three station settings and
 does not appear on plain track at all.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+Should be:
+
+...
+- *divider*
+- **Trains May Arrive...**
+- **Trains May Depart...**
+- *divider*
+- **protected by signal**
+- **Advanced Parameters...**
+...
+Move - **home for a locomotive** to the bottom of the locomotive area
+Put - **Maximum Train Length** back into the advanced parameters.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-105"></a>
@@ -2887,6 +2993,10 @@ other a pair of radio buttons. Both are Plain 14 now, the rule for text.
 The list's row height went from 22 to 24 to match, and the scroll pane's height with it, so the strip
 still shows whole rows. The `tab()` helper that built the old toggle buttons had no callers left and
 is gone.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2923,6 +3033,12 @@ redundant `invokeLater` that somebody would tidy away.
 **Worth doing more than one pass on.** It is a race, and the fix is an ordering, so "it looked right
 once" is weaker evidence here than usual.
 
+**Adam, 2026-08-22 (triage).** Does not work.
+
+When switching to autonomy, the autonomy grid view still appears in the viewer.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-107"></a>
@@ -2951,6 +3067,10 @@ a new window, because a new window ran the constructor and the constructor built
 It is rebuilt rather than hidden, because the panel's LAYOUT changes too, and a hidden component in the
 wrong layout is not the same as one that is not there. The heading is read off the form at construction
 and put back from that copy: it lives in generated code that cannot be edited by hand.
+
+**Adam, 2026-08-22 (triage).** Works.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -2986,5 +3106,117 @@ I have changed this without being asked, on the grounds that a button labelled C
 destroying work is a defect rather than a design. If you actually want Cancel to be the no-questions
 exit, say so and I will put it back - but then Escape should match it, because the two doing different
 things is the part that cannot be right either way.
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+Good, but remove the horizontal rule just above the cancel and save buttons.  Stretch the condition window to end right above the test condition button.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-109"></a>
+
+### MT-109 - 2026-08-22 - Track lengths: hotkey, focus, and size
+
+**Disposition:** fixed unvalidated  
+**From:** OB-019  
+**Written:** 2026-08-22
+
+**What to do.** In the **autonomy editor**:
+
+- **Ctrl+G** shows and hides the track lengths, and the checkbox moves with it. Press it again to
+  confirm it toggles rather than only turning on.
+- Close the editor and reopen it: the setting must have been remembered, so the shortcut has to write
+  the preference the same way a click does.
+- Tick the **Track Lengths** box by clicking it, then press **Ctrl+Z** or **Delete**. Those must still
+  work - before this, clicking the box took the focus and killed the window's shortcuts until you
+  clicked something else.
+- The length numbers should now read at the same size as the address labels, not smaller.
+
+In the **track diagram editor** (not autonomy), Ctrl+G must do nothing at all - no dialog, no error.
+
+#### Comments
+
+**Claude, 2026-08-22.** Three things, and the middle one was not on your list.
+
+**The focus.** `showLengths` went through `control()`, which sets the font and nothing else, while
+`excludePage` beside it sets `setFocusable(false)` explicitly. That matters more than it sounds: the
+editor's shortcuts are bound to the FRAME, and the code that binds them says so - "every control is
+setFocusable(false) and tiles are JLabels that never take focus, so the FRAME is the focus owner". A
+focusable control in that column takes the focus away and the shortcuts stop firing until something
+else is clicked. So ticking the box quietly disabled Ctrl+Z.
+
+**The key is Ctrl+G**, because the letters that mean anything were taken - Ctrl+D is aDdresses, Ctrl+L
+is Labels, and lengths are the third number this diagram writes on a tile. lenGth is the best of what
+was left. Say if you would rather have another.
+
+It goes through `doClick()` rather than setting the field, so the checkbox's own listener writes the
+preference and redraws - a shortcut that set the field directly would toggle the display without
+remembering it, which is the sort of difference nobody finds until they wonder why the setting keeps
+resetting.
+
+**The size** is a third of the tile now, which is what an address label gets. The two sit in opposite
+corners of the same square in the same colour, so the smaller one read as a footnote to the larger
+rather than as the same kind of fact.
+
+---
+
+<a id="mt-110"></a>
+
+### MT-110 - 2026-08-22 - The autonomy column is narrower, and three labels changed
+
+**Disposition:** fixed unvalidated  
+**From:** OB-020  
+**Written:** 2026-08-22
+
+**What to do.** Open the autonomy editor. The tools column down the left should be noticeably narrower than it was,
+and closer to the width of the New Components palette in the track editor.
+
+**Look at what is in it.** The buttons are sized to the widest of them, so if anything is now cut off
+or cramped, that is the thing to report - the number is a guess and easy to change.
+
+The visibility control should read **Track Directions**, and its options **Show All**, **Restrictions
+only**, **Hide All**, **Station Arrivals**.
+
+#### Comments
+
+**Claude, 2026-08-22.** The column is 150 rather than 170, matching `SIDEBAR_WIDTH` - the other
+fixed strip in that window, and the nearest thing to a right answer available.
+
+**Why it is not an exact match.** The New Components palette you asked it to match has no fixed width
+at all: it is three columns of tile icons, so it is as wide as the tile size makes it, and at 60px
+tiles it is wider than the autonomy column now is. "Match the track diagram editor" is a number that
+changes with the zoom, so I picked the fixed strip instead and am telling you rather than implying it
+is exact.
+
+---
+
+<a id="mt-111"></a>
+
+### MT-111 - 2026-08-22 - Layouts menu: order, and one divider too many
+
+**Disposition:** fixed unvalidated  
+**From:** OB-021  
+**Written:** 2026-08-22
+
+**What to do.** Open the **Layouts** menu. **Edit Layout Page** should sit directly below **Manage Pages**, not at
+the bottom of the menu.
+
+Open **Manage Pages**. There should be no double gap in it - no two dividers next to each other, and
+none at the very top or bottom.
+
+#### Comments
+
+**Claude, 2026-08-22.** The placement was a plain `add()`, which appends - so "beside Manage Pages
+rather than inside it" put it beside nothing, at the end of the menu. It is inserted after Manage
+Pages by looking for it, so it stays put if the menu grows.
+
+**The dividers are swept rather than removed by index.** Two of them ended up adjacent because two
+items were taken off a menu the form generates, and the dividers that framed them stayed. An index
+would be a fact about the generated form - it moves the next time somebody adds an item in the
+designer, and a hard-coded one would then delete a divider that was doing its job. The sweep asks the
+menu what it is holding and drops any separator that no longer separates anything, including leading
+and trailing ones.
 
 ---

@@ -68,34 +68,6 @@ looked, so I know this is not already here."
 
 similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
 
-### OB-019 - 2026-08-22 - appearance of track lengths in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 20:41  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-Add a hotkey for showing track lengths in the autonomy editor.  make the checkbox not focusable, like the others.  increase the font size of the track lengths to match that of address labels.
-
-### OB-020 - 2026-08-22 - width of autonomy tools sidebar area
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 20:43  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-try to make the autonomy tools sidebar narrower to match that of the track diagram editor.  change Visible Track Directions to "Track Directions", "None" to Hide All, "All" to  "Show All"
-
-### OB-021 - 2026-08-22 - location of menu option in layouts
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 20:59  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 19:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the Layouts top JMenu, the Edit Layout Page option should be just below manage pages.  Also, inside manage pages, there is an set of orphan consecutive dividers.  remove one of them.
-
-
 ### OB-022 - 2026-08-22 - DD-A6: three safety rules are in code nothing calls
 
 **Kind:** bug
@@ -184,6 +156,16 @@ guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was cl
 
 **Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
 hand-written even if this lands.
+
+### OB-026 - 2026-08-22 - route tracing
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:14  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+When arriving at a curved station (specifically s88 1015 from the north), the red trace draws a straight line on the tile, rather than following the shape of the station.  Running through curves looks OK.  Verify that this bug doesn't also exist elsewhere.
+
 ---
 
 ## What has been picked up
@@ -198,6 +180,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | OB-021 | bug | Layouts menu: Edit Layout Page under Manage Pages, and a doubled divider | - | [MT-111](tests.md#mt-111) |
+| 2026-08-22 | OB-020 | bug | The autonomy tools column is narrower, and three labels changed | - | [MT-110](tests.md#mt-110) |
+| 2026-08-22 | OB-019 | bug | Track lengths: a hotkey, the focus theft, and the font size | - | [MT-109](tests.md#mt-109) |
 | 2026-08-22 | OB-018 | bug | Route editor: Save to the bottom right corner, Cancel beside it | - | [MT-108](tests.md#mt-108) |
 | 2026-08-22 | OB-017 | bug | The track palette was empty after autonomy mode, under the wrong heading | - | [MT-107](tests.md#mt-107) |
 | 2026-08-22 | OB-016 | bug | The track diagram viewer was drawn in edit mode while the editor was open | - | [MT-106](tests.md#mt-106) |
