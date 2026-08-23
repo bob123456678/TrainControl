@@ -117,6 +117,15 @@ why (optional). Nothing changes immediately - the target's State (or, for an alr
 its `MT-###` entry) is only set to **declined** once Claude reads the request at the start of the next
 round, the same rule as every other write to either file's authoritative fields.
 
+**The same check applies to `tests.md`, and it was missed there first.** Before writing a new `MT-###`
+for a bug being picked up, look for an entry that already asks the question. MT-125 was filed from
+OB-039 for the caption's direction arrow, which MT-077 had been asking since 2026-08-18 - so Adam was
+handed the same test twice and said so: "i got two MT tickets for the same test. please avoid
+duplication and don't reopen tickets already validated." The rule below was written about the Inbox and
+is just as true one file over: a duplicate costs somebody a second run of a test they have already done,
+and the second copy is indistinguishable from a new requirement. Where two entries do turn out to cover
+one thing, the later one wins and the earlier is marked **superseded** naming it.
+
 **Before filing anything - by hand, through the app, or as an automated round working through the
 tracker on its own - check whether it is already there.** `py -3 docs\manual-tests\triage.py issues`
 lists every pending item; read it, or read the Inbox section of `issues.md` directly, before adding to

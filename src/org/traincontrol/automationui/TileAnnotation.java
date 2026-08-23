@@ -999,7 +999,15 @@ public class TileAnnotation
         // leaves the middle of the square and they part company completely. The star marks a train
         // standing on the RAILS, so the rails are what it belongs on - and it now sits on the badge it
         // is drawn over, whatever shape the tile is.
-        int[] on = trackCentre(width, height);
+        // On the BADGE, wherever the badge went - not on the track independently (MT-124).
+        //
+        // These agreed until the editor started moving a curved station's badge to the corner, to stop
+        // it fighting the two direction arrows that sit at the middles of the same two sides. The star
+        // kept asking the track and drifted off the thing it is drawn on.
+        //
+        // Falls back to the track centre when no badge was drawn - a train standing on a plain square
+        // still gets its mark, and the rails are where it belongs.
+        int[] on = badgeDrawnAt != null ? badgeDrawnAt : trackCentre(width, height);
 
         double centreX = on[0];
         double centreY = on[1];
@@ -1493,6 +1501,15 @@ public class TileAnnotation
         x = Math.max(1, Math.min(width - size - 1, x));
         y = Math.max(1, Math.min(height - size - 1, y));
 
+        // Where the badge ACTUALLY went, for the star drawn on top of it (MT-124).
+        //
+        // Recorded rather than recomputed. The placement above is three rules deep - the track centre,
+        // then the corner for a curved station in the editor, then the clamp - and a second copy of
+        // that arithmetic would be a second chance to disagree. The star asked trackCentre directly, so
+        // it stayed on the rails while the badge moved to the corner. Adam: "Move the * so it aligns
+        // with the offset placement."
+        badgeDrawnAt = new int[] {x + size / 2, y + size / 2};
+
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
         // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.
@@ -1584,6 +1601,13 @@ public class TileAnnotation
      * @param height
      * @return x and y within the tile
      */
+    /**
+     * Where paintBadge last drew, or null if it has not drawn on this pass.
+     *
+     * Only ever read by the train mark, which is painted after the badge and belongs ON it.
+     */
+    private int[] badgeDrawnAt;
+
     public int[] trackCentre(int width, int height)
     {
         // the badge's own route where it has one, otherwise the first route drawn, otherwise centre
