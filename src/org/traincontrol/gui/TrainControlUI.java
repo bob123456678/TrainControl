@@ -2886,13 +2886,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        if (session == null || station == null) return null;
-
-        Object placed = session.getPointProperty(station, "loc");
-
-        String name = placed == null ? null : String.valueOf(placed).trim();
-
-        return name == null || name.isEmpty() ? null : name;
+        // The session knows the shape.  This asked for the raw property and called String.valueOf on
+        // it, which for the JSONObject a placement actually is gives {"name":"EN57-203"} - drawn on
+        // the diagram, in a box wide enough to cover the tiles either side of it.
+        return session == null ? null : session.getLocomotiveNameAt(station);
     }
 
     /**

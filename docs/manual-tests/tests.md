@@ -97,8 +97,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-090](#mt-090) | 2026-08-22 | Add Locomotive refuses address 0 | needs test | DD appendix A3.3 - verified |
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
+| [MT-093](#mt-093) | 2026-08-22 | A placed locomotive is named, not JSON | fixed unvalidated | Adam, screenshot |
 
-Everything else - 14 of 92 - is **fixed validated** and needs nothing from you unless the
+Everything else - 14 of 93 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1933,5 +1934,51 @@ you have the test folder open in NetBeans it will look rearranged; nothing was d
   but not submitted) are still there.
 
 #### Comments
+
+---
+
+<a id="mt-093"></a>
+
+### MT-093 - 2026-08-22 - A placed locomotive is named, not JSON
+
+**Disposition:** fixed unvalidated  
+**From:** Adam, screenshot  
+**Written:** 2026-08-22
+
+**What to do.** Open the **autonomy editor** on a page where a configuration places locomotives on platforms. Each
+captioned square must show the locomotive's **name** - "EN57-203" - inside the caption, in the same
+black-on-translucent-white the running track diagram uses, sitting within its tile.
+
+It must NOT show `{"name":"EN57-203"}` in a box wide enough to cover the neighbouring tiles.
+
+Check both an occupied platform and an empty one: the empty one still shows the grey `[---]`
+placeholder, and a square with nothing placed must not show the word "null".
+
+#### Comments
+
+**Claude, 2026-08-22.** Your screenshot, and the whole bug is in one line.
+
+A placement is stored as an OBJECT - `{"name": ..., "speed": ..., "arrivalFunc": ...}` - because
+`parseAuto` resets whatever a placement omits, so a train's length and functions have to travel with
+its name rather than beside it. The label asked for the property and called `String.valueOf` on what
+came back. For a JSONObject that is its JSON.
+
+The styling was never wrong: the editor sets the same black-on-translucent-white the running diagram
+sets, and both views mutate the same `JLabel` objects, so they size identically. The box looked
+different because the text was three times longer, not because it was drawn differently.
+
+**What made it possible.** The unwrapping already existed twice and correctly -
+`AutonomyEditorPanel.locomotiveAt` did it, and `Layout.parseAuto` does it with an extra type guard.
+The label was a third copy, written separately, that got it wrong. Two right answers written down
+separately are what let a third be written that was wrong.
+
+So the fix is not the one line: `AutonomySession.getLocomotiveNameAt` is now the only place that knows
+the shape, and both the label and the editor panel ask it. `testAutonomyLabelShowsLocomotiveName` pins
+it - seen failing first with exactly the string from your screenshot - and covers the bare-string shape
+a hand-edited file can carry, the empty square, and that reading a name does not disturb the settings
+stored with it.
+
+I checked every other reader of a point property for the same mistake. They are all shape-aware
+(`instanceof Number`, `instanceof String`, an array branch); this was the only one.
 
 ---

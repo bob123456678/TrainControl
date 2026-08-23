@@ -2313,13 +2313,9 @@ public class AutonomyEditorPanel extends JPanel
 
     private String locomotiveAt(TileKey tile)
     {
-        Object placed = session.getPointProperty(tile, "loc");
-
-        if (!(placed instanceof org.json.JSONObject)) return null;
-
-        org.json.JSONObject loc = (org.json.JSONObject) placed;
-
-        return loc.has("name") ? loc.getString("name") : null;
+        // This one was right, which is how the label's version was diagnosed - and having two right
+        // answers written down separately is what let a third be written that was wrong.
+        return session == null ? null : session.getLocomotiveNameAt(tile);
     }
 
     /**

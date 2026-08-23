@@ -2829,6 +2829,53 @@ public class AutonomySession
     }
 
     /**
+     * The name of the locomotive this configuration puts on a square.
+     *
+     * A placement is an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because parseAuto
+     * resets whatever a placement omits, so a train's length and functions have to travel with its
+     * name rather than beside it.  Anything wanting only the name therefore has to unwrap it, and
+     * String.valueOf on a JSONObject gives its JSON: the autonomy editor drew {"name":"EN57-203"}
+     * across three tiles of somebody's railway.
+     *
+     * One place that knows the shape, because there were three and they did not agree.
+     *
+     * @param tile the square
+     * @return the locomotive's name, or null when nothing is placed here
+     */
+    public String getLocomotiveNameAt(TileKey tile)
+    {
+        if (tile == null) return null;
+
+        Object placed = getPointProperty(tile, "loc");
+
+        if (placed == null) return null;
+
+        String name;
+
+        if (placed instanceof org.json.JSONObject)
+        {
+            org.json.JSONObject loc = (org.json.JSONObject) placed;
+
+            // optString, not getString: a placement with no name is not this program's doing, but a
+            // hand-edited file can carry one, and asking for a key that is not there throws.
+            name = loc.optString("name", null);
+        }
+        else
+        {
+            // A bare string.  Not a shape written here, but setup files get edited by hand and an
+            // older autonomy.json may hold one - and drawing nothing on an occupied platform is the
+            // one wrong answer a label must not give.
+            name = String.valueOf(placed);
+        }
+
+        if (name == null) return null;
+
+        name = name.trim();
+
+        return name.isEmpty() ? null : name;
+    }
+
+    /**
      * Puts a locomotive on a point without disturbing anything else known about it.
      *
      * parseAuto RESETS whatever a placement omits - train length to zero, reversible to false, the
