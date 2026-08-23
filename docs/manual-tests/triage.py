@@ -1082,17 +1082,26 @@ class Triage(tk.Tk):
             if row.get("kind") != kind:
                 continue
 
+            ref = row.get("ref", "")
             tag = row.get("became_tag")
-            entry = self.doc.by_tag.get(tag) if tag else None
 
-            slug = disposition_slug(entry.disposition) if entry else None
+            if tag:
+                # Promoted to a test - its real state lives there now, so read it from there
+                # rather than trusting a State column that would have to be kept in sync by hand.
+                entry = self.doc.by_tag.get(tag)
+                slug = disposition_slug(entry.disposition) if entry else None
+                state_shown = "-> %s" % tag
+            else:
+                # Tracked directly: State IS the disposition, same three words tests.md uses,
+                # Claude-set the same way - there is no linked entry to defer to.
+                state_text = (row.get("state") or "").strip()
+                slug = disposition_slug(state_text) if state_text else None
+                state_shown = state_text or "(no state recorded)"
+
             row_tags = (slug,) if slug in DISPOSITION_COLORS else ()
 
-            state = "-> %s" % tag if tag else "picked up"
-            iid = "picked:%s" % (tag or row.get("ref", ""))
-
-            tree.insert("", tk.END, iid=iid, tags=row_tags,
-                       values=(state, row.get("ref", ""), row.get("filed", ""), row.get("what", "")))
+            tree.insert("", tk.END, iid="picked:%s" % ref, tags=row_tags,
+                       values=(state_shown, ref, row.get("filed", ""), row.get("what", "")))
 
         if selected and selected[0] in tree.get_children():
             tree.selection_set(selected[0])
@@ -1114,13 +1123,20 @@ class Triage(tk.Tk):
         iid = selection[0]
 
         if iid.startswith("picked:"):
-            tag = iid[len("picked:"):]
-            row = next((r for r in self.issues_doc.picked if r.get("became_tag") == tag), None) \
+            ref = iid[len("picked:"):]
+            row = next((r for r in self.issues_doc.picked if r.get("ref") == ref), None) \
                 if self.issues_doc else None
 
-            text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
-                tag or "(no test tag on record)", row.get("ref", "") if row else "",
-                row.get("filed", "") if row else "", row.get("what", "") if row else "")
+            tag = row.get("became_tag") if row else None
+
+            if tag:
+                text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                    tag, ref, row.get("filed", "") if row else "", row.get("what", "") if row else "")
+            else:
+                state_text = (row.get("state") if row else "") or "(no state recorded)"
+                text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                    state_text, ref, row.get("filed", "") if row else "",
+                    row.get("what", "") if row else "")
 
             self._fill(detail, text)
             widgets["open_tag"] = tag

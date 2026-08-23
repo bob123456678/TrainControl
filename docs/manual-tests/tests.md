@@ -97,7 +97,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
 | [MT-093](#mt-093) | 2026-08-22 | A placed locomotive is named, not JSON | fixed unvalidated | Adam, screenshot |
-| [MT-094](#mt-094) | 2026-08-22 | Station marks and arrows say what they mean | needs test | OB-001/OB-002 |
+| [MT-094](#mt-094) | 2026-08-22 | **Superseded - tracked as OB-001 in issues.md, not a test.** | needs test | OB-001/OB-002 |
 
 Everything else - 15 of 94 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -2059,5 +2059,22 @@ rather than being held open by it.
 Per the SOP, this is on the ledger and not being worked. Say the word and I will propose a scheme
 before changing anything, since "propose a better appearance" is the actual request and the drawing
 is the easy half.
+
+**Adam, 2026-08-22.** This entry is the thing that was wrong: a feature request, promoted to an
+`MT-###` tag the moment it was picked up, sitting in the Tests ledger indistinguishable from an
+actual hands-on regression test - "not a test yet" is right there in this entry's own instruction.
+
+**Claude, 2026-08-22 - retired.** `MT-094` is **superseded**, not deleted - the tag stays valid
+(rule 2: never reused, never renumbered) and this entry is not touched further, because it is
+already cited by tag in a real commit (`cd27e285`) and because "leave the entry where it is" is what
+README.md says to do with an obsolete test rather than removing it. Its disposition stays **needs
+test** for the same reason: there is no fourth state for "will never be tested" and inventing one
+was not part of what was asked.
+
+**The live record is `OB-001` in [issues.md](issues.md), tracked directly rather than promoted.**
+Feature requests get a **State** field of their own now - the same three words tests.md's
+disposition uses, set by Claude the same way, but living in `issues.md` and never becoming an
+`MT-###` tag unless the work genuinely needs a repeatable hands-on test the way a bug fix does. See
+`issues.md`'s "What has been picked up" table and the **Feature requests** tab in `triage.py`.
 
 ---

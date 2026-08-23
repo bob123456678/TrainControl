@@ -47,13 +47,25 @@ looked, so I know this is not already here."
 
 ## What has been picked up
 
-Newest first. This is only a receipt - the request itself lives in `tests.md` under its tag, and that
-is where its state and its comments are.
+Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
+`MT-###` tag, and its state lives there from then on. Something tracked directly instead - most
+feature requests, going forward - has no `MT-###` tag to point at; **State** is its disposition,
+in the same three words `tests.md` uses (`needs test` / `fixed unvalidated` / `fixed validated`),
+set by Claude and only by Claude, the same rule as everywhere else it appears. Exactly one of
+State or Became is filled in for any row - a feature request either gets its own tag, or it does
+not, never both.
 
-| Filed | Ref | Kind | What | Became |
-|---|---|---|---|---|
-| 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | [MT-094](tests.md#mt-094) |
-| 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | [MT-064](tests.md#mt-064) |
+| Filed | Ref | Kind | What | State | Became |
+|---|---|---|---|---|---|
+| 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | needs test | - |
+| 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
+
+**`OB-001` is retired-and-relit, not new.** It was promoted to `MT-094` on 2026-08-22, which turned
+out to be the wrong call - a feature request that had not even been designed yet, sitting in the
+Tests ledger looking like a hands-on regression test. `MT-094` stays in `tests.md`, superseded
+rather than deleted (its tag is already cited by a commit), and this row is the live one now:
+tracked here directly, with its own State, never promoted again unless the eventual work turns out
+to need a genuine repeatable hands-on test the way a bug fix does.
 
 *OB-001 and OB-002 are the same request submitted twice, two minutes apart, against commits 3a2106ab
 and cd27e285. Recorded as one entry - a duplicate is a duplicate, and two ledger rows for one decision

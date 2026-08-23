@@ -70,10 +70,19 @@ the reverse) has a single place to land. Adam writes what he wants there, in wha
 or files it through [triage.py](triage.py)'s **New issue** button; Claude empties it at the start of
 the next round.
 
-**Emptying it means:** each item becomes an entry in `tests.md` with a new `MT-###` tag and the
-disposition **needs test**, its **From** line naming the item's `OB-###` reference (or reading
-`feature request` for the handful filed before that numbering existed). A one-line receipt goes in the
-table at the bottom of the inbox, and the item leaves the Inbox section.
+**Emptying it means a one-line receipt in the table at the bottom of the inbox, and the item leaves
+the Inbox section - but where it goes from there depends on what it is.**
+
+A **bug** becomes a finding in `docs/reviews/` under that round's prefix, gets fixed there, and gets
+an entry in `tests.md` with a new `MT-###` tag and the disposition **needs test** - a bug fix needs a
+repeatable hands-on check that the regression stays fixed, which is exactly what `tests.md` is for.
+
+A **feature request** is tracked directly in the receipt table instead: a **State** column, in the
+same three words `tests.md`'s disposition uses, set by Claude the same way. It gets an `MT-###` tag
+only if the eventual work turns out to need a genuine repeatable hands-on test the way a bug fix
+does - not as the default. `MT-094` is what the default used to produce: a feature nobody had even
+designed yet, filed the moment it was picked up as if it were a regression test, sitting in the Tests
+ledger indistinguishable from one. See its own entry for the retirement.
 
 **Filing is not asking for it to be built.** An item that has been picked up sits in the ledger like
 anything else and is worked when Adam asks for it. The two are separated on purpose: it lets him write
@@ -107,12 +116,14 @@ alt-tabbing between a long markdown document and the running railway. `py -3 doc
 by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
-items of that kind, pending ones first, then the ones already picked up (shown against whatever
-disposition their linked test actually has, same colors as the Tests tab). Selecting one shows it
-read-only underneath; a picked-up item gets an **Open in Tests tab** button that jumps straight to its
-entry. Nothing is written from these two tabs - filing still goes through **New issue** or the Inbox
-itself, and answering still goes through the Tests tab; they exist to be looked at, not to be a second
-way to write to either file.
+items of that kind, pending ones first, then the ones already picked up - colored by whichever
+disposition applies, same colors as the Tests tab either way: a linked test's actual disposition for
+something that got an `MT-###` tag (with an **Open in Tests tab** button to jump straight there), or
+the item's own **State** for something tracked directly, which is the normal path for a feature
+request now. Selecting a row shows it read-only underneath. Nothing is written from these two tabs -
+filing still goes through **New issue** or the Inbox itself, and answering still goes through the
+Tests tab or a Comment on the receipt table; they exist to be looked at, not to be a second way to
+write to either file.
 
 Pick an entry from the Tests tab, say whether it worked, write what happened, add anything else
 noticed along the way, and submit. **New issue** files a bug or a feature request that has nothing to
@@ -190,7 +201,9 @@ does that from what you wrote.
    OTHER pending items and the existing `MT-###` entries for the same idea already there** - two
    pending items with the same summary are a sign a previous round already filed this and the check in
    step 5 was skipped, not a sign there are two separate things to build. Pick up the survivor; note
-   the collision in the other one's place instead of pretending both are independent.
+   the collision in the other one's place instead of pretending both are independent. A bug gets an
+   `MT-###` tag; a feature request gets a **State** in the receipt table instead, and only gets a tag
+   if the work turns out to need a genuine hands-on test - see "Asking for something new" above.
 7. Run `triage.py verify-ledger` after the ledger is updated, to catch a row that was missed.
 8. Never mark anything validated. Never edit an instruction. Never reorder. Never write into
    `tests.md` or `issues.md` by any path that skips these files' own rules - a script, a bulk edit, or
