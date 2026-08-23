@@ -166,6 +166,44 @@ hand-written even if this lands.
 
 When arriving at a curved station (specifically s88 1015 from the north), the red trace draws a straight line on the tile, rather than following the shape of the station.  Running through curves looks OK.  Verify that this bug doesn't also exist elsewhere.
 
+### OB-027 - 2026-08-22 - Autonomy tools buttons
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:33  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+"Why is it not moving" -> Why not Moving?
+Name everything -> Name Everything...
+Leave this page out -> Exclude Page
+
+### OB-028 - 2026-08-22 - grid in autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:35  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy editor, the gray grid is not needed.  show the track diagram as it appears in the viewer, without the tile borders.  make sure the borders return in the editor.
+
+### FR-006 - 2026-08-22 - editor grids
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:36  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the editor, make the gray grid an option you can toggle in the visibile elements.  on by default, but persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths when it is off.
+
+### OB-029 - 2026-08-22 - autonomy error bar
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-22 21:39  
+**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+with autonomy completely unloaded, I am still shown x/y errors on this page at the top of the track diagram after closing the diagram  editor.
+
 ---
 
 ## What has been picked up

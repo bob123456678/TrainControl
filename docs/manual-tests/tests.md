@@ -1971,6 +1971,12 @@ On a single-page layout, the page tabs must be gone.
 
 *(none yet)*
 
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+The position of the window still moves around when changing pages.
+
+*Run against commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-052"></a>
 
@@ -3142,6 +3148,22 @@ The flag was answering two questions at once. "Being edited" should stop the VIE
 clicks - that is right, and unchanged. It should not change how the viewer is LAID OUT, which is a fact
 about one grid rather than about the diagram. That decision now asks whether this particular grid is
 inside an editor, which is the question it was always trying to ask.
+
+**Claude, 2026-08-22, a correction to the note above.** The same reviewer showed that my first
+explanation was wrong in an important way, and since I wrote it here as fact it needs saying plainly.
+
+I said the ordering fix - an extra `invokeLater` on each side - put the flag behind the queued repaint.
+**It cannot.** `repaintLayout` submits to a single-thread `ExecutorService` and only calls
+`invokeLater` from inside that, so its EDT task is not queued when mine is; an `invokeLater` cannot
+order against a task that has not been posted yet.
+
+What fixes the symptom is the LayoutGrid change described above, which holds whoever wins the race. The
+misleading comment is corrected in the source, and the test that pinned the false ordering has been
+replaced by one that pins the real thing.
+
+Still open, and honestly outstanding rather than quietly dropped: the same shared flag still decides
+whether the VIEWER'S TILES accept clicks. That is a smaller hazard - a brief window during a switch -
+and it is recorded as GC-A1 rather than fixed in the same breath as the thing it sits beside.
 ---
 
 <a id="mt-107"></a>
@@ -3265,6 +3287,18 @@ resetting.
 corners of the same square in the same colour, so the smaller one read as a footnote to the larger
 rather than as the same kind of fact.
 
+
+**Claude, 2026-08-22, before you tried it.** An independent reviewer caught this and it is worth
+knowing before you spend a keystroke on it: **Ctrl+G could not fire in either mode.**
+
+The dispatcher returns early on `isAutonomyMode()` - every shortcut below that line places, cuts,
+rotates or retextures a tile, and none of those mean anything while setting autonomy up. My branch was
+below the return, so it never ran in autonomy mode. And `toggleTrackLengths` returns when there is no
+autonomy panel, so it did nothing in track mode either. Two guards written a fortnight apart, each
+correct, mutually exclusive.
+
+It is handled above the guard now, which is where it belongs: it is the one shortcut that is FOR
+autonomy mode. The rest of MT-109 - the focus and the font - was unaffected.
 ---
 
 <a id="mt-110"></a>

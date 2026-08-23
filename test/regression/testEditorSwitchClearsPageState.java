@@ -153,33 +153,98 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * And the switch waits for the repaint the teardown queued.
+     * The viewer's LAYOUT does not depend on the shared edit flag.
      *
-     * OB-016. repaintLayout does not repaint - it POSTS the work, and builds the main window's grid
-     * inside that task. The main window shares the LayoutDiagram with the editor, so an arriveAt that
-     * runs before that task sets layout.setEdit(true) first and the VIEWER is built in edit mode:
-     * grid lines, greying, dead clicks, until the editor closes.
+     * This replaces a test that asserted the wrong thing, and the story is worth keeping.
      *
-     * The old close-and-reopen never hit it, because openLayoutEditor posted and its render() posted
-     * again - the flag landed two events after the repaint by accident. This is that ordering kept on
-     * purpose, which is why it is worth a test: it looks like a redundant invokeLater.
+     * OB-016: the viewer was being drawn in edit mode while the editor was open. I fixed it by posting
+     * arriveAt so it would land behind the repaint the teardown queues, wrote a comment saying so, and
+     * wrote a test here pinning the two invokeLater calls.
+     *
+     * GC-A1 pointed out that this cannot work: repaintLayout submits to a single-thread
+     * ExecutorService and only calls invokeLater from inside THAT, so its EDT task is not queued when
+     * ours is. An extra invokeLater cannot order against a task that does not exist yet. The test
+     * passed, the comment read well, and neither was true.
+     *
+     * So what is pinned now is the thing that actually fixes it: LayoutGrid decides how to lay a grid
+     * out by asking whether THAT grid is in an editor, not by reading a flag that belongs to a diagram
+     * two windows share. That holds whoever wins the race.
      */
     @Test
-    public void testTheSwitchLandsBehindTheQueuedRepaint() throws Exception
+    public void testTheViewerLayoutIsNotDecidedByTheSharedFlag() throws Exception
     {
-        String source = methodSource("leaveFor");
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()), "UTF-8");
 
-        // Counted by scanning rather than by split(), which takes a REGEX - and the string being
-        // looked for is full of parentheses.
-        String wanted = "invokeLater(() -> arriveAt";
+        assertTrue(source.contains("layout.getEdit() && master instanceof LayoutEditor"),
+            "LayoutGrid lays the grid out on layout.getEdit() alone again. The main window shares that "
+            + "diagram with the editor, so the viewer will be re-laid the editor's way by any repaint "
+            + "while an editor is open - which is OB-016, and no amount of invokeLater fixes it.");
+    }
 
-        int posted = 0;
+    /**
+     * Everything autonomy mode MOUNTS, it also unmounts.
+     *
+     * Three things swap themselves into the window when autonomy mode starts: the palette becomes the
+     * setup column, the Addresses box becomes the visibility box, and the diagram's scroll pane becomes
+     * a stack with the findings list under it. Each of those is a GroupLayout.replace or a container
+     * swap, and each has to be undone.
+     *
+     * They were found one at a time - the palette as OB-017, the findings list as GC-A2 - and the
+     * pattern is the point: this list is what makes the fourth one fail here rather than on the
+     * railway. Every field the mount block assigns must be cleared in the teardown, or coming BACK
+     * skips the mount (the field is still set) and the previous session's controls stay on screen
+     * looking current.
+     */
+    private static final String[] MUST_BE_UNMOUNTED = {
+        "autonomyPanel", "autonomyBanner", "autonomyVisibility", "autonomyFindings",
+    };
 
-        for (int at = source.indexOf(wanted); at >= 0; at = source.indexOf(wanted, at + 1)) posted++;
+    @Test
+    public void testLeavingAutonomyModeUndoesEverythingItMounted() throws Exception
+    {
+        String source = methodSource("setAutonomyMode");
 
-        assertEquals(posted, 2,
-            "both directions of the switch must post arriveAt behind the repaint their teardown "
-            + "queued - found " + posted + " of the 2 expected");
+        String teardown = source.substring(source.indexOf("if (session == null)"));
+
+        teardown = teardown.substring(0, teardown.indexOf("else if (autonomyPanel == null)"));
+
+        for (String field : MUST_BE_UNMOUNTED)
+        {
+            assertTrue(teardown.contains(field + " = null"),
+                "setAutonomyMode's teardown does not clear " + field + ". Leaving autonomy mode will "
+                + "leave whatever it holds on screen, and coming back will skip the block that mounts "
+                + "it - so the next session's control is orphaned and the last session's stays, "
+                + "looking current. That is GC-A2, and OB-017 before it.");
+        }
+    }
+
+    /**
+     * And the fields named above are the fields the mount block actually assigns.
+     *
+     * A fifth one added to setAutonomyMode and not to the list above would leave the test passing
+     * while the bug it is written for walks straight past it.
+     */
+    @Test
+    public void testTheMountedFieldsAreTheOnesListed() throws Exception
+    {
+        String source = methodSource("setAutonomyMode");
+
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("(autonomy[A-Za-z]+) = (?!null)").matcher(source);
+
+        java.util.Set<String> assigned = new java.util.LinkedHashSet<>();
+
+        while (m.find()) assigned.add(m.group(1));
+
+        java.util.Set<String> known = new java.util.LinkedHashSet<>(
+            java.util.Arrays.asList(MUST_BE_UNMOUNTED));
+
+        assigned.removeAll(known);
+
+        assertEquals(assigned.toString(), "[]",
+            "setAutonomyMode assigns a field the unmount list above does not know about. Add it to "
+            + "MUST_BE_UNMOUNTED and make sure the teardown clears it.");
     }
 
     // ------------------------------------------------------------------------------------------

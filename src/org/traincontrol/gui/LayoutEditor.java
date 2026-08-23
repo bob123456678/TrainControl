@@ -1223,6 +1223,34 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 autonomyVisibility = null;
             }
+
+            // And the findings list comes out from under the diagram (GC-A2).
+            //
+            // The third of these, after the palette and the visibility box, and the one that had TWO
+            // ways to go wrong. Mounting it replaces jScrollPane1 - the diagram's own scroll pane -
+            // with a stack holding the diagram above and the findings below. Nothing put that back, so:
+            //
+            //   - leaving autonomy mode left a findings list sitting under the TRACK editor's diagram,
+            //     describing a setup that window was no longer editing; and
+            //   - autonomyFindings stayed non-null, so coming BACK skipped the mount block entirely -
+            //     the new session's findings were built and orphaned, while the previous session's
+            //     frozen list stayed on screen looking current.
+            //
+            // The second is the one that would have been believed. A stale list of findings is not
+            // obviously stale: it is a plausible list about the right railway, and the only thing wrong
+            // with it is that it stopped being true when the session changed.
+            if (autonomyFindings != null)
+            {
+                autonomyFindings.remove(this.jScrollPane1);
+
+                if (formPane.getLayout() instanceof javax.swing.GroupLayout)
+                {
+                    ((javax.swing.GroupLayout) formPane.getLayout())
+                        .replace(autonomyFindings, this.jScrollPane1);
+                }
+
+                autonomyFindings = null;
+            }
         }
         else if (autonomyPanel == null)
         {
@@ -4167,18 +4195,26 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // The teardown still runs in full.  A switch is still an exit as far as the rest of the
         // application is concerned: the diagram is re-read from disk, the setup is put back as it was
         // found, and the main window is told.  Only the frame survives.
-        // BEHIND the repaint the teardown has already queued, in both directions.  OB-016.
+        // Posted rather than run straight from the callback - but read the correction below before
+        // relying on what that buys.  OB-016, corrected by GC-A1.
         //
-        // autonomyEditorClosed and layoutRefreshComplete both end by calling repaintLayout, which does
-        // not repaint - it POSTS the work and builds the main window's grid inside that task. arriveAt
-        // sets layout.setEdit(true), and the main window shares the LayoutDiagram, so a repaint that
-        // runs after that flag is set builds the VIEWER in edit mode: grid lines, greying, dead
-        // clicks, until the editor is closed.
+        // The reasoning was: autonomyEditorClosed and layoutRefreshComplete both end by calling
+        // repaintLayout, which POSTS its work and builds the main window's grid inside that task;
+        // arriveAt sets layout.setEdit(true) and the main window shares the LayoutDiagram, so a repaint
+        // running after that flag is set builds the VIEWER in edit mode. Posting arriveAt was meant to
+        // put it behind that repaint.
         //
-        // Running arriveAt straight from the callback put it in front of that queued repaint, which is
-        // a race the old close-and-reopen never had - openLayoutEditor posted, and its render() posted
-        // again, so the flag was always set two events after the repaint. This is that ordering, kept
-        // deliberately rather than by accident.
+        // IT DOES NOT. repaintLayout submits to LayoutGridRenderer - a single-thread ExecutorService -
+        // and only calls invokeLater from inside THAT, so its EDT task is not queued when this one is.
+        // The order between them is whatever the executor decides. An extra invokeLater cannot order
+        // against a task that has not been posted yet, and the comment that used to stand here claimed
+        // it could.
+        //
+        // What actually fixed the reported symptom is in LayoutGrid: the LAYOUT decision now asks
+        // whether that grid is inside an editor rather than reading the shared flag, so the viewer no
+        // longer changes shape whoever wins the race. The posting is kept because it is harmless and
+        // narrows the window on the half that is still shared - see GC-A1 for the rest, which is that
+        // clickability is still decided by the same flag.
         if (isAutonomyMode())
         {
             layout.setEdit(false);
@@ -4948,6 +4984,22 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // Handle key shortcuts
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // The one shortcut that belongs to autonomy mode, handled BEFORE the guard that turns the
+            // rest of them off (GC-B2).
+            //
+            // It was below the return, which made it unreachable in the only mode where it does
+            // anything - and toggleTrackLengths returns in the other mode, so the key did nothing at
+            // all, anywhere. Filed as fixed and would have come back as "does not work".
+            //
+            // The guard's own sentence says why this one is different: "Every shortcut below places,
+            // cuts, rotates or retextures a tile." This one shows and hides a number.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
+            {
+                toggleTrackLengths();
+
+                return;
+            }
+
             // Every shortcut below places, cuts, rotates or retextures a tile.  None of them mean
             // anything while setting autonomy up, and all of them would edit the diagram silently.
             if (isAutonomyMode()) return;
@@ -5030,10 +5082,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
                 this.toggleText();
-            }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
-            {
-                this.toggleTrackLengths();
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
             {
