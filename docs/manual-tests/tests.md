@@ -2414,6 +2414,14 @@ There is room for many more than 8 pages- make the limit be 20.  Stretch the lis
 Eight was right when the pages were toggle BUTTONS at 26px with their own borders. They are list rows
 at 24px now and the strip is the height of the window, so eight was leaving most of the column empty
 and scrolling a railway of twelve pages for no reason.
+
+**Claude, 2026-08-23.** Both halves of your note are already in: the strip shows **20** pages before it
+scrolls, and it runs the height of the window down to the mode selector rather than stopping at a fixed
+eight rows. Eight was right when the pages were toggle buttons 26px tall with their own borders; they
+are 24px list rows now, and eight was leaving most of the column empty while scrolling a railway of
+twelve pages for no reason.
+
+Ready for your tick. (A leftover one-line javadoc above the constant, from when it was 8, is gone.)
 ---
 <a id="mt-057"></a>
 

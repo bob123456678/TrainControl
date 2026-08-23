@@ -4796,7 +4796,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     private static final String EDITOR_WINDOW_KEY = "editor";
 
-    /** Beyond this many pages the tabs scroll rather than running off the bottom of the window */
     /**
      * How many pages the strip shows before it starts scrolling.
      *
