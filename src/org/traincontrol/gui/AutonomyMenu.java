@@ -139,6 +139,35 @@ public class AutonomyMenu extends JMenu
         return ui.getAutonomyViewerPanel();
     }
 
+    /**
+     * Greys every item while an editor has the diagram, and offers the way back to it.
+     *
+     * The same shape as TrainControlUI.guardLayoutMenu, deliberately: the two menus are guarded for the
+     * same reason and should not look like two different rules.
+     */
+    private void guardWhileEditing()
+    {
+        if (!ui.isLayoutEditorOpen()) return;
+
+        for (int i = 0; i < getMenuComponentCount(); i++)
+        {
+            getMenuComponent(i).setEnabled(false);
+        }
+
+        // Clickable, and it brings the editor forward (OB-033).
+        //
+        // It was disabled once, which states the problem and offers nothing - and the window it is
+        // talking about may well be behind this one, which is exactly why somebody reached for this
+        // menu. First in the list, because it is the only thing here that can be done.
+        JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+
+        busy.addActionListener(e -> ui.showOpenEditor());
+
+        insert(busy, 0);
+
+        addSeparator();
+    }
+
     private void rebuild()
     {
         removeAll();
@@ -147,26 +176,6 @@ public class AutonomyMenu extends JMenu
         // rebuild that takes another branch it pointed at a JMenu no longer in this popup - and
         // showPages then asked Swing to open a detached component.
         lastPagesMenu = null;
-
-        // Nothing here while an editor has the diagram.
-        //
-        // Every item saves the setup or rebuilds the main window, and an open editor makes both unsafe:
-        // saving commits the edits that editor has not saved - so its Cancel then has nothing to take
-        // back - and the rebuild redraws the main diagram with the editor's edit flag still set on the
-        // shared page, after which every tile there tries to talk to a window that is not its parent.
-        if (ui.isLayoutEditorOpen())
-        {
-            // Clickable, and it brings the editor forward (OB-033).
-            //
-            // It was disabled, which states the problem and offers nothing - and the window it is
-            // talking about may well be behind this one, which is exactly why somebody reached for
-            // this menu.
-            JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
-            busy.addActionListener(e -> ui.showOpenEditor());
-            add(busy);
-
-            return;
-        }
 
         final AutonomyViewerPanel actions = actions();
         AutonomySession session = ui.getAutonomySession();
@@ -309,7 +318,21 @@ public class AutonomyMenu extends JMenu
                 }
             }));
         }
-    }
+    
+        // Everything greyed while an editor has the diagram, rather than nothing shown at all.
+        //
+        // Every item here saves the setup or rebuilds the main window, and an open editor makes both
+        // unsafe: saving commits edits that editor has not saved - so its Cancel then has nothing to
+        // take back - and the rebuild redraws the main diagram with the editor's edit flag still set on
+        // the shared page, after which every tile there tries to talk to a window that is not its
+        // parent. So none of them may be USED. That was done by building none of them.
+        //
+        // MT-111, Adam: "Layout greys out all options while Autonomy hides them. Grey them out in
+        // Autonomy instead." He is right, and the Layout menu was already the better of the two: a
+        // greyed item says "this exists and not now", and an empty menu says "this feature is gone" -
+        // which is a worse thing to be told by the surface you have just opened to use it.
+        guardWhileEditing();
+}
 
     /**
      * Adding a configuration - the same offer whether or not any exist yet.

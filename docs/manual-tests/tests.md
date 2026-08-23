@@ -83,8 +83,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-127](#mt-127) | 2026-08-23 | No grey grid in the autonomy editor | fixed unvalidated | OB-028 |
 | [MT-130](#mt-130) | 2026-08-23 | A setting must not outlive its track | fixed unvalidated | OB-025 |
 | [MT-131](#mt-131) | 2026-08-23 | Switching a paired link off switches its partner off | fixed unvalidated | OB-041 |
+| [MT-132](#mt-132) | 2026-08-23 | A station name can go on almost any square | fixed unvalidated | OB-042 and OB-044 |
+| [MT-133](#mt-133) | 2026-08-23 | Segment length: blank means none, and only digits go in | fixed unvalidated | OB-043 |
 
-Everything else - 65 of 131 - is **fixed validated** and needs nothing from you unless the
+Everything else - 65 of 133 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -3714,7 +3716,7 @@ left.
 
 ### MT-109 - 2026-08-22 - Track lengths: hotkey, focus, and size
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-019  
 **Written:** 2026-08-22
 
@@ -3773,6 +3775,20 @@ Control+G works, but control +L does not in the autonomy editor.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Adam: "Control+G works, but control +L does not in the autonomy editor."
+
+Of course it did not - it was below the guard, exactly where Control+G had been before GC-B2 moved it.
+Moving one key above a guard fixes the key somebody just tried and leaves its neighbours where they
+were.
+
+All three display toggles are above it now: Control+G for lengths, Control+L for text, Control+D for
+addresses. Control+D was not reported; it is here because it is the third of the same three, and
+finding out later that the sweep stopped at the two that were mentioned is worse than the original bug.
+
+The guard's own sentence is the rule that decides this - "Every shortcut below places, cuts, rotates or
+retextures a tile" - and none of these does. They show and hide something ABOUT the diagram without
+changing it.
 ---
 
 <a id="mt-110"></a>
@@ -3816,7 +3832,7 @@ nothing left to do and nothing left to check.
 
 ### MT-111 - 2026-08-22 - Layouts menu: order, and one divider too many
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-021  
 **Written:** 2026-08-22
 
@@ -3845,6 +3861,19 @@ Works, but Layout greys out all options while Autonomy hides them.  Grey them ou
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Adam: "Layout greys out all options while Autonomy hides them. Grey them out in
+Autonomy instead."
+
+Done, and the Layout menu was already the better of the two. A greyed item says "this exists, and not
+now"; an empty menu says "this feature is gone" - which is a worse thing to be told by the surface you
+have just opened in order to use it.
+
+The Autonomy menu built nothing at all while an editor had the diagram, which is a real constraint
+stated in the crudest way: every item there saves the setup or rebuilds the main window, and an open
+editor makes both unsafe. It builds the whole menu and disables it now, with the way back to the editor
+first in the list and clickable - the same shape as `guardLayoutMenu`, deliberately, so the two menus do
+not read as two different rules.
 ---
 
 <a id="mt-112"></a>
@@ -4368,6 +4397,26 @@ still not fully placed.  label doesn't update, loc isn't there on restart. loc n
 
 *Run against commit fb109619, build\classes, compiled 23 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23 - traced, and worth a retest before I change anything.**
+
+You ran this against `fb109619`, compiled 00:43. The change that most likely accounts for the first two
+symptoms landed after that, in `8a5e1951`: `placementChanged` used to refresh the editor's grid where
+there was one and rebuild the running layout only where there was not - either/or - so a change made
+from the track diagram while Autonomy Setup was open went to the editor and left the diagram showing the
+old answer. It does both now. That is exactly "label doesn't update".
+
+**On "loc isn't there on restart" I followed the save path rather than guessing**, and it is present: a
+placement runs `placementChanged` -> `refresh()` -> the panel's `onChanged`, which for the diagram's
+menus is the callback in `TrainControlUI` that calls `session.save()` and refreshes the static layer.
+Nothing about it is conditional on an editor being open.
+
+So either that path was not reached on your build for a reason I have not found, or the missing
+placement was a consequence of the refresh bug above - a setup that never rebuilt the running layout
+also never listed the locomotive, which is your third symptom, "loc not in list of autonomy locs".
+
+Worth one retest on a current build before I go further. If it persists, the thing that settles which
+half is broken is whether the locomotive is in `configuration-*.json` after the placement.
 ---
 
 <a id="mt-123"></a>
@@ -4820,5 +4869,71 @@ pair. That rule went in and its mirror image did not, which is the half-a-rule s
 Fixed in the STORE rather than beside the menu that reported it, because that is where the partner is
 known - and a rule kept beside one caller is a rule the next caller does not get. Seen failing first;
 the test also pins that an unpaired link is nobody else's business.
+
+---
+
+<a id="mt-132"></a>
+
+### MT-132 - 2026-08-23 - A station name can go on almost any square
+
+**Disposition:** fixed unvalidated
+**From:** OB-042 and OB-044
+**Written:** 2026-08-23
+
+**What to do.** Right-click a CURVED piece of track, and then a BUMPER, in the autonomy editor. Both must offer
+**Show Station Here...**, and the label must appear where you put it.
+
+Then right-click a SWITCH and a SIGNAL. Neither should offer it - those already do something when
+clicked, and a caption on one puts text over a control.
+
+Try a few other shapes too: a crossing, an uncoupler, a tunnel mouth, an overpass.
+
+#### Comments
+
+**Claude, 2026-08-23.** Two reports, one bug. Adam: "the option to place a station label is not shown
+in the curved track right click menu", and "bumpers don't allow station labels to be placed via the
+right click menu. check other components that also don't."
+
+The gate was `isStraightThrough` - one route joining two OPPOSITE sides - and its comment argued the
+case: "Curves, switches, crossings and dead ends all fail it, and none of them has room beside the track
+for a name anyway." That last clause was a guess about layouts, and it was wrong on two squares in one
+evening: a bumper at the end of a siding and the curve at the top of a loop are often the only squares
+near a station with nothing else to say.
+
+His rule is in the code now, in his own words - "the only fair place to disallow them are clickable
+elements like switches and signals" - and it is a rule about what a square DOES rather than about the
+shape of its track, which is why it needs no list of types kept in step with the port map.
+
+`isStraightThrough` is gone; nothing else used it. And the two menus that offer the caption items build
+them from one method now, so they cannot drift into offering different things - the same reasoning that
+has `buildTileMenu` handed to the main window rather than copied there.
+
+---
+
+<a id="mt-133"></a>
+
+### MT-133 - 2026-08-23 - Segment length: blank means none, and only digits go in
+
+**Disposition:** fixed unvalidated
+**From:** OB-043
+**Written:** 2026-08-23
+
+**What to do.** Open **Length...** on a square. Try typing letters and punctuation - nothing should appear.
+
+Clear the field entirely and press OK. The length must become 0, with no error.
+
+Then set a real number and check it sticks, and that Cancel still changes nothing.
+
+#### Comments
+
+**Claude, 2026-08-23.** Adam: "if the segment length is cleared and submitted, treat it as 0. force
+the field to only allow numeric entry."
+
+Both done, and the second is why the first is simple. The field refuses non-digits as they are typed, so
+there is no longer a moment where it holds something the dialog will have to reject - which leaves the
+empty field as the only special case, and clearing a field is how somebody says "I do not want this any
+more". 0 is exactly what "no length" is stored as everywhere else here.
+
+The error box for a non-number is unreachable now and the parse cannot throw, so both are gone.
 
 ---

@@ -1368,56 +1368,37 @@ public class AutonomyEditorPanel extends JPanel
         menu.add(item(I18n.t("autosetup.ui.menuSetLength"), () -> applyLength(target)));
 
 
-        // A station name can go on any square whose track runs straight through, not only on a text
-        // square: a straight, a sensor, a signal, an uncoupler.  The label is drawn beside the tile
-        // wherever it sits, so there is no reason to make the user find a text square first - and on a
-        // platform the sensible place for the name is the platform road itself.
+        // A station name can go on almost any square, not only on a text square.  The label is drawn
+        // beside the tile wherever it sits, so there is no reason to make the user find a text square
+        // first - and on a platform the sensible place for the name is the platform road itself.
+        //
+        // It used to be offered only where the track ran STRAIGHT THROUGH, on the reasoning that a
+        // curve or a dead end has no room beside the track for a name.  Adam found both ends of that
+        // being wrong on the same evening (OB-042, OB-044): a bumper at the end of a siding and the
+        // curve at the top of a loop are often the only squares near a station with nothing else to
+        // say.  His rule is the one in the code now - "the only fair place to disallow them are
+        // clickable elements like switches and signals" - because those already do something when
+        // clicked, and a caption on one puts text over a control.
         //
         // The CLICKED square, not the run leader the rest of this menu acts on: a name belongs where
         // it was put, and moving it to the head of the run would drop it somewhere else entirely.
         //
         // Editor only, both of them: they write text onto the DIAGRAM, which is a diagram edit wearing
         // an autonomy hat, and the deep menu is reached by right-clicking the diagram itself.
-        if (isStraightThrough(tile) && !menuOnly)
+        final LayoutDiagramComponent here = componentAt(tile);
+
+        if (mayCarryACaption(here) && !menuOnly)
         {
             menu.addSeparator();
 
-            final LayoutDiagramComponent here = componentAt(tile);
+            String text = here == null || here.getLabel() == null ? "" : here.getLabel();
 
-            menu.add(item(I18n.t("autosetup.ui.menuShowStationHere"),
-                () -> promptStationLabel(tile, here)));
-
-            if (session.getCaptionTarget(tile) != null)
-            {
-                menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"),
-                    () -> applyCaption(tile, null)));
-            }
+            addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile));
         }
 
         return menu;
     }
 
-    /**
-     * Whether the track on this square runs straight through it.
-     *
-     * One route, joining two OPPOSITE sides.  That is exactly the set the author named - straights,
-     * straight sensors, signals, uncouplers - without listing types that would have to be kept in step
-     * with the port map every time one was added.  Curves, switches, crossings and dead ends all fail
-     * it, and none of them has room beside the track for a name anyway.
-     */
-    private boolean isStraightThrough(TileKey tile)
-    {
-        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
-
-        if (routes.size() != 1) return false;
-
-        org.traincontrol.automationui.TilePorts.Route route = routes.values().iterator().next();
-
-        if (route.getA() == null || route.getB() == null || route.getA() == route.getB()) return false;
-
-        // N,E,S,W in order, so opposite sides are two apart either way round
-        return Math.abs(route.getA().ordinal() - route.getB().ordinal()) == 2;
-    }
 
     /**
      * Flashes the square the open menu belongs to, so a menu edit is as visible as a click.
@@ -1618,6 +1599,26 @@ public class AutonomyEditorPanel extends JPanel
         //
         // So it asks instead, naming the text it would replace.  A question is a way out; a disabled
         // menu item is not.
+        addCaptionItems(menu, tile, component, label, captioned);
+
+        return menu;
+    }
+
+    /**
+     * "Show Station Here..." and its clear, added to whichever menu is being built.
+     *
+     * Shared so the two cannot drift into offering different things - the same reason buildTileMenu is
+     * handed to the main window rather than copied there.
+     *
+     * @param menu the menu being built
+     * @param tile the square
+     * @param component what is drawn on it, or null for a blank square
+     * @param label whatever text the square already carries
+     * @param captioned the station this square is already showing, or null
+     */
+    private void addCaptionItems(javax.swing.JPopupMenu menu, final TileKey tile,
+        final LayoutDiagramComponent component, String label, TileKey captioned)
+    {
         boolean mine = label.trim().isEmpty() || captioned != null;
 
         javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
@@ -1631,8 +1632,30 @@ public class AutonomyEditorPanel extends JPanel
         {
             menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyCaption(tile, null)));
         }
+    }
 
-        return menu;
+    /**
+     * Whether a station's name may be written on this square.
+     *
+     * OB-042 and OB-044, which are one bug reported from two squares: "the option to place a station
+     * label is not shown in the curved track right click menu", and "bumpers don't allow station labels
+     * to be placed via the right click menu. check other components that also don't. only fair place to
+     * disallow them are clickable elements like switches and signals."
+     *
+     * It used to be offered only on a blank square or one already carrying text, because that is where
+     * a label normally goes - a platform road usually has no room for it. But "usually" is not a rule,
+     * and a bumper at the end of a siding or the curve at the top of a loop is often the only square
+     * near the station with nothing else to say.
+     *
+     * Clickable squares are the exception, and Adam's reasoning is the right one: a switch or a signal
+     * ALREADY does something when clicked, and hanging a caption on it puts text over a control.
+     *
+     * @param component what is drawn on the square
+     * @return whether to offer the caption items
+     */
+    private boolean mayCarryACaption(LayoutDiagramComponent component)
+    {
+        return component == null || !component.isClickable();
     }
 
     /**
@@ -3296,6 +3319,55 @@ public class AutonomyEditorPanel extends JPanel
         return out.toString();
     }
 
+    /**
+     * A text field that only lets digits be typed into it.
+     *
+     * Nothing else is a length, and a filter is a better answer than validation after the fact: it
+     * cannot be got wrong, it needs no error message, and there is no moment where the field holds
+     * something the dialog will refuse.
+     *
+     * Empty stays reachable on purpose - clearing the field is how a length is removed.
+     *
+     * @param initial what to show
+     * @return the field
+     */
+    private javax.swing.JTextField digitsOnly(String initial)
+    {
+        javax.swing.JTextField field = new javax.swing.JTextField(initial, 8);
+
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+            new javax.swing.text.DocumentFilter()
+            {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String text,
+                    javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException
+                {
+                    if (digits(text)) super.insertString(fb, offset, text, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text,
+                    javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException
+                {
+                    if (digits(text)) super.replace(fb, offset, length, text, attr);
+                }
+
+                private boolean digits(String text)
+                {
+                    if (text == null) return true;
+
+                    for (char c : text.toCharArray())
+                    {
+                        if (!Character.isDigit(c)) return false;
+                    }
+
+                    return true;
+                }
+            });
+
+        return field;
+    }
+
     private void applyLength(TileKey tile)
     {
         Set<TileKey> targets = selection.isEmpty()
@@ -3305,29 +3377,25 @@ public class AutonomyEditorPanel extends JPanel
         // necessarily among them, and prefilling from it would show a number the dialog will not touch
         TileKey sample = targets.iterator().next();
 
-        String entered = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptTileLength"),
+        // A field that will not accept anything but digits, rather than an open one that complains
+        // afterwards (OB-043).  A number is the only answer this question has, so refusing the keystroke
+        // is kinder than accepting it and then throwing it away with an error box.
+        final javax.swing.JTextField field = digitsOnly(
             String.valueOf(session.getStore().getTileLength(sample)));
 
-        if (entered == null) return;
+        int chose = JOptionPane.showConfirmDialog(owner(),
+            new Object[] {I18n.t("autosetup.ui.promptTileLength"), field},
+            I18n.t("autosetup.ui.menuSetLength"),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        int length;
+        if (chose != JOptionPane.OK_OPTION) return;
 
-        try
-        {
-            length = Integer.parseInt(entered.trim());
-        }
-        catch (NumberFormatException e)
-        {
-            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
-            return;
-        }
+        String entered = field.getText().trim();
 
-        if (length < 0)
-        {
-            JOptionPane.showMessageDialog(owner(), I18n.t("autosetup.ui.errorNegativeLength"));
-            return;
-        }
+        // Cleared and submitted means none (OB-043).  Adam: "if the segment length is cleared and
+        // submitted, treat it as 0."  Emptying a field is how somebody says "I do not want this any
+        // more", and 0 is exactly what "no length" is stored as everywhere else here.
+        int length = entered.isEmpty() ? 0 : Integer.parseInt(entered);
 
         for (TileKey target : targets)
         {

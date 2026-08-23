@@ -5069,7 +5069,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // Handle key shortcuts
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // The one shortcut that belongs to autonomy mode, handled BEFORE the guard that turns the
+            // The shortcuts that belong to autonomy mode too, handled BEFORE the guard that turns the
             // rest of them off (GC-B2).
             //
             // It was below the return, which made it unreachable in the only mode where it does
@@ -5081,6 +5081,31 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
             {
                 toggleTrackLengths();
+
+                return;
+            }
+
+            // Control+L and Control+D, for the same reason and by the same rule (MT-109).
+            //
+            // Adam: "Control+G works, but control +L does not in the autonomy editor." Of course it
+            // did not - it was below the guard, exactly where Control+G had been. Moving one key above
+            // a guard fixes the key somebody just tried and leaves its neighbours where they were, and
+            // these three are neighbours in every sense: all show or hide something ABOUT the diagram
+            // without changing it.
+            //
+            // Control+D was not reported. It is here because it is the third of the same three, and
+            // finding out later that the sweep stopped at the two that were mentioned is worse than
+            // the original bug.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
+            {
+                toggleText();
+
+                return;
+            }
+
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
+            {
+                toggleAddresses();
 
                 return;
             }
@@ -5159,14 +5184,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 // the keyboard and the menu grew the diagram DIFFERENTLY and only the menu one had a
                 // matching shrink.
                 this.growEdges();
-            }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
-            {
-                this.toggleAddresses();
-            }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
-            {
-                this.toggleText();
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
             {
