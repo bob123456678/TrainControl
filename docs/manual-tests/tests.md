@@ -22,7 +22,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
 | [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
 | [MT-069](#mt-069) | 2026-08-18 | Remove a locomotive from a non-station | needs test | Tier 1 |
-| [MT-072](#mt-072) | 2026-08-18 | Cancel in the track diagram editor | needs test | Tier 2 |
 | [MT-074](#mt-074) | 2026-08-18 | Export / import round trip | fixed unvalidated | Tier 2 |
 | [MT-075](#mt-075) | 2026-08-18 | Page files | fixed unvalidated | Tier 2 |
 | [MT-076](#mt-076) | 2026-08-18 | Running path drawing | needs test | Tier 3 |
@@ -99,7 +98,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-098](#mt-098) | 2026-08-22 | One-Way Run is a button, and asks which way | fixed unvalidated | OB-006 |
 | [MT-099](#mt-099) | 2026-08-22 | A train mark shows on a station with nothing else on it | fixed unvalidated | OB-007 |
 
-Everything else - 20 of 99 - is **fixed validated** and needs nothing from you unless the
+Everything else - 21 of 99 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -286,7 +285,7 @@ Works, but I noticed that some locomotives get a V > suffix, not just V or >.  A
 
 ### MT-072 - 2026-08-18 - Cancel in the track diagram editor
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 2 - data safety  
 **Written:** 2026-08-18
 
@@ -367,6 +366,36 @@ for the locomotive's name.
 
 Those two need completely different fixes, and I have now spent three passes reasoning about which one
 it is. One look at that file decides it.
+
+**Claude, 2026-08-22, resolved.** Adam ran it: the placement is still in the configuration file after
+Cancel, and the label reads correctly now. So **nothing was ever lost** - which is what the three
+tests were saying all along, and why none of them could be made to fail.
+
+**What was almost certainly happening.** The white star that marks "a train is set up to be standing
+here" was not being drawn, and that is a defect I found and fixed independently on the same day, filed
+as `OB-007` and covered by [MT-099](#mt-099): `TileAnnotation.isBlank()` listed every field that counts
+as content except `occupied`, so `paint()` returned before drawing anything on a square whose only
+annotation was a train. It appeared on stations, which carry a badge and so were never blank, and was
+missing on exactly the squares with nothing else on them.
+
+Both reports were made against the same build, `058d2385`, about the same squares, within minutes of
+each other. "Locomotives are removed and no longer shown in the labels" and "the mark is not there" are
+the same observation of the same missing pixels.
+
+**Stated as the likeliest explanation rather than a proven one.** I did not watch this fail and then
+watch the fix cure it, so what I have is a defect with the right shape, in the right place, at the
+right time, and a symptom that went away when it was fixed. The one thing that IS proven is the part
+that matters most: the placement was never deleted, because the file still holds it and three
+orderings of the Cancel path say it survives.
+
+**Why it took so long to get here, which is the lesson.** Three passes of reading code looking for
+where the data went, when the data had not gone anywhere. The report said "removed", I took "removed"
+to mean "deleted", and every hypothesis after that was about deletion. What would have shortened it is
+the check that finally ended it - look at the file first, and find out whether you are debugging a
+data loss or a drawing bug, because they share no code at all.
+
+`where-are-the-trains.py` exists for exactly that, and is the first thing to reach for next time
+something has "gone".
 ---
 
 <a id="mt-073"></a>
