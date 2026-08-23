@@ -2181,6 +2181,19 @@ further along the SAME diagram, so a cross-page tunnel would draw a train enteri
 page and leaving one on another.
 
 Links are unchanged and may still pair across pages.
+
+**Claude, 2026-08-23.** Already in, and before your run - the pairing list refuses a tunnel on another
+page, and its comment names this ticket.
+
+Like pairs with like, and then a tunnel pairs only within its own page. The reasoning is in the code:
+the two portal kinds are the same thing to autonomy, "and that is exactly why they need different rules
+about WHAT they may point at. A link is how a train leaves one page and arrives on another - crossing
+pages is its whole purpose. A tunnel is a piece of track that goes behind the scenery and comes out
+further along the SAME diagram."
+
+Worth one look on a current build. If a cross-page tunnel is still offered there, the useful detail is
+whether the two squares are really both TUNNEL - a link and a tunnel are refused by the like-with-like
+test one line above, and telling which test let it through says where to look.
 ---
 <a id="mt-048"></a>
 
@@ -4069,7 +4082,7 @@ nothing left to do and nothing left to check.
 
 ### MT-116 - 2026-08-22 - Renaming a station keeps its label
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed unvalidated
 **From:** OB-034  
 **Written:** 2026-08-22
 
@@ -4107,6 +4120,33 @@ Weird- the label moves around to adjacent cells on rename.
 
 *Run against commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-08-23.** Adam: "Weird - the label moves around to adjacent cells on rename."
+
+Found, and it is a side effect rather than a fault in the drawing.
+
+`placeCaption` MOVES a station's caption when it already has one rather than refusing - deliberately,
+and its comment argues the case: "Asking to show a name is asking for it to be here, and answering 'it
+is already somewhere' left the user to find and delete the old one first." That is right when somebody
+has asked for the name to be shown on a particular square.
+
+It is wrong as a side effect of renaming, which is what it had become: the rename path placed a label
+every time, so a station that already had one got it MOVED - and the search picks whichever
+neighbouring square is free this time round. Hence a label that wanders.
+
+**Nothing has to be re-placed for the text to change.** A caption points at the station's SQUARE and
+looks its name up, so a rename is already visible wherever the label happens to sit. The rename only
+places a label when the station has none, which is the case the original reasoning was about: "the
+moment a station gets a name is the moment it has one worth writing on the diagram."
+
+**There were two rename paths, and the fix went on one of them first.** The other is the "Name
+Everything..." walk, which visits only unnamed squares - and `placeCaption` refuses to caption a
+nameless station, so nothing there can already have a label. It asks the same question anyway: two
+rename paths asking different questions is how one of them ends up wrong, and asking costs nothing.
+
+`testEditorSurfaceRules.testARenameOnlyLabelsAStationThatHasNoLabel` walks every `setPointName` in the
+file and requires the label it places to be guarded, so a third rename path cannot arrive without one.
+Mutation-checked.
 ---
 
 <a id="mt-117"></a>

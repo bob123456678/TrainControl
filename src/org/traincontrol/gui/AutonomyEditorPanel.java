@@ -2811,7 +2811,23 @@ public class AutonomyEditorPanel extends JPanel
         // The moment a station gets a name is the moment it has one worth writing on the diagram.
         // Marking a square as a station cannot do it on its own: a new one has no name yet, only the
         // coordinate the reducer invented, and nobody wants that on their track plan.
-        if (session.getStore().isStation(tile)) placeLabelFor(tile);
+        //
+        // Only where it has NO caption yet (MT-116). Adam: "Weird - the label moves around to adjacent
+        // cells on rename."
+        //
+        // `placeCaption` MOVES a station's caption rather than refusing when it already has one, which
+        // is right when somebody has asked for the name to be shown here - "asking to show a name is
+        // asking for it to be here". It is wrong as a side effect of renaming: the label had a place
+        // somebody chose, the rename says nothing about where it should go, and the search picks
+        // whichever neighbouring square is free THIS time. So the label wandered.
+        //
+        // Nothing has to be re-placed for the text to change: a caption points at the station's SQUARE
+        // and looks its name up, so a rename is already visible wherever the label happens to be.
+        if (session.getStore().isStation(tile)
+            && !session.getLabelledStationTiles().contains(tile))
+        {
+            placeLabelFor(tile);
+        }
 
         // And the RUNNING layout is rebuilt, or the label goes blank (OB-034).
         //
@@ -5116,7 +5132,17 @@ public class AutonomyEditorPanel extends JPanel
 
             // A station that has just been given a name has somewhere obvious for it to go, and this
             // is the one moment the user is thinking about that station in particular.
-            if (session.getStore().isStation(tile)) placeLabelFor(tile);
+            //
+            // The same "only if it has none" test as the single rename (MT-116), although this walk
+            // visits only UNNAMED squares and placeCaption refuses to caption a nameless station - so
+            // nothing here can already have one. It is written the same way regardless: two rename
+            // paths that ask different questions is how one of them ends up wrong, and the cost of
+            // asking is nothing.
+            if (session.getStore().isStation(tile)
+                && !session.getLabelledStationTiles().contains(tile))
+            {
+                placeLabelFor(tile);
+            }
         }
 
         selection.clear();

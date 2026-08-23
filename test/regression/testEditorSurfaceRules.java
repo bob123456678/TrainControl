@@ -256,4 +256,58 @@ public class testEditorSurfaceRules
             + "autonomy editor was up. Use the inEditor answer computed once at the top");
     }
 
+    /**
+     * Renaming a station does not re-place its label.
+     *
+     * MT-116, Adam: "Weird - the label moves around to adjacent cells on rename."
+     *
+     * `AutonomySession.placeCaption` MOVES a station's caption when it already has one rather than
+     * refusing - which is right when somebody has asked for the name to be shown on a particular
+     * square, and wrong as a side effect of a rename. The label had a place somebody chose; the rename
+     * says nothing about where it should go; and the search picks whichever neighbouring square is free
+     * this time round. So it wandered.
+     *
+     * Nothing needs re-placing for the text to change - a caption points at the station's SQUARE and
+     * looks the name up - so the rename path must ask whether the station is labelled already before
+     * placing anything.
+     */
+    @Test
+    public void testARenameOnlyLabelsAStationThatHasNoLabel() throws Exception
+    {
+        if (!PANEL.isFile()) return;
+
+        List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
+
+        // Every place that names a square and then labels it - there are two, and the reason this
+        // test exists is that the fix went on one of them first.
+        int renames = 0;
+
+        for (int i = 0; i < lines.size(); i++)
+        {
+            if (!lines.get(i).contains("session.setPointName(")) continue;
+
+            renames++;
+
+            String after = "";
+
+            for (int j = i; j < Math.min(lines.size(), i + 30); j++)
+            {
+                after += lines.get(j) + " ";
+            }
+
+            if (!after.contains("placeLabelFor(")) continue;
+
+            assertTrue(after.contains("getLabelledStationTiles"),
+                "the rename at line " + (i + 1) + " places a label without first asking whether the "
+                + "station already has one. placeCaption MOVES an existing caption, so that turns "
+                + "every rename into a move and the label wanders between neighbouring squares "
+                + "(MT-116)");
+        }
+
+        assertTrue(renames >= 2,
+            "expected both rename paths - the single prompt and the naming walk - and found "
+            + renames + ". If one was removed, this test should be updated rather than made to pass");
+    }
+
+
 }
