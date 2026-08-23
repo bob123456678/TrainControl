@@ -43,7 +43,13 @@ is where its state and its comments are.
 
 | Filed | Ref | Kind | What | Became |
 |---|---|---|---|---|
+| 2026-08-22 | OB-001, OB-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | [MT-094](tests.md#mt-094) |
 | 2026-08-22 | - | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | [MT-064](tests.md#mt-064) |
+
+*OB-001 and OB-002 are the same request submitted twice, two minutes apart, against commits 3a2106ab
+and cd27e285. Recorded as one entry - a duplicate is a duplicate, and two ledger rows for one decision
+is exactly the noise the ledger exists to avoid. If the second was meant to say something the first did
+not, put the difference back in the Inbox and it gets its own entry.*
 
 *Ref is `-` for MT-064: it was filed before the `OB-###` numbering existed, directly as a sentence in
 what was then `feature-requests.md`. Everything filed from here on gets a real `OB-###`.*

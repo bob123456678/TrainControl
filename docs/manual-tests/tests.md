@@ -19,7 +19,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-065](#mt-065) | 2026-08-18 | Arrival marks look right | needs test | Tier 1 |
 | [MT-066](#mt-066) | 2026-08-18 | Arrivals menu placement | needs test | Tier 1 |
 | [MT-067](#mt-067) | 2026-08-18 | Arrival marks in the viewer | needs test | Tier 1 |
 | [MT-068](#mt-068) | 2026-08-18 | Switched-off link | needs test | Tier 1 |
@@ -98,8 +97,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-091](#mt-091) | 2026-08-22 | ant test runs the whole suite | needs test | DD-A2 - verified |
 | [MT-092](#mt-092) | 2026-08-22 | The triage app | needs test | feature request |
 | [MT-093](#mt-093) | 2026-08-22 | A placed locomotive is named, not JSON | fixed unvalidated | Adam, screenshot |
+| [MT-094](#mt-094) | 2026-08-22 | Station marks and arrows say what they mean | needs test | OB-001/OB-002 |
 
-Everything else - 14 of 93 - is **fixed validated** and needs nothing from you unless the
+Everything else - 15 of 94 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -111,7 +111,7 @@ area changes again.
 
 ### MT-065 - 2026-08-18 - Arrival marks look right
 
-**Disposition:** needs test  
+**Disposition:** fixed validated  
 **From:** 2026-08-18 manual test plan, Tier 1 - diagram and editor, autonomy not running  
 **Written:** 2026-08-18
 
@@ -129,6 +129,14 @@ Idea: make station shapes semantic.  A triangle that points in the way it accept
 Bug: clicking on the arrows to cycle in the editor affects an unrelated tile.  Changing in menu works.
 
 **Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+
+**Adam, 2026-08-22 (triage).** Works, with notes.
+
+They look good for now, but the overall appearance of the stations and incoming/outgoing arrows can be improved for better clarity.
+
+Filed from this test: OB-002 (feature request - Appearance of stations and incoming arrows).  They are in `issues.md` until they are picked up.
+
+*Run against commit cd27e285.*
 
 ---
 
@@ -1980,5 +1988,76 @@ stored with it.
 
 I checked every other reader of a point property for the same mistake. They are all shape-aware
 (`instanceof Number`, `instanceof String`, an array branch); this was the only one.
+
+**Claude, 2026-08-22, second pass.** You are right, and my first answer was half of it.
+
+The JSON is gone, but the label was still wrong, and I said in my report that the sizing could not be
+the problem because "both views mutate the same JLabel objects, so they size identically". They do -
+and that was the wrong conclusion, because the two views do not put the same STRING in them.
+
+The running diagram sets a **caption**:
+
+```java
+j.setText("[" + name.substring(0, min(len, LAYOUT_STATION_MAX_LENGTH)).trim() + facingArrow + "]");
+```
+
+Bracketed, and cut to ten characters. The brackets are the point: a platform is the same width
+whatever is standing on it, which is why `[---]` and `[EN57-203 >]` sit on the same tile. The autonomy
+editor set the bare, untruncated **name** - so the label was as wide as the name and covered its
+neighbours. That is your "rather than seeing its name inside [---]", exactly.
+
+**And a second, separate cause of the white rectangle.** My branch turned `setOpaque(true)` on, then
+set a translucent white background - but thirty lines further down, past the end of that branch,
+`text.setBackground(Color.WHITE)` runs for every label and overwrote it with fully opaque white. Every
+other label survives that because none of them is opaque, so the background never paints. Mine was the
+only opaque label on the diagram, so mine was the only one that painted a solid white block. The
+translucent background is now applied after that line rather than before it.
+
+Both are fixed together, and `LayoutGrid.stationCaption` is now the one place that spells a caption -
+the running diagram asks it too, so the two cannot drift apart again. Verified by mutation: reverting
+it to the bare name fails the new tests.
+
+**On your other question - no, I did not add any markers to the station icons.** The only mark I added
+is the facing arrow inside the brackets, which the running diagram has always drawn and the editor did
+not. The circles, squares, diamonds and arrows on the icons are the editor's existing arrival marks,
+which is what your MT-065 note is about - filed as [MT-094](#mt-094).
+
+**Adam, 2026-08-22 (triage).** Does not work.
+
+I still see a large white rectangle overlay with the name of the locomotive, rather than seeing its name inside [---]. This covers other tiles. Also, not sure if you added markers on top of the staiton icons.
+
+*Run against commit cd27e285, build\classes, compiled 22 Aug 17:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-094"></a>
+
+### MT-094 - 2026-08-22 - Station marks and arrows say what they mean
+
+**Disposition:** needs test  
+**From:** OB-001 / OB-002 (feature request), raised from MT-065  
+**Written:** 2026-08-22
+
+**What to do.** Not a test yet - a design decision that has to be made first.
+
+Right now the autonomy editor draws circles, squares and diamonds on station icons, and incoming and
+outgoing arrows around them. The shapes are not semantic: which shape you get does not reliably tell
+you what the square IS, and the arrows are visually noisy where several meet.
+
+**What is wanted:** a proposal for a better appearance, then the change, then a look at it. Not
+started - filing is not a request to build it.
+
+#### Comments
+
+**Claude, 2026-08-22.** Picked up from the Inbox: filed as `OB-001` and `OB-002`, which are the same
+request submitted twice two minutes apart, against commits 3a2106ab and cd27e285. Recorded once here.
+
+Raised from [MT-065](#mt-065), which you passed - the marks are correct, they just do not read well.
+So this is an appearance change with nothing broken behind it, and MT-065 is **fixed validated**
+rather than being held open by it.
+
+Per the SOP, this is on the ledger and not being worked. Say the word and I will propose a scheme
+before changing anything, since "propose a better appearance" is the actual request and the drawing
+is the easy half.
 
 ---
