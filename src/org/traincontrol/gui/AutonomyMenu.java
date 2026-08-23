@@ -269,8 +269,22 @@ public class AutonomyMenu extends JMenu
             addSeparator();
 
             JMenu edit = editMenu(session);
-            edit.setEnabled(chosen && edit.getItemCount() > 0);
-            edit.setToolTipText(AutonomyEditorPanel.wrapped(chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
+
+            // And not while trains are running (OB-045).
+            //
+            // Opening it was already refused on the click, which states the problem after the user has
+            // committed to it. A greyed item says the same thing before, and says it where the eye
+            // already is - which is the difference between a rule and an obstacle.
+            //
+            // Only this item. Everything else on this menu chooses a setup or does housekeeping on the
+            // file, and the one thing somebody with trains running most needs to reach is the way to
+            // stop them.
+            boolean trainsMoving = ui.isAutonomyBusy();
+
+            edit.setEnabled(chosen && !trainsMoving && edit.getItemCount() > 0);
+            edit.setToolTipText(AutonomyEditorPanel.wrapped(
+                trainsMoving ? I18n.t("autolayout.errorCannotEditWhileRunning")
+                : chosen ? I18n.t("autosetup.ui.tooltipEditAutonomy")
                 : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
             add(edit);
 

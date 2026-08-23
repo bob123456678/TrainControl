@@ -123,6 +123,20 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             if (!ui.getModel().getAutoLayout().isAutoRunning())
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
+
+                // Greyed when it could not start (OB-050).
+                //
+                // A configuration with blocking findings - the "fix it" state - cannot start, and this
+                // menu offered the item anyway and reported the refusal in a dialog afterwards. The
+                // Start button has always known; it just was not asked.
+                menuItem.setEnabled(ui.canStartAutonomy());
+
+                if (!ui.canStartAutonomy())
+                {
+                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(
+                        I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
+                }
+
                 menuItem.addActionListener(event -> 
                 {
                     try

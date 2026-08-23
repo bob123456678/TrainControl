@@ -59,6 +59,34 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### OB-053 - 2026-08-23 - the diagram builds two labels per cell
+
+**Kind:** bug  
+**Raised from:** testRenderingCost.testLabelsBuiltPerCell, failing  
+**Filed:** 2026-08-23 by Claude at Adam's request
+
+Building one page of 336 cells constructs **720 LayoutLabels** - 2.14 per cell. The test's own note
+says it was 1.6 per cell when it was written, and it fails above 2.0 because "more than two per cell
+means something has started building the grid twice over".
+
+Adam: "i could see text labels adding overhead, but never 2x."
+
+**What is already ruled out.** Deterministic - 720 on three separate runs, not a timing artefact. Not
+`LayoutGrid`: swapping in the copy from `87ada706`, the last commit whose full battery was green, gives
+the same 720. Not the damaged autonomy data: restoring the complete setup gives the same 720. An
+attempt to bisect to `87ada706` wholesale failed because the old `src` and `test` will not compile
+against the current build inputs, so the question of whether this is new is still open.
+
+**Where to look.** 336 x 2 = 672, and 720 - 672 = 48, so the shape is two per cell plus about fifty -
+which would fit an icon label and a text label per cell, plus a caption or address label on some. That
+is a guess from arithmetic; the way to settle it is to count what is actually constructed rather than
+reason about it. `LayoutLabel.COUNT_CONSTRUCTED` and `COUNT_APPLIED` already exist for exactly this,
+and the picture harness can render the page so the extra labels can be SEEN.
+
+**Why it matters beyond the number.** MT-014 carries Adam's note that the editor feels slow, and a grid
+built twice is the shape that would explain it.
+
+
 ### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
 
 **Kind:** bug  

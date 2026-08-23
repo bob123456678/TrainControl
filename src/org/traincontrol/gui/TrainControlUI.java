@@ -2858,9 +2858,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         // What "last time" means when last time is no longer possible: a setup that has since been
-        // unloaded, or trains that have since been started.  The track is always editable, so it is
-        // what an impossible preference falls back to - silently, because the user asked to edit,
-        // not to be told about a preference.
+        // unloaded.  The track is what an impossible preference falls back to - silently, because the
+        // user asked to edit, not to be told about a preference.
+        //
+        // Trains being started is no longer one of these cases: while they are running neither editor
+        // opens (OB-047), which is decided below rather than fallen back from.
         boolean wantsAutonomy = autonomy == null
             ? prefs.getBoolean(LAST_EDITOR_AUTONOMY_PREF, false) && editableAutonomySession() != null
             : autonomy;
@@ -2877,15 +2879,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             wantsAutonomy = false;
         }
 
-        if (wantsAutonomy && this.isAutonomyBusy())
+        // NEITHER editor while trains are running (OB-047).
+        //
+        // This asked only about the autonomy editor, and fell back to the track one - so pressing Edit
+        // during a run opened the diagram editor, where a tile can be moved, retextured or deleted
+        // under a train that is on its way to it. Adam: "neither it nor the autonomy editor should be
+        // allowed - just pop up an error."
+        //
+        // No silent fallback here, unlike the cases above: falling back means opening SOMETHING, and
+        // the answer while trains are running is nothing at all.
+        if (this.isAutonomyBusy())
         {
-            if (autonomy != null)
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
-                return;
-            }
-
-            wantsAutonomy = false;
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            return;
         }
 
         // One editor at a time, over the same button the diagram editor is gated on.
@@ -16635,6 +16641,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Called externally
      * @throws Exception 
      */
+    /**
+     * Whether autonomy could be started right now.
+     *
+     * The Start button's own enabled state, which is where this question has always been answered -
+     * requestStartAutonomy asks it and throws if the answer is no. Exposed so a menu can GREY the item
+     * rather than offer it and then refuse (OB-050): a configuration in the "fix it" state cannot start,
+     * and being told so after clicking is worse than seeing it before.
+     *
+     * @return whether Start would be accepted
+     */
+    public boolean canStartAutonomy()
+    {
+        return this.startAutonomy != null && this.startAutonomy.isEnabled();
+    }
+
     public void requestStartAutonomy() throws Exception
     {
         if (this.startAutonomy.isEnabled())

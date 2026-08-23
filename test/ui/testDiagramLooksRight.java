@@ -440,6 +440,48 @@ public class testDiagramLooksRight
 
         assertNotNull(runLocomotive, "no locomotive to place");
 
+        // Every train taken off first, and put back afterwards.
+        //
+        // The search needs an empty railway: a start with a locomotive on it is skipped, and a
+        // destination whose block is occupied is not offered as a path at all - so whichever trains
+        // happen to be placed in the setup decide whether this test runs. It stopped running exactly
+        // that way once, after a restore put three locomotives back, and the only sign was a skip.
+        //
+        // A test that quietly stops testing because of where somebody parked a train is worse than one
+        // that fails, because nothing goes red.
+        java.util.Map<org.traincontrol.automation.Point, org.traincontrol.base.Locomotive> parked =
+            new java.util.LinkedHashMap<>();
+
+        for (org.traincontrol.automation.Point p : auto.getPoints())
+        {
+            if (p.getCurrentLocomotive() != null) parked.put(p, p.getCurrentLocomotive());
+        }
+
+        for (org.traincontrol.automation.Point p : parked.keySet()) p.setLocomotive(null);
+
+        try
+        {
+            return searchForARun(auto, edges, tiles, curved);
+        }
+        finally
+        {
+            for (java.util.Map.Entry<org.traincontrol.automation.Point,
+                org.traincontrol.base.Locomotive> was : parked.entrySet())
+            {
+                was.getKey().setLocomotive(was.getValue());
+            }
+        }
+    }
+
+    /**
+     * The search itself, on a railway with nothing standing on it.
+     */
+    private java.util.List<org.traincontrol.automationui.TileGraph.TileKey> searchForARun(
+        org.traincontrol.automation.Layout auto,
+        java.util.Map<String, org.traincontrol.automationui.GraphReducer.ReducedEdge> edges,
+        java.util.Map<String, org.traincontrol.automationui.TileGraph.TileKey> tiles,
+        java.util.Set<String> curved)
+    {
         int busy = 0, unmapped = 0;
 
         for (org.traincontrol.automation.Point from : starts(auto))

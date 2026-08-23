@@ -3400,6 +3400,12 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JTextField field = new javax.swing.JTextField(initial, 8);
 
+        // Three digits, 0 to 999 (OB-048).
+        //
+        // Refused as it is typed, like the non-digits: a length of 100000 is not a length anybody
+        // means, and the alternative - accepting it and complaining afterwards - is the shape this
+        // filter exists to avoid.
+
         ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
             new javax.swing.text.DocumentFilter()
             {
@@ -3407,14 +3413,27 @@ public class AutonomyEditorPanel extends JPanel
                 public void insertString(FilterBypass fb, int offset, String text,
                     javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException
                 {
-                    if (digits(text)) super.insertString(fb, offset, text, attr);
+                    if (fits(fb, 0, text)) super.insertString(fb, offset, text, attr);
                 }
 
                 @Override
                 public void replace(FilterBypass fb, int offset, int length, String text,
                     javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException
                 {
-                    if (digits(text)) super.replace(fb, offset, length, text, attr);
+                    if (fits(fb, length, text)) super.replace(fb, offset, length, text, attr);
+                }
+
+                /**
+                 * Digits, and not more than three of them once this edit has been applied.
+                 */
+                private boolean fits(FilterBypass fb, int replacing, String text)
+                {
+                    if (!digits(text)) return false;
+
+                    int after = fb.getDocument().getLength() - replacing
+                        + (text == null ? 0 : text.length());
+
+                    return after <= MAX_LENGTH_DIGITS;
                 }
 
                 private boolean digits(String text)
@@ -3432,6 +3451,9 @@ public class AutonomyEditorPanel extends JPanel
 
         return field;
     }
+
+    /** 0 to 999: three digits is every length anybody means, and 100000 is not one (OB-048) */
+    private static final int MAX_LENGTH_DIGITS = 3;
 
     private void applyLength(TileKey tile)
     {
