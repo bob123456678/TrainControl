@@ -965,7 +965,7 @@ class Triage(tk.Tk):
                                       "everything, validated included"])
 
         picker.pack(side=tk.RIGHT)
-        picker.bind("<<ComboboxSelected>>", lambda e: self._refresh_list())
+        picker.bind("<<ComboboxSelected>>", lambda e: self._on_filter_changed())
 
         if self.filter_var.get() not in picker["values"]:
             self.filter_var.set("open - not yet answered here")
@@ -1113,6 +1113,24 @@ class Triage(tk.Tk):
         for kind in self.issue_widgets:
             self._populate_issue_tree(kind)
 
+    def _issue_include(self, is_open):
+        """Same 'Show:' filter the Tests tab uses, applied to a bug/feature request's own
+        open/closed state.  Issues have no per-session mark the way a test's Skip/Submit does -
+        nothing is ever 'answered' through a read-only tab - so the two 'open' modes collapse
+        into one question here (still open, or not), and 'answered this session' has nothing to
+        show, honestly, rather than a made-up substitute for a state these tabs don't have.
+        """
+
+        mode = self.filter_var.get()
+
+        if mode.startswith("open - not yet") or mode.startswith("open - everything"):
+            return is_open
+
+        if mode.startswith("answered"):
+            return False
+
+        return True     # everything, validated included
+
     def _populate_issue_tree(self, kind):
         widgets = self.issue_widgets[kind]
         tree = widgets["tree"]
@@ -1126,6 +1144,10 @@ class Triage(tk.Tk):
 
         for it in self.issues_doc.pending:
             if it.kind != kind:
+                continue
+
+            # A pending item has not been picked up, let alone finished - always open.
+            if not self._issue_include(True):
                 continue
 
             tree.insert("", tk.END, iid="pending:%s" % it.ref, tags=("pending",),
@@ -1144,12 +1166,19 @@ class Triage(tk.Tk):
                 entry = self.doc.by_tag.get(tag)
                 slug = disposition_slug(entry.disposition) if entry else None
                 state_shown = "-> %s" % tag
+                is_open = entry.is_open if entry else True
             else:
                 # Tracked directly: State IS the disposition, same three words tests.md uses,
-                # Claude-set the same way - there is no linked entry to defer to.
+                # Claude-set the same way - there is no linked entry to defer to.  Closed the
+                # same way fixed validated closes a test: declined is the request-track's own
+                # terminal state, so it hides under the same filter that hides fixed validated.
                 state_text = (row.get("state") or "").strip()
                 slug = disposition_slug(state_text) if state_text else None
                 state_shown = state_text or "(no state recorded)"
+                is_open = state_text.lower() not in ("fixed validated", "declined")
+
+            if not self._issue_include(is_open):
+                continue
 
             row_tags = (slug,) if slug in ISSUE_STATE_COLORS else ()
 
@@ -1433,6 +1462,14 @@ class Triage(tk.Tk):
             out.append(e)
 
         return out
+
+    def _on_filter_changed(self):
+        """The 'Show:' dropdown drives all three tabs, not just Tests - a feature request or bug
+        that's done closing shouldn't need its own separate control to hide it.
+        """
+
+        self._refresh_list()
+        self._refresh_issue_tabs()
 
     def _refresh_list(self, select_first=False):
         self.state_.data["filter"] = self.filter_var.get()
