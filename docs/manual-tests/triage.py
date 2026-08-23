@@ -858,7 +858,7 @@ class Triage(tk.Tk):
         self.observations = []       # pending, for the entry on screen
 
         self.issues_doc = None
-        self.issue_widgets = {}      # kind -> {tree, detail, request_cancel_button}
+        self.issue_widgets = {}      # kind -> {tree, detail, request_cancel_button, open_button, open_tag}
 
         self._build_ui()
         self._refresh_list(select_first=True)
@@ -1043,8 +1043,10 @@ class Triage(tk.Tk):
 
     def _build_issue_list(self, parent, kind):
         """One tab's worth: pending items of that kind, plus the ones tracked directly by their
-        own State once picked up - never one that got promoted to an MT-### tag, since that one's
-        real home is the Tests tab now. A read-only pane underneath shows whichever row is
+        own State once picked up. A promoted item - one that earned an MT-### tag - hides under
+        the 'open' filters, since its real home is the Tests tab while it's active work, and
+        reappears under 'everything' so it can still be traced from filing to close from its own
+        tab rather than only from tests.md. A read-only pane underneath shows whichever row is
         selected. Read-only on purpose - filing and answering both already have a home (New
         issue, and the Tests tab), so this tab is for seeing what is there, not a second way to
         write to either file.
@@ -1063,6 +1065,11 @@ class Triage(tk.Tk):
         request_cancel_button = ttk.Button(button_row, text="Request cancel…", state=tk.DISABLED,
                                            command=lambda: self.request_cancel(kind))
         request_cancel_button.pack(side=tk.LEFT)
+
+        open_button = ttk.Button(button_row, text="Open in Tests tab", state=tk.DISABLED,
+                                 command=lambda: self._jump_to_test(
+                                     self.issue_widgets[kind].get("open_tag")))
+        open_button.pack(side=tk.RIGHT)
 
         detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
                          background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
@@ -1097,6 +1104,7 @@ class Triage(tk.Tk):
 
         self.issue_widgets[kind] = {
             "tree": tree, "detail": detail, "request_cancel_button": request_cancel_button,
+            "open_button": open_button, "open_tag": None,
         }
 
         tree.bind("<<TreeviewSelect>>", lambda e, k=kind: self._on_issue_select(k))
@@ -1149,30 +1157,39 @@ class Triage(tk.Tk):
             tree.insert("", tk.END, iid="pending:%s" % it.ref, tags=("pending",),
                        values=("pending", it.ref, it.filed, it.summary))
 
+        show_everything = self.filter_var.get().startswith("everything")
+
         for row in self.issues_doc.picked:
             if row.get("kind") != kind:
                 continue
 
-            # Promoted to a test - it belongs in the Tests tab now, full stop.  Showing it here
-            # too, alongside the things that were NEVER going to become a test, is the exact
-            # bug/feature-request conflation this whole tabbed view exists to end; the row's
-            # entire life from here is in tests.md, findable there by its tag or its title.
-            if row.get("became_tag"):
-                continue
-
             ref = row.get("ref", "")
+            tag = row.get("became_tag")
 
-            # Tracked directly: State IS the disposition, same three words tests.md uses,
-            # Claude-set the same way.  Closed the same way fixed validated closes a test:
-            # declined is the request-track's own terminal state, so it hides under the same
-            # filter that hides fixed validated.
-            state_text = (row.get("state") or "").strip()
-            slug = disposition_slug(state_text) if state_text else None
-            state_shown = state_text or "(no state recorded)"
-            is_open = state_text.lower() not in ("fixed validated", "declined")
+            if tag:
+                # Promoted to a test - while it's still being worked, its home is the Tests tab,
+                # not here, which is what the "open" filters enforce by hiding it outright
+                # regardless of its own disposition.  "everything" is the exception: a bug or
+                # feature request should be traceable from filing to close from its OWN tab, not
+                # only from tests.md, so it comes back once the broad view is asked for.
+                if not show_everything:
+                    continue
 
-            if not self._issue_include(is_open):
-                continue
+                entry = self.doc.by_tag.get(tag)
+                slug = disposition_slug(entry.disposition) if entry else None
+                state_shown = "-> %s" % tag
+            else:
+                # Tracked directly: State IS the disposition, same three words tests.md uses,
+                # Claude-set the same way.  Closed the same way fixed validated closes a test:
+                # declined is the request-track's own terminal state, so it hides under the same
+                # filter that hides fixed validated.
+                state_text = (row.get("state") or "").strip()
+                slug = disposition_slug(state_text) if state_text else None
+                state_shown = state_text or "(no state recorded)"
+                is_open = state_text.lower() not in ("fixed validated", "declined")
+
+                if not self._issue_include(is_open):
+                    continue
 
             row_tags = (slug,) if slug in ISSUE_STATE_COLORS else ()
 
@@ -1187,6 +1204,7 @@ class Triage(tk.Tk):
         tree = widgets["tree"]
         detail = widgets["detail"]
         cancel_button = widgets["request_cancel_button"]
+        open_button = widgets["open_button"]
 
         selection = tree.selection()
 
@@ -1194,23 +1212,33 @@ class Triage(tk.Tk):
 
         if not selection:
             self._fill(detail, "")
+            widgets["open_tag"] = None
+            open_button.config(state=tk.DISABLED)
             return
 
         iid = selection[0]
 
         if iid.startswith("picked:"):
-            # Never a promoted (became_tag) row - _populate_issue_tree skips those, since a
-            # promoted item's real home is the Tests tab, not here.
             ref = iid[len("picked:"):]
             row = next((r for r in self.issues_doc.picked if r.get("ref") == ref), None) \
                 if self.issues_doc else None
 
-            state_text = (row.get("state") if row else "") or "(no state recorded)"
-            text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
-                state_text, ref, row.get("filed", "") if row else "",
-                row.get("what", "") if row else "")
+            tag = row.get("became_tag") if row else None
+
+            if tag:
+                # Only reachable under the "everything" filter - _populate_issue_tree hides a
+                # promoted row otherwise, so its real home stays the Tests tab while it's active.
+                text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                    tag, ref, row.get("filed", "") if row else "", row.get("what", "") if row else "")
+            else:
+                state_text = (row.get("state") if row else "") or "(no state recorded)"
+                text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
+                    state_text, ref, row.get("filed", "") if row else "",
+                    row.get("what", "") if row else "")
 
             self._fill(detail, text)
+            widgets["open_tag"] = tag
+            open_button.config(state=tk.NORMAL if tag and tag in self.doc.by_tag else tk.DISABLED)
             return
 
         ref = iid[len("pending:"):]
@@ -1225,6 +1253,8 @@ class Triage(tk.Tk):
                    it.kind, it.raised_from, it.filed_at, it.build, it.detail)
 
         self._fill(detail, text)
+        widgets["open_tag"] = None
+        open_button.config(state=tk.DISABLED)
 
     def request_cancel(self, kind):
         """Adam's half of cancelling something: a request, not a decision - only Claude sets
@@ -1290,6 +1320,25 @@ class Triage(tk.Tk):
         self._refresh_issue_tabs()
 
         self._say("Cancellation requested for %s - filed as %s." % (ref, new_ref))
+
+    def _jump_to_test(self, tag):
+        if not tag:
+            return
+
+        if tag not in self.doc.by_tag:
+            messagebox.showinfo("Not found", "%s is not in tests.md (yet)." % tag, parent=self)
+            return
+
+        self.left_book.select(0)
+
+        if tag not in self.tree.get_children():
+            # Whatever filter is active right now doesn't include it - the point of the button is
+            # to get there, not to first explain why it's hidden.
+            self.filter_var.set("everything, validated included")
+            self._on_filter_changed()
+
+        self.tree.selection_set(tag)
+        self.tree.see(tag)
 
     def _build_detail(self, parent):
         outer = ttk.Frame(parent)

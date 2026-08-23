@@ -140,14 +140,20 @@ by finding the `MT-###` row it got picked up into, indistinguishable there from 
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
 items of that kind: pending ones, and picked-up ones tracked directly by their own **State** -
-colored the same way the Tests tab colors a disposition, same three words (plus **declined**). **A
-picked-up item that got promoted to an `MT-###` tag is not shown here at all** - it belongs to the
-Tests tab now, the same as any other test, and showing it in both places is the exact conflation
-this tabbed view exists to end. Selecting a row shows it read-only underneath, alongside
-**Request cancel…** - the one exception to "nothing is written from these two tabs": it files a new
-item asking that the selected one be cancelled, the same request-then-Claude-acts shape as
-everything else here, so it does not touch the target's State itself. Filing still goes through
-**New issue** or the Inbox directly, and
+colored the same way the Tests tab colors a disposition, same three words (plus **declined**).
+
+**A picked-up item promoted to an `MT-###` tag hides under the `open` filters and reappears under
+`everything, validated included`.** While it's active work its home is the Tests tab, not here - the
+`open` filters enforce that regardless of the item's own disposition, so an in-progress bug never
+shows up twice. But a bug or feature request should still be traceable from filing to close from its
+own tab, not only by knowing to go look in `tests.md`, so the broad `everything` view brings it back,
+colored by its linked test's actual disposition, with an **Open in Tests tab** button to jump
+straight there.
+
+Selecting a row shows it read-only underneath, alongside **Request cancel…** - the one exception to
+"nothing is written from these two tabs": it files a new item asking that the selected one be
+cancelled, the same request-then-Claude-acts shape as everything else here, so it does not touch the
+target's State itself. Filing still goes through **New issue** or the Inbox directly, and
 answering still goes through the Tests tab or a Comment on the receipt table.
 
 Pick an entry from the Tests tab, say whether it worked, write what happened, add anything else
