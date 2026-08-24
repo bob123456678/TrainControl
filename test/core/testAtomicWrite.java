@@ -182,4 +182,83 @@ public class testAtomicWrite
         @SuppressWarnings("unused")
         private final Object trouble = new Object();
     }
+
+    /**
+     * The backup archive holds the whole layout folder, not a file from it.
+     *
+     * FR-015. The autonomy setup is keyed by PAGE ID, and those ids are defined by
+     * `config/gleisbild.cs2` - so `setup.json` on its own means nothing, and a `gleisbild.cs2` from a
+     * different day silently reattaches every station to the wrong page. That is not a hypothetical:
+     * it is what the 23 August restore had to undo, and the reason it took a bracketed comparison of
+     * three snapshots to do it.
+     *
+     * So what this pins is not "a zip was written" but that the pieces which are only meaningful
+     * together are in the same archive, under paths that say where they came from.
+     */
+    @Test
+    public void testTheBackupArchiveHoldsEveryPieceOfTheState() throws Exception
+    {
+        File config = new File(dir.toFile(), "config");
+        File pages = new File(config, "gleisbilder");
+        File autonomy = new File(config, "autonomy");
+
+        assertTrue(pages.mkdirs() && autonomy.mkdirs(), "could not build the fixture");
+
+        Files.write(new File(dir.toFile(), "UIState.data").toPath(),
+            "ui".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(dir.toFile(), "LocDB.data").toPath(),
+            "locs".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            "index".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(pages, "1 - Main.cs2").toPath(),
+            "page".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(autonomy, "setup.json").toPath(),
+            "{}".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(autonomy, "configuration-Only.json").toPath(),
+            "{}".getBytes(StandardCharsets.UTF_8));
+
+        java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+        state.put("UIState.data", new File(dir.toFile(), "UIState.data"));
+        state.put("LocDB.data", new File(dir.toFile(), "LocDB.data"));
+        state.put("config", config);
+
+        // and one that is not there, which is ordinary - a layout held on the Central Station has no
+        // local config, and a first run has no UI state
+        state.put("NotThere.data", new File(dir.toFile(), "NotThere.data"));
+
+        File zip = new File(dir.toFile(), "backup.zip");
+
+        List<String> failed = org.traincontrol.util.Util.zipInto(zip, state);
+
+        assertEquals(failed, new java.util.ArrayList<String>(),
+            "the archive reported failures: " + failed);
+
+        assertTrue(zip.isFile() && zip.length() > 0, "no archive was written");
+
+        java.util.Set<String> entries = new java.util.LinkedHashSet<>();
+
+        try (java.util.zip.ZipFile read = new java.util.zip.ZipFile(zip))
+        {
+            java.util.Enumeration<? extends java.util.zip.ZipEntry> all = read.entries();
+
+            while (all.hasMoreElements()) entries.add(all.nextElement().getName());
+        }
+
+        assertTrue(entries.contains("UIState.data"), "the UI state is not in the backup: " + entries);
+        assertTrue(entries.contains("LocDB.data"),
+            "the locomotive database is not in the backup: " + entries);
+        assertTrue(entries.contains("config/gleisbild.cs2"),
+            "the page index is not in the backup - without it the autonomy setup's page ids mean "
+            + "nothing, which is the whole reason this is one archive: " + entries);
+        assertTrue(entries.contains("config/gleisbilder/1 - Main.cs2"),
+            "the track diagram pages are not in the backup: " + entries);
+        assertTrue(entries.contains("config/autonomy/setup.json"),
+            "the autonomy setup is not in the backup: " + entries);
+        assertTrue(entries.contains("config/autonomy/configuration-Only.json"),
+            "the configurations are not in the backup: " + entries);
+
+        assertFalse(entries.contains("NotThere.data"),
+            "a source that does not exist was added as an empty entry rather than skipped");
+    }
 }

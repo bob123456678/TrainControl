@@ -88,6 +88,95 @@ public class Util
     }
 
     /**
+     * Writes a set of files and folders into one zip.
+     *
+     * FR-015, Adam: "the backup menu option should export a zip file with the locdb and uistate files,
+     * track diagram files, and autonomy files - effectively, all state."
+     *
+     * The argument for one archive rather than a folder of copies is the 23 August restore. The
+     * autonomy setup is keyed by PAGE ID, and those ids are defined by `config/gleisbild.cs2` - so
+     * `setup.json` on its own means nothing, and a `gleisbild.cs2` from a different day silently
+     * reattaches every station to the wrong page. The pieces are only a backup together, and an
+     * archive is the only form that cannot be half-copied, half-restored, or separated on the way to
+     * wherever the user keeps it.
+     *
+     * A source that does not exist is skipped rather than failing the whole archive: a layout held on
+     * the Central Station has no local config folder, and a first run has no UI state yet. Neither is
+     * an error, and neither should cost the user the rest of their backup.
+     *
+     * @param zip where to write
+     * @param sources entry name inside the archive -> file or folder on disk
+     * @return what could not be added, empty when everything was
+     */
+    public static List<String> zipInto(File zip, java.util.Map<String, File> sources)
+    {
+        List<String> failed = new ArrayList<>();
+
+        if (zip == null || sources == null) return failed;
+
+        File parent = zip.getAbsoluteFile().getParentFile();
+
+        if (parent != null) parent.mkdirs();
+
+        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
+            new java.io.BufferedOutputStream(new java.io.FileOutputStream(zip))))
+        {
+            for (java.util.Map.Entry<String, File> source : sources.entrySet())
+            {
+                if (source.getValue() == null || !source.getValue().exists()) continue;
+
+                addToZip(out, source.getValue(), source.getKey(), failed, 0);
+            }
+        }
+        catch (IOException | RuntimeException e)
+        {
+            failed.add(zip.getName() + ": " + e);
+        }
+
+        return failed;
+    }
+
+    /**
+     * One file, or one folder and everything under it.
+     *
+     * @param depth guards against a symlink loop, the same way copyInto does
+     */
+    private static void addToZip(java.util.zip.ZipOutputStream out, File source, String name,
+        List<String> failed, int depth)
+    {
+        if (depth > 32) return;
+
+        try
+        {
+            if (source.isDirectory())
+            {
+                File[] children = source.listFiles();
+
+                if (children == null) return;
+
+                for (File child : children)
+                {
+                    addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
+                }
+
+                return;
+            }
+
+            out.putNextEntry(new java.util.zip.ZipEntry(name));
+
+            java.nio.file.Files.copy(source.toPath(), out);
+
+            out.closeEntry();
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // Named individually, so "some files could not be copied" can say which - a file held open
+            // by a sync client is the everyday case here and the user can act on it.
+            failed.add(name + ": " + e);
+        }
+    }
+
+    /**
      * Copies a folder and everything under it into the backup area.
      *
      * Added because the backup did not cover the track diagrams or the autonomy setup - it saved the

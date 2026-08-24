@@ -15723,6 +15723,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // only copy of them anywhere.
             List<String> unsaved = new java.util.ArrayList<>();
 
+            File backupArchive = null;
+
+            // Read from the reporting lambda below, which needs it effectively final
+            final File[] made = new File[1];
+
             this.backupDataMenuItem.setEnabled(false);
 
             // Given back whatever happens.  It is switched off so a second backup cannot start while
@@ -15731,16 +15736,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // back up again is to restart the application, and the user is not told why.
             try
             {
-                this.saveState(true);
-                this.model.saveState(true);
+                // Written LIVE first, so the archive holds the state as it is now rather than as it
+                // was when something last happened to save it. This is the same write the application
+                // does on the way out, so there is nothing novel about doing it here.
+                this.saveState(false);
+                this.model.saveState(false);
+
+                // One archive, holding all of it (FR-015).
+                //
+                // Adam: "the backup menu option should export a zip file with the locdb and uistate
+                // files, track diagram files, and autonomy files - effectively, all state."
+                //
+                // The argument for one archive rather than a folder of copies is the 23 August
+                // restore: the autonomy setup is keyed by PAGE ID, and those ids are defined by
+                // config/gleisbild.cs2 - so setup.json alone means nothing, and a gleisbild.cs2 from a
+                // different day silently reattaches every station to the wrong page. These files are
+                // only a backup together.
+                java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+                state.put(TrainControlUI.DATA_FILE_NAME, new File(TrainControlUI.DATA_FILE_NAME));
+                state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
+                    new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
 
                 String localLayout = getLocalLayoutPath();
 
                 if (localLayout != null && !localLayout.isEmpty())
                 {
-                    unsaved.addAll(Util.backupFolder(new File(localLayout, "config"),
-                        prefixForBackup() + "layout"));
+                    // The whole folder: the pages, the index that gives them their ids, and the
+                    // autonomy setup and configurations beside them.
+                    state.put("config", new File(localLayout, "config"));
                 }
+
+                backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
+
+                unsaved.addAll(Util.zipInto(backupArchive, state));
+
+                made[0] = backupArchive;
             }
             catch (RuntimeException | StackOverflowError e)
             {
@@ -15761,11 +15792,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
+                // The ARCHIVE, not the folder it sits in: the user is being told where their backup
+                // is, and after FR-015 that is one file they can copy somewhere else.
+                final String where = made[0] != null && made[0].isFile()
+                    ? made[0].getAbsolutePath() : backupFolder;
+
                 JOptionPane.showMessageDialog(
                     this,
                     unsaved.isEmpty()
-                        ? I18n.f("ui.infoBackupCompleteSavedTo", backupFolder)
-                        : I18n.f("ui.warnBackupIncomplete", backupFolder,
+                        ? I18n.f("ui.infoBackupCompleteSavedTo", where)
+                        : I18n.f("ui.warnBackupIncomplete", where,
                             String.join(", ", unsaved))
                 );
 
