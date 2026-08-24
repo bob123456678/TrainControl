@@ -187,6 +187,90 @@ public class AutonomyCompanionStore
     private final Map<String, List<String>> stationSignals = new LinkedHashMap<>();
 
     /**
+     * Squares whose occupancy makes a station unavailable to autonomy (FR-001).
+     *
+     * Station square to the squares being watched, the same shape as the signals above and kept for the
+     * same reason: a station may be held back by more than one place, and each of them is a SQUARE
+     * here, resolved to a Point name only when the configuration is built.
+     */
+    private final Map<String, List<String>> blockedPoints = new LinkedHashMap<>();
+
+    /**
+     * @param station the station's square
+     * @return the squares that make it unavailable while occupied, in the order they were added
+     */
+    public List<TileKey> getBlockingPoints(TileKey station)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        if (station == null) return out;
+
+        List<String> keys = blockedPoints.get(station.toString());
+
+        if (keys == null) return out;
+
+        for (String key : keys)
+        {
+            TileKey blocker = parseTileKey(key);
+
+            if (blocker != null) out.add(blocker);
+        }
+
+        return out;
+    }
+
+    /**
+     * Replaces the squares that hold a station back.
+     *
+     * @param station the station's square
+     * @param blockers the squares to watch; empty or null clears the restriction
+     */
+    public void setBlockingPoints(TileKey station, List<TileKey> blockers)
+    {
+        if (station == null) return;
+
+        List<String> keys = new ArrayList<>();
+
+        if (blockers != null)
+        {
+            for (TileKey blocker : blockers)
+            {
+                // De-duplicated here rather than in the picker, and never the station itself: standing
+                // at a station already decides whether it is free, so watching it from itself makes a
+                // station nothing can be sent to rather than one that is restricted.
+                if (blocker != null && !blocker.equals(station) && !keys.contains(blocker.toString()))
+                {
+                    keys.add(blocker.toString());
+                }
+            }
+        }
+
+        if (keys.isEmpty()) blockedPoints.remove(station.toString());
+        else blockedPoints.put(station.toString(), keys);
+    }
+
+    /**
+     * @return every station held back by something, against the squares watched for it
+     */
+    public Map<TileKey, List<TileKey>> getBlockingPoints()
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (String key : blockedPoints.keySet())
+        {
+            TileKey station = parseTileKey(key);
+
+            if (station == null) continue;
+
+            List<TileKey> blockers = getBlockingPoints(station);
+
+            if (!blockers.isEmpty()) out.put(station, blockers);
+        }
+
+        return out;
+    }
+
+    /**
      * @param station the station's square
      * @return the square of the first signal protecting it, or null
      */
@@ -938,6 +1022,7 @@ public class AutonomyCompanionStore
         root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
         root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
         root.put("stationSignals", new JSONObject(translateTileListMap(stationSignals)));
+        root.put("blockedPoints", new JSONObject(translateTileListMap(blockedPoints)));
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
@@ -1226,6 +1311,7 @@ public class AutonomyCompanionStore
         tileDirections.clear();
         barredArrivals.clear();
         stationSignals.clear();
+        blockedPoints.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();
@@ -1506,6 +1592,8 @@ public class AutonomyCompanionStore
         // signal's, and a rename moves both.
         rekeyListValues(stationSignals, from, to);
         rekey(stationSignals, from, to);
+        rekeyListValues(blockedPoints, from, to);
+        rekey(blockedPoints, from, to);
         rekeyValues(portals, from, to);
         rekey(portals, from, to);
         rekey(linkNames, from, to);
@@ -1698,6 +1786,8 @@ public class AutonomyCompanionStore
         // station.
         moveListValues(stationSignals, byKey);
         moveKeys(stationSignals, byKey);
+        moveListValues(blockedPoints, byKey);
+        moveKeys(blockedPoints, byKey);
 
         moveValues(portals, byKey);
         moveKeys(portals, byKey);
@@ -1768,6 +1858,7 @@ public class AutonomyCompanionStore
         // in place - so deleting the signal's square emptied the snapshot's list too and undo restored
         // the deletion.
         out.put("stationSignals", copyLists(onPage(stationSignals, page)));
+        out.put("blockedPoints", copyLists(onPage(blockedPoints, page)));
         out.put("portals", onPage(portals, page));
         out.put("captions", onPage(captions, page));
 
@@ -1828,6 +1919,7 @@ public class AutonomyCompanionStore
         putBack(barredArrivals, page, (Map<String, String>) snapshot.get("barredArrivals"));
         putBack(linkNames, page, (Map<String, String>) snapshot.get("linkNames"));
         putBack(stationSignals, page, copyLists((Map<String, List<String>>) snapshot.get("stationSignals")));
+        putBack(blockedPoints, page, copyLists((Map<String, List<String>>) snapshot.get("blockedPoints")));
         putBack(portals, page, (Map<String, String>) snapshot.get("portals"));
         putBack(captions, page, (Map<String, String>) snapshot.get("captions"));
 
@@ -2014,6 +2106,7 @@ public class AutonomyCompanionStore
             barredArrivals.remove(key);
             linkNames.remove(key);
             stationSignals.remove(key);
+            blockedPoints.remove(key);
             portals.remove(key);
 
             String names = captions.get(key);
@@ -2062,6 +2155,18 @@ public class AutonomyCompanionStore
 
         for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
             = stationSignals.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<String, List<String>> pair = pairs.next();
+
+            pair.getValue().removeAll(squares);
+
+            if (pair.getValue().isEmpty()) pairs.remove();
+        }
+
+        // The same for the squares a station is held back by: a restriction naming track that has been
+        // built over is one nothing can satisfy or clear.
+        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+            = blockedPoints.entrySet().iterator(); pairs.hasNext();)
         {
             Map.Entry<String, List<String>> pair = pairs.next();
 
@@ -2293,6 +2398,7 @@ public class AutonomyCompanionStore
         // That is the defect the linkNames drop below was written for, applied to the one collection
         // that commands real hardware: autonomy would start throwing an accessory nobody paired.
         report.droppedTileProperties.addAll(dropMissing(stationSignals, keys, false));
+        report.droppedTileProperties.addAll(dropMissing(blockedPoints, keys, false));
 
         for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
             = stationSignals.entrySet().iterator(); pairs.hasNext();)
@@ -2307,6 +2413,26 @@ public class AutonomyCompanionStore
             {
                 if (keys.contains(signal)) kept.add(signal);
                 else report.droppedTileProperties.add("protecting signal at " + signal);
+            }
+
+            if (kept.isEmpty()) pairs.remove();
+            else pair.setValue(kept);
+        }
+
+        // And the squares a station is held back by, on the same rule and for the same reason: a
+        // restriction watching a square that no longer exists cannot be satisfied, and would be
+        // INHERITED by whatever is drawn there next.
+        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+            = blockedPoints.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<String, List<String>> pair = pairs.next();
+
+            List<String> kept = new ArrayList<>();
+
+            for (String blocker : pair.getValue())
+            {
+                if (keys.contains(blocker)) kept.add(blocker);
+                else report.droppedTileProperties.add("restriction watching " + blocker);
             }
 
             if (kept.isEmpty()) pairs.remove();
@@ -2517,7 +2643,7 @@ public class AutonomyCompanionStore
      */
     private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
         "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "barredArrivals", "stationSignals",
+        "barredArrivals", "stationSignals", "blockedPoints",
         "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
 
 
@@ -2541,6 +2667,7 @@ public class AutonomyCompanionStore
         readStringMap(root, "tileDirections", tileDirections);
         readStringMap(root, "barredArrivals", barredArrivals);
         readStringListMap(root, "stationSignals", stationSignals);
+        readStringListMap(root, "blockedPoints", blockedPoints);
         readStringMap(root, "portals", portals);
         readStringMap(root, "captions", captions);
         readStringMap(root, "linkNames", linkNames);
@@ -2564,6 +2691,7 @@ public class AutonomyCompanionStore
         untranslate(tileDirections);
         untranslate(barredArrivals);
         untranslateTileListMap(stationSignals);
+        untranslateTileListMap(blockedPoints);
         untranslate(linkNames);
         untranslatePortals();
         untranslateTileMap(captions);
@@ -2613,6 +2741,7 @@ public class AutonomyCompanionStore
         // since the last save survived a discard, and the next save wrote it to disk.  A signal
         // somebody had cancelled was then thrown on real hardware.
         stationSignals.clear();
+        blockedPoints.clear();
         portals.clear();
         captions.clear();
         linkNames.clear();

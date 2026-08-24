@@ -147,15 +147,6 @@ in the editor, make the gray grid an option you can toggle in the visibile eleme
 
 it should be possible to initially load autonomy from an import, not just forcing the creation of a new one.
 
-### FR-008 - 2026-08-22 - Cancel -
-
-**Kind:** feature request  
-**Raised from:** cancellation request for - - Highlight on Diagram button in the route editor, and rename Test to Test Condition  
-**Filed:** 2026-08-22 23:21  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 22:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-This was completed, clean up the disposition and give this a proper FR- index for the record.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -168,6 +159,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-22 | FR-008 | feature request | Route editor: Highlight on Diagram dropped, Test renamed Test Condition | fixed validated | - |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |

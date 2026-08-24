@@ -196,10 +196,28 @@ public class AutonomyMenu extends JMenu
 
         String running = ui.getActiveDiagramConfiguration();
 
-        // Nothing set up yet: one thing to do, and no submenus of things that would all be empty.
+        // Nothing set up yet: no submenus of things that would all be empty - but two ways to get
+        // started, not one.
+        //
+        // FR-007: "it should be possible to initially load autonomy from an import, not just forcing
+        // the creation of a new one."  Import used to live only in the branch below, so the first
+        // thing this menu asked of somebody who already HAD a setup - from another machine, from a
+        // colleague running the same layout, or from a backup of their own - was to build a new one
+        // from scratch and then find the import afterwards.
         if (names.isEmpty())
         {
             add(addConfigurationItem(actions));
+
+            add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    actions.importConfiguration();
+
+                    ui.autonomyMenuActed();
+                }
+            }));
         }
         else
         {

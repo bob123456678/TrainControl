@@ -58,6 +58,7 @@ public class testStoreCollectionsAreHandledEverywhere
      */
     private static final Set<String> KEPT = new LinkedHashSet<>(java.util.Arrays.asList(
         "pointNames", "stations", "tileLengths", "tileDirections", "barredArrivals", "portals",
+        "blockedPoints",
         "stationSignals", "captions", "linkNames", "excludedPages", "disabledPortals"));
 
     /**
@@ -118,7 +119,7 @@ public class testStoreCollectionsAreHandledEverywhere
         // and no use for. This is the one site where "handled everywhere" is the wrong rule, so it is
         // written down once, here, rather than argued about each time somebody reads that method.
         for (String notTrack : new String[] {"pointNames", "stations", "tileLengths", "barredArrivals",
-            "stationSignals", "captions", "linkNames", "excludedPages"})
+            "stationSignals", "captions", "linkNames", "excludedPages", "blockedPoints"})
         {
             EXEMPT.put("applyTo:" + notTrack, "applyTo populates the tile GRAPH, which models track - "
                 + "pairings, switched-off links and directions. This is not a property of track");
@@ -184,7 +185,7 @@ public class testStoreCollectionsAreHandledEverywhere
         }
 
         assertEquals(missing, new ArrayList<String>(),
-            "a collection the store keeps is not handled at one of its bookkeeping sites. Each of "
+            missing + ": a collection the store keeps is not handled at one of its bookkeeping sites. Each of "
             + "these is the shape that produced the disabledPortals defects - a setting that survives "
             + "a rename, a move, a delete or a discard because one site of " + SITES.length + " never "
             + "heard of it. Handle it, or add a line to EXEMPT saying why it does not apply");

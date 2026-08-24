@@ -464,6 +464,8 @@ public class LayoutEditor extends PositionAwareJFrame
         
         // Mirror address preference
         this.showAddressCheckbox.setSelected(l.getShowAddress());
+
+        mountGridToggle();
         
         this.setFocusable(true);
         this.requestFocusInWindow();
@@ -3117,13 +3119,122 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public static Border restingBorder(boolean palette, boolean autonomy)
     {
+        return restingBorder(palette, autonomy, showGrid());
+    }
+
+    /**
+     * What a square's border looks like when nothing is hovering it.
+     *
+     * @param palette a tile in the toolbox rather than on the diagram, which keeps its thicker line
+     * @param autonomy unused now that the grid is a choice - kept so the two-argument form still reads
+     *        the same at its call sites
+     * @param grid whether the grey grid is being drawn
+     * @return the border, never null
+     */
+    public static Border restingBorder(boolean palette, boolean autonomy, boolean grid)
+    {
         if (palette)
         {
             return BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR,
                 NEW_COMPONENT_BORDER_WIDTH);
         }
 
-        return autonomy ? null : BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, 1);
+        // An EMPTY border of the same width, never null.
+        //
+        // A border occupies space, so a square with none is one pixel smaller in each direction than
+        // its neighbours with one - and hovering it, which puts a coloured line on, made it grow.  With
+        // the grid off that happened on every square the pointer crossed, so the whole diagram shifted
+        // under it (FR-006).  Autonomy mode has had the grid off since it was written and this is
+        // exactly what it did.
+        return grid
+            ? BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH)
+            : BorderFactory.createEmptyBorder(COMPONENT_BORDER_WIDTH, COMPONENT_BORDER_WIDTH,
+                COMPONENT_BORDER_WIDTH, COMPONENT_BORDER_WIDTH);
+    }
+
+    /**
+     * Puts the grid switch into the window's own Toggle Visibility group.
+     *
+     * FR-006: "make the gray grid an option you can toggle in the visible elements.  on by default,
+     * but persisted if turned off."
+     *
+     * By REPLACING the Text Labels box with a small column holding both, which is the trick the
+     * autonomy sidebar already uses one control along: a GroupLayout cannot have a component added to
+     * it after the fact, but it can swap one for another - so this lands where it belongs without
+     * touching the generated form, which must not be edited by hand.
+     *
+     * Text Labels rather than Addresses, because Addresses is the one autonomy mode swaps for a column
+     * of its own; two replacements of one component would fight.
+     */
+    private void mountGridToggle()
+    {
+        if (!(formPane.getLayout() instanceof javax.swing.GroupLayout)) return;
+
+        showGridCheckbox = new javax.swing.JCheckBox(I18n.t("layout.ui.grid"), showGrid());
+
+        showGridCheckbox.setFont(this.showTextCheckbox.getFont());
+        showGridCheckbox.setFocusable(false);
+        showGridCheckbox.setOpaque(false);
+        showGridCheckbox.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipGrid")));
+
+        showGridCheckbox.addActionListener(new java.awt.event.ActionListener()
+        {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e)
+            {
+                setShowGrid(showGridCheckbox.isSelected());
+            }
+        });
+
+        javax.swing.JPanel column = new javax.swing.JPanel();
+
+        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+        column.setOpaque(false);
+
+        ((javax.swing.GroupLayout) formPane.getLayout()).replace(this.showTextCheckbox, column);
+
+        this.showTextCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        showGridCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        column.add(this.showTextCheckbox);
+        column.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+        column.add(showGridCheckbox);
+    }
+
+    private javax.swing.JCheckBox showGridCheckbox;
+
+    /**
+     * Whether the editor draws its grey grid.
+     *
+     * On by default and remembered when turned off (FR-006).  Static because the border is: the label
+     * that asks has no editor to ask, and the answer is a property of the application rather than of
+     * one window.
+     *
+     * @return true when the grid should be drawn
+     */
+    public static boolean showGrid()
+    {
+        return TrainControlUI.getPrefs() == null
+            || TrainControlUI.getPrefs().getBoolean(TrainControlUI.EDITOR_GRID_PREF, true);
+    }
+
+    /**
+     * Remembers the choice and redraws every square to it.
+     *
+     * @param show whether to draw the grid
+     */
+    public void setShowGrid(boolean show)
+    {
+        if (TrainControlUI.getPrefs() != null)
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, show);
+        }
+
+        // The borders as they stand are the old answer, so they are all put back.  Both panels: the
+        // palette keeps its own thicker line either way, and asking it costs nothing.
+        clearBordersFromChildren(this.newComponents);
+
+        if (this.grid != null) clearBordersFromChildren(this.grid.getContainer());
     }
 
     private void highlightLabel(JLabel label, Color color)
@@ -3143,13 +3254,17 @@ public class LayoutEditor extends PositionAwareJFrame
                 if (component instanceof JLabel)
                 {
                     JLabel label = (JLabel) component;
-                    
-                    // Don't reset components without a border, because they might be something else...
+
+                    // Every TILE, asked of what it is rather than of whether it currently has a
+                    // border.
                     //
-                    // Except in autonomy mode, where the resting border IS null: a label already put
-                    // back to nothing must not be skipped on the way to being given a highlight and
-                    // back again, or the first hover would leave a line behind for good.
-                    if (label.getBorder() != null || isAutonomyMode())
+                    // This used to be "has a border, or we are in autonomy mode" - because the resting
+                    // border was null in autonomy mode, and a label already put back to nothing had to
+                    // not be skipped on the way to a highlight and back, or the first hover left a line
+                    // behind for good. The resting border is never null now (FR-006: a missing border
+                    // is missing SPACE, so hovering grew the square), which would have made that
+                    // condition quietly mean something else - "any label that has ever been touched".
+                    if (label instanceof LayoutLabel)
                     {
                         label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));
                     }

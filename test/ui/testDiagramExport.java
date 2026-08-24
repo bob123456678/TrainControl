@@ -1,6 +1,8 @@
 package ui;
 
 import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.image.BufferedImage;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
@@ -315,5 +317,79 @@ public class testDiagramExport
             + "(MT-134, NR-3)");
     }
 
+    /**
+     * A dozen editors opened and closed leave nothing behind.
+     *
+     * FR-012: "open and close the aditor a dozen times on a big layout and watch memory.  nothing to
+     * see if this is right."
+     *
+     * Watching memory is what a person does; it is not what a test should assert, because a heap
+     * measurement is noise - a garbage collector is under no obligation to have run, the JIT allocates
+     * on its own account, and a threshold loose enough never to fail spuriously is loose enough to miss
+     * a page or two of retained diagram. The property underneath is exact and can be asked for
+     * directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable from nothing.
+     *
+     * That is the same question `testAReplacedGridIsNotRetained` above asks once. Asking it twelve
+     * times over is not redundant: the leak it found retained one page per cycle, so a single
+     * replacement is the case most likely to be fixed by accident, and a dozen is what Adam actually
+     * does with the editor.
+     *
+     * The collection is asked for in a bounded loop rather than demanded on the first `gc()`, for the
+     * reason given above: a collector is entitled to take its time.
+     */
+    @Test
+    public void testADozenEditorCyclesRetainNothing() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
 
+        assertNotNull(page, "no page to draw");
+
+        final javax.swing.JPanel panel = new javax.swing.JPanel();
+
+        List<java.lang.ref.WeakReference<org.traincontrol.gui.LayoutGrid>> built = new ArrayList<>();
+
+        final org.traincontrol.gui.LayoutGrid[] latest = new org.traincontrol.gui.LayoutGrid[1];
+
+        for (int cycle = 0; cycle < 12; cycle++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                panel.removeAll();
+
+                latest[0] = new org.traincontrol.gui.LayoutGrid(page, 30, panel, null, true, ui);
+            });
+
+            built.add(new java.lang.ref.WeakReference<>(latest[0]));
+        }
+
+        // Everything but the one currently on the panel, which is alive on purpose
+        java.lang.ref.WeakReference<org.traincontrol.gui.LayoutGrid> current =
+            built.get(built.size() - 1);
+
+        latest[0] = null;
+
+        int alive = built.size();
+
+        for (int attempt = 0; attempt < 40 && alive > 1; attempt++)
+        {
+            System.gc();
+
+            Thread.sleep(50);
+
+            alive = 0;
+
+            for (java.lang.ref.WeakReference<org.traincontrol.gui.LayoutGrid> was : built)
+            {
+                if (was.get() != null) alive++;
+            }
+        }
+
+        assertNotNull(current.get(),
+            "the grid still on the panel was collected, so this test is measuring the wrong thing");
+
+        assertEquals(alive, 1,
+            alive + " of twelve grids are still reachable after being replaced. Each one holds a page "
+            + "of tiles, their icons and their listeners, so this is a page of diagram retained per "
+            + "editor opened - the shape of leak nobody notices until the day they do (FR-012)");
+    }
 }

@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.traincontrol.gui.LayoutEditor;
 
 /**
  * Three rules about the editor's surface, each of which was a defect Adam reported and each of which
@@ -366,5 +367,63 @@ public class testEditorSurfaceRules
             "the rebuild-from-setup load appears " + found + " times. It was extracted into "
             + "rebuildRunningLayoutFromSetup precisely so there would be one of it, and the last time "
             + "there were two, a fix went into one of them and left the other wrong (TD-9)");
+    }
+
+    /**
+     * Turning the grid off moves nothing, and hovering moves nothing either.
+     *
+     * FR-006: "make the gray grid an option you can toggle in the visible elements.  on by default, but
+     * persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths
+     * when it is off."
+     *
+     * The second half is the one with teeth, and it was already broken in autonomy mode, which has had
+     * the grid off since it was written: the resting border there was NULL. A border occupies space, so
+     * a square with none is a pixel smaller in each direction than one with a line - and putting a
+     * coloured line on it to show the pointer is over it made it grow, which pushes every square after
+     * it along. Off, the resting border is an EMPTY border of the same width instead.
+     *
+     * So the property is: all three borders a square can be wearing - grid on, grid off, hovered - take
+     * up exactly the same room. Asked of the insets rather than of the picture, because insets are what
+     * the layout manager reads.
+     *
+     * The three-argument form is used deliberately: the two-argument one asks the stored preference,
+     * and a test that reads the operator's settings is a test whose answer depends on their settings.
+     */
+    @Test
+    public void testTheGridTakesUpTheSameRoomOnAsOff()
+    {
+        javax.swing.JLabel square = new javax.swing.JLabel();
+
+        java.awt.Insets on = LayoutEditor.restingBorder(false, false, true).getBorderInsets(square);
+        java.awt.Insets off = LayoutEditor.restingBorder(false, false, false).getBorderInsets(square);
+
+        assertEquals(off.top, on.top, "a square without the grid is a different height from one with it");
+        assertEquals(off.left, on.left, "a square without the grid is a different width from one with it");
+        assertEquals(off.bottom, on.bottom);
+        assertEquals(off.right, on.right);
+
+        assertTrue(on.left > 0, "the grid border takes up no room, so nothing below tests anything");
+    }
+
+    /**
+     * And the hover outline is the same size as both, which is what stops the diagram shifting.
+     */
+    @Test
+    public void testHoveringDoesNotResizeASquare()
+    {
+        javax.swing.JLabel square = new javax.swing.JLabel();
+
+        // What highlightLabel puts on a square of the DIAGRAM - the palette keeps its thicker line
+        java.awt.Insets hovered = javax.swing.BorderFactory
+            .createLineBorder(java.awt.Color.BLUE, 1).getBorderInsets(square);
+
+        java.awt.Insets off = LayoutEditor.restingBorder(false, false, false).getBorderInsets(square);
+
+        assertEquals(hovered.left, off.left,
+            "hovering a square changes its width while the grid is off, so the pointer pushes the "
+            + "diagram along in front of it (FR-006)");
+
+        assertEquals(hovered.top, off.top,
+            "hovering a square changes its height while the grid is off");
     }
 }

@@ -2315,6 +2315,159 @@ public class AutonomyEditorPanel extends JPanel
             ? (String) stored : null;
     }
 
+    /**
+     * Asks for one locomotive from a list, with a box to narrow it down.
+     *
+     * FR-010 and FR-011. Both places that ask this question used `JOptionPane.showInputDialog` with a
+     * combo box, which is fine for six locomotives and useless for sixty: the only way to a name is to
+     * scroll to it. A line of text that filters the list is the whole feature.
+     *
+     * ONE component for both, which is what FR-011 asks for - "if it makes sense, reuse the same
+     * component as home locomotives while disabling its use current button". It made sense: the two
+     * questions differ only in whether "the locomotive I am driving" is a sensible answer. For a HOME
+     * it is - that is the common case, assigning the loco in your hand to the station in front of you.
+     * For adding to autonomy the current locomotive is usually already in it, so the button is left
+     * out rather than offered and refused.
+     *
+     * Hand-written rather than a form, and a dialog rather than a window: this is a question, and the
+     * project's rule is that new UI is built as panels inside what already exists.
+     *
+     * @param owner what to centre the dialog on
+     * @param title the dialog's title
+     * @param prompt the question
+     * @param names what may be chosen, in the order they should appear
+     * @param current the one to start selected, or null
+     * @param useCurrent the name behind a "use current" button, or null for no such button
+     * @return the chosen name, or null if the dialog was cancelled
+     */
+    static String pickLocomotive(java.awt.Component owner, String title, String prompt,
+        List<String> names, String current, final String useCurrent)
+    {
+        final javax.swing.DefaultListModel<String> shown = new javax.swing.DefaultListModel<>();
+
+        for (String name : names) shown.addElement(name);
+
+        final javax.swing.JList<String> list = new javax.swing.JList<>(shown);
+
+        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        list.setVisibleRowCount(12);
+        list.setSelectedValue(current == null ? (names.isEmpty() ? null : names.get(0)) : current, true);
+
+        final javax.swing.JTextField filter = new javax.swing.JTextField();
+
+        filter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterLocomotives")));
+
+        // Re-filtered on every keystroke, against the names as they were handed in - so deleting a
+        // character brings entries back rather than filtering what is left of a previous filter.
+        final List<String> all = new java.util.ArrayList<>(names);
+
+        filter.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
+        {
+            private void refilter()
+            {
+                String was = list.getSelectedValue();
+                String wanted = filter.getText().trim().toLowerCase();
+
+                shown.clear();
+
+                for (String name : all)
+                {
+                    if (wanted.isEmpty() || name.toLowerCase().contains(wanted)) shown.addElement(name);
+                }
+
+                // Keep the selection where it still exists, so typing does not silently move the
+                // answer; otherwise select the first match, so Enter means the obvious thing.
+                if (was != null && shown.contains(was)) list.setSelectedValue(was, true);
+                else if (!shown.isEmpty()) list.setSelectedIndex(0);
+            }
+
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+        });
+
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+
+        JPanel top = new JPanel(new java.awt.BorderLayout(0, 4));
+
+        top.add(new javax.swing.JLabel(prompt), java.awt.BorderLayout.NORTH);
+        top.add(filter, java.awt.BorderLayout.CENTER);
+
+        panel.add(top, java.awt.BorderLayout.NORTH);
+        panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+
+        // The dialog is built by hand rather than through showInputDialog, because "use current" is a
+        // third answer and showInputDialog offers exactly two.
+        final javax.swing.JOptionPane pane = new javax.swing.JOptionPane(panel,
+            JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+
+        final String[] answer = new String[1];
+
+        if (useCurrent != null && names.contains(useCurrent))
+        {
+            javax.swing.JButton pick =
+                new javax.swing.JButton(I18n.f("autosetup.ui.btnUseCurrentLocomotive", useCurrent));
+
+            pick.addActionListener(new java.awt.event.ActionListener()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    answer[0] = useCurrent;
+
+                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+                }
+            });
+
+            JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+
+            row.add(pick);
+
+            panel.add(row, java.awt.BorderLayout.SOUTH);
+        }
+
+        // Double-clicking a name is the same as choosing it and pressing OK, which is what a list
+        // invites and what a combo box could not offer.
+        list.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                if (e.getClickCount() == 2 && list.getSelectedValue() != null)
+                {
+                    answer[0] = list.getSelectedValue();
+
+                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+                }
+            }
+        });
+
+        javax.swing.JDialog dialog = pane.createDialog(owner, title);
+
+        // The filter has the caret, because typing is what this dialog is for
+        dialog.addWindowListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowOpened(java.awt.event.WindowEvent e) { filter.requestFocusInWindow(); }
+        });
+
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        if (answer[0] != null) return answer[0];
+
+        Object chose = pane.getValue();
+
+        if (!(chose instanceof Integer) || (Integer) chose != JOptionPane.OK_OPTION) return null;
+
+        return list.getSelectedValue();
+    }
+
     private void promptHome(TileKey tile)
     {
         String current = homeOf(tile);
@@ -2327,14 +2480,21 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        Object chosen = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptHomeFor"), I18n.t("autosetup.ui.menuHomeNone"),
-            JOptionPane.PLAIN_MESSAGE, null, names.toArray(),
-            current == null ? names.get(0) : current);
+        // FR-010: filterable, and offering the locomotive being driven.
+        //
+        // "Use current" is the common gesture this dialog exists for - the locomotive in your hand,
+        // the station in front of you - and it is only offered when that locomotive is actually one of
+        // the choices, so the button can never be a way to pick something the list refuses.
+        String driving = parentWindow() == null || parentWindow().getActiveLoc() == null
+            ? null : parentWindow().getActiveLoc().getName();
+
+        String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuHomeNone"),
+            I18n.t("autosetup.ui.promptHomeFor"), names,
+            current == null ? names.get(0) : current, driving);
 
         if (chosen == null) return;
 
-        String picked = names.get(0).equals(chosen) ? null : String.valueOf(chosen);
+        String picked = names.get(0).equals(chosen) ? null : chosen;
 
         // And a home this locomotive cannot actually rest at is worth saying out loud (OB-022).
         //
@@ -2632,14 +2792,17 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        Object chosen = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptAddToAutonomy"),
-            I18n.t("autosetup.ui.menuAddToAutonomy"),
-            JOptionPane.PLAIN_MESSAGE, null, names.toArray(), names.get(0));
+        // FR-011: the same picker, filterable, without the "use current" button.
+        //
+        // Left out rather than shown and refused: this list is the locomotives autonomy does NOT
+        // already have, so the one being driven is usually not in it, and a button that is absent
+        // most of the time it is looked for is worse than no button.
+        String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuAddToAutonomy"),
+            I18n.t("autosetup.ui.promptAddToAutonomy"), names, names.get(0), null);
 
         if (chosen == null) return;
 
-        String name = unmark(String.valueOf(chosen), placed);
+        String name = unmark(chosen, placed);
 
         if (name == null) return;
 

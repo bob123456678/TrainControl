@@ -197,6 +197,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Which of the two editors was opened last, so that the Edit button does not have to ask */
     public static final String LAST_EDITOR_AUTONOMY_PREF = "LastEditorWasAutonomy";
 
+    /** Whether the editor draws its grey grid.  On unless somebody has turned it off (FR-006). */
+    public static final String EDITOR_GRID_PREF = "EditorGrid";
+
     public static final String PATH_PREFERENCE_PREF = "AutonomyPathPreference";
     public static final String ROUTE_SORT_PREF = "RouteSorting";
     public static final String ONTOP_SETTING_PREF = "OnTop" + Conversion.getFolderHash(10);
@@ -968,20 +971,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Called from LayoutGrid.discard, which is the one moment something knows a grid is finished with.
      *
-     * @param owner the panel the grid was built into
+     * **Exactly the labels that grid built**, not everything registered against its panel. The main
+     * window uses ONE panel for every page, so forgetting by panel forgets the captions of every page
+     * there is - and a page brought back from the grid cache builds no grid and registers nothing, so
+     * its captions would be blank for the rest of the session. That is the failure the repaint code
+     * warns about where it stopped pruning wholesale, reached by a different door.
+     *
+     * **And only when the grid is really finished with.** A retired grid whose container sits in the
+     * page cache is not: switching back to that page re-attaches the container and builds nothing, so
+     * nothing registers those captions again and they would be blank for the rest of the session. That
+     * is the failure the repaint code warns about where it stopped pruning wholesale - "their grids are
+     * detached while another page shows, and detached is not dead" - and dropping labels here reached it
+     * by another door. The cache is this window's, so this is the only place that can tell.
+     *
+     * @param labels the caption labels the retired grid registered
+     * @param container the panel that grid built, or null if it never got that far
      */
-    public void forgetLayoutStations(java.awt.Container owner)
+    public void forgetLayoutStations(java.util.Collection<JLabel> labels, java.awt.Container container)
     {
-        if (owner == null) return;
+        if (labels == null || labels.isEmpty()) return;
+
+        if (container != null && this.layoutCache.containsValue(container)) return;
+
+        Set<JLabel> going = java.util.Collections.newSetFromMap(
+            new java.util.IdentityHashMap<JLabel, Boolean>());
+
+        going.addAll(labels);
 
         for (java.util.Iterator<Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>>
             squares = layoutStations.entrySet().iterator(); squares.hasNext();)
         {
             Set<JLabel> here = squares.next().getValue();
 
-            for (java.util.Iterator<JLabel> labels = here.iterator(); labels.hasNext();)
+            for (java.util.Iterator<JLabel> mine = here.iterator(); mine.hasNext();)
             {
-                if (owner == labels.next().getClientProperty(LAYOUT_STATION_OWNER)) labels.remove();
+                if (going.contains(mine.next())) mine.remove();
             }
 
             // The square itself once nothing draws it, so the map does not keep a key per square the

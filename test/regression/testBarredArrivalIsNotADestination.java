@@ -378,6 +378,85 @@ public class testBarredArrivalIsNotADestination
             + "this must not block the setup from starting (MT-078)");
     }
 
+    /**
+     * Autonomy can be set up FROM AN IMPORT, with no setup here to begin with.
+     *
+     * FR-007: "it should be possible to initially load autonomy from an import, not just forcing the
+     * creation of a new one."
+     *
+     * The import machinery was already there and already handled a store that had never been written
+     * to - what was missing was the way in. The Autonomy menu offered "add a configuration" and nothing
+     * else while `names.isEmpty()`, with Import sitting in the branch that only runs once a
+     * configuration exists. So the first thing the menu asked of somebody who already HAD a setup -
+     * from another machine, from somebody running the same layout, or from their own backup - was to
+     * build a new one from scratch and find the import afterwards.
+     *
+     * This is the model half: a session on a folder that has never held a setup takes a bundle and
+     * comes out with a working configuration. The menu half is one item, in AutonomyMenu.
+     */
+    @Test
+    public void testASetupCanBeCreatedByImportingOne() throws Exception
+    {
+        // Somebody else's layout, exported
+        java.io.File theirs = java.nio.file.Files.createTempDirectory("tc-fr007-from").toFile();
+
+        AutonomySession exporter = new AutonomySession(theirs);
+
+        exporter.open(java.util.Arrays.asList(threeSensors()));
+
+        exporter.getStore().createConfiguration("Theirs", null);
+        exporter.getStore().setActiveConfiguration("Theirs");
+        exporter.setStation(new TileKey("main", 2, 1), true);
+        exporter.setPointName(new TileKey("main", 2, 1), "Hauptbahnhof");
+
+        org.json.JSONObject bundle = exporter.getStore().exportBundle("Theirs");
+
+        assertNotNull(bundle, "nothing was exported, so nothing below tests anything");
+
+        // A layout that has never had autonomy set up on it
+        java.io.File mine = java.nio.file.Files.createTempDirectory("tc-fr007-to").toFile();
+
+        AutonomySession fresh = new AutonomySession(mine);
+
+        fresh.open(java.util.Arrays.asList(threeSensors()));
+
+        assertFalse(fresh.exists(), "the fixture is not a fresh layout, so this proves nothing");
+
+        assertTrue(fresh.getStore().getConfigurationNames().isEmpty(),
+            "the fresh session already has a configuration");
+
+        fresh.getStore().importBundle("Imported", bundle);
+        fresh.save();
+
+        assertEquals(fresh.getStore().getConfigurationNames(),
+            java.util.Arrays.asList("Imported"),
+            "importing into a layout with no setup did not produce one, so the only way in is still "
+            + "to create a configuration first (FR-007)");
+
+        assertEquals(fresh.getStore().getActiveConfiguration(), "Imported",
+            "the imported configuration is not the active one, so nothing would run");
+
+        assertTrue(fresh.getStore().isStation(new TileKey("main", 2, 1)),
+            "the track decisions did not come across, so the configuration refers to points this "
+            + "layout has never heard of");
+
+        assertEquals(fresh.getStore().getPointName(new TileKey("main", 2, 1)), "Hauptbahnhof",
+            "the station's name did not come across");
+
+        // And it is on disk, so the next start finds it
+        AutonomySession reopened = new AutonomySession(mine);
+
+        reopened.open(java.util.Arrays.asList(threeSensors()));
+
+        assertTrue(reopened.exists(), "the imported setup was not written, so it is gone on restart");
+
+        assertEquals(reopened.getStore().getConfigurationNames(),
+            java.util.Arrays.asList("Imported"));
+
+        delete(theirs);
+        delete(mine);
+    }
+
     private void delete(File f)
     {
         if (f.isDirectory())

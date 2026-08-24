@@ -103,6 +103,18 @@ public class LayoutGrid
     private TrainControlUI window;
 
     /**
+     * The caption labels THIS grid registered, so discarding it can hand back exactly those.
+     *
+     * Not "everything registered against the panel", which was the first attempt and was wrong in a way
+     * the repaint code warns about three lines from where it is called: the main window has ONE panel
+     * for every page, so forgetting by panel forgot the captions of every page there is - and a page
+     * served from the grid cache registers nothing on the way back, so its captions were blank for
+     * good.  That is the defect "dropping labels wholesale on a repaint" describes, reached through a
+     * different door.
+     */
+    private final java.util.List<javax.swing.JLabel> registeredCaptions = new java.util.ArrayList<>();
+
+    /**
      * The grid currently drawn into each panel, so that building a new one can retire the old one.
      *
      * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
@@ -163,7 +175,11 @@ public class LayoutGrid
         // Here because this is the one moment something knows a grid is finished with.  It runs before
         // the replacement registers anything - LIVE.put and this call are the first thing the new
         // constructor does - so it cannot take the new grid's labels with it.
-        if (window != null && owner != null) window.forgetLayoutStations(owner);
+        // Its own labels, and only if this grid is really finished with - which the WINDOW decides,
+        // because it owns the page cache and this does not.  A grid whose container is cached is coming
+        // back: the cache re-attaches the container without building anything or registering anything,
+        // so labels dropped here would be gone for the session and that page's captions blank.
+        if (window != null) window.forgetLayoutStations(registeredCaptions, container);
 
         // Null only for a grid whose constructor did not reach the panel - it registers itself against
         // that panel before it builds, so a failure part way through leaves one here to be discarded by
@@ -399,6 +415,8 @@ public class LayoutGrid
 
                         // This callback will populate the label
                         ui.addLayoutStation(captioned, text, parent);
+
+                        registeredCaptions.add(text);
                         text.setToolTipText(captionName);
 
                         final org.traincontrol.automationui.TileGraph.TileKey station = captioned;

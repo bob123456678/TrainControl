@@ -161,9 +161,13 @@ public final class LayoutLabel extends JLabel
                 }
             });
 
-            // Add a border around the icons
-            Border blackBorder = BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1); 
-            this.setBorder(blackBorder);
+            // The grey grid, which is where it actually comes from - the editor's restingBorder puts it
+            // BACK after a hover, and this is what puts it there to begin with.
+            //
+            // Asked of the same rule, so the toggle reaches both (FR-006).  Off, it is an empty border
+            // of the same width rather than none at all: a border occupies space, so a square without
+            // one is a pixel smaller than its neighbours and grew when the pointer crossed it.
+            this.setBorder(LayoutEditor.restingBorder(false, false));
         }
         
         // Every square on the MAIN window reports when the pointer is over it.
