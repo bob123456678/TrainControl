@@ -368,6 +368,14 @@ public class AutonomySession
         public int settings = 0;
 
         /**
+         * Homes cleared because the locomotive already had one.
+         *
+         * A pre-rule file can name two homes for one locomotive; only one can be kept, and which one
+         * is a choice the importer makes rather than the user. Counted so it can be said out loud.
+         */
+        public int duplicateHomes = 0;
+
+        /**
          * Names whose sensor is not on this diagram, in the order the file gave them.
          */
         public final List<String> unmatched = new ArrayList<>();
@@ -476,6 +484,21 @@ public class AutonomySession
         // because the model's objection is global: two points naming the same locomotive invalidate
         // the layout, whichever pages they are on.
         Set<String> placedAlready = new LinkedHashSet<>();
+
+        // And one locomotive has one HOME, for the same reason and by the same means (OB-075).
+        //
+        // setHome sweeps duplicates and says why - "a rule enforced at one door of two is the shape
+        // this defect came from" (TD-8). This is that second door: the import writes "home" straight
+        // into the configuration and never goes near setHome.
+        //
+        // A file written before the rule existed can legitimately name two, and both were imported.
+        // Layout.rebuildHomeStations then drops one by iteration order with a log line, and the next
+        // capture writes that arbitrary choice back permanently - so the user keeps a home they never
+        // chose, and nothing says which had been theirs.
+        //
+        // First one wins, which is the file's own order and therefore at least reproducible; the rest
+        // are counted so the choice can be reported rather than made silently.
+        Set<String> homedAlready = new LinkedHashSet<>();
 
         org.json.JSONArray points = legacy.optJSONArray("points");
 
@@ -600,7 +623,17 @@ public class AutonomySession
                         }
                     }
 
-                    if (!home.trim().isEmpty() && !extras.has("home")) extras.put("home", home.trim());
+                    if (!home.trim().isEmpty() && !extras.has("home"))
+                    {
+                        if (homedAlready.add(home.trim()))
+                        {
+                            extras.put("home", home.trim());
+                        }
+                        else
+                        {
+                            result.duplicateHomes++;
+                        }
+                    }
 
                     for (String key : CARRIED_SETTINGS)
                     {

@@ -3598,4 +3598,68 @@ public class testAutonomyDiagramSession
         assertEquals(reopened.getStore().getPointName(onFirst), "First Platform",
             "the page that DID load lost its setup instead");
     }
+
+    /**
+     * A legacy file naming two homes for one locomotive imports one of them.
+     *
+     * OB-075. `setHome` sweeps duplicates, and its comment names the reason - "a rule enforced at one
+     * door of two is the shape this defect came from" (TD-8). The import is the second door: it writes
+     * "home" straight into the configuration, so it went round setHome and its sweep entirely.
+     *
+     * A pre-rule autonomy.json can legitimately hold two, because the rule did not exist when it was
+     * written. Both were imported; `Layout.rebuildHomeStations` then dropped one by iteration order
+     * with a log line, and the next capture wrote that arbitrary choice back permanently. The user
+     * ended up with a home they never chose and nothing to say which had been theirs.
+     */
+    @Test
+    public void testAnImportLeavesOneHomePerLocomotive() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        // Homes live in a configuration, so there has to be one for the import to write into.
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        // Both squares carry a sensor the diagram has - 11 at 1,1 and 12 at 4,1 - and both name the
+        // SAME locomotive as home, which is what a file written before the one-home rule looks like.
+        // which is what a file written before the one-home rule looks like.
+        org.json.JSONObject first = new org.json.JSONObject();
+        first.put("name", "Hauptbahnhof");
+        first.put("station", true);
+        first.put("s88", 11);
+        first.put("home", "BR 232");
+        points.put(first);
+
+        org.json.JSONObject second = new org.json.JSONObject();
+        second.put("name", "Nebenbahnhof");
+        second.put("station", true);
+        second.put("s88", 12);
+        second.put("home", "BR 232");
+        points.put(second);
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        AutonomySession.LegacyImport result = session.importLegacy(legacy);
+
+        int homes = 0;
+
+        for (TileKey square : new TileKey[] {new TileKey("main", 1, 1), new TileKey("main", 4, 1)})
+        {
+            if ("BR 232".equals(session.getPointProperty(square, "home"))) homes++;
+        }
+
+        assertEquals(homes, 1,
+            "the import gave one locomotive " + homes + " homes. Only one can survive: "
+            + "rebuildHomeStations drops the rest by iteration order, and the next capture writes "
+            + "that arbitrary choice back permanently - so the user keeps a home they never chose");
+
+        assertEquals(result.duplicateHomes, 1,
+            "the import cleared a home without counting it, so nothing can tell the user that a "
+            + "choice was made on their behalf");
+    }
 }
