@@ -1744,13 +1744,24 @@ public class testAutonomyDiagramStore
         TileKey unnamed = new TileKey("1 - Main", 3, 3);
         TileKey named = new TileKey("1 - Main", 4, 3);
 
+        // A station with no name whose tile IS still there (CR-C3).
+        //
+        // Without it this test only pinned one direction. A reviewer mutated the rule to delete every
+        // unnamed station rather than only the ones whose tile has gone - which silently strips a
+        // designation off live track - and 184 tests across five classes stayed green, because no
+        // fixture anywhere had a live unnamed station in it. An unnamed station is an ordinary state:
+        // setStation asks for no name.
+        TileKey unnamedButPresent = new TileKey("1 - Main", 5, 3);
+
         store.setStation(unnamed, true);
+
+        store.setStation(unnamedButPresent, true);
 
         store.setStation(named, true);
         store.setPointName(named, "Still here");
 
-        AutonomyCompanionStore.Reconciliation report =
-            store.reconcile(new java.util.LinkedHashSet<>(java.util.Arrays.asList(named)));
+        AutonomyCompanionStore.Reconciliation report = store.reconcile(
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(named, unnamedButPresent)));
 
         assertFalse(store.isStation(unnamed),
             "an unnamed station outlived its tile. It sits in setup.json for good, so a sensor drawn "
@@ -1758,6 +1769,12 @@ public class testAutonomyDiagramStore
             + "UNNAMED_STATION finding about a square nobody can see (UR-12)");
 
         assertTrue(store.isStation(named), "the station whose tile is still there was dropped");
+
+        assertTrue(store.isStation(unnamedButPresent),
+            "a station whose tile is STILL THERE was dropped because it has no name. The rule is "
+            + "about squares the track no longer has, and an unnamed station is an ordinary thing - "
+            + "setStation asks for no name. Deleting it strips a designation off live track, and "
+            + "silently: nothing tells the operator the square stopped being a station (CR-C3)");
 
         assertFalse(report.getDroppedTileProperties().isEmpty(),
             "the square was dropped without saying so. A diagram edit that quietly costs a station "

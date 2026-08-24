@@ -1510,16 +1510,16 @@ public class AutonomyCompanionStore
 
         root.put("pages", new JSONObject(pages));
 
-        root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
+        root.put("pointNames", new JSONObject(translateKeys(pointNames)));
         root.put("stations", new JSONArray(translateSet(stations)));
         root.put("tileLengths", new JSONObject(translateLengths()));
         root.put("tileDirections", new JSONObject(translateSuffixedKeys(tileDirections)));
-        root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
+        root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals)));
         root.put("stationSignals", new JSONObject(translateTileListMap(stationSignals)));
         root.put("blockedPoints", new JSONObject(translateTileListMap(blockedPoints)));
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
-        root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
+        root.put("linkNames", new JSONObject(translateKeys(linkNames)));
         // By page ID, like the other nine.  This was the one collection written raw, and it broke the
         // rule setPageIds states: a rename orphaned it, so an excluded page silently rejoined autonomy
         // and its old name sat in the set for ever because nothing prunes it.
@@ -3985,15 +3985,13 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    private Map<String, String> translateKeys(Map<TileKey, String> map, boolean storing)
+    private Map<String, String> translateKeys(Map<TileKey, String> map)
     {
         Map<String, String> out = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, String> entry : map.entrySet())
         {
-            String key = entry.getKey().toString();
-
-            out.put(storing ? toStored(key) : fromStored(key), entry.getValue());
+            out.put(toStored(entry.getKey().toString()), entry.getValue());
         }
 
         return out;
@@ -4006,22 +4004,6 @@ public class AutonomyCompanionStore
         for (Map.Entry<String, String> entry : map.entrySet())
         {
             out.put(fromStored(entry.getKey().toString()), entry.getValue());
-        }
-
-        map.clear();
-        map.putAll(out);
-    }
-
-    /**
-     * For a map whose keys AND values are both squares - portals, and captions.
-     */
-    private void untranslateTileMap(Map<String, String> map)
-    {
-        Map<String, String> out = new LinkedHashMap<>();
-
-        for (Map.Entry<String, String> entry : map.entrySet())
-        {
-            out.put(fromStored(entry.getKey().toString()), fromStored(entry.getValue().toString()));
         }
 
         map.clear();
@@ -4060,19 +4042,6 @@ public class AutonomyCompanionStore
         }
 
         return out;
-    }
-
-    private void untranslateSet(Set<String> set)
-    {
-        Set<String> out = new LinkedHashSet<>();
-
-        for (String key : set)
-        {
-            out.add(fromStored(key));
-        }
-
-        set.clear();
-        set.addAll(out);
     }
 
     /**
@@ -4590,7 +4559,16 @@ public class AutonomyCompanionStore
                 if (only != null) values.add(only);
             }
 
-            into.put(tile, values);
+            // An entry whose members ALL failed to parse is dropped, not stored empty (CR-C2).
+            //
+            // Storing it empty writes `"key": []` back out - and an array is the form this file only
+            // gained at version 2, so a setup stamped version 1 would go to disk carrying one. That is
+            // exactly what the version gate exists to keep away from an older TrainControl, and it
+            // would have been produced by reading a corrupt file rather than by anything the user did.
+            //
+            // The pair readers drop a half-parsed entry for the same reason: half a pairing is worse
+            // than none. An empty signal list is the same thing said differently.
+            if (!values.isEmpty()) into.put(tile, values);
         }
     }
 
@@ -4620,45 +4598,6 @@ public class AutonomyCompanionStore
         for (String key : object.keySet())
         {
             into.put(key, object.getString(key));
-        }
-    }
-
-    /**
-     * Reads a map whose values are either one square or an array of them.
-     *
-     * Both shapes, because this field held a bare string until 3.0.0 and every setup written before
-     * then still has one.  Nothing migrates: the string is read as a list of one, and the file gains
-     * an array only when a second signal is paired and it is saved again.
-     */
-    private static void readStringListMap(JSONObject root, String field, Map<String, List<String>> into)
-    {
-        JSONObject object = root.optJSONObject(field);
-
-        if (object == null) return;
-
-        for (String key : object.keySet())
-        {
-            List<String> values = new ArrayList<>();
-
-            JSONArray several = object.optJSONArray(key);
-
-            if (several != null)
-            {
-                for (int at = 0; at < several.length(); at++)
-                {
-                    String one = several.optString(at, null);
-
-                    if (one != null && !values.contains(one)) values.add(one);
-                }
-            }
-            else
-            {
-                String one = object.optString(key, null);
-
-                if (one != null) values.add(one);
-            }
-
-            if (!values.isEmpty()) into.put(key, values);
         }
     }
 
