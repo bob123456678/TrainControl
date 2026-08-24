@@ -152,6 +152,7 @@ not, never both.
 | 2026-08-24 | OB-064 | bug | Renaming or deleting a page invented an autonomy setup | - | [MT-142](tests.md#mt-142) |
 | 2026-08-24 | OB-065 | bug | Page delete, rename, combine and the database sync ran during autonomy | - | [MT-141](tests.md#mt-141) |
 | 2026-08-24 | OB-066 | bug | deletePage left cross-page pointers to the deleted page | - | [MT-142](tests.md#mt-142) |
+| 2026-08-24 | OB-067 | bug | A page named "2" breaks the id/name translation | - | FR-013 |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |
@@ -312,29 +313,23 @@ string key meaning something other than what the reader assumed:
 stays exactly where it is, in `toStored`/`fromStored` at the boundary. Not a change to the UI's sort
 order either - pages still sort by name.
 
+**It must also dissolve OB-067, which is now this item's problem.** `toStored` and `pageOf` rest on an
+invariant stated in the code - "Ids are numeric and names are not, so the two never collide" - which
+nothing enforces. `validateLayoutName` allows digits, so a page called "2" is legal, and a page whose
+NAME equals another page's ID misroutes both translations.
+
+Adam, asked whether to forbid such names: **"A page should be allowed to be named 2 - let FR-013
+dissolve it."** So the name stays legal and the pun goes, which means this work is not finished until a
+page id and a page name can no longer be mistaken for one another by any code path. A `TileKey` holding
+a typed page reference does that by construction; a `TileKey` holding a `String` page merely moves the
+problem, so that is the line between doing this and appearing to.
+
+The on-disk repair path added for OB-062 is the most exposed and is the one to check first: every key
+there sits in memory in id form, so `toStored` would rewrite `"2:x,y"` through the page *named* "2".
+Nothing has hit it yet - it is a trap laid for later, and this is the work that removes it.
+
 **Shape of the work.** `Map<String, X>` becomes `Map<TileKey, X>` across the store; `tileDirections`
 becomes a compound key of square plus route rather than a string with a suffix; the boundary methods
 gain the conversion that is today spread through the class. Mechanical but wide, and it touches the one
 class that holds the data Adam has already lost once - so it wants its own commit with the battery
 green either side, and the existing round-trip tests are what make it safe to attempt.
-
-### OB-067 - 2026-08-24 - a page named "2" breaks the id/name translation
-
-**Kind:** bug
-**Raised from:** review of the last day of commits, at Adam's request
-**Filed:** 2026-08-24
-
-`toStored` and `pageOf` rest on an invariant stated in the code - "Ids are numeric and names are not, so
-the two never collide" - and nothing enforces it. `validateLayoutName` allows digits, so a page called
-"2" is legal, and people do name pages "1", "2", "3".
-
-A page whose NAME equals another page's ID misroutes both translations. The on-disk repair path added
-for OB-062 is the most exposed, because there every key sits in memory in id form and `toStored` would
-rewrite `"2:x,y"` through the page *named* "2".
-
-Filed rather than fixed because the fix is a policy choice and it is Adam's: either refuse a
-purely-numeric page name at validation - which would reject names somebody may already be using, so it
-needs a migration story - or stop the two sharing a namespace, which is the same direction as FR-013
-and would fall out of it for free.
-
-Nothing has hit this yet; it is a trap laid for later.

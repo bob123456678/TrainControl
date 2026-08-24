@@ -3261,8 +3261,19 @@ public class AutonomyCompanionStore
     /**
      * A key as it is stored: the page id where one is known, the page name otherwise.
      *
-     * Ids are numeric and names are not, so the two never collide, and a page added since the index was
-     * last read still round trips - by name, which is no worse than before.
+     * A page added since the index was last read still round trips - by name, which is no worse than
+     * before.
+     *
+     * This used to say "ids are numeric and names are not, so the two never collide", and that is not
+     * true: `validateLayoutName` allows digits, so a page may legally be called "2", and a page whose
+     * NAME equals another page's ID misroutes this translation and pageOf both. Nothing enforces the
+     * invariant they rest on (OB-067).
+     *
+     * Adam ruled on it rather than have the name forbidden: "A page should be allowed to be named 2 -
+     * let FR-013 dissolve it." FR-013 replaces these string keys with TileKey objects, at which point
+     * an id and a name stop sharing a representation and the question cannot be asked. Until then this
+     * is a known trap with nothing standing in it, and the on-disk repair path is the most exposed to
+     * it - every key there is in id form, so this would rewrite "2:x,y" through the page NAMED "2".
      */
     private String toStored(String key)
     {
