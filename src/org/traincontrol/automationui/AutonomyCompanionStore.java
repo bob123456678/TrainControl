@@ -820,7 +820,10 @@ public class AutonomyCompanionStore
         root.put("portals", new JSONObject(translatePortals()));
         root.put("captions", new JSONObject(translateTileMap(captions)));
         root.put("linkNames", new JSONObject(translateKeys(linkNames, true)));
-        root.put("excludedPages", new JSONArray(excludedPages));
+        // By page ID, like the other nine.  This was the one collection written raw, and it broke the
+        // rule setPageIds states: a rename orphaned it, so an excluded page silently rejoined autonomy
+        // and its old name sat in the set for ever because nothing prunes it.
+        root.put("excludedPages", new JSONArray(translatePages(excludedPages)));
         root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
 
         // written back last, so a field this build does not model survives a round trip
@@ -2332,6 +2335,7 @@ public class AutonomyCompanionStore
         untranslateTileMap(captions);
         untranslateSet(stations);
         untranslateSet(disabledPortals);
+        untranslatePages(excludedPages);
 
         pageIdConflicts.clear();
 
@@ -2617,6 +2621,45 @@ public class AutonomyCompanionStore
 
         set.clear();
         set.addAll(out);
+    }
+
+    /**
+     * The same for a set of whole PAGES rather than of squares.
+     *
+     * toStored and fromStored split a key on its page and leave anything without a colon alone, so a
+     * bare page name went through them unchanged - which is how the one collection that holds page
+     * names came to be the one collection stored by name.
+     *
+     * A page the index has never heard of keeps its name, which is what makes this safe on a file
+     * written before the change and on a page added since the index was read.
+     */
+    private Set<String> translatePages(Set<String> pages)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String page : pages)
+        {
+            String id = pageNameToId.get(page);
+
+            out.add(id == null ? page : id);
+        }
+
+        return out;
+    }
+
+    private void untranslatePages(Set<String> pages)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String stored : pages)
+        {
+            String name = pageIdToName.get(stored);
+
+            out.add(name == null ? stored : name);
+        }
+
+        pages.clear();
+        pages.addAll(out);
     }
 
     private Set<String> translateSet(Set<String> set)

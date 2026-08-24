@@ -140,6 +140,12 @@ public class LayoutGrid
     {
         discarded = true;
 
+        // Null only for a grid whose constructor did not reach the panel - it registers itself against
+        // that panel before it builds, so a failure part way through leaves one here to be discarded by
+        // the next grid over the same panel.  Nothing on that path throws today; guarded so that a
+        // failure stays the failure it was rather than becoming an NPE in the recovery.
+        if (container == null) return;
+
         // Shown, whatever state the reveal had reached.  A grid is HIDDEN while its tiles decode and
         // shown again by the reveal - which discarding cancels - so a grid discarded while it was
         // still decoding stayed hidden for good.  It may already be in the page cache, and coming

@@ -5,6 +5,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import static org.traincontrol.base.Accessory.accessoryDecoderType;
+import static org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
  * Growing a track diagram by one all round, and shrinking it back.
@@ -151,5 +153,62 @@ public class testDiagramResize
 
         assertFalse(new LayoutDiagram("test", 4, 1, null, null).edgesAreEmpty(),
             "and a one-row diagram must refuse for the same reason");
+    }
+
+    /**
+     * A page with nothing on it has bounds a grid can be built from.
+     *
+     * UR-8, from the uninformed review. `checkBounds` seeds `minx = sx` and `maxx = 0` outside edit
+     * mode and only ever lowers `minx` for a square that HOLDS something, so a page with no components
+     * keeps both seeds. `LayoutGrid` then computes `maxx - minx + 1 + 1`, which on a thirty-wide page is
+     * -28, and `new LayoutLabel[width][height]` throws NegativeArraySizeException.
+     *
+     * One component anywhere is enough to make it right, because the `x < minx` branch pulls the seed
+     * down to it - so this is the empty page and nothing else. `LayoutEditor.clear()` empties a page and
+     * `saveChanges` has no emptiness guard, and closing the editor calls `setEdit(false)`, which is the
+     * transition that turns the seeds back on.
+     *
+     * The consequence is worse than one exception: the grid is registered in LayoutGrid's static LIVE
+     * map before it finishes building, so a constructor that throws leaves a half-built grid registered
+     * against that panel. The track diagram tab goes blank and stays blank.
+     *
+     * Each axis on its own, because they fail separately: components along one row leave `miny` seeded
+     * while `minx` was pulled down.
+     */
+    @Test
+    public void testAnEmptyPageHasBoundsAGridCanBeBuiltFrom()
+    {
+        LayoutDiagram empty = new LayoutDiagram("blank", 30, 10, null, null);
+
+        empty.setEdit(false);
+        empty.checkBounds();
+
+        assertTrue(empty.getMaxx() - empty.getMinx() + 1 > 0,
+            "an empty page has a negative width - " + empty.getMinx() + ".." + empty.getMaxx()
+            + " - and LayoutGrid builds its array from exactly this, so the diagram tab throws "
+            + "NegativeArraySizeException and stays blank (UR-8)");
+
+        assertTrue(empty.getMaxy() - empty.getMiny() + 1 > 0,
+            "an empty page has a negative height - " + empty.getMiny() + ".." + empty.getMaxy());
+    }
+
+    /**
+     * And a page with everything in one row is not mistaken for an empty one.
+     */
+    @Test
+    public void testOneRowOfComponentsStillMeasuresThatRow() throws java.io.IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("row", 30, 10, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 4, 6, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 6, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setEdit(false);
+        page.checkBounds();
+
+        assertEquals(page.getMiny(), 6, "the row's own y was lost");
+        assertEquals(page.getMaxy(), 6);
+        assertEquals(page.getMinx(), 4, "the row's own x was lost");
+        assertEquals(page.getMaxx(), 7);
     }
 }

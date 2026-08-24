@@ -236,6 +236,18 @@ public class LayoutDiagram
                 }
             }            
         }  
+
+        // A page with nothing on it keeps both seeds, because only a square that HOLDS something
+        // lowers minx.  LayoutGrid then builds its array from maxx - minx + 2, which on a thirty-wide
+        // page is -28: NegativeArraySizeException out of the constructor, and since the grid registers
+        // itself against its panel before it finishes building, the diagram tab goes blank and stays
+        // blank.  One component anywhere is enough to make the bounds right, so this is the empty page
+        // and nothing else - which the editor's own "clear" produces.
+        //
+        // Each axis on its own: components along a single row leave miny seeded while minx was pulled
+        // down to them.
+        if (maxx < minx) minx = 0;
+        if (maxy < miny) miny = 0;
     }
 
     public int getSx()

@@ -1332,4 +1332,82 @@ public class testAutonomyDiagramStore
         assertEquals(reloaded.getCaptionTarget(station), station,
             "a station captioned on its own square does not resolve after a reload");
     }
+
+    /**
+     * A page's EXCLUSION survives a rename too, because it is stored by id like everything else.
+     *
+     * UR-7, from the uninformed review. `excludedPages` was written raw - `new JSONArray(excludedPages)`
+     * - and read raw, alone among the ten shared collections, every other one of which goes through
+     * toStored/fromStored. The rule it broke is the class's own, at the top of setPageIds: "A name is
+     * something a user renames on a whim, and every key here begins with one, so a rename would
+     * otherwise orphan a whole page of names, lengths, directions and pairings at once."
+     *
+     * So after a rename everything tile-keyed came back onto the new name and the page's exclusion did
+     * not: the page silently rejoined autonomy, and the stale name sat in the set for ever because
+     * nothing prunes it. That matters most on the layout the setting exists for - a page that redraws
+     * another page's sensors, which is `excludeRepeatedSensorPages`' case - because rejoining puts two
+     * Points on one sensor, the state that code says nothing downstream can resolve.
+     *
+     * `renamePage` has no production caller, so every real rename is an EXTERNAL one - in the Central
+     * Station, or by editing the gleisbild - which is exactly the case ids exist to survive and the one
+     * this test performs.
+     *
+     * The page name has no colon, so toStored and fromStored return it unchanged: they split a tile key
+     * on its page, and there is nothing here to split. Hence the two page-level translators.
+     */
+    @Test
+    public void testAnExcludedPageIsStillExcludedAfterItIsRenamed() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Scenery", "3");
+        before.put("Old Name", "2");
+
+        store.setPageIds(before);
+
+        store.setPageExcluded("Old Name", true);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Scenery", "3");
+        after.put("New Name", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertTrue(reloaded.getExcludedPages().contains("New Name"),
+            "the renamed page is no longer excluded, so it has silently rejoined autonomy - and on the "
+            + "layout this setting exists for that puts two Points on one sensor (UR-7)");
+
+        assertFalse(reloaded.getExcludedPages().contains("Old Name"),
+            "the old name is still in the set. Nothing prunes it, so it stays there for ever, and a "
+            + "page later given that name would be excluded for a reason nobody can find");
+    }
+
+    /**
+     * And a page the index has never heard of keeps its name, so nothing is lost by translating.
+     */
+    @Test
+    public void testAnExcludedPageWithNoIdKeepsItsName() throws IOException
+    {
+        java.util.Map<String, String> known = new java.util.LinkedHashMap<>();
+        known.put("Known", "2");
+
+        store.setPageIds(known);
+
+        store.setPageExcluded("Not in the index", true);
+        store.createConfiguration("Default", null);
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(known);
+        reloaded.load();
+
+        assertTrue(reloaded.getExcludedPages().contains("Not in the index"),
+            "a page with no id in the index lost its exclusion. Files written before this change hold "
+            + "NAMES, and a page added since the index was read has no id yet - both have to survive");
+    }
 }
