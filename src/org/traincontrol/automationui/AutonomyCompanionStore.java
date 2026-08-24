@@ -798,7 +798,24 @@ public class AutonomyCompanionStore
 
     public boolean isPortalDisabled(TileKey tile)
     {
-        return disabledPortals.contains(tile.toString());
+        if (tile == null) return false;
+
+        if (disabledPortals.contains(tile.toString())) return true;
+
+        // The PARTNER as well, which is the same question TileGraph.portalClosed asks (TD-2).
+        //
+        // setPortalDisabled writes both ends, so on any setup saved since that fix the two agree and
+        // this second look costs nothing. It is the setups written BEFORE it that need it: those have
+        // one end switched off and the other left on, and TileGraph refuses to route through either
+        // while this answered "open" for the far one - so the far end drew as a live two-way door, with
+        // its arrows and a ticked "Use link" box, over track no train could pass.
+        //
+        // Before the fix both halves said "open" and were wrong together, which is at least
+        // consistent. Repairing only the router made them disagree, which is harder to diagnose than
+        // the defect was.
+        TileKey partner = getPortalPartner(tile);
+
+        return partner != null && disabledPortals.contains(partner.toString());
     }
 
     /**
@@ -1128,6 +1145,15 @@ public class AutonomyCompanionStore
         // taking away something of the user's rather than undoing its own work.
         boolean existed = configurations.containsKey(name);
 
+        // And a COPY of what is being replaced, when something is.
+        //
+        // The rollback below used to put back only a configuration this import had added, on the
+        // reasoning that removing an existing name would take the user's own work with it.  That was a
+        // false choice: the object being replaced can be kept and put back, which is what load() does
+        // with snapshotSetup.  Importing over a name consents to being replaced by a GOOD file, not to
+        // losing the configuration to an unreadable one.
+        JSONObject replaced = existed ? new JSONObject(configurations.get(name).toString()) : null;
+
         importConfiguration(name, configuration);
 
         JSONObject incoming = file.optJSONObject(EXPORT_SHARED);
@@ -1254,10 +1280,10 @@ public class AutonomyCompanionStore
                 // placements, homes and exclusions refer to points the rollback has just taken away,
                 // offered in the list like any other.
                 //
-                // Only when this import is what added it.  Importing over an existing name replaces it,
-                // and removing the name would then take the user's own configuration with it - so that
-                // case keeps what is there rather than deleting somebody's work over a bad file.
-                if (!existed) forgetConfiguration(name);
+                // Put back exactly as it was, whichever case this is: taken out when the import added
+                // it, and restored from the copy above when the import replaced something.
+                if (existed) configurations.put(name, replaced);
+                else forgetConfiguration(name);
 
                 throw e;
             }

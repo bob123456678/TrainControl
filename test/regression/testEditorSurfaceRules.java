@@ -85,6 +85,31 @@ public class testEditorSurfaceRules
                     if (lines.get(k).contains("placementChanged()")) redrawn = true;
                 }
             }
+
+            // The TOGGLE helper as well, which this used to leave out (TD-1).
+            //
+            // Pinning radio() alone said "the facing redraws" and let its sibling keep the bug: toggle()
+            // carries four setup writes reachable from the track diagram's own menu, and one of them -
+            // whether trains may arrive by a side - decides how a square SPLITS, which is the case the
+            // rebuild exists for. A rule with two implementations needs both named, which is the shape
+            // this whole file is about.
+            for (int j = 0; j < lines.size(); j++)
+            {
+                if (!lines.get(j).contains("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")) continue;
+
+                boolean rebuilt = false;
+
+                for (int k = j; k < Math.min(lines.size(), j + 40); k++)
+                {
+                    if (lines.get(k).contains("placementChanged()")) rebuilt = true;
+                }
+
+                assertTrue(rebuilt,
+                    "the menu's toggle helper writes the setup and only refreshes. Four settings go "
+                    + "through it, and one of them changes how a square splits - so the running layout "
+                    + "keeps Points the setup no longer has, and everything that goes through their "
+                    + "names quietly stops working (TD-1)");
+            }
         }
 
         assertEquals(writes, 1,

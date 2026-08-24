@@ -1561,7 +1561,17 @@ public class AutonomyEditorPanel extends JPanel
         menuItem.addActionListener(e ->
         {
             action.accept(menuItem.isSelected());
-            refresh();
+
+            // placementChanged, not refresh (TD-1).
+            //
+            // Every one of these writes the SETUP, and four of them are reachable from the track
+            // diagram's own right-click menu, where nothing else picks the change up: whether trains
+            // may arrive by a side, which way an arm runs, whether a link is switched off, and whether
+            // autonomy may choose this square.  The first of those decides how a square SPLITS - how
+            // many Points it becomes and what they are called - which is the very example the rebuild
+            // exists for.  Refreshing alone redrew this menu over a running layout that still held the
+            // old Points.
+            placementChanged();
 
             flashMenuTarget();
         });

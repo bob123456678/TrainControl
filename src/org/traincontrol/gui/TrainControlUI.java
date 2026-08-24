@@ -2708,9 +2708,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void repairAutonomyLocomotive(String from, String to)
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        // The session ALREADY BUILT, not the lazy getter.
+        //
+        // getAutonomySession creates one on demand: it opens every page, runs the caption migration -
+        // which rewrites gleisbild files and can raise a dialog - and this method then saves, which
+        // makes the folder and writes setup.json. So on a layout where diagram autonomy has never been
+        // touched, renaming a locomotive quietly created a setup out of nothing and attributed it to a
+        // gesture with nothing to do with autonomy.
+        //
+        // Nothing is lost by asking only for one that exists: a setup that has never been opened in
+        // this session has nothing in memory to repair, and the file it would repair is read the next
+        // time it IS opened - by which time this rename is already in the locomotive database.
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
         if (session == null) return;
+
+        // And nothing is written for a setup that has never been saved: save() would create the
+        // folder and the file, which is the same fabrication by a shorter route.
+        if (!session.exists()) return;
 
         try
         {

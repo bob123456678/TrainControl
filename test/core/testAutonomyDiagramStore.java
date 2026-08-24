@@ -1785,4 +1785,55 @@ public class testAutonomyDiagramStore
             + "comment promises it no longer does. The caller is left with a live blank store, one "
             + "press of Save away from writing that over setup.json (UR-14)");
     }
+
+    /**
+     * A failed import that was REPLACING a configuration puts the old one back.
+     *
+     * UR-10, second half, and the branch the first test of this pair did not reach. Importing over an
+     * existing name replaces it - the panel says so and asks first - but that consents to being
+     * replaced by a good file, not to losing the configuration to an unreadable one.
+     *
+     * The rollback used to take the configuration back only when the import had ADDED it, reasoning
+     * that removing an existing name would take the user's own work with it. That was a false choice:
+     * the object being replaced can be kept and put back, which is what load() does with snapshotSetup.
+     */
+    @Test
+    public void testAFailedImportPutsBackTheConfigurationItWasReplacing() throws IOException
+    {
+        store.setPointName(new TileKey("Main", 1, 1), "Mine");
+        store.createConfiguration("Ours", null);
+
+        store.getConfiguration("Ours").put("points", new org.json.JSONObject()
+            .put("1:4,4", new org.json.JSONObject().put("home", "BR 218")));
+
+        org.json.JSONObject bundle = new org.json.JSONObject();
+
+        bundle.put(AutonomyCompanionStore.EXPORT_CONFIGURATION,
+            new org.json.JSONObject().put("name", "Theirs"));
+
+        // A point name that is a NUMBER, which readShared's strict accessors refuse
+        bundle.put(AutonomyCompanionStore.EXPORT_SHARED, new org.json.JSONObject()
+            .put("pointNames", new org.json.JSONObject().put("1:7,7", 5)));
+
+        try
+        {
+            store.importBundle("Ours", bundle);
+        }
+        catch (RuntimeException expected)
+        {
+            // the panel reports this as "import unreadable"
+        }
+
+        assertTrue(store.getConfigurationNames().contains("Ours"),
+            "the configuration the import was replacing is gone. Importing over a name consents to "
+            + "being replaced by a GOOD file, not to losing the configuration to a bad one (UR-10)");
+
+        assertEquals(store.getConfiguration("Ours").getJSONObject("points")
+            .getJSONObject("1:4,4").optString("home", null), "BR 218",
+            "the name survived but the configuration behind it is the imported one, so the user's own "
+            + "placements, homes and exclusions are gone");
+
+        assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
+            "the shared half was not put back, which is what the rollback is for");
+    }
 }

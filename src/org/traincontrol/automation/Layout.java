@@ -2351,6 +2351,15 @@ public class Layout
             {
             for (Edge e : path)
             {
+                // Counted as TAKEN before it is taken, not after.
+                //
+                // The release below covers path.subList(0, edgesLocked), so an edge counted afterwards
+                // is one a throw out of setOccupied or reserve leaves occupied and outside the release -
+                // the single edge the recovery provably could not reach.  Counting first can only ever
+                // release an edge that was never taken, and setUnoccupied on an edge that is already
+                // clear does nothing.
+                edgesLocked++;
+
                 e.setOccupied();
 
                 // RESERVED, not placed.  A locked path holds every one of its points for this
@@ -2360,7 +2369,6 @@ public class Layout
                 // reserved, collapsing the reservation to the destination and freeing every junction -
                 // and, on a path-integrity failure, stranding the train on no point at all.
                 e.getEnd().reserve(loc);
-                edgesLocked++;
 
                 // isPathClear already previewed the configuration, so this should not fail - but if an
                 // accessory went missing in between, the locomotive must not be released onto a path we
@@ -2387,7 +2395,17 @@ public class Layout
             // Exactly what a configuration failure does, and only the edges actually taken: releasing
             // the rest would call setUnoccupied on edges never held, which also clears their lock edges
             // - and those may belong to another locomotive by now.
-            this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            //
+            // Unless nothing was taken at all, in which case there is nothing to hand back and asking
+            // would make the recovery a different failure: handleMisconfiguredPath ends by reserving
+            // path.get(0).getStart(), which on an empty list throws - replacing the exception that
+            // explains what went wrong, and skipping the claim release below so the locomotive stays
+            // claimed for the session.  The configureFailed path cannot reach zero; a throw can.
+            if (edgesLocked > 0)
+            {
+                this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            }
+
             this.takingPath.remove(loc);
 
             // Rethrown rather than turned into false.  Nothing here knows what went wrong, and a fault

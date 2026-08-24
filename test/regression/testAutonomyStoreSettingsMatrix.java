@@ -124,6 +124,11 @@ public class testAutonomyStoreSettingsMatrix
             (store, at) -> store.setCaption(at, ELSEWHERE),
             (store, at) -> store.getCaptionTarget(at)),
 
+        // Also a reference: this station is held back while ANOTHER square is occupied (FR-001)
+        new Setting("a point that holds a station back", "blockedPoints",
+            (store, at) -> store.setBlockingPoints(at, java.util.Arrays.asList(ELSEWHERE)),
+            (store, at) -> store.getBlockingPoints(at)),
+
         new Setting("what a link is called", "linkNames",
             (store, at) -> store.setLinkName(at, "to the yard"),
             (store, at) -> store.getLinkName(at)),
@@ -403,6 +408,19 @@ public class testAutonomyStoreSettingsMatrix
      */
     private static Object renamed(Object expected)
     {
+        // A LIST of squares as well as one, because a setting may name several - a station can be held
+        // back by more than one point (FR-001). Without this the list came back correctly repointed at
+        // the renamed page and was compared against the old one, which reads as the store having failed
+        // when it was this helper that could not follow.
+        if (expected instanceof java.util.List)
+        {
+            java.util.List<Object> out = new java.util.ArrayList<>();
+
+            for (Object one : (java.util.List<?>) expected) out.add(renamed(one));
+
+            return out;
+        }
+
         return expected instanceof TileKey && PAGE.equals(((TileKey) expected).getPage())
             ? new TileKey("main renamed", ((TileKey) expected).getX(), ((TileKey) expected).getY())
             : expected;
