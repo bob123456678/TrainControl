@@ -53,12 +53,19 @@ public class Point
     private Set<Locomotive> excludedLocs;
     private double speedMultiplier = 1.0;
 
-    // The locomotive this station has been assigned to, by NAME rather than by reference.
+    // The locomotive this station has been assigned to, as a REFERENCE.
     //
-    // A name rather than a reference because an assignment outlives placement: a locomotive that is not
-    // currently on the graph keeps its station, and is simply ignored while it is absent.  A name that
-    // matches no locomotive at all is a different case - it is reported and cleared on load, since
-    // nothing can ever resolve it - but neither invalidates the layout.
+    // This said "by NAME rather than by reference" and went on to argue for it, above a field that has
+    // been a Locomotive since the object migration. Left standing it is worse than no comment: the
+    // argument is sound and it is an argument for the opposite of what the field now is, so a reader
+    // trusting it would look for name-comparison bugs that cannot exist and miss the identity ones
+    // that can.
+    //
+    // What actually holds: an assignment outlives placement, so a locomotive that is not currently on
+    // the graph keeps its station and is ignored while absent - that part was always about the
+    // ASSIGNMENT rather than about how it is stored. The name/object boundary is toJSON and parseAuto
+    // and nowhere else, and a name in the file that resolves to no locomotive is reported and cleared
+    // on load. Neither case invalidates the layout.
     //
     // Null means no assignment, which is the state every existing layout is in - and in that state the
     // home of a locomotive is still simply where it was standing when the graph loaded.

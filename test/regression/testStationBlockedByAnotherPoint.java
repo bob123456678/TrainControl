@@ -619,4 +619,47 @@ public class testStationBlockedByAnotherPoint
 
         f.delete();
     }
+
+    /**
+     * Deleting a point takes it out of every list that was watching it.
+     *
+     * OB-080. `blockedBy` holds Points, so a deleted station stayed in the lists of the stations it
+     * held back - a ghost blocker on a point nobody can see or clear.
+     *
+     * It fails closed, which is why nothing was reported: a station that will not be chosen is quieter
+     * than one chosen wrongly. And it disappears across a save and load, because the list is written by
+     * name and the name then resolves to nothing - so the symptom is a railway that behaves differently
+     * before and after a restart, which is the hardest kind of fault to report.
+     */
+    @Test
+    public void testDeletingAPointClearsItFromEveryBlockedByList() throws Exception
+    {
+        Layout layout = builtWithAnApproachFromTheYard();
+
+        org.traincontrol.automation.Point watched = layout.getPoint("BK YARD");
+        org.traincontrol.automation.Point station = layout.getPoint("BK B");
+
+        assertTrue(station.getBlockedBy().contains(watched),
+            "the fixture does not hold the station back, so nothing below tests anything");
+
+        // BK YARD TWIN shares the block but has no edges, so it can be deleted cleanly
+        layout.deletePoint("BK YARD TWIN");
+
+        // and now the watched point itself, once nothing connects to it
+        for (Edge e : new java.util.LinkedList<>(layout.getEdges()))
+        {
+            if (e.getStart().getName().equals("BK YARD") || e.getEnd().getName().equals("BK YARD"))
+            {
+                layout.deleteEdge(e.getStart().getName(), e.getEnd().getName());
+            }
+        }
+
+        layout.deletePoint("BK YARD");
+
+        assertTrue(station.getBlockedBy().isEmpty(),
+            "the deleted point is still watching this station. Nothing stands on it and nothing can, "
+            + "so the rule passes today - but the reference outlives the graph, and it vanishes across "
+            + "a save and load, which makes the railway behave differently after a restart: "
+            + station.getBlockedBy());
+    }
 }

@@ -332,11 +332,16 @@ public class Edge
      * tile in both.  A train stands on a sensor.  The track a lock edge protects is the rest of the
      * run.  They cannot be the same piece of rail.
      *
-     * Nothing is given up by asking the narrow question, because locks are symmetric: GraphReducer
-     * locks every pair of edges that share a tile, in both directions.  So if the train standing there
-     * later wants to leave over track this route is using, its edge is one of this route's lock edges
-     * and carries the flag while this route holds it.  The parked train is stopped by the lock, which
-     * is what a lock is for - not by being counted as an obstruction it is not standing on.
+     * Nothing is given up by asking the narrow question - but NOT because locks are symmetric, which
+     * is what this said and is not true. GraphReducer writes symmetric locks; GraphEdgeEdit only
+     * writes one direction, and the sample layout that ships carries 104 asymmetric relations out of
+     * 118 (Layout says so, and counts them). Reasoning from symmetry here would be reasoning from
+     * something the data contradicts.
+     *
+     * What holds instead is the complementary pair: a route locks the edges it crosses AND checks the
+     * edges that lock it, so a train standing beyond a junction is stopped whichever direction the
+     * relation happens to have been written in. The parked train is stopped by the lock, which is what
+     * a lock is for - not by being counted as an obstruction it is not standing on.
      *
      * Left as an occupancy question, a train parked next to a junction was a permanent roadblock for
      * every route across that junction, and two such trains could deadlock with no way out for either.

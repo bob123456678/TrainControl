@@ -2154,6 +2154,44 @@ public class Layout
         // object equal by name is the same claim.
         this.homeStations.values().removeIf(home -> home != null && home.getName().equals(name));
 
+        // And every OTHER point that was watching this one (OB-080).
+        //
+        // blockedBy holds Points, so a deleted station stayed in the lists of the stations it held
+        // back - a ghost blocker with nobody standing on it and nobody able to. isPathClear asks
+        // getBlockLocomotive of each watched point, so the ghost answers null and the rule passes;
+        // but the moment anything DOES occupy the deleted object - a stale reference from a path that
+        // was mid-flight - the station it guards is refused for the rest of the session, naming a
+        // point the user cannot see to clear.
+        //
+        // It fails closed, which is why nothing has been reported: a station that will not be chosen
+        // is quieter than one chosen wrongly. It also disappears across a save and load, because the
+        // list is written by name and the name resolves to nothing - so the symptom is a railway that
+        // behaves differently before and after a restart, which is the hardest kind to report.
+        //
+        // The occupant goes too. A point being deleted while a locomotive stands on it leaves that
+        // locomotive's position pointing at an object no longer in the graph.
+        for (Point other : this.points.values())
+        {
+            if (other == p) continue;
+
+            if (other.getBlockedBy().isEmpty()) continue;
+
+            // Through setBlockedBy, because getBlockedBy hands back an unmodifiable view - which the
+            // test for this found the moment it was written, by throwing.
+            List<Point> keeping = new LinkedList<>();
+
+            for (Point watched : other.getBlockedBy())
+            {
+                if (watched != null && watched.getName().equals(name)) continue;
+
+                keeping.add(watched);
+            }
+
+            other.setBlockedBy(keeping);
+        }
+
+        if (p.getCurrentLocomotive() != null) p.setLocomotive(null);
+
         // Remove from db
         this.points.remove(name);
     }
@@ -2514,10 +2552,25 @@ public class Layout
                 }
                 catch (InterruptedException ex)
                 {
-                    // Autonomy is being stopped - abort validation without flagging a misconfiguration
-                    // (the loco is not going anywhere).  Preserve the interrupt for downstream code.
+                    // Interrupted: stop waiting, and ASK rather than assume (OB-080).
+                    //
+                    // This returned true - "everything actuated" - without looking. The reasoning was
+                    // that an interrupt means autonomy is being stopped and the locomotive is not
+                    // going anywhere, which is true of the interrupt this code was written for and
+                    // is not a property of interrupts. Returning true is the answer that lets a train
+                    // onto turnouts nothing ever confirmed, so it is the wrong direction for a guard
+                    // to fail in whatever the reason.
+                    //
+                    // allConfirmed below is a pure read of state that has already arrived: it costs
+                    // nothing, it cannot block, and it gives the honest answer - confirmed if the
+                    // confirmations happened to be in, refused if they were not. The interrupt is
+                    // still preserved for whatever is unwinding.
+                    //
+                    // Unreachable today: nothing interrupts a dispatch thread from outside. Fixed
+                    // because a fail-safe pointing the wrong way is a thing you find out about once.
                     Thread.currentThread().interrupt();
-                    return true;
+
+                    return allConfirmed(accessories, desired);
                 }
             }
         }
