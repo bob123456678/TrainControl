@@ -329,4 +329,133 @@ public class testPageIdsAreDurable
 
         f.delete();
     }
+
+    /**
+     * A page keeps its identity through a whole sequence of page operations.
+     *
+     * Adam, after testing MT-142: "This seems to work, but add a thorough test case for it since you
+     * already know what should happen."
+     *
+     * The tests above each isolate one operation. This one does what a person does - rename, add,
+     * delete, add again - and checks after EVERY step that the two pages he cares about still carry
+     * everything they had, and that the ids of surviving pages never moved.
+     *
+     * It is written this way because the defects this month were not in any single operation. They were
+     * in what one operation did to a page it was not about: a rename renumbered other pages, a delete
+     * handed a retired id to a newcomer, a page that failed to load was pruned by a save meant for
+     * something else. A sequence is the only shape that catches those.
+     */
+    @Test
+    public void testPageIdentitySurvivesASequenceOfOperations() throws IOException
+    {
+        write("Alpha", "Bravo", "Charlie");
+
+        Map<String, Integer> issued = ids();
+
+        assertEquals(issued, map("Alpha", 1, "Bravo", 2, "Charlie", 3), "the fixture");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey onAlpha = new TileKey("Alpha", 2, 2);
+        TileKey onCharlie = new TileKey("Charlie", 5, 5);
+
+        store.setPointName(onAlpha, "Alpha Platform");
+        store.setStation(onAlpha, true);
+        store.setTileLength(onAlpha, 12);
+
+        store.setPointName(onCharlie, "Charlie Platform");
+        store.setStation(onCharlie, true);
+        store.setTileLength(onCharlie, 7);
+
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        place(store.getConfiguration("Only"), "Alpha:2,2", "BR 232");
+        place(store.getConfiguration("Only"), "Charlie:5,5", "MY 1106");
+
+        store.save();
+
+        int alphaId = issued.get("Alpha");
+        int charlieId = issued.get("Charlie");
+
+        // --- 1. rename a page to something that sorts to the FRONT -------------------------------
+        Map<String, String> renamed = new LinkedHashMap<>();
+        renamed.put("Bravo", "Aardvark");
+
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Aardvark", "Alpha", "Charlie")), renamed);
+
+        AutonomyCompanionStore afterRename = reload();
+
+        assertUntouched(afterRename, onAlpha, onCharlie, alphaId, charlieId, "after renaming Bravo");
+
+        // --- 2. add a page -----------------------------------------------------------------------
+        write("Aardvark", "Alpha", "Charlie", "Delta");
+
+        assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Delta");
+
+        // --- 3. delete the page that was renamed --------------------------------------------------
+        AutonomyCompanionStore before = reload();
+
+        before.deletePage("Aardvark");
+        before.save();
+
+        write("Alpha", "Charlie", "Delta");
+
+        assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after deleting Aardvark");
+
+        // --- 4. and add another, which may take the retired id -------------------------------------
+        write("Alpha", "Charlie", "Delta", "Echo");
+
+        assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Echo");
+    }
+
+    /**
+     * The two pages the sequence is not about must be untouched, every time.
+     */
+    private void assertUntouched(AutonomyCompanionStore check, TileKey onAlpha, TileKey onCharlie,
+        int alphaId, int charlieId, String when)
+    {
+        assertEquals(check.getPointName(onAlpha), "Alpha Platform", "Alpha's name, " + when);
+        assertTrue(check.isStation(onAlpha), "Alpha's station, " + when);
+        assertEquals(check.getTileLength(onAlpha), 12, "Alpha's length, " + when);
+
+        assertEquals(check.getPointName(onCharlie), "Charlie Platform", "Charlie's name, " + when);
+        assertTrue(check.isStation(onCharlie), "Charlie's station, " + when);
+        assertEquals(check.getTileLength(onCharlie), 7, "Charlie's length, " + when);
+
+        assertTrue(check.getConfiguration("Only").getJSONObject("points").has("Alpha:2,2"),
+            "Alpha's placement, " + when);
+        assertTrue(check.getConfiguration("Only").getJSONObject("points").has("Charlie:5,5"),
+            "Charlie's placement, " + when);
+
+        Map<String, Integer> now = ids();
+
+        assertEquals(now.get("Alpha"), Integer.valueOf(alphaId),
+            "Alpha's id moved " + when + " - which reattaches its whole setup to another page");
+        assertEquals(now.get("Charlie"), Integer.valueOf(charlieId),
+            "Charlie's id moved " + when + " - which reattaches its whole setup to another page");
+    }
+
+    /**
+     * The store as it comes back off disk, under the numbering the index now has.
+     */
+    private AutonomyCompanionStore reload() throws IOException
+    {
+        AutonomyCompanionStore fresh = new AutonomyCompanionStore(layout);
+
+        fresh.setPageIds(idsAsNameToId());
+        fresh.load();
+
+        return fresh;
+    }
+
+    private void place(org.json.JSONObject configuration, String key, String loc)
+    {
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        configuration.getJSONObject("points").put(key, new org.json.JSONObject()
+            .put("loc", new org.json.JSONObject().put("name", loc)));
+    }
 }

@@ -539,3 +539,71 @@ showed a bare dash and read as though somebody had forgotten to fill it in. File
 truth, so filed and undone is how it is recorded.
 
 The same family as OB-071, which FR-013 also dissolves.
+
+### FR-014 - 2026-08-24 - show station name here
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 01:52  
+**Build:** commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the show station name here right click menu option in the autonomy editor should clearly indicate the current station being shown, in cases where the user just sees [---] on the diagram.
+
+### OB-081 - 2026-08-24 - renaming locomotives while autonomy is loaded
+
+**Kind:** bug  
+**Raised from:** MT-145 (A locomotive rename reaches a setup nothing has open)  
+**Filed:** 2026-08-24 02:02  
+**Build:** commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+When autonomy is loaded: Renaming a locomotive does not immediately propagate to the labels in the track diagram viewer.
+
+### OB-082 - 2026-08-24 - autonomy editor window title
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 02:07  
+**Build:** commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+minor cosmetic: the layout editor says layout editor: {page}, autonomy uses a dash instead.  change the autonomy window title to use a colon in the same format.
+
+### OB-083 - 2026-08-24 - unavailable while occupied window cosmetics
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 02:11  
+**Build:** commit b1e22b5b
+
+make the scroll area background white, and make the popup wider so we can read the message (or split the message across 2 lines).  increase the scrolling speed of the stations.  Ensure self-selection is impossible (hide target station from the list).
+
+### FR-014 - 2026-08-24 - the "no available paths" reasons, as a list you can read
+
+**Kind:** feature request
+**Raised from:** Adam, testing MT-144
+**Filed:** 2026-08-24
+
+Adam: "let's also make it clickable and show the notes in a popup with a scrollable text area with the
+whole list of stations. Order them by ones that can be chosen autonomously and ones that cannot, with
+the autonomous ones first."
+
+Today the information mark beside **No available paths** is hover-only: the reasons are computed when
+the pointer stops on the label and shown as a tooltip. A tooltip is the wrong container for this - it
+cannot be scrolled, it goes away while you read it, and the list can be long on a real railway.
+
+Wanted: click the mark, get a window with the whole list in a scrollable text area, ordered with the
+stations autonomy could choose first and the ones it cannot after them.
+
+One thing to be careful of, from the code that computes this: `explainDestinations` walks every
+candidate route to every station and takes the Layout monitor to do it. The comment beside it records
+what happened when that ran on the event thread - "that is the freeze this file's own comments say must
+never happen, reintroduced by the feature meant to explain it". So the popup has to compute off the
+event thread and fill itself in when the answer arrives.
+
+### FR-015 - 2026-08-24 - backup robustness
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 02:24  
+**Build:** commit b1e22b5b
+
+backup traincontrol data should write a zip with: UIstate, LocDB, the track diagram, and all autonomy files.

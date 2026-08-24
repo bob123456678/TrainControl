@@ -1483,6 +1483,19 @@ class Triage(tk.Tk):
         for e in self.doc.entries:
             mark = self.state_.mark(e.tag)
 
+            # A mark says "I dealt with this in this session".  It goes stale the moment the entry
+            # MOVES: Adam submits a verdict, the mark drops the row out of the queue, Claude then fixes
+            # the thing and writes it up - and the row stays hidden, for ever, because the mark is
+            # still there.  That hid MT-124 for a whole round: its disposition was open, it had been
+            # acted on, and it never came back in front of him.
+            #
+            # Reopened is exactly "he judged it and something has changed since", so it is the right
+            # thing to override a stale mark with.  Within one session nothing changes: an entry he has
+            # just submitted has no newer Claude comment yet, so it is not reopened and the mark still
+            # hides it, which is what the mark is for.
+            if e.reopened:
+                mark = None
+
             if mode.startswith("open - not yet"):
                 # Skipped is a marker, not an exit - Adam still wants that row in front of him, just
                 # flagged, so only a real Submit (mark == "done") drops an entry out of this view.

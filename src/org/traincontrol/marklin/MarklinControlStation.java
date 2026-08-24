@@ -774,6 +774,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void parseAuto(String s)
     {        
+        // What the OPERATOR chose, kept across the rebuild.
+        //
+        // Everything else here is a property of the configuration and is rightly replaced with it.
+        // Timetable capture is not: it is a button the user pressed a moment ago, and it lives on the
+        // Layout object because that is where the capture happens.
+        //
+        // So every rebuild silently turned it off. The setup rebuilds far more often than it used to -
+        // applying a diagram edit, placing a locomotive, loading a configuration all come through here -
+        // and the toggle button is not repainted from the layout at those moments, so it stayed lit
+        // over a layout that was no longer capturing. Adam: "capture locomotive commands is capturing
+        // neither manual locomotive commands nor full autonomy commands into the timetable."
+        //
+        // Read before the old layout is discarded, applied after the new one exists.
+        boolean wasCapturing = this.autoLayout != null && this.autoLayout.isTimetableCapture();
+
         if (this.autoLayout != null)
         {
             this.autoLayout.invalidate();
@@ -781,6 +796,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.autoLayout = Layout.fromJSON(s, this);
+
+        if (this.autoLayout != null) this.autoLayout.setTimetableCapture(wasCapturing);
+
         this.applyAutonomyRouteActivations();
     }
     

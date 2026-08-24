@@ -40,19 +40,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
-| [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | - |
-| [MT-142](#mt-142) | 2026-08-24 | A page keeps its identity when other pages change | fixed unvalidated | OB-059, OB-060, OB-061 |
-| [MT-143](#mt-143) | 2026-08-24 | Four small ones from the same test pass | fixed unvalidated | OB-054, OB-055, OB-056, OB-057 |
-| [MT-144](#mt-144) | 2026-08-24 | The editor window comes forward, and the info mark is an icon | fixed unvalidated | OB-058, OB-063 |
-| [MT-145](#mt-145) | 2026-08-24 | A locomotive rename reaches a setup nothing has open | fixed unvalidated | OB-062 |
-| [MT-146](#mt-146) | 2026-08-24 | A train may leave the point that holds a station back | fixed unvalidated | FR-001 |
-| [MT-147](#mt-147) | 2026-08-24 | The restored layout is the one you had | needs test | the 23 August data loss |
-| [MT-148](#mt-148) | 2026-08-24 | A page that will not load keeps its setup | fixed unvalidated | OB-068 |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 
-Everything else - 113 of 149 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 149 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1690,6 +1682,10 @@ This vanished, I reported it in another item too.
 twice - the edit-locomotive item was suppressed by a gate whose precondition OB-009 had removed. Fixed
 there; this entry is worth running again because it goes further than MT-101 does: it asks you to set
 an arrival function and then actually hear it fire.
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit b1e22b5b.*
+
 ---
 <a id="mt-023"></a>
 
@@ -1751,6 +1747,10 @@ So the loss is not in the model. Three things it could be, in the order I would 
 If it recurs, the detail that separates them is what the **second** signal's address is and whether the
 log shows it being commanded. The test proves the command is issued; what it cannot prove is that the
 ironwork moved.
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit b1e22b5b.*
+
 ---
 <a id="mt-024"></a>
 
@@ -5195,6 +5195,30 @@ back to the track centre.
 **Unvalidated because this is a question about pixels**, and two of the three drawing defects this month
 were wrong on the first attempt. Worth a look at a curved station with a train on it, in the editor and
 in the viewer.
+
+**Claude, 2026-08-24.** Adam: "I did not see MT-124 in the queue." He was right, and the reason is a
+tooling defect rather than anything about this entry.
+
+`triage.py` hides an entry that carries a session mark of `done`. He submitted a verdict on this one
+last round, which set that mark - and the mark persists across rounds, because the session state is
+local scratch that nothing clears. So once he had judged it, it never came back in front of him, no
+matter what happened to it afterwards. That applies to every entry he has ever submitted on, not just
+this one.
+
+Fixed in `triage.py`: a mark is ignored when the entry is **reopened**, which is exactly "he judged it
+and something has changed since". Within a session nothing changes - an entry he has just submitted has
+no newer comment yet, so the mark still hides it, which is what the mark is for.
+
+**On the finding itself: it was already addressed.** His note was "on a curve, the badge is perfectly
+over the sensor, but we decided to place those curved station dots offset on the other side when in the
+autonomy editor. Move the * so it aligns with the offset placement." The star follows `badgeDrawnAt` -
+the position the badge actually landed at, recorded rather than recomputed, because that placement is
+three rules deep and a second copy of the arithmetic would be a second chance to disagree. His words
+are quoted at the code site.
+
+So this wants his eyes rather than work: a curved station with a train on it, in the editor and in the
+viewer.
+
 ---
 
 <a id="mt-125"></a>
@@ -6073,7 +6097,7 @@ facing rule. Nothing to build, and the migration I was going to ask about does n
 <a id="mt-139"></a>
 ### MT-139 - 2026-08-23 - A train dispatched by hand now counts as a run
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's ruling on the first signal question
 **Written:** 2026-08-23
 
@@ -6121,6 +6145,8 @@ Control+X drove its protecting signals on the spot" - and it stays fixed.
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam, 2026-08-24: **works**. A hand-dispatched train is a run, with the same guards and the same signalling as autonomy.
 
 ---
 
@@ -6260,7 +6286,7 @@ combine.
 
 ### MT-142 - 2026-08-24 - A page keeps its identity when other pages change
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-059, OB-060, OB-061
 **Written:** 2026-08-24
 
@@ -6344,13 +6370,32 @@ Six tests, each seen failing first, in `testPageIdsAreDurable`. The delete and t
 also why `AutonomySession.save`'s refusal to prune while the numbering is suspect is now a backstop
 rather than the fix.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+This seems to work, but add a thorough test case for it since you already know what should happen.
+
+*Run against commit b1e22b5b.*
+
+**Claude, 2026-08-24.** Adam: **works with notes** - "This seems to work, but add a thorough test
+case for it since you already know what should happen."
+
+Added: `testPageIdentitySurvivesASequenceOfOperations`. The existing tests each isolate one operation;
+this one does what a person does - rename, add, delete, add again - and after EVERY step asserts that
+the two pages the sequence is not about still carry their names, stations, lengths and placements, and
+that their ids have not moved.
+
+Written as a sequence deliberately. None of this month's defects were in a single operation: they were
+in what one operation did to a page it was not about - a rename renumbering others, a delete handing a
+retired id to a newcomer, a page that failed to load pruned by a save meant for something else. A
+sequence is the only shape that catches those.
+
 ---
 
 <a id="mt-143"></a>
 
 ### MT-143 - 2026-08-24 - Four small ones from the same test pass
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-054, OB-055, OB-056, OB-057
 **Written:** 2026-08-24
 
@@ -6397,13 +6442,19 @@ refused for its own reason; the editor holds the pages the session is built from
 **The `[]` is not fixed here** - it is its own item, OB-063, under MT-144, since Adam has asked for
 narrower entries.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam, 2026-08-24: **works**. All four - the page-link menu, the grid on the editor spacers, the grid toggle in the autonomy editor, and Start Autonomy refusing while the setup has errors.
+
 ---
 
 <a id="mt-144"></a>
 
 ### MT-144 - 2026-08-24 - The editor window comes forward, and the info mark is an icon
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-058, OB-063
 **Written:** 2026-08-24
 
@@ -6438,13 +6489,27 @@ size every pixel is a decision, and reducing a large drawing produced a rounded 
 it. It sits beside the text as the label's icon, and is cleared alongside the tooltip it belongs to,
 because one branch sets it and every other branch has to be the one that takes it away.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+Works, but let's also make it clickable and show the notes in a popup with a scrollable text area with the whole list of stations.  Order them by ones that can be chosen autonomously and ones that cannot, with the autonomous ones first.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam: **works with notes** - "Works, but let's also make it clickable and
+show the notes in a popup with a scrollable text area with the whole list of stations. Order them by
+ones that can be chosen autonomously and ones that cannot, with the autonomous ones first."
+
+The fix is validated, so this closes; the note is a new piece of work rather than a defect in it, and
+is filed as **FR-014**. Today the reasons appear only on hover, one tooltip's worth, which is the
+limitation he is describing rather than a fault.
+
 ---
 
 <a id="mt-145"></a>
 
 ### MT-145 - 2026-08-24 - A locomotive rename reaches a setup nothing has open
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-062
 **Written:** 2026-08-24
 
@@ -6505,13 +6570,21 @@ uncovered part, which in this codebase is usually where the defect is - `renameP
 had no caller for weeks (MT-135), and `HomeLocomotiveMenu` lost four of its five callers with its tests
 still green (DD-A6).
 
+**Adam, 2026-08-24 (triage).** Works.
+
+Filed from this test: OB-081 (bug - renaming locomotives while autonomy is loaded).  They are in `issues.md` until they are picked up.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam, 2026-08-24: **works**. A locomotive rename reaches a setup nothing has open.
+
 ---
 
 <a id="mt-146"></a>
 
 ### MT-146 - 2026-08-24 - A train may leave the point that holds a station back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-001
 **Written:** 2026-08-24
 
@@ -6547,13 +6620,30 @@ clause is ever right about the wrong locomotive - and one for the twin copy, whi
 They needed a fixture with a way OUT of the yard: the old one had no edge leaving it, so the exemption
 had nothing to be asked about, which is exactly why nothing pinned this either way.
 
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+Make a test case for this since you already list the steps.  Reopen only if test case fails.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam: "Make a test case for this since you already list the steps. Reopen
+only if test case fails."
+
+The tests were already written when the exemption was - three in
+`testStationBlockedByAnotherPoint`: the train leaving the watched point may be sent to the station it
+holds back, somebody ELSE standing there still blocks it, and leaving the other copy of a split square
+is exempt too. The middle one is the mutation check: `standing == null || standing.equals(loc)`
+collapses to `true` if the second clause is ever right about the wrong locomotive.
+
+All three pass. Closed on that, per his instruction.
+
 ---
 
 <a id="mt-147"></a>
 
 ### MT-147 - 2026-08-24 - The restored layout is the one you had
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** the 23 August data loss
 **Written:** 2026-08-24
 
@@ -6597,13 +6687,21 @@ somewhere else, and can't be at 2 places at once" was reporting.
 Backups, if any of this is wrong: `PRE-RESTORE-2213` (your state before the first restore) and
 `PRE-RESTORE-2258` (what the app left after it pruned).
 
+**Adam, 2026-08-24 (triage).** Works.
+
+all looks good.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam, 2026-08-24: **works** - "all looks good." The restored railway is his, verified page by page. That was the entry everything else was gated on.
+
 ---
 
 <a id="mt-148"></a>
 
 ### MT-148 - 2026-08-24 - A page that will not load keeps its setup
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-068
 **Written:** 2026-08-24
 
@@ -6648,6 +6746,12 @@ Worth knowing for reading the code: with the page absent, its entries stay in me
 because `pageOf` has no name to resolve the id to. That is why they look like squares that do not exist
 to anything working in page names - and it is exactly the state in which they must not be deleted.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam, 2026-08-24: **works**. A page that will not load keeps its setup.
+
 ---
 
 <a id="mt-149"></a>
@@ -6691,4 +6795,42 @@ breaks the entries that cross it. That is survivable now rather than fatal - one
 instead of the list - but it is a real gap, and `setPointName`'s comment still says "Nothing else has to
 happen", which is not true.
 
+**Adam, 2026-08-24 (triage).** Does not work.
+
+Was not unable to test this directly because "capture locomotive commands" is capturing neither manual locomotive commands nor full autonomy commands into the timetable.  Regression.  Fix and then reopen this bug to test the original intent.
+
+*Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+Was not able to test this directly because "capture locomotive commands" is capturing neither manual
+locomotive commands nor full autonomy commands into the timetable. Regression. Fix and then reopen this
+bug to test the original intent.
+
+**Claude, 2026-08-24.** Found, fixed, and it was not where either of us would have looked.
+
+The engine was never at fault. Probing `addTimetableEntry` directly captured a dispatch first time, with
+capture on - so the capture path, including the change made for this entry, works.
+
+What was broken is that the operator's CHOICE did not survive. The capture flag lives on the `Layout`
+object, because that is where capture happens. `MarklinControlStation.parseAuto` replaces that object
+wholesale and carries nothing across, so every rebuild started a fresh Layout with capture **off** -
+while the toggle button, which is not repainted at that moment, stayed lit. A rebuild happens far more
+often than it reads: applying a diagram edit, placing a locomotive and loading a configuration all
+arrive there. So he pressed a button, did something ordinary, and recorded nothing for the rest of the
+session with no indication why.
+
+`parseAuto` now carries the flag across. Everything else it replaces is a property of the configuration
+and is rightly replaced with it; this is a button somebody pressed a moment ago.
+
+**And the test that should have existed.** Adam: "I am surprised we don't have a timetable capture test
+yet." There was none at all. `testTimetableCapture` has three: a dispatch is captured with capture on, a
+dispatch is NOT captured with it off - the mutation check, without which the first would pass whatever
+the code did - and the flag survives a rebuild, which is the one that would have caught this and is
+about a piece of state surviving something that looks unrelated to it. Mutation-checked.
+
+**This entry stays open**, per his instruction: the original intent - that the timetable survives
+renaming a locomotive - still needs testing now that capture works.
+
 ---
+
