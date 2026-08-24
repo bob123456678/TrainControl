@@ -702,7 +702,23 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which way a train that arrived by this side is pointing.
+     * Which way a train that arrived by this side is pointing - for the NAME, and only for the name.
+     *
+     * The straight-through answer, which is the opposite of the side arrived by.  facingOf gives a
+     * different answer on a curve or a diverging leg, and a better one: it follows the route the train
+     * actually took, and its own javadoc records why the naive version was wrong - "A train entering an
+     * N-E curve by N leaves by E, and saying it faces S describes a train sitting across the rails."
+     *
+     * So on those squares the copy is CALLED "(eastbound)" while facingsAt reports its train faces
+     * south.  That is one rule in two places with only one of them corrected (UR-16), and it is left
+     * that way deliberately for now: a Point's name is what every configuration refers to - placements,
+     * homes, exclusions and timetables are all by name - so changing which word appears here renames
+     * Points on real layouts, and a configuration naming a Point that no longer exists is refused by
+     * parseAuto, which invalidates the whole thing.  Correcting it needs a migration that rewrites the
+     * configurations, not a change here.  Raised as MT-138.
+     *
+     * Nothing routes on this text.  StationIndex.withoutArrivalSuffix strips all four words whichever
+     * one is chosen, so that list stays valid either way.
      */
     private static String heading(TilePorts.Side arrival)
     {

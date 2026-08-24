@@ -957,6 +957,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param station the sensor’s square
      * @param value the label drawing its caption
      */
+    /**
+     * Drops every caption label a retired grid registered.
+     *
+     * addLayoutStation prunes lazily, and only when a SUCCESSOR for the same square is registered by
+     * the same owner - so a caption that is cleared leaves its label behind for ever, because nothing
+     * is ever registered for that square again.  A label left here is a child of the retired container,
+     * which keeps the whole previous grid alive with it, and updateStationLabels goes on doing its full
+     * per-Point work writing into a label nobody can see.
+     *
+     * Called from LayoutGrid.discard, which is the one moment something knows a grid is finished with.
+     *
+     * @param owner the panel the grid was built into
+     */
+    public void forgetLayoutStations(java.awt.Container owner)
+    {
+        if (owner == null) return;
+
+        for (java.util.Iterator<Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>>
+            squares = layoutStations.entrySet().iterator(); squares.hasNext();)
+        {
+            Set<JLabel> here = squares.next().getValue();
+
+            for (java.util.Iterator<JLabel> labels = here.iterator(); labels.hasNext();)
+            {
+                if (owner == labels.next().getClientProperty(LAYOUT_STATION_OWNER)) labels.remove();
+            }
+
+            // The square itself once nothing draws it, so the map does not keep a key per square the
+            // diagram has ever had.
+            if (here.isEmpty()) squares.remove();
+        }
+    }
+
     public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value)
     {
         addLayoutStation(station, value, null);

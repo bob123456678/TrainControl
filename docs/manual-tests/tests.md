@@ -42,8 +42,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
+| [MT-138](#mt-138) | 2026-08-23 | A split copy's name and its facing disagree on a curve | needs decision | - |
+| [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
 
-Everything else - 111 of 137 - is **fixed validated** and needs nothing from you unless the
+Everything else - 111 of 139 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5792,5 +5794,76 @@ the moment it is most needed is when the current setup will not load.
 **OB-052.** The tidy-up report ran two lists together that mean opposite things - stations FORGOTTEN and
 stations KEPT because something still names them - with no title and no sentence. A reader could not tell
 which of their stations they had just lost.
+
+---
+
+<a id="mt-138"></a>
+### MT-138 - 2026-08-23 - A split copy's name and its facing disagree on a curve
+
+**Disposition:** needs decision
+
+**Claude, 2026-08-23.** This one is a design decision rather than a fix, because fixing it renames
+Points on your layout.
+
+A square trains can reach from two sides is emitted as two Points, and each is named with the direction
+its train is travelling - "Bahnsteig 4 (eastbound)". That word comes from `heading`, which answers "the
+opposite of the side arrived by". `facingOf`, which decides which way the train on that copy is actually
+pointing, answers by following the ROUTE the train took - and its own comment records why the simple
+version is wrong: "A train entering an N-E curve by N leaves by E, and saying it faces S describes a
+train sitting across the rails."
+
+So on a curve or a diverging leg, the copy is called "(eastbound)" while the facing menu, the arrows and
+the running log say the train faces south. One rule in two places, with only one of them corrected.
+
+**Nothing routes on the text**, so this is a labelling defect - but the running log is where you go to
+work out what a train is doing, and you have curved stations.
+
+**Why I have not just changed it.** A Point's NAME is what every configuration refers to: placements,
+homes, exclusions and timetable entries are all by name. Changing which word appears renames those
+Points, and a configuration naming a Point that no longer exists is refused by `parseAuto`, which
+invalidates the whole layout - the same failure UR-9 was about. Correcting it properly needs a migration
+that rewrites the configurations at the same time, which is a change I would not make quietly the week
+of a release.
+
+**What I need from you:** whether to do the migration, or to leave the names as they are and treat the
+word as "the side it came in by" rather than a heading. If the latter, the honest fix is to change the
+word - "(from the west)" reads as what it is, and would need `StationIndex.withoutArrivalSuffix`
+updating - and that is still a rename.
+
+The divergence is now recorded in `heading`'s javadoc either way, so the next reader is not left to find
+it again.
+
+---
+
+<a id="mt-139"></a>
+### MT-139 - 2026-08-23 - A train dispatched by hand now counts as a run
+
+**Disposition:** fixed unvalidated
+
+**Claude, 2026-08-23.** Your ruling on the first signal question - "The same thing should happen in
+manual operation vs auto - the same switches and signals set, and guards applied" - is in, and it
+changes more than signals. Worth ten minutes with a train, because it is the widest behaviour change of
+this round.
+
+**What was wrong.** Dispatching a train from the diagram's right-click menu ran it on a bare thread, so
+nothing counted it as running - and the route is locked BEFORE the locomotive is registered. For the
+whole locking phase the railway believed nothing was happening, so protection stood down and the
+destination platform's signal stayed GREEN for the entire approach. It only went red once the train was
+standing at the platform, which is the one moment it no longer matters.
+
+**What to check.**
+
+1. Send a train by hand to a platform that has a protecting signal. The signal should go RED as the
+   route is set, not when the train arrives - and back to green after it leaves.
+2. While that hand-dispatched train is running, the same things should be refused as during autonomy:
+   the track diagram editor and the autonomy editor should not open, the simulation toggle should be
+   off-limits, and locomotives should not be editable or deletable. **This is the part to look at
+   hardest** - it is new. Before this, all of those were allowed while a hand-driven train was moving.
+3. When it arrives, everything should come back on its own. If anything stays greyed after the train
+   has stopped, that is a real bug and worth filing - it would mean the count is not being given back.
+
+**What has NOT changed:** placing or removing a train by hand, with nothing running, still moves no
+signals. That was the defect the old guard existed for - "cutting a locomotive off a platform with
+Control+X drove its protecting signals on the spot" - and it stays fixed.
 
 ---

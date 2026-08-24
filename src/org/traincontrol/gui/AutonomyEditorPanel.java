@@ -1276,7 +1276,12 @@ public class AutonomyEditorPanel extends JPanel
         // than the question, and sat nowhere near its other half.
         if (arrivals != null) menu.add(arrivals);
 
-        menu.add(connections);
+        // Only when there is something under the heading.  Everything that fills this submenu sits
+        // inside canCarryDirection(target), which is false for any portal - so right-clicking a link or
+        // a tunnel opened "Connections and Direction" onto a greyed heading and a separator, which is
+        // exactly the state hasItemsBesidesTitle was written to detect for OB-032 and was then never
+        // called from anywhere.
+        if (hasItemsBesidesTitle(connections)) menu.add(connections);
 
         // Then a divider, the signal, and the drawer of numbers (MT-104).
         //

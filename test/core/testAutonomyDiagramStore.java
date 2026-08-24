@@ -1726,4 +1726,63 @@ public class testAutonomyDiagramStore
         assertTrue(store.getProtectingSignals(station).isEmpty(),
             "the station is still recorded as protected by a signal that no longer exists");
     }
+
+    /**
+     * A load that fails on the CONTENT leaves the setup exactly as it was, like one that fails on the file.
+     *
+     * UR-14, from the uninformed review. load()'s own comment promises this outright: "Read and parse
+     * BEFORE anything is thrown away ... A load that fails now leaves the setup empty" - and it is true
+     * of a parse failure, which happens before `clear()`. It was not true of a TYPE failure.
+     * `readShared` runs after `clear()` and uses the strict accessors throughout - `getString`, `getInt`
+     * - each of which throws part way through, with the store already empty.
+     *
+     * What that costs is what the comment says it costs: "The caller then had a live, blank store:
+     * every station, name and direction gone from the screen, and one press of Save away from being
+     * gone from the disk as well." `discardEdits` leaves `dirty` set over an empty store, and the next
+     * save on the way out writes that over setup.json.
+     *
+     * `importBundle` really is guarded, and its comment cites load() as the model it was following.
+     *
+     * The trigger is a setup.json that TrainControl did not write - hand-edited, or from another tool.
+     * Every field this build writes round-trips, so this cannot happen by itself today; the guarantee
+     * is what is being tested, not the odds.
+     */
+    @Test
+    public void testALoadThatFailsOnATypeLeavesTheSetupAlone() throws IOException
+    {
+        store.setPointName(new TileKey("1 - Main", 2, 2), "Still here");
+        store.setStation(new TileKey("1 - Main", 2, 2), true);
+        store.createConfiguration("Mine", null);
+        store.save();
+
+        // A point name that is a NUMBER, which the strict accessors refuse - written straight into the
+        // file, as a hand edit would leave it.
+        java.io.File file = new java.io.File(new java.io.File(layout, "config/autonomy"), "setup.json");
+
+        org.json.JSONObject root = new org.json.JSONObject(new String(
+            java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
+
+        root.getJSONObject("pointNames").put("1:9,9", 7);
+
+        java.nio.file.Files.write(file.toPath(),
+            root.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPointName(new TileKey("1 - Main", 5, 5), "What was there before");
+
+        try
+        {
+            reopened.load();
+        }
+        catch (RuntimeException | IOException expected)
+        {
+            // the caller reports this as "the setup could not be read"
+        }
+
+        assertEquals(reopened.getPointName(new TileKey("1 - Main", 5, 5)), "What was there before",
+            "a load that failed on the CONTENT emptied the store, which is what the same method's "
+            + "comment promises it no longer does. The caller is left with a live blank store, one "
+            + "press of Save away from writing that over setup.json (UR-14)");
+    }
 }

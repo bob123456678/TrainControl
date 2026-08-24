@@ -92,6 +92,17 @@ public class LayoutGrid
     private volatile boolean discarded = false;
 
     /**
+     * The panel this grid was built into, and the window that holds the caption registry.
+     *
+     * Kept so that discard() can hand back the labels this grid registered.  They are registered
+     * against the PANEL, which is also what LIVE is keyed by, so "the labels this grid owns" and "the
+     * grid being replaced over this panel" are the same question.
+     */
+    private JPanel owner;
+
+    private TrainControlUI window;
+
+    /**
      * The grid currently drawn into each panel, so that building a new one can retire the old one.
      *
      * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
@@ -140,6 +151,20 @@ public class LayoutGrid
     {
         discarded = true;
 
+        // The caption labels this grid registered, handed back.
+        //
+        // addLayoutStation prunes LAZILY - a stale label goes only when a successor for the same square
+        // with the same owner is registered - so a caption that is CLEARED left its label in the map for
+        // good: nothing is registered for that square again, so no successor ever arrives.  The label is
+        // still a child of the retired container, which keeps the whole previous grid reachable, every
+        // tile and listener on that page with it.  The same held for every square on a page that was
+        // renamed or deleted, since the key carries the page name.
+        //
+        // Here because this is the one moment something knows a grid is finished with.  It runs before
+        // the replacement registers anything - LIVE.put and this call are the first thing the new
+        // constructor does - so it cannot take the new grid's labels with it.
+        if (window != null && owner != null) window.forgetLayoutStations(owner);
+
         // Null only for a grid whose constructor did not reach the panel - it registers itself against
         // that panel before it builds, so a failure part way through leaves one here to be discarded by
         // the next grid over the same panel.  Nothing on that path throws today; guarded so that a
@@ -183,6 +208,9 @@ public class LayoutGrid
 
         // Before anything else touches the panel: whatever was drawn here is being replaced, and a
         // replaced grid with timers still armed fires into a panel that is no longer its own.
+        this.owner = parent;
+        this.window = ui;
+
         if (parent != null)
         {
             java.lang.ref.WeakReference<LayoutGrid> was =

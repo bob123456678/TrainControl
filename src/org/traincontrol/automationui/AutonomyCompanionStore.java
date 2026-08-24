@@ -479,13 +479,35 @@ public class AutonomyCompanionStore
             }
         }
 
+        // What is here now, so that a failure in the READ can put it back.
+        //
+        // The promise above holds for a parse failure, which happens before this point.  It did not
+        // hold for a TYPE failure: readShared runs after clear() and uses the strict accessors
+        // throughout - getString, getInt - each of which throws part way through with the store already
+        // empty.  That is the very state the comment says was fixed, reached by a different door, and
+        // importBundle cites this method as the model for the guard it does have.
+        //
+        // The trigger is a setup.json this build did not write - hand-edited, or from another tool -
+        // since every field it writes round trips.  The guarantee is worth keeping whatever the odds:
+        // the caller is left with a live blank store, one press of Save from writing it to disk.
+        JSONObject wasThere = snapshotSetup();
+
         clear();
 
-        readShared(root);
+        try
+        {
+            readShared(root);
 
-        activeConfiguration = root.optString("activeConfiguration", null);
+            activeConfiguration = root.optString("activeConfiguration", null);
 
-        configurations.putAll(loaded);
+            configurations.putAll(loaded);
+        }
+        catch (RuntimeException e)
+        {
+            restoreSetup(wasThere);
+
+            throw e;
+        }
 
         if (activeConfiguration != null && !configurations.containsKey(activeConfiguration))
         {

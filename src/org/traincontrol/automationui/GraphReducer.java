@@ -1060,8 +1060,16 @@ public class GraphReducer
      * The location identifiers a step occupies.
      *
      * Normally the tile itself.  An overpass is identified per route, so its two levels are separate
-     * places.  A paired portal counts as one location with its partner, since a tunnel and its far end
-     * are one piece of track drawn twice.
+     * places.
+     *
+     * A paired portal is NOT unioned with its partner here, although a tunnel and its far end are one
+     * piece of track drawn twice.  It does not need to be, and the reason is worth writing down because
+     * the next reader will otherwise assume the union is missing: a portal tile carries no feedback, so
+     * it is never a Point, so a walk that crosses the jump records BOTH tiles as steps - and the two
+     * edges then share the first tile's location key anyway.  Adding the union would be redundant
+     * rather than a correction.
+     *
+     * This comment used to describe the union as something the method did.  It never has.
      */
     private List<String> locationsOf(TileStep step)
     {

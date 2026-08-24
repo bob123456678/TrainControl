@@ -113,9 +113,6 @@ public class AutonomyViewerPanel extends JPanel
 
     private final JLabel status = new JLabel();
 
-    // Set while a configuration is being loaded into the combo, so reacting to that does not load it
-    // straight back again
-    private boolean populating = false;
 
     public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
     {
@@ -319,6 +316,12 @@ public class AutonomyViewerPanel extends JPanel
         manage.addActionListener(e -> manageMenu().show(manage, 0, manage.getHeight()));
         choose.add(styled(manage, true));
 
+        // No ActionListener, deliberately: choosing a configuration is done from the menu below rather
+        // than by selecting it here.  There used to be a `populating` flag set around every write to
+        // this combo, described as stopping a selection made in code from being reacted to and loaded
+        // straight back - a guard against a listener that does not exist, and that nothing ever read.
+        // Anything that does add one will need that guard back, because populate() sets the selection
+        // itself.
         configurations.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
@@ -644,16 +647,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void setSelectedConfiguration(String name)
     {
-        populating = true;
-
-        try
-        {
-            configurations.setSelectedItem(name);
-        }
-        finally
-        {
-            populating = false;
-        }
+        configurations.setSelectedItem(name);
     }
 
     public String selected()
@@ -1371,25 +1365,16 @@ public class AutonomyViewerPanel extends JPanel
             : running ? I18n.f("autosetup.ui.statusEnabled", ui.getActiveDiagramConfiguration())
             : I18n.t("autosetup.ui.statusNotEnabled"));
 
-        populating = true;
+        configurations.removeAllItems();
 
-        try
+        for (String name : session().getStore().getConfigurationNames())
         {
-            configurations.removeAllItems();
-
-            for (String name : session().getStore().getConfigurationNames())
-            {
-                configurations.addItem(name);
-            }
-
-            String active = session().getStore().getActiveConfiguration();
-
-            if (active != null) configurations.setSelectedItem(active);
+            configurations.addItem(name);
         }
-        finally
-        {
-            populating = false;
-        }
+
+        String active = session().getStore().getActiveConfiguration();
+
+        if (active != null) configurations.setSelectedItem(active);
 
         refreshRoster();
         refreshFindings();
