@@ -957,10 +957,6 @@ public final class HomeStaging
     }
 
     /**
-     * Whether a locomotive may come to rest on a station - length, exclusions, and the reversibility a
-     * terminus demands.
-     */
-    /**
      * canRest, plus the one rest rule that depends on where everything ELSE is.
      *
      * FR-001 holds a station back while another named square is occupied, and `isPathClear` enforces
@@ -1022,6 +1018,10 @@ public final class HomeStaging
         return there != null && !there.equals(loc);
     }
 
+    /**
+     * Whether a locomotive may come to rest on a station - length, exclusions, and the reversibility a
+     * terminus demands.
+     */
     private static boolean canRest(Locomotive loc, Point at)
     {
         return at.isDestination()

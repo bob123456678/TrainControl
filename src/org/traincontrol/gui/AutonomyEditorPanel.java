@@ -2557,6 +2557,13 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * How tall one station's row is in the blocked-points picker, and therefore how far one notch of
+     * the wheel moves.  A row and a bit, so scrolling a long list feels like reading it rather than
+     * dragging it.
+     */
+    private static final int BLOCKED_ROW_HEIGHT = 24;
+
+    /**
      * Asks which squares hold this station back (FR-001).
      *
      * A checklist of the other named points, rather than a picker of one: a station may be held back by
@@ -2567,13 +2574,6 @@ public class AutonomyEditorPanel extends JPanel
      * edges pointing at the watched square, and a square with no name is one the operator cannot
      * recognise in a list - the name is how they know which place it is.
      */
-    /**
-     * How tall one station's row is in the blocked-points picker, and therefore how far one notch of
-     * the wheel moves.  A row and a bit, so scrolling a long list feels like reading it rather than
-     * dragging it.
-     */
-    private static final int BLOCKED_ROW_HEIGHT = 24;
-
     private void promptBlockingPoints(TileKey station)
     {
         java.util.List<TileKey> choices = new java.util.ArrayList<>();
