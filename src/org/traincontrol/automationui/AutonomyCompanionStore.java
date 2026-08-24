@@ -450,6 +450,22 @@ public class AutonomyCompanionStore
      *
      * @return recorded name -> name that id now has
      */
+    /**
+     * Whether this setup's keys can be trusted to mean the pages they name.
+     *
+     * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
+     * the file carries.  When a renumber has happened that map is wrong, so every entry is name-keyed
+     * to the wrong page - and the coordinates of a page of settings do not exist on whatever page now
+     * holds its old id.  Anything that deletes on the strength of "this square does not exist" is then
+     * deleting on the strength of a lie.
+     *
+     * @return true while a renumber is outstanding and nothing has re-keyed the setup
+     */
+    public boolean isPageNumberingSuspect()
+    {
+        return !pageIdConflicts.isEmpty();
+    }
+
     public Map<String, String> getPageIdConflicts()
     {
         return Collections.unmodifiableMap(pageIdConflicts);
@@ -2455,6 +2471,14 @@ public class AutonomyCompanionStore
      */
     public static class Reconciliation
     {
+        /**
+         * Nothing was reconciled.  For the callers that decline to prune - see AutonomySession.save,
+         * which declines while a page renumber is outstanding.
+         */
+        public Reconciliation()
+        {
+        }
+
         private final List<String> droppedTileProperties = new ArrayList<>();
         private final List<String> forgottenNames = new ArrayList<>();
         private final Map<String, List<String>> namesStillReferenced = new LinkedHashMap<>();
@@ -2804,6 +2828,15 @@ public class AutonomyCompanionStore
      */
     private void readShared(JSONObject root)
     {
+        // FIRST, because everything below is translated out of page ids and the translation needs to
+        // know what those ids were called when this file was written.
+        //
+        // It used to be read after the tileLengths loop, which is the one collection translated inline
+        // rather than by an untranslate* call below - so lengths were resolved against an empty map
+        // while the other ten were resolved against a full one.  Harmless for as long as the
+        // translation ignored this map, and wrong the moment it stopped ignoring it.
+        readStringMap(root, "pages", pageNamesWhenWritten);
+
         readStringMap(root, "pointNames", pointNames);
         readStringSet(root, "stations", stations);
         readStringMap(root, "tileDirections", tileDirections);
@@ -2825,8 +2858,6 @@ public class AutonomyCompanionStore
                 tileLengths.put(fromStored(key), lengths.getInt(key));
             }
         }
-
-        readStringMap(root, "pages", pageNamesWhenWritten);
 
         // stored against page ids; brought back to the names the rest of the application uses
         untranslate(pointNames);
@@ -2999,9 +3030,45 @@ public class AutonomyCompanionStore
 
         if (colon < 0) return key;
 
-        String name = pageIdToName.get(key.substring(0, colon));
+        return pageOf(key.substring(0, colon)) + key.substring(colon);
+    }
 
-        return name == null ? key : name + key.substring(colon);
+    /**
+     * What page a stored id means, which is not always the page that holds that id now.
+     *
+     * Two different things can have happened since this file was written, and they want opposite
+     * answers - the same pair readShared tells apart to raise its warning:
+     *
+     *   renamed    - the same page, called something else.  The id is the part that held still, so the
+     *                current index is right and the settings follow the page.
+     *   renumbered - a DIFFERENT page holds this id now.  The NAME is the part that held still, so the
+     *                current index is wrong: it would attach a page of names, lengths and stations to
+     *                whatever track happens to sit at that number today.
+     *
+     * The deciding question is the same one pageIdConflicts asks - whether the name this id used to
+     * carry still exists somewhere.  If it does, this is a renumber and the name is followed.
+     *
+     * This is why "pages" is written at all, and until now it was only ever used to warn: the reading
+     * went through the current index either way, so a renumber silently reattached the whole setup and
+     * the next save reconciled away every setting whose coordinates did not exist on the page it had
+     * been given to.  Adam lost 19 point names, 14 stations, 22 directions and 15 captions that way on
+     * 2026-08-23, to a page rename that moved one page to the end of the index.
+     *
+     * Both branches agree whenever nothing has moved, which is the ordinary case.
+     *
+     * @param id the page id as stored in the file
+     * @return the page name those settings belong to, or the id itself when nothing is known about it
+     */
+    private String pageOf(String id)
+    {
+        String whenWritten = pageNamesWhenWritten.get(id);
+
+        // Renumbered: that page is still here, under a different number
+        if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return whenWritten;
+
+        String now = pageIdToName.get(id);
+
+        return now == null ? id : now;
     }
 
     private Map<String, String> translateKeys(Map<String, String> map, boolean storing)
@@ -3158,9 +3225,10 @@ public class AutonomyCompanionStore
 
         for (String stored : pages)
         {
-            String name = pageIdToName.get(stored);
-
-            out.add(name == null ? stored : name);
+            // The same question as fromStored - an excluded page is named by id like everything else,
+            // and a renumber moved it just the same.  This was the collection that used to be written
+            // raw, and getting it wrong silently re-includes a page in autonomy.
+            out.add(pageOf(stored));
         }
 
         pages.clear();

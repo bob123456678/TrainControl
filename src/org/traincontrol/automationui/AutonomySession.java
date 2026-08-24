@@ -3848,7 +3848,25 @@ public class AutonomySession
             }
         }
 
-        AutonomyCompanionStore.Reconciliation report = store.reconcile(existing);
+        // Not while the numbering is suspect.
+        //
+        // The THIRD time this method has reconciled against a page set that did not represent the
+        // truth, and the same fix as the other two: wait.  A renumber leaves every entry name-keyed to
+        // the wrong page, so their coordinates are missing from the page they were attached to and
+        // dropMissing reads that as a deleted tile.  Adam lost 19 point names and 14 stations to this
+        // on 2026-08-23 - pruned by the save that was meant to tidy the diagram, and reported as a
+        // routine list of squares that no longer exist.
+        //
+        // readShared had already detected it and AutonomyViewerPanel had already warned about it.  The
+        // warning was all there was: nothing re-keys, and the save below then rewrote "pages" from the
+        // current index, which is the only evidence a renumber ever happened.  So the warning could
+        // fire once, and afterwards the setup looked consistent for ever while meaning something else.
+        //
+        // Saving still happens.  It is only the DELETING that waits - until the numbering is settled,
+        // which is the point at which "this square does not exist" is a fact again.
+        AutonomyCompanionStore.Reconciliation report = store.isPageNumberingSuspect()
+            ? new AutonomyCompanionStore.Reconciliation()
+            : store.reconcile(existing);
 
         store.save();
 

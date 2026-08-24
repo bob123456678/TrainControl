@@ -495,6 +495,98 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A renumbered page's settings follow the PAGE, not the number.
+     *
+     * The test above pins that a renumber is REPORTED.  Nothing pinned where the settings went, and
+     * they went to the wrong page: fromStored resolved every stored id through the current index, so a
+     * page of names, stations, lengths and directions was handed to whatever track holds that number
+     * now.  Their coordinates do not exist there, so the next save reconciled them away as deleted
+     * squares - and because ids that shift by one round-trip unchanged, the file looked consistent
+     * throughout.
+     *
+     * Adam, MT-135: "Immediately after rename, all stations are gone."  A rename moved one page to the
+     * end of the index, which renumbered every page after it; he lost 19 point names, 14 stations, 22
+     * directions and 15 captions on 2026-08-23.
+     *
+     * The pair of them is the whole rule: the test above says the id is not trusted blindly, this one
+     * says the name is followed instead, and testRenamingAPageCostsNothingBecauseIdsAreStored says a
+     * rename still goes by id - because there the old name is GONE, which is what tells the two apart.
+     */
+    @Test
+    public void testARenumberedPagesSettingsFollowTheNameNotTheNumber() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Yard", "2");
+
+        store.setPageIds(before);
+
+        TileKey tile = new TileKey("Yard", 1, 1);
+
+        store.setPointName(tile, "Yard throat");
+        store.setStation(tile, true);
+        store.setTileLength(tile, 9);
+        store.setTileDirection(tile, new RouteId(0, 0), Direction.TOWARD_B);
+        store.createConfiguration("Default", null);
+        store.save();
+
+        // "Yard" is still here, under a different id - a renumber, not a rename
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main Line", "2");
+        after.put("Yard", "3");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(tile), "Yard throat",
+            "the settings of a renumbered page did not follow it - they were read through whatever "
+            + "page holds that id now, which is how a rename came to delete every station on a page");
+        assertTrue(reloaded.isStation(tile), "the station did not follow the page");
+        assertEquals(reloaded.getTileLength(tile), 9, "the length did not follow the page");
+        assertEquals(reloaded.getTileDirection(tile, new RouteId(0, 0)), Direction.TOWARD_B,
+            "the direction did not follow the page");
+
+        assertNull(reloaded.getPointName(new TileKey("Main Line", 1, 1)),
+            "another page was given this page's settings, which is worse than losing them because "
+            + "nothing looks wrong");
+        assertFalse(reloaded.isStation(new TileKey("Main Line", 1, 1)),
+            "another page was given this page's station");
+    }
+
+    /**
+     * And an excluded page stays excluded across a renumber.
+     *
+     * Getting this one wrong is silent in the other direction: a page the user took OUT of autonomy
+     * quietly rejoins it, and autonomy starts routing trains over track nobody meant it to touch.
+     */
+    @Test
+    public void testAnExcludedPageStaysExcludedAcrossARenumber() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Yard", "2");
+        before.put("Main Line", "3");
+
+        store.setPageIds(before);
+        store.setPageExcluded("Yard", true);
+        store.createConfiguration("Default", null);
+        store.save();
+
+        // the two pages swap numbers
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main Line", "2");
+        after.put("Yard", "3");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertTrue(reloaded.getExcludedPages().contains("Yard"),
+            "the excluded page rejoined autonomy because its exclusion was read by number");
+        assertFalse(reloaded.getExcludedPages().contains("Main Line"),
+            "a page nobody excluded was excluded instead");
+    }
+
+    /**
      * A page rename must carry everything on that page with it.
      *
      * Every key here begins with a page name, so without this the user would see a page worth of names,

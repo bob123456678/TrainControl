@@ -18212,6 +18212,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 List<String> layoutList = this.model.getLayoutList();
                 String currentLayout = this.LayoutList.getSelectedItem().toString();
 
+                // WHERE it sits, because writeLayoutIndex numbers the pages by position and that
+                // number is the page id.  A rename used to remove the name and add the new one, which
+                // put the renamed page last and gave every page after its old slot a different id.
+                //
+                // The autonomy setup is keyed by page ID on disk.  So renaming one page silently
+                // reattached the whole setup to the wrong pages - and because ids that shift by one
+                // round-trip unchanged (id 1 reads as the page now called 1, writes back as 1), the
+                // file looked consistent while meaning something else entirely.  The coordinates of
+                // one page's settings do not exist on the next page along, so the following save
+                // reconciled them away as deleted squares.
+                //
+                // Adam, MT-135: "Immediately after rename, all stations are gone... Renaming the page
+                // back did not restore the stations."  It could not: they had already been pruned and
+                // written.  He lost 19 point names, 14 stations, 22 directions and 15 captions to one
+                // rename on 2026-08-23.
+                //
+                // renamePage below deals with the NAME, which is how configurations are keyed. This
+                // deals with the ID, which is how the setup is keyed. Both halves move on a rename and
+                // only one of them was being carried across.
+                int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;
+
                 if (rename)
                 {
                     layoutList.remove(currentLayout);
@@ -18226,7 +18247,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     newLayoutName, duplicate
                 );
 
-                layoutList.add(newLayoutName);
+                // Back in its own slot, so the page keeps its id.  A duplicate or a new page has no
+                // slot of its own and goes at the end, which is where a page that did not exist before
+                // belongs.
+                if (renamedAt >= 0 && renamedAt <= layoutList.size())
+                {
+                    layoutList.add(renamedAt, newLayoutName);
+                }
+                else
+                {
+                    layoutList.add(newLayoutName);
+                }
 
                 // The autonomy setup keys everything by PAGE NAME, so it has to be told (OB-049).
                 //

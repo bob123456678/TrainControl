@@ -1927,18 +1927,25 @@ public class Layout
 
             for (Point watched : destination.getBlockedBy())
             {
-                // NOT exempting the locomotive being dispatched, which is a decision rather than an
-                // oversight - and one worth re-reading, because Edge.isOccupied does exempt the asker.
+                Locomotive standing = watched.getBlockLocomotive();
+
+                // The train LEAVING the watched point is exempt; the restriction is about what may
+                // ARRIVE at the held-back station.  Adam, asked directly: "The condition should not
+                // apply to trains leaving - only departing."
                 //
-                // Adam's words were "exclude the autonomous selection of a station when another point
-                // is occupied", and a train standing on that point occupies it - including the train
-                // that is about to leave it.  So a locomotive in the yard cannot be sent to the
-                // platform the yard holds back, even though its own departure clears the condition.
+                // Without the exemption the one movement that clears the condition is the movement it
+                // forbids: a locomotive standing in the yard could never be sent to the platform the
+                // yard holds back, and while it sat there the platform was shut to everybody else too.
+                // Autonomy had no way out of that - only a person driving the train off by hand.
                 //
-                // The literal reading is implemented.  If the intent was "occupied by somebody else",
-                // this is the line to change - one clause, matching isOccupied's shape - and the test
-                // beside it says which way round it is.
-                if (watched.getBlockLocomotive() == null) continue;
+                // The same choice Edge.isOccupied makes, for the reason isLockHeld records: "a train
+                // parked next to a junction was a permanent roadblock for every route across that
+                // junction, and two such trains could deadlock with no way out for either."
+                //
+                // It cannot let two trains onto one square.  Whether the DESTINATION is free is a
+                // different question, asked by isOccupied in this same method, so all this exemption
+                // permits is a train leaving track it is already standing on.
+                if (standing == null || standing.equals(loc)) continue;
 
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorDestinationBlockedByPoint",

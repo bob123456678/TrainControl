@@ -436,6 +436,120 @@ public class testStationBlockedByAnotherPoint
 
     // ------------------------------------------------------------------------------------------
 
+    /**
+     * The train leaving the watched point may still be sent to the station that point holds back.
+     *
+     * Adam, asked directly: "The condition should not apply to trains leaving - only departing."
+     *
+     * Without the exemption the one movement that clears the condition is the movement it forbids. A
+     * locomotive standing in the yard could never be sent to the platform the yard holds back, and
+     * while it sat there the platform was shut to everybody else too - so autonomy had no way out of
+     * it at all, only a person driving the train off by hand.
+     *
+     * That is the same choice Edge.isOccupied makes, for the reason Edge.isLockHeld records: a train
+     * parked next to a junction was a permanent roadblock for every route across it, and two of them
+     * could deadlock with no way out for either.
+     */
+    @Test
+    public void testATrainLeavingTheWatchedPointMayStillBeSentThere() throws Exception
+    {
+        Layout layout = builtWithAnApproachFromTheYard();
+
+        Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("BK YARD").setLocomotive(leaving);
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("BK YARD", "BK B"));
+
+        assertTrue(layout.isPathClear(path, leaving, false),
+            "the train standing on the watched point was refused the station that point holds back - "
+            + "so the only movement that can clear the condition is the one it forbids, and the "
+            + "station stays shut to everybody until somebody drives this train off by hand");
+    }
+
+    /**
+     * And the rule still holds for everybody else, which is the half the exemption could have taken
+     * with it: `standing == null || standing.equals(loc)` reduces to `true` if the second clause is
+     * ever right about the wrong locomotive.
+     */
+    @Test
+    public void testTheExemptionIsOnlyForTheTrainThatIsLeaving() throws Exception
+    {
+        Layout layout = builtWithAnApproachFromTheYard();
+
+        Locomotive driven = model.getLocByName(model.getLocList().get(0));
+        Locomotive standing = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("BK A").setLocomotive(driven);
+        layout.getPoint("BK YARD").setLocomotive(standing);
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("BK A", "BK B"));
+
+        assertFalse(layout.isPathClear(path, driven, false),
+            "somebody ELSE is standing on the watched point and the station was still offered - the "
+            + "exemption has swallowed the rule it was carved out of");
+    }
+
+    /**
+     * The exemption asks the BLOCK, not the square.
+     *
+     * The yard is reachable from two sides, modelled as two Points sharing one s88 - and a train
+     * standing on the twin is standing on the same piece of track. getBlockLocomotive is what makes
+     * that true, and it is the subtle half of the rule: testACopyOfTheWatchedSquareCountsAsOccupied
+     * pins it for the train being held back, and this pins it for the train being let out.
+     */
+    @Test
+    public void testLeavingTheOtherHalfOfTheWatchedBlockIsAlsoExempt() throws Exception
+    {
+        Layout layout = builtWithAnApproachFromTheYard();
+
+        Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+
+        // The TWIN, not the point named in the restriction
+        layout.getPoint("BK YARD TWIN").setLocomotive(leaving);
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("BK YARD", "BK B"));
+
+        assertTrue(layout.isPathClear(path, leaving, false),
+            "the train is standing on the other Point of the watched block - the same track - and was "
+            + "treated as a different train, so it cannot leave the square it is on");
+    }
+
+    /**
+     * The same run as built(), with a way OUT of the yard.
+     *
+     * built() has no edge leaving the yard, so the exemption has nothing to be asked about there: a
+     * path can only be refused for its destination, and the yard was never a start.
+     */
+    private Layout builtWithAnApproachFromTheYard() throws Exception
+    {
+        String json = "{"
+            + "\"points\": ["
+            + "  {\"name\": \"BK A\", \"station\": true, \"s88\": 47441},"
+            + "  {\"name\": \"BK B\", \"station\": true, \"s88\": 47442,"
+            + "   \"blockedBy\": [\"BK YARD\"]},"
+            + "  {\"name\": \"BK YARD\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"},"
+            + "  {\"name\": \"BK YARD TWIN\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"}"
+            + "],"
+            + "\"edges\": ["
+            + "  {\"start\": \"BK A\", \"end\": \"BK B\", \"length\": 1},"
+            + "  {\"start\": \"BK YARD\", \"end\": \"BK B\", \"length\": 1}"
+            + "],"
+            + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        Layout layout = Layout.fromJSON(json, model);
+
+        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
+        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
+
+        layout.runLocomotives();
+
+        return layout;
+    }
+
     private Layout built() throws Exception
     {
         return built("BK YARD");
