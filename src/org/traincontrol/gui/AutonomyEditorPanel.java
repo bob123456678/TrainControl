@@ -2595,6 +2595,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void promptBlockingPoints(TileKey station)
     {
+        // Read FIRST, because what is already stored decides what has to be offered (FSR-C5).
+        java.util.List<TileKey> already = session.getStore().getBlockingPoints(station);
+
         java.util.List<TileKey> choices = new java.util.ArrayList<>();
 
         for (TileKey tile : session.getStore().getNamedTiles())
@@ -2625,19 +2628,38 @@ public class AutonomyEditorPanel extends JPanel
             //     deleted the moment somebody pressed OK (FBR-A2). The finding this came from opened
             //     with "a safety restriction the operator believes is on and is not is worse than one
             //     they were never offered", and the fix for it did that from the other end.
-            if (station.equals(session.getCaptionTarget(tile))) continue;
+            // ... unless it is ALREADY stored, in which case it is offered whatever the rules say
+            // (FSR-C5, and it subsumes FBR-A2).
+            //
+            // The filters above are about what may be CHOSEN. An entry that is already there was
+            // chosen under some earlier version of them, or by an import, and hiding it makes it
+            // permanent: this dialog is the only way to edit blockedPoints, so a restriction it does
+            // not show is one nobody can ever take off. Carrying it silently past the dialog - which
+            // is what the first repair did - fixes the deletion and leaves that.
+            //
+            // Offering it costs nothing. It appears ticked, it can be unticked, and the filters still
+            // decide what may be added.
+            if (station.equals(session.getCaptionTarget(tile)) && !already.contains(tile)) continue;
 
             choices.add(tile);
         }
 
+        // And any stored entry the loop above never reached at all - a square that has since lost its
+        // name, or is the station itself from before that was refused. Same reasoning: visible, and
+        // therefore removable.
+        for (TileKey held : already)
+        {
+            if (held != null && !choices.contains(held)) choices.add(held);
+        }
+
+        // Nothing to offer, which now also means nothing is stored - the loop above puts every stored
+        // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
             JOptionPane.showMessageDialog(owner(),
                 I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith"));
             return;
         }
-
-        java.util.List<TileKey> already = session.getStore().getBlockingPoints(station);
 
         JPanel panel = new JPanel();
 
@@ -2698,25 +2720,11 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<TileKey> chosen = new java.util.ArrayList<>();
 
-        // Anything already stored that this list did not OFFER is carried through untouched (FBR-A2).
+        // Every stored entry is on the list above, so the boxes are the whole answer (FSR-C5).
         //
-        // setBlockingPoints REPLACES the stored list, and `chosen` is assembled from the check boxes -
-        // so a restriction the picker filtered out was deleted the moment somebody pressed OK, with
-        // nothing on screen to say it had ever been there. Cancel was safe; OK was destructive, and OK
-        // is what a person presses after adding one more blocker.
-        //
-        // It needs only one square that the loop above skips, and there is one on any railway old
-        // enough: the station's own caption, which OB-083 stopped offering. An entry made before that
-        // could be deleted by opening this dialog and confirming it.
-        //
-        // Deliberately not "restore what the filters hid" but "keep what was not asked about". Whatever
-        // the list stops offering next, this stays right, because it is about the difference between
-        // the two rather than about any particular rule.
-        for (TileKey held : already)
-        {
-            if (!choices.contains(held)) chosen.add(held);
-        }
-
+        // This used to carry the unoffered ones through here instead (FBR-A2). That stopped OK from
+        // deleting what the dialog did not show, and left them unremovable - the same restriction,
+        // permanent, with nothing on screen. Offering them is the smaller change and answers both.
         for (int at = 0; at < boxes.size(); at++)
         {
             if (boxes.get(at).isSelected()) chosen.add(choices.get(at));

@@ -50,15 +50,15 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-154](#mt-154) | 2026-08-24 | The editor's Cancel cannot revert work done elsewhere | fixed unvalidated | OB-076 |
 | [MT-155](#mt-155) | 2026-08-24 | Closing the application asks about unsaved editor work | fixed unvalidated | OB-070 |
 | [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
-| [MT-157](#mt-157) | 2026-08-24 | Return Home refuses a plan it cannot carry out | fixed unvalidated | OB-073 |
 | [MT-158](#mt-158) | 2026-08-24 | The autonomy editor's title, and the blocked-points window | fixed unvalidated | OB-082, OB-083 |
 | [MT-159](#mt-159) | 2026-08-24 | The backup is one archive holding all the state | fixed unvalidated | FR-015 |
 | [MT-160](#mt-160) | 2026-08-24 | The application starts, and the window does not freeze | fixed unvalidated | OB-077, OB-078, OB-079 |
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
 | [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
+| [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 
-Everything else - 121 of 164 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 165 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7106,19 +7106,14 @@ says was fixed. A leg that threw is the clearest abandonment there is.
 
 ### MT-157 - 2026-08-24 - Return Home refuses a plan it cannot carry out
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-073
 **Written:** 2026-08-24
 
 **What to do.** Hold one locomotive's home station back by another square (the "unavailable while
 occupied" menu), and stand a DIFFERENT locomotive on that square.
 
-Press Return Home. It should produce a plan that **moves the blocker out of the way first** and then
-brings the home locomotive in - and the run should finish with everyone home.
-
-What it must NOT do is start moving trains and then give up, leaving the fleet half-staged. That is the
-bug. Refusing up front is not the right answer either, and asking for it here was my mistake - see the
-comment below.
+Press Return Home. It must refuse up front, not start moving trains and then give up.
 
 #### Comments
 
@@ -7155,6 +7150,15 @@ The mutation note above is also why this went unnoticed: it concluded the scan w
 because reverting the scan alone turned the test red. It did - but only because the test asserted "not
 READY", which cannot tell a proof from a refusal. A test that pins the wrong property will confirm
 whatever you mutate.
+
+**Claude, 2026-08-24, superseded by [MT-165](#mt-165).** I first corrected this by rewriting the "What
+to do" above, which rule 5 of the README forbids: an entry's instructions are fixed once written, and
+only the Disposition and Comments change. The reason is exactly this case - a result recorded against
+instructions nobody can read afterwards means nothing, and the title of this entry now contradicts what
+the application does.
+
+So the instructions are back as they were, this entry is superseded, and MT-165 asks for the behaviour
+that is actually correct. Nothing here needs running.
 
 ---
 
@@ -7453,5 +7457,45 @@ running it would give a result about a rule that no longer exists.
 
 Kept rather than deleted, because its tag is cited from `docs/reviews/2026-08-24-fable-round-review.md`
 and from two commits.
+
+---
+
+<a id="mt-165"></a>
+
+### MT-165 - 2026-08-24 - Return Home stages a blocker out of the way instead of refusing
+
+**Disposition:** fixed unvalidated
+**From:** OB-073, FBR-B1, FBR-B2
+**Written:** 2026-08-24
+
+Replaces [MT-157](#mt-157), whose instructions asked for a refusal that turned out to be the wrong
+answer. Do not run that one.
+
+**What to do.** Hold one locomotive's home station back by another square (the "unavailable while
+occupied" menu), and stand a DIFFERENT locomotive on that square.
+
+Press Return Home. It should produce a plan that **moves the blocker out of the way first** and then
+brings the home locomotive in, and the run should finish with everyone home.
+
+The failure to watch for is the original bug: trains start moving, one leg is refused, the run retries
+until it gives up, and everything stops with the fleet half-staged. Refusing before anything moves is
+also wrong, and is what two attempts at this fix did instead.
+
+#### Comments
+
+**Claude, 2026-08-24.** OB-073 was real: the planner did not read `getBlockedBy` at all, so it produced
+plans whose arrival `isPathClear` then refused. The fix for that is a check inside `firstClearRoute`,
+asked of the state as the search takes moves, and it has been in place throughout.
+
+What went wrong twice was the OTHER thing that fix did - putting an occupancy test into the
+impossibility scan, whose whole job is to prove that no arrangement can work. Staging can move whatever
+is standing in the way, so no occupancy proves anything, and the scan was reporting IMPOSSIBLE for
+arrangements the search solves in three moves. Narrowing it to blockers "staging will never move" was
+wrong for the same reason, because a hand-placed locomotive gets a home where it stands and the search
+moves locomotives off their homes freely. The test is gone from the scan entirely.
+
+The automated test replays the plan move by move and asserts, at each move, that the destination is
+free AND that nothing occupies a square holding it back - and it was mutation-checked to confirm that
+the FR-001 assertion is the one that fires, rather than a move-count check standing in front of it.
 
 ---

@@ -341,8 +341,13 @@ public final class HomeStaging
             //     barely exists anyway: `Layout.claimHome` gives a hand-placed one a positional home
             //     where it is put.
             //
-            // There is no state-independent statement to make about an FR-001 blocker, so there is
-            // nothing here to keep.  `connected`, four lines down, states the doctrine: "A route blocked
+            // There is nothing here to keep, and "no state-independent statement can be made about an
+            // FR-001 blocker" - which is how this was first written - is too strong (FSR-C3). One can:
+            // two homes each held back by a square the other's occupant must end on is impossible from
+            // the structure alone, whoever is standing where. That is real and it is not caught here;
+            // the search exhausts and answers NO_PLAN_FOUND, which claims less than it could but claims
+            // nothing false. Filed rather than added, because the last two things put into this scan
+            // were both wrong and both looked obviously right.  `connected`, four lines down, states the doctrine: "A route blocked
             // merely by another train is not impossible - moving that train is exactly what the planner
             // is for."  The state-aware canRest inside firstClearRoute is the one OB-073 ever needed,
             // and it stays: it is what makes the plans the search returns executable.

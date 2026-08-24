@@ -846,4 +846,11 @@ about the behaviour.
 
 Both are the same mistake in different directions: trusting a description of the code instead of the
 code. It is the mistake this folder's README opens with, and it produced an A-severity defect on the
-start-up path that no test in the battery can see, because every test runs with `showUI=false`.
+start-up path.
+
+**And the sentence that used to end this paragraph was a third instance of it** (FSR-C2). It said that
+defect was one "no test in the battery can see, because every test runs with `showUI=false`". Five test
+classes do not: `testAutonomyPathValidation` and `testLayoutTiles` pass `showUI=true` outright, and the
+three that call the no-argument `init()` get it too, because that overload passes `true`. I wrote the
+claim from the two `init(...)` shapes I happened to grep and did not read the overload. The path IS
+exercised - which is better news for the fix than what I wrote, and no better for the habit.

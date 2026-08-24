@@ -155,11 +155,10 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
-        // Carriage returns stripped, because two of the rules below bound their windows on a
-        // newline followed by the closing brace, and this repository checks out CRLF on
-        // Windows (FBR-C8). The test passed in
-        // the tree it was written in and was red on a fresh clone - a guard that depends on how
-        // git happened to write the file is not a guard.
+        // Carriage returns stripped, because the rule below bounds its window on a newline
+        // followed by the closing brace, and this repository checks out CRLF on Windows
+        // (FBR-C8). It passed in the tree it was written in and was red on a fresh clone - a
+        // guard that depends on how git happened to write the file is not a guard.
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
             .replace("\r", "");
 
@@ -702,11 +701,10 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
 
-        // Carriage returns stripped, because two of the rules below bound their windows on a
-        // newline followed by the closing brace, and this repository checks out CRLF on
-        // Windows (FBR-C8). The test passed in
-        // the tree it was written in and was red on a fresh clone - a guard that depends on how
-        // git happened to write the file is not a guard.
+        // Carriage returns stripped, for the same reason as the rule above (FBR-C8): a source
+        // read that can behave differently depending on how git wrote the file is not a guard.
+        // Nothing here bounds a window on a brace, so this is consistency rather than a fix -
+        // and the comment used to say otherwise, having been pasted along with the code (FSR-C7).
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
             .replace("\r", "");
 

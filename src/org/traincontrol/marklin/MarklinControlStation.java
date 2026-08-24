@@ -3802,9 +3802,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Reachable only for a failure to POST the task - the lambda's own exceptions
                 // land on the event thread, which is why the flag above exists rather than this
                 // catch being widened to look as though it covers them.
+                //
+                // exit(1) here too (FSR-C6). The comment two branches up calls exit(0) on a failure
+                // "habit rather than intent", and then this sibling was left reporting success -
+                // which is the one mistake this project's review notes say is made more often than
+                // any other.
                 model.logf("ui.fatalErrorInitializing");
                 model.log(ex);
-                System.exit(0);
+                System.exit(1);
             }
         }
                         

@@ -298,6 +298,39 @@ about a clean checkout, and that is worth knowing before it is quoted as evidenc
 
 ---
 
+### OB-085 - 2026-08-24 - the staging scan could prove a blockedBy cycle impossible, and does not
+
+**Filed rather than fixed, deliberately.** Raised as FSR-C3 by the second review of the fix round.
+
+The impossibility scan in `HomeStaging.plan()` proves that no arrangement can park a locomotive at its
+home. Its FR-001 test was removed on 2026-08-24 after two attempts at it were both wrong, and the
+comment left in its place said there is "no state-independent statement to make about an FR-001
+blocker".
+
+That is too strong, and the reviewer produced the counterexample. Two homes, each held back by a square
+the other's occupant must end up on, is impossible from the structure alone - whoever is standing where
+at the start, the last move of any arrangement puts a train on a square that closes the other station.
+No occupancy needs to be read to know it.
+
+What it costs today is not wrongness but time: the search exhausts its budget and answers
+NO_PLAN_FOUND - "no arrangement found, it may still be possible" - which claims less than the truth but
+claims nothing false. On the small probe it took 9ms. On a layout the size of Adam's it would spend the
+whole budget to say "maybe" about something a pairwise scan settles.
+
+**Why it is not being fixed now.** The last two things put into that scan were both wrong, both looked
+obviously right, and both shipped with a test that could not tell the difference. The scan is the one
+place in this class that makes a claim to the operator rather than a suggestion - IMPOSSIBLE names
+locomotives as blocked and skips the search - so the bar for adding to it is higher than for anything
+else here, and a third attempt made in the same session as the first two is not the way to clear it.
+
+**What a fix would look like.** The pairwise goal scan directly below it already does this shape of
+reasoning for conflicting homes - two homes on one detection section - and says why: "it spends the
+whole budget to say maybe about something provable in a pairwise scan". The cycle case belongs beside
+it, as a second pairwise test, and wants a test whose fixture is a genuine two-home cycle and a
+mutation showing that the scan rather than the search is what answers.
+
+---
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

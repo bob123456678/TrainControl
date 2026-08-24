@@ -157,13 +157,37 @@ public class testHomeStaging
     /**
      * Replays a plan against the model, checking the invariant that makes it a plan at all: every move
      * must find its destination free at the moment it runs.
+     *
+     * "Free" means two things, and it used to check only the first (FSR-C1). `moveLocomotive` PLACES a
+     * locomotive - it does not consult `getBlockedBy` and it does not refuse - so replaying through it
+     * cannot notice a move into a station FR-001 is holding back, which is exactly the fault OB-073 was
+     * about. Under a mutation that reintroduced OB-073, the replay ran clean and the failure came from
+     * a different assertion entirely, while four separate comments credited this method with catching
+     * it.
+     *
+     * So the FR-001 condition is asserted here, against the state at the moment the move runs, the same
+     * question `isPathClear` asks of a path's destination.
      */
     private static void applyPlan(Layout layout, HomeStaging.Plan plan)
     {
         for (HomeStaging.Move move : plan.getMoves())
         {
-            assertNull(layout.getPoint(move.getEnd().getName()).getCurrentLocomotive(),
+            org.traincontrol.automation.Point end = layout.getPoint(move.getEnd().getName());
+
+            assertNull(end.getCurrentLocomotive(),
                 "move \"" + move + "\" sends a locomotive into an occupied station");
+
+            for (org.traincontrol.automation.Point watched : end.getBlockedBy())
+            {
+                if (watched == null) continue;
+
+                assertNull(layout.getPoint(watched.getName()).getCurrentLocomotive(),
+                    "move \"" + move + "\" sends a locomotive into a station that is held back while "
+                    + watched.getName() + " is occupied, and it is occupied by "
+                    + layout.getPoint(watched.getName()).getCurrentLocomotive()
+                    + ". isPathClear refuses that arrival, so the run would retry until it gave up and "
+                    + "stop with the fleet half-staged - which is OB-073, exactly");
+            }
 
             assertTrue(
                 layout.moveLocomotive(move.getLocomotive().getName(), move.getEnd().getName(), false),
@@ -2296,8 +2320,12 @@ public class testHomeStaging
      *
      * So it asserts the property that would have caught OB-073 and does not forbid the right answer:
      * a plan comes back, every move finds its destination free at the moment it runs, and everyone
-     * ends up home. When the fix regresses, `applyPlan`'s first assert fails on the move that walks
-     * into the held-back station.
+     * ends up home.
+     *
+     * "Free" had to be widened for that to be true (FSR-C1). `applyPlan` replays through
+     * `moveLocomotive`, which PLACES a locomotive rather than refusing and never reads `getBlockedBy` -
+     * so the replay could not see the very arrival OB-073 was about, and under the mutation it ran
+     * clean while a different assertion did the work. It asks the FR-001 question directly now.
      *
      * The SOP has the paragraph for what happened here: "When a root fix lands, expect tests of the
      * old bug to fail at their preconditions - that is confirmation, not regression."
@@ -2332,12 +2360,18 @@ public class testHomeStaging
             + "cannot: staging moves whatever is standing in the way (FBR-B2).  Got: "
             + plan.getOutcome());
 
+        // The replay FIRST, because it is the assertion this test exists for (FSR-C1).
+        //
+        // The move-count check below used to come before it, and under a mutation that reintroduced
+        // OB-073 that is the one that fired - on "a one-move plan cannot be right" rather than on the
+        // move being one the railway refuses. Both are true of that plan; only the second says what is
+        // wrong with it, and a test whose message names the wrong fault sends the next reader to the
+        // wrong place.
+        applyPlan(layout, plan);
+
         assertTrue(plan.getMoves().size() >= 2,
             "a one-move plan cannot be right: something has to leave the watched square before A "
             + "arrives, so the answer is at least two moves.  Got: " + plan.getMoves());
-
-        // The half OB-073 was about: every move finds its destination free when it runs.
-        applyPlan(layout, plan);
 
         assertEveryoneHome(layout);
     }
