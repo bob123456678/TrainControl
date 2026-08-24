@@ -91,7 +91,13 @@ public class testConfirmedGoodState
     {
         AutonomySession session = openBaseline();
 
-        if (session.getReducer() == null) throw new SkipException("the baseline reduced to nothing");
+        // An ASSERTION, not a skip.  A reduction that collapses to nothing is the loudest regression a
+        // baseline exists to catch, and as a skip it was the one failure this test could not report
+        // (TD-4 in the history review). Reaching here at all means a baseline was found, so there is
+        // something to reduce.
+        assertNotNull(session.getReducer(),
+            "the blessed baseline reduced to NOTHING - no graph at all came out of a layout that was "
+            + "confirmed good. That is the regression this test exists for, not a reason to stand down");
 
         String now = describe(session.getReducer());
 

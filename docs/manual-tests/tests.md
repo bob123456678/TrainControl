@@ -44,8 +44,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
 | [MT-138](#mt-138) | 2026-08-23 | A split copy's name and its facing disagree on a curve | needs decision | - |
 | [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
+| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
 
-Everything else - 111 of 139 - is **fixed validated** and needs nothing from you unless the
+Everything else - 111 of 140 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5865,5 +5866,44 @@ standing at the platform, which is the one moment it no longer matters.
 **What has NOT changed:** placing or removing a train by hand, with nothing running, still moves no
 signals. That was the defect the old guard existed for - "cutting a locomotive off a platform with
 Control+X drove its protecting signals on the spot" - and it stays fixed.
+
+---
+
+<a id="mt-140"></a>
+### MT-140 - 2026-08-23 - Bless the baseline once you are happy with the railway
+
+**Disposition:** needs decision
+
+**Claude, 2026-08-23.** This is the entry that keeps your own request from being forgotten: "Once we are
+bug free, can you capture confirmed good state along with config files for validation? that is better
+than guessing."
+
+The machinery is built and committed - `testConfirmedGoodState` opens a copy of a blessed layout, derives
+the graph, and compares it against what was recorded. **No baseline is captured yet**, deliberately:
+blessing a railway nobody has confirmed would record whatever was wrong with it as the definition of
+right.
+
+Until one exists, both of its tests skip. That is the honest state, and it has a cost the history review
+named (TD-5): the class is listed in `build.xml`, so it counts towards the "89 classes clean" figure
+while being unable to fail. The number is slightly less true than it looks, and nothing on screen says
+which classes contributed - so this entry is the record.
+
+**What to do when you are ready.** With the railway in a state you have confirmed is right:
+
+```
+ant test -Dbaseline.capture=true
+```
+
+That copies `cs2_sample_layout/config` into `test/baseline/layout`, derives the graph, and writes both
+down. Commit what it produces. From then on every run compares against it, and a change to the reduction
+- an edge that stops existing, a station that stops being one - fails with a readable diff rather than a
+changed byte in a blob.
+
+**One thing that changed today.** "The baseline reduced to nothing" used to be a skip. It is a failure
+now: a reduction that collapses to nothing is the loudest regression this test exists for, and as a skip
+it was the one failure it could not report.
+
+**Nothing to do until you say the railway is right.** I have not captured one and will not without you
+saying so.
 
 ---

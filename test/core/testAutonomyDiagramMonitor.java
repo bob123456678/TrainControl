@@ -549,4 +549,93 @@ public class testAutonomyDiagramMonitor
         assertEquals(centre[0], 30, "a square with no route known should answer the middle");
         assertEquals(centre[1], 30, "a square with no route known should answer the middle");
     }
+
+    /**
+     * The EDITOR's tested path stops on the rail too, not only the running overlay's run line.
+     *
+     * TD-4, from the three-day history review. OB-026 - "the end of a run stops in the middle of the
+     * square rather than on the rail" - was fixed in `TileOverlay.paintRun`, and `trackCentre` was made
+     * public and threaded through `LayoutLabel` to do it. Its javadoc claims the outcome: "the run line
+     * and the badge now agree about where the track is."
+     *
+     * `paintTraces`, in the same class as `trackCentre`, still started from `{width / 2, height / 2}` -
+     * so the editor's yellow trace, drawn on the same squares to answer the same question, kept the
+     * defect that had just been fixed one painter along. Null ends are not hypothetical: the editor
+     * builds them deliberately, "null at the ends of the run, where the line stops in the middle of the
+     * square", which is exactly the first and last square of a traced path.
+     *
+     * The pixel test written for OB-026 drives `TileOverlay` only, so nothing noticed.
+     *
+     * **The trace is isolated by DIFFERENCE**, and the first version of this test was wrong for want of
+     * that. It painted one tile and asked whether anything had been drawn near the rail - which passed
+     * against the unfixed code, because the badge and the direction arrows are drawn on the rail too.
+     * Subtracting a rendering without the trace from one with it leaves only the pixels the trace
+     * added, which is the only thing this test is about.
+     *
+     * On a 60-pixel N-E bend the rail's midpoint is (45,15). The tile centre, (30,30), is 21 pixels
+     * away - so a line that stops at the centre cannot be mistaken for one that reached the rail.
+     */
+    @Test
+    public void testTheEditorsTracedPathStopsOnTheRailOfABend()
+    {
+        int size = 60;
+
+        java.awt.image.BufferedImage without = painted(bend(null), size);
+        java.awt.image.BufferedImage with =
+            painted(bend(Arrays.asList(new TileAnnotation.Trace(Side.N, null, true))), size);
+
+        assertTrue(addedNear(with, without, 45, 15),
+            "the traced path does not reach the rail. The editor's own line for a tested run still "
+            + "stops at the tile centre on a bend, which is the defect OB-026 fixed in the run "
+            + "overlay and left in its sibling (TD-4)");
+    }
+
+    /**
+     * A square whose track bends from N to E, with or without a traced run ending on it.
+     */
+    private TileAnnotation bend(java.util.List<TileAnnotation.Trace> traces)
+    {
+        return new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.N, Side.E, null)), 0, false,
+            new TileAnnotation.Badge(true, false, false, false, true, Side.N, Side.E), false, true,
+            false, traces, false, null);
+    }
+
+    private java.awt.image.BufferedImage painted(TileAnnotation annotation, int size)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        annotation.paint(g, size, size);
+
+        g.dispose();
+
+        return image;
+    }
+
+    /**
+     * Whether the second rendering added ink near a point that the first did not have.
+     *
+     * A tolerance of three pixels, because a stroked line has width and where its exact pixels fall
+     * depends on the join and the antialiasing. The question is where the line WENT.
+     */
+    private boolean addedNear(java.awt.image.BufferedImage with, java.awt.image.BufferedImage without,
+        int x, int y)
+    {
+        for (int dx = -3; dx <= 3; dx++)
+        {
+            for (int dy = -3; dy <= 3; dy++)
+            {
+                int at = x + dx, down = y + dy;
+
+                if (at < 0 || down < 0 || at >= with.getWidth() || down >= with.getHeight()) continue;
+
+                if (with.getRGB(at, down) != without.getRGB(at, down)) return true;
+            }
+        }
+
+        return false;
+    }
 }

@@ -1053,7 +1053,16 @@ public class TileAnnotation
         if (traces.isEmpty()) return;
 
         int span = Math.min(width, height);
-        int[] centre = new int[] {width / 2, height / 2};
+
+        // Where a traced line stops when it has no side to leave by - the first and last square of a
+        // run, which AutonomyEditorPanel builds with a null end deliberately.
+        //
+        // The same question the running overlay asks, and it was answered two different ways in the
+        // same class: OB-026 gave the RUN line the track midpoint, and left this - the editor's tested
+        // path, drawn on the same squares - stopping at the tile centre, which on a bend is nowhere
+        // near the rails.  The fix's own javadoc claims "the run line and the badge now agree about
+        // where the track is", and that was untrue for this painter (TD-4).
+        int[] centre = trackCentre(width, height);
 
         // The route ONCE, however many directions it carries.  Drawn as one line per direction it was
         // two lines down the same piece of track wherever a route worked both ways, which is the
@@ -1209,8 +1218,13 @@ public class TileAnnotation
             }
         }
 
+        // The fallback is trackCentre rather than the geometric centre, for the third time in this
+        // class (TD-4).  It changes nothing on a straight - the midpoint of two opposite sides IS the
+        // middle of the square - and nothing where the branch above applies.  What it corrects is a
+        // bend whose side carries no route or more than one, where the arrow used to be aimed from a
+        // point the track does not pass through.
         int[] from = curved && through == 1 && other != null && other != side
-            ? midpoint(other, width, height) : new int[] {width / 2, height / 2};
+            ? midpoint(other, width, height) : trackCentre(width, height);
 
         int[] to = midpoint(side, width, height);
 
