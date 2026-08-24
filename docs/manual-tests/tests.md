@@ -27,7 +27,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
-| [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train |
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-082](#mt-082) | 2026-08-18 | Compare, and scrutinise the NEW-ONLY entries | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
@@ -51,7 +50,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-146](#mt-146) | 2026-08-24 | A train may leave the point that holds a station back | fixed unvalidated | FR-001 |
 | [MT-147](#mt-147) | 2026-08-24 | The restored layout is the one you had | needs test | the 23 August data loss |
 
-Everything else - 112 of 147 - is **fixed validated** and needs nothing from you unless the
+Everything else - 113 of 147 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -763,7 +762,7 @@ Fixed, with a test (UR-6).
 
 ### MT-079 - 2026-08-18 - Barred terminus loads
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train  
 **Written:** 2026-08-18
 
@@ -804,6 +803,20 @@ Two possibilities:
    what it said and I will find it.
 
 You wrote "no error" in the same breath, which is why I would rather ask than pick.
+
+**Claude, 2026-08-24.** Automated, so this no longer needs Adam's hands:
+`testBarredArrivalIsNotADestination.testATerminusWithABarredSideStillLoads`.
+
+Nobody had covered it, and it is the one combination the neighbouring test's comment singles out as
+dangerous - "the `stops` variable exists for a case where the model DOES refuse - a terminus that is
+not a destination - and answers a refusal by invalidating the whole layout". Barring a side is exactly
+what stops a copy being a destination, so two settings that are each harmless are, together, the shape
+that refuses the entire configuration.
+
+The rule the builder states is the one asserted: no copy is emitted as a terminus unless it is a
+destination. The test also asserts that the fixture actually produced a terminus, because without that
+it would pass by asking the question about nothing - which is how the first version of it passed.
+
 ---
 
 <a id="mt-080"></a>
@@ -6059,6 +6072,23 @@ facing rule. Nothing to build, and the migration I was going to ask about does n
 ### MT-139 - 2026-08-23 - A train dispatched by hand now counts as a run
 
 **Disposition:** fixed unvalidated
+**From:** Adam's ruling on the first signal question
+**Written:** 2026-08-23
+
+**What to do.** This entry had no steps until now - it was written as an explanation and never turned
+into something to run. Ten minutes with one train:
+
+1. From the track diagram, right-click a station and **dispatch a train by hand** to a platform that
+   has a protecting signal. Watch the signal: it must go **RED as the route is set**, not when the
+   train arrives, and back to green after the train leaves.
+2. While that hand-dispatched train is running, check the same things are refused as during autonomy:
+   neither editor opens, the Layouts menu refuses delete/rename/duplicate/combine, the locomotive
+   database refuses edits, and Ctrl+X / Ctrl+V over a square do nothing but say why.
+3. Let it arrive. Everything above must become available again.
+4. Then do it once more with **two** trains dispatched by hand at the same time, and check the second
+   is refused a path that crosses the first's.
+
+#### Comments
 
 **Claude, 2026-08-23.** Your ruling on the first signal question - "The same thing should happen in
 manual operation vs auto - the same switches and signals set, and guards applied" - is in, and it

@@ -468,4 +468,70 @@ public class testBarredArrivalIsNotADestination
 
         f.delete();
     }
+
+    /**
+     * A terminus with one side barred still loads.
+     *
+     * MT-079, from the 18 August plan: "Mark a terminus 'trains may turn round here', bar one of its
+     * sides, reload. It loads - no 'configuration is invalid and must be reloaded'."
+     *
+     * Nobody had automated it, and this is the one case the comment on
+     * testABarredCopyStillHoldsItsProtectingSignal singles out as dangerous: "the `stops` variable
+     * exists for a case where the model DOES refuse - a terminus that is not a destination - and
+     * answers a refusal by invalidating the whole layout."
+     *
+     * Barring a side is exactly what makes a copy stop being a destination. So the two settings that
+     * are individually fine are, together, the shape that invalidates everything - and the failure is
+     * not a warning about one square, it is the whole configuration refusing to load, days after
+     * somebody set it.
+     */
+    @Test
+    public void testATerminusWithABarredSideStillLoads() throws IOException
+    {
+        TileKey platform = twoEndedStation();
+
+        session.setPointProperty(platform,
+            org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+        java.util.List<TilePorts.Side> sides = session.arrivalSides(platform);
+
+        assertEquals(sides.size(), 2, "the fixture must be reachable from two sides - got " + sides);
+
+        session.setBarredArrivals(platform,
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(sides.get(0))));
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfigurationForInspection());
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        assertTrue(points.length() > 0, "the build emitted no points at all");
+
+        java.util.List<String> broken = new java.util.ArrayList<>();
+        int termini = 0;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!point.optBoolean("terminus", false)) continue;
+
+            termini++;
+
+            // The rule the builder states: "a terminus must be a destination, and a copy trains may
+            // not arrive at is not one.  Emitted as a plain reversing point instead."
+            if (!point.optBoolean(org.traincontrol.automationui.AutonomyBuilder.AUTO_DESTINATION, true))
+            {
+                broken.add(point.toString());
+            }
+        }
+
+        assertEquals(broken, new java.util.ArrayList<String>(),
+            "a copy was emitted as a TERMINUS while not being a destination. parseAuto answers that "
+            + "by invalidating the whole layout, so every path is refused as \"configuration is "
+            + "invalid\" - from two settings each of which is fine on its own: " + broken);
+
+        assertTrue(termini > 0,
+            "the fixture produced no terminus at all, so the rule above was never asked about "
+            + "anything - which is how a test comes to pass by testing nothing: " + points);
+    }
 }
