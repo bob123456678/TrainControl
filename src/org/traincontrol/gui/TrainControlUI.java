@@ -2733,6 +2733,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else session.getStore().locomotiveRenamed(from, to);
 
             session.getStore().save();
+
+            // And the editor's Cancel snapshot, if one is open.  It was taken before this rename and
+            // still names the old locomotive, so cancelling would write that back over the repair -
+            // and a configuration naming a locomotive that is not in the database invalidates the
+            // whole layout.
+            if (openEditor != null && openEditor.isDisplayable())
+            {
+                openEditor.autonomyLocomotiveRenamed(from, to);
+            }
         }
         catch (Exception e)
         {

@@ -935,48 +935,92 @@ public class AutonomyCompanionStore
     {
         for (JSONObject configuration : configurations.values())
         {
-            if (!configuration.has("points")) continue;
+            repairLocomotiveIn(configuration, from, to);
+        }
+    }
 
-            JSONObject points = configuration.getJSONObject("points");
+    /**
+     * The same repair, over a setup somebody else is holding.
+     *
+     * The diagram editor takes a snapshot of the whole setup when it opens, and puts it back if the
+     * user cancels.  A rename made while that window is open repairs the LIVE store and leaves the
+     * snapshot naming the old locomotive - so cancelling wrote it back, and a configuration naming a
+     * locomotive that is not in the database is refused by parseAuto, which invalidates the whole
+     * layout.  That is the exact state this repair exists to prevent, reached by holding a copy.
+     *
+     * Public and static because the holder is in another package and there is nothing here to hold: it
+     * is a rewrite of somebody else's JSON, in the shape snapshotSetup returns.
+     *
+     * @param setup what snapshotSetup returned; changed in place
+     * @param from the old locomotive name
+     * @param to the new one, or null when it was deleted
+     */
+    public static void repairLocomotiveInSetup(JSONObject setup, String from, String to)
+    {
+        if (setup == null || from == null || from.equals(to)) return;
 
-            for (String key : points.keySet())
+        JSONObject copies = setup.optJSONObject("configurations");
+
+        if (copies == null) return;
+
+        for (String name : copies.keySet())
+        {
+            JSONObject configuration = copies.optJSONObject(name);
+
+            if (configuration != null) repairLocomotiveIn(configuration, from, to);
+        }
+    }
+
+    /**
+     * One configuration's placements, homes and exclusion lists.
+     *
+     * @param configuration the configuration, changed in place
+     * @param from the old name
+     * @param to the new name, or null to remove it
+     */
+    private static void repairLocomotiveIn(JSONObject configuration, String from, String to)
+    {
+        if (configuration == null || !configuration.has("points")) return;
+
+        JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            JSONObject point = points.optJSONObject(key);
+
+            if (point == null) continue;
+
+            JSONObject placed = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            if (placed != null && from.equals(placed.optString("name", null)))
             {
-                JSONObject point = points.optJSONObject(key);
-
-                if (point == null) continue;
-
-                JSONObject placed = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-                if (placed != null && from.equals(placed.optString("name", null)))
-                {
-                    if (to == null) point.remove(AutonomyBuilder.LOCOMOTIVE);
-                    else placed.put("name", to);
-                }
-
-                if (from.equals(point.optString(HOME_KEY, null)))
-                {
-                    if (to == null) point.remove(HOME_KEY);
-                    else point.put(HOME_KEY, to);
-                }
-
-                JSONArray excluded = point.optJSONArray(EXCLUDED_LOCS_KEY);
-
-                if (excluded == null) continue;
-
-                JSONArray kept = new JSONArray();
-
-                for (int at = 0; at < excluded.length(); at++)
-                {
-                    String was = excluded.optString(at, null);
-
-                    if (was == null) continue;
-
-                    if (!from.equals(was)) kept.put(was);
-                    else if (to != null) kept.put(to);
-                }
-
-                point.put(EXCLUDED_LOCS_KEY, kept);
+                if (to == null) point.remove(AutonomyBuilder.LOCOMOTIVE);
+                else placed.put("name", to);
             }
+
+            if (from.equals(point.optString(HOME_KEY, null)))
+            {
+                if (to == null) point.remove(HOME_KEY);
+                else point.put(HOME_KEY, to);
+            }
+
+            JSONArray excluded = point.optJSONArray(EXCLUDED_LOCS_KEY);
+
+            if (excluded == null) continue;
+
+            JSONArray kept = new JSONArray();
+
+            for (int at = 0; at < excluded.length(); at++)
+            {
+                String was = excluded.optString(at, null);
+
+                if (was == null) continue;
+
+                if (!from.equals(was)) kept.put(was);
+                else if (to != null) kept.put(to);
+            }
+
+            point.put(EXCLUDED_LOCS_KEY, kept);
         }
     }
 

@@ -1836,4 +1836,82 @@ public class testAutonomyDiagramStore
         assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
             "the shared half was not put back, which is what the rollback is for");
     }
+
+    /**
+     * A locomotive renamed while an editor is open is repaired in the snapshot Cancel would put back.
+     *
+     * The diagram editor holds the whole setup as it was when it opened, so that cancelling undoes
+     * every edit made in that window. A rename made meanwhile repairs the live store - and left the
+     * snapshot naming the old locomotive, so pressing Cancel wrote it back.
+     *
+     * What that costs is not a lost name. `parseAuto` refuses a configuration naming a locomotive that
+     * is not in the database and answers a refusal by invalidating the WHOLE layout, so the rename
+     * quietly armed that, to go off whenever somebody happened to cancel an editor session.
+     *
+     * Repaired rather than refused: blocking renames while an editor is open takes away something
+     * reasonable to do, and the two windows are about different things.
+     */
+    @Test
+    public void testARenameReachesTheSnapshotACancelPutsBack() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.setActiveConfiguration("Running");
+
+        place(store.getConfiguration("Running"), "1:4,4", "Old Name");
+
+        // What the editor takes when it opens
+        org.json.JSONObject asOpened = store.snapshotSetup();
+
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        AutonomyCompanionStore.repairLocomotiveInSetup(asOpened, "Old Name", "New Name");
+
+        // What Cancel does
+        store.restoreSetup(asOpened);
+
+        org.json.JSONObject point = store.getConfiguration("Running")
+            .getJSONObject("points").getJSONObject("1:4,4");
+
+        assertEquals(point.getJSONObject("loc").getString("name"), "New Name",
+            "cancelling the editor put the old locomotive name back. It is not in the database any "
+            + "more, and parseAuto answers a name it cannot find by invalidating the whole layout - so "
+            + "the rename armed that, to go off whenever somebody cancelled");
+
+        assertEquals(point.getString("home"), "New Name",
+            "the home assignment in the restored snapshot still names the old locomotive");
+
+        assertEquals(point.getJSONArray("excludedLocs").getString(0), "New Name",
+            "the exclusion in the restored snapshot still names the old locomotive");
+    }
+
+    /**
+     * And a deletion clears it from the snapshot rather than leaving a name nothing resolves.
+     */
+    @Test
+    public void testADeletionReachesTheSnapshotToo() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.setActiveConfiguration("Running");
+
+        place(store.getConfiguration("Running"), "1:4,4", "Gone");
+
+        org.json.JSONObject asOpened = store.snapshotSetup();
+
+        store.locomotiveDeleted("Gone");
+
+        AutonomyCompanionStore.repairLocomotiveInSetup(asOpened, "Gone", null);
+
+        store.restoreSetup(asOpened);
+
+        org.json.JSONObject point = store.getConfiguration("Running")
+            .getJSONObject("points").getJSONObject("1:4,4");
+
+        assertFalse(point.has("loc"),
+            "cancelling put back a placement for a locomotive that has been deleted");
+
+        assertFalse(point.has("home"), "cancelling put back a home for a deleted locomotive");
+
+        assertEquals(point.getJSONArray("excludedLocs").length(), 0,
+            "cancelling put back an exclusion naming a deleted locomotive");
+    }
 }

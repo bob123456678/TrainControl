@@ -380,6 +380,28 @@ public class LayoutEditor extends PositionAwareJFrame
      * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
      * halves have to be undone together or they are left describing different railways.
      */
+    /**
+     * Follows a locomotive's new name into the snapshot Cancel would put back.
+     *
+     * This window holds the setup as it was when it opened, so that cancelling can undo every edit made
+     * in it.  A locomotive renamed or deleted while it is open is repaired in the live store - but the
+     * snapshot still names the old one, and cancelling wrote that back.  A configuration naming a
+     * locomotive that is not in the database is refused by parseAuto, which invalidates the whole
+     * layout: the rename would have quietly armed that, to go off whenever somebody pressed Cancel.
+     *
+     * Repaired rather than refused.  The alternative is blocking locomotive renames while any editor is
+     * open, which takes away something reasonable to do - the two windows are about different things,
+     * and one of them being open is no reason the other cannot be used.
+     *
+     * @param from the old name
+     * @param to the new name, or null when it was deleted
+     */
+    public void autonomyLocomotiveRenamed(String from, String to)
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore
+            .repairLocomotiveInSetup(this.autonomyAsOpened, from, to);
+    }
+
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;
