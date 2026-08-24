@@ -402,8 +402,14 @@ def append_to_inbox(path, block):
 
     end = text.find("\n---", body_from)
 
+    # No rule closing the Inbox is the normal case in issues.md, and taking the end of the FILE
+    # instead put every new item after the sections that follow Inbox - outside the section it was
+    # meant to go in, below "Where the older backlog is", which is where Adam went looking for it and
+    # did not find it.  The next heading is the real end of the section.
     if end < 0:
-        end = len(text)
+        heading = re.search(r'^## ', text[body_from:], re.M)
+
+        end = body_from + heading.start() if heading else len(text)
 
     section = text[body_from:end]
 
@@ -2482,14 +2488,30 @@ def cli_verify_ledger(_args):
         if ledger_from not in actual_from and actual_from not in ledger_from:
             from_notes.append({"tag": tag, "ledger_from": row["from"], "actual_from": e.origin})
 
+    # Two items sharing one ref, which is the failure this check was added for: a feature request
+    # filed through the app and a second one written by hand both took FR-014, and the list showed
+    # two rows under one identifier.  Cheap to detect, and impossible to notice by eye in a file this
+    # size.
+    issues_text, _ = read_text(ISSUES_MD)
+
+    seen = {}
+    duplicate_refs = []
+
+    for ref in re.findall(r'^### ((?:OB|FR)-\d+) - ', issues_text, re.M):
+        seen[ref] = seen.get(ref, 0) + 1
+
+        if seen[ref] == 2:
+            duplicate_refs.append(ref)
+
     out = {
+        "duplicate_refs": duplicate_refs,
         "ledger_rows": len(ledger_rows),
         "should_be_open": len(should_be_open),
         "missing_from_ledger": missing,
         "stale_in_ledger": stale,
         "disposition_drift": disposition_drift,
         "from_notes": from_notes,
-        "clean": not missing and not stale and not disposition_drift,
+        "clean": not missing and not stale and not disposition_drift and not duplicate_refs,
     }
 
     return out, (0 if out["clean"] else 1)

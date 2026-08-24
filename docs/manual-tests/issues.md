@@ -576,7 +576,7 @@ minor cosmetic: the layout editor says layout editor: {page}, autonomy uses a da
 
 make the scroll area background white, and make the popup wider so we can read the message (or split the message across 2 lines).  increase the scrolling speed of the stations.  Ensure self-selection is impossible (hide target station from the list).
 
-### FR-014 - 2026-08-24 - the "no available paths" reasons, as a list you can read
+### FR-017 - 2026-08-24 - the "no available paths" reasons, as a list you can read
 
 **Kind:** feature request
 **Raised from:** Adam, testing MT-144
@@ -606,4 +606,22 @@ event thread and fill itself in when the answer arrives.
 **Filed:** 2026-08-24 02:24  
 **Build:** commit b1e22b5b
 
-backup traincontrol data should write a zip with: UIstate, LocDB, the track diagram, and all autonomy files.
+Backup TrainControl data should write a ZIP holding **all** of the state, not part of it:
+
+- `UIState.data` - the window's own state
+- the locomotive database
+- the track diagram: `config/gleisbild.cs2` and every page in `config/gleisbilder/`
+- the autonomy files: `config/autonomy/setup.json` and every `configuration-*.json`
+
+Adam, filing it: "the backup menu option should export a zip file with the locdb and uistate files,
+track diagram files, and autonomy files - effectively, all state."
+
+**Why this one matters more than it looks.** The 23 August loss was recoverable only because copies of
+`setup.json` happened to be lying around in a scratch folder, and the restore needed the *whole* config
+directory to be meaningful - the setup is keyed by page id, so it means nothing without the
+`gleisbild.cs2` that defines those ids. A backup of any one of these files on its own is not a backup;
+it is a file that will be read against a layout it no longer matches. The unit is the folder, and this
+request is that the menu option say so.
+
+*Filed twice (as FR-015 and FR-016) because the app appeared not to have filed it the first time - see
+the note in FR-015's own entry about why it looked that way. Consolidated here.*

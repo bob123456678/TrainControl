@@ -19,7 +19,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | TD-6 |
+| [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
@@ -6500,7 +6500,7 @@ show the notes in a popup with a scrollable text area with the whole list of sta
 ones that can be chosen autonomously and ones that cannot, with the autonomous ones first."
 
 The fix is validated, so this closes; the note is a new piece of work rather than a defect in it, and
-is filed as **FR-014**. Today the reasons appear only on hover, one tooltip's worth, which is the
+is filed as **FR-017**. Today the reasons appear only on hover, one tooltip's worth, which is the
 limitation he is describing rather than a fault.
 
 ---
