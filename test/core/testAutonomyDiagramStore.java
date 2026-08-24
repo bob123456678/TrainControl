@@ -2222,4 +2222,245 @@ public class testAutonomyDiagramStore
 
         return pages;
     }
+
+    /**
+     * A page rename survives a save and a load, and takes nothing else with it.
+     *
+     * Adam's shape for this, and the right one: "as long as names change in the objects, and
+     * reads/writes of the saved state restore the exact data, then we should be good... a mutation, a
+     * check, a save, a load, and verification that the mutation is still there (while rest staying the
+     * same)."
+     *
+     * Both halves matter and the second is the one this week kept failing. Every loss so far has been a
+     * rename that worked perfectly in memory and then took a page of settings with it on the way to
+     * disk - pruned by a reconcile against stale names, or reattached by a renumber. Checking only the
+     * memory would have passed throughout.
+     *
+     * So the fixture carries one of everything the store holds, on TWO pages, and the untouched page is
+     * asserted as hard as the renamed one.
+     */
+    @Test
+    public void testARenamedPageSurvivesASaveAndLoad() throws IOException
+    {
+        store.setPageIds(twoPages());
+
+        TileKey moving = new TileKey("Main", 4, 4);
+        TileKey signal = new TileKey("Main", 5, 4);
+        TileKey plaque = new TileKey("Main", 4, 5);
+        TileKey doorway = new TileKey("Main", 6, 6);
+
+        TileKey elsewhere = new TileKey("Yard", 1, 1);
+        TileKey farDoor = new TileKey("Yard", 2, 2);
+
+        store.setPointName(moving, "Platform One");
+        store.setStation(moving, true);
+        store.setTileLength(moving, 14);
+        store.setTileDirection(moving, new RouteId(0, 0), Direction.TOWARD_B);
+        store.setProtectingSignals(moving, java.util.Arrays.asList(signal));
+        store.setCaption(plaque, moving);
+        store.setBlockingPoints(moving, java.util.Arrays.asList(elsewhere));
+        store.pairPortals(doorway, farDoor);
+
+        store.setPointName(elsewhere, "Yard Throat");
+        store.setStation(elsewhere, true);
+        store.setTileLength(elsewhere, 3);
+
+        store.setPageExcluded("Yard", true);
+
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        place(store.getConfiguration("Only"), "Main:4,4", "BR 232");
+
+        store.save();
+
+        // --- the mutation ---------------------------------------------------------------------
+        store.renamePage("Main", "Mainline");
+
+        TileKey renamed = new TileKey("Mainline", 4, 4);
+        TileKey renamedPlaque = new TileKey("Mainline", 4, 5);
+        TileKey renamedDoor = new TileKey("Mainline", 6, 6);
+
+        // --- the check, in memory -------------------------------------------------------------
+        assertEverythingIsWhereItShouldBe(store, renamed, renamedPlaque, renamedDoor, elsewhere,
+            "in memory, immediately after the rename");
+
+        // --- the save, and the load ------------------------------------------------------------
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Mainline", "1");
+        after.put("Yard", "2");
+
+        store.setPageIds(after);
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        // --- and the check again ----------------------------------------------------------------
+        assertEverythingIsWhereItShouldBe(reloaded, renamed, renamedPlaque, renamedDoor, elsewhere,
+            "after a save and a load - so the rename was right in memory and wrong on disk, which is "
+            + "every page-rename defect this week");
+
+        assertNull(reloaded.getPointName(new TileKey("Main", 4, 4)),
+            "the old page name still carries the setup, so the rename left a copy behind");
+    }
+
+    /**
+     * The same, through the door used when nothing has the setup open.
+     *
+     * `renamePageOnDisk` had no test at all. It reads the file twice on purpose - the first read has no
+     * page numbering to work with, so every key comes back in ID form, and renamePage works on NAMES
+     * and would match nothing against those. Delete the second read and this is the test that notices.
+     */
+    @Test
+    public void testARenamedPageSurvivesTheOnDiskDoor() throws IOException
+    {
+        store.setPageIds(twoPages());
+
+        TileKey moving = new TileKey("Main", 4, 4);
+        TileKey signal = new TileKey("Main", 5, 4);
+        TileKey plaque = new TileKey("Main", 4, 5);
+        TileKey doorway = new TileKey("Main", 6, 6);
+        TileKey elsewhere = new TileKey("Yard", 1, 1);
+        TileKey farDoor = new TileKey("Yard", 2, 2);
+
+        store.setPointName(moving, "Platform One");
+        store.setStation(moving, true);
+        store.setTileLength(moving, 14);
+        store.setTileDirection(moving, new RouteId(0, 0), Direction.TOWARD_B);
+        store.setProtectingSignals(moving, java.util.Arrays.asList(signal));
+        store.setCaption(plaque, moving);
+        store.setBlockingPoints(moving, java.util.Arrays.asList(elsewhere));
+        store.pairPortals(doorway, farDoor);
+
+        store.setPointName(elsewhere, "Yard Throat");
+        store.setStation(elsewhere, true);
+        store.setTileLength(elsewhere, 3);
+
+        store.setPageExcluded("Yard", true);
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        place(store.getConfiguration("Only"), "Main:4,4", "BR 232");
+        store.save();
+
+        // the mutation, by the door the window uses when no session is open
+        assertTrue(AutonomyCompanionStore.renamePageOnDisk(layout, "Main", "Mainline"),
+            "the setup on disk was not found, so nothing below tests anything");
+
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Mainline", "1");
+        after.put("Yard", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertEverythingIsWhereItShouldBe(reloaded,
+            new TileKey("Mainline", 4, 4), new TileKey("Mainline", 4, 5),
+            new TileKey("Mainline", 6, 6), elsewhere,
+            "after renaming through the on-disk door");
+    }
+
+    /**
+     * Everything the fixture above put in, asserted where it should now be - and the other page
+     * asserted just as hard, because "the rest staying the same" is half the rule.
+     */
+    private void assertEverythingIsWhereItShouldBe(AutonomyCompanionStore check, TileKey renamed,
+        TileKey plaque, TileKey doorway, TileKey elsewhere, String when)
+    {
+        assertEquals(check.getPointName(renamed), "Platform One", "the name, " + when);
+        assertTrue(check.isStation(renamed), "the station flag, " + when);
+        assertEquals(check.getTileLength(renamed), 14, "the length, " + when);
+        assertEquals(check.getTileDirection(renamed, new RouteId(0, 0)), Direction.TOWARD_B,
+            "the direction, " + when);
+
+        assertEquals(check.getCaptionTarget(plaque), renamed,
+            "the caption points at the station it is about, " + when);
+
+        assertEquals(check.getPortalPartner(doorway), new TileKey("Yard", 2, 2),
+            "the portal's far end, " + when);
+
+        assertFalse(check.getProtectingSignals(renamed).isEmpty(),
+            "the protecting signal, " + when);
+
+        assertFalse(check.getBlockingPoints(renamed).isEmpty(),
+            "the blocking point, " + when);
+
+        // and the page nobody touched
+        assertEquals(check.getPointName(elsewhere), "Yard Throat", "the OTHER page's name, " + when);
+        assertTrue(check.isStation(elsewhere), "the OTHER page's station, " + when);
+        assertEquals(check.getTileLength(elsewhere), 3, "the OTHER page's length, " + when);
+        assertTrue(check.getExcludedPages().contains("Yard"),
+            "the OTHER page is still excluded, " + when);
+
+        assertTrue(check.getConfiguration("Only").getJSONObject("points").has("Mainline:4,4"),
+            "the configuration's placement followed the rename, " + when);
+    }
+
+    /**
+     * Deleting a page through the on-disk door forgets BOTH halves of the setup.
+     *
+     * This is the test the second read in repairOnDisk exists for, and the one that notices when it is
+     * taken out - the rename above does not, which is worth writing down.
+     *
+     * The shared half is keyed by page ID on disk, so a rename needs nothing from that read: the id
+     * does not move and the name follows the index. Configuration points are keyed by page NAME, and
+     * renamePage rewrites those whether the keys are in name form or not. So a rename works either way.
+     *
+     * A delete does not. deletePage gathers a page's squares by asking isOnPage of every key, and
+     * against ID-form keys - which is what one read leaves behind - that question is false for every
+     * one of them. Without the second read the configurations are cleaned and the shared half is not:
+     * the names, stations, lengths, directions, captions and pairings of a deleted page all stay in
+     * setup.json, keyed to an id that has been retired.
+     */
+    @Test
+    public void testADeletedPageIsForgottenThroughTheOnDiskDoor() throws IOException
+    {
+        store.setPageIds(twoPages());
+
+        TileKey going = new TileKey("Yard", 1, 1);
+        TileKey staying = new TileKey("Main", 4, 4);
+
+        store.setPointName(going, "Yard Throat");
+        store.setStation(going, true);
+        store.setTileLength(going, 8);
+        store.setTileDirection(going, new RouteId(0, 0), Direction.TOWARD_A);
+
+        store.setPointName(staying, "Platform One");
+        store.setStation(staying, true);
+
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        place(store.getConfiguration("Only"), "Yard:1,1", "BR 232");
+        place(store.getConfiguration("Only"), "Main:4,4", "MY 1106");
+
+        store.save();
+
+        assertTrue(AutonomyCompanionStore.deletePageOnDisk(layout, "Yard"),
+            "the setup on disk was not found, so nothing below tests anything");
+
+        // reloaded under the numbering that survives the delete
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main", "1");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertFalse(reloaded.getConfiguration("Only").getJSONObject("points").has("Yard:1,1"),
+            "the deleted page is still placed in the configuration");
+
+        // the SHARED half - the part one read leaves behind
+        String written = new String(java.nio.file.Files.readAllBytes(
+            new File(layout, "config/autonomy/setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertFalse(written.contains("Yard Throat"),
+            "the deleted page's station name is still in setup.json, keyed to an id that has been "
+            + "retired. The configurations were cleaned and the shared half was not, which is what "
+            + "happens when the keys are still in ID form and deletePage asks isOnPage by NAME: "
+            + written);
+
+        assertTrue(written.contains("Platform One"),
+            "deleting one page took the other page's setup with it: " + written);
+    }
 }

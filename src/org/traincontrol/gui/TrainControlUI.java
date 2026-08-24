@@ -13516,15 +13516,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
-        // Trains first, whatever the autosave setting says.
+        // Trains first, and not conditional on a setting that has nothing to do with them.
         //
-        // This whole block used to sit inside `if (this.autosave.isSelected() && ...)`, under a comment
+        // This block used to sit inside `if (this.autosave.isSelected() && ...)`, under a comment
         // calling it the auto-save confirmation. It is not: it stops the railway and asks whether to
-        // exit with trains at speed, and neither of those has anything to do with whether the setup is
-        // saved on exit. With autosave unticked, closing the window while trains were running neither
-        // stopped them nor asked - the app exited and the locomotives kept going.
+        // exit with trains at speed, neither of which has anything to do with saving the setup.
         //
-        // Found by review. The condition it grew inside is still below, doing what it is named for.
+        // It was NOT reachable, and the review that found it said trains could keep running - they
+        // could not. Autosave is forced on and its checkbox hidden at startup (see setSelected(true)
+        // and setVisible(false) in the constructor), so the condition was always true. Adam: "layout
+        // autosave should be default and forced these days."
+        //
+        // Moved out anyway, because a guard that stops a railway must not be one hidden checkbox away
+        // from not running, and because reading it wrongly is exactly what a reviewer just did.
         if (this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())

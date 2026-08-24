@@ -333,3 +333,235 @@ becomes a compound key of square plus route rather than a string with a suffix; 
 gain the conversion that is today spread through the class. Mechanical but wide, and it touches the one
 class that holds the data Adam has already lost once - so it wants its own commit with the battery
 green either side, and the existing round-trip tests are what make it safe to attempt.
+
+### OB-068 - 2026-08-24 - a page that fails to load has its whole setup pruned
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`CS2File.parseLayout` deliberately skips a page whose file will not parse or is missing - the everyday
+OneDrive case, an unhydrated placeholder or a sync lock. `readShared` is relaxed about it too, and says
+so: "Absent is fine - the page may simply not be loaded."
+
+But `AutonomySession.save()` reconciles against the pages that DID load, and its only guard is
+`isPageNumberingSuspect`. So every name, station, direction, length, signal pairing and caption on the
+page that did not load is dropped as deleted track and written to disk. Worse, the next page operation
+calls `writeLayoutIndex` with the in-memory list, which drops the unloaded page from `gleisbild.cs2`
+and retires its id - the page disappears from the layout with its file orphaned on disk.
+
+The routine doors that trigger that save discard the reconciliation report - `rememberPlacement`, the
+tile-menu callback, `AutonomyViewerPanel.save()` - so it is silent at three of the four.
+
+**The fix shape already exists in the code:** treat "an id in `pageNamesWhenWritten` with no loaded
+page" exactly as suspect numbering is treated - save, but do not prune. That is a small change to one
+condition in `AutonomySession.save`.
+
+This is the highest-value item on this list: it is data loss, it needs no unusual gesture, and OneDrive
+makes it likelier here than it would be anywhere else.
+
+### OB-069 - 2026-08-24 - the timetable is an unrepaired holder of locomotive and station names
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The rename repair's own documentation enumerates "three things in a configuration hold a locomotive by
+NAME - the placement, the home assignment and the exclusion list", and `repairLocomotiveIn` touches only
+the configuration's `points`. There is a fourth: the captured timetable rides in `globals`, and every
+entry names its locomotive and names Points by name.
+
+On the next load `TimetablePath.fromJSON` throws on the unresolvable name, and the loader's
+all-or-nothing loop drops the **entire** timetable with a log warning. `captureFromLayout` then writes
+the now-empty timetable back, permanently.
+
+Station renames are worse: `AutonomySession.setPointName`'s comment says "Nothing else has to happen",
+which is not true of the timetable, whose edges name the old Point.
+
+Only the active running configuration self-heals by capture; inactive configurations have no repair at
+all - the same asymmetry the placement bug had.
+
+Two fixes, and both are wanted: add the timetable to the repair, and make the loader drop a bad ENTRY
+rather than the whole list.
+
+### OB-070 - 2026-08-24 - closing the app never asks the open editor about unsaved work
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The rule "one save/discard/cancel question, asked wherever a page is left" is enforced at
+`LayoutEditor.mayLeave`, `settleUnsavedWork` and `jumpToSquare`. `WindowClosed` - the title-bar X and
+File > Exit - consults none of them and calls `System.exit(0)`.
+
+In autonomy mode the exit capture calls `saveWithoutReconciling()`, so it can COMMIT edits the user was
+about to cancel.
+
+(The other half of this - trains left running when autosave was unticked - is fixed in 38ccbfc8.)
+
+### OB-071 - 2026-08-24 - toStored splits a key on the FIRST colon; everything else uses the last
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`toStored` and `fromStored` use `indexOf(':')`. `parseTileKey`, `isOnPage` and `rekeyOne` were all
+fixed to use the LAST colon, and their comments call "Yard: Upper" "an ordinary thing to call a page".
+
+With pages "Yard" (id 3) and "Yard: Upper" both present, every "Yard: Upper" key is stored as
+`3: Upper:x,y` - bound to *Yard's* identity. Renaming "Yard" then orphans the whole of "Yard: Upper",
+which is MT-135-class loss triggered by renaming a **different** page.
+
+`validateLayoutName` strips colons, but only on keyReleased - a pasted name survives, and page names
+that come from the Central Station are unconstrained.
+
+Same family as OB-067 and, like it, dissolved for good by FR-013.
+
+### OB-072 - 2026-08-24 - a timetable leg that fails reports the run as completed
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The dispatcher's `catch (Throwable)` stops all trains but never sets `abandoned`, so `return
+!abandoned.get()` answers true and the plain-timetable flow shows no "stopped at entry N" dialog -
+reproducing the exact symptom the code's own comment says was fixed. The staging flow is accidentally
+immune, via an unrelated cross-check.
+
+Every train stops and the app says it went fine.
+
+### OB-073 - 2026-08-24 - the return-home planner does not know about blockedBy
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The FR-001 refusal lives in `isPathClear` behind `isAutoRunning()`, and staging executes with running
+true - but `HomeStaging`'s `canEnter`, `canRest` and its impossibility scan never read `getBlockedBy()`,
+and the runtime audit compares against `getPossiblePaths` at rest, where the clause is skipped.
+
+If a home station is watched by a square that is another locomotive's home, the plan reports READY,
+execution then refuses that leg, and the run gives up after the retry limit and stops everything -
+fleet left half-staged.
+
+It fails safe: no train moves wrongly. But partial execution is the thing staging was built to avoid,
+and the planner should refuse up front instead.
+
+### OB-074 - 2026-08-24 - a Central Station rename proposal bypasses the unusable-name guard
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`RouteCommand.isNameUsable`'s rule says "three separate doors have to agree", and the manual rename
+dialog and both route-editor doors enforce it. `checkForRenameMenuItemActionPerformed` - accepting a
+name the Central Station proposes - calls `renameLoc` with no check, and `renameLoc` writes the new name
+into every route.
+
+Real CS names look like "SBB 460 (2)", which the route condition parser rewrites into a broken
+expression. Accepting a proposal corrupts every route naming that locomotive.
+
+### OB-075 - 2026-08-24 - legacy import writes home assignments without the one-home sweep
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`AutonomySession.setHome` sweeps duplicates, and its comment names the reason: "a rule enforced at one
+door of two is the shape this defect came from" (TD-8). `importLegacy` writes homes directly and does
+not sweep.
+
+A pre-rule autonomy.json with one locomotive assigned two homes imports both;
+`Layout.rebuildHomeStations` then drops one by iteration order with a log line, and the next capture
+writes that arbitrary choice back permanently.
+
+### OB-076 - 2026-08-24 - autonomy edits made from the main window are reverted by the editor Cancel
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The editor's Cancel restores `autonomyAsOpened` - the setup as of the moment the window opened - and
+saves it. Locomotive renames during that window are repaired into the snapshot, but the main window's
+tile menu and its placements stay live while the editor is open and are not.
+
+Name a station or place a locomotive from the main window, then press Cancel in the editor: the edit is
+reverted, and the reversion is written to disk.
+
+Either those doors should be refused while an editor is open, the way the Layouts menu now is, or the
+snapshot should be repaired the way renames are.
+
+### OB-077 - 2026-08-24 - startup hangs for ever if the window fails to build
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`MarklinControlStation` waits on a latch whose only `countDown()` is the last statement of
+`setViewListener`, and it is not in a `finally`. The IOException catch in the posted runnable logs,
+sleeps, and never counts down - so `latch.await()` blocks for ever with no window and no message. Any
+RuntimeException reaching the EDT handler does the same.
+
+Error path only, but the symptom is the worst kind: nothing happens at all.
+
+### OB-078 - 2026-08-24 - a modal refusal dialog is raised from worker threads
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`refuseWhileEditorOpen()` reads Swing state and shows a modal `JOptionPane`. It is called from raw
+worker threads in `editRoute` and `AddRouteButtonActionPerformed` - immediately OUTSIDE the
+`invokeLater` whose adjacent comment explains why the sibling check was moved inside it ("left a window
+between them").
+
+Off-EDT modal dialogs mispaint on a good day and deadlock on a bad one, and the check has the same
+time-of-check/time-of-use gap the comment describes.
+
+### OB-079 - 2026-08-24 - the event thread can still block on the Layout monitor for seconds
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`getPossiblePaths` and the timetable snapshot were moved off the EDT for exactly this reason. Three
+callers were left behind: `explainDestinations` from the hover tooltip, `getPossiblePaths` while
+building the diagram right-click menu, and the synchronized `moveLocomotive` on paste and placement.
+
+Dispatch holds the Layout monitor across its per-command sleeps, so hovering a locomotive panel during
+a manual dispatch freezes the whole window for the configuration phase.
+
+### OB-080 - 2026-08-24 - four comments that state the opposite of what the code does
+
+**Kind:** bug
+**Raised from:** independent review of the last seven days of commits, at Adam's request
+**Filed:** 2026-08-24
+**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+The repo's recurring problem, found again:
+
+- `Point.java` documents `homeLoc` as held "by NAME rather than by reference", directly above a field
+  that is now a `Locomotive`. Left over from the object migration.
+- `Edge.isLockHeld`'s justification claims "locks are symmetric"; `Layout` states the opposite, and
+  counts 104 of 118 shipped lock relations as asymmetric. The safety argument survives by another
+  route, but the stated premise is wrong and should not be reasoned from.
+- `validatePathActuation` returns **true** on `InterruptedException`, bypassing its own final
+  confirmation - inverting the fail-safe direction of the guard. Unreachable today.
+- `Layout.deletePoint` sweeps neither the deleted point's occupant nor its presence in other points'
+  `blockedBy` lists, so a ghost blocker refuses the watched station for the rest of the session.
+
+Also three javadocs in `Layout.java` orphaned above the wrong methods by later insertions - the same
+mistake I made five times today, which suggests the ratchet's allowance should be walked down rather
+than left at 98.
