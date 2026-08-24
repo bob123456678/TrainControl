@@ -40,12 +40,14 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
-| [MT-138](#mt-138) | 2026-08-23 | A split copy's name and its facing disagree on a curve | needs decision | - |
 | [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
-| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | needs decision | - |
+| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | - |
+| [MT-142](#mt-142) | 2026-08-24 | A page keeps its identity when other pages change | fixed unvalidated | OB-059, OB-060, OB-061 |
+| [MT-143](#mt-143) | 2026-08-24 | Four small ones from the same test pass | fixed unvalidated | OB-054, OB-055, OB-056, OB-057 |
+| [MT-144](#mt-144) | 2026-08-24 | The editor window comes forward, and the info mark is an icon | fixed unvalidated | OB-058, OB-063 |
 
-Everything else - 113 of 141 - is **fixed validated** and needs nothing from you unless the
+Everything else - 113 of 144 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5757,6 +5759,51 @@ legitimately have none. Mutation-checked: removing the call I just added fails i
 **Duplicating a page is not covered by this.** A duplicate should probably COPY the setup onto the new
 page, and today it does not - worth its own item if you want it.
 
+**Adam, 2026-08-23 (triage).** Does not work.
+
+Does not work.  Immediately after rename, all stations are gone.  Error in the editor: loc at s88 is standing somewhere else, and can't be at 2 places at once.
+
+I was also able to start autonomy while the editor was open.  This should not be possible.
+
+Renaming the page back did not restore the stations, and added more errors to the config (says 13/46 errors, but the editor only shows 4 errors total).
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam was right and my fix was aimed at the wrong thing. Calling `renamePage`
+was necessary and not sufficient: it carries the page's NAME across, and a rename was also changing
+every page's ID.
+
+`writeLayoutIndex` numbered pages by their position in the list it is given, and the rename did
+`layoutList.remove(old)` then `layoutList.add(new)` - so the renamed page went to the END. The list also
+arrives sorted (`MarklinControlStation.getLayoutList` sorts), so a page's id was really its place in the
+alphabet, and renaming "1 - Main and neighbours" to "1 - Main" moved it from first to last.
+
+The setup is keyed by page id on disk. So one rename reattached the whole setup to the wrong pages -
+and because ids that shift by one round-trip unchanged (id 1 reads as the page now called 1 and writes
+back as 1), the file looked perfectly consistent while meaning something else entirely. The
+coordinates of one page's settings do not exist on the next page along, so the following save
+reconciled them away as deleted squares. Adam lost 19 point names, 14 stations, 22 tile directions, 15
+captions and 3 lengths.
+
+The two errors he saw both follow from it. "All stations are gone" is the pruning. "Loc at s88 is
+standing somewhere else, and can't be at 2 places at once" is the other half: configurations key by
+page NAME, not id, so they orphaned under the OLD name instead - his `Autonomy 1h` was holding 34
+points keyed `1 - Main2:x,y`, four of them carrying locomotives that also existed under `1 - Main`. And
+"13/46 errors but the editor shows 4" is the count of those orphans, which can be counted but not
+displayed, because they are on a page that does not exist.
+
+Four things changed. A rename keeps its slot and is told to the index so the page keeps its id.
+`fromStored` asks which of a rename and a renumber happened - the same question `pageIdConflicts` asks,
+whether the name that id used to carry still exists - instead of trusting the current index. `readShared`
+reads `pages` before anything is translated, having read it AFTER the one collection that translates
+inline. And `AutonomySession.save` no longer prunes at all while the numbering is suspect, since
+detection existed and only ever warned.
+
+His data was rebuilt from the last pre-damage snapshot with every key re-keyed and verified against the
+real tiles - 249 references, no orphans - and is in the repository.
+
+**Still not covered by this:** duplicating a page does not copy the setup onto the copy. Same as before.
+
 ---
 
 <a id="mt-136"></a>
@@ -5801,6 +5848,26 @@ anything, which is why it is the reading half rather than a migration.
 **Both were found by a reviewer reading three days of commits**, not by a test - and neither would have
 been found by reading the end state, which is what the other two reviews did. A fix applied to one of
 several call sites looks complete in the diff that contains it.
+
+**Adam, 2026-08-23 (triage).** Does not work.
+
+1. is OK.
+
+BUT In the track diagram viewer: There is a condition where "place {locname}" is greyed out saying it can't possible leave so can be placed, but Place Locomotive still works.
+
+2/3 are OK but I still need to test autonomy over a link.
+
+**Claude, 2026-08-24.** The greyed item was not the one that worked. `Place {loc}` on the right-click
+menu greys itself correctly when no copy of the square can be driven away from - it sets the item
+disabled and attaches no listener, so it is inert. The door that ignored the rule is the KEYBOARD one:
+Ctrl+V over the same square calls `moveLocomotive` directly, with no "can it leave" test and no busy
+test either.
+
+Two ways to reach one action with the rule on only one of them, which is this codebase's recurring
+shape. The keyboard door now asks both questions - and asks them of the POINT rather than of the
+square's copies, because by then the copy is already chosen.
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -5849,12 +5916,33 @@ the moment it is most needed is when the current setup will not load.
 stations KEPT because something still names them - with no title and no sentence. A reader could not tell
 which of their stations they had just lost.
 
+**Adam, 2026-08-23 (triage).** Does not work.
+
+segment lengths are OK
+fix it start greyout does not work (see other bug)
+try not to bunch multiple bugs into a MT, this will reduce my accuracy.
+
+**Claude, 2026-08-24.** Noted, and this entry is the example - seven items, one verdict, and the one
+that failed could not be reported without reporting the six that passed. MT-142 and MT-143 below are
+narrower; MT-143 is still four items, because they are four one-line UI faults from one pass, but
+nothing in it is load-bearing.
+
+"Fix it start greyout does not work" is OB-057, filed separately and fixed under MT-143. The greying
+was the wrong mechanism for it: the button's enabled state is computed when the tabs are built and when
+a configuration is loaded, so an error appearing later - a page renamed, a tile deleted - leaves the
+affordance stale while the action stays live. There are three ways to press it as well. It is refused
+at the ACTION now, which cannot go stale, and the dialog says how many errors there are.
+
+diagram edit that costs the station- in the current state, I can't validate, but I see no error.
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-138"></a>
 ### MT-138 - 2026-08-23 - A split copy's name and its facing disagree on a curve
 
-**Disposition:** needs decision
+**Disposition:** superseded
 
 **Claude, 2026-08-23.** This one is a design decision rather than a fix, because fixing it renames
 Points on your layout.
@@ -5886,6 +5974,17 @@ updating - and that is still a rename.
 
 The divergence is now recorded in `heading`'s javadoc either way, so the next reader is not left to find
 it again.
+
+**Adam, 2026-08-23 (triage).** Does not work.
+
+I don't understand the question.  Logically, a curved station accepts ingress and egress from two directions, just like straight track.
+
+**Claude, 2026-08-24.** That answers it, and the answer is that the question was malformed - so this is
+superseded rather than decided. A curve is not a special case: it takes trains in and out from two
+directions exactly as straight track does, so a split copy needs no different naming and no different
+facing rule. Nothing to build, and the migration I was going to ask about does not arise.
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -5919,6 +6018,10 @@ standing at the platform, which is the one moment it no longer matters.
 **What has NOT changed:** placing or removing a train by hand, with nothing running, still moves no
 signals. That was the defect the old guard existed for - "cutting a locomotive off a platform with
 Control+X drove its protecting signals on the spot" - and it stays fixed.
+
+**Adam, 2026-08-23 (triage).** Works.
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -5964,7 +6067,7 @@ saying so.
 <a id="mt-141"></a>
 ### MT-141 - 2026-08-23 - Editing a placement while trains are out puts the others back where they started
 
-**Disposition:** needs decision
+**Disposition:** fixed unvalidated
 
 **Claude, 2026-08-23.** A design decision, and I would rather you made it than have me pick.
 
@@ -6003,5 +6106,192 @@ would avoid - it is the shape that produced the seam we have spent this week rep
 locomotive, call `captureFromLayout` with a layout built before that placement, and require the
 placement to survive. That test is worth having whichever option you pick, and I will write it once you
 have.
+
+**Adam, 2026-08-23 (triage).** Does not work.
+
+Never allow any modifications to a running layout.  This includes locomotive database, the track diagram, the autonomy config, or the locomotive placements.
+
+*Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Ruled, so this stops being a decision and becomes a rule. Adam, separately:
+"I'd like things to propagate correctly, but locking down the editors is the right call" - so the
+propagation work stays as it is and the lock is added on top rather than instead.
+
+Of the four things named, three were already refused: the track diagram and the autonomy config share
+one door (`openLayoutEditor`, which refuses while autonomy is busy and deliberately does not fall back
+to opening the other one), and placements were refused on the right-click menu. Two doors had no check
+at all:
+
+- **adding** a locomotive to the database. Editing, deleting, renaming and multi-units all refused;
+  adding did not, and it is the same database.
+- the **full locomotive state sync**, which calls `allFunctionsOff()` across the whole database before
+  it re-reads anything - so during a run it strips the lights and sounds off moving trains and then
+  fights the automation for control of them. The most destructive of the four and the one nobody had
+  thought about.
+
+- and the keyboard placement door, which is MT-136.
+
+The check was written out longhand at each of the four places that had it, which is how two came to be
+missed; it is one call now, so the next door added is one line rather than one more copy.
+
+---
+
+<a id="mt-142"></a>
+
+### MT-142 - 2026-08-24 - A page keeps its identity when other pages change
+
+**Disposition:** fixed unvalidated
+**From:** OB-059, OB-060, OB-061
+**Written:** 2026-08-24
+
+**What to do.** This is about page IDs, which are invisible - so the check is on what they carry.
+
+Set up two pages so you can tell them apart: on **each**, name two stations, mark them stations, give
+one a length and one a caption.
+
+Then, one at a time, checking after each that BOTH pages still have everything above:
+
+1. **Rename** the first page to something that sorts to the front of the list (put an `A` at the
+   start). The list is alphabetical, so this moves it.
+2. **Add a new page**, then delete it again.
+3. **Delete** a page you do not care about, added for the purpose, that sits alphabetically BETWEEN
+   your two.
+
+After each step, close TrainControl and reopen it, then look again - the first look is about memory and
+the second is about the file.
+
+Finally, delete one of the two set-up pages on purpose. Its own stations and captions should be gone
+and the OTHER page must be untouched. Check the log says how many squares it forgot.
+
+#### Comments
+
+**Claude, 2026-08-24.** Found by review while validating the MT-135 fix, which turned out to be one
+door of three.
+
+**OB-060 - ids were positions.** `writeLayoutIndex` numbered pages by their place in the list it is
+handed, and `MarklinControlStation.getLayoutList` returns that list SORTED - so a page's id was its
+place in the alphabet. The autonomy setup is keyed by page id, so anything that changed the set of
+names renumbered other pages and silently reattached their settings to whatever track had taken the
+number. An id is a page's identity now: read back from the index by name, kept for every page still
+there, retired when a page goes, and issued fresh only for a page that has never had one. Written
+explicitly for every page including the first, because an absent id is read as the page's POSITION and
+a retired id leaves a gap.
+
+**OB-059 - deleting a page told the setup nothing.** `renamePage` got a caller under OB-049; its
+counterpart never had one. The file went, the index was rewritten, and everything the setup knew about
+that page stayed behind keyed to a page that no longer existed - then got read through whatever page
+had inherited the id. Where two pages shared coordinates, one page's names and stations landed on the
+other's track and the rest was pruned by the next reconcile. Nothing warned, and nothing could: the
+test for a renumber is whether the old NAME still exists, and after a delete it does not - which is
+precisely what a rename looks like. `deletePage` forgets that page's squares through `forgetSquares`,
+which also un-points the captions, signals and portal ends on OTHER pages that named them, and drops
+its points from every configuration.
+
+**OB-061 - a guard that promised more than it checked.** The source guard added for the home-dialog
+defect had a message naming `JComboBox.setSelectedItem` and a test that required `getName().equals(` on
+the line - so the one defect it was written for was invisible to it. Widened; then narrowed again after
+it flagged `Layout.locomotivesToRun.remove(getCurrentLocomotive())`, which is a `Set<Locomotive>` where
+removing by object is exactly right. `contains`, `indexOf` and `remove` are out: they take an Object, so
+they are equally the correct call on a collection of locomotives, and a guard reading source text a line
+at a time cannot tell which it is looking at. A guard that has to be argued with is one somebody
+eventually adds an exemption list to. Verified by putting the real defect back and watching it fail.
+
+Five tests, each seen failing first, in `testPageIdsAreDurable`. The delete and the durable ids are
+also why `AutonomySession.save`'s refusal to prune while the numbering is suspect is now a backstop
+rather than the fix.
+
+---
+
+<a id="mt-143"></a>
+
+### MT-143 - 2026-08-24 - Four small ones from the same test pass
+
+**Disposition:** fixed unvalidated
+**From:** OB-054, OB-055, OB-056, OB-057
+**Written:** 2026-08-24
+
+**What to do.** Four separate looks, none of them long.
+
+1. **Right-click a page link.** There must be no "This Link" heading, and no band with nothing in it
+   between two dividers - anywhere on that menu.
+2. **In the track diagram editor, turn the grid on.** There must be no grid on an extra row below the
+   diagram, and none on a part-width column to its right.
+3. **In the autonomy editor, turn the grid on and off.** It must actually appear and disappear - and
+   with it ON, the tiles must not shift or gain white gaps between them.
+4. **Get the setup into a state with errors** (renaming a page no longer does it, so delete a sensor a
+   station is on). **Start Autonomy** must refuse, and say how many errors there are. Then open an
+   editor and try again: it must refuse for that reason too.
+
+#### Comments
+
+**Claude, 2026-08-24.** All four from Adam's 22:10-22:48 pass.
+
+**OB-054.** The menu is assembled by a dozen independent blocks, each adding a divider and then
+whatever it has for this square, so a block with nothing to offer leaves its divider behind. Rather
+than teach twelve blocks to look ahead - and leave the thirteenth to get it wrong - the shape is
+corrected once at the end: leading, trailing and doubled dividers go, and so does a heading left with
+nothing under it. The "This Link" heading goes outright; the menu is already titled with what the
+square is.
+
+**OB-055.** Those two rows are `LayoutGrid`'s own spacers - "a dummy column at the end with nothing in
+it to ensure long labels don't misalign things". They hold nothing, so GridBagLayout gives them
+whatever height is left rather than a square's worth, which is exactly the half-height cells Adam
+described. They are marked as spacers and no longer take the grid.
+
+**OB-056.** The toggle had nothing to act on in that editor: `restingBorder` returned null for autonomy
+mode whatever it said. What MT-127 required was that the tiles sit FLUSH - "there is now a gap between
+tiles (essentially a white grid)" - which is a rule about ROOM, not about whether a line is drawn. So
+the grid is drawn there by `overlayLine`, which paints and reserves nothing. The hover outline now
+matches on insets rather than on "is the resting border null", because with an overlay in play those
+stopped being the same question. The ratchet was asserting the implementation that happened to satisfy
+MT-127; it asserts the room now.
+
+**OB-057.** Two halves. The greying was the wrong mechanism - see MT-137 - so starting is refused at the
+action, which cannot go stale, and the dialog gives the error count. Starting with an editor open is
+refused for its own reason; the editor holds the pages the session is built from.
+
+**The `[]` is not fixed here** - it is its own item, OB-063, under MT-144, since Adam has asked for
+narrower entries.
+
+---
+
+<a id="mt-144"></a>
+
+### MT-144 - 2026-08-24 - The editor window comes forward, and the info mark is an icon
+
+**Disposition:** fixed unvalidated
+**From:** OB-058, OB-063
+**Written:** 2026-08-24
+
+**What to do.**
+
+1. Open the track diagram editor. Click on the main window so the editor goes behind it. Press
+   **Edit** again: the editor should come to the front. No error dialog.
+2. Get a locomotive into the state where its panel says **No available paths** - place one somewhere it
+   cannot leave. Beside that text there should be a small blue **information icon**, not a box or a
+   pair of brackets. Hover it: the reasons should still appear.
+3. Then get the same panel into any other state (send the train somewhere, or pick it up). The icon
+   must be gone - it belongs to that one message.
+
+#### Comments
+
+**Claude, 2026-08-24.**
+
+**OB-058.** `showOpenEditor()` already existed and does exactly what Adam asked for - it was written for
+the menus, which had the same problem. The Edit button was the one door still answering with a dialog.
+It raises the window now, and keeps the dialog only for the case where the button is disabled and there
+is no editor to raise, which is a real refusal rather than a misunderstanding.
+
+**OB-063.** Adam: "the status page says No Available Paths [] - not sure what that [] is doing in the
+UI." It was never a `[]`. The mark was written as U+24D8 CIRCLED LATIN SMALL LETTER I, and the UI font
+on his machine has no glyph for it, so Swing drew the missing-glyph box.
+
+My first fix asked the font whether it could display the character and fell back to `(i)`. Adam: "then
+for the (i) icon we need to use an actual gif" - which is right, and for a better reason than the one I
+had: asking the font makes what the user sees depend on which machine they are on, and the fallback is
+uglier than either. It is a 14px icon now, drawn at its final size rather than resampled down - at that
+size every pixel is a decision, and reducing a large drawing produced a rounded box with two blobs in
+it. It sits beside the text as the label's icon, and is cleared alongside the tooltip it belongs to,
+because one branch sets it and every other branch has to be the one that takes it away.
 
 ---

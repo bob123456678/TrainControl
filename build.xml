@@ -213,6 +213,7 @@
         <test-one-class class="testConfirmedGoodState"/>
         <test-one-class class="testJavadocsAreAttached"/>
         <test-one-class class="testStationBlockedByAnotherPoint"/>
+        <test-one-class class="testPageIdsAreDurable"/>
         <test-one-class class="testLocomotiveIdentityPropagates"/>
         <test-one-class class="testNonReversibleTrains"/>
         <test-one-class class="testRenderingCost"/>

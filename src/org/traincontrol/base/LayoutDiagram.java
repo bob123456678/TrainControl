@@ -822,6 +822,84 @@ public class LayoutDiagram
      */
     public static void writeLayoutIndex(String path, List<String> layoutList) throws IOException
     {
+        writeLayoutIndex(path, layoutList, null);
+    }
+
+    /**
+     * The page id each name has in the index as it stands on disk.
+     *
+     * Parsed rather than taken from the running model, because this is about what the FILE says: the
+     * ids in it are what the autonomy setup is keyed by, and the point of reading them is to write them
+     * back unchanged.
+     *
+     * An absent id reads as the page's position, which is what CS2File does with the same file.
+     *
+     * @param path the layout folder
+     * @return name -> id, empty when there is no index yet
+     */
+    public static Map<String, Integer> readLayoutIndexIds(String path)
+    {
+        Map<String, Integer> out = new java.util.LinkedHashMap<>();
+
+        File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
+
+        if (!index.isFile()) return out;
+
+        try
+        {
+            int position = 0;
+            Integer id = null;
+
+            for (String line : java.nio.file.Files.readAllLines(index.toPath(),
+                java.nio.charset.StandardCharsets.UTF_8))
+            {
+                String trimmed = line.trim();
+
+                if ("seite".equals(trimmed))
+                {
+                    position++;
+                    id = null;
+                }
+                else if (trimmed.startsWith(".id="))
+                {
+                    try
+                    {
+                        id = Integer.parseInt(trimmed.substring(4).trim());
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        id = null;
+                    }
+                }
+                else if (trimmed.startsWith(".name="))
+                {
+                    out.put(trimmed.substring(6), id == null ? position : id);
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            // An unreadable index is the same as not having one: every page gets a fresh id, which is
+            // what happens today anyway.  Throwing here would stop a page being saved.
+            return new java.util.LinkedHashMap<>();
+        }
+
+        return out;
+    }
+
+    /**
+     * Writes the index, optionally told that a page has been renamed.
+     *
+     * @param path the layout folder
+     * @param layoutList the pages, in the order they are to appear
+     * @param renamedFromTo old name -> new name, so a renamed page keeps its id.  Null when nothing was
+     *        renamed - a page nobody recognises is then given a fresh id, which is right for a new
+     *        page, a duplicate and a combined page.
+     * @throws IOException
+     */
+    public static void writeLayoutIndex(String path, List<String> layoutList,
+        Map<String, String> renamedFromTo) throws IOException
+    {
         // Ensure the directory exists
         File directory = new File(Paths.get(path, "config").toString());
         if (!directory.exists())
@@ -851,17 +929,55 @@ public class LayoutDiagram
         contents.append(" .major=1\n");
         contents.append("groesse\n");
 
-        // Write layout details
-        int id = 1;
+        // Write layout details, keeping the id each page already had.
+        //
+        // These used to be numbered by POSITION, and the position came from a sorted list
+        // (MarklinControlStation.getLayoutList sorts), so a page's id was really its place in the
+        // alphabet.  Anything that changed the set of names therefore renumbered other pages: a rename
+        // moved one page and shifted every page after it, and a delete closed the gap and shifted
+        // everything below.
+        //
+        // The autonomy setup is keyed by page id.  So a rename or a delete silently reattached other
+        // pages' settings to the wrong track, and the following reconcile deleted whatever did not fit
+        // - Adam lost 19 point names, 14 stations, 22 directions and 15 captions to a single rename
+        // (MT-135).  Fixing the rename to keep its slot fixed one door; this fixes the rule.
+        //
+        // An id is now a page's IDENTITY: it is read from the file that already exists, kept for every
+        // page still in the list, retired when a page goes, and issued fresh only for a page that has
+        // never had one.  Nothing any other page does can change it.
+        Map<String, Integer> existing = readLayoutIndexIds(path);
+
+        int next = 1;
+
+        for (Integer taken : existing.values())
+        {
+            if (taken != null && taken >= next) next = taken + 1;
+        }
+
         for (String layout : layoutList)
         {
-            contents.append("seite\n");
-            if (id != 1) { // Skip ID for the first layout
-                contents.append(" .id=").append(id).append("\n");
+            Integer id = existing.get(layout);
+
+            // A rename is the one case where a page keeps its id under a different name, and only the
+            // caller knows that happened - by here it is simply a name that has never been seen.
+            if (id == null && renamedFromTo != null)
+            {
+                for (Map.Entry<String, String> renamed : renamedFromTo.entrySet())
+                {
+                    if (layout.equals(renamed.getValue())) id = existing.get(renamed.getKey());
+                }
             }
 
+            if (id == null) id = next++;
+
+            contents.append("seite\n");
+
+            // ALWAYS written, unlike before.  An absent id is read as the page's POSITION
+            // (CS2File: `m.get("id") != null ? m.get("id") : String.valueOf(position)`), so omitting it
+            // for the first page only worked while ids and positions were the same thing.  They are
+            // not any more - a retired id leaves a gap - and an omitted id would be read as 1.
+            contents.append(" .id=").append(id).append("\n");
             contents.append(" .name=").append(layout).append("\n");
-            id++;
         }
 
         final byte[] bytes = contents.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);

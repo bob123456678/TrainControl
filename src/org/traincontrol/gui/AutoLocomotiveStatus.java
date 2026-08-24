@@ -96,6 +96,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
+     * The "there is a reason, hover me" mark.
+     *
+     * An image rather than a character.  It was written as U+24D8 CIRCLED LATIN SMALL LETTER I, which
+     * the UI font on Adam's machine has no glyph for, so Swing drew the missing-glyph box - Adam,
+     * OB-063: "the status page says No Available Paths [] - not sure what that [] is doing in the UI."
+     * It was never a [] at all; it was a character with nowhere to be drawn from.
+     *
+     * Asking the font whether it can display it was the first fix and is not good enough: it makes what
+     * the user sees depend on which machine they are on, and the fallback is uglier than either. An
+     * icon looks the same everywhere and is what the rest of this application already does for its
+     * track tiles.
+     *
+     * Loaded once. A null icon is harmless to setIcon, so a missing resource costs the mark rather than
+     * the panel.
+     */
+    private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
+
+    private static javax.swing.ImageIcon loadInfoIcon()
+    {
+        java.net.URL url = AutoLocomotiveStatus.class.getResource("resources/info.gif");
+
+        return url == null ? null : new javax.swing.ImageIcon(url);
+    }
+
+    /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.
      *
      * Two reasons, one meaning to the operator.  The station may exclude this particular locomotive,
@@ -262,6 +287,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             this.noPathsNow = false;
             this.locDest.setToolTipText(null);
 
+            // The mark goes with the tooltip it belongs to, and for the same reason: one branch sets
+            // it, so every other branch has to be the one that takes it away.
+            this.locDest.setIcon(null);
+
             // Locomotive is running - show the path and hide the list
             if (layout.getActiveLocomotives().containsKey(locomotive))
             {
@@ -341,7 +370,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // This label has said "No available paths" for years and the reasons behind it
                     // are new - there is no way to guess that resting the pointer here now answers
                     // the question the text raises.
-                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths") + " \u24d8");
+                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
+                    this.locDest.setIcon(INFO_ICON);
 
                     // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
                     // stops on the label - see the mouse listener in the constructor.

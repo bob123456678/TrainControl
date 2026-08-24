@@ -1809,6 +1809,90 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Forgets everything about a page that has been deleted.
+     *
+     * renamePage's counterpart, and it had none: deleting a page removed the file and rewrote the
+     * index, and nothing told the setup.  What was left behind was worse than an orphan.  Page ids come
+     * from the index, so removing a page used to renumber every page after it - and on the next load
+     * the deleted page's entries resolved through pageOf, whose recorded name is now gone from the
+     * index, so they were handed to whatever page had inherited that id.  Where the two pages shared
+     * coordinates, one page's names and stations landed on the other's track; the rest was pruned by
+     * the following reconcile and written back.  And because the old NAME no longer existed anywhere,
+     * the renumber could not even be detected - readShared's test is whether that name still exists,
+     * so isPageNumberingSuspect stayed false and the guard in AutonomySession.save never engaged.
+     *
+     * Ids are durable now (see LayoutDiagram.writeLayoutIndex), so the inheriting-page half of that is
+     * gone: a deleted page's id is retired rather than handed on.  This is the other half - the page's
+     * own settings, which are about track that no longer exists and which nothing else will ever claim.
+     *
+     * Gathered here and removed by forgetSquares, which is the method that already knows how to take a
+     * square out of all eleven collections AND out of everything that NAMES one - a caption pointing at
+     * a station on this page, a protecting signal, the far end of a portal.  Those are on OTHER pages
+     * and would otherwise be left pointing at nothing.
+     *
+     * @param page the page being deleted
+     * @return the number of squares whose setup was forgotten
+     */
+    public int deletePage(String page)
+    {
+        if (page == null) return 0;
+
+        Set<String> squares = new LinkedHashSet<>();
+
+        // Every collection keyed by square.  Named individually rather than gathered by a helper so
+        // that testStoreCollectionsAreHandledEverywhere governs this method too - a collection added
+        // later has to be added here, and the test says so before anybody notices in the field.
+        for (String key : new LinkedHashSet<>(pointNames.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(tileLengths.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(barredArrivals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(linkNames.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(stationSignals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(blockedPoints.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(portals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(captions.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(stations)) if (isOnPage(key, page)) squares.add(key);
+        for (String key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);
+
+        // tileDirections is keyed by the square AND a route across it, so its keys carry a suffix.
+        // forgetSquares takes bare squares and strips the suffix itself, so the bare square is what
+        // goes in - the same distinction the eleventh member of forgetSquares' own list got wrong.
+        for (String key : new LinkedHashSet<>(tileDirections.keySet()))
+        {
+            int at = key.lastIndexOf('#');
+
+            String bare = at >= 0 ? key.substring(0, at) : key;
+
+            if (isOnPage(bare, page)) squares.add(bare);
+        }
+
+        forgetSquares(squares);
+
+        // Keyed by PAGE rather than by square, so forgetSquares has nothing to say about it - and a
+        // page that is gone cannot be excluded from autonomy.  Left behind, the name sits in the set
+        // for ever, and a page later created with the same name would silently start out excluded.
+        excludedPages.remove(page);
+
+        // And the configurations, which key by square too.  renamePage's note records what happens
+        // when they are missed: "a rename silently dropped every placement, home, terminus and length
+        // in every configuration while the shared file survived, making the loss look arbitrary".
+        for (JSONObject configuration : configurations.values())
+        {
+            if (!configuration.has("points")) continue;
+
+            JSONObject points = configuration.getJSONObject("points");
+
+            for (String key : new LinkedHashSet<>(points.keySet()))
+            {
+                int at = key.lastIndexOf('#');
+
+                if (isOnPage(at >= 0 ? key.substring(0, at) : key, page)) points.remove(key);
+            }
+        }
+
+        return squares.size();
+    }
+
+    /**
      * Follows tiles being moved on the diagram.
      *
      * Everything here is keyed by SQUARE, so a tile that moves leaves its whole setup behind at the

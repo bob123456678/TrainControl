@@ -86,6 +86,10 @@ public class testStoreCollectionsAreHandledEverywhere
     {
         "sharedFields", "KNOWN_SHARED", "readShared", "clear", "clearShared", "renamePage",
         "moveTiles", "forgetSquares", "snapshotPage", "restorePage", "reconcile", "applyTo",
+        // deletePage gathers the page's squares and hands them to forgetSquares. It is on this list
+        // because the GATHERING has to know every collection: one missed means a page's worth of that
+        // one setting survives the page, keyed to track that is gone.
+        "deletePage",
     };
 
     /**

@@ -3057,6 +3057,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // two clicks of the findings count away.
         if (!this.editLayoutButton.isEnabled())
         {
+            // Brought FORWARD rather than complained about, when there is a window to bring.
+            //
+            // Adam, OB-058: "when clicking the edit (track diagram) button, the window should be
+            // brought in front of the main window if it isn't already."  Pressing Edit with an editor
+            // already open is not a mistake to be corrected - it is somebody looking for that window,
+            // which is usually behind this one, which is exactly why they reached for the button.
+            //
+            // showOpenEditor already existed for the menus, which had the same problem and solved it
+            // properly; this door still had the dialog. The dialog stays for the case where the button
+            // is disabled and there is NO editor to show, which is a real refusal.
+            if (openEditor != null && openEditor.isDisplayable())
+            {
+                showOpenEditor();
+                return;
+            }
+
             JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorEditorAlreadyOpen"));
             return;
         }
@@ -18341,9 +18357,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 List<String> layoutList = this.model.getLayoutList();
                 String currentLayout = this.LayoutList.getSelectedItem().toString();
 
-                // WHERE it sits, because writeLayoutIndex numbers the pages by position and that
-                // number is the page id.  A rename used to remove the name and add the new one, which
-                // put the renamed page last and gave every page after its old slot a different id.
+                // WHERE it sits, so the file stays in the order the user sees.
+                //
+                // This began as the fix for MT-135: writeLayoutIndex numbered pages by position, so
+                // removing the name and adding the new one put the renamed page last and gave every
+                // page after its old slot a different id.  Ids no longer come from the position, so
+                // this is no longer load-bearing - it is kept because a file whose order jumps around
+                // is harder to read, and because getLayoutList is sorted, so the slack costs nothing.
                 //
                 // The autonomy setup is keyed by page ID on disk.  So renaming one page silently
                 // reattached the whole setup to the wrong pages - and because ids that shift by one
@@ -18420,7 +18440,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                // Told what was renamed, so the page keeps its ID under the new name.
+                //
+                // Ids are a page's identity now rather than its place in the list, and they are read
+                // back from the index by NAME - so a rename is the one operation where the name the id
+                // belongs to changes.  Without this the renamed page would be a name nobody has seen,
+                // take a fresh id, and leave its whole setup keyed to an id that no page holds any
+                // more: orphaned, and pruned by the next reconcile.
+                Map<String, String> renamed = new java.util.LinkedHashMap<>();
+
+                if (rename) renamed.put(currentLayout, newLayoutName);
+
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, renamed);
 
                 // Selecting the new page has to wait for the page list to be rebuilt, which now
                 // happens after the background sync rather than before this line
@@ -18485,9 +18516,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     List<String> layoutList = this.model.getLayoutList();
 
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()).deleteLayoutFile();
+                    String going = this.LayoutList.getSelectedItem().toString();
 
-                    layoutList.remove(this.LayoutList.getSelectedItem().toString());
+                    // The setup FIRST, before the page or the file is gone.
+                    //
+                    // Deleting a page used to tell the setup nothing at all - the file went, the index
+                    // was rewritten, and everything the setup knew about that page was left keyed to a
+                    // page that no longer existed.  It was then read through whatever page had
+                    // inherited the id, because ids came from list position; where two pages shared
+                    // coordinates one page's names and stations landed on the other's track, and the
+                    // rest was pruned by the next reconcile and written back.  Nothing warned, because
+                    // the detection asks whether the old NAME still exists - and after a delete it
+                    // does not, so a delete could not even be told from a rename.
+                    //
+                    // renamePage has had a caller since OB-049. This is its counterpart, which never
+                    // had one - the same omission, one method along.
+                    if (getAutonomySession() != null)
+                    {
+                        int forgotten = getAutonomySession().getStore().deletePage(going);
+
+                        if (forgotten > 0) this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
+
+                        try
+                        {
+                            getAutonomySession().saveWithoutReconciling();
+                        }
+                        catch (java.io.IOException e)
+                        {
+                            // The page is going either way; only the record of it is at risk
+                            this.model.log(e);
+                        }
+                    }
+
+                    this.model.getLayout(going).deleteLayoutFile();
+
+                    layoutList.remove(going);
+
+                    // No rename map: the deleted page's id is retired, and every surviving page keeps
+                    // the one it had.  That is the whole reason a delete no longer disturbs anything.
                     LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
 
                     this.layoutEditingComplete();

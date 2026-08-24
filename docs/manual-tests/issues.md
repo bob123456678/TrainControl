@@ -139,6 +139,15 @@ not, never both.
 | 2026-08-23 | FR-011 | feature request | Add to autonomy uses the same filtering picker | fixed unvalidated | - |
 | 2026-08-23 | FR-012 | feature request | A dozen editor cycles must retain nothing | fixed validated | - |
 | 2026-08-22 | FR-008 | feature request | Route editor: Highlight on Diagram dropped, Test renamed Test Condition | fixed validated | - |
+| 2026-08-23 | OB-054 | bug | Page link menu: a repeated heading and an empty section | - | [MT-143](tests.md#mt-143) |
+| 2026-08-23 | OB-055 | bug | The grid was drawn on the editor's own spacer row and column | - | [MT-143](tests.md#mt-143) |
+| 2026-08-23 | OB-056 | bug | The grid toggle did nothing in the autonomy editor | - | [MT-143](tests.md#mt-143) |
+| 2026-08-23 | OB-057 | bug | Autonomy could be started with errors outstanding, or an editor open | - | [MT-143](tests.md#mt-143) |
+| 2026-08-24 | OB-059 | bug | Deleting a page told the autonomy setup nothing at all | - | [MT-142](tests.md#mt-142) |
+| 2026-08-24 | OB-060 | bug | Page ids were list positions, so any rename or delete renumbered the others | - | [MT-142](tests.md#mt-142) |
+| 2026-08-24 | OB-061 | bug | A source guard promised more coverage than it checked | - | [MT-142](tests.md#mt-142) |
+| 2026-08-23 | OB-058 | bug | The Edit button brings an already-open editor forward | - | [MT-144](tests.md#mt-144) |
+| 2026-08-24 | OB-063 | bug | The info mark had no glyph, so the font drew a box | - | [MT-144](tests.md#mt-144) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |
@@ -270,3 +279,22 @@ things written down so they would not be lost, none of them scheduled. It has no
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
 
+### OB-062 - 2026-08-24 - a locomotive rename is not repaired when no session is built
+
+**Kind:** bug
+**Raised from:** review of the last day of commits, at Adam's request
+**Build:** commit 48d98f4c, build\classes - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+`TrainControlUI.repairAutonomyLocomotive` returns immediately when `autonomySession` is null - even
+when a setup exists on disk. Its comment argues that the file "is read the next time it IS opened - by
+which time this rename is already in the locomotive database", but nothing repairs locomotive names on
+load, so a stale placement, home or exclusion survives until the configuration is chosen. That is the
+fatal case: `parseAuto` answers a locomotive it cannot resolve by invalidating the whole layout, days
+later, with nothing connecting it to the rename.
+
+Narrow in practice, because most routine paths build the session lazily - but the window is real: rename
+a locomotive before anything has touched autonomy in that session.
+
+Filed rather than fixed: the repair wants a load-time pass over the setup, which is a different shape
+from the in-memory repairs beside it, and it is worth deciding whether that belongs here or in the
+store's own load.
