@@ -6551,8 +6551,28 @@ public class Layout
             List<TimetablePath> timetableList = new LinkedList<>();
             
             for (Object tt : timetable)
-            {                
-                timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+            {
+                // Each entry on its own, so one that cannot be read costs ITSELF and nothing else.
+                //
+                // This loop used to let the exception out to the catch below, which discards
+                // timetableList entirely - so a single entry naming a locomotive that had been renamed
+                // or deleted lost the WHOLE timetable, with one line in the log to say so. The next
+                // capture then wrote the empty timetable back over the configuration, and it was gone
+                // for good.
+                //
+                // An entry naming something that no longer exists is not a corrupt file; it is a
+                // record of a train that has since been renamed, or a station that has. Dropping the
+                // one and keeping the rest is what a reader would expect, and it is what the
+                // locomotive list a few lines below has always done - "skip names that no longer
+                // resolve".
+                try
+                {
+                    timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+                }
+                catch (Exception entry)
+                {
+                    control.logf("autolayout.warnTimetableEntry", entry.getMessage());
+                }
             }
             
             layout.setTimetable(timetableList);

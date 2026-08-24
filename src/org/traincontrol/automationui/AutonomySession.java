@@ -3864,7 +3864,35 @@ public class AutonomySession
         //
         // Saving still happens.  It is only the DELETING that waits - until the numbering is settled,
         // which is the point at which "this square does not exist" is a fact again.
-        AutonomyCompanionStore.Reconciliation report = store.isPageNumberingSuspect()
+        // A page this setup knows about that is NOT among the pages above is the same problem wearing
+        // different clothes, and it took a review to see it (OB-068).
+        //
+        // CS2File skips a page whose file will not parse or is missing, deliberately and quietly - on a
+        // layout in OneDrive an unhydrated placeholder is enough. The session then opens without it,
+        // and `existing` is built only from the pages that DID load. So every name, station, direction,
+        // length, signal pairing and caption on the missing page reads as track that has been deleted,
+        // and is pruned and written - and the next page operation drops that page from gleisbild.cs2
+        // too, orphaning its file.
+        //
+        // Nothing about that is a user's doing, and three of the four doors that reach this save
+        // discard the report, so it happens in silence.
+        java.util.Set<String> loadedNames = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            loadedNames.add(page.getName());
+        }
+
+        java.util.List<String> absent = store.pagesNotLoaded(loadedNames);
+
+        boolean incomplete = store.isPageNumberingSuspect() || !absent.isEmpty();
+
+        // Not logged from here: this class has no logger, deliberately - it is the model half of the
+        // setup and every message about it belongs to a window. A caller that wants to say so can ask
+        // store.pagesNotLoaded the same question; the important half is that nothing is destroyed
+        // while the answer is non-empty.
+
+        AutonomyCompanionStore.Reconciliation report = incomplete
             ? new AutonomyCompanionStore.Reconciliation()
             : store.reconcile(existing);
 

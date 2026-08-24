@@ -49,8 +49,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-145](#mt-145) | 2026-08-24 | A locomotive rename reaches a setup nothing has open | fixed unvalidated | OB-062 |
 | [MT-146](#mt-146) | 2026-08-24 | A train may leave the point that holds a station back | fixed unvalidated | FR-001 |
 | [MT-147](#mt-147) | 2026-08-24 | The restored layout is the one you had | needs test | the 23 August data loss |
+| [MT-148](#mt-148) | 2026-08-24 | A page that will not load keeps its setup | fixed unvalidated | OB-068 |
+| [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 
-Everything else - 113 of 147 - is **fixed validated** and needs nothing from you unless the
+Everything else - 113 of 149 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -6594,5 +6596,99 @@ somewhere else, and can't be at 2 places at once" was reporting.
 
 Backups, if any of this is wrong: `PRE-RESTORE-2213` (your state before the first restore) and
 `PRE-RESTORE-2258` (what the app left after it pruned).
+
+---
+
+<a id="mt-148"></a>
+
+### MT-148 - 2026-08-24 - A page that will not load keeps its setup
+
+**Disposition:** fixed unvalidated
+**From:** OB-068
+**Written:** 2026-08-24
+
+**What to do.** You are simulating the thing OneDrive does on its own: a page file that is briefly not
+readable.
+
+1. Set up two pages so you can tell them apart - name a station on each and mark both as stations.
+2. Close TrainControl.
+3. **Rename one page's `.cs2` file** in `config/gleisbilder` so it cannot be found - add `.hidden` to
+   the end. Leave `gleisbild.cs2` alone: the index still promises the page.
+4. Open TrainControl. That page is missing from the list, which is expected.
+5. Now do something ordinary that saves - place a locomotive from the diagram, or rename a station on
+   the page that DID load.
+6. Close TrainControl, **put the file name back**, and reopen.
+
+The hidden page must come back with its station name and its station flag intact. Before this fix they
+were gone: pruned as deleted track by the save in step 5, silently.
+
+Then check the index: `config/gleisbild.cs2` must still list that page. It used to be dropped from
+there as well, orphaning the file.
+
+#### Comments
+
+**Claude, 2026-08-24.** Found by the independent seven-day review, as ISD-B1, and the highest-value
+item on its list.
+
+`CS2File.parseLayout` skips a page whose file will not parse or is not there - deliberately, so one bad
+page does not take the layout down - and `readShared` is relaxed about the same absence for the same
+reason: "Absent is fine - the page may simply not be loaded." Both halves agreed that a missing page was
+survivable. Then `save()` reconciled the setup against the pages that DID load, and everything on the
+missing one read as track that had been deleted.
+
+Three of the four doors that reach that save discard the reconciliation report, so it happened without a
+word.
+
+The remedy is the one already written for a suspect page numbering, extended: save, but do not prune,
+while the picture of the layout is incomplete. `store.pagesNotLoaded` answers that question, and the
+test that pins it is `testAutonomyDiagramSession.testAPageThatDidNotLoadKeepsItsSetup` -
+mutation-checked by removing the new half of the condition.
+
+Worth knowing for reading the code: with the page absent, its entries stay in memory under RAW ID keys,
+because `pageOf` has no name to resolve the id to. That is why they look like squares that do not exist
+to anything working in page names - and it is exactly the state in which they must not be deleted.
+
+---
+
+<a id="mt-149"></a>
+
+### MT-149 - 2026-08-24 - The timetable survives renaming a locomotive
+
+**Disposition:** fixed unvalidated
+**From:** OB-069
+**Written:** 2026-08-24
+
+**What to do.**
+
+1. Capture a timetable with **several** entries, using at least two different locomotives.
+2. **Rename one of those locomotives** in the locomotive database.
+3. Check the timetable at once: every entry must still be there, and the renamed locomotive's entries
+   must show its new name.
+4. Close TrainControl and reopen. Check again - this is the half that used to fail.
+5. Then **delete** one of the locomotives, and check that only ITS entries have gone.
+
+Before this fix, step 4 lost the **entire** timetable, not just the affected entries - and the next
+capture wrote the emptiness back permanently.
+
+#### Comments
+
+**Claude, 2026-08-24.** ISD-B2 from the seven-day review. Two defects, one on top of the other.
+
+The rename repair's own note enumerates "three things in a configuration hold a locomotive by NAME - the
+placement, the home assignment and the exclusion list", and all three live in `points`. The captured
+timetable does not: it rides in `globals`, and every entry names its locomotive. Nothing repaired it.
+
+That alone would have cost the affected entries. What made it cost everything is the loader: it built
+the whole timetable in one loop and let a single entry's exception escape to a catch that discards the
+list. One unresolvable name, and every entry went - with one line in the log.
+
+Both are fixed. The repair carries a rename into the timetable and removes the legs of a deleted
+locomotive; the loader now drops the one entry it cannot read and keeps the rest, which is what the
+locomotive list a few lines below it has always done.
+
+**Not fixed, and it is the same shape:** the entries also name POINTS, so renaming a STATION still
+breaks the entries that cross it. That is survivable now rather than fatal - one entry is dropped
+instead of the list - but it is a real gap, and `setPointName`'s comment still says "Nothing else has to
+happen", which is not true.
 
 ---

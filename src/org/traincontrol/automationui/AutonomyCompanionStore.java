@@ -442,6 +442,40 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Whether this setup knows about a page that is not among the ones it is being shown.
+     *
+     * The setup records what each page id was called when it was written.  If one of those names is
+     * missing from the pages a caller is holding, then the caller's picture of the layout is
+     * incomplete - and anything that deletes on the strength of "this square does not exist" is about
+     * to delete a page's worth of settings for a page that still exists.
+     *
+     * That is not hypothetical.  CS2File deliberately skips a page whose file will not parse or is not
+     * there, and says so; on this layout, which lives in OneDrive, an unhydrated placeholder or a file
+     * held by the sync client is enough.  readShared is relaxed about the same absence for the same
+     * reason - "Absent is fine - the page may simply not be loaded" - so the two halves agreed that a
+     * missing page is survivable, and then reconcile deleted its contents anyway.
+     *
+     * Found by review (OB-068).  The remedy is the one already written for a suspect numbering: save,
+     * but do not prune.
+     *
+     * @param loaded the page names the caller actually has
+     * @return the names this setup knows that are not in that set, empty when the picture is complete
+     */
+    public java.util.List<String> pagesNotLoaded(java.util.Collection<String> loaded)
+    {
+        java.util.List<String> missing = new ArrayList<>();
+
+        if (loaded == null) return missing;
+
+        for (String name : pageNamesWhenWritten.values())
+        {
+            if (name != null && !loaded.contains(name)) missing.add(name);
+        }
+
+        return missing;
+    }
+
+    /**
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
      * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
@@ -1140,9 +1174,72 @@ public class AutonomyCompanionStore
      */
     private static void repairLocomotiveIn(JSONObject configuration, String from, String to)
     {
-        if (configuration == null || !configuration.has("points")) return;
+        if (configuration == null) return;
 
-        repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
+        if (configuration.has("points"))
+        {
+            repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
+        }
+
+        repairLocomotiveInTimetable(configuration, from, to);
+    }
+
+    /**
+     * The fourth holder of a locomotive's name, and the one nothing reached.
+     *
+     * The note above this method used to enumerate three - the placement, the home assignment and the
+     * exclusion list - and all three are inside "points". The captured timetable is not: it rides in
+     * "globals", because AutonomySession copies every top-level key across and Layout.toJSON puts the
+     * timetable there. Every entry names its locomotive.
+     *
+     * Left unrepaired, a rename left an entry naming a locomotive that no longer exists. Until this
+     * commit that cost the whole timetable on the next load, because the loader took one exception as a
+     * reason to discard all of them; it now costs that entry. Either way the fix is to carry the rename
+     * across, so it costs nothing.
+     *
+     * A DELETE removes the entry outright: a timetable leg for a locomotive that is gone is not a leg
+     * anybody can run, and leaving it would be leaving the loader to drop it on every load for ever.
+     *
+     * Found by review (OB-069). The entries also name POINTS, which a station rename breaks in the same
+     * way - that half is not repaired here, and is survivable now only because the loader drops the one
+     * entry rather than the list.
+     *
+     * @param configuration the configuration to repair, modified in place
+     * @param from the locomotive's name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     */
+    private static void repairLocomotiveInTimetable(JSONObject configuration, String from, String to)
+    {
+        if (!configuration.has("globals")) return;
+
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null || !globals.has("timetable")) return;
+
+        org.json.JSONArray timetable = globals.optJSONArray("timetable");
+
+        if (timetable == null) return;
+
+        org.json.JSONArray kept = new org.json.JSONArray();
+
+        for (int at = 0; at < timetable.length(); at++)
+        {
+            JSONObject entry = timetable.optJSONObject(at);
+
+            if (entry == null) continue;
+
+            if (from.equals(entry.optString(AutonomyBuilder.LOCOMOTIVE, null)))
+            {
+                // Gone, so the leg is gone with it
+                if (to == null) continue;
+
+                entry.put(AutonomyBuilder.LOCOMOTIVE, to);
+            }
+
+            kept.put(entry);
+        }
+
+        globals.put("timetable", kept);
     }
 
     /**

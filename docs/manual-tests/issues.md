@@ -152,7 +152,8 @@ not, never both.
 | 2026-08-24 | OB-064 | bug | Renaming or deleting a page invented an autonomy setup | - | [MT-142](tests.md#mt-142) |
 | 2026-08-24 | OB-065 | bug | Page delete, rename, combine and the database sync ran during autonomy | - | [MT-141](tests.md#mt-141) |
 | 2026-08-24 | OB-066 | bug | deletePage left cross-page pointers to the deleted page | - | [MT-142](tests.md#mt-142) |
-| 2026-08-24 | OB-067 | bug | A page named "2" breaks the id/name translation | - | FR-013 |
+| 2026-08-24 | OB-068 | bug | A page that fails to load had its whole setup pruned | - | [MT-148](tests.md#mt-148) |
+| 2026-08-24 | OB-069 | bug | The timetable was an unrepaired holder of locomotive names | - | [MT-149](tests.md#mt-149) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |
@@ -334,58 +335,6 @@ gain the conversion that is today spread through the class. Mechanical but wide,
 class that holds the data Adam has already lost once - so it wants its own commit with the battery
 green either side, and the existing round-trip tests are what make it safe to attempt.
 
-### OB-068 - 2026-08-24 - a page that fails to load has its whole setup pruned
-
-**Kind:** bug
-**Raised from:** independent review of the last seven days of commits, at Adam's request
-**Filed:** 2026-08-24
-**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-`CS2File.parseLayout` deliberately skips a page whose file will not parse or is missing - the everyday
-OneDrive case, an unhydrated placeholder or a sync lock. `readShared` is relaxed about it too, and says
-so: "Absent is fine - the page may simply not be loaded."
-
-But `AutonomySession.save()` reconciles against the pages that DID load, and its only guard is
-`isPageNumberingSuspect`. So every name, station, direction, length, signal pairing and caption on the
-page that did not load is dropped as deleted track and written to disk. Worse, the next page operation
-calls `writeLayoutIndex` with the in-memory list, which drops the unloaded page from `gleisbild.cs2`
-and retires its id - the page disappears from the layout with its file orphaned on disk.
-
-The routine doors that trigger that save discard the reconciliation report - `rememberPlacement`, the
-tile-menu callback, `AutonomyViewerPanel.save()` - so it is silent at three of the four.
-
-**The fix shape already exists in the code:** treat "an id in `pageNamesWhenWritten` with no loaded
-page" exactly as suspect numbering is treated - save, but do not prune. That is a small change to one
-condition in `AutonomySession.save`.
-
-This is the highest-value item on this list: it is data loss, it needs no unusual gesture, and OneDrive
-makes it likelier here than it would be anywhere else.
-
-### OB-069 - 2026-08-24 - the timetable is an unrepaired holder of locomotive and station names
-
-**Kind:** bug
-**Raised from:** independent review of the last seven days of commits, at Adam's request
-**Filed:** 2026-08-24
-**Build:** commit 38ccbfc8 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-The rename repair's own documentation enumerates "three things in a configuration hold a locomotive by
-NAME - the placement, the home assignment and the exclusion list", and `repairLocomotiveIn` touches only
-the configuration's `points`. There is a fourth: the captured timetable rides in `globals`, and every
-entry names its locomotive and names Points by name.
-
-On the next load `TimetablePath.fromJSON` throws on the unresolvable name, and the loader's
-all-or-nothing loop drops the **entire** timetable with a log warning. `captureFromLayout` then writes
-the now-empty timetable back, permanently.
-
-Station renames are worse: `AutonomySession.setPointName`'s comment says "Nothing else has to happen",
-which is not true of the timetable, whose edges name the old Point.
-
-Only the active running configuration self-heals by capture; inactive configurations have no repair at
-all - the same asymmetry the placement bug had.
-
-Two fixes, and both are wanted: add the timetable to the repair, and make the loader drop a bad ENTRY
-rather than the whole list.
-
 ### OB-070 - 2026-08-24 - closing the app never asks the open editor about unsaved work
 
 **Kind:** bug
@@ -565,3 +514,28 @@ The repo's recurring problem, found again:
 Also three javadocs in `Layout.java` orphaned above the wrong methods by later insertions - the same
 mistake I made five times today, which suggests the ratchet's allowance should be walked down rather
 than left at 98.
+
+### OB-067 - 2026-08-24 - a page named "2" breaks the id/name translation
+
+**Kind:** bug
+**Raised from:** review of the last day of commits, at Adam's request
+**Filed:** 2026-08-24
+**Decided:** 2026-08-24 - Adam: "A page should be allowed to be named 2 - let FR-013 dissolve it."
+
+`toStored` and `pageOf` rest on an invariant stated in the code - "ids are numeric and names are not,
+so the two never collide" - and nothing enforces it. `validateLayoutName` allows digits, so a page
+called "2" is legal, and a page whose NAME equals another page's ID misroutes both translations. The
+on-disk repair path is the most exposed: every key there is in id form, so `toStored` would rewrite
+`"2:x,y"` through the page *named* "2".
+
+**Not to be fixed on its own.** The name stays legal and the pun goes when FR-013 replaces these string
+keys with objects. That is written into FR-013 as a requirement rather than left as an aspiration: the
+work is not finished until an id and a name can no longer be mistaken for one another by any code path.
+
+Left in the Inbox deliberately. It is a real, open bug with no hands-on test to hand out - there is
+nothing for a person to check until FR-013 lands - and this file has no way to say "picked up, waiting
+on another item": a bug carries a State of `-` and an `MT-###` link, so a receipt row for this one
+showed a bare dash and read as though somebody had forgotten to fill it in. Filed and undone is the
+truth, so filed and undone is how it is recorded.
+
+The same family as OB-071, which FR-013 also dissolves.

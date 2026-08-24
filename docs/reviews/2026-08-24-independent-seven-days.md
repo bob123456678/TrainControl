@@ -95,8 +95,8 @@ avoid, and the planner should refuse up front.
 
 | | Finding | Disposition |
 |---|---|---|
-| **ISD-B1** | A page that fails to load has its whole setup pruned | **Open** — `OB-068` |
-| **ISD-B2** | The timetable is an unrepaired holder of locomotive and station names | **Open** — `OB-069` |
+| **ISD-B1** | A page that fails to load has its whole setup pruned | **Fixed** in `f0a2` round — `OB-068`, MT-148 |
+| **ISD-B2** | The timetable is an unrepaired holder of locomotive and station names | **Fixed (locomotive half)** — `OB-069`, MT-149; the STATION half remains open |
 | **ISD-B3** | Closing the app never asks the open editor about unsaved work | **Open** — `OB-070` |
 | **ISD-B4** | A Central Station rename proposal bypasses the unusable-name guard | **Open** — `OB-074` |
 | **ISD-B5** | Combining linked pages fabricates a setup, on a worker thread | **Fixed** in `38ccbfc8` (= `FV-B1`) |
@@ -122,7 +122,9 @@ Three of the four doors that trigger that save discard the reconciliation report
 **The fix shape already exists in this codebase:** treat "an id in `pageNamesWhenWritten` with no loaded
 page" exactly as suspect numbering is treated — save, but do not prune.
 
-**Disposition: open.** Filed as `OB-068`. Recommended first.
+**Disposition: fixed.** `AutonomySession.save` now declines to prune while `store.pagesNotLoaded`
+answers non-empty - the same remedy already written for a suspect numbering. Pinned by
+`testAPageThatDidNotLoadKeepsItsSetup`, mutation-checked. Hands-on check: MT-148.
 
 ### ISD-B2 — the fourth holder
 
@@ -135,8 +137,14 @@ warning; `captureFromLayout` then writes the empty timetable back, permanently.
 Station renames are worse: `setPointName`'s comment says "Nothing else has to happen", which is untrue
 of the timetable. Only the active running configuration self-heals by capture.
 
-**Disposition: open.** Filed as `OB-069`. Two fixes wanted: add the timetable to the repair, and make
-the loader drop a bad *entry* rather than the whole list.
+**Disposition: fixed, for the locomotive half.** Both fixes the reviewer asked for are in: the repair
+carries a rename into the timetable and drops a deleted locomotive's legs, and the loader now skips the
+one entry it cannot read instead of discarding the list. Two tests, mutation-checked. Hands-on check:
+MT-149.
+
+**The STATION half is still open.** Entries name Points by name too, so renaming a station still breaks
+the entries that cross it. It is survivable rather than fatal now - one entry is dropped, not all of
+them - but `setPointName`'s comment still claims "Nothing else has to happen", which is untrue.
 
 ### ISD-B3, ISD-B4, ISD-B6, ISD-B8, ISD-B9
 

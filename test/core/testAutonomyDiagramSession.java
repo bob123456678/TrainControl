@@ -3528,4 +3528,74 @@ public class testAutonomyDiagramSession
         assertNotNull(session.getPointProperty(now, "loc"),
             "the locomotive is not recorded where it was put");
     }
+
+    /**
+     * A page that did not load keeps its setup.
+     *
+     * OB-068. `CS2File.parseLayout` skips a page whose file will not parse or is not there, quietly and
+     * on purpose - on a layout that lives in OneDrive an unhydrated placeholder or a file held by the
+     * sync client is enough, and neither is anything the user did.
+     *
+     * The session then opens without it, and `save()` reconciled against the pages that DID load: every
+     * name, station, direction, length, signal pairing and caption on the missing page read as track
+     * that had been deleted, and was pruned and written. Three of the four doors that reach that save
+     * discard the report, so it happened in silence - and the next page operation dropped the page from
+     * gleisbild.cs2 as well, orphaning its file.
+     *
+     * `readShared` is relaxed about the same absence, and says why: "Absent is fine - the page may
+     * simply not be loaded." Both halves agreed a missing page was survivable and then one of them
+     * deleted its contents.
+     *
+     * The mutation here is the absence itself: set up two pages, then reopen holding only one.
+     */
+    @Test
+    public void testAPageThatDidNotLoadKeepsItsSetup() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey onSecond = new TileKey("second", 1, 1);
+        TileKey onFirst = new TileKey("main", 2, 1);
+
+        session.setPointName(onSecond, "Second Platform");
+        session.getStore().setStation(onSecond, true);
+
+        session.setPointName(onFirst, "First Platform");
+        session.getStore().setStation(onFirst, true);
+
+        session.save();
+
+        // --- the second page fails to load this time -------------------------------------------
+        AutonomySession partial = new AutonomySession(layout);
+
+        partial.open(Arrays.asList(runOfTrack()));
+
+        // Its entries are still in memory, but under RAW ID keys - with no page called "second"
+        // loaded, pageOf has no name to resolve id 2 to, so it hands back the id. That is why they
+        // look like squares that do not exist to anything working in page names, and it is exactly
+        // the state in which they must not be deleted.
+        assertFalse(partial.getStore().pagesNotLoaded(
+                java.util.Collections.singletonList("main")).isEmpty(),
+            "the store cannot tell that a page it knows about is missing, so the guard below has "
+            + "nothing to act on and this test proves nothing");
+
+        partial.save();
+
+        // --- and the page that never loaded still has everything --------------------------------
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        assertEquals(reopened.getStore().getPointName(onSecond), "Second Platform",
+            "a page that merely failed to load had its station name pruned as deleted track. Nothing "
+            + "the user did caused the page to be missing, and nothing told them it had gone");
+
+        assertTrue(reopened.getStore().isStation(onSecond),
+            "a page that merely failed to load had its station pruned");
+
+        assertEquals(reopened.getStore().getPointName(onFirst), "First Platform",
+            "the page that DID load lost its setup instead");
+    }
 }

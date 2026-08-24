@@ -2463,4 +2463,100 @@ public class testAutonomyDiagramStore
         assertTrue(written.contains("Platform One"),
             "deleting one page took the other page's setup with it: " + written);
     }
+
+    /**
+     * A locomotive rename reaches the captured timetable, and survives a save and a load.
+     *
+     * OB-069. The repair's own note enumerated three holders of a locomotive's name - the placement,
+     * the home and the exclusion list - and all three are inside "points". The captured timetable is
+     * not: it rides in "globals", and every entry names its locomotive.
+     *
+     * Left behind, the entry named a locomotive that no longer exists, and the loader answered that by
+     * discarding the ENTIRE timetable - then the next capture wrote the emptiness back permanently.
+     */
+    @Test
+    public void testARenameReachesTheCapturedTimetable() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        timetable(store.getConfiguration("Only"), "Old Name", "Other Loco");
+
+        store.save();
+
+        // --- the mutation ---------------------------------------------------------------------
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        assertEquals(legOf(store, 0), "New Name", "in memory, the renamed leg");
+        assertEquals(legOf(store, 1), "Other Loco", "in memory, the leg that was not renamed");
+
+        // --- save, load, and check again --------------------------------------------------------
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(legOf(reloaded, 0), "New Name",
+            "the timetable leg still names the old locomotive after a save and a load. The loader "
+            + "cannot resolve it, so that leg is dropped on every load - and the next capture writes "
+            + "the loss back permanently");
+
+        assertEquals(legOf(reloaded, 1), "Other Loco",
+            "renaming one locomotive changed another's timetable leg");
+    }
+
+    /**
+     * And deleting one takes its legs with it, rather than leaving the loader to drop them for ever.
+     */
+    @Test
+    public void testADeleteRemovesThatLocomotivesTimetableLegs() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        timetable(store.getConfiguration("Only"), "Going", "Staying");
+
+        store.save();
+
+        store.locomotiveDeleted("Going");
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        org.json.JSONArray legs = reloaded.getConfiguration("Only")
+            .getJSONObject("globals").getJSONArray("timetable");
+
+        assertEquals(legs.length(), 1, "the deleted locomotive still has a timetable leg: " + legs);
+        assertEquals(legs.getJSONObject(0).getString("loc"), "Staying",
+            "deleting one locomotive took another's leg with it");
+    }
+
+    /**
+     * Two timetable legs, one per locomotive, in the place a captured timetable actually lives.
+     */
+    private void timetable(org.json.JSONObject configuration, String first, String second)
+    {
+        org.json.JSONArray legs = new org.json.JSONArray();
+
+        for (String loc : new String[] {first, second})
+        {
+            legs.put(new org.json.JSONObject()
+                .put("loc", loc)
+                .put("path", new org.json.JSONArray())
+                .put("executionTime", 0)
+                .put("secondsToNext", 0));
+        }
+
+        if (!configuration.has("globals")) configuration.put("globals", new org.json.JSONObject());
+
+        configuration.getJSONObject("globals").put("timetable", legs);
+    }
+
+    private String legOf(AutonomyCompanionStore from, int at)
+    {
+        return from.getConfiguration("Only").getJSONObject("globals")
+            .getJSONArray("timetable").getJSONObject(at).getString("loc");
+    }
 }
