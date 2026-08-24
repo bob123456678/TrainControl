@@ -2567,6 +2567,13 @@ public class AutonomyEditorPanel extends JPanel
      * edges pointing at the watched square, and a square with no name is one the operator cannot
      * recognise in a list - the name is how they know which place it is.
      */
+    /**
+     * How tall one station's row is in the blocked-points picker, and therefore how far one notch of
+     * the wheel moves.  A row and a bit, so scrolling a long list feels like reading it rather than
+     * dragging it.
+     */
+    private static final int BLOCKED_ROW_HEIGHT = 24;
+
     private void promptBlockingPoints(TileKey station)
     {
         java.util.List<TileKey> choices = new java.util.ArrayList<>();
@@ -2575,7 +2582,16 @@ public class AutonomyEditorPanel extends JPanel
         {
             // Not the station itself: standing there already decides whether it is free, so watching
             // itself would make it a station nothing can be sent to.
-            if (!tile.equals(station)) choices.add(tile);
+            if (tile.equals(station)) continue;
+
+            // And not a square that IS this station by another name (OB-083, "ensure self-selection
+            // is impossible"). A caption sits on a square of its own and points AT the station, and it
+            // carries a name, so it appeared in this list as though it were somewhere else - choosing
+            // it would have held the station back with itself, by the back door the check above closes
+            // at the front.
+            if (station.equals(session.getCaptionTarget(tile))) continue;
+
+            choices.add(tile);
         }
 
         if (choices.isEmpty())
@@ -2591,8 +2607,10 @@ public class AutonomyEditorPanel extends JPanel
 
         panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
 
-        panel.add(new javax.swing.JLabel(
-            I18n.f("autosetup.ui.promptBlockedByPoints", describeTile(station))));
+        // Wrapped, because the message names a station and ran off the side of a dialog sized for
+        // check boxes (OB-083).
+        panel.add(new javax.swing.JLabel(wrapped(
+            I18n.f("autosetup.ui.promptBlockedByPoints", describeTile(station)))));
 
         panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
 
@@ -2609,10 +2627,31 @@ public class AutonomyEditorPanel extends JPanel
             panel.add(box);
         }
 
+        // White behind the list rather than the panel's default grey: this reads as a list of things
+        // to pick from, and every other list in the application is white (OB-083).
+        panel.setBackground(java.awt.Color.WHITE);
+        panel.setOpaque(true);
+
+        for (javax.swing.JCheckBox box : boxes)
+        {
+            box.setBackground(java.awt.Color.WHITE);
+            box.setOpaque(true);
+        }
+
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
 
-        scroll.setPreferredSize(new java.awt.Dimension(320,
-            Math.min(340, 60 + choices.size() * 24)));
+        scroll.getViewport().setBackground(java.awt.Color.WHITE);
+        scroll.setBackground(java.awt.Color.WHITE);
+
+        // A wheel notch moves a row and a bit rather than three pixels. The default unit increment is
+        // one pixel, so a list of thirty stations took an unreasonable amount of scrolling.
+        scroll.getVerticalScrollBar().setUnitIncrement(BLOCKED_ROW_HEIGHT);
+        scroll.getVerticalScrollBar().setBlockIncrement(BLOCKED_ROW_HEIGHT * 5);
+
+        // Wider than the 320 it was: the prompt above names a station, and at 320 the name wrapped
+        // into three lines while the check boxes beside it used a third of the width.
+        scroll.setPreferredSize(new java.awt.Dimension(460,
+            Math.min(360, 80 + choices.size() * BLOCKED_ROW_HEIGHT)));
 
         if (JOptionPane.showConfirmDialog(owner(), scroll,
             I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
