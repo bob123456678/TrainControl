@@ -2641,15 +2641,21 @@ public class AutonomyEditorPanel extends JPanel
      * applyCaption says why refresh() is the wrong tool for it: "the caption is part of the tile art,
      * and the annotation refresh that follows every other edit does not touch it" (OB-009, MT-101).
      *
-     * From the track diagram's DEEP MENU there is no grid of ours to rebuild - onDiagramChanged is
-     * null, because this panel is a menu builder with no window - and the caption being looked at
-     * belongs to the main diagram, which draws from the RUNNING layout rather than from the setup. So
-     * the setup gained a locomotive and nothing on screen changed, while the facing menu - which reads
-     * the setup - listed it happily. That is OB-035, and the inconsistency Adam spotted is exactly the
-     * two surfaces disagreeing about where the truth lives.
+     * From the track diagram's DEEP MENU the caption being looked at belongs to the main diagram, which
+     * draws from the RUNNING layout rather than from the setup. So the setup gained a locomotive and
+     * nothing on screen changed, while the facing menu - which reads the setup - listed it happily.
+     * That is OB-035, and the inconsistency Adam spotted is exactly the two surfaces disagreeing about
+     * where the truth lives.
      *
-     * Rebuilding the running layout is what makes them agree, and is the same seam OB-034 uses. Not
-     * done while an editor is open, because the editor defers that to closing on purpose.
+     * Rebuilding the running layout is what makes them agree, and is the same seam OB-034 uses.
+     *
+     * Two sentences that used to be here have been taken out, because both had stopped being true and
+     * both would be read as decisions (NR-7). "onDiagramChanged is null, because this panel is a menu
+     * builder with no window" - it is set, at TrainControlUI's deep-menu site, and the body below calls
+     * it. And "not done while an editor is open, because the editor defers that to closing on purpose"
+     * - the body rebuilds unconditionally now, deliberately, because the two surfaces are on screen
+     * together. That second sentence is the one somebody would have used to argue the stale-state
+     * defect could not happen.
      */
     private void placementChanged()
     {

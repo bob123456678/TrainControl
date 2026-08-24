@@ -253,10 +253,16 @@ public class LayoutGrid
             // Things mess up without this
             //
             // "Being edited" is a fact about the DIAGRAM and is therefore true in both windows at once
-            // - the main window shares the LayoutDiagram with the editor. That is right for
-            // clickability below, where the viewer's tiles must stop routing clicks while an editor
-            // owns the page, and wrong for LAYOUT, which is only about how this particular grid is
+            // - the main window shares the LayoutDiagram with the editor - and it is the wrong question
+            // for anything about THIS grid, which is what LAYOUT is: how this particular grid is
             // arranged.
+            //
+            // This used to add "that is right for clickability below, where the viewer's tiles must
+            // stop routing clicks while an editor owns the page". It is not right any more and was not
+            // meant to be: the line it points at passes `inEditor`, so the viewer's tiles stay
+            // clickable while an editor is open, which is the whole point of asking the longer
+            // question. Corrected rather than deleted because this is the only written record of why
+            // the flag is shared at all (NR-7).
             //
             // MT-106: the two were the same flag, so any repaint of the viewer while an editor was
             // open re-laid the viewer the editor's way. It went unnoticed while the viewer was only

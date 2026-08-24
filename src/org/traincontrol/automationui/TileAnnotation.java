@@ -1555,12 +1555,6 @@ public class TileAnnotation
     }
 
     /**
-     * Where the track runs through this tile, as far as the marks can tell.
-     *
-     * The midpoint of the first route's two sides: the middle of the square for anything straight or
-     * crossing, and the corner the rails actually bend around for a curve.
-     */
-    /**
      * How far in from the bottom left corner a badge on a bend sits, in the editor.
      *
      * One pixel put it hard against both edges; this lifts it clear without moving it back under the
@@ -1590,6 +1584,13 @@ public class TileAnnotation
     }
 
     /**
+     * Where paintBadge last drew, or null if it has not drawn on this pass.
+     *
+     * Only ever read by the train mark, which is painted after the badge and belongs ON it.
+     */
+    private int[] badgeDrawnAt;
+
+    /**
      * The midpoint of this tile's own two track sides - the tile centre for a straight, and on the
      * rails for anything else.
      *
@@ -1601,13 +1602,6 @@ public class TileAnnotation
      * @param height
      * @return x and y within the tile
      */
-    /**
-     * Where paintBadge last drew, or null if it has not drawn on this pass.
-     *
-     * Only ever read by the train mark, which is painted after the badge and belongs ON it.
-     */
-    private int[] badgeDrawnAt;
-
     public int[] trackCentre(int width, int height)
     {
         // the badge's own route where it has one, otherwise the first route drawn, otherwise centre

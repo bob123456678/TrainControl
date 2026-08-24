@@ -348,17 +348,6 @@ public class TileOverlay
     }
 
     /**
-     * The path itself, drawn through the square rather than around it.
-     *
-     * A border said WHERE a path went and nothing about which way it ran, or which part of it the train
-     * had already covered - and on a square two paths crossed, one border had to speak for both.  A
-     * line laid along the track answers all three: red ahead of the train, green behind it, and a black
-     * arrowhead pointing the way it is going.
-     *
-     * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
-     * two different times - which way does this route run - so it is worth only learning to read once.
-     */
-    /**
      * Where the middle of this tile IS, for anything that has to sit on the track.
      *
      * The geometric centre is on the rail for a straight and nowhere near it for a curve, where the
@@ -374,6 +363,17 @@ public class TileOverlay
             ? trackCentre : new int[] {width / 2, height / 2};
     }
 
+    /**
+     * The path itself, drawn through the square rather than around it.
+     *
+     * A border said WHERE a path went and nothing about which way it ran, or which part of it the train
+     * had already covered - and on a square two paths crossed, one border had to speak for both.  A
+     * line laid along the track answers all three: red ahead of the train, green behind it, and a black
+     * arrowhead pointing the way it is going.
+     *
+     * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
+     * two different times - which way does this route run - so it is worth only learning to read once.
+     */
     private void paintRun(Graphics2D g, int width, int height, int[] trackCentre)
     {
         int span = Math.min(width, height);

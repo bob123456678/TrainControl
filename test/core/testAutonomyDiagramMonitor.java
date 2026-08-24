@@ -9,6 +9,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.DiagramMonitor;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
 import org.traincontrol.automationui.TilePorts.Side;
@@ -480,5 +481,72 @@ public class testAutonomyDiagramMonitor
             + "and away from the badge it is meant to mark");
     }
 
+    /**
+     * The half of the OB-026 fix that computes where the rail is.
+     *
+     * NR-9, from the night review. The two tests above hand the answer in - `paint(g, size, size,
+     * new int[] {45, 15})` - so they pin the drawing and say nothing about the call that works out
+     * those numbers, which is `LayoutLabel`'s `annotation.trackCentre(getWidth(), getHeight())`. That
+     * is the usual result of extracting a rule and testing the extract: the rule is covered and the
+     * call becomes the only uncovered part.
+     *
+     * `trackCentre` is the join. Given the badge's own two sides it returns their midpoint - the corner
+     * the rails bend around on a curve - and falls back to the middle of the square when it has nothing
+     * to go on, which is right for a straight and is also what it answers for a square it knows nothing
+     * about.
+     *
+     * A 60-pixel tile whose track joins N to E: the two side midpoints are (30,0) and (60,30), so the
+     * rail's midpoint is (45,15). The tile centre, (30,30), is well clear of it.
+     */
+    @Test
+    public void testTheAnnotationPutsTheTrackCentreOnTheRailOfACurve()
+    {
+        int size = 60;
 
+        TileAnnotation curve = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.N, Side.E, null)), 0, false,
+            new TileAnnotation.Badge(true, false, false, false, true, Side.N, Side.E), false);
+
+        int[] centre = curve.trackCentre(size, size);
+
+        assertEquals(centre[0], 45,
+            "the track centre of an N-E curve is not on the rail. This is the number LayoutLabel hands "
+            + "the overlay, so a run ending here draws its stub across the tile instead of along it "
+            + "(OB-026, NR-9)");
+
+        assertEquals(centre[1], 15, "the track centre of an N-E curve is not on the rail");
+    }
+
+    /**
+     * And a straight is still the middle of the square, which is the case that must not move.
+     */
+    @Test
+    public void testAStraightKeepsTheMiddleOfTheSquare()
+    {
+        int size = 60;
+
+        TileAnnotation straight = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false,
+            new TileAnnotation.Badge(true, false, false, false, true, Side.W, Side.E), false);
+
+        int[] centre = straight.trackCentre(size, size);
+
+        assertEquals(centre[0], 30, "a straight's track centre moved off the middle of the square");
+        assertEquals(centre[1], 30, "a straight's track centre moved off the middle of the square");
+    }
+
+    /**
+     * A square with nothing known about its track falls back to the middle, rather than to a corner.
+     */
+    @Test
+    public void testASquareWithNoRouteFallsBackToTheCentre()
+    {
+        TileAnnotation blank = new TileAnnotation(
+            java.util.Collections.<TileAnnotation.Mark>emptyList(), 0, false, null, false);
+
+        int[] centre = blank.trackCentre(60, 60);
+
+        assertEquals(centre[0], 30, "a square with no route known should answer the middle");
+        assertEquals(centre[1], 30, "a square with no route known should answer the middle");
+    }
 }

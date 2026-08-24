@@ -165,7 +165,10 @@ public class AutonomyMenu extends JMenu
 
         insert(busy, 0);
 
-        addSeparator();
+        // Under the item it belongs to.  addSeparator APPENDS, so the rule meant to divide this one
+        // entry from the greyed rest was drawn after the LAST item instead - a line across the bottom
+        // of the popup with nothing below it.
+        insertSeparator(1);
     }
 
     private void rebuild()

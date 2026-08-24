@@ -167,7 +167,7 @@ public class testStoreCollectionsAreHandledEverywhere
 
         for (String site : SITES)
         {
-            String body = bodyOf(source, site);
+            String body = withoutComments(bodyOf(source, site));
 
             assertNotNull(body, "no site called " + site + " in the store - if it was renamed, rename "
                 + "it in SITES too, because this test is the only thing checking it covers everything");
@@ -206,7 +206,7 @@ public class testStoreCollectionsAreHandledEverywhere
             String site = key.substring(0, key.indexOf(':'));
             String kept = key.substring(key.indexOf(':') + 1);
 
-            String body = bodyOf(source, site);
+            String body = withoutComments(bodyOf(source, site));
 
             if (body != null && body.contains(kept)) stale.add(key);
         }
@@ -225,6 +225,52 @@ public class testStoreCollectionsAreHandledEverywhere
      * weakness worth stating rather than hiding, and still catches every omission listed in the class
      * javadoc, because a collection nobody handled is a collection nobody wrote about either.
      */
+    /**
+     * A method body with its comments taken out.
+     *
+     * NR-8, from the night review, and it produced its own counter-example. This test asks whether a
+     * collection's NAME appears at a site, and its javadoc above argues that "a collection nobody
+     * handled is a collection nobody wrote about either" - which stopped being true the moment
+     * forgetSquares lost its `tileDirections.remove(key)` line and gained a comment explaining why it
+     * was dead. Delete the real handling tomorrow and the string would still be there, in the comment,
+     * and this test would stay green for the very collection it guards.
+     *
+     * The same trap caught this change from the other side: a comment added to reconcile mentioning
+     * captions made an exemption read as stale.
+     *
+     * A test that reads source has to read the CODE. Copied rather than shared with the two other
+     * tests that do this - a test helper reaching into another test class is a dependency between
+     * things that are supposed to fail independently.
+     */
+    private String withoutComments(String body)
+    {
+        if (body == null) return null;
+
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
+        }
+
+        return out.toString();
+    }
+
     private String bodyOf(String source, String name)
     {
         String longest = null;

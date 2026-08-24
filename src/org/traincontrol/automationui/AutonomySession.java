@@ -2970,9 +2970,15 @@ public class AutonomySession
     /**
      * The ways a train standing on this square could be pointing.
      *
-     * One per side track arrives by, because a train that came in by the west side is pointing east.
+     * One per side track arrives by, mapped through onwardFrom - the other end of the route the train
+     * came in on, not the opposite of the side it entered by. Those two agree on a straight and differ
+     * on a curve, and its own javadoc calls the simpler rule "true by accident": a train entering an
+     * N-E curve by N leaves by E, and saying it faces S describes a train sitting across the rails.
+     * This sentence used to state that simpler rule as the reason (NR-7).
+     *
      * Ordered the same way the builder orders its copies, so the first answer here is the one a
-     * placement with no facing recorded actually gets.
+     * placement with no facing recorded actually gets - and more exactly so than when that was
+     * written, since onwardFrom and AutonomyBuilder.facingOf now answer alike.
      *
      * @param tile
      * @return the possible facings, empty when nothing reaches the square and a single entry - which
