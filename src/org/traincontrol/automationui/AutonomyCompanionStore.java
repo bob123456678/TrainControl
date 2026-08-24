@@ -995,6 +995,10 @@ public class AutonomyCompanionStore
             return 0;
         }
 
+        // Whether this name was already here, so the rollback below knows if removing it would be
+        // taking away something of the user's rather than undoing its own work.
+        boolean existed = configurations.containsKey(name);
+
         importConfiguration(name, configuration);
 
         JSONObject incoming = file.optJSONObject(EXPORT_SHARED);
@@ -1010,6 +1014,33 @@ public class AutonomyCompanionStore
             if ("version".equals(key)) continue;
 
             Object value = incoming.get(key);
+
+            // "pages" is not a setting being merged - it is the exporter's record of what each of
+            // THEIR ids was called, and it is the only evidence a renumber can be detected from.  Under
+            // the merge rule below, mine won for every id both files knew, so readShared read my own
+            // names back and compared them against my own index: the two could never disagree, and
+            // pageIdConflicts was empty after any import by construction.
+            //
+            // Theirs wins per id, and ids only I have are kept - those say what MY pages were called
+            // and nothing incoming refers to them.
+            if ("pages".equals(key) && value instanceof JSONObject)
+            {
+                JSONObject mine = merged.optJSONObject(key);
+
+                if (mine == null)
+                {
+                    merged.put(key, value);
+                }
+                else
+                {
+                    for (String id : ((JSONObject) value).keySet())
+                    {
+                        mine.put(id, ((JSONObject) value).get(id));
+                    }
+                }
+
+                continue;
+            }
 
             if (value instanceof JSONObject)
             {
@@ -1088,6 +1119,16 @@ public class AutonomyCompanionStore
             {
                 clearShared();
                 readShared(wasThere);
+
+                // And the configuration, which was installed before any of this and was not being put
+                // back with it.  What that left was worse than a failed import: a configuration whose
+                // placements, homes and exclusions refer to points the rollback has just taken away,
+                // offered in the list like any other.
+                //
+                // Only when this import is what added it.  Importing over an existing name replaces it,
+                // and removing the name would then take the user's own configuration with it - so that
+                // case keeps what is there rather than deleting somebody's work over a bad file.
+                if (!existed) forgetConfiguration(name);
 
                 throw e;
             }
@@ -1223,6 +1264,28 @@ public class AutonomyCompanionStore
         configurations.put(name, imported);
 
         if (activeConfiguration == null) activeConfiguration = name;
+    }
+
+    /**
+     * Takes back a configuration this class has just put in, without touching any file.
+     *
+     * For the import rollback only.  deleteConfiguration is the door for a user deleting one and does
+     * more than this needs - it deletes the FILE, and refuses when it cannot - while an import that has
+     * not reached a save has written nothing to delete.
+     *
+     * @param name the configuration to forget
+     */
+    private void forgetConfiguration(String name)
+    {
+        configurations.remove(name);
+
+        // importConfiguration makes it active when nothing else was, so taking it back has to leave
+        // that pointing at something that exists.
+        if (name.equals(activeConfiguration))
+        {
+            activeConfiguration = configurations.isEmpty()
+                ? null : configurations.keySet().iterator().next();
+        }
     }
 
     public void renameConfiguration(String from, String to) throws IOException

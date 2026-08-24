@@ -1522,4 +1522,107 @@ public class testAutonomyDiagramStore
             .put("home", loc)
             .put("excludedLocs", new org.json.JSONArray().put(loc)));
     }
+
+    /**
+     * Importing a bundle can tell a page RENUMBER from a rename.
+     *
+     * UR-10, from the uninformed review. `exportBundle` writes the exporter's `pages` map - which id
+     * was called what when they wrote it - beside keys built from the exporter's page ids. The merge
+     * then starts from `sharedFields()`, which is MY pages map, and keeps what I already have for every
+     * inner key. So for any id both files know, the exporter's name was dropped, `readShared` read my
+     * own names into `pageNamesWhenWritten`, and the conflict loop compared them against
+     * `pageIdToName` - my own names again. The two always matched, so `pageIdConflicts` was guaranteed
+     * empty after any import.
+     *
+     * The detection was disabled by construction, not by an oversight in the check.
+     *
+     * What it exists to catch is described where the ids are set up: a renumber "would silently reattach
+     * a page of settings to the WRONG page, which is worse than losing them, because nothing looks
+     * wrong." An import from a layout numbered differently attaches their station names, lengths,
+     * one-way directions, portal pairings and captions to my pages, quietly.
+     *
+     * A rename is still not a conflict - the deciding question is whether the old name still exists
+     * somewhere in MY index, which is what tells "the same page, called something else" from "a
+     * different page now holds this id".
+     */
+    @Test
+    public void testImportingABundleCanStillSpotARenumberedPage() throws IOException
+    {
+        java.util.Map<String, String> theirs = new java.util.LinkedHashMap<>();
+        theirs.put("Yard", "2");
+
+        AutonomyCompanionStore exporter =
+            new AutonomyCompanionStore(java.nio.file.Files.createTempDirectory("tc-export").toFile());
+
+        exporter.setPageIds(theirs);
+        exporter.createConfiguration("Theirs", null);
+        exporter.setPointName(new TileKey("Yard", 3, 3), "Their siding");
+
+        org.json.JSONObject bundle = exporter.exportBundle("Theirs");
+
+        assertNotNull(bundle, "nothing was exported, so nothing below tests anything");
+
+        // Here, id 2 is a different page - and the page THEY called Yard is my id 3.  That is a
+        // renumber: adopting their keys would put their siding on my "Main".
+        java.util.Map<String, String> mine = new java.util.LinkedHashMap<>();
+        mine.put("Main", "2");
+        mine.put("Yard", "3");
+
+        store.setPageIds(mine);
+        store.setPointName(new TileKey("Main", 1, 1), "Mine");
+
+        store.importBundle("Imported", bundle);
+
+        assertFalse(store.getPageIdConflicts().isEmpty(),
+            "importing a bundle from a layout whose pages are numbered differently reported no "
+            + "conflict. The check compares the names in the file against my own - and the merge had "
+            + "already replaced theirs with mine, so it was comparing my names with my names and could "
+            + "never disagree (UR-10)");
+    }
+
+    /**
+     * An import that fails leaves nothing behind, the configuration included.
+     *
+     * UR-10, second half. The shared merge is rolled back when `readShared` throws - it uses the
+     * type-strict accessors on an object assembled out of somebody else's file, and the comment there
+     * says why that matters: clearing first "emptied the shared half and then failed, and the panel's
+     * 'import unreadable' told the user nothing had happened while the store stood blank".
+     *
+     * The configuration was installed BEFORE any of that and was not rolled back with it. So an
+     * unreadable bundle left a configuration whose placements, homes and exclusions refer to points the
+     * rollback had just taken away - and it is offered in the configuration list like any other.
+     */
+    @Test
+    public void testAFailedImportLeavesNoConfigurationBehind() throws IOException
+    {
+        store.setPointName(new TileKey("Main", 1, 1), "Mine");
+        store.createConfiguration("Kept", null);
+
+        org.json.JSONObject bundle = new org.json.JSONObject();
+
+        bundle.put(AutonomyCompanionStore.EXPORT_CONFIGURATION,
+            new org.json.JSONObject().put("name", "Theirs"));
+
+        // A point name that is a NUMBER.  readShared's accessors are type-strict and throw on it -
+        // which is the case the rollback exists for.
+        bundle.put(AutonomyCompanionStore.EXPORT_SHARED, new org.json.JSONObject()
+            .put("pointNames", new org.json.JSONObject().put("1:7,7", 5)));
+
+        try
+        {
+            store.importBundle("Broken", bundle);
+        }
+        catch (RuntimeException expected)
+        {
+            // the panel reports this as "import unreadable"
+        }
+
+        assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
+            "the shared half was not put back, which is what the rollback is for");
+
+        assertFalse(store.getConfigurationNames().contains("Broken"),
+            "the failed import left its configuration behind. Its placements, homes and exclusions "
+            + "refer to points the rollback has just taken away, and it is offered in the list like "
+            + "any other (UR-10)");
+    }
 }
