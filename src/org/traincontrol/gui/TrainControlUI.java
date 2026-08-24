@@ -14633,12 +14633,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.activeLoc = null;
                 }
 
-                List<JButton> keys = new LinkedList(this.currentLocMapping().keySet());
-                for (JButton key : keys)
+                // Every PAGE of mappings, not only the one on screen.
+                //
+                // locMapping is a list of pages and this cleared the current one, so a locomotive
+                // mapped on any other page kept its button - holding a reference to something that is
+                // no longer in the database, on a button that still works: its decoder address is
+                // unchanged, so pressing it drives real hardware for a locomotive the application has
+                // been told to forget.
+                for (java.util.HashMap<javax.swing.JButton, Locomotive> page : this.locMapping)
                 {
-                    if (this.currentLocMapping().get(key) == l)
+                    for (JButton key : new LinkedList<>(page.keySet()))
                     {
-                        this.currentLocMapping().put(key, null);
+                        if (page.get(key) == l) page.put(key, null);
                     }
                 }
 

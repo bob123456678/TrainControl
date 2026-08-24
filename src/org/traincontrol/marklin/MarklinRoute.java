@@ -135,42 +135,6 @@ public class MarklinRoute extends Route
         this.executeAutoRoute();
     }
 
-    /**
-     * Also repairs the condition tree, which the base class cannot see.
-     *
-     * A condition references a locomotive BY NAME - an "autoloc" term meaning "only fire while this
-     * locomotive is standing at that sensor" - and conditions live here, not in the command list Route
-     * sweeps.  So a rename left them naming something that no longer resolves, evaluate got null from
-     * getLocByName and returned false from then on, and the route simply stopped firing: no error, no
-     * dialog, just a route that used to set switches ahead of a moving train and now does not.
-     *
-     * The commands come back from toList by reference, so setting the name repairs the tree in place.
-     *
-     * @param oldName
-     * @param newName
-     */
-    @Override
-    public void locomotiveRenamed(String oldName, String newName)
-    {
-        super.locomotiveRenamed(oldName, newName);
-
-        if (this.conditions == null) return;
-
-        if (oldName == null || newName == null || oldName.equals(newName)) return;
-
-        for (RouteCommand rc : NodeExpression.toList(this.conditions))
-        {
-            // The same set the base class repairs.  Only autoloc can appear in a condition today, but
-            // a condition that named a locomotive any other way would need the same repair, and the
-            // two lists disagreeing is exactly how this was missed the first time.
-            if ((rc.isLocomotiveSpeed() || rc.isFunction() || rc.isAutoLocomotive()
-                    || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
-            {
-                rc.setName(newName);
-            }
-        }
-    }
-
     @Override
     public boolean isLocked()
     {

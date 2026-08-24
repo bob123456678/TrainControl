@@ -723,6 +723,26 @@ public class Layout
         this.activeLocomotives.remove(l);
         this.locomotiveMilestones.remove(l);
 
+        // The claim on a path slot.  Left behind it lowers the cap on how many trains may run for the
+        // rest of the session - a leak that makes the railway quieter and quieter with nothing to say
+        // why, which is what its own comment in configureAndLockPath warns about.
+        this.takingPath.remove(l);
+
+        // The sensor this locomotive was said to be heading for.  A route condition asking "has it
+        // reached that sensor yet" waits on this entry, and one left behind is an entry nothing will
+        // ever clear - the thread evaluating that route parks until the locomotive is dispatched again,
+        // which for a deleted one is never.  updatePendingS88 notifies, so anybody already waiting is
+        // let go rather than left.
+        updatePendingS88(l, null);
+
+        // And every timetable entry that would run it.  TimetablePath holds the locomotive itself, so
+        // executing the timetable afterwards drives something that is not in the database - and the
+        // entry is written back out on every save, naming a locomotive the next load cannot resolve.
+        for (java.util.Iterator<TimetablePath> entries = this.timetable.iterator(); entries.hasNext();)
+        {
+            if (l.equals(entries.next().getLoc())) entries.remove();
+        }
+
         // Points hold their own references, and nothing else was clearing them: a deleted locomotive
         // stayed excluded forever, and its name kept being written into the exported JSON as an
         // exclusion for a locomotive that no longer exists.

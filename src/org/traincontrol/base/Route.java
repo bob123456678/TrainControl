@@ -151,17 +151,78 @@ abstract public class Route
      */
     public void locomotiveRenamed(String oldName, String newName)
     {
-        if (oldName != null && newName != null && !oldName.equals(newName))
+        if (oldName == null || newName == null || oldName.equals(newName)) return;
+
+        for (RouteCommand rc : namesLocomotives())
         {
-            for (RouteCommand rc : this.route)
+            if (oldName.equals(rc.getName())) rc.setName(newName);
+        }
+    }
+
+    /**
+     * Takes a deleted locomotive out of this route.
+     *
+     * Renaming has always been followed into a route and deleting never was, so a route went on naming
+     * a locomotive that is not in the database - and what that does is quiet.  A command for a
+     * locomotive that cannot be resolved does nothing when the route fires, and a route is a list of
+     * commands: one of them silently not applying looks exactly like a route that ran.  A CONDITION
+     * naming one is worse - Route.evaluate answers false for a locomotive it cannot find, so the route
+     * simply never fires again, with nothing on screen to say why.
+     *
+     * Removed rather than blanked.  A command with no locomotive is not a command, and a condition that
+     * can never be true is a route that can never run: leaving either in place keeps the route looking
+     * complete while it is not.
+     *
+     * @param name the locomotive that no longer exists
+     */
+    public void locomotiveDeleted(String name)
+    {
+        if (name == null) return;
+
+        for (java.util.Iterator<RouteCommand> commands = this.route.iterator(); commands.hasNext();)
+        {
+            RouteCommand rc = commands.next();
+
+            if (namesALocomotive(rc) && name.equals(rc.getName())) commands.remove();
+        }
+    }
+
+    /**
+     * Every command in this route that names a locomotive - in its COMMANDS and in its CONDITIONS.
+     *
+     * The conditions were missed for as long as this rule has existed.  They are RouteCommands too -
+     * "has locomotive X reached sensor Y" is one - and NodeExpression.toList hands back the objects
+     * themselves rather than copies, so changing one here changes the condition.
+     *
+     * A renamed locomotive left in a condition is the worst of the shapes this can take: the condition
+     * cannot be satisfied, so the route stops firing, and nothing anywhere says that a rename did it.
+     *
+     * @return the commands naming a locomotive, live
+     */
+    private java.util.List<RouteCommand> namesLocomotives()
+    {
+        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+
+        for (RouteCommand rc : this.route)
+        {
+            if (namesALocomotive(rc)) out.add(rc);
+        }
+
+        if (this.getConditions() != null)
+        {
+            for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
             {
-                // Route command references old locomotive name
-                if ((rc.isLocomotiveSpeed() || rc.isFunction() || rc.isAutoLocomotive() || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
-                {
-                    rc.setName(newName);
-                }
+                if (namesALocomotive(rc)) out.add(rc);
             }
         }
+
+        return out;
+    }
+
+    private static boolean namesALocomotive(RouteCommand rc)
+    {
+        return rc != null && (rc.isLocomotiveSpeed() || rc.isFunction()
+            || rc.isAutoLocomotive() || rc.isLocomotiveDirection());
     }
     
     /**

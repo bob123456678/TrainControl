@@ -2886,6 +2886,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // The autonomy setup holds locomotives by name, in every configuration - see the note in
             // renameLoc.  A deleted one is taken out rather than followed.
             if (this.view != null) this.view.autonomyLocomotiveDeleted(name);
+
+            // And the routes, which renameLoc has always repaired and this did not.
+            //
+            // A route command naming a locomotive that is not in the database does nothing when the
+            // route fires - silently, because a route is a list of commands and one of them quietly
+            // not applying looks exactly like a route that ran.  Renaming followed the locomotive into
+            // every route; deleting left the name behind.
+            for (MarklinRoute r : this.getRoutes())
+            {
+                r.locomotiveDeleted(name);
+            }
         }
 
         return res;
