@@ -325,7 +325,7 @@ public final class HomeStaging
             // "maybe".  One flag test turns that into a proof, the same upgrade the pairwise goal scan
             // below gives conflicting homes.
             if (!locationOf(this.start, l).isActive()
-                || !canRest(l, home)
+                || !canRest(l, home, this.start)
                 || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
@@ -669,7 +669,7 @@ public final class HomeStaging
         // autonomy running, so a locomotive standing on a deactivated point would be planned home and
         // then refused at its first edge.
         if (!from.isActive()) return null;
-        if (!canRest(loc, to) || state.containsKey(to)) return null;
+        if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();
         Map<Point, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
@@ -960,6 +960,68 @@ public final class HomeStaging
      * Whether a locomotive may come to rest on a station - length, exclusions, and the reversibility a
      * terminus demands.
      */
+    /**
+     * canRest, plus the one rest rule that depends on where everything ELSE is.
+     *
+     * FR-001 holds a station back while another named square is occupied, and `isPathClear` enforces
+     * it on a path's DESTINATION - which is every move this planner makes. The planner could not see
+     * it: `canRest` reads only the station itself, and `getBlockedBy` is about a different square.
+     *
+     * So the plan reported READY, execution refused the leg, the run retried until it gave up, and it
+     * stopped everything with the fleet half-staged (OB-073). It fails safe - no train moves wrongly -
+     * but partial execution is the thing staging exists to avoid, and the planner is where it should
+     * have been refused.
+     *
+     * Asked of the PLANNED state rather than the live railway, because that is what the rest of this
+     * class reasons about: by the time this move happens the trains are where the plan put them, not
+     * where they are now.
+     *
+     * The locomotive being routed is exempt, as it is at runtime - "the condition should not apply to
+     * trains leaving, only departing" - so a train standing on the watched square may still be sent to
+     * the station that square holds back.
+     *
+     * Sensor siblings count, for the reason canEnter gives: two active points reporting one sensor are
+     * one detection section, and the runtime asks getBlockLocomotive, which is block-aware.
+     *
+     * @param loc the locomotive being planned
+     * @param at where it would come to rest
+     * @param state who is standing where, in the plan
+     * @return whether it may rest there
+     */
+    private boolean canRest(Locomotive loc, Point at, Map<Point, Locomotive> state)
+    {
+        if (!canRest(loc, at)) return false;
+
+        for (Point watched : at.getBlockedBy())
+        {
+            if (watched == null) continue;
+
+            if (heldBySomebodyElse(watched, loc, state)) return false;
+
+            if (watched.getS88() == null) continue;
+
+            for (Point sibling : this.pointsBySensor.getOrDefault(watched.getS88(),
+                java.util.Collections.<Point>emptyList()))
+            {
+                if (sibling.equals(watched)) continue;
+
+                if (heldBySomebodyElse(sibling, loc, state)) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a point holds a locomotive that is not the one being planned.
+     */
+    private static boolean heldBySomebodyElse(Point p, Locomotive loc, Map<Point, Locomotive> state)
+    {
+        Locomotive there = state.get(p);
+
+        return there != null && !there.equals(loc);
+    }
+
     private static boolean canRest(Locomotive loc, Point at)
     {
         return at.isDestination()

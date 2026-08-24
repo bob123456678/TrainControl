@@ -2209,4 +2209,45 @@ public class testHomeStaging
                     && "HS C".equals(m.getEnd().getName())),
             "the plan must actually send the locomotive there: " + plan.getMoves());
     }
+
+    /**
+     * A home held back by an occupied point is refused by the PLANNER, not by execution.
+     *
+     * OB-073. FR-001 holds a station back while another named square is occupied, and `isPathClear`
+     * enforces it on a path's destination - which is every move staging makes. The planner did not
+     * read `getBlockedBy` at all, so it reported READY, execution refused the leg, the run retried
+     * until it gave up, and it stopped everything with the fleet half-staged.
+     *
+     * It fails safe - no train moves wrongly - but partial execution is precisely what staging exists
+     * to avoid, and a plan that cannot be carried out is worse than a plan refused up front, because
+     * the refusal arrives after the trains have started moving.
+     */
+    @Test
+    public void testAHomeHeldBackByAnOccupiedPointIsRefusedWhenPlanning() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        // B is where A wants to go, and it is held back by D - where nobody is yet.
+        layout.getPoint("HS B").setBlockedBy(
+            java.util.Arrays.asList(layout.getPoint("HS D")));
+
+        assign(layout, LOC_A, "HS B");
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS A", false), "the fixture could not be arranged");
+
+        assertEquals(layout.planReturnToHome().getOutcome(), HomeStaging.Outcome.READY,
+            "with the watched point EMPTY the plan should be ready, so the refusal below is about "
+            + "the occupancy rather than about the fixture");
+
+        // Now put somebody on the watched point. Execution would refuse A's arrival at B.
+        assertTrue(layout.moveLocomotive(LOC_B, "HS D", false),
+            "could not stand a second locomotive on the watched point");
+
+        HomeStaging.Outcome outcome = layout.planReturnToHome().getOutcome();
+
+        assertNotEquals(outcome, HomeStaging.Outcome.READY,
+            "the planner reported a plan it cannot carry out: B is held back while D is occupied, so "
+            + "isPathClear refuses A's arrival - the run would retry until it gave up and then stop "
+            + "everything with the fleet half-staged");
+    }
 }
