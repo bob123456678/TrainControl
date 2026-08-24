@@ -57,8 +57,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
 | [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
+| [MT-164](#mt-164) | 2026-08-24 | Return Home works around a train that is in the way but has somewhere to go | fixed unvalidated | FBR-B1 |
 
-Everything else - 121 of 163 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 164 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7362,5 +7363,52 @@ it. The train will leave; the bar will not.
 Computed off the event thread, which this file's comments already insisted on twice. The window opens
 saying it is working and fills in when the answer arrives - a modal dialog runs its own event pump,
 which is what lets that work.
+
+---
+
+<a id="mt-164"></a>
+
+### MT-164 - 2026-08-24 - Return Home works around a train that is in the way but has somewhere to go
+
+**Disposition:** fixed unvalidated
+**From:** FBR-B1
+**Written:** 2026-08-24
+
+**What to do.** This is the other half of [MT-157](#mt-157), and the two want running together.
+
+1. Pick a station **S** with a home locomotive **A**, and make S unavailable while some other square
+   **X** is occupied ("unavailable while occupied").
+2. Stand **A** somewhere away from S.
+3. Stand a second locomotive **B** on **X**, and give **B** a home of its own that is NOT X.
+4. Press Return Home.
+
+It should stage both: **B off X first, then A into S.** It must NOT report that staging is impossible.
+
+**Then change one thing and run it again:** take B's home away, so B has nowhere to go. Now it SHOULD
+refuse up front - that is MT-157, and it is still the right answer, because nothing will ever move B
+off X.
+
+The difference between the two runs is the whole of this entry. A train in the way is not the same as a
+train that is stuck.
+
+#### Comments
+
+**Claude, 2026-08-24.** Found by the Fable review of my own OB-073 fix, and it is the third time in this
+session that a rule was moved somewhere its precondition did not hold.
+
+The impossibility scan proves one thing - "no move can ever end there" - and every test in it was
+state-independent for that reason. IMPOSSIBLE is shown to the operator as a proof, with the blocked
+locomotives named, and it skips the search entirely. The OB-073 fix put the state-AWARE check in there,
+so a locomotive merely standing in the way counted as proof, including one whose departure is the
+plan's own first move.
+
+`connected`, four lines below the scan, states the rule that was broken: "A route blocked merely by
+another train is not impossible - moving that train is exactly what the planner is for."
+
+The scan now counts an occupant only when staging will never move it - no home, or already standing on
+its home. Everything else is left to the search, which vacates squares as it takes moves.
+
+The fixture MT-157 shipped with could not have caught this: its blocker has no home, so IMPOSSIBLE was
+the right answer for it. That is why this entry asks for both runs.
 
 ---
