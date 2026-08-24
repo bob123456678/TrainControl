@@ -59,8 +59,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
 | [MT-169](#mt-169) | 2026-08-24 | The three things Adam asked for after running MT-159, MT-160 and MT-163 | fixed unvalidated | MT-159, MT-160, MT-163 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
+| [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
 
-Everything else - 124 of 170 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 171 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7759,5 +7760,62 @@ whether the archive would hold half of a pair. It does not: `AutonomyCompanionSt
 that is not local - "autonomy needs a local copy of the track diagram, because its settings are stored
 alongside the diagram files" - so there is no setup to pair these pages with, and an archive holding
 only them is complete rather than half of something.
+
+---
+
+<a id="mt-171"></a>
+
+### MT-171 - 2026-08-24 - Nothing about the railway changed when the store started holding objects
+
+**Disposition:** fixed unvalidated
+**From:** FR-013
+**Written:** 2026-08-24
+
+**Back up first.** File > Backup TrainControl Data, and keep the zip somewhere you can find it. This
+touches the class that holds your whole autonomy setup, and while the file format is unchanged, that
+is a claim to be checked rather than trusted.
+
+**What to do.** The whole point is that you should not be able to tell. So this is a tour of the
+things that read or write the setup, looking for anything that has quietly stopped working.
+
+1. **Open the app and look.** Every station name, caption, direction arrow, length and restriction
+   should be exactly where it was. Compare against the backup if anything looks thin.
+2. **Rename a page.** Everything on it must still be there afterwards, and everything on the other
+   pages untouched. Close and reopen, and check again - the reload is the half that used to differ.
+3. **Move a tile** in the layout editor, one carrying a station name, a length and a direction. All
+   three should travel with it. Undo, and all three should come back.
+4. **Build over a tile** that had settings, then reconcile. Its settings should be reported as dropped
+   rather than silently kept.
+5. **Caption a station at both ends of a platform,** then ask for its captions - both should be found.
+   That one was broken by the conversion and caught by a test; it is worth seeing on the railway.
+6. **Delete a page** with settings on it, and check the reconciliation report names what went.
+7. **Run autonomy** briefly, and use Return Home. Nothing here should be different, but the planner
+   reads the setup through the same doors.
+
+**What a failure looks like.** Not a crash - a silence. A setting that does not follow its tile, a
+caption that reports none, a name that vanishes without appearing in the report. If anything is
+missing rather than wrong, that is the shape.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "Ideally: string keys only matter at import/export. Internally, we
+should always use objects."
+
+Nine of the ten square-keyed collections now hold `TileKey` rather than a `"page:x,y"` string.
+`tileDirections` is stage two - its key carries a `#dx,dy` route suffix and wants a compound key.
+
+The file format is unchanged: strings stay on disk and the id/name translation stays at the boundary,
+which is why the backup should restore cleanly whatever happens.
+
+**Why this entry is a tour rather than one check.** The conversion compiled clean and then failed nine
+automated tests, and every failure was the same thing: `Map.get`, `containsKey`, `Set.contains`,
+`remove` and `String.equals` all take `Object`, so passing the printed form of a key compiles and
+silently answers false. Five such no-ops were found that way - configuration points not following
+their tile, directions surviving a tile being built over, a platform captioned at both ends reporting
+none, a name neither forgotten nor reported, an orphaned station never removed.
+
+They were all caught by tests written over the past week. But the compiler could not see any of them,
+before or after the change, so the honest position is that the automated suite found the ones it
+covers and this entry is for the ones it does not.
 
 ---

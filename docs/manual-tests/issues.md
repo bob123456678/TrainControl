@@ -120,6 +120,7 @@ bookkeeping. The guard makes the omissions loud; it does not make them impossibl
 the file shorter. Left open at Adam's request rather than closed on the strength of a test.
 
 
+
 ### FR-013 - 2026-08-24 - The store should hold objects, not strings
 
 **Kind:** feature request
@@ -201,6 +202,38 @@ Two things to carry into it:
 
 Left open deliberately, and not started rather than half done: this is the class holding the data Adam
 has already lost twice, and a conversion abandoned in the middle is worse than one not begun.
+
+**Stage one landed, 2026-08-24** - `0c79bbe7`, with [MT-171](tests.md#mt-171) to check on the railway.
+
+Nine of the ten square-keyed collections hold `TileKey`: point names, tile lengths, barred arrivals,
+portals, captions, station signals, blocked points, link names, the station set and the disabled-portal
+set. `isOnPage` is one field comparison and `rekeyOne` one construction - the string surgery is gone
+rather than moved - and the read boundary translates as it reads, so the two-list agreement that had to
+hold by eye, and the state where collections held stored keys in memory-key fields, are both
+unrepresentable.
+
+**What remains, and it is smaller than this ticket first described.**
+
+1. **`tileDirections`.** Still `Map<String, String>`, because its key is a square PLUS a route suffix
+   and wants a compound key. It keeps four named `*Suffixed` helper variants - `onPageSuffixed`,
+   `putBackSuffixed`, `rekeySuffixed`, `dropMissingSuffixed`, alongside the existing
+   `moveSuffixedKeys` - which exist to be deleted with it. Erasure forbids overloading the typed
+   versions, which is why they are named rather than overloaded.
+2. **Nothing else.** `configurations` are JSON keyed by the printed form and always were;
+   `excludedPages` is a set of page names, not squares; `getPointNames()` deliberately still returns
+   printed keys, because it is the nearest thing to an export and its callers key their own maps that
+   way.
+
+**The lesson from stage one, for whoever does stage two.** It compiled clean and failed nine tests, and
+every failure was the same defect: `Map.get`, `Map.containsKey`, `Map.remove`, `Set.contains`,
+`Set.remove` and `String.equals` all take `Object`, so a printed key handed to a typed collection
+compiles and silently answers false. Five live no-ops, all found by tests rather than by the compiler.
+
+That is the honest limit of what this conversion buys. It removes the PARSING - the split-on-a-colon
+that OB-071 lived inside - and it does not remove the `Object`-typed lookup. Stage two should start by
+grepping every `.get(`, `.contains(`, `.containsKey(`, `.remove(` and `.equals(` against the collection
+it is called on, and checking the argument's static type by hand.
+
 
 ### FR-018 - 2026-08-24 - a page whose file returns should get its old id back
 
