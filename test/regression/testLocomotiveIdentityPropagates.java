@@ -659,4 +659,45 @@ public class testLocomotiveIdentityPropagates
             + "placement, home and exclusion - until parseAuto refuses the whole layout over it, days "
             + "later. The store offers repairLocomotiveOnDisk for exactly this: " + method.trim());
     }
+
+    /**
+     * Renaming a locomotive rewrites the station labels on the track diagram.
+     *
+     * OB-081, Adam: "When autonomy is loaded: Renaming a locomotive does not immediately propagate to
+     * the labels in the track diagram viewer."
+     *
+     * The refresh block after a rename redraws the locomotive buttons, the mappings, the route list,
+     * the selector and the layout's own callbacks - and not the labels beside the stations, which are
+     * written by updateStationLabels and reached through updateVisiblePoints.
+     *
+     * Every other door that changes which locomotive stands where already calls it, each carrying the
+     * same note: "The label still says the locomotive's name until something rewrites it." Renaming
+     * changes exactly that and was the one door that did not.
+     *
+     * Read from source because the alternative is a Swing harness for a repaint. What is pinned is the
+     * CALL, which is what was missing - the method it calls is exercised everywhere else.
+     */
+    @Test
+    public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
+    {
+        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+        String body = withoutComments(new String(
+            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+
+        int at = body.indexOf("this.model.renameLoc(");
+
+        assertTrue(at > 0, "the rename call is gone - this rule has nothing to watch");
+
+        // the refresh block that follows it, up to the end of that method
+        int end = body.indexOf("\n    /**", at);
+
+        String after = end > 0 ? body.substring(at, end) : body.substring(at);
+
+        assertTrue(after.contains("updateVisiblePoints"),
+            "renaming a locomotive does not rewrite the station labels, so the track diagram goes on "
+            + "showing the old name beside the train until something unrelated repaints it: " + after);
+    }
 }

@@ -14035,6 +14035,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         this.model.getAutoLayout().sanitizeMultiUnits(l);
                         this.model.getAutoLayout().refreshUI();
+
+                        // And the STATION LABELS on the track diagram (OB-081).
+                        //
+                        // refreshUI fires the layout's callbacks, which redraw the autonomy surfaces.
+                        // The labels beside a station on the track diagram are not one of those: they
+                        // are written by updateStationLabels, and nothing here called it - so after a
+                        // rename the diagram went on showing the old name beside the train until
+                        // something unrelated happened to repaint it.
+                        //
+                        // Adam, OB-081: "When autonomy is loaded: Renaming a locomotive does not
+                        // immediately propagate to the labels in the track diagram viewer."
+                        //
+                        // Every other door that changes which locomotive stands where already does
+                        // this - placing one, removing one, turning one round - each with the same
+                        // note beside it: "The label still says the locomotive's name until something
+                        // rewrites it." Renaming changes the same thing and was the door that did not.
+                        this.updateVisiblePoints();
+                        this.repaintAutoLocList(false);
                     }
                 }
             }
