@@ -1625,4 +1625,105 @@ public class testAutonomyDiagramStore
             + "refer to points the rollback has just taken away, and it is offered in the list like "
             + "any other (UR-10)");
     }
+
+    /**
+     * A station that was never named goes when its tile does.
+     *
+     * UR-12, from the uninformed review. `stations` is pruned only as a side effect of pruning
+     * `pointNames` - the loop walks the NAMES that no longer have a square - so a square carrying a
+     * station designation and no name is never visited. There is no `dropMissingMembers(stations, keys)`
+     * to match the one written for `disabledPortals` twenty lines above.
+     *
+     * An unnamed station is an ordinary state rather than a corner case: `setStation` asks for no name,
+     * and `placeCaption` has a dedicated "not named yet" answer for exactly this.
+     *
+     * What it costs: mark a sensor as a station, do not name it yet, delete the tile later. The square
+     * stays in `stations` for good, so redrawing a sensor at those coordinates - routine when a page is
+     * re-laid-out - makes it silently a station again. And `checkNames` raises UNNAMED_STATION as an
+     * ERROR, so the user gets a blocking finding they did not create, about a square they cannot see.
+     *
+     * A NAMED station is deliberately not dropped this way: the loop above keeps one whose name a
+     * configuration still refers to, so the user can find it. Nothing can refer to an unnamed one, so
+     * that rule has nothing to say here.
+     */
+    @Test
+    public void testAnUnnamedStationGoesWhenItsTileDoes()
+    {
+        TileKey unnamed = new TileKey("1 - Main", 3, 3);
+        TileKey named = new TileKey("1 - Main", 4, 3);
+
+        store.setStation(unnamed, true);
+
+        store.setStation(named, true);
+        store.setPointName(named, "Still here");
+
+        AutonomyCompanionStore.Reconciliation report =
+            store.reconcile(new java.util.LinkedHashSet<>(java.util.Arrays.asList(named)));
+
+        assertFalse(store.isStation(unnamed),
+            "an unnamed station outlived its tile. It sits in setup.json for good, so a sensor drawn "
+            + "at those coordinates later is silently a station - and checkNames raises a blocking "
+            + "UNNAMED_STATION finding about a square nobody can see (UR-12)");
+
+        assertTrue(store.isStation(named), "the station whose tile is still there was dropped");
+
+        assertFalse(report.getDroppedTileProperties().isEmpty(),
+            "the square was dropped without saying so. A diagram edit that quietly costs a station "
+            + "should be visible rather than discovered later - which is the rule the links next to "
+            + "it already follow");
+    }
+
+    /**
+     * A protecting signal goes when the SIGNAL's tile does, not only when the station's does.
+     *
+     * UR-13, from the uninformed review. `dropMissing(stationSignals, keys, false)` tests the KEY - the
+     * station's square. `stationSignals` is the only square-referencing collection whose VALUE
+     * reconcile never checked: portals are checked on both ends, and captions inside reconcileCaptions.
+     *
+     * `forgetSquares` covers a signal square that is BUILT OVER, so what is left is the plain deletion,
+     * and the pairing then survives every save. `signalsThatAreGone()` reports it, so it is not
+     * invisible - but nothing drops it, and if any accessory-bearing tile is later drawn at those
+     * coordinates, `protectingSignalNames()` resolves it and autonomy starts throwing an accessory
+     * nobody paired. That is the same defect the neighbouring drop was written for - "INHERITED by the
+     * next link drawn on that square" - applied to the one collection that commands real hardware.
+     *
+     * The plan this came from says the intended rule outright: dropped in reconcile when EITHER tile
+     * goes.
+     */
+    @Test
+    public void testAPairingGoesWhenTheSignalsTileDoes()
+    {
+        TileKey station = new TileKey("1 - Main", 6, 6);
+        TileKey stays = new TileKey("1 - Main", 7, 6);
+        TileKey deleted = new TileKey("1 - Main", 8, 6);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Guarded");
+        store.setProtectingSignals(station, java.util.Arrays.asList(stays, deleted));
+
+        store.reconcile(new java.util.LinkedHashSet<>(java.util.Arrays.asList(station, stays)));
+
+        assertEquals(store.getProtectingSignals(station), java.util.Arrays.asList(stays),
+            "the pairing with the deleted signal survived. Draw anything with an address at those "
+            + "coordinates later and autonomy throws an accessory nobody paired (UR-13)");
+    }
+
+    /**
+     * And a station whose signals have all gone stops being paired at all.
+     */
+    @Test
+    public void testAStationWhoseOnlySignalWentIsNoLongerPaired()
+    {
+        TileKey station = new TileKey("1 - Main", 6, 8);
+        TileKey deleted = new TileKey("1 - Main", 7, 8);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Was guarded");
+        store.setProtectingSignals(station, java.util.Arrays.asList(deleted));
+
+        store.reconcile(new java.util.LinkedHashSet<>(java.util.Arrays.asList(station)));
+
+        assertTrue(store.getProtectingSignals(station).isEmpty(),
+            "the station is still recorded as protected by a signal that no longer exists");
+    }
 }

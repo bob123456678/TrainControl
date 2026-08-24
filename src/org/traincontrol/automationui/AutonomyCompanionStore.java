@@ -2263,7 +2263,33 @@ public class AutonomyCompanionStore
         report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
         report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
         report.droppedTileProperties.addAll(dropMissing(barredArrivals, keys, false));
+        // dropMissing tests the KEY - the station's square.  The VALUES are squares too, and this was
+        // the one square-referencing collection whose values reconcile never looked at: portals are
+        // checked on both ends, and a caption's two ends inside reconcileCaptions.  forgetSquares covers a signal
+        // square that is BUILT OVER, so what was left was the plain deletion - and the pairing then
+        // survived every save, ready to be INHERITED by whatever is drawn at those coordinates next.
+        // That is the defect the linkNames drop below was written for, applied to the one collection
+        // that commands real hardware: autonomy would start throwing an accessory nobody paired.
         report.droppedTileProperties.addAll(dropMissing(stationSignals, keys, false));
+
+        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+            = stationSignals.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<String, List<String>> pair = pairs.next();
+
+            // A NEW list rather than removing from the one held: a page snapshot may be holding it for
+            // the editor's undo, and editing it in place is how undo came to restore the deletion.
+            List<String> kept = new ArrayList<>();
+
+            for (String signal : pair.getValue())
+            {
+                if (keys.contains(signal)) kept.add(signal);
+                else report.droppedTileProperties.add("protecting signal at " + signal);
+            }
+
+            if (kept.isEmpty()) pairs.remove();
+            else pair.setValue(kept);
+        }
 
         // linkNames and disabledPortals, which were the only two of the eleven kept collections this
         // method said nothing about (DD-A1).
@@ -2308,6 +2334,30 @@ public class AutonomyCompanionStore
             {
                 report.namesStillReferenced.put(name, referrers);
             }
+        }
+
+        // A station that was never NAMED is not covered by the loop above, which walks the names whose
+        // square has gone - so a square carrying a designation and no name was never visited, and there
+        // was no dropMissingMembers(stations, keys) to match the one written for disabledPortals.  An
+        // unnamed station is an ordinary state: setStation asks for no name, and placeCaption has a
+        // "not named yet" answer for exactly this.  Left behind, the square stays a station for good,
+        // so a sensor drawn at those coordinates later is silently one again - and checkNames raises a
+        // blocking UNNAMED_STATION about a square nobody can see.
+        //
+        // Only the unnamed ones.  A named station whose tile is gone is kept above when a configuration
+        // still refers to it, so the user can find it; nothing can refer to one with no name, so that
+        // rule has nothing to say here.
+        List<String> orphanStations = new ArrayList<>();
+
+        for (String key : stations)
+        {
+            if (!keys.contains(key) && !pointNames.containsKey(key)) orphanStations.add(key);
+        }
+
+        for (String key : orphanStations)
+        {
+            stations.remove(key);
+            report.droppedTileProperties.add("station at " + key);
         }
 
         // a portal whose partner is gone is half a pairing, which is worse than none

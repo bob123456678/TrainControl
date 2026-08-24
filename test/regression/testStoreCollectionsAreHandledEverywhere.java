@@ -214,7 +214,7 @@ public class testStoreCollectionsAreHandledEverywhere
         assertEquals(stale, new ArrayList<String>(),
             "these collections ARE handled at these sites now, so the exemptions claiming they do not "
             + "apply are wrong. An exemption is a statement about the code, and a stale one is worse "
-            + "than none - it is a comment that reads as a decision");
+            + "than none - it is a comment that reads as a decision. Stale: " + stale);
     }
 
     /**
