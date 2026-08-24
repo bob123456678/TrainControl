@@ -2345,7 +2345,27 @@ public class AutonomyEditorPanel extends JPanel
         // rails, when nothing about the rails is at fault.
         if (picked != null && !mayRestHere(tile, picked) && !confirmedAnyway(picked, tile)) return;
 
-        session.setPointProperty(tile, "home", picked);
+        // And a locomotive already at home somewhere else, which is the fourth of the rules the running
+        // layout has and this door did not (TD-8).
+        //
+        // Warned rather than refused, like the two above: one locomotive has one station, so setting
+        // this one MOVES the other, and moving it is very often what was meant. What must not happen is
+        // it being moved silently - which is what used to happen on the next load instead, where the
+        // loser was decided by iteration order and the only notice was a line in the log.
+        TileKey already = picked == null ? null : session.homeElsewhere(tile, picked);
+
+        if (already != null && JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmHomeIsAlreadySet", picked, describeTile(already)),
+            I18n.t("autolayout.ui.dialogSetHomeLocomotive"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        // Through setHome, which does the sweep. setPointProperty writes the one square and nothing
+        // else, which is how two squares came to share a home in the first place.
+        session.setHome(tile, picked);
 
         refresh();
     }

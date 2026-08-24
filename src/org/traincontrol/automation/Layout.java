@@ -825,9 +825,15 @@ public class Layout
             if (this.homeStations.containsKey(l))
             {
                 // Dropped, for the reason a dangling name is dropped: it can never be honoured.  One
-                // locomotive has one station - setHomeLocomotive enforces exactly that when an
-                // assignment is made - so only a hand-edited file reaches here, and keeping the loser
-                // would re-warn on every load and be written back out on every save.
+                // locomotive has one station, and keeping the loser would re-warn on every load and be
+                // written back out on every save.
+                //
+                // This used to add "so only a hand-edited file reaches here".  True when it was
+                // written; the autonomy setup gained its own home editor a fortnight later and did not
+                // sweep, so a MENU reached it - and which of the two assignments survived was decided
+                // by iteration order, with this log line as the only notice.  AutonomySession.setHome
+                // sweeps now, so a hand-edited file is once again the way in - but the sentence is left
+                // out rather than restored, because it is what stopped anybody looking here (TD-8).
                 this.control.logf("autolayout.warnHomeLocomotiveAssignedTwice", p.getHomeLoc(), p.getName());
                 p.setHomeLoc(null);
                 continue;

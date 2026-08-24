@@ -3087,6 +3087,92 @@ public class AutonomySession
      *        excludedLocs
      * @param value the value, or null to remove the property entirely
      */
+    /**
+     * Gives a square a home locomotive, taking that locomotive's home away from anywhere else.
+     *
+     * ONE locomotive, ONE station. The running layout has enforced this since July - setHomeLocomotive
+     * clears the same locomotive from every other Point as it assigns one - and the setup-side editor,
+     * which arrived a month later, wrote the property and swept nothing. So two squares could be given
+     * the same home from the menu, and the next load dropped one of them by iteration order, with a log
+     * line as the only notice (TD-8).
+     *
+     * The sweep is here rather than in the menu because it is a rule about the SETUP, and a rule
+     * enforced at one door of two is the shape this defect came from.
+     *
+     * @param tile the square to make home
+     * @param locomotive the locomotive, or null to clear this square's home
+     */
+    public void setHome(TileKey tile, String locomotive)
+    {
+        if (tile == null) return;
+
+        if (locomotive != null)
+        {
+            for (TileKey other : homesElsewhere(tile, locomotive))
+            {
+                setPointProperty(other, "home", null);
+            }
+        }
+
+        setPointProperty(tile, "home", locomotive);
+    }
+
+    /**
+     * Where this locomotive is already at home, if it is somewhere other than the given square.
+     *
+     * For the menu, which warns before moving it rather than moving it silently - the same shape as the
+     * other two warnings there: the operator is told what will happen and asked.
+     *
+     * @param tile the square being assigned, which is not itself an answer
+     * @param locomotive the locomotive
+     * @return the other square that calls this locomotive home, or null
+     */
+    public TileKey homeElsewhere(TileKey tile, String locomotive)
+    {
+        java.util.List<TileKey> found = homesElsewhere(tile, locomotive);
+
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    /**
+     * Every square other than this one whose home is that locomotive.
+     *
+     * A list rather than one answer, because a setup written before the rule existed - or edited by
+     * hand - can hold several, and taking one away while leaving the rest would move the problem
+     * rather than fix it.
+     */
+    private java.util.List<TileKey> homesElsewhere(TileKey tile, String locomotive)
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        if (locomotive == null) return out;
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            if (tile != null && tile.toString().equals(key)) continue;
+
+            org.json.JSONObject point = points.optJSONObject(key);
+
+            if (point == null || !locomotive.equals(point.optString("home", null))) continue;
+
+            // Package-private on the store, and this is the same package - the parse splits on the LAST
+            // colon, because a page name may hold one.
+            TileKey other = AutonomyCompanionStore.parseTileKey(key);
+
+            if (other != null) out.add(other);
+        }
+
+        return out;
+    }
+
     public void setPointProperty(TileKey tile, String key, Object value)
     {
         String active = store.getActiveConfiguration();

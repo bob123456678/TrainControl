@@ -246,6 +246,92 @@ public class testBarredArrivalIsNotADestination
         return platform;
     }
 
+    /**
+     * One locomotive, one home - enforced where the home is SET, not only where it is loaded.
+     *
+     * TD-8, from the three-day history review. The running layout has enforced this since July:
+     * `setHomeLocomotive` clears the same locomotive's home from every other Point as it assigns one.
+     * The setup-side editor, which arrived in August, ends at `setPointProperty(tile, "home", picked)`
+     * and nothing sweeps - so two squares could be given the same home from the menu, silently.
+     *
+     * What happens then is decided on the next load, in `rebuildHomeStations`: the second assignment it
+     * meets is dropped with a log line, and which one loses depends on `points.values()` iteration
+     * order. One of the two homes the operator set goes away, and the only notice is in the log.
+     *
+     * That method's comment said "only a hand-edited file reaches here". It was true when it was
+     * written, on 2026-07-28; the home editor arrived on 2026-08-16, and a menu has reached it ever
+     * since. The comment is corrected too, because a reader trusting it will not look for this.
+     */
+    @Test
+    public void testALocomotiveHasOneHomeAcrossTheWholeSetup() throws Exception
+    {
+        session.open(java.util.Arrays.asList(threeSensors()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 2, 1);
+
+        session.setHome(first, "BR 218");
+
+        assertEquals(session.homeElsewhere(second, "BR 218"), first,
+            "the existing home was not found, so the warning at the menu would never fire");
+
+        session.setHome(second, "BR 218");
+
+        assertNull(session.getPointProperty(first, "home"),
+            "the locomotive is now the home of TWO squares. On the next load one of them is dropped "
+            + "by iteration order, with a log line as the only notice - so an assignment the operator "
+            + "made disappears and nothing says which (TD-8)");
+
+        assertEquals(session.getPointProperty(second, "home"), "BR 218",
+            "the home did not arrive at the square it was moved to");
+
+        assertNull(session.homeElsewhere(second, "BR 218"),
+            "the square that now holds the home should not report itself as somewhere else");
+    }
+
+    /**
+     * And setting a home somewhere else's locomotive does not disturb it.
+     */
+    @Test
+    public void testMovingOneHomeLeavesAnotherLocomotivesAlone() throws Exception
+    {
+        session.open(java.util.Arrays.asList(threeSensors()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey first = new TileKey("main", 1, 1);
+        TileKey second = new TileKey("main", 2, 1);
+        TileKey third = new TileKey("main", 3, 1);
+
+        session.setHome(first, "BR 218");
+        session.setHome(second, "V 200");
+        session.setHome(third, "BR 218");
+
+        assertEquals(session.getPointProperty(second, "home"), "V 200",
+            "moving one locomotive's home took another locomotive's with it");
+
+        assertEquals(session.getPointProperty(third, "home"), "BR 218");
+
+        assertNull(session.getPointProperty(first, "home"));
+    }
+
+    private LayoutDiagram threeSensors() throws java.io.IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
     private void delete(File f)
     {
         if (f.isDirectory())
