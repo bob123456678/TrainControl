@@ -3374,7 +3374,17 @@ public class AutonomyCompanionStore
      */
     private String toStored(String key)
     {
-        int colon = key.indexOf(':');
+        // The LAST colon, as parseTileKey, isOnPage and rekeyOne all do (OB-071).
+        //
+        // A key is "page:x,y" and a page name may contain a colon - parseTileKey's own comment calls
+        // "Yard: Upper" an ordinary thing to call a page. Splitting on the first colon read that name
+        // as "Yard", so every square on "Yard: Upper" was stored under the id belonging to a DIFFERENT
+        // page, and renaming that other page would orphan this one's entire setup: MT-135-class loss
+        // triggered by renaming a page you were not touching.
+        //
+        // These two were the last sites still splitting on the first colon; the other three were fixed
+        // when the hazard was found, and nobody came back for these. Found by review.
+        int colon = key.lastIndexOf(':');
 
         if (colon < 0) return key;
 
@@ -3385,7 +3395,8 @@ public class AutonomyCompanionStore
 
     private String fromStored(String key)
     {
-        int colon = key.indexOf(':');
+        // The LAST colon - see toStored above.
+        int colon = key.lastIndexOf(':');
 
         if (colon < 0) return key;
 

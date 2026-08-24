@@ -2559,4 +2559,63 @@ public class testAutonomyDiagramStore
         return from.getConfiguration("Only").getJSONObject("globals")
             .getJSONArray("timetable").getJSONObject(at).getString("loc");
     }
+
+    /**
+     * A page whose NAME contains a colon keeps its own setup.
+     *
+     * OB-071. A key is "page:x,y", and `parseTileKey`'s own comment calls "Yard: Upper" an ordinary
+     * thing to call a page - which is why it, `isOnPage` and `rekeyOne` all split on the LAST colon.
+     * `toStored` and `fromStored` were splitting on the first, so every square on "Yard: Upper" was
+     * stored under the id belonging to the page called "Yard".
+     *
+     * The consequence is the one this month keeps producing: rename "Yard" - a page you are not
+     * touching - and "Yard: Upper" loses its entire setup, with nothing connecting the two.
+     */
+    @Test
+    public void testAPageNameContainingAColonKeepsItsOwnSetup() throws IOException
+    {
+        java.util.Map<String, String> pages = new java.util.LinkedHashMap<>();
+
+        pages.put("Yard", "1");
+        pages.put("Yard: Upper", "2");
+
+        store.setPageIds(pages);
+
+        TileKey plain = new TileKey("Yard", 3, 3);
+        TileKey colon = new TileKey("Yard: Upper", 3, 3);
+
+        store.setPointName(plain, "Down Sidings");
+        store.setStation(plain, true);
+
+        store.setPointName(colon, "Upper Sidings");
+        store.setStation(colon, true);
+        store.setTileLength(colon, 21);
+
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+
+        reloaded.setPageIds(pages);
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(colon), "Upper Sidings",
+            "the colon in the page name was read as the end of the page, so this square was stored "
+            + "under the OTHER page's id - and renaming that page, which nobody was touching, would "
+            + "take this one's whole setup with it");
+
+        assertEquals(reloaded.getTileLength(colon), 21, "the length went to the wrong page");
+        assertTrue(reloaded.isStation(colon), "the station went to the wrong page");
+
+        assertEquals(reloaded.getPointName(plain), "Down Sidings",
+            "the page whose name has no colon lost its own setup");
+
+        // and the two are genuinely distinct on disk
+        String written = new String(java.nio.file.Files.readAllBytes(
+            new File(layout, "config/autonomy/setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(written.contains("\"2:3,3\""),
+            "the square on \"Yard: Upper\" was not stored under that page's own id (2): " + written);
+    }
 }
