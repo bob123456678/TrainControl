@@ -238,7 +238,18 @@
         <mkdir dir="${store.dir}"/>
         <jar destfile="${store.dir}/temp_final.jar" filesetmanifest="skip">
             <zipgroupfileset dir="dist" includes="*.jar"/>
-            <zipgroupfileset dir="resources" includes="*.jar"/>
+            <!-- NAMED, not globbed.  This used to be includes="*.jar", so whatever happened to be
+                 sitting in resources/ went into the release - and two library upgrades removed the old
+                 jars from git without removing them from the working tree, while a third deleted the
+                 code that used GraphStream and left 9.4 MB of it there.  A jar built that way carried
+                 two copies of FlatLaf and two of org.json, and which one loaded was decided by zip
+                 entry order: alphabetically the SUPERSEDED ones come first, so the upgrade was
+                 probably not in the shipped jar at all (TD-7).
+
+                 These two must match file.reference.* in nbproject/project.properties, which is what
+                 the code is compiled against.  Naming them means adding a file to the directory can no
+                 longer change what ships. -->
+            <zipgroupfileset dir="resources" includes="flatlaf-3.7.2.jar,json-20260814.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
             </manifest>

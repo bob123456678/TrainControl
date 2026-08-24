@@ -147,10 +147,21 @@ public class testRouteEditorRoundTripCases
     }
 
     /**
-     * And each position's pair round-trips as a route, in order.
+     * And each position's pair really does round-trip as a route, in order.
      *
      * The order is the instruction: the release has to precede the throw, or the point is asked to be
-     * in two states at once and settles wherever the hardware happens to finish.
+     * in two states at once and settles wherever the hardware happens to finish. That is real ironwork,
+     * two motors on consecutive addresses.
+     *
+     * **This test used to be unable to fail** (TD-6). It built the route text from the same list, in
+     * the same index order, that it read `first` and `second` from - so if `expand` returned its pair
+     * the wrong way round, all three swapped together and the comparison came out the same. It was
+     * order-invariant by construction, and could not fail for the reason its own message gave, while
+     * its javadoc promised a round trip nothing performed: the text was never parsed back.
+     *
+     * It parses back now, through `RouteCommand.fromLine`, which is the direction nothing else here
+     * covered. The order is then read off the PARSED commands, which is what a route actually executes,
+     * rather than off the list they were rendered from.
      */
     @Test
     public void testEachPositionKeepsItsOrderThroughTheRouteText() throws Exception
@@ -160,18 +171,54 @@ public class testRouteEditorRoundTripCases
             List<RouteCommand> pair = ThreeWaySwitch.expand(5,
                 Accessory.accessoryDecoderType.MM2, position, ThreeWaySwitch.SETTLE);
 
-            String first = pair.get(0).toLine(null).trim();
-            String second = pair.get(1).toLine(null).trim();
-
             String asARoute = pair.get(0).toLine(null) + pair.get(1).toLine(null);
-
-            assertTrue(asARoute.indexOf(first) < asARoute.indexOf(second),
-                position + ": the two commands changed places in the route text, so the point is "
-                + "thrown before it is released");
 
             assertTrue(asARoute.trim().contains("\n"),
                 position + ": the pair ran together onto one line, which is the shape that made a "
                 + "feedback command swallow its neighbour - see testRouteRoundTrip");
+
+            List<RouteCommand> back = new java.util.ArrayList<>();
+
+            for (String line : asARoute.split("\n"))
+            {
+                if (line.trim().isEmpty()) continue;
+
+                back.add(RouteCommand.fromLine(line.trim(), false));
+            }
+
+            assertEquals(back.size(), 2,
+                position + ": the route text did not read back as two commands, so what the route "
+                + "would execute is not the pair that was rendered");
+
+            assertEquals(back.get(0).toLine(null).trim(), pair.get(0).toLine(null).trim(),
+                position + ": the FIRST command to come back out of the route text is not the one "
+                + "that went in first. The release has to precede the throw, or the point is asked to "
+                + "be in two states at once and settles wherever the hardware finishes (TD-6)");
+
+            assertEquals(back.get(1).toLine(null).trim(), pair.get(1).toLine(null).trim(),
+                position + ": the SECOND command came back changed");
+
+            // And the first command out of the route is a RELEASE, asked of the parsed commands rather
+            // than of the list they were written from - which is the half the old assertion left out.
+            //
+            // Only the first. STRAIGHT releases BOTH motors, since it is the position neither of them
+            // chooses - expand's own rule is `position != Position.STRAIGHT` for the second command -
+            // so requiring a throw there asks for a road that does not exist. The rule being guarded is
+            // "nothing is thrown before the other has been released", and that is a statement about
+            // the first.
+            assertFalse(back.get(0).getSetting(),
+                position + ": the first command out of the route is a THROW. Both motors of a "
+                + "three-way are then driven over at once, which routes nowhere and which some "
+                + "mechanisms bind in (TD-6)");
+
+            assertEquals(back.get(1).getSetting(), position != ThreeWaySwitch.Position.STRAIGHT,
+                position + ": the second command sets the wrong way. Every position but STRAIGHT is "
+                + "chosen by throwing one motor; STRAIGHT is the one where both are released");
+
+            // The release waits before the throw follows.  Without the delay the two commands go out
+            // together and the point is asked to be in two states at once.
+            assertTrue(back.get(0).getDelay() > 0,
+                position + ": the release carries no delay, so the throw follows it immediately");
         }
     }
 }
