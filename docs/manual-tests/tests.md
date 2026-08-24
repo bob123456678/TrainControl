@@ -57,8 +57,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
 | [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
+| [MT-166](#mt-166) | 2026-08-24 | The backup dialog offers to show the file | fixed unvalidated | FR-019 |
+| [MT-167](#mt-167) | 2026-08-24 | The application does not freeze while trains are running | fixed unvalidated | OB-087 |
 
-Everything else - 121 of 165 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 167 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7219,6 +7221,14 @@ The state is written live first so the archive holds it as it is now. A source t
 skipped - a Central Station layout has no local config folder - and a file that cannot be read is named
 individually, because a file held open by a sync client is the everyday case here.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+Content is good, but we are missing the folder name of the active layout (i.e., zip file contains "config" instead of "cs2_sample_layout").  
+
+Also, what happens when a CS2 layout is being used- do we skip this step, or do we download the files from the CS2 and then same them?  The latter would be preferred if serviceable.
+
+*Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-160"></a>
@@ -7258,6 +7268,12 @@ window. It runs on a thread now, guarded so a slow answer cannot land on a locom
 **Two callers left as they are**, and recorded: the right-click menu's `getPossiblePaths` and the
 synchronized `moveLocomotive` on paste. Both are gestures that already imply a wait, and neither runs
 while the monitor is held for seconds.
+
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+Looks good for for the window content in 3, increase the font size to match the standard size of all other windows.  Make the headings (could choose / never choose) bold.
+
+*Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7395,6 +7411,12 @@ Computed off the event thread, which this file's comments already insisted on tw
 saying it is working and fills in when the answer arrives - a modal dialog runs its own event pump,
 which is what lets that work.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+looks good- just increase the font size within that window to the standard
+
+*Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-164"></a>
@@ -7497,5 +7519,83 @@ moves locomotives off their homes freely. The test is gone from the scan entirel
 The automated test replays the plan move by move and asserts, at each move, that the destination is
 free AND that nothing occupies a square holding it back - and it was mutation-checked to confirm that
 the FR-001 assertion is the one that fires, rather than a move-count check standing in front of it.
+
+---
+
+<a id="mt-166"></a>
+
+### MT-166 - 2026-08-24 - The backup dialog offers to show the file
+
+**Disposition:** fixed unvalidated
+**From:** FR-019
+**Written:** 2026-08-24
+
+**What to do.** File > Backup TrainControl Data.
+
+The dialog should now name just the **file** - `...-TrainControl.zip` - rather than the whole path, and
+carry two buttons: **OK** and **Show Files**.
+
+1. Press **Show Files**. Explorer should open on the backup folder with that archive already selected.
+2. Do it again and press **OK**. Nothing should happen but the dialog closing.
+3. Check the log: the full path should be there, once, for the backup you just made.
+
+Also worth one run with something wrong - the easiest is to open the .zip from a previous backup in
+another program so it cannot be overwritten. The dialog should say what could not be saved, and Show
+Files should still work.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "after a backup finishes, in the window that prints the path, instead of
+printing the path in the popup, add a button to 'show files'. That way, the user can dismiss (OK) or
+Show Files in the OS file explorer. You no longer need to print the path - just the filename in the
+popup, leaving the full path in the log."
+
+The file is SELECTED rather than the folder merely opened, which needs `explorer /select,` on Windows -
+worth the special case, because the backup folder accumulates one archive per backup and opening it
+plain leaves you hunting for the newest. Other platforms open the folder.
+
+Opening the file manager happens off the event thread: a cold Explorer takes seconds to answer, and by
+then this dialog is gone, so the freeze would have had nothing on screen to explain it. Failing to open
+it is silent beyond the log - the backup succeeded, and a second dialog saying the file manager would
+not start is noise on top of the one just dismissed.
+
+---
+
+<a id="mt-167"></a>
+
+### MT-167 - 2026-08-24 - The application does not freeze while trains are running
+
+**Disposition:** fixed unvalidated
+**From:** OB-087
+**Written:** 2026-08-24
+
+**What to do.** With full autonomy running and at least two trains moving, use the window while a path
+is being set up - that is the window where switches are being thrown, half a second to two seconds.
+
+1. Open the autonomy editor and close it again.
+2. Open the autonomy viewer.
+3. Right-click a turnout on the track diagram and throw it by hand.
+4. Hover the information mark beside a locomotive showing "No available paths", then click it.
+5. Press Stop.
+
+Nothing should pause for more than an instant, and **Stop must respond immediately**, every time. If
+anything hangs, that is the thing to report - and if the whole application stops responding, a thread
+dump says in one step what no amount of reading can: `jstack <pid>` from the JDK's `bin` folder, with
+the output pasted into the ticket.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam reported a deadlock during an autonomy run (OB-087) on a build 28 commits
+old, at a moment when Claude Code went down as well - so a machine-wide stall is the more economical
+explanation, and nothing in that build had changed locking.
+
+Checking it found one that I had introduced hours later, in the current tree. A review finding asked
+for `Layout.getPoints()` and `getEdges()` to copy under the monitor, as `getHomeStations` does. Both
+are called from five places in the UI, and a dispatch holds that monitor across its per-command sleeps
+- so synchronizing them put the event thread behind exactly the wait that OB-079 and IAR-B2 exist to
+keep it out of. Reverted to the live views, which is what has been running for weeks.
+
+This entry exists because that class of fault is invisible to the automated battery: every test in it
+drives the model directly, and none of them has an event thread to freeze.
 
 ---

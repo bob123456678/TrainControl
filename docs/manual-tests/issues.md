@@ -369,7 +369,81 @@ hand-written (DD-D9), and the transient occupancy term stays out of any shared "
 predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
 separation is what makes the FR-017 window's two groups mean anything.
 
+### OB-087 - 2026-08-24 - crash during autonomy run
 
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 09:01  
+**Build:** commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+critical - ran autonomy with timetable capture on from the current state, app deadlocked.
+
+**Claude, 2026-08-24.** Your instinct was right to ask, and the answer has two halves.
+
+**On your build: nothing in it changed locking.** `b1e22b5b` is 28 commits behind, from 01:43. Every
+change to a `synchronized` keyword this session came after it. So whatever happened at 09:01, it was
+not something new in the app - and with Claude Code going down at the same moment, a machine-wide
+stall is the more economical explanation.
+
+**On the current tree: one WAS introduced this morning, by me, and it is now out again.** A review
+finding (DR-B7) pointed out that `Layout.getPoints()` and `getEdges()` hand out live views that
+off-thread readers walk while the event thread can be writing them, and asked for the treatment
+`getHomeStations` got: copy under the monitor. I applied it, and it was wrong twice over:
+
+- `getPoints()` is called from **five places in the UI** - the autonomy editor, the viewer, and three
+  menu paths. Synchronizing it puts the event thread on the Layout monitor, which a dispatch holds
+  across its per-command sleeps. That is exactly the freeze IAR-B2 had just removed from
+  `getActiveAccs`, reintroduced by another door in the same commit.
+- It is also called from inside this class's own loops - `deleteEdge` walks every edge while removing
+  one - so a copy per call turns a linear sweep quadratic.
+
+Reverted to the live views, which is what you have been running for weeks. The hazard DR-B7 names is
+real and now unaddressed; the right answer is the one the class already documents for its four
+UI-read collections - make the maps concurrent, so readers take no lock at all - and that needs null
+guards `getPoint`/`getEdge` do not have. Folded into [OB-086](#ob-086) rather than done in a hurry.
+
+**The two other locking changes in the current tree were checked and are clean.**
+`explainDestinationsGrouped` and `destinationsBarredFromAutonomy` are synchronized, and their only
+caller is the FR-017 window's worker thread - never the event thread. `getActiveAccs` had its
+`synchronized` REMOVED, which can only reduce freezing.
+
+**What would help if it happens again on a current build.** A thread dump says in one step what
+reading cannot: with the app hung, `jstack <pid>` from the JDK's `bin` folder, output pasted into a
+ticket. If it is a deadlock, the dump names both threads and both locks.
+
+### OB-088 - 2026-08-24 - capturing timetable commands still doesn't work
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 09:05  
+**Build:** commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe - COULD NOT CONFIRM THIS IS JAVA 8, the version TrainControl is built for; if the display looks wrong after launch, this is the first thing to check
+
+nothing gets added to the list while full autonomy is running
+
+**Claude, 2026-08-24. Already fixed - your build is 41 minutes too old.**
+
+`b1e22b5b` was built at 01:43. The fix for this is `86acd990` at 02:24, and the symptom it describes
+is word for word yours.
+
+The capture flag lives on the `Layout` object, and `parseAuto` replaces that object wholesale - so a
+fresh Layout started with capture off and every rebuild silently turned it off. Rebuilds happen far
+more often than they read: applying a diagram edit, placing a locomotive, and loading a configuration
+all come through there, and **starting full autonomy loads a configuration**. So the button stayed lit
+over a layout that was no longer capturing, which is precisely "nothing gets added to the list while
+full autonomy is running".
+
+The flag is now read before the old layout is discarded and applied after the new one exists.
+
+`test/regression/testTimetableCapture.java` covers it in three tests, and
+`testCaptureSurvivesTheLayoutBeingRebuilt` is the one about this case - it was the gap that let the
+regression through, since nothing had tested capture across a rebuild.
+
+**Please rebuild before retesting.** If it still fails on a current build, that is a new bug and worth
+filing fresh - and the ticket should say so, because this one will not be it.
+
+**Worth knowing for next time:** the Build line the triage app stamps on every ticket is what made this
+answerable in two minutes rather than an afternoon of hunting a phantom. Both of today's bug reports
+turned out to be about a build from before the relevant fix.
 
 ## What has been picked up
 
@@ -423,6 +497,7 @@ not, never both.
 | 2026-08-24 | FR-015 | feature request | Backup writes one archive holding all the state | fixed unvalidated | [MT-159](tests.md#mt-159) |
 | 2026-08-24 | FR-014 | feature request | The caption menu items name the station | fixed unvalidated | [MT-162](tests.md#mt-162) |
 | 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | fixed unvalidated | [MT-163](tests.md#mt-163) |
+| 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | fixed unvalidated | [MT-166](tests.md#mt-166) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |

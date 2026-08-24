@@ -15867,23 +15867,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // failure mode the fallback exists for.
             String backupFolder = new File(Util.getBackupPath("x")).getAbsoluteFile().getParent();
 
+            // The full path goes to the LOG, not into the dialog (FR-019).
+            //
+            // Adam: "you no longer need to print the path - just the filename in the popup, leaving
+            // the full path in the log." A backup path on this machine is long enough to stretch the
+            // dialog across the screen, and it is not something anybody retypes - what they want is
+            // to go and look at the file.
+            final String fullPath = made[0] != null && made[0].isFile()
+                ? made[0].getAbsolutePath() : backupFolder;
+
+            if (this.model != null) this.model.logf("ui.infoBackupCompleteSavedTo", fullPath);
+
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // The ARCHIVE, not the folder it sits in: the user is being told where their backup
-                // is, and after FR-015 that is one file they can copy somewhere else.
-                final String where = made[0] != null && made[0].isFile()
-                    ? made[0].getAbsolutePath() : backupFolder;
+                // The file's NAME in the dialog, its folder behind the button.
+                final String shown = made[0] != null && made[0].isFile()
+                    ? made[0].getName() : backupFolder;
 
-                JOptionPane.showMessageDialog(
-                    this,
+                Object[] choices =
+                {
+                    I18n.t("ui.ok"),
+                    I18n.t("ui.showFiles")
+                };
+
+                int chose = JOptionPane.showOptionDialog(this,
                     unsaved.isEmpty()
-                        ? I18n.f("ui.infoBackupCompleteSavedTo", where)
-                        : I18n.f("ui.warnBackupIncomplete", where,
-                            String.join(", ", unsaved))
-                );
+                        ? I18n.f("ui.infoBackupCompleteSavedTo", shown)
+                        : I18n.f("ui.warnBackupIncomplete", shown, String.join(", ", unsaved)),
+                    I18n.t("ui.main.toolbar.backupData"),
+                    JOptionPane.YES_NO_OPTION,
+                    unsaved.isEmpty() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE,
+                    null, choices, choices[0]);
 
-                // Advance to last tab (log)
-                //this.KeyboardTab.setSelectedIndex(this.KeyboardTab.getComponentCount() - 1);
+                if (chose != 1) return;
+
+                // Off the event thread: opening a file manager waits on the shell, which on a cold
+                // Explorer is seconds - and this dialog is dismissed by then, so a frozen window with
+                // nothing on it is all the user would see.
+                //
+                // The FILE selected where the platform can, so a folder holding a year of backups
+                // opens on the one just made rather than wherever it happens to scroll to.
+                final File made0 = made[0];
+
+                new Thread(() -> Util.showInFileManager(made0, backupFolder)).start();
             });
         }).start();
     }//GEN-LAST:event_backupDataMenuItemActionPerformed

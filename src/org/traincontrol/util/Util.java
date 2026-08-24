@@ -88,6 +88,58 @@ public class Util
     }
 
     /**
+     * Opens the operating system's file manager on a file, selecting it where that is possible.
+     *
+     * FR-019.  Selecting the file rather than merely opening its folder matters here: the backup
+     * folder accumulates one archive per backup, so opening it plain leaves the user hunting for the
+     * one they just made.
+     *
+     * Windows gets `explorer /select,`, which is the only way to ask for that and is worth the special
+     * case because it is the platform this application is used on.  Everywhere else falls back to
+     * Desktop.open on the FOLDER - opening the archive itself would hand it to whatever is registered
+     * for .zip, which is not what "show files" means.
+     *
+     * Never throws.  Failing to open a file manager must not turn a successful backup into an error
+     * dialog; the path is already in the log either way.
+     *
+     * @param file the file to select, or null to just open the folder
+     * @param folder the folder to fall back to
+     */
+    public static void showInFileManager(File file, String folder)
+    {
+        try
+        {
+            if (file != null && file.isFile()
+                && System.getProperty("os.name", "").toLowerCase().contains("win"))
+            {
+                // Not quoted, and not through a shell: this is passed as one argv element, so a path
+                // with spaces arrives intact and nothing is interpreted.  `/select,` takes the path as
+                // part of the same argument, which is why the comma has no space after it.
+                Runtime.getRuntime().exec(new String[]
+                {
+                    "explorer.exe", "/select," + file.getAbsolutePath()
+                });
+
+                return;
+            }
+
+            File open = file != null && file.isFile() ? file.getAbsoluteFile().getParentFile()
+                : (folder == null ? null : new File(folder));
+
+            if (open != null && open.isDirectory() && java.awt.Desktop.isDesktopSupported())
+            {
+                java.awt.Desktop.getDesktop().open(open);
+            }
+        }
+        catch (java.io.IOException | RuntimeException e)
+        {
+            // Deliberately silent beyond the log. The backup succeeded; not being able to show it is
+            // not a failure of the backup, and a second dialog saying so would be noise on top of the
+            // one the user just dismissed.
+        }
+    }
+
+    /**
      * Writes a set of files and folders into one zip.
      *
      * FR-015, Adam: "the backup menu option should export a zip file with the locdb and uistate files,

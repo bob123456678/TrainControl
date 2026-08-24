@@ -4949,33 +4949,46 @@ public class Layout
     /**
      * Returns all edges in the graph
      *
-     * A COPY, taken under the monitor, for the reason getHomeStations gives (DR-B7): "copying under
-     * the monitor makes every reader safe without asking every writer to know about the readers".
-     * That fix was applied to the home map and not to its two siblings, which are read off-thread by
-     * the staging planner and by the diagram - `points` and `edges` are plain LinkedHashMaps, and
-     * `createPoint`/`deletePoint`/`createEdge` write them from the event thread, so a live view could
-     * be iterated while one is being added.
+     * NOT synchronized, and NOT a copy - which is what it was for a few hours on 2026-08-24, and the
+     * reason it is not is worth more than the reason it was.
      *
-     * The cost is one shallow copy per call. These are read to be walked, and a walk over a map
-     * somebody is editing is the failure this prevents.
+     * DR-B7 observed that these two are live views read off-thread by the staging planner while the
+     * event thread can be writing them, and asked for the treatment `getHomeStations` had: copy under
+     * the monitor. Applying it here was wrong twice over, and Adam asked the right question about it
+     * before anybody had run the result.
+     *
+     * FIRST, it puts the event thread on the Layout monitor. `getPoints` is called from five places
+     * in the UI - the editor, the viewer, three menu paths - and a dispatch holds that monitor across
+     * its per-command sleeps. That is precisely the freeze IAR-B2 had just removed from
+     * `getActiveAccs`, reintroduced by a different door in the same commit.
+     *
+     * SECOND, these are called from inside this class's own loops - `deleteEdge` walks every edge to
+     * strip lock references while removing one - so a copy per call turns a linear sweep into a
+     * quadratic one on a layout of any size.
+     *
+     * The hazard DR-B7 names is real and unaddressed. The right answer is the one this class already
+     * documents for its four UI-read collections: make the maps concurrent, so a reader gets a
+     * weakly-consistent iteration and no lock at all. That needs the null guards the note at those
+     * fields warns about - ConcurrentHashMap rejects a null key, and `getPoint`/`getEdge` pass one
+     * straight through - so it is filed rather than done in a hurry.
      *
      * @return 
      */
-    synchronized public Collection<Edge> getEdges()
+    public Collection<Edge> getEdges()
     {
-        return Collections.unmodifiableCollection(new ArrayList<>(this.edges.values()));
+        return this.edges.values();   
     }
     
     /**
      * Returns all points in the graph
      *
-     * A copy, under the monitor - see getEdges directly above (DR-B7).
+     * Live and unsynchronized - see getEdges directly above for why the copy was taken out again.
      *
      * @return 
      */
-    synchronized public Collection<Point> getPoints()
+    public Collection<Point> getPoints()
     {
-        return Collections.unmodifiableCollection(new ArrayList<>(this.points.values()));
+        return this.points.values();
     }
 
     /**
