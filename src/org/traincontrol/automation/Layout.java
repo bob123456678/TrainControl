@@ -3857,6 +3857,29 @@ public class Layout
      */
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)
     {
+        // A dispatch is a train under way, however it was asked for.
+        //
+        // runLocomotive counts autonomy's driving threads so that a locomotive between one path and the
+        // next is never invisible to isRunning().  A train dispatched BY HAND was invisible for a
+        // different reason: the diagram's right-click menu is a bare thread straight into this method,
+        // so nothing counted it, and activeLocomotives is not written until configureAndLockPath has
+        // already reserved every point on the route.  For the whole locking phase isRunning() was
+        // false, and everything built on it stood down - including the protection that should have
+        // thrown the destination's signal the moment its platform was reserved.  The signal stayed
+        // green for the entire approach and only went red once the train was standing at the platform.
+        //
+        // Adam's rule, 2026-08-23: "The same thing should happen in manual operation vs auto - the same
+        // switches and signals set, and guards applied."  So the same guards apply for the length of a
+        // hand dispatch: the editors refuse to open, the simulation cannot be toggled, and locomotives
+        // cannot be edited or deleted, exactly as while autonomy runs.
+        //
+        // Nested under autonomy, which has already counted its own thread, so this can only reach zero
+        // when the LAST thing finishes - and reaching zero announces the end of the run, which is how
+        // the interface learns to re-enable what it disabled.
+        this.locomotiveThreads.incrementAndGet();
+
+        try
+        {
         try
         {
             return executePathInternal(path, loc, speed, ttp);
@@ -3913,6 +3936,17 @@ public class Layout
             this.control.log(e);
 
             throw e;
+        }
+        }
+        finally
+        {
+            // In a finally for the reason runLocomotive's is: a thread killed by anything at all still
+            // stops being counted.  One left behind reports the layout as running for the rest of the
+            // session, and nothing can be edited again without a restart.
+            if (this.locomotiveThreads.decrementAndGet() == 0)
+            {
+                announceRunFinished();
+            }
         }
     }
 
@@ -4678,15 +4712,33 @@ public class Layout
             // Nothing ever wrote false back - the clearing transition was recorded on the other copy -
             // so the next real arrival there matched its stale memo and sent no command at all, and
             // the signal stayed GREEN with a train standing at the platform.
-            Boolean showing = this.signalAspects.get(accessory);
-
-            if (showing != null && showing == claimed) return;
-
-            this.signalAspects.put(accessory, claimed);
-
             Accessory acc = this.control.getAccessoryByName(accessory);
 
             if (acc == null) return;
+
+            Boolean showing = this.signalAspects.get(accessory);
+
+            // The memo AND the signal, because the memo is only the aspect protection last commanded
+            // and it is not the only thing that commands this accessory.  TilePorts gives a SIGNAL tile
+            // a GREEN configuration command, so a path configured across one drives it green through
+            // getConfigCommands - the same Accessory, and configureAndLockPath does it in the same loop
+            // that reserves the point, immediately after.  Protection then agreed with its own memo,
+            // sent nothing, and went on agreeing: the signal stood GREEN over an occupied platform
+            // until the train left, and no later occupancy change corrected it.
+            //
+            // Adam's ruling, 2026-08-23: a signal a path crosses and a signal protecting the
+            // destination are two different signals, so a railway wired the way he intends never asks
+            // which of them wins.  Nothing stops the two being paired to one accessory, though, and
+            // when they are the failure is silent - so what protection may not do is skip because of
+            // something it REMEMBERS.  Whatever moved the signal, the next occupancy change is decided
+            // by looking.
+            //
+            // isRed() rather than a second memo: Accessory.switched is set optimistically by every
+            // caller, protection and path configuration alike, so it is the one record that cannot go
+            // stale behind somebody's back.
+            if (showing != null && showing == claimed && acc.isRed() == claimed) return;
+
+            this.signalAspects.put(accessory, claimed);
 
             // Through Accessory.setState, the same door the edge configuration uses, so a signal
             // thrown here is thrown exactly as one thrown by a route.
