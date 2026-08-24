@@ -137,5 +137,29 @@ public class testHomeAssignmentRules
         assertTrue(source.contains("HomeStaging.canBeHome"),
             "rule 2's warning - a home the locomotive cannot reach - is decided by "
             + "HomeStaging.canBeHome, and nothing in the panel consults it any more");
+
+        // The CALL SITES, not only the bodies (TA-B4).
+        //
+        // The three checks above search for tokens that live inside private helpers, so they prove
+        // the helper still exists - not that anything reaches it. Deleting `mayRestHere`'s single
+        // caller leaves every one of them satisfied and rule 2 unreachable, which is DD-A6's exact
+        // shape: "a rule with no caller passes every test written about the rule". Demonstrated by
+        // mutation, 5 of 5 green with the caller gone.
+        //
+        // A private helper cannot be reached from this package, so this is the same source read one
+        // level up rather than a real invocation. It is not proof that the path executes; it is proof
+        // that the path is still written down, which is one more link of the chain than before.
+        assertTrue(source.contains("mayRestHere(tile, picked)"),
+            "nothing calls mayRestHere, so rule 2's warning - a home the locomotive cannot reach - "
+            + "cannot be produced however correct the helper is. The token check above passes on the "
+            + "helper's own body, which is why it did not notice (TA-B4, DD-A6)");
+
+        assertTrue(source.contains("homeBrokenBy(tile, picked)"),
+            "nothing calls the homeBrokenBy overload that takes a tile, so the exclusion warning is "
+            + "unreachable from the assignment path (TA-B4)");
+
+        assertTrue(source.contains("() -> promptHome("),
+            "nothing opens the home dialog, so all three of these rules are unreachable at once and "
+            + "the checks above would still pass (TA-B4)");
     }
 }

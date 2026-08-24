@@ -610,6 +610,19 @@ public class testPageIdsAreDurable
 
         assertEquals(ids.size(), 2, "both pages should have come back.  Got: " + ids);
 
+        // The ACCENTED page by name, which is the whole point and which this test did not ask for
+        // until TA-A1 (2026-08-24) demonstrated the hole: a decoder that mangles the name still
+        // returns two entries with Alpha at 1, so a lenient decode that renumbers every page and
+        // reattaches every setting passed this test 11 of 11.
+        //
+        // Alpha is the control - it is pure ASCII and survives any decoding - so asserting only Alpha
+        // was asserting the half that cannot fail.
+        assertEquals(ids.get("Bahnhof Süd"), Integer.valueOf(2),
+            "the page whose name carries a non-ASCII byte did not come back under its own name, so "
+            + "its id is lost and everything keyed to it is about to be reattached to whatever takes "
+            + "that number. This is the failure the fallback exists for, and asserting Alpha alone "
+            + "could not see it (TA-A1).  Got: " + ids);
+
         // And the write must go through. Before the fallback this threw, permanently, because the
         // condition it refuses on is one that a retry cannot clear.
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),

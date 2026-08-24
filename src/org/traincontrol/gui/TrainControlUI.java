@@ -1445,6 +1445,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Puts a yes/no question on screen from whatever thread is asking, and waits for the answer.
+     *
+     * The backup runs on its own thread - it writes files and may fetch a layout over the network -
+     * so it cannot show a dialog directly, and it cannot carry on without the answer either.
+     * `invokeAndWait` is the honest form of that: the worker blocks, the event thread asks.
+     *
+     * Guarded against being called ON the event thread, where invokeAndWait deadlocks outright rather
+     * than merely misbehaving.
+     *
+     * @param question what to ask
+     * @return true only for an explicit yes
+     */
+    private boolean askOnEventThread(String question)
+    {
+        final boolean[] yes = new boolean[1];
+
+        Runnable ask = () -> yes[0] = JOptionPane.showConfirmDialog(this, question,
+            I18n.t("ui.main.toolbar.backupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            ask.run();
+
+            return yes[0];
+        }
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (java.lang.reflect.InvocationTargetException e)
+        {
+            // A question nobody could be asked is a no: the caller is about to do something optional
+            // and expensive, and doing it unasked is the worse of the two mistakes.
+            if (this.model != null) this.model.log(e);
+        }
+
+        return yes[0];
+    }
+
+    /**
      * The floor `writeLayoutIndex` must not issue a fresh page id at or below (IAR-A1).
      *
      * The index remembers a retired id for exactly one write - the one that drops the page - and hands
@@ -15798,6 +15843,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Read from the reporting lambda below, which needs it effectively final
             final File[] made = new File[1];
 
+            // The temporary copy of a Central Station layout, if one was fetched (FR-020). Removed in
+            // the finally, whatever happens to the archive.
+            File centralStationCopy = null;
+
             this.backupDataMenuItem.setEnabled(false);
 
             // Given back whatever happens.  It is switched off so a second backup cannot start while
@@ -15848,6 +15897,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 String localLayout = getLocalLayoutPath();
 
+                // The layout lives on the CENTRAL STATION, so there is nothing local to put in the
+                // archive - and until now the backup simply did not mention it (FR-020).
+                //
+                // Adam: "for cs2 files, we have a top menu option to download a layout from the
+                // station. so a backup run in this mode could ask the user if they want to include
+                // this data."
+                //
+                // Asked rather than assumed, because it is a network fetch of every page: quick on a
+                // small layout, not free, and pointless if the Central Station is off. Declining
+                // leaves the archive exactly as it was, and the dialog at the end says what is not in
+                // it either way.
+                //
+                // There is no autonomy setup to pair these with. `AutonomyCompanionStore` refuses a
+                // layout that is not local - "autonomy needs a local copy of the track diagram,
+                // because its settings are stored alongside the diagram files" - so unlike the local
+                // case these pages stand alone, and an archive holding only them is complete rather
+                // than half of a pair.
+                if ((localLayout == null || localLayout.isEmpty()) && this.model != null
+                    && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
+                {
+                    try
+                    {
+                        centralStationCopy = java.nio.file.Files
+                            .createTempDirectory("tc-cs-backup").toFile();
+
+                        this.model.downloadLayout(centralStationCopy);
+
+                        state.put("central-station-layout", centralStationCopy);
+                    }
+                    catch (Exception cs)
+                    {
+                        // Named in the incomplete-backup dialog like any other source that could not
+                        // be read. The rest of the archive is still worth writing.
+                        unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
+
+                        if (centralStationCopy != null)
+                        {
+                            Util.deleteTree(centralStationCopy, 0);
+
+                            centralStationCopy = null;
+                        }
+                    }
+                }
+
                 if (localLayout != null && !localLayout.isEmpty())
                 {
                     // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
@@ -15881,6 +15974,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
+                // The scratch download goes, whether or not the archive was written. A stale copy of
+                // the diagram left in a temporary folder is exactly the sort of second copy this
+                // application keeps being bitten by.
+                if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
+
                 this.backupDataMenuItem.setEnabled(true);
             }
 

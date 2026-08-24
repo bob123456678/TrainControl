@@ -50,7 +50,17 @@ public class testEveryTestIsInTheBattery
         assertTrue(build.exists(), "cannot find " + build.getAbsolutePath()
             + " - this test reads the build file, so it has to run from the project root");
 
-        String xml = new String(Files.readAllBytes(build.toPath()), StandardCharsets.UTF_8);
+        // WITHOUT its comments (TA-B1).
+        //
+        // The check below is a substring search for a `test-one-class` line, and a line inside
+        // `<!-- -->` is still a substring - so commenting a class out satisfied this guard while
+        // `ant test` stopped running it. That is not a hypothetical edit. It is what somebody does to
+        // skip a slow class while debugging, and forgetting to put it back is exactly how thirty-five
+        // classes came to be silently out of the battery (DD-A2), which is the state this test exists
+        // to stop returning to. Demonstrated by mutation: commented out, 3 of 3 green; deleted
+        // outright, correctly red.
+        String xml = withoutXmlComments(
+            new String(Files.readAllBytes(build.toPath()), StandardCharsets.UTF_8));
 
         List<String> missing = new ArrayList<>();
 
@@ -136,4 +146,43 @@ public class testEveryTestIsInTheBattery
 
         return false;
     }
+    /**
+     * The build file with everything between comment delimiters removed.
+     *
+     * Deliberately crude: it blanks spans rather than parsing XML. A comment delimiter inside an
+     * attribute value would confuse it, and `build.xml` has none - a real parser here would be a
+     * dependency and a second thing that can be wrong about a file this test exists to read
+     * literally.
+     *
+     * An unterminated comment swallows the rest of the file, which is what ant would do with it too,
+     * so a class after one is correctly reported as missing.
+     *
+     * @param xml the file's text
+     * @return it, with comment spans removed
+     */
+    private static String withoutXmlComments(String xml)
+    {
+        StringBuilder out = new StringBuilder();
+
+        int at = 0;
+
+        while (true)
+        {
+            int opens = xml.indexOf("<!--", at);
+
+            if (opens < 0)
+            {
+                return out.append(xml.substring(at)).toString();
+            }
+
+            out.append(xml, at, opens);
+
+            int closes = xml.indexOf("-->", opens);
+
+            if (closes < 0) return out.toString();
+
+            at = closes + 3;
+        }
+    }
+
 }

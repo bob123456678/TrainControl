@@ -88,6 +88,47 @@ public class Util
     }
 
     /**
+     * Removes a file, or a folder and everything under it.
+     *
+     * Written for FR-020's temporary download: the Central Station layout is fetched into a scratch
+     * folder, zipped, and then has no reason to exist.  Leaving it would put a stale copy of the
+     * diagram somewhere nobody is looking, which is its own hazard on a machine where the whole point
+     * is knowing which copy is current.
+     *
+     * Depth-guarded like addToZip, for the same reason: a symlink loop would otherwise recurse for
+     * ever, and this one DELETES.
+     *
+     * Never throws.  Failing to tidy up must not turn a completed backup into an error.
+     *
+     * @param file what to remove
+     * @param depth recursion guard
+     * @return whether everything asked for is gone
+     */
+    public static boolean deleteTree(File file, int depth)
+    {
+        if (file == null || !file.exists() || depth > 32) return false;
+
+        try
+        {
+            if (file.isDirectory())
+            {
+                File[] children = file.listFiles();
+
+                if (children != null)
+                {
+                    for (File child : children) deleteTree(child, depth + 1);
+                }
+            }
+
+            return file.delete();
+        }
+        catch (RuntimeException e)
+        {
+            return false;
+        }
+    }
+
+    /**
      * Opens the operating system's file manager on a file, selecting it where that is possible.
      *
      * FR-019.  Selecting the file rather than merely opening its folder matters here: the backup

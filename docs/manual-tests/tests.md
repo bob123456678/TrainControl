@@ -58,8 +58,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-167](#mt-167) | 2026-08-24 | The application does not freeze while trains are running | fixed unvalidated | OB-087 |
 | [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
 | [MT-169](#mt-169) | 2026-08-24 | The three things Adam asked for after running MT-159, MT-160 and MT-163 | fixed unvalidated | MT-159, MT-160, MT-163 |
+| [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
 
-Everything else - 124 of 169 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 170 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7711,5 +7712,52 @@ matching the words would work in English and quietly do nothing in the other sev
 **Adam's fourth note is a question, not a fix,** and is filed as [FR-020](issues.md): what should the
 backup do when the layout is being read from the Central Station rather than from disk? Today it
 silently has nothing to put in the archive.
+
+---
+
+<a id="mt-170"></a>
+
+### MT-170 - 2026-08-24 - Backing up a layout that lives on the Central Station
+
+**Disposition:** fixed unvalidated
+**From:** FR-020
+**Written:** 2026-08-24
+
+**What to do.** You need TrainControl reading its layout from the Central Station rather than from a
+local folder - that is, with no local layout path set.
+
+1. File > Backup TrainControl Data.
+2. It should ASK: the track diagram is on the Central Station, download it and include it?
+3. Answer **yes**. The backup should take a little longer, and the archive should contain a
+   `central-station-layout/` folder with the diagram files in it.
+4. Run it again and answer **no**. The archive should be written without them, and the completion
+   dialog should not claim anything is missing - declining is not a failure.
+5. Then the unhappy one: switch the Central Station off, or unplug it, and answer yes. The backup
+   should still complete, and the dialog should name the download as the thing that could not be
+   saved rather than failing the whole archive.
+
+**And check nothing is left behind.** The download goes to a temporary folder and should be removed
+afterwards - in all three cases above, including the failure.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam, answering the question in FR-020: "for cs2 files, we have a top menu
+option to download a layout from the station. so a backup run in this mode could ask the user if they
+want to include this data."
+
+It reuses that menu's own path - `model.downloadLayout(folder)` - into a temporary directory, adds it
+to the archive, and removes it in a `finally` whatever happened. A stale copy of the diagram left in a
+temporary folder is the sort of second copy this application keeps being bitten by.
+
+Asked rather than assumed: it is a network fetch of every page, which is quick on a small layout, not
+free, and pointless if the station is off. The question is put on the event thread and waited for,
+because the backup runs on its own thread and can neither show a dialog itself nor sensibly carry on
+without the answer.
+
+**One thing this settled.** FR-020 asked where a Central Station layout's autonomy setup lives, and
+whether the archive would hold half of a pair. It does not: `AutonomyCompanionStore` refuses a layout
+that is not local - "autonomy needs a local copy of the track diagram, because its settings are stored
+alongside the diagram files" - so there is no setup to pair these pages with, and an archive holding
+only them is complete rather than half of something.
 
 ---

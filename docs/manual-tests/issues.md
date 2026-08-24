@@ -387,40 +387,48 @@ hand-written (DD-D9), and the transient occupancy term stays out of any shared "
 predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
 separation is what makes the FR-017 window's two groups mean anything.
 
-### FR-020 - 2026-08-24 - what should a backup contain when the layout lives on the Central Station?
+### OB-089 - 2026-08-24 - the test suite audit's remainder: seven guards that assert less than they read
 
-**From Adam's triage note on [MT-159](tests.md#mt-159).** His words: "what happens when a CS2 layout is
-being used - do we skip this step, or do we download the files from the CS2 and then save them? The
-latter would be preferred if serviceable."
+**From [2026-08-24-test-suite-audit.md](../reviews/2026-08-24-test-suite-audit.md), prefix TA.** Adam
+asked for a pass over the tests looking for "false assumptions, missing ground truth, or incomplete
+coverage". It found one A and ten B, backed by twenty mutation experiments - eight of which
+demonstrated a false pass by making the change the test should have caught and watching it stay green.
 
-**What happens today.** The archive asks `getLocalLayoutPath()`, and when the layout is read from the
-Central Station that is empty - so the whole `config` tree is simply absent from the zip. `UIState.data`
-and `LocDB.data` are still there, and the backup reports success. Nothing says the track diagram and
-the autonomy setup are not in it.
+Four were fixed the same day: TA-A1 (the encoding test never asserted the accented page's id, so a
+lenient decode that renumbered every page passed 11 of 11), TA-B1 (a class commented out of
+`build.xml` satisfied the guard against classes leaving the battery), TA-B4 (a wiring check that read
+tokens inside private helpers, so deleting the only caller left it green - DD-A6's exact shape), and
+the CRLF class, which the audit confirmed is now fully closed.
 
-That is the part worth fixing whatever else is decided: a backup that quietly contains less than the
-user believes is the failure mode this application keeps meeting.
+This is the rest. They share one shape, and it is the shape worth naming: **a test that reads
+something adjacent to the thing it claims to guard.** A token instead of a call, non-emptiness instead
+of contents, a fixture built by the code under test instead of an independent statement of what is
+right.
 
-**Three options, in order of how much they change.**
+| | What is asserted | What is not |
+|---|---|---|
+| **TA-B2** | `deletePage` names each collection it forgets | That it forgets them. The gathering neutered but still naming the collection passes 85 tests across all four guard classes - the settings matrix has no deletePage column |
+| **TA-B3** | `testLoadData`'s seven old-build fixtures load non-empty | That they load *correctly*. A restore keeping one component of each passes 7 of 7 |
+| **TA-B5** | The Central Station sync-safety block, in four sentences | A connect-timeout assertion that cannot fail (the "unreachable station" is a closed local port, which refuses instantly), a cumulative static counter used as proof of a fetch, a vacuous `before`, and a false premise about sync wiping locomotives - while route deletion, which the sync does perform, has no garbled-fetch test |
+| **TA-B6** | CS3 `isNotFoundError` | Its JSON branch, which is the one real pre-2.6.0 firmware exercises. Replaced with `return false`, everything passes: the test server only ever sends real 404s |
+| **TA-B7** | That UDP messages are constructed | That any BYTE goes out correctly. Nothing anywhere asserts an outgoing datagram; the short-datagram guard and reader-restart-after-reopen are untested, and a reopen to an ephemeral port would satisfy both existing assertions with reception dead |
+| **TA-B8** | `testFacingFollowsTheTrack`'s oracle | Anything independent - it checks membership in the same `getRoutes` map the facings are built from, so MT-125 is satisfied by construction. Plus a silent return on a null reducer |
+| **TA-B9** | That `DiagramMonitor` can be constructed | That it ever publishes. Both publisher tests use a null layout, so `compute()` - milestones, runs, lock wash - is unreachable, and a monitor that says nothing for ever passes |
+| **TA-B10** | That the route editor's frame is locked | The `isCellEditable` gate, which is the surface its own javadoc names - the test cannot see table cell editors. The focusability loop is vacuous if the list is empty |
 
-1. **Say so.** If the layout is not local, the completion dialog names what is not in the archive. One
-   sentence, no new machinery, and it stops the silent version immediately.
-2. **Fetch and include.** `CS2File` already downloads the layout to read it - the pages and the index
-   come over HTTP from the Central Station. Pointing that at the archive is plausible and is what you
-   asked for. What needs checking first is whether it can be done without a second round trip per page
-   on a big layout, and what happens when the Central Station is not answering at the moment somebody
-   presses Backup.
-3. **Fetch, include, and offer to restore.** The full round trip - put the files back onto the Central
-   Station from an archive. Much more work, and it is a different feature: writing to the CS2 is not
-   something this application does anywhere else.
+Plus fifteen C findings in the same document.
 
-**My recommendation is 1 now and 2 as its own piece of work.** The silent gap is the actual defect and
-it is an hour; the fetch is a feature, and it deserves its own testing rather than riding along with a
-dialog change.
+**Where to start.** TA-B9 and TA-B7 are the two with no coverage at all rather than weak coverage, and
+they are the two closest to the railway: a monitor that stops publishing and a datagram that goes out
+malformed are both invisible to every test that exists. TA-B2 is the cheapest - one more column in the
+settings matrix, which is a file that already has the shape.
 
-**One thing to decide with it:** the autonomy setup for a CS2-hosted layout is stored where? If it is
-local while the diagram is remote, then the archive today holds half of a pair that only means anything
-together - which is the argument FR-015 was built on, and it would be worth checking before choosing.
+**What the audit also established, and is worth keeping.** Eight guards were mutated and fired
+correctly, so they are known-good rather than assumed-good. One candidate finding was disproved before
+it was filed - `reconcile`'s blocked-points keep-side IS guarded. And one premise in the brief I gave
+the reviewer was wrong: I said no test drives a real event thread, and `testBusyDialogInteraction`
+pumps a real modal EDT. The genuine EDT hole is narrower than I claimed - blocking dialogs on the
+export path, and four test classes that call `setViewListener` off the event thread themselves.
 
 ## What has been picked up
 
@@ -475,6 +483,7 @@ not, never both.
 | 2026-08-24 | FR-014 | feature request | The caption menu items name the station | fixed unvalidated | [MT-162](tests.md#mt-162) |
 | 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | fixed unvalidated | [MT-163](tests.md#mt-163) |
 | 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | fixed unvalidated | [MT-166](tests.md#mt-166) |
+| 2026-08-24 | FR-020 | feature request | Backing up a layout that lives on the Central Station | fixed unvalidated | [MT-170](tests.md#mt-170) |
 | 2026-08-24 | OB-087 | bug | A deadlock reported on an old build; a real one found and reverted | - | [MT-167](tests.md#mt-167) |
 | 2026-08-24 | OB-088 | bug | Capture stopped whenever the setup was rebuilt | - | [MT-168](tests.md#mt-168) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
