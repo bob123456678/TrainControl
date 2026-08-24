@@ -375,12 +375,6 @@ public class LayoutEditor extends PositionAwareJFrame
     private org.json.JSONObject autonomyAsOpened;
 
     /**
-     * Puts the autonomy setup back the way it was when this window opened.
-     *
-     * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
-     * halves have to be undone together or they are left describing different railways.
-     */
-    /**
      * Follows a locomotive's new name into the snapshot Cancel would put back.
      *
      * This window holds the setup as it was when it opened, so that cancelling can undo every edit made
@@ -402,6 +396,12 @@ public class LayoutEditor extends PositionAwareJFrame
             .repairLocomotiveInSetup(this.autonomyAsOpened, from, to);
     }
 
+    /**
+     * Puts the autonomy setup back the way it was when this window opened.
+     *
+     * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
+     * halves have to be undone together or they are left describing different railways.
+     */
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;
