@@ -1445,10 +1445,69 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The floor `writeLayoutIndex` must not issue a fresh page id at or below (IAR-A1).
+     *
+     * The index remembers a retired id for exactly one write - the one that drops the page - and hands
+     * it out again afterwards. Harmless for a page that was DELETED, because deletePage forgets its
+     * settings first. Not harmless for a page whose FILE was merely absent when the index was written:
+     * its settings are still in the autonomy setup, held under its old number, and the next new page
+     * would collect a stranger's stations, lengths and exclusions with nothing reporting a renumber.
+     *
+     * The setup is the thing that remembers, so it is the thing that is asked. Zero when there is no
+     * session or no setup, which is exactly the behaviour this had before.
+     *
+     * @return the highest page id the autonomy setup has ever recorded, or 0
+     */
+    private int pageIdFloor()
+    {
+        try
+        {
+            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+            return session == null ? 0 : session.getStore().highestPageIdSeen();
+        }
+        catch (RuntimeException e)
+        {
+            // A floor is a safety margin, not a correctness requirement of the write itself. Failing
+            // to work one out must not stop the index being written at all.
+            return 0;
+        }
+    }
+
+    /**
      * Saves initialized component database to a file
      * @param backup
      */
     public void saveState(boolean backup)
+    {
+        // Every existing caller keeps exactly the behaviour it had: a live save captures the session,
+        // a backup does not.
+        saveState(backup, !backup);
+    }
+
+    /**
+     * The same, with the session capture said separately from where the files go.
+     *
+     * IAR-A2. These were one flag, and FR-015 needed them apart. The archive has to hold the state as
+     * it is NOW, so it writes live - and writing live turned on the block below that lifts the running
+     * layout back into the active configuration and saves it. That block's own comment forbids exactly
+     * that: "backups run this method from their own thread, and the session is an event thread object -
+     * and Backup data silently rewriting the active configuration would surprise anybody who pressed it
+     * to get a copy, not to commit their session."
+     *
+     * So pressing Backup Data with the autonomy editor open committed the unsaved edits to setup.json
+     * and every configuration file, from a thread that is not the event thread, and the editor's Cancel
+     * could not take them back - `discardEdits` is a re-read of the file that had just been written.
+     *
+     * One flag doing two things is what made that reachable, so they are two flags.
+     *
+     * @param backup true to write timestamped copies into the backup folder rather than over the live
+     *     files
+     * @param captureSession whether to lift the running layout back into the active configuration
+     *     first.  False for anything that is taking a COPY: the session belongs to the event thread,
+     *     and a copy should not commit anything.
+     */
+    public void saveState(boolean backup, boolean captureSession)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
@@ -1554,7 +1613,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Not on backup: backups run this method from their own thread, and the session is an event
         // thread object - and "Backup data" silently rewriting the active configuration would surprise
         // anybody who pressed it to get a copy, not to commit their session.
-        if (!backup && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
+        if (captureSession && this.activeDiagramConfiguration != null && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().isRunning())
         {
@@ -15737,9 +15796,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             try
             {
                 // Written LIVE first, so the archive holds the state as it is now rather than as it
-                // was when something last happened to save it. This is the same write the application
-                // does on the way out, so there is nothing novel about doing it here.
-                this.saveState(false);
+                // was when something last happened to save it.
+                //
+                // WITHOUT the session capture (IAR-A2). Writing live used to imply it, and that made
+                // this menu item commit whatever was open in the autonomy editor - to setup.json and
+                // to every configuration file - from this thread, which is not the event thread. The
+                // editor's Cancel could not undo it, because discardEdits re-reads the file that had
+                // just been written. Taking a copy must not change anything.
+                this.saveState(false, false);
                 this.model.saveState(false);
 
                 // One archive, holding all of it (FR-015).
@@ -15757,6 +15821,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 state.put(TrainControlUI.DATA_FILE_NAME, new File(TrainControlUI.DATA_FILE_NAME));
                 state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
                     new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
+
+                // The LEGACY autonomy file (IAR-B1).
+                //
+                // For an operator still on the hand-authored graph this is their entire autonomy
+                // setup, and it was in neither half of the backup: not in this archive, and no longer
+                // copied into the backup folder either, because that copy only happens on a
+                // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
+                // reported success with none of it in the file.
+                //
+                // Skipped silently when it is not there, like every other source - a layout driven
+                // from the diagram has no autonomy.json and never will.
+                state.put(TrainControlUI.AUTONOMY_FILE_NAME,
+                    new File(TrainControlUI.AUTONOMY_FILE_NAME));
 
                 String localLayout = getLocalLayoutPath();
 
@@ -18335,7 +18412,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(combined);
 
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null, pageIdFloor());
 
                 // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk.
                 // Included for even one build, every sensor on it becomes a second Point for a sensor
@@ -18699,7 +18776,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (rename) renamed.put(currentLayout, newLayoutName);
 
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, renamed);
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, renamed, pageIdFloor());
 
                 // Selecting the new page has to wait for the page list to be rebuilt, which now
                 // happens after the background sync rather than before this line
@@ -18837,7 +18914,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // No rename map: the deleted page's id is retired, and every surviving page keeps
                     // the one it had.  That is the whole reason a delete no longer disturbs anything.
-                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList);
+                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null, pageIdFloor());
 
                     this.layoutEditingComplete();
                 }

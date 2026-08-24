@@ -839,6 +839,8 @@ public class LayoutDiagram
      */
     public static Map<String, Integer> readLayoutIndexIds(String path)
     {
+        unreadableIndex = null;
+
         Map<String, Integer> out = new java.util.LinkedHashMap<>();
 
         File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
@@ -879,12 +881,43 @@ public class LayoutDiagram
         }
         catch (IOException e)
         {
-            // An unreadable index is the same as not having one: every page gets a fresh id, which is
-            // what happens today anyway.  Throwing here would stop a page being saved.
+            // An unreadable index is NOT the same as not having one, and the comment that used to
+            // stand here saying it was predates page ids being identities (DR-B4).
+            //
+            // With no ids to keep, writeLayoutIndex reissues 1..n to every page - so a transient lock
+            // on gleisbild.cs2, which a sync client can take at any moment on this railway, renumbers
+            // the whole layout at the next page add, rename or delete. The setup then self-heals
+            // through its own record of what each id was called, which is a lot to lean on silently.
+            //
+            // Still not thrown: refusing here would stop a page being saved, and a page nobody can
+            // save is worse than a renumber that recovers. But the caller is told, so the recovery is
+            // not the first anybody hears of it.
+            unreadableIndex = e;
+
             return new java.util.LinkedHashMap<>();
         }
 
         return out;
+    }
+
+    /**
+     * Why the last index read failed, or null if it did not.
+     *
+     * Static and best-effort, which is enough for what it is for: `writeLayoutIndex` asks whether the
+     * map it is about to reason from came from a file it could actually read, and says so in the file
+     * it writes. It is not a lock and it does not need to be - two threads rewriting the layout index
+     * at once is a bigger problem than this field.
+     */
+    private static volatile IOException unreadableIndex;
+
+    /**
+     * Whether the last call to readLayoutIndexIds failed to read the file at all.
+     *
+     * @return the failure, or null
+     */
+    public static IOException getUnreadableIndex()
+    {
+        return unreadableIndex;
     }
 
     /**
@@ -899,6 +932,27 @@ public class LayoutDiagram
      */
     public static void writeLayoutIndex(String path, List<String> layoutList,
         Map<String, String> renamedFromTo) throws IOException
+    {
+        writeLayoutIndex(path, layoutList, renamedFromTo, 0);
+    }
+
+    /**
+     * The same, with a floor below which a fresh id will not be issued.
+     *
+     * IAR-A1.  The ids in the file are the only thing `next` could see, so a retired one was out of
+     * reach for exactly one write - the write that dropped it - and free again afterwards. That is
+     * fine for a page that was DELETED, whose settings were forgotten first. It is not fine for a page
+     * whose file was merely absent when the index was written: its settings are still in the autonomy
+     * setup, held under its old number, and the next new page collects them without a word.
+     *
+     * The floor comes from the autonomy setup, which remembers every id it has ever written and keeps
+     * the ones belonging to pages that are not loaded. Zero when there is no setup to ask, which is
+     * the behaviour this had before.
+     *
+     * @param floor no fresh id will be at or below this
+     */
+    public static void writeLayoutIndex(String path, List<String> layoutList,
+        Map<String, String> renamedFromTo, int floor) throws IOException
     {
         // Ensure the directory exists
         File directory = new File(Paths.get(path, "config").toString());
@@ -947,7 +1001,23 @@ public class LayoutDiagram
         // never had one.  Nothing any other page does can change it.
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
-        int next = 1;
+        // Refuse to renumber the whole layout because the index could not be READ (DR-B4).
+        //
+        // With `existing` empty every page below is issued a fresh id, and that is right for a layout
+        // that has never had an index. It is not right when the file is there and something stopped us
+        // reading it - a sync client holding it open, which on this railway is an ordinary Tuesday.
+        // Writing then reissues 1..n across the board, and every stored setting has to be recovered
+        // through the setup's own record of what each id used to be called.
+        //
+        // The page the caller wanted to save is not saved. That is the lesser harm: it can be saved
+        // again in a moment, and the alternative is a silent renumber of everything the operator owns.
+        if (existing.isEmpty() && getUnreadableIndex() != null)
+        {
+            throw new IOException("The layout index could not be read, so the pages were not renumbered."
+                + "  Nothing was written.  Try again in a moment: " + getUnreadableIndex().getMessage());
+        }
+
+        int next = floor + 1;
 
         for (Integer taken : existing.values())
         {

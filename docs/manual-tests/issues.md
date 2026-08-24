@@ -249,7 +249,7 @@ OneDrive placeholders are a normal state on this machine.
 Option 2 on its own would have prevented every instance of this that could have happened so far, and
 does not require the distinction. My recommendation is 2 now and 3 only if you meet it for real.
 
----
+
 
 ### OB-084 - 2026-08-24 - testRenderingCost fails from a clean checkout, and says something real
 
@@ -296,7 +296,7 @@ uncommitted change reproduces it.
 was measured with the fixture already migrated. The number is honest about what ran; it is not honest
 about a clean checkout, and that is worth knowing before it is quoted as evidence again.
 
----
+
 
 ### OB-085 - 2026-08-24 - the staging scan could prove a blockedBy cycle impossible, and does not
 
@@ -329,7 +329,47 @@ whole budget to say maybe about something provable in a pairwise scan". The cycl
 it, as a second pairwise test, and wants a test whose fixture is a genuine two-home cycle and a
 mutation showing that the scan rather than the search is what answers.
 
----
+
+
+### OB-086 - 2026-08-24 - the duplication review's remainder: six places one rule is written twice
+
+**From [2026-08-24-duplication-robustness.md](../reviews/2026-08-24-duplication-robustness.md), prefix
+DR.** That pass found one A and ten B findings. Five were fixed the same day - the held-field lists
+(DR-A1), the FR-001 reason that could never reach the window (DR-B3), the two silent name-resolution
+doors (DR-B9), the two live collections read off-thread (DR-B7), and the swallowed index read that
+renumbered every page (DR-B4 part 2). This is the rest, kept together because they are one subject.
+
+Every one of them is the shape Adam named when he asked for the pass: **one decision written down in
+more than one place, which then drifts.** None has bitten yet. Page management and autonomy linkage had
+not bitten either, until they did.
+
+| | What is written twice | What it costs when they drift |
+|---|---|---|
+| **DR-B1** | The staging audit's list of "correct divergences" between planner and runtime is missing FR-001, which OB-073 added to both sides on different terms | The debug audit accuses the planner of a fault on every layout that uses FR-001 - noise in the one tool that exists to find real divergence |
+| **DR-B2** | FR-001 itself exists in three inequivalent forms: runtime (block-aware, fenced behind autonomy running), planner (sensor-sibling-aware, unfenced), test oracle (point-level, no departing-train exemption) | The planner and the railway disagree about which stations are available. `AutonomyBuilder`'s own comment names the layout where the block-and-sensor coincidence ends |
+| **DR-B4 (1) (3)** | Two parsers of `gleisbild.cs2` - `readLayoutIndexIds` and `CS2File` - agreeing by a sentence; and nothing anywhere notices two pages claiming one id | The setup keyed by ids the index does not believe. This is the misattachment class, with no rename in sight to blame |
+| **DR-B5** | `pageIsHere` restates `pageOf` branch for branch, kept in step by a comment saying it must be | FR-018, already filed, changes one of them |
+| **DR-B6** | A third inline arrival-sides loop (`facingChoices`) bypassing the `arrivalSides` door; a new `onwardFrom`/`facingOf` pair kept in step by a sentence | The DD-A7 family, which this repository has already paid for twice |
+| **DR-B8** | The settings matrix never calls `setPageIds`, so every save/load cell runs name-keyed | The whole id-translation layer is outside the guard that exists to cover it - the "written raw" defect class the store has had once already |
+| **DR-B10** | The "an absent page must not be judged" rule is enforced by four different mechanisms, one pruner runs outside the guard, and the reconciliation report is discarded at five of six save doors | A page's settings pruned while its file is missing, silently, which is the loss OB-067 was about arriving by a different door |
+
+Plus eight C findings in the same document, which are the same subject at lower stakes.
+
+**Why this is one item rather than seven.** They share a remedy shape - name the rule, give it one
+home, and let the ratchet count the sites - and doing them separately means seven passes over the same
+four files. DD-A1 is the cautionary example: the eleventh collection took five commits to finish
+wiring because each site was found on its own.
+
+**Where to start, if this is picked up.** DR-B8 first: it is test-only, it pairs with the DR-A1 work
+already done, and until the matrix runs with page ids set, every other fix in this list is being
+checked by a guard that cannot see the layer they are about.
+
+**What must NOT be consolidated,** recorded so it is not rediscovered: `reconcile` and `applyTo` stay
+hand-written (DD-D9), and the transient occupancy term stays out of any shared "sendable destination"
+predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
+separation is what makes the FR-017 window's two groups mean anything.
+
+
 
 ## What has been picked up
 

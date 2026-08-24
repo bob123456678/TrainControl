@@ -479,6 +479,48 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * The highest page id this setup has ever recorded, live or absent.
+     *
+     * IAR-A1.  `writeLayoutIndex` issues a new page the number above the highest one in the index
+     * FILE, which means a retired id is accounted for exactly once - by the write that drops it. The
+     * write after that reuses it, and the settings of the page it belonged to are still here, held
+     * under that number because its file was merely absent rather than deleted (OB-067). The new page
+     * collects a stranger's stations, lengths and exclusions, and nothing reports a renumber, because
+     * as far as the index is concerned nothing was renumbered.
+     *
+     * The index cannot remember this by itself without a new field, and `gleisbild.cs2` is a file real
+     * Maerklin hardware reads. This map can: it is the setup's record of what every id was called when
+     * the file was written, and it deliberately keeps the ids of pages that are not loaded.
+     *
+     * A page id is written as a decimal number; anything that is not one is skipped rather than
+     * guessed at.
+     *
+     * @return the highest id known, or 0 when nothing is
+     */
+    public int highestPageIdSeen()
+    {
+        int highest = 0;
+
+        for (java.util.Collection<String> ids
+            : java.util.Arrays.asList(pageNamesWhenWritten.keySet(), pageIdToName.keySet()))
+        {
+            for (String id : ids)
+            {
+                try
+                {
+                    highest = Math.max(highest, Integer.parseInt(id.trim()));
+                }
+                catch (NumberFormatException ignored)
+                {
+                    // Not a number, so not an id this method can reason about.
+                }
+            }
+        }
+
+        return highest;
+    }
+
+    /**
      * Whether this setup knows about a page that is not among the ones it is being shown.
      *
      * The setup records what each page id was called when it was written.  If one of those names is
@@ -1473,9 +1515,7 @@ public class AutonomyCompanionStore
         // (OB-067).  Without this, one save while a page's file is missing deletes that page's whole
         // setup - the same loss the page-id work was done for, arriving through absence rather than
         // through a rename.
-        for (String field : new String[] {"pointNames", "stations", "tileLengths", "tileDirections",
-            "barredArrivals", "stationSignals", "blockedPoints", "portals", "captions", "linkNames",
-            "excludedPages", "disabledLinks"})
+        for (String field : HELD_FIELDS.keySet())
         {
             mergeHeld(root, field);
         }
@@ -3226,6 +3266,68 @@ public class AutonomyCompanionStore
 
 
     /**
+     * What a held field's values are made of, which is the only thing the hold needs to know.
+     *
+     * PLAIN is keyed by a square with a value that is nobody's business here - a name, a length, a set
+     * of barred sides.  The rest name squares as well, and an entry is held when ANY square it names
+     * belongs to a page that is not loaded: a caption points at a station, a portal is paired with
+     * another square, and a station's protecting signals are squares too.
+     */
+    private enum Held
+    {
+        /** keyed by a square; the value is not one */
+        PLAIN,
+        /** keyed by a square; the value is a square */
+        SQUARE_VALUE,
+        /** keyed by a square; the value is one square or an array of them */
+        SQUARE_LIST_VALUE,
+        /** a bare list of squares */
+        SQUARE_LIST,
+        /** a bare list of whole PAGES, so the element is the page part itself */
+        PAGE_LIST
+    }
+
+    /**
+     * Every shared field that can be held for an absent page, and what its values are made of.
+     *
+     * ONE list (DR-A1). This was three: four shape-classified arrays inside `withoutAbsentPages` and a
+     * twelve-name array inside `sharedFields`, none of them governed by any test. A reviewer proved
+     * what that costs by removing a single string - `"blockedPoints"` from the merge array, nothing
+     * else. All three ratchets stayed green, and one save while a page's file was missing silently
+     * deleted that page's FR-001 restrictions from disk. That is the sentence OB-067 was closed with,
+     * minus one string in one array.
+     *
+     * The other direction is as quiet: a field in the merge list but not the hold list comes back into
+     * memory with a page ID standing where a page NAME belongs, which is the pun the whole mechanism
+     * exists to remove.
+     *
+     * So the hold and the merge read the same map, and it cannot be half-updated. The store's history
+     * is a list of lists that drifted - DD-A1 counted fourteen - and this is the one whose drift is
+     * invisible until somebody's page is offline.
+     */
+    private static final Map<String, Held> HELD_FIELDS;
+
+    static
+    {
+        Map<String, Held> fields = new LinkedHashMap<>();
+
+        fields.put("pointNames", Held.PLAIN);
+        fields.put("tileLengths", Held.PLAIN);
+        fields.put("tileDirections", Held.PLAIN);
+        fields.put("barredArrivals", Held.PLAIN);
+        fields.put("linkNames", Held.PLAIN);
+        fields.put("portals", Held.SQUARE_VALUE);
+        fields.put("captions", Held.SQUARE_VALUE);
+        fields.put("stationSignals", Held.SQUARE_LIST_VALUE);
+        fields.put("blockedPoints", Held.SQUARE_LIST_VALUE);
+        fields.put("stations", Held.SQUARE_LIST);
+        fields.put("disabledLinks", Held.SQUARE_LIST);
+        fields.put("excludedPages", Held.PAGE_LIST);
+
+        HELD_FIELDS = java.util.Collections.unmodifiableMap(fields);
+    }
+
+    /**
      * The shared object with every entry naming an absent page taken out of it and held.
      *
      * Only when the numbering is known at all. A store loaded with no index - which is what the
@@ -3249,33 +3351,31 @@ public class AutonomyCompanionStore
             out.put(field, root.get(field));
         }
 
-        // Keyed by a square, with a value that is nobody's business here.
-        for (String field : new String[] {"pointNames", "tileLengths", "tileDirections",
-            "barredArrivals", "linkNames"})
+        for (Map.Entry<String, Held> field : HELD_FIELDS.entrySet())
         {
-            holdEntries(out, field, false, false);
-        }
+            switch (field.getValue())
+            {
+                case PLAIN:
+                    holdEntries(out, field.getKey(), false, false);
+                    break;
 
-        // Keyed by a square, and the value is a square too.
-        for (String field : new String[] {"portals", "captions"})
-        {
-            holdEntries(out, field, true, false);
-        }
+                case SQUARE_VALUE:
+                    holdEntries(out, field.getKey(), true, false);
+                    break;
 
-        // Keyed by a square, and the value is one square or several.
-        for (String field : new String[] {"stationSignals", "blockedPoints"})
-        {
-            holdEntries(out, field, false, true);
-        }
+                case SQUARE_LIST_VALUE:
+                    holdEntries(out, field.getKey(), false, true);
+                    break;
 
-        // A list of squares.
-        for (String field : new String[] {"stations", "disabledLinks"})
-        {
-            holdElements(out, field, false);
-        }
+                case SQUARE_LIST:
+                    holdElements(out, field.getKey(), false);
+                    break;
 
-        // A list of whole PAGES, so the element is the page part itself.
-        holdElements(out, "excludedPages", true);
+                case PAGE_LIST:
+                    holdElements(out, field.getKey(), true);
+                    break;
+            }
+        }
 
         return out;
     }

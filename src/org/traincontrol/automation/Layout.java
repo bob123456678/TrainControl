@@ -689,9 +689,28 @@ public class Layout
     
     /**
      * Returns all accessories along active routes
+     *
+     * NOT synchronized, deliberately (IAR-B2).
+     *
+     * This is read from the EVENT THREAD, by the layout label's click handler, and only in the branch
+     * that runs while autonomy is going - which is exactly when `configureAndLockPath` holds this
+     * object's monitor across its per-command sleeps. So throwing a turnout by hand during a run froze
+     * the whole window, Stop included, for the length of the configuration phase. OB-079 fixed three
+     * sites of this shape and its list was one short.
+     *
+     * Safe without the monitor, and by the pattern this class already documents for UI reads:
+     * `activeLocomotives` is a ConcurrentHashMap, so iterating its values is weakly consistent rather
+     * than a ConcurrentModificationException, and the lists inside it are only ever put and removed
+     * whole - never edited in place - so a captured reference cannot change under this loop.
+     *
+     * What is given up is compound atomicity: the answer may straddle one locomotive's path being
+     * replaced. That is the right trade here. The caller uses it to decide whether to WARN before
+     * throwing an accessory on an active route, and a warning computed a moment ago is worth having;
+     * a frozen Stop button is not.
+     *
      * @return 
      */
-    synchronized public Set<Accessory> getActiveAccs()
+    public Set<Accessory> getActiveAccs()
     {
         Set<Accessory> activeAccessories = new HashSet<>();
         
@@ -1925,28 +1944,29 @@ public class Layout
         {
             Point destination = path.get(path.size() - 1).getEnd();
 
-            for (Point watched : destination.getBlockedBy())
+            // The train LEAVING the watched point is exempt; the restriction is about what may ARRIVE
+            // at the held-back station.  Adam, asked directly: "The condition should not apply to
+            // trains leaving - only departing."
+            //
+            // Without the exemption the one movement that clears the condition is the movement it
+            // forbids: a locomotive standing in the yard could never be sent to the platform the yard
+            // holds back, and while it sat there the platform was shut to everybody else too. Autonomy
+            // had no way out of that - only a person driving the train off by hand.
+            //
+            // The same choice Edge.isOccupied makes, for the reason isLockHeld records: "a train
+            // parked next to a junction was a permanent roadblock for every route across that
+            // junction, and two such trains could deadlock with no way out for either."
+            //
+            // It cannot let two trains onto one square.  Whether the DESTINATION is free is a
+            // different question, asked by isOccupied in this same method, so all this exemption
+            // permits is a train leaving track it is already standing on.
+            //
+            // In blockingOccupantOf now, so the window that EXPLAINS this can ask the same question
+            // rather than trying to read the answer out of a static (DR-B3).
+            Point watched = blockingOccupantOf(destination, loc);
+
+            if (watched != null)
             {
-                Locomotive standing = watched.getBlockLocomotive();
-
-                // The train LEAVING the watched point is exempt; the restriction is about what may
-                // ARRIVE at the held-back station.  Adam, asked directly: "The condition should not
-                // apply to trains leaving - only departing."
-                //
-                // Without the exemption the one movement that clears the condition is the movement it
-                // forbids: a locomotive standing in the yard could never be sent to the platform the
-                // yard holds back, and while it sat there the platform was shut to everybody else too.
-                // Autonomy had no way out of that - only a person driving the train off by hand.
-                //
-                // The same choice Edge.isOccupied makes, for the reason isLockHeld records: "a train
-                // parked next to a junction was a permanent roadblock for every route across that
-                // junction, and two such trains could deadlock with no way out for either."
-                //
-                // It cannot let two trains onto one square.  Whether the DESTINATION is free is a
-                // different question, asked by isOccupied in this same method, so all this exemption
-                // permits is a train leaving track it is already standing on.
-                if (standing == null || standing.equals(loc)) continue;
-
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorDestinationBlockedByPoint",
                         destination.getName(), watched.getName()));
@@ -3496,6 +3516,46 @@ public class Layout
     }
 
     /**
+     * The square holding this destination back right now, or null when none is (FR-001).
+     *
+     * ONE expression of the rule, asked by the runtime check in `isPathClear` and by the explanation
+     * in `firstClearOrWhyNot` (DR-B3). It used to exist only inside `isPathClear`, which reports
+     * through the static `lastError` - and `firstClearOrWhyNot` replaces that with a generic message
+     * whenever autonomy is running, deliberately, because the static is written by every locomotive's
+     * thread. The FR-001 clause only fires when autonomy IS running, so the one message that names the
+     * watched square could never reach the window: a station held back permanently read as "blocked by
+     * a train or a route in progress", which is to say temporarily busy.
+     *
+     * That is worse than saying nothing. The window exists to tell the operator what to do about it,
+     * and it was telling them to wait for a condition that waiting does not clear.
+     *
+     * The train LEAVING the watched square is exempt, as it is at runtime - Adam: "The condition
+     * should not apply to trains leaving, only departing" - and the whole BLOCK is asked rather than
+     * the named copy, because a square emitted as several copies is one piece of track.
+     *
+     * @param destination the station being arrived at
+     * @param loc the locomotive arriving, exempt where it is itself the occupant
+     * @return the watched square with somebody else standing on it, or null
+     */
+    private Point blockingOccupantOf(Point destination, Locomotive loc)
+    {
+        if (destination == null) return null;
+
+        for (Point watched : destination.getBlockedBy())
+        {
+            if (watched == null) continue;
+
+            Locomotive standing = watched.getBlockLocomotive();
+
+            if (standing == null || standing.equals(loc)) continue;
+
+            return watched;
+        }
+
+        return null;
+    }
+
+    /**
      * Null when some route from start to end is clear, and otherwise why the last one was not.
      *
      * The reason comes from isPathClear itself, through lastError, which it sets whether or not it is
@@ -3536,6 +3596,26 @@ public class Layout
                 // trusted, because a reason naming an edge nowhere near this route would send the user
                 // to look at the wrong piece of railway.
                 if (this.isPathClear(path, loc, false)) return null;
+
+                // FR-001 is asked directly rather than read out of the static (DR-B3).
+                //
+                // The substitution below fires whenever autonomy is running, and the FR-001 clause
+                // only fires when autonomy is running - so the one message that names the watched
+                // square could never reach the caller, and a station held back permanently was
+                // reported as "blocked by a train or a route in progress". That is the opposite of
+                // useful: it tells the operator to wait for something waiting will not clear.
+                //
+                // Asking blockingOccupantOf is not a second copy of the rule. It IS the rule; the
+                // runtime check above calls the same method.
+                Point held = this.isAutoRunning() ? blockingOccupantOf(end, loc) : null;
+
+                if (held != null)
+                {
+                    why = I18n.f("autolayout.errorDestinationBlockedByPoint",
+                        end.getName(), held.getName());
+
+                    continue;
+                }
 
                 why = this.isAutoRunning()
                     ? I18n.t("autolayout.why.blockedWhileRunning") : Layout.getLastError();
@@ -4868,20 +4948,34 @@ public class Layout
     
     /**
      * Returns all edges in the graph
+     *
+     * A COPY, taken under the monitor, for the reason getHomeStations gives (DR-B7): "copying under
+     * the monitor makes every reader safe without asking every writer to know about the readers".
+     * That fix was applied to the home map and not to its two siblings, which are read off-thread by
+     * the staging planner and by the diagram - `points` and `edges` are plain LinkedHashMaps, and
+     * `createPoint`/`deletePoint`/`createEdge` write them from the event thread, so a live view could
+     * be iterated while one is being added.
+     *
+     * The cost is one shallow copy per call. These are read to be walked, and a walk over a map
+     * somebody is editing is the failure this prevents.
+     *
      * @return 
      */
-    public Collection<Edge> getEdges()
+    synchronized public Collection<Edge> getEdges()
     {
-        return this.edges.values();   
+        return Collections.unmodifiableCollection(new ArrayList<>(this.edges.values()));
     }
     
     /**
      * Returns all points in the graph
+     *
+     * A copy, under the monitor - see getEdges directly above (DR-B7).
+     *
      * @return 
      */
-    public Collection<Point> getPoints()
+    synchronized public Collection<Point> getPoints()
     {
-        return this.points.values();
+        return Collections.unmodifiableCollection(new ArrayList<>(this.points.values()));
     }
 
     /**
@@ -6174,7 +6268,18 @@ public class Layout
                         {
                             String locName = (String) loc;
 
-                            if (control.getLocByName(locName) != null) excludedLocs.add(control.getLocByName(locName));
+                // Named in the log when it is dropped, like the home and blockedBy doors
+                            // three lines of code and two hundred lines apart (DR-B9).
+                            //
+                            // An exclusion that vanishes is a safety restriction the operator believes
+                            // is in force: a locomotive sent to a platform it was barred from. The
+                            // drop is right - one bad entry must not take the layout out of service -
+                            // but it was silent, and the next save writes the configuration back
+                            // without it, so the loss is permanent as well as invisible.
+                            Locomotive excluded = control.getLocByName(locName);
+
+                            if (excluded != null) excludedLocs.add(excluded);
+                            else control.logf("autolayout.warnExcludedLocomotiveNotInDatabase", locName);
                         }
                         catch (Exception e)
                         {
@@ -6818,6 +6923,12 @@ public class Layout
             if (loc != null)
             {
                 locsToRun.add(loc);
+            }
+            else
+            {
+                // Said out loud (DR-B9). Dropping it is right; doing so in silence meant a train that
+                // simply never moved, with nothing anywhere to connect that to a rename.
+                control.logf("autolayout.warnRunLocomotiveNotInDatabase", s);
             }
         }
 

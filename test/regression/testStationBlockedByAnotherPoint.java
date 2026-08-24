@@ -556,6 +556,60 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
+     * The reason names the watched square, rather than saying the station is busy.
+     *
+     * DR-B3. FR-017 built a window to tell the operator why a locomotive has nowhere to go, and this
+     * reason could never appear in it.
+     *
+     * `firstClearOrWhyNot` reads the reason out of `Layout.lastError`, which is static and written by
+     * every running locomotive's thread - so while autonomy is running it substitutes a generic
+     * "blocked by a train or a route in progress" rather than repeat a message that may have been
+     * generated for a different train. Deliberate, and right, except that the FR-001 clause ONLY fires
+     * while autonomy is running. The substitution therefore covered it every single time.
+     *
+     * What the operator saw was a permanently held-back station described as temporarily busy: wait,
+     * and it will clear. It will not. Nothing clears it but moving the train off the watched square,
+     * and the message that says so is the one being replaced.
+     *
+     * Fixed by asking rather than by reading: `blockingOccupantOf` is one method, called by the
+     * runtime check and by this explanation, so the two cannot drift and the answer needs no static
+     * to travel through.
+     */
+    @Test
+    public void testTheReasonNamesTheWatchedSquareRatherThanSayingBusy() throws Exception
+    {
+        Layout layout = built("BK YARD");
+
+        assertTrue(layout.isAutoRunning(),
+            "the fixture must be auto-running: the substitution this is about only happens then, and "
+            + "so does the FR-001 rule itself");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+        Locomotive other = model.getLocByName(model.getLocList().get(1));
+
+        // setLocomotive, as every other test in this file does: moveLocomotive refuses while
+        // autonomy is running, and running is the state this rule and its substitution both need.
+        layout.getPoint("BK A").setLocomotive(loc);
+        layout.getPoint("BK YARD").setLocomotive(other);
+
+        assertEquals(layout.getPoint("BK YARD").getCurrentLocomotive(), other,
+            "the fixture did not take: with nothing on the watched square there is no reason to give");
+
+        String reason = layout.explainDestinations(loc).get("BK B");
+
+        assertNotNull(reason, "BK B is held back while BK YARD is occupied, so it is not available");
+
+        assertTrue(reason.contains("BK YARD"),
+            "the reason does not name the square holding the station back. It reads as though the "
+            + "station were temporarily busy, so the operator is told to wait for a condition that "
+            + "waiting does not clear - which is the opposite of what the window was built for "
+            + "(DR-B3).  Got: " + reason);
+
+        assertFalse(reason.equals(org.traincontrol.util.I18n.t("autolayout.why.blockedWhileRunning")),
+            "the reason is still the generic substitution.  Got: " + reason);
+    }
+
+    /**
      * A run from A to B, with a yard that B is held back by.
      *
      * The yard is two Points sharing a block, which is how a square reachable from two sides is

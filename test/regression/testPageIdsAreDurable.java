@@ -301,6 +301,226 @@ public class testPageIdsAreDurable
     }
 
     /**
+     * A retired id stays retired for longer than one write.
+     *
+     * IAR-A1, found by an independent review. The closing comment on
+     * `testAPageReusingARetiredIdInheritsNothing` says a reused id is "the case the index cannot
+     * prevent". The index can prevent it, and until now it did so for exactly one write.
+     *
+     * `next` is derived from the ids present in the FILE. The write that drops a page still sees its
+     * id, so nothing takes it that time; the write after that does not, and hands it to the next new
+     * page. For a page that was DELETED that is harmless - `deletePage` forgets its settings first,
+     * which is what the sibling test pins. For a page whose FILE was merely absent it is the worst
+     * thing this application does: nothing forgot anything, the settings sit in setup.json under that
+     * id held verbatim (OB-067), and a brand-new page inherits a stranger's stations, lengths and
+     * exclusions with nothing reporting a renumber - because as far as the index is concerned, none
+     * happened.
+     *
+     * A page whose file will not load is ordinary here. CS2File skips one that will not parse or is
+     * not there and says so; on this railway, which lives in OneDrive, an unhydrated placeholder is
+     * enough.
+     *
+     * The index cannot remember this by itself without a new field in `gleisbild.cs2`, which real
+     * Maerklin hardware reads. The autonomy setup can, and does - so it is passed in as a floor.
+     */
+    @Test
+    public void testARetiredIdIsNotHandedOutTwoWritesLater() throws IOException
+    {
+        write("Alpha", "Bravo");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey onBravo = new TileKey("Bravo", 3, 3);
+
+        store.setPointName(onBravo, "Bravo Platform");
+        store.setStation(onBravo, true);
+        store.createConfiguration("Only", null);
+        store.save();
+
+        assertEquals(ids().get("Bravo"), Integer.valueOf(2), "the fixture did not take");
+
+        int floor = store.highestPageIdSeen();
+
+        assertEquals(floor, 2,
+            "the setup does not remember Bravo's id, so it cannot be asked to protect it. That "
+            + "record is the only thing standing between an absent page and the next new one");
+
+        // Bravo's FILE goes missing - not deleted, nothing told to forget it - and the index is
+        // written twice, which is all it takes: once while it is still on record, once after.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha")), null, floor);
+
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "Zulu")), null, floor);
+
+        assertNotEquals(ids().get("Zulu"), Integer.valueOf(2),
+            "a brand new page was handed the id of a page whose file is merely missing. Its settings "
+            + "are still in setup.json under that number, held there precisely because nobody deleted "
+            + "them - so Zulu comes up carrying another page's stations, and nothing reports a "
+            + "renumber because none happened (IAR-A1)");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+
+        reloaded.setPageIds(idsAsNameToId());
+        reloaded.load();
+
+        assertNull(reloaded.getPointName(new TileKey("Zulu", 3, 3)),
+            "the new page came up holding the absent page's station name");
+
+        assertFalse(reloaded.isStation(new TileKey("Zulu", 3, 3)),
+            "the new page came up already carrying a station");
+    }
+
+    /**
+     * Every held field is declared, and a save with a page absent loses none of them.
+     *
+     * DR-A1. The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
+     * names in three hand-written lists - four shape-classified arrays in `withoutAbsentPages` and a
+     * merge array inside `sharedFields` - and no test governed any of them. A reviewer removed one
+     * string, `"blockedPoints"` from the merge array, and nothing else: all three ratchets stayed
+     * green while one save with a page's file missing deleted that page's FR-001 restrictions from
+     * disk.
+     *
+     * The lists are one map now, so they cannot disagree by count. This is the other half, and it is
+     * the half with teeth: the map also encodes each field's SHAPE - whether its values name squares -
+     * and a field held with the wrong shape cannot be caught by any amount of name-matching. Only
+     * behaviour catches it.
+     *
+     * The property is the one OB-067 was closed on, stated per field: put something on a page, take
+     * that page's file away, load and save, and it is all still in the file. A store that is missing a
+     * field from the hold loses it here; one that is missing it from the merge loses it here; one that
+     * holds it with the wrong shape loses the half of it that names a square somewhere else.
+     */
+    @Test
+    public void testASaveWhileAPageIsAbsentLosesNothingOfIt() throws IOException
+    {
+        write("Ghost", "Alpha");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey ghost = new TileKey("Ghost", 3, 3);
+        TileKey ghostSignal = new TileKey("Ghost", 4, 4);
+        TileKey ghostFar = new TileKey("Ghost", 5, 5);
+        TileKey ghostCaption = new TileKey("Ghost", 6, 6);
+
+        // One of each shape the hold classifies, so a field dropped or misclassified shows up.
+        store.setPointName(ghost, "Ghost Platform");
+        store.setStation(ghost, true);
+        store.setTileLength(ghost, 42);
+        store.setPointName(ghostSignal, "Ghost Signal");
+        store.setProtectingSignals(ghost, java.util.Arrays.asList(ghostSignal));
+        store.setBlockingPoints(ghost, java.util.Arrays.asList(ghostSignal));
+        store.setCaption(ghostCaption, ghost);
+        store.setLinkName(ghostFar, "Ghost Link");
+        store.pairPortals(ghost, ghostFar);
+        store.setPortalDisabled(ghostFar, true);
+        store.setPageExcluded("Ghost", true);
+        store.createConfiguration("Only", null);
+        store.save();
+
+        String before = read(setupFile());
+
+        for (String must : new String[] {"Ghost Platform", "Ghost Signal", "Ghost Link"})
+        {
+            assertTrue(before.contains(must),
+                "the fixture did not take - " + must + " is not in the file, so this test would pass "
+                + "by having written nothing.  File:\n" + before);
+        }
+
+        // Ghost's file goes away. Not deleted - nothing is told to forget it - which is the whole
+        // point: a page that will not load is an everyday thing here.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha")), null, store.highestPageIdSeen());
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPageIds(idsAsNameToId());
+        reopened.load();
+        reopened.save();
+
+        String after = read(setupFile());
+
+        // Every field, by the value that could only have come from Ghost.
+        assertTrue(after.contains("Ghost Platform"),
+            "the point name of a page whose file is missing was dropped by one save (DR-A1). "
+            + "File:\n" + after);
+
+        assertTrue(after.contains("Ghost Signal"),
+            "the protecting signal's name was dropped.  File:\n" + after);
+
+        assertTrue(after.contains("Ghost Link"),
+            "the link name was dropped.  File:\n" + after);
+
+        assertTrue(after.contains("\"42\"") || after.contains(": 42"),
+            "the tile length was dropped.  File:\n" + after);
+
+        // And the structural ones, by counting entries rather than by name.
+        for (String field : new String[] {"stations", "stationSignals", "blockedPoints", "portals",
+            "captions", "excludedPages"})
+        {
+            assertTrue(countIn(after, field) >= countIn(before, field),
+                "the \"" + field + "\" collection lost entries to one save while a page's file was "
+                + "missing. Nothing deleted that page, so nothing should have forgotten it - and this "
+                + "is exactly the loss the held-entries mechanism exists to prevent (DR-A1)."
+                + "\n\nBefore:\n" + before + "\n\nAfter:\n" + after);
+        }
+    }
+
+    /**
+     * How many entries a named collection holds in a written setup, without parsing it as JSON.
+     *
+     * Deliberately crude: it counts the commas plus one inside the field's braces or brackets, which
+     * is enough to tell "lost some" from "kept them" and does not need the file's shape to be stable.
+     */
+    private int countIn(String setup, String field)
+    {
+        int at = setup.indexOf('"' + field + '"');
+
+        if (at < 0) return 0;
+
+        int open = at;
+
+        while (open < setup.length() && setup.charAt(open) != '{' && setup.charAt(open) != '[') open++;
+
+        if (open >= setup.length()) return 0;
+
+        char closer = setup.charAt(open) == '{' ? '}' : ']';
+        int depth = 0;
+        int entries = 0;
+
+        for (int i = open; i < setup.length(); i++)
+        {
+            char c = setup.charAt(i);
+
+            if (c == '{' || c == '[') depth++;
+            else if (c == '}' || c == ']')
+            {
+                depth--;
+
+                if (depth == 0)
+                {
+                    return setup.substring(open, i).trim().length() <= 1 ? 0 : entries + 1;
+                }
+            }
+            else if (c == ',' && depth == 1) entries++;
+        }
+
+        return entries;
+    }
+
+    /**
+     * A file as text.
+     */
+    private String read(File file) throws IOException
+    {
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
+    /**
      * The index as the store wants it: name -> id.
      */
     private Map<String, String> idsAsNameToId()
