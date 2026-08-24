@@ -15850,9 +15850,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (localLayout != null && !localLayout.isEmpty())
                 {
-                    // The whole folder: the pages, the index that gives them their ids, and the
-                    // autonomy setup and configurations beside them.
-                    state.put("config", new File(localLayout, "config"));
+                    // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
+                    // folder name of the active layout - the zip contains 'config' instead of
+                    // 'cs2_sample_layout'").
+                    //
+                    // It matters for the thing this archive is for. Restoring means putting these
+                    // files back beside a `gleisbild.cs2` of the same vintage, and a bare `config`
+                    // says nothing about which layout that was - so two backups of two layouts are
+                    // indistinguishable once they are off this machine, which is exactly when
+                    // somebody needs to tell them apart.
+                    File layoutFolder = new File(localLayout).getAbsoluteFile();
+
+                    String named = layoutFolder.getName();
+
+                    state.put((named == null || named.isEmpty() ? "layout" : named) + "/config",
+                        new File(layoutFolder, "config"));
                 }
 
                 backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));

@@ -155,10 +155,11 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
-        // Carriage returns stripped, because the rule below bounds its window on a newline
-        // followed by the closing brace, and this repository checks out CRLF on Windows
-        // (FBR-C8). It passed in the tree it was written in and was red on a fresh clone - a
-        // guard that depends on how git happened to write the file is not a guard.
+        // Carriage returns stripped, for consistency with the rule below rather than because this
+        // one needs it (FBR-C8, corrected by RA-A1): this test COUNTS occurrences of a marker and
+        // never bounds a window on a brace, so line endings cannot change its answer. A source read
+        // that behaves differently depending on how git wrote the file is not a guard, and having
+        // one of these normalise and not the other would be an invitation to remove the wrong one.
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
             .replace("\r", "");
 
@@ -701,10 +702,14 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
 
-        // Carriage returns stripped, for the same reason as the rule above (FBR-C8): a source
-        // read that can behave differently depending on how git wrote the file is not a guard.
-        // Nothing here bounds a window on a brace, so this is consistency rather than a fix -
-        // and the comment used to say otherwise, having been pasted along with the code (FSR-C7).
+        // Carriage returns stripped, because the rule below bounds its window on a newline followed
+        // by the closing brace - the indexOf a few lines down - and this repository checks out
+        // CRLF on Windows (FBR-C8). It passed in the tree it was written in and was red on a fresh
+        // clone: a guard that depends on how git happened to write the file is not a guard.
+        //
+        // FSR-C7 raised that the comment here described rules this site does not have, and the fix
+        // for it swapped the two comments instead of correcting them, so each was then true of the
+        // other site (RA-A1). Which is FSR-C7 again, in mirror image, produced by fixing FSR-C7.
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
             .replace("\r", "");
 

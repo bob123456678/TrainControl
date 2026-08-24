@@ -561,14 +561,24 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private void showWhyNot()
     {
-        final javax.swing.JTextArea area =
-            new javax.swing.JTextArea(I18n.t("autolayout.ui.whyWorking"));
+        // A styled pane rather than a plain text area, so the two headings can be bold (Adam,
+        // MT-160 and MT-163: "increase the font size to match the standard size of all other windows.
+        // Make the headings (could choose / never choose) bold.").
+        final javax.swing.JTextPane area = new javax.swing.JTextPane();
 
         area.setEditable(false);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        area.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
         area.setMargin(new java.awt.Insets(6, 6, 6, 6));
+
+        // The look and feel's own label font, NOT a hardcoded one.
+        //
+        // It was "Segoe UI" at 12, which is smaller than everything around it and would stay 12 if the
+        // application's font ever changed. Asking the L&F is what makes "the standard size of all
+        // other windows" true by construction rather than by my matching it once.
+        java.awt.Font standard = javax.swing.UIManager.getFont("Label.font");
+
+        if (standard == null) standard = new javax.swing.JLabel().getFont();
+
+        area.setFont(standard);
 
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(area);
 
@@ -592,7 +602,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 //
                 // What is actually true is smaller: this window may be closed before the answer
                 // arrives, and writing to a text area nobody is looking at costs nothing.
-                area.setText(report);
+                write(area, report);
                 area.setCaretPosition(0);
             });
         }).start();
@@ -600,6 +610,49 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(this), scroll,
             I18n.f("autolayout.ui.whyTitle", locomotive == null ? "" : locomotive.getName()),
             JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * Puts the report into the pane, with the group headings in bold.
+     *
+     * Adam, on MT-160 and MT-163: "make the headings (could choose / never choose) bold". They are the
+     * only thing in the window that is not a station, and without them the two groups run together -
+     * which matters here more than it looks, because the whole point of the grouping is that the first
+     * list is worth waiting for and the second is not.
+     *
+     * A heading is recognised by position rather than by matching its text: the report writes each one
+     * on its own line immediately before an indented block, and the lines that are not indented and
+     * not blank are exactly the headings and the opening sentence. Matching the translated text would
+     * mean this working in English and quietly doing nothing in the other seven bundles.
+     *
+     * @param pane the window's text
+     * @param report what whyNotReport produced
+     */
+    private void write(javax.swing.JTextPane pane, String report)
+    {
+        javax.swing.text.StyledDocument doc = pane.getStyledDocument();
+
+        javax.swing.text.SimpleAttributeSet bold = new javax.swing.text.SimpleAttributeSet();
+
+        javax.swing.text.StyleConstants.setBold(bold, true);
+
+        pane.setText("");
+
+        try
+        {
+            for (String line : report.split("\n", -1))
+            {
+                boolean heading = !line.isEmpty() && !line.startsWith("    ");
+
+                doc.insertString(doc.getLength(), line + "\n", heading ? bold : null);
+            }
+        }
+        catch (javax.swing.text.BadLocationException impossible)
+        {
+            // Inserting at getLength() cannot be out of bounds. Falling back to the plain text costs
+            // the bold and nothing else, which is better than an empty window.
+            pane.setText(report);
+        }
     }
 
     /**

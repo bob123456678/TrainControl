@@ -363,6 +363,16 @@ not bitten either, until they did.
 
 Plus eight C findings in the same document, which are the same subject at lower stakes.
 
+**Two more added 2026-08-24, from the reopen audit:**
+
+- **RA-C2.** A blocked-points entry that is carried through because the picker no longer offers it
+  renders as a blank check box when its square has lost its name. The picker also has no automated
+  guard at all now - the source rule that pinned its filters was deleted with the filters. The
+  check-side warning this item already recommends is the same fix.
+- **RA-C3.** For an index that is genuinely locked, the delete path still throws AFTER the page file
+  is gone and the setup has forgotten it, leaving an index entry for a page that no longer exists.
+  SV-B1 fixed the common case - a file this build cannot decode - and this residual survives.
+
 **Why this is one item rather than seven.** They share a remedy shape - name the rule, give it one
 home, and let the ratchet count the sites - and doing them separately means seven passes over the same
 four files. DD-A1 is the cautionary example: the eleventh collection took five commits to finish
@@ -376,6 +386,41 @@ checked by a guard that cannot see the layer they are about.
 hand-written (DD-D9), and the transient occupancy term stays out of any shared "sendable destination"
 predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
 separation is what makes the FR-017 window's two groups mean anything.
+
+### FR-020 - 2026-08-24 - what should a backup contain when the layout lives on the Central Station?
+
+**From Adam's triage note on [MT-159](tests.md#mt-159).** His words: "what happens when a CS2 layout is
+being used - do we skip this step, or do we download the files from the CS2 and then save them? The
+latter would be preferred if serviceable."
+
+**What happens today.** The archive asks `getLocalLayoutPath()`, and when the layout is read from the
+Central Station that is empty - so the whole `config` tree is simply absent from the zip. `UIState.data`
+and `LocDB.data` are still there, and the backup reports success. Nothing says the track diagram and
+the autonomy setup are not in it.
+
+That is the part worth fixing whatever else is decided: a backup that quietly contains less than the
+user believes is the failure mode this application keeps meeting.
+
+**Three options, in order of how much they change.**
+
+1. **Say so.** If the layout is not local, the completion dialog names what is not in the archive. One
+   sentence, no new machinery, and it stops the silent version immediately.
+2. **Fetch and include.** `CS2File` already downloads the layout to read it - the pages and the index
+   come over HTTP from the Central Station. Pointing that at the archive is plausible and is what you
+   asked for. What needs checking first is whether it can be done without a second round trip per page
+   on a big layout, and what happens when the Central Station is not answering at the moment somebody
+   presses Backup.
+3. **Fetch, include, and offer to restore.** The full round trip - put the files back onto the Central
+   Station from an archive. Much more work, and it is a different feature: writing to the CS2 is not
+   something this application does anywhere else.
+
+**My recommendation is 1 now and 2 as its own piece of work.** The silent gap is the actual defect and
+it is an hour; the fetch is a feature, and it deserves its own testing rather than riding along with a
+dialog change.
+
+**One thing to decide with it:** the autonomy setup for a CS2-hosted layout is stored where? If it is
+local while the diagram is remote, then the archive today holds half of a pair that only means anything
+together - which is the argument FR-015 was built on, and it would be worth checking before choosing.
 
 ## What has been picked up
 

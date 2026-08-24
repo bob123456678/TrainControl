@@ -51,17 +51,15 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-155](#mt-155) | 2026-08-24 | Closing the application asks about unsaved editor work | fixed unvalidated | OB-070 |
 | [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
 | [MT-158](#mt-158) | 2026-08-24 | The autonomy editor's title, and the blocked-points window | fixed unvalidated | OB-082, OB-083 |
-| [MT-159](#mt-159) | 2026-08-24 | The backup is one archive holding all the state | fixed unvalidated | FR-015 |
-| [MT-160](#mt-160) | 2026-08-24 | The application starts, and the window does not freeze | fixed unvalidated | OB-077, OB-078, OB-079 |
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
-| [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-166](#mt-166) | 2026-08-24 | The backup dialog offers to show the file | fixed unvalidated | FR-019 |
 | [MT-167](#mt-167) | 2026-08-24 | The application does not freeze while trains are running | fixed unvalidated | OB-087 |
 | [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
+| [MT-169](#mt-169) | 2026-08-24 | The three things Adam asked for after running MT-159, MT-160 and MT-163 | fixed unvalidated | MT-159, MT-160, MT-163 |
 
-Everything else - 121 of 168 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 169 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7195,7 +7193,7 @@ check closes at the front. Adam asked for exactly that: "ensure self-selection i
 
 ### MT-159 - 2026-08-24 - The backup is one archive holding all the state
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-015
 **Written:** 2026-08-24
 
@@ -7230,13 +7228,20 @@ Also, what happens when a CS2 layout is being used- do we skip this step, or do 
 
 *Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-24.** Adam ran this and said "works, with notes" - so the behaviour is validated and
+the disposition says so. His notes are follow-up work rather than a failure of this test, and rewriting
+these instructions to cover them is not allowed and would not be right anyway: what they ask for is a
+different thing to check. They are carried into [MT-169](#mt-169).
+
+Recorded because the verdict sat in this entry for hours without moving the disposition, which is
+exactly what the disposition is for (RA-C4).
 ---
 
 <a id="mt-160"></a>
 
 ### MT-160 - 2026-08-24 - The application starts, and the window does not freeze
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-077, OB-078, OB-079
 **Written:** 2026-08-24
 
@@ -7276,6 +7281,13 @@ Looks good for for the window content in 3, increase the font size to match the 
 
 *Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-24.** Adam ran this and said "works, with notes" - so the behaviour is validated and
+the disposition says so. His notes are follow-up work rather than a failure of this test, and rewriting
+these instructions to cover them is not allowed and would not be right anyway: what they ask for is a
+different thing to check. They are carried into [MT-169](#mt-169).
+
+Recorded because the verdict sat in this entry for hours without moving the disposition, which is
+exactly what the disposition is for (RA-C4).
 ---
 
 <a id="mt-161"></a>
@@ -7374,7 +7386,7 @@ the menu cannot get past.
 
 ### MT-163 - 2026-08-24 - The "no available paths" reasons, in a window
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-017
 **Written:** 2026-08-24
 
@@ -7418,6 +7430,13 @@ looks good- just increase the font size within that window to the standard
 
 *Run against commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-08-24.** Adam ran this and said "works, with notes" - so the behaviour is validated and
+the disposition says so. His notes are follow-up work rather than a failure of this test, and rewriting
+these instructions to cover them is not allowed and would not be right anyway: what they ask for is a
+different thing to check. They are carried into [MT-169](#mt-169).
+
+Recorded because the verdict sat in this entry for hours without moving the disposition, which is
+exactly what the disposition is for (RA-C4).
 ---
 
 <a id="mt-164"></a>
@@ -7645,5 +7664,52 @@ The flag is read before the old layout is discarded and applied after the new on
 `test/regression/testTimetableCapture.java` covers it in three tests, and
 `testCaptureSurvivesTheLayoutBeingRebuilt` is about this case specifically - the gap that let the
 regression through, since nothing had tested capture across a rebuild.
+
+---
+
+<a id="mt-169"></a>
+
+### MT-169 - 2026-08-24 - The three things Adam asked for after running MT-159, MT-160 and MT-163
+
+**Disposition:** fixed unvalidated
+**From:** MT-159, MT-160, MT-163 (Adam's triage notes)
+**Written:** 2026-08-24
+
+Three small things, from three tests that otherwise passed.
+
+**1. The backup archive names the layout.** File > Backup TrainControl Data, then open the zip. The
+track diagram and autonomy files should now sit under the layout folder's own name -
+`cs2_sample_layout/config/...` rather than a bare `config/...`. `UIState.data` and `LocDB.data` stay at
+the top, because they live beside the application rather than inside the layout.
+
+**2. The "no available paths" window uses the standard font.** Click the information mark. The text
+should be the same size as every other window in the application, not smaller.
+
+**3. Its two headings are bold.** In the same window, "Stations autonomy could choose..." and "Stations
+autonomy will never choose..." should stand out from the station lines under them.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam, on MT-159: "we are missing the folder name of the active layout (i.e.,
+zip file contains 'config' instead of 'cs2_sample_layout')." On MT-160 and MT-163: "increase the font
+size to match the standard size of all other windows. Make the headings (could choose / never choose)
+bold."
+
+The folder name matters for what the archive is for. Restoring means putting these files back beside a
+`gleisbild.cs2` of the same vintage, and a bare `config` says nothing about which layout that was - so
+two backups of two layouts are indistinguishable once they are off this machine, which is exactly when
+somebody needs to tell them apart.
+
+The font is taken from the look and feel rather than matched by hand. It was "Segoe UI" at 12, which is
+both smaller than its neighbours and frozen there if the application's font ever changes; asking
+`UIManager` makes "the standard size of all other windows" true by construction.
+
+The headings are bold because the window is now a styled pane rather than a plain text area. A heading
+is recognised by position - not indented, not blank - rather than by matching its text, because
+matching the words would work in English and quietly do nothing in the other seven bundles.
+
+**Adam's fourth note is a question, not a fix,** and is filed as [FR-020](issues.md): what should the
+backup do when the layout is being read from the Central Station rather than from disk? Today it
+silently has nothing to put in the archive.
 
 ---
