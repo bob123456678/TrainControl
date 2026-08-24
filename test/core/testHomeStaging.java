@@ -1557,6 +1557,11 @@ public class testHomeStaging
         layout.getPoint("HS B").setBlockedBy(
             java.util.Arrays.asList(layout.getPoint("HS D")));
 
+        // FBR-D19: without this the fixture could stop taking and the test would pass vacuously, on a
+        // station nothing is watching.
+        assertEquals(layout.getPoint("HS B").getBlockedBy().size(), 1,
+            "the fixture did not take: with nothing watching HS B this tests nothing at all");
+
         assign(layout, LOC_A, "HS B");
 
         // And B has a home of its own, which is NOT the square it is standing on. Staging will move
@@ -2268,26 +2273,37 @@ public class testHomeStaging
     }
 
     /**
-     * A home held back by an occupied point is refused by the PLANNER, not by execution.
+     * A plan whose destination is held back by an occupied point is one the railway can carry out.
      *
-     * OB-073. FR-001 holds a station back while another named square is occupied, and `isPathClear`
-     * enforces it on a path's destination - which is every move staging makes. The planner did not
-     * read `getBlockedBy` at all, so it reported READY, execution refused the leg, the run retried
-     * until it gave up, and it stopped everything with the fleet half-staged.
+     * OB-073: "the planner reported a plan it cannot carry out". FR-001 holds a station back while
+     * another named square is occupied, and `isPathClear` enforces that on a path's destination -
+     * which is every move staging makes. The planner did not read `getBlockedBy` at all, so it
+     * reported READY, execution refused the leg, the run retried until it gave up, and it stopped
+     * everything with the fleet half-staged.
      *
-     * It fails safe - no train moves wrongly - but partial execution is precisely what staging exists
-     * to avoid, and a plan that cannot be carried out is worse than a plan refused up front, because
-     * the refusal arrives after the trains have started moving.
+     * **This test was inverted on 2026-08-24, and the inversion is the point (FBR-B2).**
      *
-     * **Which half of the fix this pins.** Mutation-checking it showed the impossibility SCAN is what
-     * catches this scenario: reverting only the search's check left the test green, and both had to be
-     * reverted before it failed. The search-side check covers a case this does not reach - a blocker
-     * that arrives on the watched square partway through a multi-move plan, where the scan's snapshot
-     * of the starting state says nothing. Recorded because the single-site mutation was run first and
-     * would have supported the wrong conclusion about what is covered.
+     * It used to assert `!= READY`, on the reasoning that a station held back by an occupied square
+     * cannot be reached. That is not true and was never true: staging can move whatever is standing
+     * there. What OB-073 was actually about is that a plan must be EXECUTABLE, and the check that
+     * delivers it is the state-aware `canRest` inside `firstClearRoute` - which is asked of the
+     * evolving state, so the search vacates squares as it takes moves.
+     *
+     * `!= READY` could not tell a proof from a refusal, and it stayed green through two wrong fixes
+     * because of it: a scan that called every occupant a proof of impossibility (FBR-B1), and then one
+     * that called an occupant standing on its own home a proof (FBR-B2). `astar` moves locomotives off
+     * their homes freely; the only exemption is the launch pad.
+     *
+     * So it asserts the property that would have caught OB-073 and does not forbid the right answer:
+     * a plan comes back, every move finds its destination free at the moment it runs, and everyone
+     * ends up home. When the fix regresses, `applyPlan`'s first assert fails on the move that walks
+     * into the held-back station.
+     *
+     * The SOP has the paragraph for what happened here: "When a root fix lands, expect tests of the
+     * old bug to fail at their preconditions - that is confirmation, not regression."
      */
     @Test
-    public void testAHomeHeldBackByAnOccupiedPointIsRefusedWhenPlanning() throws Exception
+    public void testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan() throws Exception
     {
         Layout layout = load(ring(LOC_A, LOC_B, null));
 
@@ -2295,23 +2311,35 @@ public class testHomeStaging
         layout.getPoint("HS B").setBlockedBy(
             java.util.Arrays.asList(layout.getPoint("HS D")));
 
+        assertEquals(layout.getPoint("HS B").getBlockedBy().size(), 1,
+            "the fixture did not take: with nothing watching HS B this tests nothing at all");
+
         assign(layout, LOC_A, "HS B");
 
         assertTrue(layout.moveLocomotive(LOC_A, "HS A", false), "the fixture could not be arranged");
 
-        assertEquals(layout.planReturnToHome().getOutcome(), HomeStaging.Outcome.READY,
-            "with the watched point EMPTY the plan should be ready, so the refusal below is about "
-            + "the occupancy rather than about the fixture");
-
-        // Now put somebody on the watched point. Execution would refuse A's arrival at B.
+        // Somebody on the watched point. Execution refuses A's arrival at B while this is true, so any
+        // plan that sends A straight there is one the railway will not carry out.
         assertTrue(layout.moveLocomotive(LOC_B, "HS D", false),
             "could not stand a second locomotive on the watched point");
 
-        HomeStaging.Outcome outcome = layout.planReturnToHome().getOutcome();
+        HomeStaging.Plan plan = layout.planReturnToHome();
 
-        assertNotEquals(outcome, HomeStaging.Outcome.READY,
-            "the planner reported a plan it cannot carry out: B is held back while D is occupied, so "
-            + "isPathClear refuses A's arrival - the run would retry until it gave up and then stop "
-            + "everything with the fleet half-staged");
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "no plan was produced for an arrangement that has one. B can be moved off the watched "
+            + "square and A can then take its home - three moves. Reporting anything else here means "
+            + "the impossibility scan has started proving things about occupancy again, which it "
+            + "cannot: staging moves whatever is standing in the way (FBR-B2).  Got: "
+            + plan.getOutcome());
+
+        assertTrue(plan.getMoves().size() >= 2,
+            "a one-move plan cannot be right: something has to leave the watched square before A "
+            + "arrives, so the answer is at least two moves.  Got: " + plan.getMoves());
+
+        // The half OB-073 was about: every move finds its destination free when it runs.
+        applyPlan(layout, plan);
+
+        assertEveryoneHome(layout);
     }
+
 }

@@ -57,7 +57,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
 | [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
-| [MT-164](#mt-164) | 2026-08-24 | Return Home works around a train that is in the way but has somewhere to go | fixed unvalidated | FBR-B1 |
 
 Everything else - 121 of 164 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -7114,7 +7113,12 @@ says was fixed. A leg that threw is the clearest abandonment there is.
 **What to do.** Hold one locomotive's home station back by another square (the "unavailable while
 occupied" menu), and stand a DIFFERENT locomotive on that square.
 
-Press Return Home. It must refuse up front, not start moving trains and then give up.
+Press Return Home. It should produce a plan that **moves the blocker out of the way first** and then
+brings the home locomotive in - and the run should finish with everyone home.
+
+What it must NOT do is start moving trains and then give up, leaving the fleet half-staged. That is the
+bug. Refusing up front is not the right answer either, and asking for it here was my mistake - see the
+comment below.
 
 #### Comments
 
@@ -7128,6 +7132,29 @@ It fails safe - no train moves wrongly - but partial execution is the thing stag
 Mutation-checking showed the impossibility SCAN is what catches this case; the search-side check covers
 a blocker arriving partway through a multi-move plan, which the test does not reach. Recorded because
 the first mutation run would have supported the wrong conclusion.
+
+**Claude, 2026-08-24 - and that paragraph above was wrong, twice over.** Two review passes took it
+apart, and the correction matters more than the original entry.
+
+The scan it praises is the impossibility scan, whose whole job is to prove that "no move can ever end
+there". Putting an occupancy test in it was the mistake: staging can move whatever is standing in the
+way, and `connected` - four lines below it - says so outright: "A route blocked merely by another train
+is not impossible, moving that train is exactly what the planner is for."
+
+So the planner reported IMPOSSIBLE, named the locomotive as blocked, and skipped the search for
+arrangements the search solves in three moves. It was narrowed once, to blockers "staging will never
+move" (FBR-B1), and that was wrong too: `astar` moves locomotives off their own homes freely, and a
+hand-placed locomotive gets a positional home where it stands, so the narrowed rule still fired on the
+ordinary case (FBR-B2). The occupancy test is gone from the scan entirely.
+
+What OB-073 was actually about survives untouched, and it is the check inside `firstClearRoute`, which
+is asked of the evolving state as the search takes moves. That is what makes the plan executable, which
+is the property the automated test now asserts by replaying the plan move by move.
+
+The mutation note above is also why this went unnoticed: it concluded the scan was doing the work
+because reverting the scan alone turned the test red. It did - but only because the test asserted "not
+READY", which cannot tell a proof from a refusal. A test that pins the wrong property will confirm
+whatever you mutate.
 
 ---
 
@@ -7370,7 +7397,7 @@ which is what lets that work.
 
 ### MT-164 - 2026-08-24 - Return Home works around a train that is in the way but has somewhere to go
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FBR-B1
 **Written:** 2026-08-24
 
@@ -7410,5 +7437,21 @@ its home. Everything else is left to the search, which vacates squares as it tak
 
 The fixture MT-157 shipped with could not have caught this: its blocker has no home, so IMPOSSIBLE was
 the right answer for it. That is why this entry asks for both runs.
+
+**Claude, 2026-08-24, superseded a few hours later.** Both halves of that last sentence are wrong, and
+the entry asks for a distinction that does not exist.
+
+The blocker in MT-157's fixture is not homeless: `moveLocomotive` runs `claimHome`, so standing a
+locomotive anywhere by hand gives it a home right there. And IMPOSSIBLE was not the right answer for it
+either - that same arrangement has an executable three-move plan, which a reviewer produced by running
+the search directly.
+
+There is no "in the way versus stuck" distinction to test, because staging can move anything that is
+not on a launch pad. The occupancy test has been taken out of the impossibility scan altogether, and
+[MT-157](#mt-157) now asks for the behaviour that is actually correct. Nothing here needs running;
+running it would give a result about a rule that no longer exists.
+
+Kept rather than deleted, because its tag is cited from `docs/reviews/2026-08-24-fable-round-review.md`
+and from two commits.
 
 ---

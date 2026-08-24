@@ -2603,24 +2603,29 @@ public class AutonomyEditorPanel extends JPanel
             // itself would make it a station nothing can be sent to.
             if (tile.equals(station)) continue;
 
-            // And not a CAPTION square, whichever station it is about (OB-083, extended by FBR-C4).
+            // And not a square that IS this station by another name (OB-083, "ensure self-selection
+            // is impossible"). A caption sits on a square of its own and points AT the station, and it
+            // carries a name, so it appeared in this list as though it were somewhere else - choosing
+            // it would have held the station back with itself, by the back door the check above closes
+            // at the front.
             //
-            // Adam's rule was "ensure self-selection is impossible", and the check that answered it
-            // excluded captions of THIS station only: a caption sits on a square of its own and points
-            // at the station, so it appeared here as though it were somewhere else. A caption about a
-            // DIFFERENT station is the same square in every other respect - it is not track, the
-            // reducer emits no point for it, and AutonomyBuilder drops it with a bare `continue`. The
-            // user picks a restriction, the dialog accepts it, and the built configuration simply does
-            // not contain it: FR-001 never holds the station back and nothing anywhere says so.
+            // THIS station's captions only, and it was briefly widened to every caption square and to
+            // squares absent from the graph (FBR-C4). Both were withdrawn, and the reasons are worth
+            // leaving here because the widening looked obviously right:
             //
-            // A safety restriction the operator believes is on and is not is worse than one they were
-            // never offered.
-            if (session.getCaptionTarget(tile) != null) continue;
-
-            // Nor a square that is not in play at all. The graph is built from the pages autonomy is
-            // allowed to see - `new TileGraph(pages, store.getExcludedPages())` - so a named square on
-            // an excluded page is absent from it, and produces no point for the same reason.
-            if (session.getGraph() != null && !session.getGraph().getTiles().containsKey(tile)) continue;
+            //   - The premise was false. It rested on AutonomyBuilder dropping an unresolvable blocker
+            //     with a bare `continue`, and that line cannot be reached: nodesFor never returns an
+            //     empty list (FBR-C7). Nothing was being silently dropped.
+            //   - A caption square is often real track. `mayCarryACaption` allows one on a feedback
+            //     square, calling it the commonest place of all, and importLegacy captions every
+            //     imported station WITH ITSELF - so after a legacy import the wider filter refused
+            //     every station square on the railway (FBR-B3).
+            //   - And it destroyed data. `chosen` is built only from what the list offers and
+            //     setBlockingPoints REPLACES the stored list, so every restriction the filter hid was
+            //     deleted the moment somebody pressed OK (FBR-A2). The finding this came from opened
+            //     with "a safety restriction the operator believes is on and is not is worse than one
+            //     they were never offered", and the fix for it did that from the other end.
+            if (station.equals(session.getCaptionTarget(tile))) continue;
 
             choices.add(tile);
         }
@@ -2692,6 +2697,25 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         java.util.List<TileKey> chosen = new java.util.ArrayList<>();
+
+        // Anything already stored that this list did not OFFER is carried through untouched (FBR-A2).
+        //
+        // setBlockingPoints REPLACES the stored list, and `chosen` is assembled from the check boxes -
+        // so a restriction the picker filtered out was deleted the moment somebody pressed OK, with
+        // nothing on screen to say it had ever been there. Cancel was safe; OK was destructive, and OK
+        // is what a person presses after adding one more blocker.
+        //
+        // It needs only one square that the loop above skips, and there is one on any railway old
+        // enough: the station's own caption, which OB-083 stopped offering. An entry made before that
+        // could be deleted by opening this dialog and confirming it.
+        //
+        // Deliberately not "restore what the filters hid" but "keep what was not asked about". Whatever
+        // the list stops offering next, this stays right, because it is about the difference between
+        // the two rather than about any particular rule.
+        for (TileKey held : already)
+        {
+            if (!choices.contains(held)) chosen.add(held);
+        }
 
         for (int at = 0; at < boxes.size(); at++)
         {

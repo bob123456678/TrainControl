@@ -3716,7 +3716,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 try
                 {
-                    theUI.setViewListener(model, latch);
+                    // NULL, not the latch (FBR-A1).
+                    //
+                    // setViewListener's LAST statement is `if (latch != null) latch.countDown()`. Passing
+                    // the latch in therefore released the waiter one statement before `built` was set, so
+                    // the check after await() could read false on a completely successful start-up and
+                    // exit an application whose window was fully built. Measured at 4554 misses in 20000
+                    // in a probe of the same shape; the control, with the flag set first, missed none.
+                    //
+                    // AtomicBoolean does not help: this is not a stale read, it is a read taken before
+                    // the write happens. The countDown/await pair orders everything BEFORE the countDown,
+                    // and the write was after it.
+                    //
+                    // So there is now exactly one release, in the finally below, and it fires after this
+                    // flag either way. Two releases to keep in step is what caused this.
+                    theUI.setViewListener(model, null);
 
                     built.set(true);
                 }
@@ -3766,7 +3780,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 model.logf("ui.fatalErrorInitializing");
 
-                System.exit(0);
+                // 1, not 0. Whatever launched this should be told the start-up failed, and every other
+                // exit on this path reports success out of habit rather than intent. The log line goes
+                // to the window through invokeLater, which this exit will usually beat to the screen -
+                // the log file behind it is the reason the message is seen at all.
+                System.exit(1);
             }
 
             model.logf("ui.rendering");

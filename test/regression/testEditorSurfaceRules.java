@@ -155,7 +155,13 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+        // Carriage returns stripped, because two of the rules below bound their windows on a
+        // newline followed by the closing brace, and this repository checks out CRLF on
+        // Windows (FBR-C8). The test passed in
+        // the tree it was written in and was red on a fresh clone - a guard that depends on how
+        // git happened to write the file is not a guard.
+        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
+            .replace("\r", "");
 
         int built = 0;
         int at = source.indexOf("menuFacingGroup");
@@ -696,7 +702,13 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
 
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+        // Carriage returns stripped, because two of the rules below bound their windows on a
+        // newline followed by the closing brace, and this repository checks out CRLF on
+        // Windows (FBR-C8). The test passed in
+        // the tree it was written in and was red on a fresh clone - a guard that depends on how
+        // git happened to write the file is not a guard.
+        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
+            .replace("\r", "");
 
         // The clear item is ALWAYS about a station - it is only offered when one is captioned - so
         // there is no reading of the code in which an un-named clear is correct.
@@ -739,57 +751,5 @@ public class testEditorSurfaceRules
             "addCaptionItems does not ask describeTile for the station's name. That is the method "
             + "that falls back to the s88 address or the coordinates when a square has no authored "
             + "name, which is the case where the user has least else to go on");
-    }
-
-    /**
-     * The blocked-points picker offers only squares that will survive the build.
-     *
-     * FBR-C4. `AutonomyBuilder` emits an FR-001 restriction by resolving each watched square to its
-     * points, and a square that resolves to none is dropped with a bare `continue` - no warning, no
-     * finding, nothing in the built configuration. So a restriction the operator chose, and that the
-     * dialog accepted, silently never fires. A safety restriction believed to be on and not on is
-     * worse than one never offered.
-     *
-     * Two kinds of square do that, and the picker used to offer both. A CAPTION square is not track -
-     * it carries a station's name and points at it - and OB-083 already excluded captions of the
-     * station being edited, on Adam's "ensure self-selection is impossible". A caption about a
-     * different station is the same square in every other respect. And a named square on a page
-     * excluded from autonomy is absent from the graph entirely, because the graph is built from the
-     * pages autonomy may see.
-     *
-     * Read from the source rather than driven, because the fault is a missing filter in a dialog that
-     * needs a display and a built session to open. What is asserted is the pair of `continue`s, inside
-     * the loop that builds the list - a filter moved out of that loop, or dropped, is the regression.
-     */
-    @Test
-    public void testTheBlockedPointsPickerOffersOnlySquaresThatResolve() throws Exception
-    {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
-
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
-
-        int at = source.indexOf("private void promptBlockingPoints(");
-
-        assertTrue(at > 0, "promptBlockingPoints is gone. If the picker was rewritten, this rule "
-            + "should be rewritten with it rather than deleted - what it protects is that a chosen "
-            + "restriction is one the build will keep");
-
-        int ends = source.indexOf("\n        if (choices.isEmpty())", at);
-
-        assertTrue(ends > at, "could not find the end of the loop that builds the choices");
-
-        String building = source.substring(at, ends);
-
-        assertTrue(building.contains("if (session.getCaptionTarget(tile) != null) continue;"),
-            "the picker offers caption squares. A caption is not track: the reducer emits no point "
-            + "for it, so AutonomyBuilder drops the restriction and FR-001 never holds the station "
-            + "back. Excluding only THIS station's captions - which is what OB-083 did - leaves the "
-            + "same square about another station still on offer (FBR-C4)");
-
-        assertTrue(building.contains("getTiles().containsKey(tile)"),
-            "the picker offers squares that are not in the graph. It is built from the pages autonomy "
-            + "is allowed to see, so a named square on an excluded page is absent from it and "
-            + "resolves to no point - the restriction is accepted and then dropped (FBR-C4)");
     }
 }
