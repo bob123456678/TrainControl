@@ -3167,14 +3167,12 @@ public class LayoutEditor extends PositionAwareJFrame
      * What a square's border looks like when nothing is hovering it.
      *
      * @param palette a tile in the toolbox rather than on the diagram, which keeps its thicker line
-     * @param autonomy unused now that the grid is a choice - kept so the two-argument form still reads
-     *        the same at its call sites
+     * @param autonomy the autonomy editor, which draws its grid ON the squares rather than around them
      * @param grid whether the grey grid is being drawn
-     * @return the border, or NULL when nothing is to be drawn - which is the autonomy editor always,
-     *         and the track editor with the grid switched off.  Null rather than an empty border of
-     *         the same width, because an empty border still takes up room and the room shows the panel
-     *         behind it: a white grid where the grey one used to be (MT-127).  The hover outline
-     *         answers the same question, so nothing moves - see overlayLine.
+     * @return the border, or NULL when the grid is off.  Null rather than an empty border of the same
+     *         width, because an empty border still takes up room and the room shows the panel behind
+     *         it: a white grid where the grey one used to be (MT-127).  The hover outline answers the
+     *         same question, so nothing moves - see overlayLine.
      */
     public static Border restingBorder(boolean palette, boolean autonomy, boolean grid)
     {
@@ -3193,13 +3191,23 @@ public class LayoutEditor extends PositionAwareJFrame
         // That leaves FR-006's other half - "make sure hovering doesn't increase tile widths when it is
         // off" - to be answered on the HIGHLIGHT side instead, by a border that paints without
         // reserving anything.  See overlayLine.
-        // The autonomy editor never draws it, whatever the toggle says.  That is MT-127, which Adam
-        // validated: its tiles sit flush, exactly as they do in the viewer, because the overlay it
-        // draws is busy enough without a grid under it.  The toggle governs the TRACK editor, which is
-        // where the grid is - and turning it off there now gets the same flush tiles.
-        return grid && !autonomy
-            ? BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH)
-            : null;
+        if (!grid) return null;
+
+        // The autonomy editor draws the grid ON its squares.
+        //
+        // It used to draw no grid at all, whatever the toggle said, and the toggle was on screen in
+        // both editors - Adam, OB-056: "grid on/off in autonomy editor - checkbox has no effect."
+        //
+        // What MT-127 actually required is that its tiles sit FLUSH, exactly as they do in the viewer:
+        // "The grid is correctly gone, but now there is a gap between tiles (essentially a white
+        // grid)".  That is a rule about ROOM, not about whether a line is drawn, and overlayLine draws
+        // a line while reserving none - so the grid can be offered here without the gap coming back.
+        //
+        // A line border would bring it straight back, which is why this is not simply the branch below
+        // with the condition dropped.
+        if (autonomy) return overlayLine(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH);
+
+        return BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH);
     }
 
     /**
@@ -3347,11 +3355,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int width = palette ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH;
 
-            // Sized the same as what this square was resting in, so hovering moves nothing.  A palette
-            // tile always rests in a line and keeps one; a diagram tile with the grid off rests in
-            // nothing, so its outline has to reserve nothing either - see overlayLine.
-            label.setBorder(restingBorder(palette, isAutonomyMode()) == null
-                ? overlayLine(color, width) : BorderFactory.createLineBorder(color, width));
+            // Sized the same as what this square was resting in, so hovering moves nothing.
+            //
+            // Asked of the ROOM the resting border takes, not of whether there is one.  It used to test
+            // for null, which was the same question for as long as the only border that reserved
+            // nothing was no border at all - and stopped being the same question the moment the
+            // autonomy editor got a grid that paints without reserving (OB-056).  A palette tile rests
+            // in a line and keeps one; anything resting in nothing, or in an overlay, gets an overlay.
+            Border resting = restingBorder(palette, isAutonomyMode());
+
+            boolean reservesRoom = resting != null
+                && resting.getBorderInsets(label).left > 0;
+
+            label.setBorder(reservesRoom
+                ? BorderFactory.createLineBorder(color, width) : overlayLine(color, width));
         }
     }
     
@@ -3375,7 +3392,9 @@ public class LayoutEditor extends PositionAwareJFrame
                     // a border keeps that working whether the resting border is a line or nothing at
                     // all - and with the grid off it is nothing, which is what the old condition would
                     // have quietly turned into "any label that has ever been touched".
-                    if (label instanceof LayoutLabel)
+                    // Spacers excluded - they are the grid's own padding, not squares (OB-055).  The
+                    // constructor never gives them a border; this is the door that was putting one on.
+                    if (label instanceof LayoutLabel && !((LayoutLabel) label).isSpacer())
                     {
                         label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));
                     }

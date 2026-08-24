@@ -3579,6 +3579,70 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      */
     /**
+     * Refuses to start autonomy while the setup has errors in it.
+     *
+     * The button's enabled state is not enough on its own.  It is computed when the tabs are built and
+     * when a configuration is loaded, and an error can appear long after either - a page renamed, a
+     * tile deleted, a locomotive removed - so the affordance goes stale while the action stays live.
+     * There are three ways to press it as well: this button, the diagram strip's mirror, and the
+     * station right-click item.
+     *
+     * Adam, OB-057: "after renaming a page, it says there are errors, but the start autonomy button is
+     * still visible.  it can be pressed, but no trains run because they are duplicated."  Which is the
+     * shape of the whole finding - it started, did nothing, and said nothing about why.
+     *
+     * Asked of the same check() the editor and the viewer panel show, so the count in the dialog is
+     * the count on screen rather than a second opinion.
+     *
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseAutonomyStartWhileBroken()
+    {
+        if (getAutonomySession() == null) return false;
+
+        int errors = 0;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding
+            : getAutonomySession().check())
+        {
+            if (finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR)
+            {
+                errors++;
+            }
+        }
+
+        if (errors == 0) return false;
+
+        JOptionPane.showMessageDialog(this,
+            I18n.f("autolayout.ui.errorCannotStartWithErrors", errors));
+
+        return true;
+    }
+
+    /**
+     * Refuses to change the locomotive database while autonomy is running.
+     *
+     * Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
+     * database, the track diagram, the autonomy config, or the locomotive placements."
+     *
+     * The wording and the check were already at four of these doors, written out longhand at each.
+     * Collected here so a fifth door is one call rather than one more copy - the doors that had it were
+     * not the doors that needed it, which is how two of them came to have no check at all.
+     *
+     * @param source what to hang the dialog off, usually the menu item pressed
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhileAutonomyRunning(Component source)
+    {
+        if (this.model == null || !this.model.isAutonomyRunning()) return false;
+
+        JOptionPane.showMessageDialog(source == null ? this : source,
+            I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
+
+        return true;
+    }
+
+    /**
      * Refuses an autonomy action while an editor holds the diagram, and says why.
      *
      * The Autonomy menu gates itself by disabling its items; the banner cannot, because it is a single
@@ -3890,6 +3954,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return true;
         }
 
+        // Not while trains are moving.
+        //
+        // Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
+        // database, the track diagram, the autonomy config, or the locomotive placements."  Picking a
+        // train up off a square autonomy is currently routing over is the placement case of that, and
+        // this door had no check of any kind - the right-click menu asks isAutonomyBusy before it will
+        // even draw Place or Remove.
+        //
+        // Logged rather than dialogged, like the "does not know this square" case just above: this is a
+        // key press, and a modal dialog for each one is worse than a line saying why nothing happened.
+        if (isAutonomyBusy())
+        {
+            this.model.logf("autolayout.warnNoPlacementWhileRunning", point.getName());
+
+            return true;
+        }
+
         if (paste)
         {
             Locomotive placing = this.cutLocomotive != null ? this.cutLocomotive : this.getActiveLoc();
@@ -3898,6 +3979,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // pointing at the diagram, and a paste onto a locomotive button while they are looking at
             // a station is the one outcome they cannot have meant.
             if (placing == null) return true;
+
+            // Somewhere the train could actually be driven away from.
+            //
+            // The right-click menu has always refused this: "if NO copy can leave, placing here is
+            // placing a train that cannot move.  Refused with a reason, rather than accepted and
+            // reported much later as a setup that will not run."  It greys the item and says why.
+            //
+            // This door said nothing and did it anyway - Adam, MT-136: "There is a condition where
+            // place {locname} is greyed out saying it can't possibly leave so can be placed, but Place
+            // Locomotive still works."  Two ways to reach one action and the rule on only one of them.
+            //
+            // Asked of the POINT rather than of the square's copies, because by here the copy is
+            // already chosen: the menu enumerates copies precisely to pick one, and its item goes grey
+            // only when every copy has nowhere to go at all. For a copy already in hand that is the
+            // same question, asked directly.
+            java.util.List<org.traincontrol.automation.Edge> away =
+                this.model.getAutoLayout().getNeighbors(point);
+
+            if (away == null || away.isEmpty())
+            {
+                this.model.logf("autolayout.warnNoWayOutOfPoint", point.getName());
+
+                return true;
+            }
 
             this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false);
 
@@ -15376,6 +15481,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
+        // This one calls allFunctionsOff() on the whole database before it re-reads anything, so run
+        // during autonomy it strips the lights and sounds off trains that are moving and then fights
+        // the automation for control of them.  The most destructive of the doors MT-141 names and the
+        // one with no check at all.
+        if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
+
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             int dialogResult = JOptionPane.showOptionDialog(
@@ -15534,6 +15645,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_backupDataMenuItemActionPerformed
 
     private void addLocomotiveMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveMenuItemActionPerformed
+        // Editing, deleting and renaming a locomotive all refused this while trains were running.
+        // Adding one did not, and it is the same database - a locomotive added mid-run appears in the
+        // list autonomy is iterating.
+        if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
+
         this.getLocAdder().setVisible(true);
     }//GEN-LAST:event_addLocomotiveMenuItemActionPerformed
 
@@ -17275,6 +17391,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
+
+        // Nothing while an editor holds the diagram, and nothing while the setup has errors.
+        //
+        // Both are refused BEFORE the button is greyed below: greying first and returning would leave
+        // it dead until something else re-enabled it, which is a worse failure than the one being
+        // prevented - the user would be locked out of starting autonomy by having been told not to.
+        //
+        // Adam, MT-135: "I was also able to start autonomy while the editor was open.  This should not
+        // be possible."  The editor holds the pages the session is built from, so starting underneath
+        // it runs trains over a diagram that is still being changed.
+        if (refuseWhileEditorOpen()) return;
+
+        if (refuseAutonomyStartWhileBroken()) return;
 
         // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
         // a worker thread several checks later got round to disabling it, and there are three ways to

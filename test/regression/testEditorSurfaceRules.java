@@ -274,10 +274,14 @@ public class testEditorSurfaceRules
         assertTrue(editing instanceof javax.swing.border.LineBorder,
             "the layout editor lost its grid - OB-028 asks for the borders to RETURN in the editor");
 
-        assertNull(autonomy,
+        // Not assertNull any more.  MT-127 is a rule about ROOM - "there is now a gap between tiles
+        // (essentially a white grid)" - and asserting null pinned the implementation that happened to
+        // satisfy it, which then made the grid toggle undeliverable in this editor (OB-056). The grid
+        // is drawn here now, by a border that paints and reserves nothing.
+        assertEquals(autonomy == null ? 0 : autonomy.getBorderInsets(new javax.swing.JLabel()).left, 0,
             "the autonomy editor's tiles must sit flush, exactly as they do in the viewer. A border "
-            + "that draws nothing still takes up room, and the room shows the panel behind it - which "
-            + "is a white grid where the grey one used to be (MT-127)");
+            + "that takes up room shows the panel behind it in that room - which is a white grid where "
+            + "the grey one used to be (MT-127)");
 
         assertTrue(palette instanceof javax.swing.border.LineBorder,
             "the palette needs its borders in both modes - those tiles are a menu of things to place, "
@@ -540,11 +544,12 @@ public class testEditorSurfaceRules
             + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
             + "editor's own rule below pins");
 
-        assertNull(LayoutEditor.restingBorder(false, true, true),
-            "with the grid off a square must rest in NO border. An empty border of the same width was "
-            + "tried and is wrong: it still takes up room, and the room shows the panel behind it - a "
-            + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
-            + "editor's own rule below pins");
+        assertEquals(
+            LayoutEditor.restingBorder(false, true, true).getBorderInsets(square).left, 0,
+            "the autonomy editor draws its grid ON the squares (OB-056), so it must reserve no room. "
+            + "A border that takes up room shows the panel behind it in that room - a white grid where "
+            + "the grey one used to be, which is MT-127 and which the autonomy editor's own rule "
+            + "below pins");
 
         assertTrue(LayoutEditor.restingBorder(false, false, true).getBorderInsets(square).left > 0,
             "the grid border takes up no room, so nothing above tests anything");

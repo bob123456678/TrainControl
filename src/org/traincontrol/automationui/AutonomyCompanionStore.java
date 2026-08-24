@@ -442,15 +442,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Pages whose id now belongs to a different name than when the setup was written.
-     *
-     * Empty in normal use.  A page renamed keeps its id and appears here not at all - that is the point.
-     * A page RENUMBERED appears here, and its settings must not be adopted blindly, because they belong
-     * to whatever page used to hold that id.
-     *
-     * @return recorded name -> name that id now has
-     */
-    /**
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
      * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
@@ -466,6 +457,15 @@ public class AutonomyCompanionStore
         return !pageIdConflicts.isEmpty();
     }
 
+    /**
+     * Pages whose id now belongs to a different name than when the setup was written.
+     *
+     * Empty in normal use.  A page renamed keeps its id and appears here not at all - that is the point.
+     * A page RENUMBERED appears here, and its settings must not be adopted blindly, because they belong
+     * to whatever page used to hold that id.
+     *
+     * @return recorded name -> name that id now has
+     */
     public Map<String, String> getPageIdConflicts()
     {
         return Collections.unmodifiableMap(pageIdConflicts);

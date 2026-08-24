@@ -1314,8 +1314,12 @@ public class AutonomyEditorPanel extends JPanel
         {
             menu.addSeparator();
 
-            title(menu, I18n.t("autosetup.ui.menuLinkHeading"));
-
+            // No heading of its own.
+            //
+            // The menu is already titled with what the square IS - "Page Link" - so a "This Link"
+            // heading three items below says the same word twice and buys a divider for it.  Adam,
+            // OB-054: "The 'this link' heading isn't necessary".  The separator above is enough to
+            // group them, which is what the heading was really doing.
             // Autonomy can be told to leave a link alone entirely.  A diagram can carry one that
             // belongs to the drawing rather than to the railway autonomy runs, and refusing to build
             // until it is paired would be insisting on something the user has decided against.
@@ -1407,9 +1411,75 @@ public class AutonomyEditorPanel extends JPanel
             addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile));
         }
 
+        tidy(menu);
+
         return menu;
     }
 
+    /**
+     * Takes the gaps out of a menu that was built in sections.
+     *
+     * This menu is assembled by a dozen independent blocks, each adding a divider and then whatever it
+     * has to offer for THIS square - and a block with nothing to offer leaves the divider behind.  Two
+     * in a row leave an empty band between two lines, which is what Adam saw on a page link (OB-054):
+     * a heading, a divider, nothing at all, another divider.
+     *
+     * Rather than teach every block to look ahead - twelve places to get it right, and the next one
+     * added would be the thirteenth - the shape is corrected once, here, at the end:
+     *
+     *   - a divider at the top or the bottom has nothing to separate
+     *   - two dividers in a row have nothing between them
+     *   - a heading with nothing under it is a title for an empty section
+     *
+     * The last of those is why this cannot simply be a loop over separators: a heading is an ITEM, so
+     * "heading, divider, divider" is not two adjacent dividers until the heading is recognised and
+     * removed.  Repeated until nothing changes, so removing a heading can collapse the dividers that
+     * were around it.
+     *
+     * @param menu the menu to tidy, in place
+     */
+    private static void tidy(javax.swing.JPopupMenu menu)
+    {
+        boolean again = true;
+
+        while (again)
+        {
+            again = false;
+
+            for (int at = 0; at < menu.getComponentCount(); at++)
+            {
+                java.awt.Component here = menu.getComponent(at);
+
+                boolean separator = here instanceof javax.swing.JSeparator;
+
+                // A heading: the disabled item title() leaves behind.  Disabled and NOT a separator -
+                // an ordinary item that happens to be disabled is a real offer the user cannot take
+                // right now, and removing those would hide them.  Only a heading is followed by a
+                // divider or by the end of the menu, which is the test below.
+                boolean heading = here instanceof javax.swing.JMenuItem
+                    && !here.isEnabled();
+
+                java.awt.Component next = at + 1 < menu.getComponentCount()
+                    ? menu.getComponent(at + 1) : null;
+
+                boolean nothingFollows = next == null || next instanceof javax.swing.JSeparator;
+
+                if (separator && (at == 0 || nothingFollows))
+                {
+                    menu.remove(at);
+                    again = true;
+                    break;
+                }
+
+                if (heading && nothingFollows)
+                {
+                    menu.remove(at);
+                    again = true;
+                    break;
+                }
+            }
+        }
+    }
 
     /**
      * Flashes the square the open menu belongs to, so a menu edit is as visible as a click.

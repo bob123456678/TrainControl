@@ -337,6 +337,15 @@ public class LayoutGrid
                 if (x == (width - 1) || y == (height - 1))
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui, false);
+
+                    // Not a square, so not part of the grey grid (OB-055).
+                    //
+                    // Adam: "when grid is turned on, there is a grid on an extra row at the bottom, and
+                    // an extra half column on the right.  the half column starts halfway down and has
+                    // the same number of cells, but each is only at half height."  That is this row and
+                    // this column: they hold nothing, so GridBagLayout gives them whatever is left
+                    // rather than a square's worth, and the border made them visible.
+                    grid[x][y].markSpacer();
                     gbc.gridwidth = 0;
                     gbc.gridheight = 0;
                     gbc.gridx = x;

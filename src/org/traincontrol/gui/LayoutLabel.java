@@ -97,6 +97,38 @@ public final class LayoutLabel extends JLabel
     // because they answer different questions and are cleared at different times.
     private volatile org.traincontrol.automationui.TileAnnotation autonomyAnnotation;
     
+    /**
+     * Whether this label is one of the grid's spacers rather than a square of the diagram.
+     *
+     * LayoutGrid puts an empty label along its last row and column - "a dummy column at the end with
+     * nothing in it to ensure long labels don't misalign things".  They are not track and they are not
+     * places a tile can be drawn, so they must not wear the grey grid.
+     *
+     * A flag rather than "has no component": the blank squares in the MIDDLE of a layout also have no
+     * component, and in the editor those are exactly the squares a user is about to draw on - they need
+     * the grid more than anything else does.
+     */
+    private boolean spacer;
+
+    /**
+     * Says this label is one of the grid's spacers.  Called by LayoutGrid as it builds them.
+     */
+    void markSpacer()
+    {
+        this.spacer = true;
+
+        // and take off anything already put on, since the border is set in the constructor
+        this.setBorder(null);
+    }
+
+    /**
+     * @return true when this label is a spacer rather than a square of the diagram
+     */
+    public boolean isSpacer()
+    {
+        return this.spacer;
+    }
+
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this.component = c;

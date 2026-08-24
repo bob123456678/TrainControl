@@ -409,11 +409,46 @@ public class testLocomotiveIdentityPropagates
             {
                 String line = lines[at];
 
-                // getName().equals( ... getHomeLoc() or getCurrentLocomotive() ... )
-                if (!line.contains("getName().equals(")) continue;
+                // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected.
+                //
+                // The first version of this required getName().equals( on the line, which is one of
+                // several shapes the mistake takes - and not the shape of the defect it was written
+                // for.  That one was a Locomotive handed to setSelectedItem on a combo box of names
+                // (gui/HomeLocomotiveMenu.java): it compiles, Swing quietly ignores a selection it
+                // cannot find, and the dialog showed "(none)" for a station that had a home - so
+                // pressing OK cleared the assignment it was displaying.  No equals anywhere in it.
+                //
+                // Found by review, which is the second time this guard has been the thing at fault
+                // rather than the code it watches.
+                if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
+                    && !line.contains("getBlockLocomotive()")) continue;
 
-                if (line.contains("getHomeLoc()") || line.contains("getCurrentLocomotive()")
-                    || line.contains("getBlockLocomotive()"))
+                // Compared against a name, either way round
+                boolean comparedWithAName = line.contains("getName().equals(")
+                    || line.contains("getHomeLoc().equals(")
+                    || line.contains("getCurrentLocomotive().equals(")
+                    || line.contains("getBlockLocomotive().equals(");
+
+                // Or handed to a combo box that holds names.
+                //
+                // NOT contains/indexOf/remove, which were tried and cry wolf: they take an Object, so
+                // they are equally the RIGHT call on a collection of locomotives, and a guard reading
+                // source text one line at a time cannot tell which it is looking at.  The first run
+                // flagged Layout.locomotivesToRun.remove(getCurrentLocomotive()) - a Set<Locomotive>,
+                // where removing by object is exactly correct.  A guard that has to be argued with is
+                // one somebody eventually adds an exemption list to, and then it watches nothing.
+                //
+                // setSelectedItem is different: every combo box in this application that a locomotive
+                // could be offered to is built from NAMES, so a Locomotive reaching one is wrong every
+                // time - and it is the shape of the live defect (gui/HomeLocomotiveMenu.java).
+                boolean handedToNames = line.contains("setSelectedItem(");
+
+                // Unless the name is taken first, which is how the boundary is meant to be crossed
+                boolean converted = line.contains("getHomeLoc().getName()")
+                    || line.contains("getCurrentLocomotive().getName()")
+                    || line.contains("getBlockLocomotive().getName()");
+
+                if ((comparedWithAName || handedToNames) && !converted)
                 {
                     suspect.add(file.getName() + ":" + (at + 1) + "  " + line.trim());
                 }
