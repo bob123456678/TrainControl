@@ -3020,6 +3020,11 @@ public class AutonomyEditorPanel extends JPanel
 
         list.setSelectedIndices(selection);
 
+        // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept rather
+        // than deleted because the shape is right for any list-valued property - but anything that
+        // starts using it for a HOME has to go through session.setHome instead, which sweeps that
+        // locomotive's home off every other square (TD-8).  Writing the property straight through here
+        // would put things back exactly as they were before that rule existed.
         if (JOptionPane.showConfirmDialog(owner(), new JScrollPane(list), I18n.t(key.equals("home")
                 ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelExcludedLocs"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)

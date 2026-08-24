@@ -661,9 +661,12 @@ public class AutonomyMenu extends JMenu
                 }
 
                 // Applying this rebuilds the layout, and every configuration load stops everything -
-                // including a train somebody is driving by hand, which isAutonomyBusy() above does not
-                // cover.  Stopping a moving train is not something to do as a side effect of a
-                // checkbox without saying so first.
+                // including a train somebody is driving by hand.
+                //
+                // isAutonomyBusy above covers a hand DISPATCH now, since UR-2 counts one as running.
+                // What is left to catch here is a train being driven on the throttle alone, which
+                // nothing counts and which this still sees.  Stopping a moving train is not something
+                // to do as a side effect of a checkbox without saying so first.
                 if (ui.getActiveDiagramConfiguration() != null)
                 {
                     java.util.List<String> moving = ui.locomotivesMoving();

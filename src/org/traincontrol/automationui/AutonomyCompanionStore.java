@@ -1301,7 +1301,12 @@ public class AutonomyCompanionStore
      * left a station recorded on a square the track had been moved away from.
      *
      * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the
-     * editing that follows.  snapshotPage does not do this and should.
+     * editing that follows.
+     *
+     * snapshotPage does this too now.  It did not when this was written, and the sentence saying so is
+     * what led a reviewer to UR-5 - undo restoring the edit rather than undoing it, because the
+     * snapshot shared the store's own lists and point objects.  Left as it stood it would read as a
+     * defect still open.
      *
      * @return a snapshot for restoreSetup
      */

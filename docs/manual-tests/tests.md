@@ -43,8 +43,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-138](#mt-138) | 2026-08-23 | A split copy's name and its facing disagree on a curve | needs decision | - |
 | [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
+| [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | needs decision | - |
 
-Everything else - 113 of 140 - is **fixed validated** and needs nothing from you unless the
+Everything else - 113 of 141 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -5957,5 +5958,50 @@ it was the one failure it could not report.
 
 **Nothing to do until you say the railway is right.** I have not captured one and will not without you
 saying so.
+
+---
+
+<a id="mt-141"></a>
+### MT-141 - 2026-08-23 - Editing a placement while trains are out puts the others back where they started
+
+**Disposition:** needs decision
+
+**Claude, 2026-08-23.** A design decision, and I would rather you made it than have me pick.
+
+**What happens.** Any setup edit that calls `placementChanged` - a facing, a home, a station
+designation, a locomotive placed from the diagram - rebuilds the running layout from the configuration
+file. That rebuild deliberately skips the "capture" step, which is what NR-1 was about: capturing first
+folded the running layout's state back into the configuration and wrote the stale answer over the edit
+that had just asked for the rebuild, so the edit was undone on its way to being redrawn.
+
+Skipping it fixes that. But the capture was also the only thing folding run-derived state back in - and
+nothing writes a train's live position to the configuration as autonomy drives it. So if trains have
+been running, the configuration still says where they all STARTED, and a rebuild puts them back there
+in the model. The trains do not move; what the app believes about them does.
+
+**When it bites.** Only with autonomy actually running, and only for locomotives other than the one you
+just edited. Stopped, or before a run, the configuration and the railway agree and there is nothing to
+lose.
+
+**Three ways out, and they are genuinely different:**
+
+1. **Leave it.** Editing the setup mid-run is unusual, and the alternative costs more than it saves.
+   The rebuild is already refused while autonomy is BUSY - this is the window where it is running but
+   not busy.
+2. **Update the running layout in place** rather than rebuilding it - which is what
+   `LayoutRightclickAutonomyMenu.placeFacing` already does for its own edit. No rebuild, so nothing is
+   put back; but every edit needs its own in-place equivalent, and one that gets missed is a setup and
+   a railway that quietly disagree, which is the whole class of defect OB-034 and OB-035 came from.
+3. **Capture only the positions**, then rebuild - fold back where the trains actually are without
+   folding back anything else, so the edit survives and the placements do too. The most correct and the
+   most code: it needs a capture that takes one field rather than everything.
+
+**My reading**, for what it is worth: 3 is right and 1 is defensible until somebody is bitten. 2 I
+would avoid - it is the shape that produced the seam we have spent this week repairing.
+
+**What I have not done.** The reviewer also asked for the invariant to be pinned either way: place a
+locomotive, call `captureFromLayout` with a layout built before that placement, and require the
+placement to survive. That test is worth having whichever option you pick, and I will write it once you
+have.
 
 ---

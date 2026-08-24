@@ -156,6 +156,20 @@ public final class DiagramExport
             }
         });
 
+        // Finished with, and said so (NR-3).
+        //
+        // This grid is built for one render into a panel nobody will ever show, and then dropped - so
+        // nothing ever retired it, and every caption it registered stayed in the window's label table
+        // for the session, keeping the whole grid and its tiles reachable through them.  One page
+        // retained per export.
+        //
+        // Its panel is a local, so it is never in the page cache and the window will always agree it is
+        // finished with.
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            if (grid[0] != null) grid[0].discard();
+        });
+
         return wanted == NATIVE_TILE_SIZE ? image[0] : scaled(image[0], wanted);
     }
 
