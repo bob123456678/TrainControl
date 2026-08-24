@@ -40,7 +40,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-135](#mt-135) | 2026-08-23 | Renaming a page keeps its autonomy setup | fixed unvalidated | OB-049 |
 | [MT-136](#mt-136) | 2026-08-23 | Two more of one shape, from the history review | fixed unvalidated | TD-1, TD-2 (2026-08-23-three-day-history.md), OB-046 |
 | [MT-137](#mt-137) | 2026-08-23 | The round of bugs from Adam's last test pass | fixed unvalidated | OB-045, OB-046, OB-047, OB-048, OB-050, OB-051, OB-052 |
-| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
+| [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | - |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | - |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
 
@@ -201,6 +201,7 @@ Fifteen lines below the line I changed, this comment was already there:
 
 That fix was applied to the inner test and not to where the square comes from, so the designation was
 still deciding, one step earlier. The block reads from the square now when there is no station.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -436,6 +437,7 @@ designation and the placement all arrive.
 The named regression is covered by asserting the square key is in the bundle: an export that drops it
 drops the Point's identity, and the way that fails is silent - the file is valid JSON and imports
 without complaint.
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 make sure there is a test for this.  close out if so.
@@ -500,6 +502,7 @@ Confirmed by mutating the copy itself to replace, which the test does catch.
 
 Worth knowing if that catch is ever narrowed: it is currently the thing actually enforcing "only the
 first".
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 make sure there is a test for this.  close out if so
@@ -562,6 +565,7 @@ where there is a line to have covered it, so an ordinary diagram still paints it
 **The train icon you suggested is not in this.** "Why not put a little train icon (simple black steam
 engine)" is a different and larger idea than fixing an overlap, and it wants deciding rather than
 slipping in beside a fix. Say the word and I will file it as a feature request through the inbox.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -605,6 +609,7 @@ So the label I think you mean is already truncated identically. **Which view is 
 and icon?** The candidates are the Auto tab's locomotive list, the findings list at the foot of the
 editor, and the graph window's own labels - all of which draw a locomotive name and none of which
 shares that method. Name the one you saw and it is a small change.
+
 **Adam, 2026-08-23 (triage).** Works, with notes.
 
 i got two MT tickets for the same test.  please avoid duplication and don't reopen tickets already validated with a was-red test case.
@@ -691,6 +696,7 @@ Recording the distinction so a later reader does not mistake one for the other. 
 `testBarredArrivalIsNotADestination`, verified by mutation. What is unproven is the railway, and the
 railway is what the report was about. A passing unit test is not an answer to "I watched a train do
 this", and this entry stays open until somebody watches one not do it.
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 make a test case for this on a contrive autonomy layout by changing the settings programmatically
@@ -1005,6 +1011,7 @@ places a train from the menu above.
 
 **Nothing else was touched.** The setup editor's own facing menu is the same object and is unchanged;
 the only other caller of the removed code path was the placement item above it, which still works.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -1150,6 +1157,7 @@ is what your note describes.
 Built from objects rather than typed as text on purpose. The text form is the editor's business, and a
 hand-written string would pin my spelling of it rather than its behaviour - the first draft of this
 test failed for exactly that reason, on syntax I had invented.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -1208,6 +1216,7 @@ recorded as the single deliberate omission in `testEveryTestIsInTheBattery`.
 So this entry stays open for the echo half. The instruction above is still the right thing to do; what
 has changed is that the model half underneath it is now pinned, so if the icon is wrong you will know
 the commands were right.
+
 **Adam, 2026-08-23 (triage).** Does not work.
 
 Use DEBUG_SIMULATE_PACKETS = true to simulate that there is a station, and confirm that way.
@@ -1299,6 +1308,7 @@ your railway, and the guess that stops a train is the one that cannot cause a co
 `isThreeWay` - a three-way is two accessories this editor draws as one row - so nothing at an address
 can announce itself as a three-way the way `isSignal()` announces a signal. An ACCESSORY row can only
 become THREE_WAY by being chosen, never by typing.
+
 **Adam, 2026-08-23 (triage).** Works, with notes.
 
 current behavior accepted
@@ -1499,6 +1509,7 @@ speed, but it is the only genuine race in this area and it is written down.
 I have not debounced the checker, because that is a behaviour change - findings would lag an edit - and
 it wants deciding rather than doing quietly. Say the word if the editor still feels slow and I will
 put a proposal in front of you.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -1682,6 +1693,7 @@ This vanished, I reported it in another item too.
 twice - the edit-locomotive item was suppressed by a gate whose precondition OB-009 had removed. Fixed
 there; this entry is worth running again because it goes further than MT-101 does: it asks you to set
 an arrival function and then actually hear it fire.
+
 **Adam, 2026-08-24 (triage).** Works.
 
 *Run against commit b1e22b5b.*
@@ -1747,6 +1759,7 @@ So the loss is not in the model. Three things it could be, in the order I would 
 If it recurs, the detail that separates them is what the **second** signal's address is and whether the
 log shows it being commanded. The test proves the command is issued; what it cannot prove is that the
 ironwork moved.
+
 **Adam, 2026-08-24 (triage).** Works.
 
 *Run against commit b1e22b5b.*
@@ -1823,6 +1836,7 @@ source files byte for byte.
 about**, and I have not found it. If it is still happening, it is worth its own item with the two builds
 named - "opened by the previous version" is a wide net, and a locomotive that fails to transfer is
 either a placement not read or a Point renamed underneath it.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -1944,6 +1958,7 @@ from becoming a second implementation of move and delete that could agree with i
 is wrong.
 
 Mutation-checked: making duplicate insert twice fails it on the sentence about copies.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -2013,6 +2028,7 @@ difference between a route that holds a train and one that waves it through.
 
 **Reworded here rather than in the instruction above,** which is append-only: read every "at danger" in
 that instruction as "showing red", and "cleared" as "showing green".
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -2210,6 +2226,7 @@ in a locomotive genuinely called "Dummy Loc", which is the one string a test can
 for the advisory's own words now, and for the sensors being waited on, and the same mutation fails it.
 
 That is the second time this session a mutation check earned its keep by failing to fail.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -2314,6 +2331,7 @@ own comment says why the case exists: "Up/Down" is an ordinary name for a page o
 and an impossible one for a file.
 
 Recorded rather than re-tested. It runs in the battery, which is green.
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 Unsure if you added a test case or not.  make sure you have a test case.  the UI does not allow slashes, rightfully.
@@ -2365,6 +2383,7 @@ make a test for this.
 loads, the missing one is named, and the folder is still the one being pointed at afterwards.
 
 Recorded rather than re-tested. It runs in the battery, which is green.
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 make sure there is a test case for this.
@@ -2525,6 +2544,7 @@ second look.
 **And it has a programmatic half already:** `testLayoutEditorBulkEdits.testAMovedRowTakesItsSetupWithIt`
 covers the setup travelling with a moved row, and `testDeleteAndInsertKeepTheSetup` covers what the
 overwritten squares lose. Neither can see the editor's menus, which is why this stays a hands-on test.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -2600,6 +2620,7 @@ further along the SAME diagram."
 Worth one look on a current build. If a cross-page tunnel is still offered there, the useful detail is
 whether the two squares are really both TUNNEL - a link and a tunnel are refused by the like-with-like
 test one line above, and telling which test let it through says where to look.
+
 **Adam, 2026-08-23 (triage).** Works, with notes.
 
 see other comment, it does not use the same confirmation dialog as the rest of the editor.
@@ -2713,6 +2734,7 @@ The cause was one remembered window entry PER PAGE, so clicking a tab restored t
 had last been left at. There is one entry for the whole window now and it does not move on a switch;
 only the size changes, and only upwards. Worth re-running rather than taking my word for it - see
 MT-095, which is the entry that carries the change.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 Filed from this test: OB-050 (bug - right click menu when autonomy is invalid).  They are in `issues.md` until they are picked up.
@@ -2779,6 +2801,7 @@ Locomotive" is now **Set Home Locomotive...**, naming the locomotive when there 
 
 The group reads as the life of a locomotive on the square now: put one here, edit what is here, take it
 away, then which way round it faces and which station it belongs to.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -2866,6 +2889,7 @@ are 24px list rows now, and eight was leaving most of the column empty while scr
 twelve pages for no reason.
 
 Ready for your tick. (A leftover one-line javadoc above the constant, from when it was 8, is gone.)
+
 **Adam, 2026-08-23 (triage).** Works.
 
 Filed from this test: OB-049 (bug - page rename effectively deletes autonomy config.).  They are in `issues.md` until they are picked up.
@@ -2911,6 +2935,7 @@ slightly off. On a bend the track leaves the middle of the square and they part 
 
 It is on the track now, so it sits on the badge it is drawn over whatever shape the tile is - which is
 also the right answer on its own terms, since the star marks a train standing on the RAILS.
+
 **Adam, 2026-08-23 (triage).** Works, with notes.
 
 see prior note about incorrect * placement on curved sensors
@@ -2951,6 +2976,7 @@ Works, but rename "Show Autonomy" to "Autonomy Controls"
 
 **Claude, 2026-08-23.** Done - the checkbox reads **Autonomy Controls** in all eight language bundles.
 Ready for your tick.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3103,6 +3129,7 @@ and the store. Verified by mutation: making `forgetTiles` tell the setup nothing
 
 The hands-on instruction above is still worth running, because the test drives the session rather than
 the window - it cannot see a menu item that calls the wrong thing.
+
 **Adam, 2026-08-23 (triage).** Could not run this.
 
 make a test case for this.
@@ -3539,6 +3566,7 @@ closing, clicking a tab picked the window up and moved it, because the page you 
 somewhere else - which is exactly "the window location memory is messing with the single window view".
 
 The window no longer moves on a switch. Only the size changes, and only upwards - see MT-096.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3602,6 +3630,7 @@ needs more than that raises it, capped at the screen.
 
 Worth testing on a fresh layout as you suggested, and also on your own: the old per-page entries are
 still in the preferences and are simply no longer read.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3647,6 +3676,7 @@ Looks good.  Reduce padding to the right of the table.
 and the change landed later. The strip's right inset went from eight to two, and the list is wider by
 the same amount: a list has its own inset before the text and a selection bar to its edge, so eight on
 the right read as sixteen.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3702,6 +3732,7 @@ tooltip, wired into the `Tool` enum and into the disarm path - and never added t
 Nothing failed and nothing warned. An unmounted Swing component is just a live object with no parent,
 so every test of the machinery around it passed. It is on the panel now, sized to the column like the
 two above it.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3756,6 +3787,7 @@ this is about the badge covered it completely.
 It is drawn after the badge now, which is also the right reading: the badge says what the square IS,
 which does not change; the star says a train is standing on it now, which does. The changing fact
 belongs on top.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -3887,6 +3919,7 @@ The gate is gone. `menuLabelFor` already says the right thing either way - "Plac
 
 This is the second time today a rule outlived the precondition that made it safe. Both times the
 comment above it said what that precondition was.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4064,6 +4097,7 @@ verdicts recorded against an older build.
 Worth one look on a current build. If the order still comes out wrong there, the useful detail is which
 two items are the wrong way round - the code adds them in one sequence, so a difference means something
 is being added from somewhere else.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4170,6 +4204,7 @@ replaced by one that pins the real thing.
 Still open, and honestly outstanding rather than quietly dropped: the same shared flag still decides
 whether the VIEWER'S TILES accept clicks. That is a smaller hazard - a brief window during a switch -
 and it is recorded as GC-A1 rather than fixed in the same breath as the thing it sits beside.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4267,6 +4302,7 @@ the way down to the buttons that act on it. It reads as a subtitle to the sectio
 footnote to the table - which is what it is, since it restates the whole condition rather than the
 selected row. If you would rather have it back underneath, say so and the table keeps whatever is
 left.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4332,6 +4368,7 @@ correct, mutually exclusive.
 
 It is handled above the guard now, which is where it belongs: it is the one shortcut that is FOR
 autonomy mode. The rest of MT-109 - the focus and the font - was unaffected.
+
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
 Control+G works, but control +L does not in the autonomy editor.
@@ -4352,6 +4389,7 @@ finding out later that the sweep stopped at the two that were mentioned is worse
 The guard's own sentence is the rule that decides this - "Every shortcut below places, cuts, rotates or
 retextures a tile" - and none of these does. They show and hide something ABOUT the diagram without
 changing it.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4443,6 +4481,7 @@ stated in the crudest way: every item there saves the setup or rebuilds the main
 editor makes both unsafe. It builds the whole menu and disables it now, with the way back to the editor
 first in the list and clickable - the same shape as `guardLayoutMenu`, deliberately, so the two menus do
 not read as two different rules.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -4533,6 +4572,7 @@ The rules themselves:
 
 The hands-on instruction above is still worth running: none of this can see a menu item that is never
 built, and "is the warning actually shown" is a question about a window.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 Filed from this test: FR-010 (feature request - home locomotive searching).  They are in `issues.md` until they are picked up.
@@ -4725,6 +4765,7 @@ rename paths asking different questions is how one of them ends up wrong, and as
 `testEditorSurfaceRules.testARenameOnlyLabelsAStationThatHasNoLabel` walks every `setPointName` in the
 file and requires the label it places to be guarded, so a third rename path cannot arrive without one.
 Mutation-checked.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 Filed from this test: OB-045 (bug - disable autonomy editing while running).  They are in `issues.md` until they are picked up.
@@ -4955,6 +4996,7 @@ Lite battery green afterwards - 76 classes, no failures.
 **Still worth your eye**, which is why this is unvalidated: on a curve the stub now ends underneath the
 station badge, so what you should see is the trace stopping cleanly AT the badge rather than shooting
 past it. On a straight nothing should have changed at all.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -5073,6 +5115,7 @@ also never listed the locomotive, which is your third symptom, "loc not in list 
 
 Worth one retest on a current build before I go further. If it persists, the thing that settles which
 half is broken is whether the locomotive is in `configuration-*.json` after the placement.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 Filed from this test: FR-011 (feature request - add to autonomy filtering).  They are in `issues.md` until they are picked up.
@@ -5167,6 +5210,7 @@ at directly rather than reasoned about.
 
 That needs the CS2 port, which TrainControl has. Queued for the next time it is free rather than
 guessed at, because guessing at this exact question is what made OB-037 take three rounds.
+
 **Adam, 2026-08-23 (triage).** Does not work.
 
 On a curve, the badge is perfectly over the sensor, but we decided to place those curved station dots offset on the other side when in the autonomy editor.  Move the * so it aligns with the offset placement.
@@ -5290,6 +5334,7 @@ curved square, so it cannot go quietly green on a layout of straights.
 
 **Not yet run** - it needs the CS2 port and TrainControl has it. Compile-checked only, and it will be
 run before this is asked of you again.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -5411,6 +5456,7 @@ was right. The other six asked the short version. There is one answer now, worke
 
 This is the remaining half of the graph-and-clickability finding GC-A1 raised, closed here because you
 found the same flag from the other end.
+
 **Adam, 2026-08-23 (triage).** Works.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
@@ -6153,7 +6199,7 @@ Control+X drove its protecting signals on the spot" - and it stays fixed.
 <a id="mt-140"></a>
 ### MT-140 - 2026-08-23 - Bless the baseline once you are happy with the railway
 
-**Disposition:** needs decision
+**Disposition:** needs test
 
 **Claude, 2026-08-23.** This is the entry that keeps your own request from being forgotten: "Once we are
 bug free, can you capture confirmed good state along with config files for validation? that is better
@@ -6186,6 +6232,17 @@ it was the one failure it could not report.
 
 **Nothing to do until you say the railway is right.** I have not captured one and will not without you
 saying so.
+
+**Claude, 2026-08-24.** Disposition corrected from "needs decision" to **needs test**.
+
+"needs decision" is not one of the four words README documents, and I introduced it - on this entry and
+two others - without adding it to the vocabulary. `verify-ledger` now checks the disposition against
+that list and was flagging this one every run.
+
+"needs test" already covers it: its definition is "nobody has run it since it was written, or it was
+run and deferred, or it is waiting on something that does not exist yet", and this entry is waiting on
+Adam. A fifth word would have to earn its place by saying something the four cannot, and this one does
+not.
 
 ---
 

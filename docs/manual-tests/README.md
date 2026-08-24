@@ -220,10 +220,13 @@ structured shape (a freeform note dropped straight into the Inbox, say) is still
 be exact.
 
 `verify-ledger` is read-only: it reports which open entries are missing from the ledger table, which
-ledger rows no longer belong there, and where a row's Disposition or From has drifted from the entry
-itself. It does not rewrite the table - the ledger allows hand notes on individual rows (crossing
+ledger rows no longer belong there, and where a row's Disposition, Date, What or From has drifted from
+the entry itself - plus a duplicate `MT-###`/issue ref anywhere in either file, a duplicate ledger row,
+a ledger link whose href doesn't point at the tag it names, and a Disposition that isn't one of rule 4's
+four words. It does not rewrite the table - the ledger allows hand notes on individual rows (crossing
 something out, adding a comment), and a wholesale regeneration would erase them. Use it to know exactly
-what to change, then change it the same way as always.
+what to change, then change it the same way as always. Exits 3, not 1, when the ledger merely isn't
+clean - kept apart from 1 (an actual error running the check) so a script can tell the two apart.
 
 ---
 

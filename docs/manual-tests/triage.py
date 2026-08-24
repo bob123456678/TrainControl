@@ -101,6 +101,12 @@ DISPOSITION_COLORS = {
 ISSUE_STATE_COLORS = dict(DISPOSITION_COLORS)
 ISSUE_STATE_COLORS["declined"] = "#8a3a3a"         # closed, deliberately not built - not grey (=validated)
 
+# README.md rule 4's four documented words, and no others - derived from DISPOSITION_COLORS
+# rather than re-typed, so the two cannot say something different from each other.  Nothing
+# checked an entry's Disposition against this before verify-ledger's own duplicate/href/date
+# checks were added; this is that missing check.
+VALID_DISPOSITIONS = set(slug.replace("-", " ") for slug in DISPOSITION_COLORS)
+
 
 def disposition_slug(disposition):
     """'fixed unvalidated' -> 'fixed-unvalidated', a lookup key and a tag name in one."""
@@ -143,7 +149,10 @@ def write_text(path, text, crlf):
         os.makedirs(BACKUP_DIR)
 
     if os.path.exists(path):
-        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        # %f (microseconds) too - to-the-second was not fine enough: three writes inside one
+        # second, which submit()'s observations-then-comment sequence can produce on its own,
+        # overwrote each other's backup under the same name.
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         name = "%s.%s.bak" % (os.path.basename(path), stamp)
         shutil.copy2(path, os.path.join(BACKUP_DIR, name))
 
@@ -151,10 +160,22 @@ def write_text(path, text, crlf):
 
     tmp = path + ".triage-tmp"
 
-    with io.open(tmp, "wb") as fh:
-        fh.write(out.encode("utf-8"))
+    try:
+        with io.open(tmp, "wb") as fh:
+            fh.write(out.encode("utf-8"))
 
-    os.replace(tmp, path)
+        os.replace(tmp, path)
+
+    finally:
+        # os.replace raises PermissionError when OneDrive still holds `path` open - leaving the
+        # temp file sitting there rather than the replace having happened.  Removed here rather
+        # than left behind for the next write to trip over (or for someone to find and wonder
+        # whether it is the real file).
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
     prune_backups()
 
@@ -181,7 +202,7 @@ def prune_backups():
 
 ANCHOR_RE = re.compile(r'^<a id="(mt-\d+)"></a>\s*$', re.M)
 HEADING_RE = re.compile(r'^### (MT-\d+) - (\d{4}-\d{2}-\d{2}) - (.*)$', re.M)
-FIELD_RE = r'^\*\*%s:?\*\*\s*(.*?)\s*$'
+FIELD_RE = r'^\*\*%s:?\*\*[ \t]*(.*?)[ \t]*$'
 
 
 class Entry(object):
@@ -222,7 +243,10 @@ class Entry(object):
         if not self.is_open:
             return False
 
-        mine = [m.start() for m in re.finditer(r"\*\*Adam,[^*]*\(triage\)\.\*\*", self.block)]
+        # Any '**Adam, ...**' marker, not only one this app itself wrote - "(triage)." used to
+        # be required, so a verdict Adam typed straight into the file by hand never counted as
+        # his, and an entry could sit reopened-in-fact with nothing on screen saying so.
+        mine = [m.start() for m in re.finditer(r"\*\*Adam,[^*]*\*\*", self.block)]
 
         if not mine:
             return False
@@ -295,7 +319,16 @@ class Entry(object):
         if cut < 0:
             return self.block.rstrip() + "\n\n" + text
 
-        return self.block[:cut + 1] + text + self.block[cut + 1:]
+        prefix = self.block[:cut + 1]
+
+        if not prefix.endswith("\n\n"):
+            # The rule that closes an entry does not always have a blank line before it - some
+            # entries were hand-written without one.  Splicing straight in at that single '\n'
+            # then glues the new comment onto the end of whatever paragraph precedes it, rather
+            # than starting its own - a verdict that reads as part of the text above it.
+            prefix += "\n"
+
+        return prefix + text + self.block[cut + 1:]
 
 
 class TestsDoc(object):
@@ -317,6 +350,20 @@ class TestsDoc(object):
         for i, (pos, anchor) in enumerate(marks):
             end = marks[i + 1][0] if i + 1 < len(marks) else len(self.text)
             self.entries.append(Entry(anchor, self.text[pos:end]))
+
+        # A duplicate MT-### is a real defect in the file, not something to paper over - two
+        # entries with the same iid used to crash the window at startup the moment both
+        # populate calls ran (tree.insert raises TclError on an existing iid).  Surfaced here so
+        # the caller can warn instead, and the second entry keeps its place in self.entries even
+        # though by_tag can only ever point at one of them.
+        seen = set()
+        self.duplicate_tags = []
+
+        for e in self.entries:
+            if e.tag in seen:
+                self.duplicate_tags.append(e.tag)
+
+            seen.add(e.tag)
 
         self.by_tag = dict((e.tag, e) for e in self.entries)
 
@@ -359,6 +406,34 @@ class TestsDoc(object):
 ISSUE_PREFIXES = {"bug": "OB", "feature request": "FR"}
 
 
+def normalize_kind(raw):
+    """issues.md's Kind field, normalised - lowercase, and 'feature' folded into 'feature
+    request' the way this file uses it everywhere else.
+
+    Returns (kind, recognized).  A hand-written Kind reads fine to a person as 'Bug' or
+    'feature', but compared with '==' against 'bug'/'feature request' - which is how the issue
+    tabs, cli_issues --kind, and next_ref_number()/format_ref() all read it - either one is
+    exactly unequal, so the item was invisible in both tabs and in the API, and a feature
+    request's ref got filed under the BUG counter (ISSUE_PREFIXES.get(kind, "OB") falls back to
+    OB for anything that is not the exact string 'feature request').
+
+    An unrecognised value (not bug/feature/feature request in any case) still falls back to
+    'bug', the same default ISSUE_PREFIXES already used - but 'recognized' comes back False so
+    the caller can warn about it rather than silently miscounting it, which is the one thing the
+    old exact-match behaviour never did.
+    """
+
+    text = (raw or "").strip().lower()
+
+    if text == "bug":
+        return "bug", True
+
+    if text in ("feature request", "feature"):
+        return "feature request", True
+
+    return "bug", False
+
+
 def next_ref_number(kind):
     """The next free number for this kind, across the issue inbox and tests.md - a plain int, so
     a caller filing several of the same kind in one go can increment it locally without re-reading
@@ -387,29 +462,56 @@ def format_ref(kind, number):
 
 INBOX_EMPTY = "*(empty)*"
 
+# What inbox_span() treats as the end of the Inbox section - a '---' rule, or (its fallback) a
+# '## ' heading.  A detail body containing either, typed by hand, reads as that same boundary to
+# the parser: 'text.find("\n---")' can match a '---' inside the new item's OWN prose, and the
+# '^## ' fallback can match a heading typed into a detail body - either way splicing the new item
+# into the middle of an existing one instead of appending it.  Checked before a detail body can
+# reach append_to_inbox() at all - see ObservationDialog._ok().
+INBOX_BOUNDARY_LOOKALIKE_RE = re.compile(r'^(---|## )', re.M)
+
+
+def inbox_span(text):
+    """Where a file's '## Inbox' section runs: from just after the heading line to the '\\n---'
+    rule that closes it, or - when there is no such rule, the normal case in issues.md - to the
+    next '^## ' heading.  Never to end of file: that put every new item after the sections that
+    follow Inbox, outside the section it was meant to go in and below "Where the older backlog
+    is", which is where Adam went looking for one and did not find it.
+
+    The one function both append_to_inbox() and IssuesDoc._inbox_span() call, on purpose - they
+    used to each compute this themselves, and only one of the two got the '^## ' fallback when it
+    was added, so a hand-added item and the parser disagreed about where the section ended.
+    Returns None if there is no '## Inbox' heading at all.
+    """
+
+    start = text.find("\n## Inbox")
+
+    if start < 0:
+        return None
+
+    body_from = text.index("\n", start + 1)
+
+    end = text.find("\n---", body_from)
+
+    if end < 0:
+        heading = re.search(r'^## ', text[body_from:], re.M)
+
+        end = body_from + heading.start() if heading else len(text)
+
+    return body_from, end
+
 
 def append_to_inbox(path, block):
     """Put an item at the bottom of a file's '## Inbox' section, above the rule that closes it."""
 
     text, crlf = read_text(path)
 
-    start = text.find("\n## Inbox")
+    span = inbox_span(text)
 
-    if start < 0:
+    if not span:
         raise IOError("%s has no '## Inbox' section" % os.path.basename(path))
 
-    body_from = text.index("\n", start + 1)
-
-    end = text.find("\n---", body_from)
-
-    # No rule closing the Inbox is the normal case in issues.md, and taking the end of the FILE
-    # instead put every new item after the sections that follow Inbox - outside the section it was
-    # meant to go in, below "Where the older backlog is", which is where Adam went looking for it and
-    # did not find it.  The next heading is the real end of the section.
-    if end < 0:
-        heading = re.search(r'^## ', text[body_from:], re.M)
-
-        end = body_from + heading.start() if heading else len(text)
+    body_from, end = span
 
     section = text[body_from:end]
 
@@ -418,7 +520,15 @@ def append_to_inbox(path, block):
 
     section = section.rstrip("\n") + "\n\n" + block.strip() + "\n"
 
-    write_text(path, text[:body_from] + section + text[end:], crlf)
+    tail = text[end:]
+
+    if tail and not tail.startswith("\n"):
+        # end landed exactly on the next '## ' heading (no closing rule) - without this the new
+        # item is glued straight onto that heading with no blank line between them.  The '\n---'
+        # case needs nothing extra: tail already starts with its own leading '\n'.
+        section += "\n"
+
+    write_text(path, text[:body_from] + section + tail, crlf)
 
 
 # --------------------------------------------------------------------------------------------
@@ -427,6 +537,12 @@ def append_to_inbox(path, block):
 
 ISSUE_ITEM_RE = re.compile(
     r'^### ((?:OB|FR)-\d+) - (\d{4}-\d{2}-\d{2}) - (.*)$', re.M)
+
+# What a '**Field:**' line looks like, generically - bold text ending in a colon before the
+# closing '**'.  Used to find where the block of fields ends and the free-text body begins,
+# without naming any one field: a bold body phrase ("**Not to be fixed on its own.**") ends in a
+# period, not a colon, so it never matches this.
+FIELD_LINE_RE = re.compile(r'^\*\*[^*\n]+:\*\*')
 
 
 class IssueItem(object):
@@ -438,7 +554,8 @@ class IssueItem(object):
         self.ref = ref
         self.filed = filed_date
         self.summary = summary.strip()
-        self.kind = self._field(block, "Kind") or "?"
+        self.kind_raw = self._field(block, "Kind") or "?"
+        self.kind, self.kind_recognized = normalize_kind(self.kind_raw)
         self.raised_from = self._field(block, "Raised from") or "-"
         self.filed_at = self._field(block, "Filed") or filed_date
         self.build = self._field(block, "Build") or "-"
@@ -451,19 +568,38 @@ class IssueItem(object):
 
     @staticmethod
     def _detail(block):
-        marker = "**Build:**"
-        at = block.find(marker)
+        """The free-text body: everything after the run of '**Field:**' lines that follows the
+        heading - i.e. after the first blank line that closes that run - falling back to the
+        whole post-heading body when there are no field lines at all.
 
-        if at < 0:
-            return ""
+        Used to be anchored on '**Build:**' specifically, which dropped the entire body of any
+        hand-written item that has no Build line - OB-053, OB-025, FR-013, OB-067 and FR-017,
+        including OB-025's recorded instruction "leave OB-25 open".  Structural instead, so it
+        does not care which fields an entry happens to have or skip.
+        """
 
-        rest = block[at:]
-        nl = rest.find("\n")
+        nl = block.find("\n")
+        lines = block[nl + 1:].split("\n") if nl >= 0 else []
 
-        return rest[nl:].strip() if nl >= 0 else ""
+        i = 0
+
+        while i < len(lines) and not lines[i].strip():
+            i += 1
+
+        saw_field = False
+
+        while i < len(lines) and FIELD_LINE_RE.match(lines[i].strip()):
+            saw_field = True
+            i += 1
+
+        if saw_field:
+            while i < len(lines) and not lines[i].strip():
+                i += 1
+
+        return "\n".join(lines[i:]).strip()
 
     def as_dict(self):
-        return {
+        d = {
             "ref": self.ref,
             "filed": self.filed,
             "kind": self.kind,
@@ -472,6 +608,13 @@ class IssueItem(object):
             "build": self.build,
             "detail": self.detail,
         }
+
+        if not self.kind_recognized:
+            # kind above is already the normalize_kind() fallback ('bug') - this says so, rather
+            # than leaving a caller to assume it was filed as a bug on purpose.
+            d["kind_raw"] = self.kind_raw
+
+        return d
 
 
 class IssuesDoc(object):
@@ -489,19 +632,25 @@ class IssuesDoc(object):
         self.pending, self.freeform = self._parse_inbox()
         self.picked = self._parse_picked()
 
+        # Same duplicate-iid hazard TestsDoc.load guards against, on the pending items that feed
+        # the Feature requests / Bugs tabs (tree.insert(iid="pending:%s" % ref, ...)).
+        seen = set()
+        self.duplicate_pending_refs = []
+
+        for it in self.pending:
+            if it.ref in seen:
+                self.duplicate_pending_refs.append(it.ref)
+
+            seen.add(it.ref)
+
+        # normalize_kind() already keeps these visible (filed under 'bug', its own fallback)
+        # rather than invisible in both tabs - this is what lets the caller warn about them too,
+        # since a Kind that could not be recognised is worth a person's eyes even though it did
+        # not get dropped.
+        self.unrecognized_kind_refs = [it.ref for it in self.pending if not it.kind_recognized]
+
     def _inbox_span(self):
-        start = self.text.find("\n## Inbox")
-
-        if start < 0:
-            return None
-
-        body_from = self.text.index("\n", start + 1)
-        end = self.text.find("\n---", body_from)
-
-        if end < 0:
-            end = len(self.text)
-
-        return body_from, end
+        return inbox_span(self.text)
 
     def _parse_inbox(self):
         span = self._inbox_span()
@@ -513,10 +662,23 @@ class IssuesDoc(object):
 
         marks = list(ISSUE_ITEM_RE.finditer(section))
 
+        # Defence in depth alongside inbox_span()'s own boundary: a '## ' heading landing inside
+        # what would otherwise be the last item's block - typed into a detail body by hand, or a
+        # boundary bug like the one this file just had - must not let that item swallow
+        # everything after it.  This is exactly how the last real Inbox item once absorbed the
+        # receipt table and every section below it.
+        headings = [h.start() for h in re.finditer(r'^## ', section, re.M)]
+
         items = []
 
         for i, m in enumerate(marks):
             block_end = marks[i + 1].start() if i + 1 < len(marks) else len(section)
+
+            for h in headings:
+                if m.start() < h < block_end:
+                    block_end = h
+                    break
+
             block = section[m.start():block_end]
 
             items.append(IssueItem(m.group(1), m.group(2), m.group(3), block))
@@ -890,6 +1052,12 @@ class Triage(tk.Tk):
         self.current = None
         self.observations = []       # pending, for the entry on screen
 
+        # Set when a comment fails to write after its observations were already filed - (tag,
+        # composed comment text) - so a retry reuses the exact text that names those observations'
+        # refs instead of recomposing one that would show none filed, since self.observations is
+        # cleared the moment they are safely in issues.md.  See submit().
+        self.pending_comment = None
+
         self.issues_doc = None
         self.issue_widgets = {}      # kind -> {tree, detail, request_cancel_button, open_button, open_tag}
 
@@ -1189,13 +1357,16 @@ class Triage(tk.Tk):
             if not self._issue_include(True):
                 continue
 
-            tree.insert("", tk.END, iid="pending:%s" % it.ref, tags=("pending",),
-                       values=("pending", it.ref, it.filed, it.summary))
+            self._insert_row(tree, "pending:%s" % it.ref, ("pending",),
+                             ("pending", it.ref, it.filed, it.summary))
 
         show_everything = self.filter_var.get().startswith("everything")
 
         for row in self.issues_doc.picked:
-            if row.get("kind") != kind:
+            # The receipt table's Kind column is free text, same as the Inbox item it came from -
+            # normalised for the same reason IssueItem.kind is, so a hand-typed 'Bug' or
+            # 'feature' row is not invisible in both tabs the way an exact '==' left it.
+            if normalize_kind(row.get("kind"))[0] != kind:
                 continue
 
             ref = row.get("ref", "")
@@ -1228,8 +1399,8 @@ class Triage(tk.Tk):
 
             row_tags = (slug,) if slug in ISSUE_STATE_COLORS else ()
 
-            tree.insert("", tk.END, iid="picked:%s" % ref, tags=row_tags,
-                       values=(state_shown, ref, row.get("filed", ""), row.get("what", "")))
+            self._insert_row(tree, "picked:%s" % ref, row_tags,
+                             (state_shown, ref, row.get("filed", ""), row.get("what", "")))
 
         if selected and selected[0] in tree.get_children():
             tree.selection_set(selected[0])
@@ -1312,12 +1483,16 @@ class Triage(tk.Tk):
             ref = iid[len("pending:"):]
             it = next((x for x in self.issues_doc.pending if x.ref == ref), None)
             summary = it.summary if it else ref
-            target_kind = it.kind if it else kind
+            target_kind = it.kind if it else kind      # already normalize_kind()'d
         else:
             ref = iid[len("picked:"):]
             row = next((r for r in self.issues_doc.picked if r.get("ref") == ref), None)
             summary = row.get("what", "") if row else ref
-            target_kind = row.get("kind") if row else kind
+            # The receipt table's Kind column is free text too - normalised for the same reason
+            # IssueItem.kind is: an exact-match 'feature request' here decides which counter
+            # format_ref()/next_ref_number() file the cancellation request's own ref under, and a
+            # cased or shortened Kind used to fall through to OB regardless of which one it named.
+            target_kind = normalize_kind(row.get("kind"))[0] if row else kind
 
         reason = simpledialog.askstring(
             "Request cancel",
@@ -1350,7 +1525,16 @@ class Triage(tk.Tk):
             reason.strip() or "(no reason given)",
         )
 
-        append_to_inbox(ISSUES_MD, block)
+        try:
+            append_to_inbox(ISSUES_MD, block)
+
+        except Exception as bad:
+            # Same failure modes as free_observation(): a missing '## Inbox' heading, or
+            # OneDrive holding the file so os.replace raises PermissionError.  Left unhandled,
+            # this callback would just stop - no dialog, nothing printed under pythonw - and the
+            # cancellation request would look like it never happened.
+            messagebox.showerror("Could not file the cancellation request", str(bad), parent=self)
+            return
 
         self._refresh_issue_tabs()
 
@@ -1368,12 +1552,15 @@ class Triage(tk.Tk):
 
         if tag not in self.tree.get_children():
             # Whatever filter is active right now doesn't include it - the point of the button is
-            # to get there, not to first explain why it's hidden.
+            # to get there, not to first explain why it's hidden.  A live search in the Find box
+            # can hide it too, independently of the filter - cleared here for the same reason.
             self.filter_var.set("everything, validated included")
+            self.search_var.set("")
             self._on_filter_changed()
 
-        self.tree.selection_set(tag)
-        self.tree.see(tag)
+        if tag in self.tree.get_children():
+            self.tree.selection_set(tag)
+            self.tree.see(tag)
 
     def _build_detail(self, parent):
         outer = ttk.Frame(parent)
@@ -1499,7 +1686,13 @@ class Triage(tk.Tk):
             # thing to override a stale mark with.  Within one session nothing changes: an entry he has
             # just submitted has no newer Claude comment yet, so it is not reopened and the mark still
             # hides it, which is what the mark is for.
-            if e.reopened:
+            #
+            # Applied only to the "open" and "reopened" branches - NOT "answered this session",
+            # which needs the raw mark.  _say_counts() counts self.state_.mark(e.tag) == "done"
+            # directly, with no override, so applying it here too used to make the two disagree:
+            # the status line said N were answered this session, and the list - using the
+            # overridden mark - hid a reopened one of them anyway.
+            if (mode.startswith("open") or mode.startswith("reopened")) and e.reopened:
                 mark = None
 
             if mode.startswith("open - not yet"):
@@ -1511,9 +1704,10 @@ class Triage(tk.Tk):
                 if not e.is_open:
                     continue
             elif mode.startswith("reopened"):
-                # The ones he has already judged and which have moved since - a retest queue rather
-                # than a first pass.
-                if not e.reopened or mark == "done":
+                # The ones he has already judged and which have moved since - a retest queue
+                # rather than a first pass.  mark is always None here already, from the override
+                # above, so the only real condition left is e.reopened itself.
+                if not e.reopened:
                     continue
             elif mode.startswith("answered"):
                 if mark != "done":
@@ -1536,6 +1730,27 @@ class Triage(tk.Tk):
 
         self._refresh_list()
         self._refresh_issue_tabs()
+
+    @staticmethod
+    def _insert_row(tree, iid, tags, values):
+        """tree.insert(), safe against a duplicate iid.  Tk's Treeview raises TclError on an
+        iid that already exists, which used to take the whole window down mid-populate the
+        moment two entries shared one MT-### or issue ref - see TestsDoc.duplicate_tags /
+        IssuesDoc.duplicate_pending_refs, which is where the real fix (fixing the file) starts.
+        This just keeps the app alive and both rows visible in the meantime, one of them under a
+        suffixed iid.
+        """
+
+        real_iid = iid
+        n = 1
+
+        while real_iid in tree.get_children():
+            n += 1
+            real_iid = "%s#%d" % (iid, n)
+
+        tree.insert("", tk.END, iid=real_iid, tags=tags, values=values)
+
+        return real_iid
 
     def _refresh_list(self, select_first=False):
         self.state_.data["filter"] = self.filter_var.get()
@@ -1560,8 +1775,7 @@ class Triage(tk.Tk):
             # how a legend stops being read.
             again = "↺" if e.reopened else ""
 
-            self.tree.insert("", tk.END, iid=e.tag, tags=tags,
-                             values=(glyph, again, e.tag, e.date, e.title))
+            self._insert_row(self.tree, e.tag, tags, (glyph, again, e.tag, e.date, e.title))
 
         rows = self.tree.get_children()
 
@@ -1581,9 +1795,57 @@ class Triage(tk.Tk):
 
         again = sum(1 for e in self.doc.entries if e.reopened)
 
-        self._say("%d entries, %d not validated, %d of those changed since you judged them, "
+        message = ("%d entries, %d not validated, %d of those changed since you judged them, "
                   "%d answered here this session.  Showing %d."
                   % (total, openn, again, done, len(self.tree.get_children())))
+
+        message += self._data_warnings()
+
+        self._say(message)
+
+    def _data_warnings(self):
+        """Things the row list itself cannot say, appended to the status line so they are seen
+        without going looking for them.
+        """
+
+        bits = []
+
+        dup = list(self.doc.duplicate_tags)
+
+        if self.issues_doc:
+            dup += self.issues_doc.duplicate_pending_refs
+
+        if dup:
+            # A duplicate MT-### or issue ref is a file defect, not just a display nuisance - it
+            # used to crash the window outright (tree.insert raises TclError on an existing iid,
+            # and both populate calls run inside __init__).  The tree survives it now (see
+            # _insert_row), but Adam still needs to know a tag means two different things in the
+            # file.
+            bits.append("DUPLICATE TAG(S) IN THE FILE - fix by hand: %s"
+                       % ", ".join(sorted(set(dup))))
+
+        if self.issues_doc and self.issues_doc.unrecognized_kind_refs:
+            # Filed under 'bug' by normalize_kind()'s own fallback, so not invisible - but a
+            # Kind that could not be recognised as bug/feature/feature request is worth a look,
+            # since it may be filed under the wrong tab.
+            bits.append("UNRECOGNISED Kind, filed under Bugs for now: %s"
+                       % ", ".join(sorted(self.issues_doc.unrecognized_kind_refs)))
+
+        if self.issues_doc and self.issues_doc.freeform:
+            # IssuesDoc.freeform is real content - a free-hand note Adam dropped straight into
+            # the Inbox with no structure - and used to be computed and then never shown
+            # anywhere in the window, which is as good as dropped for anyone who only looks at
+            # the app.  A preview here is not a substitute for reading it in issues.md, but it is
+            # the difference between knowing it exists and not.
+            preview = self.issues_doc.freeform.strip().replace("\n", " ")
+
+            if len(preview) > 80:
+                preview = preview[:77] + "..."
+
+            bits.append("FREEFORM note(s) in the Inbox, not shown in either tab - see "
+                       "issues.md: \"%s\"" % preview)
+
+        return ("  " + "  |  ".join(bits) + ".") if bits else ""
 
     def _on_select(self, _event=None):
         selection = self.tree.selection()
@@ -1601,6 +1863,12 @@ class Triage(tk.Tk):
 
     def _show(self, entry):
         self.current = entry
+
+        if not (self.pending_comment and entry and self.pending_comment[0] == entry.tag):
+            # A pending retry only applies to the entry it was composed against - leaving here
+            # abandons it rather than risking it firing later against whatever this box now
+            # holds.
+            self.pending_comment = None
 
         if entry is None:
             self.head_label.config(text="Nothing to show")
@@ -1728,7 +1996,18 @@ class Triage(tk.Tk):
 
         ref = format_ref(got["kind"], next_ref_number(got["kind"]))
 
-        self._file_observation(got, ref, None)
+        try:
+            self._file_observation(got, ref, None)
+
+        except Exception as bad:
+            # append_to_inbox raises IOError with no '## Inbox' heading; write_text's os.replace
+            # raises PermissionError when OneDrive still holds the file open.  Unhandled, either
+            # one unwinds out of this Tk callback - no confirmation dialog, and under pythonw
+            # nothing printed either, so from Adam's side the button just did nothing.  That is
+            # what led to an item being filed twice: he clicked again because it looked like the
+            # first click had not worked.
+            messagebox.showerror("Could not file the issue", str(bad), parent=self)
+            return
 
         messagebox.showinfo("Filed", "Filed as %s in issues.md." % ref, parent=self)
 
@@ -1820,22 +2099,51 @@ class Triage(tk.Tk):
             messagebox.showerror("Could not file an observation", str(bad), parent=self)
             return
 
-        comment = self._compose(result, feedback, receipts)
+        # A retry of a previously-failed submit reuses the exact comment text composed last
+        # time, receipts and all, rather than recomposing one - self.observations was cleared
+        # the moment those observations were safely filed, so a fresh _compose() here would
+        # produce a comment that names none of them, even though they are sitting in issues.md.
+        if self.pending_comment and self.pending_comment[0] == entry.tag:
+            comment = self.pending_comment[1]
+        else:
+            comment = self._compose(result, feedback, receipts)
 
         try:
             self.doc.append_comment(entry.tag, comment)
 
         except Exception as bad:
+            # The observations, if any, are already safely in issues.md - clearing them here
+            # stops a retry from filing them a second time under new refs, which is the failure
+            # this file itself records happening once already ("filed twice because the app
+            # appeared not to have filed it the first time").  The comment stays in the boxes,
+            # and self.pending_comment keeps its exact text so Submit tries the same thing again
+            # rather than composing a new comment that would undercount what was filed.
+            self.observations = []
+            self._refresh_observations()
+            self.pending_comment = (entry.tag, comment)
+            self._stash_draft()
+
             messagebox.showerror(
                 "Could not write tests.md",
-                "%s\n\nYour observations were filed.  The comment was not written - it is still in "
-                "the boxes." % bad, parent=self)
+                "%s\n\nYour observations were filed and removed from this submit - retrying "
+                "will not file them again.  The comment itself was not written; it is still in "
+                "the boxes, and Submit will try the exact same text again." % bad, parent=self)
             return
+
+        self.pending_comment = None
 
         self.state_.clear_draft(entry.tag)
         self.state_.mark(entry.tag, "done")
 
+        # Clear what is on screen, not just the saved draft - _advance() -> _refresh_list() ->
+        # _on_select() calls _stash_draft() BEFORE _show() on whatever row comes next, and if
+        # these boxes still held the answer just submitted, that is exactly what got stashed
+        # back as a fresh draft on THIS entry a moment after it was marked done.  Same reason the
+        # 20-second autosave needed this: it stashes on a timer, not only on navigation.
+        self.result_var.set("")
+        self.feedback.delete("1.0", tk.END)
         self.observations = []
+        self._refresh_observations()
 
         self._say("%s answered%s." % (
             entry.tag, " and %d observation(s) filed" % len(receipts) if receipts else ""))
@@ -2124,6 +2432,14 @@ class Triage(tk.Tk):
                 "This forgets which entries you have answered or skipped IN THIS APP.  Nothing "
                 "written to the markdown files is touched.", parent=self):
 
+            # A draft left behind on a tag already marked "done" is a stale echo of the answer
+            # already submitted for it - see submit()'s own clearing.  Marks are being wiped
+            # anyway, which would put a done row back in front of Adam with its old draft
+            # pre-filled the moment he reopens it, ready to be re-submitted as if it were new.
+            for tag, mark in list(self.state_.data["marks"].items()):
+                if mark == "done":
+                    self.state_.data["drafts"].pop(tag, None)
+
             self.state_.data["marks"] = {}
             self.state_.save()
             self._refresh_list()
@@ -2245,10 +2561,25 @@ class ObservationDialog(tk.Toplevel):
                                 "A summary is what makes the list readable later.", parent=self)
             return
 
+        detail = self.detail.get("1.0", tk.END).strip()
+
+        boundary = INBOX_BOUNDARY_LOOKALIKE_RE.search(detail)
+
+        if boundary:
+            messagebox.showinfo(
+                "A line looks like a section boundary",
+                "A line starting with \"%s\" reads as the end of the Inbox section to this "
+                "file's own parser - that is how a '---' or a '## heading' typed into a detail "
+                "body ends up splicing this item into the middle of an existing one instead of "
+                "adding a new one.\n\n"
+                "Indent that line (a leading space is enough) or reword it, then Add again."
+                % boundary.group(1), parent=self)
+            return
+
         self.result = {
             "kind": self.kind.get(),
             "summary": summary,
-            "detail": self.detail.get("1.0", tk.END).strip(),
+            "detail": detail,
         }
 
         self.destroy()
@@ -2326,9 +2657,15 @@ class LogWindow(tk.Toplevel):
 # This exists so that reading the ledger stops being something a round does by eye.  "read the
 # file, scan for open rows, re-derive the counts" is exactly the kind of step that quietly drifts
 # from what the file actually says; a command that returns the same structured answer every time
-# does not.  Every subcommand prints one JSON value to stdout and sets its exit code (0 found /
-# fine, 1 bad input, 2 not found) - nothing else goes to stdout, so the output is always valid to
-# parse on its own.
+# does not.  Every subcommand prints one JSON value to stdout and sets its exit code - nothing
+# else goes to stdout, so the output is always valid to parse on its own.  The codes:
+#
+#   0   found / fine
+#   1   an unexpected error (an exception - see the try/except in run_cli)
+#   2   not found (tests.md itself missing, issues.md missing, or a --tag that doesn't exist)
+#   3   verify-ledger only: it ran fine, but the ledger is not clean - distinct from 1 so a
+#       script can tell "verify-ledger says the FILE needs a hand edit" apart from "verify-ledger
+#       itself broke", which used to be the same exit code either way.
 
 def entry_dict(e, full=True):
     d = {
@@ -2418,6 +2755,35 @@ def cli_issues(args):
     return out, 0
 
 
+LEDGER_CELL_SPLIT_RE = re.compile(r'(?<!\\)\|')
+LEDGER_TAG_CELL_RE = re.compile(r'^\[(MT-\d+)\]\(([^)]*)\)$')
+
+
+def _ledger_row_cells(line):
+    """A markdown table row's cells - tolerant of an escaped '\\|' inside one.
+
+    The five-group regex this replaced (five '[^|]*' groups) went blind the moment a cell
+    contained a '|' at all, escaped or not: that one character made the whole row fail to match,
+    so the row was reported as simply missing from the ledger rather than as a row with an
+    unusual What column.  Splitting on '|' and counting cells sees the row either way.
+
+    Returns None for a line that is not a '| ... | ... |' row at all (ordinary prose, or a
+    blank line between rows).
+    """
+
+    line = line.strip()
+
+    if not line.startswith("|") or not line.endswith("|"):
+        return None
+
+    parts = LEDGER_CELL_SPLIT_RE.split(line)
+
+    if len(parts) < 2 or parts[0].strip() or parts[-1].strip():
+        return None
+
+    return [p.strip() for p in parts[1:-1]]
+
+
 def cli_verify_ledger(_args):
     """Compare the ledger table in tests.md against what the entries themselves say.
 
@@ -2438,18 +2804,48 @@ def cli_verify_ledger(_args):
 
     section = text[ledger_start:ledger_end]
 
-    row_re = re.compile(
-        r'^\|\s*\[(MT-\d+)\]\([^)]*\)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*$',
-        re.M)
-
     ledger_rows = {}
+    duplicate_ledger_rows = []
+    malformed_ledger_rows = []
+    bad_href = []
 
-    for m in row_re.finditer(section):
-        ledger_rows[m.group(1)] = {
-            "date": m.group(2).strip(),
-            "what": m.group(3).strip(),
-            "disposition": m.group(4).strip(),
-            "from": m.group(5).strip(),
+    for line in section.splitlines():
+        cells = _ledger_row_cells(line)
+
+        if not cells:
+            continue
+
+        tag_match = LEDGER_TAG_CELL_RE.match(cells[0])
+
+        if not tag_match:
+            continue    # the header row, the '|---|...' rule row, or not a tag cell at all
+
+        tag, href = tag_match.group(1), tag_match.group(2)
+
+        if len(cells) != 5:
+            # A tag cell that parsed but the row still doesn't have five cells - a stray '|'
+            # that could not be told apart from a column break, most likely.  Recorded rather
+            # than silently skipped, and not folded into ledger_rows since which of its cells is
+            # Date/What/Disposition/From is not knowable.
+            malformed_ledger_rows.append({"tag": tag, "cells": len(cells)})
+            continue
+
+        if tag in ledger_rows:
+            # Two ledger rows sharing one iid used to collapse into a dict silently, keeping
+            # whichever came last and reporting a ledger that looked entirely fine.
+            duplicate_ledger_rows.append(tag)
+            continue
+
+        if href != "#" + tag.lower():
+            # [MT-084](#mt-048) - a mistyped link - used to verify clean, because the href was
+            # matched (`[^)]*`) and then thrown away without being looked at again.
+            bad_href.append({"tag": tag, "href": href})
+
+        ledger_rows[tag] = {
+            "date": cells[1],
+            "what": cells[2],
+            "disposition": cells[3],
+            "from": cells[4],
         }
 
     should_be_open = dict((e.tag, e) for e in doc.entries if e.is_open)
@@ -2458,18 +2854,30 @@ def cli_verify_ledger(_args):
     stale = sorted(tag for tag in ledger_rows if tag not in should_be_open)
 
     # Disposition drift is unambiguous: the two either say the same word or they don't, and if they
-    # don't the ledger is simply wrong.
+    # don't the ledger is simply wrong.  Date is the same - it is copied from the entry, not
+    # composed, so any difference at all is drift.
     #
-    # "From" is judged differently.  The ledger's column is a deliberately short label - "Tier 1",
-    # "AR-20" - while the entry's own From field is sometimes the long sentence it was filed under.
-    # Equality would flag that shorthand as broken on nearly every Tier 1-6 row, which is noise, not
-    # a finding.  So this only flags a "from" pair where NEITHER side is contained in the other
-    # (case-insensitively) - which still catches a ledger citing a tag the entry does not mention at
-    # all (MT-036: ledger says AR-20, the entry says "hands-on testing" - not a shorthand of it) and
-    # a ledger that is missing a tag the entry has gained since (MT-030 the other way round), while
-    # leaving "Tier 1" vs. "...Tier 1 - diagram and editor..." alone.
+    # "What" allows a little more: README.md calls it "one line about it", not a verbatim copy of
+    # the title, so this only flags a pair where NEITHER side is contained in the other
+    # (case-insensitively) - the same tolerance "from" already used, for the same reason: it
+    # still catches a ledger that was never updated after a title changed, without flagging every
+    # ledger row that legitimately shortens its ONE LINE version of a long title.
+    #
+    # "From" is judged the same way as What, for the same reason - the ledger's column is a
+    # deliberately short label ("Tier 1", "AR-20") while the entry's own From field is sometimes
+    # the long sentence it was filed under, so equality would flag that shorthand as broken on
+    # nearly every Tier 1-6 row, which is noise, not a finding.  It still catches a ledger citing
+    # a tag the entry does not mention at all (MT-036: ledger says AR-20, the entry says
+    # "hands-on testing" - not a shorthand of it) and a ledger missing a tag the entry has gained
+    # since (MT-030 the other way round).
     disposition_drift = []
+    date_drift = []
+    what_notes = []
     from_notes = []
+
+    def _neither_contains(a, b):
+        a, b = a.lower(), b.lower()
+        return a not in b and b not in a
 
     for tag, row in ledger_rows.items():
         e = should_be_open.get(tag)
@@ -2482,44 +2890,69 @@ def cli_verify_ledger(_args):
                 "tag": tag, "ledger": row["disposition"], "actual": e.disposition,
             })
 
-        ledger_from = row["from"].lower()
-        actual_from = e.origin.lower()
+        if row["date"] != e.date:
+            date_drift.append({"tag": tag, "ledger": row["date"], "actual": e.date})
 
-        if ledger_from not in actual_from and actual_from not in ledger_from:
+        if _neither_contains(row["what"], e.title):
+            what_notes.append({"tag": tag, "ledger_what": row["what"], "actual_title": e.title})
+
+        if _neither_contains(row["from"], e.origin):
             from_notes.append({"tag": tag, "ledger_from": row["from"], "actual_from": e.origin})
+
+    # README.md rule 4: exactly four words, and no others.  Checked against every entry, not just
+    # the open ones - a validated or superseded entry can still be misspelled or hand-typed wrong,
+    # and would otherwise never be looked at again once it drops off the "should be open" list.
+    invalid_disposition = [
+        {"tag": e.tag, "disposition": e.disposition}
+        for e in doc.entries
+        if e.disposition.strip().lower() not in VALID_DISPOSITIONS
+    ]
 
     # Two items sharing one ref, which is the failure this check was added for: a feature request
     # filed through the app and a second one written by hand both took FR-014, and the list showed
     # two rows under one identifier.  Cheap to detect, and impossible to notice by eye in a file this
     # size.
-    issues_text, _ = read_text(ISSUES_MD)
-
-    seen = {}
     duplicate_refs = []
 
-    for ref in re.findall(r'^### ((?:OB|FR)-\d+) - ', issues_text, re.M):
-        seen[ref] = seen.get(ref, 0) + 1
+    if os.path.exists(ISSUES_MD):
+        issues_text, _ = read_text(ISSUES_MD)
 
-        if seen[ref] == 2:
-            duplicate_refs.append(ref)
+        seen = {}
+
+        for ref in re.findall(r'^### ((?:OB|FR)-\d+) - ', issues_text, re.M):
+            seen[ref] = seen.get(ref, 0) + 1
+
+            if seen[ref] == 2:
+                duplicate_refs.append(ref)
 
     out = {
+        "duplicate_tags": doc.duplicate_tags,
         "duplicate_refs": duplicate_refs,
+        "duplicate_ledger_rows": duplicate_ledger_rows,
+        "malformed_ledger_rows": malformed_ledger_rows,
+        "bad_href": bad_href,
         "ledger_rows": len(ledger_rows),
         "should_be_open": len(should_be_open),
         "missing_from_ledger": missing,
         "stale_in_ledger": stale,
         "disposition_drift": disposition_drift,
+        "date_drift": date_drift,
+        "what_notes": what_notes,
         "from_notes": from_notes,
-        "clean": not missing and not stale and not disposition_drift and not duplicate_refs,
+        "invalid_disposition": invalid_disposition,
+        "clean": not (missing or stale or disposition_drift or date_drift or duplicate_refs
+                      or doc.duplicate_tags or duplicate_ledger_rows or malformed_ledger_rows
+                      or bad_href or invalid_disposition),
     }
 
-    return out, (0 if out["clean"] else 1)
+    return out, (0 if out["clean"] else 3)
 
 
 CLI_COMMANDS = {
-    "stats": (cli_stats, "Counts: tests by disposition, issues pending, whether ledger looks clean."),
-    "tests": (cli_tests, "List entries. Default: open only. --all for everything, --tag for one."),
+    "stats": (cli_stats, "Counts: tests by disposition, issues pending.  Does NOT check the "
+                        "ledger - see verify-ledger for that."),
+    "tests": (cli_tests, "List entries. Default: open only. --all for everything, a TAG "
+                        "argument (positional, not --tag) for one."),
     "issues": (cli_issues, "List Inbox items not yet picked up. --kind bug|feature, --all adds picked-up."),
     "verify-ledger": (cli_verify_ledger, "Diff the ledger table against the entries. Read-only."),
 }
