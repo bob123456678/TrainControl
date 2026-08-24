@@ -43,8 +43,19 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs test | - |
 | [MT-141](#mt-141) | 2026-08-23 | Editing a placement while trains are out puts the others back where they started | fixed unvalidated | - |
 | [MT-149](#mt-149) | 2026-08-24 | The timetable survives renaming a locomotive | fixed unvalidated | OB-069 |
+| [MT-150](#mt-150) | 2026-08-24 | A page name with a colon keeps its own setup | fixed unvalidated | OB-071 |
+| [MT-151](#mt-151) | 2026-08-24 | A legacy import leaves one home per locomotive | fixed unvalidated | OB-075 |
+| [MT-152](#mt-152) | 2026-08-24 | Deleting a point clears it out of everything that watched it | fixed unvalidated | OB-080 |
+| [MT-153](#mt-153) | 2026-08-24 | A locomotive rename reaches the diagram labels | fixed unvalidated | OB-081, OB-074 |
+| [MT-154](#mt-154) | 2026-08-24 | The editor's Cancel cannot revert work done elsewhere | fixed unvalidated | OB-076 |
+| [MT-155](#mt-155) | 2026-08-24 | Closing the application asks about unsaved editor work | fixed unvalidated | OB-070 |
+| [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
+| [MT-157](#mt-157) | 2026-08-24 | Return Home refuses a plan it cannot carry out | fixed unvalidated | OB-073 |
+| [MT-158](#mt-158) | 2026-08-24 | The autonomy editor's title, and the blocked-points window | fixed unvalidated | OB-082, OB-083 |
+| [MT-159](#mt-159) | 2026-08-24 | The backup is one archive holding all the state | fixed unvalidated | FR-015 |
+| [MT-160](#mt-160) | 2026-08-24 | The application starts, and the window does not freeze | fixed unvalidated | OB-077, OB-078, OB-079 |
 
-Everything else - 121 of 149 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 160 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -6891,3 +6902,326 @@ renaming a locomotive - still needs testing now that capture works.
 
 ---
 
+<a id="mt-150"></a>
+
+### MT-150 - 2026-08-24 - A page name with a colon keeps its own setup
+
+**Disposition:** fixed unvalidated
+**From:** OB-071
+**Written:** 2026-08-24
+
+**What to do.** Rename a page so its name contains a colon - "Yard: Upper" is the example the code
+uses. Name a station on it, mark it a station, give it a length.
+
+Then rename a DIFFERENT page - any other one. Check "Yard: Upper" still has its station, its name and
+its length, before and after closing and reopening TrainControl.
+
+#### Comments
+
+**Claude, 2026-08-24.** Every square on a page whose name contained a colon was stored under the id belonging to a
+different page, because `toStored` and `fromStored` split the key on the FIRST colon while
+`parseTileKey`, `isOnPage` and `rekeyOne` all split on the last. So renaming an unrelated page orphaned
+this one's whole setup - MT-135-class loss, triggered by touching something else.
+
+Those two were the last sites still splitting on the first colon; the other three were fixed when the
+hazard was found and nobody came back for these. Covered by
+`testAPageNameContainingAColonKeepsItsOwnSetup`, mutation-checked.
+
+---
+
+<a id="mt-151"></a>
+
+### MT-151 - 2026-08-24 - A legacy import leaves one home per locomotive
+
+**Disposition:** fixed unvalidated
+**From:** OB-075
+**Written:** 2026-08-24
+
+**What to do.** You need an old `autonomy.json` in which one locomotive is named as the home of TWO
+stations - which was legal before the one-home rule.
+
+Import it. Exactly one of those stations should end up as that locomotive's home, and the import report
+should say that a duplicate was cleared.
+
+#### Comments
+
+**Claude, 2026-08-24.** `setHome` sweeps duplicates and its comment names the reason - "a rule enforced at one door of two
+is the shape this defect came from" (TD-8). The import is that second door: it writes "home" straight
+into the configuration and never goes near `setHome`.
+
+Both were imported; `rebuildHomeStations` then dropped one by iteration order with a log line, and the
+next capture wrote that arbitrary choice back permanently - so the user kept a home they never chose,
+with nothing to say which had been theirs.
+
+Done the way the same method already handles PLACEMENTS: a set beside `placedAlready`, first one wins,
+and the rest counted so the choice is reported rather than made silently.
+
+---
+
+<a id="mt-152"></a>
+
+### MT-152 - 2026-08-24 - Deleting a point clears it out of everything that watched it
+
+**Disposition:** fixed unvalidated
+**From:** OB-080
+**Written:** 2026-08-24
+
+**What to do.** Hold one station back with another (the "unavailable while occupied" menu), then
+delete the watched square from the diagram and save.
+
+The station it was holding back must be freely available again - and must still be after closing and
+reopening TrainControl, which is the half that used to differ.
+
+#### Comments
+
+**Claude, 2026-08-24.** `deletePoint` released the home claim on a deleted station and nothing else. `blockedBy` holds
+Points, so a deleted station stayed in the lists of every station it held back - a ghost blocker on a
+point nobody can see or clear.
+
+It fails closed, which is why it was never reported: a station that will not be chosen is quieter than
+one chosen wrongly. And it vanishes across a save and load, because the list is written by name and the
+name then resolves to nothing - so the symptom was a railway that behaved differently after a restart.
+
+The test for it found a bug in the fix on its first run: `getBlockedBy` hands back an unmodifiable
+view, so `removeIf` threw.
+
+**Also in this fix, and not separately testable:** `validatePathActuation` returned TRUE - "everything
+actuated" - when interrupted, without looking. That is the answer that lets a train onto turnouts
+nothing confirmed. It asks `allConfirmed` now. Unreachable today; fixed because a fail-safe pointing
+the wrong way is a thing you find out about once.
+
+---
+
+<a id="mt-153"></a>
+
+### MT-153 - 2026-08-24 - A locomotive rename reaches the diagram labels
+
+**Disposition:** fixed unvalidated
+**From:** OB-081, OB-074
+**Written:** 2026-08-24
+
+**What to do.** With autonomy loaded and a locomotive standing at a station, **rename that
+locomotive**. The label beside it on the track diagram must change at once, without touching anything
+else.
+
+Do it twice: once from the locomotive edit dialog, and once by accepting a rename the Central Station
+proposes (Tools > check for renamed locomotives).
+
+Then, for OB-074: if your Central Station offers a name containing brackets or a comma - "SBB 460 (2)"
+is the shape - accepting it must be REFUSED with a message, not applied.
+
+#### Comments
+
+**Claude, 2026-08-24.** The refresh after a rename redrew the locomotive buttons, the mappings, the route list, the
+selector and the layout's callbacks - and not the labels beside the stations, which are written by
+`updateStationLabels`. Every other door that changes which locomotive stands where already called it,
+each carrying the same note: "The label still says the locomotive's name until something rewrites it."
+
+The Central Station path is a near-copy of the dialog's, so it had the same gap - and it also applied
+the proposed name with no `isNameUsable` check, while `RouteCommand`'s own rule says "three separate
+doors have to agree". `renameLoc` writes the new name into every route, so accepting a proposal could
+rewrite every route naming that locomotive into something that does not parse.
+
+The guard reads EVERY `renameLoc` call site rather than the first, because a rule that stopped at the
+first match would have reported the pair as covered after fixing one.
+
+---
+
+<a id="mt-154"></a>
+
+### MT-154 - 2026-08-24 - The editor's Cancel cannot revert work done elsewhere
+
+**Disposition:** fixed unvalidated
+**From:** OB-076
+**Written:** 2026-08-24
+
+**What to do.** Open the layout editor. Now, in the MAIN window, try to right-click a square for the
+autonomy menu and try Ctrl+X / Ctrl+V over a station.
+
+Both should decline - the menu should not appear, and the keys should do nothing but say why in the
+log. Close the editor and check both work again.
+
+#### Comments
+
+**Claude, 2026-08-24.** The editor's Cancel restores the setup as it was when that window opened, and saves it. The main
+window's tile menu and keyboard placements stayed live while the editor was open, and their edits are
+not in that snapshot - so naming a station from the diagram and then pressing Cancel in a window about
+something else silently reverted the name and wrote the reversion to disk.
+
+Refused rather than repaired. The snapshot IS repaired for locomotive renames; doing the same for every
+setup edit would mean keeping two live editors in step, which is the trap that made the editors
+mutually exclusive in the first place.
+
+---
+
+<a id="mt-155"></a>
+
+### MT-155 - 2026-08-24 - Closing the application asks about unsaved editor work
+
+**Disposition:** fixed unvalidated
+**From:** OB-070
+**Written:** 2026-08-24
+
+**What to do.** Open the editor, change something, and close the MAIN window without saving.
+
+You should get the same Save / Discard / Cancel question every other way out of the editor gives.
+Cancel must leave the application open. Check Save and Discard each do what they say.
+
+#### Comments
+
+**Claude, 2026-08-24.** "One save/discard/cancel question, asked wherever a page is left" was enforced at every door out of
+the editor except the biggest: `WindowClosed` never consulted it and went on to `System.exit`.
+
+In autonomy mode it was worse than a silent discard - the exit capture SAVES the setup, so work the
+user was about to Cancel could be committed on the way out.
+
+---
+
+<a id="mt-156"></a>
+
+### MT-156 - 2026-08-24 - A timetable run that fails says so
+
+**Disposition:** fixed unvalidated
+**From:** OB-072
+**Written:** 2026-08-24
+
+**What to do.** Start a timetable and make one of its legs fail - the simplest way is to put another
+train in the way of a later entry so its path cannot be configured.
+
+Every train should stop, AND you should get the "stopped at entry N" dialog. Before this fix the trains
+stopped and the run reported success.
+
+#### Comments
+
+**Claude, 2026-08-24.** The dispatcher's `catch (Throwable)` stopped every train and never set `abandoned`, so
+`return !abandoned.get()` answered true - reproducing the exact symptom the comment beside that dialog
+says was fixed. A leg that threw is the clearest abandonment there is.
+
+---
+
+<a id="mt-157"></a>
+
+### MT-157 - 2026-08-24 - Return Home refuses a plan it cannot carry out
+
+**Disposition:** fixed unvalidated
+**From:** OB-073
+**Written:** 2026-08-24
+
+**What to do.** Hold one locomotive's home station back by another square (the "unavailable while
+occupied" menu), and stand a DIFFERENT locomotive on that square.
+
+Press Return Home. It must refuse up front, not start moving trains and then give up.
+
+#### Comments
+
+**Claude, 2026-08-24.** FR-001 holds a station back while another named square is occupied, and `isPathClear` enforces it
+on a path's destination - which is every move staging makes. The planner never read `getBlockedBy`, so
+the plan reported READY, execution refused the leg, the run retried until it gave up, and it stopped
+everything with the fleet half-staged.
+
+It fails safe - no train moves wrongly - but partial execution is the thing staging exists to avoid.
+
+Mutation-checking showed the impossibility SCAN is what catches this case; the search-side check covers
+a blocker arriving partway through a multi-move plan, which the test does not reach. Recorded because
+the first mutation run would have supported the wrong conclusion.
+
+---
+
+<a id="mt-158"></a>
+
+### MT-158 - 2026-08-24 - The autonomy editor's title, and the blocked-points window
+
+**Disposition:** fixed unvalidated
+**From:** OB-082, OB-083
+**Written:** 2026-08-24
+
+**What to do.** Two looks.
+
+1. Open the autonomy editor. Its title bar should read **Autonomy Editor: {page}**, matching the layout
+   editor's "Layout Editor: {page}" rather than using a dash.
+2. Open "unavailable while occupied" on a station with plenty of named squares. The list should be
+   white, wide enough to read the message above it, and a wheel notch should move about a row. The
+   station you opened it ON must not appear in the list - nor should a caption square that is about
+   that same station.
+
+#### Comments
+
+**Claude, 2026-08-24.** Four cosmetics and one correctness item. The station itself was already excluded, but a caption
+square points AT the station and carries a name, so it appeared in the list as though it were somewhere
+else - choosing it would have held the station back with itself through the back door the existing
+check closes at the front. Adam asked for exactly that: "ensure self-selection is impossible".
+
+---
+
+<a id="mt-159"></a>
+
+### MT-159 - 2026-08-24 - The backup is one archive holding all the state
+
+**Disposition:** fixed unvalidated
+**From:** FR-015
+**Written:** 2026-08-24
+
+**What to do.** File > Backup TrainControl Data.
+
+The dialog should name a **.zip** file. Open it and check it holds: `UIState.data`, `LocDB.data`,
+`config/gleisbild.cs2`, every page under `config/gleisbilder/`, and `config/autonomy/setup.json` plus
+every `configuration-*.json`.
+
+Then the point of the exercise: unpack it somewhere else and check the layout is complete - pages, page
+index, and autonomy setup together.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "the backup menu option should export a zip file with the locdb and uistate files, track
+diagram files, and autonomy files - effectively, all state."
+
+The argument for one archive rather than a folder of copies is the 23 August restore. The autonomy
+setup is keyed by PAGE ID, and those ids are defined by `config/gleisbild.cs2` - so `setup.json` alone
+means nothing, and a `gleisbild.cs2` from a different day silently reattaches every station to the
+wrong page. These files are only a backup together.
+
+The state is written live first so the archive holds it as it is now. A source that is not there is
+skipped - a Central Station layout has no local config folder - and a file that cannot be read is named
+individually, because a file held open by a sync client is the everyday case here.
+
+---
+
+<a id="mt-160"></a>
+
+### MT-160 - 2026-08-24 - The application starts, and the window does not freeze
+
+**Disposition:** fixed unvalidated
+**From:** OB-077, OB-078, OB-079
+**Written:** 2026-08-24
+
+**What to do.** Three quick ones; none should show anything unusual, which is the point.
+
+1. Start TrainControl normally. It should open as always. (The fix is to a failure path: if the window
+   ever fails to build, the application now exits with a message instead of hanging for ever with
+   nothing on screen.)
+2. With the layout editor open, use the route editor's Add and Edit buttons. The "close the editor
+   first" message should appear normally, not late and not behind the window.
+3. Dispatch a train by hand, and while it is being set up, hover the "No available paths" mark on
+   another locomotive's panel. The window must stay responsive; the explanation may take a moment to
+   appear.
+
+#### Comments
+
+**Claude, 2026-08-24.** Three internal robustness fixes with little to see.
+
+The start-up latch had one `countDown`, as the last statement of the window build, and no timeout on
+the wait - so anything that stopped it reaching that line hung the application for ever with no window
+and no message. It is in a `finally` now and catches `Throwable`.
+
+`refuseWhileEditorOpen` built and showed a modal dialog, and two callers asked it from a raw worker
+thread. It posts to the event thread now.
+
+`explainDestinations` walks every candidate route to every station and takes the Layout monitor, which
+a dispatch holds across its per-command sleeps - so hovering that label during a dispatch froze the
+window. It runs on a thread now, guarded so a slow answer cannot land on a locomotive it is not about.
+
+**Two callers left as they are**, and recorded: the right-click menu's `getPossiblePaths` and the
+synchronized `moveLocomotive` on paste. Both are gestures that already imply a wait, and neither runs
+while the monitor is held for seconds.
+
+---
