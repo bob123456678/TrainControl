@@ -202,6 +202,54 @@ Two things to carry into it:
 Left open deliberately, and not started rather than half done: this is the class holding the data Adam
 has already lost twice, and a conversion abandoned in the middle is worse than one not begun.
 
+### FR-018 - 2026-08-24 - a page whose file returns should get its old id back
+
+**Found while fixing OB-067, and it needs your decision rather than a fix chosen for you.**
+
+`writeLayoutIndex` retires the id of any page that is not in the list it is given. That is deliberate
+and it is what stops a later page inheriting a deleted page's settings - the MT-135 loss, in the form
+it took on 23 August.
+
+The case it does not distinguish is a page that was never deleted. `CS2File` skips a page whose file
+will not parse or is not there, and says so; on this railway, which lives in OneDrive, an unhydrated
+placeholder or a file held open by the sync client is enough. If the index is written while a page is
+in that state, the page is treated exactly as though it had been deleted: its id is retired, and when
+the file comes back it is a NEW page with a new number.
+
+Its settings are safe - they stay in `setup.json` under the old id, held and written back verbatim
+(OB-067) - but they no longer attach to anything, because the page they belong to now answers to a
+different number. Nothing is lost and nothing is found.
+
+**Why this is a decision and not an obvious fix.** The two cases look identical from the index's point
+of view: "this page is not in the list I was given". Telling them apart means asking a question the
+index does not currently ask - whether the page's FILE is present - and the answer changes what safety
+means:
+
+- Retiring too eagerly costs a returning page its settings, which is this item.
+- Retiring too reluctantly means a genuinely deleted page's id stays reserved, and a new page with the
+  same name would collect the old one's settings. That is the loss the retirement was added to prevent,
+  and it is the worse of the two.
+
+So the shape of a fix is probably "retire the id only when the page file is really gone, and keep it
+reserved while the file merely failed to load" - which is the same distinction `pagesNotLoaded` already
+makes for the setup, and which the index does not make at all.
+
+**How likely is it in practice?** It needs a save of the layout index during the window when a page is
+unreadable. That is not rare here: the index is rewritten on page add, rename, delete and combine, and
+OneDrive placeholders are a normal state on this machine.
+
+**What would you like?** Options, roughly in order of how much they change:
+
+1. Leave it. The settings survive; a page that comes back is set up again by hand.
+2. Warn: if the index is about to be written while a page the setup knows about is not loaded, say so
+   and let you cancel. Cheap, and it puts the decision where the information is.
+3. Reserve rather than retire, for pages that failed to load as opposed to pages that were deleted.
+   Correct, and the most work - it means the index has to distinguish the two, which today it cannot.
+
+Option 2 on its own would have prevented every instance of this that could have happened so far, and
+does not require the distinction. My recommendation is 2 now and 3 only if you meet it for real.
+
+---
 
 ## What has been picked up
 
