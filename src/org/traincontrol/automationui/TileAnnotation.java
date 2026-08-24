@@ -139,9 +139,19 @@ public class TileAnnotation
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.
      *
-     * Shapes and colours follow the graph window exactly, because that is the vocabulary the user
-     * already reads: a station is a circle, a terminus a square, a reversing point a smaller
-     * square, and a plain point a small diamond; blue means autonomy uses it, orange means it does not.
+     * The SHAPE says what turning means here; the SIZE says whether it is a station.  Blue means
+     * autonomy uses it, orange means it does not.
+     *
+     *                       trains do not turn    trains MAY turn    trains ALWAYS turn
+     *     a station              big circle          big diamond         big square
+     *     a passing point       small circle        small diamond       small square
+     *
+     * This used to describe the vocabulary that grid replaced - "a station is a circle, a terminus a
+     * square, a reversing point a smaller square, and a plain point a small diamond" - which had grown
+     * up the other way, four shapes with no system behind them.  Two of those four claims are now the
+     * wrong way round: a plain point is a small CIRCLE, and a diamond means trains MAY turn, so a
+     * reader interpreting a screenshot by the old legend would read a may-turn station as a plain
+     * point (TD-15).  The justification is gone too: the graph window it followed was deleted.
      *
      * The five kinds the user thinks in are two questions over a station - must a train leave the way
      * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are

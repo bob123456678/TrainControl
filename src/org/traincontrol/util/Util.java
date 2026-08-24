@@ -208,27 +208,6 @@ public class Util
     }
 
     /**
-     * Writes a file without ever leaving the target truncated.
-     *
-     * Opening a file for writing empties it immediately, so from the first byte until the last is
-     * flushed the only copy of the data is incomplete - and if the process dies in that window, or the
-     * write throws part way, what was there before is gone.  For the files this exists to protect
-     * (the locomotive database, the UI state, autonomy.json) that is the operator's accumulated work,
-     * and the loss is silent: an unreadable database reads as a first launch, and the next Central
-     * Station sync repopulates the locomotive list so the customizations look mislaid rather than
-     * destroyed.
-     *
-     * The content is therefore staged in a sibling file and moved into place only once it is complete
-     * and closed - the same shape downloadFile uses so that an interrupted download never looks like a
-     * finished one.  A failed write deletes the staging file and leaves the previous contents exactly
-     * as they were.  REPLACE_EXISTING rather than ATOMIC_MOVE: the rename window is nanoseconds
-     * against a write window of milliseconds to seconds, and ATOMIC_MOVE is not supported everywhere.
-     *
-     * @param target the file to end up with
-     * @param body writes the content to the stream it is given; need not close it
-     * @throws IOException
-     */
-    /**
      * Makes a page name safe to use as a local filename.
      *
      * Page names are free text - they come out of the Central Station index, or out of the rename box -
@@ -257,6 +236,27 @@ public class Util
         return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
     }
 
+    /**
+     * Writes a file without ever leaving the target truncated.
+     *
+     * Opening a file for writing empties it immediately, so from the first byte until the last is
+     * flushed the only copy of the data is incomplete - and if the process dies in that window, or the
+     * write throws part way, what was there before is gone.  For the files this exists to protect
+     * (the locomotive database, the UI state, autonomy.json) that is the operator's accumulated work,
+     * and the loss is silent: an unreadable database reads as a first launch, and the next Central
+     * Station sync repopulates the locomotive list so the customizations look mislaid rather than
+     * destroyed.
+     *
+     * The content is therefore staged in a sibling file and moved into place only once it is complete
+     * and closed - the same shape downloadFile uses so that an interrupted download never looks like a
+     * finished one.  A failed write deletes the staging file and leaves the previous contents exactly
+     * as they were.  REPLACE_EXISTING rather than ATOMIC_MOVE: the rename window is nanoseconds
+     * against a write window of milliseconds to seconds, and ATOMIC_MOVE is not supported everywhere.
+     *
+     * @param target the file to end up with
+     * @param body writes the content to the stream it is given; need not close it
+     * @throws IOException
+     */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
         File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);

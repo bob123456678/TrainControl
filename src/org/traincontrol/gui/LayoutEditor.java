@@ -3221,10 +3221,15 @@ public class LayoutEditor extends PositionAwareJFrame
      * Undoable, which is what makes it safe to reach for: each one takes a snapshot first, so a
      * mis-aimed shift is one Control+Z away.
      *
-     * Worth knowing, and the reason these do not appear in autonomy mode: everything the autonomy
-     * setup holds about a page is keyed by SQUARE, and shifting the diagram moves the track without
-     * moving those keys.  See the note on growEdges, which is why THAT one only ever grows at the
-     * right and the bottom.
+     * The autonomy setup FOLLOWS the shift.  Everything it holds about a page is keyed by SQUARE, so
+     * moving the track without moving those keys leaves every station, name, facing and restriction on
+     * coordinates the track has walked away from - which is what these four did until moveTiles was
+     * added below.
+     *
+     * That sentence used to read the other way round: "the reason these do not appear in autonomy mode
+     * is that shifting moves the track without moving those keys." It was true when it was written and
+     * false eighteen lines later in the same method, and it was stated as established fact, which is
+     * the form a reader trusts without checking (TD-12).
      */
     public void shiftUp()
     {
@@ -3281,6 +3286,14 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void shiftDown()
     {
+        // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
+        // being left to be worked out from a side effect two files away (TD-12).
+        //
+        // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
+        // directions, which is what made the destructive pair dangerous.  This pair calls
+        // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
+        // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
+        // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
         this.snapshotLayout();
         
         try
@@ -3368,6 +3381,14 @@ public class LayoutEditor extends PositionAwareJFrame
     
     public void shiftRight()
     {
+        // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
+        // being left to be worked out from a side effect two files away (TD-12).
+        //
+        // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
+        // directions, which is what made the destructive pair dangerous.  This pair calls
+        // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
+        // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
+        // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
         this.snapshotLayout();
 
         try
