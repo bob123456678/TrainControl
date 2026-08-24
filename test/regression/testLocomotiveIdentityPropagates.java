@@ -691,10 +691,22 @@ public class testLocomotiveIdentityPropagates
 
         assertTrue(at > 0, "the rename call is gone - this rule has nothing to watch");
 
-        // the refresh block that follows it, up to the end of that method
-        int end = body.indexOf("\n    /**", at);
+        // The refresh block that follows it, bounded by the catch that closes the method.
+        //
+        // NOT bounded by the next javadoc, which is what the first version of this did:
+        // withoutComments has already removed every javadoc, so that search never matched, the window
+        // became the whole rest of the file, and the rule passed no matter what the code did.
+        //
+        // A guard that cannot fail is worse than no guard - it reports the thing it watches as
+        // covered. This one was written, run, seen green, and only found by removing the call it is
+        // supposed to protect and watching it stay green.
+        int end = body.indexOf("catch (Exception", at);
 
-        String after = end > 0 ? body.substring(at, end) : body.substring(at);
+        assertTrue(end > at && end - at < 4000,
+            "the refresh block could not be bounded, so this rule would read the rest of the file and "
+            + "pass whatever the code did");
+
+        String after = body.substring(at, end);
 
         assertTrue(after.contains("updateVisiblePoints"),
             "renaming a locomotive does not rewrite the station labels, so the track diagram goes on "
