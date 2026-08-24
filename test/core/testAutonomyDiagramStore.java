@@ -2051,4 +2051,175 @@ public class testAutonomyDiagramStore
         assertEquals(point.getJSONArray("excludedLocs").getString(0), "New Name",
             "the exclusion in the restored page still names the old locomotive");
     }
+
+    /**
+     * A rename reaches a setup that nothing has open.
+     *
+     * OB-062. A locomotive rename has to reach the database, the setup in memory and the setup on
+     * disk. With no session built the window did the last of those not at all, on the reasoning that
+     * the file "is read the next time it IS opened - by which time this rename is already in the
+     * locomotive database".
+     *
+     * Nothing repairs locomotive names at load, so that is not what happens. The old name survives in
+     * the placement, the home and the exclusions until somebody chooses that configuration - and
+     * parseAuto answers a locomotive it cannot resolve by invalidating the whole layout, days later,
+     * with nothing connecting it to the rename.
+     */
+    @Test
+    public void testARenameReachesASetupNothingHasOpen() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        place(store.getConfiguration("Only"), "1:4,4", "Old Name");
+
+        store.save();
+
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"),
+            "the setup on disk was not found, so nothing below tests anything");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        org.json.JSONObject point = reloaded.getConfiguration("Only")
+            .getJSONObject("points").getJSONObject("1:4,4");
+
+        assertEquals(point.getJSONObject("loc").getString("name"), "New Name",
+            "the placement still names the old locomotive. Choosing this configuration invalidates "
+            + "the whole layout, and nothing about the message says a rename caused it");
+
+        assertEquals(point.getString("home"), "New Name",
+            "the home assignment still names the old locomotive");
+
+        assertEquals(point.getJSONArray("excludedLocs").getString(0), "New Name",
+            "the exclusion still names the old locomotive");
+    }
+
+    /**
+     * And a delete reaches it the same way.
+     */
+    @Test
+    public void testADeleteReachesASetupNothingHasOpen() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        place(store.getConfiguration("Only"), "1:4,4", "Going");
+
+        store.save();
+
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null),
+            "the setup on disk was not found, so nothing below tests anything");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        org.json.JSONObject point = reloaded.getConfiguration("Only")
+            .getJSONObject("points").getJSONObject("1:4,4");
+
+        assertFalse(point.has("loc") && point.getJSONObject("loc").has("name")
+            && "Going".equals(point.getJSONObject("loc").getString("name")),
+            "a deleted locomotive is still placed here");
+    }
+
+    /**
+     * A layout that has never had a setup does not acquire one.
+     *
+     * This is the whole reason the window declines to build a SESSION on a rename: doing so opens
+     * every page, runs the caption migration, can raise a dialog and then writes a setup.json - so
+     * renaming a locomotive would create autonomy out of nothing, on a layout where nobody has ever
+     * asked for it. The file repair must not smuggle that back in by a shorter route.
+     */
+    @Test
+    public void testRepairingALayoutWithNoSetupCreatesNothing() throws IOException
+    {
+        File bare = Files.createTempDirectory("tc-no-setup").toFile();
+
+        try
+        {
+            assertFalse(AutonomyCompanionStore.repairLocomotiveOnDisk(bare, "Old Name", "New Name"),
+                "a layout with no setup reported that it had repaired one");
+
+            assertFalse(new File(bare, "config").exists(),
+                "renaming a locomotive created an autonomy setup on a layout that never had one");
+        }
+        finally
+        {
+            delete(bare);
+        }
+    }
+
+    /**
+     * Repairing on disk changes the locomotive and nothing else - the page record above all.
+     *
+     * Nobody calls setPageIds on a bare store: there is no session to tell it what the pages are
+     * called. So pageIdToName is empty, and sharedFields() writes the file's "pages" record from
+     * exactly that map - which means saving would replace it with {}.
+     *
+     * That record is the only evidence a page renumber ever happened. readShared compares it against
+     * the current index to tell a rename from a renumber, and pageOf resolves every stored id through
+     * it. Blanking it is the same data loss this class was repaired for in the commit before this one,
+     * arriving by a new door: a locomotive rename would quietly disarm the detection for the whole
+     * setup, and the next renumber would go through unnoticed.
+     *
+     * Caught by probing the method rather than by reading it, which is the only reason it is not in the
+     * repository.
+     */
+    @Test
+    public void testRepairingOnDiskChangesOnlyTheLocomotive() throws IOException
+    {
+        store.setPageIds(twoPages());
+
+        TileKey square = new TileKey("Main", 4, 4);
+
+        store.setPointName(square, "Platform");
+        store.setStation(square, true);
+        store.setTileLength(square, 11);
+        store.setPageExcluded("Yard", true);
+
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+        place(store.getConfiguration("Only"), "1:4,4", "Old Name");
+
+        store.save();
+
+        String before = new String(Files.readAllBytes(new File(layout, "config/autonomy/setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(before.contains("\"Main\""),
+            "the fixture never recorded its page names, so nothing below tests anything: " + before);
+
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"));
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(twoPages());
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(square), "Platform",
+            "repairing a locomotive lost the point names");
+        assertTrue(reloaded.isStation(square), "repairing a locomotive lost the stations");
+        assertEquals(reloaded.getTileLength(square), 11, "repairing a locomotive lost the lengths");
+        assertTrue(reloaded.getExcludedPages().contains("Yard"),
+            "repairing a locomotive lost the excluded pages");
+
+        String after = new String(Files.readAllBytes(new File(layout, "config/autonomy/setup.json").toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(after.contains("\"Main\"") && after.contains("\"Yard\""),
+            "the page record was blanked by a LOCOMOTIVE rename. It is the only evidence a renumber "
+            + "ever happened - readShared tells a rename from a renumber by it, and pageOf resolves "
+            + "every stored id through it - so the detection is now disarmed for this whole setup: "
+            + after);
+    }
+
+    /**
+     * Two pages, by the numbering a file would have been written under.
+     */
+    private java.util.Map<String, String> twoPages()
+    {
+        java.util.Map<String, String> pages = new java.util.LinkedHashMap<>();
+
+        pages.put("Main", "1");
+        pages.put("Yard", "2");
+
+        return pages;
+    }
 }

@@ -617,4 +617,46 @@ public class testLocomotiveIdentityPropagates
 
         return layout;
     }
+
+    /**
+     * The window repairs the setup on disk when it has no session to repair in memory.
+     *
+     * Testing the rule leaves the CALL as the only uncovered part, and in this codebase that is where
+     * the defect usually is - renamePage was faultless and had no caller for weeks (MT-135), and
+     * HomeLocomotiveMenu lost four of its five callers with its tests still green (DD-A6). OB-062 is
+     * the same shape again: repairLocomotiveOnDisk can be perfect and change nothing.
+     *
+     * So this asks the source whether the null-session path actually calls it, rather than returning
+     * the way it used to.
+     */
+    @Test
+    public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
+    {
+        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(source.isFile(),
+            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass "
+            + "by not finding it");
+
+        String body = withoutComments(new String(
+            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+
+        int at = body.indexOf("private void repairAutonomyLocomotive");
+
+        assertTrue(at > 0, "repairAutonomyLocomotive is gone - this rule has nothing to watch");
+
+        // to the end of that method: the next member declaration at class level
+        int end = body.indexOf("\n    private ", at + 10);
+        int alt = body.indexOf("\n    public ", at + 10);
+
+        if (alt > 0 && (end < 0 || alt < end)) end = alt;
+
+        String method = end > 0 ? body.substring(at, end) : body.substring(at);
+
+        assertTrue(method.contains("repairLocomotiveOnDisk"),
+            "repairAutonomyLocomotive does not repair the setup on disk when no session is built, so "
+            + "a locomotive renamed before anything has touched autonomy keeps its old name in every "
+            + "placement, home and exclusion - until parseAuto refuses the whole layout over it, days "
+            + "later. The store offers repairLocomotiveOnDisk for exactly this: " + method.trim());
+    }
 }

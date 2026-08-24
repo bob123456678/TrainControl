@@ -148,6 +148,7 @@ not, never both.
 | 2026-08-24 | OB-061 | bug | A source guard promised more coverage than it checked | - | [MT-142](tests.md#mt-142) |
 | 2026-08-23 | OB-058 | bug | The Edit button brings an already-open editor forward | - | [MT-144](tests.md#mt-144) |
 | 2026-08-24 | OB-063 | bug | The info mark had no glyph, so the font drew a box | - | [MT-144](tests.md#mt-144) |
+| 2026-08-24 | OB-062 | bug | A locomotive rename did not reach a setup nothing had open | - | [MT-145](tests.md#mt-145) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |
@@ -278,26 +279,6 @@ they were filed under, and this mapping is how to trace one to the other.*
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
-
-### OB-062 - 2026-08-24 - a locomotive rename is not repaired when no session is built
-
-**Kind:** bug
-**Raised from:** review of the last day of commits, at Adam's request
-**Build:** commit 48d98f4c, build\classes - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-`TrainControlUI.repairAutonomyLocomotive` returns immediately when `autonomySession` is null - even
-when a setup exists on disk. Its comment argues that the file "is read the next time it IS opened - by
-which time this rename is already in the locomotive database", but nothing repairs locomotive names on
-load, so a stale placement, home or exclusion survives until the configuration is chosen. That is the
-fatal case: `parseAuto` answers a locomotive it cannot resolve by invalidating the whole layout, days
-later, with nothing connecting it to the rename.
-
-Narrow in practice, because most routine paths build the session lazily - but the window is real: rename
-a locomotive before anything has touched autonomy in that session.
-
-Filed rather than fixed: the repair wants a load-time pass over the setup, which is a different shape
-from the in-memory repairs beside it, and it is worth deciding whether that belongs here or in the
-store's own load.
 
 ### FR-013 - 2026-08-24 - The store should hold objects, not strings
 

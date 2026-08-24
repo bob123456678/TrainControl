@@ -921,6 +921,76 @@ public class AutonomyCompanionStore
      * @param from the old name
      * @param to the new name
      */
+    /**
+     * Repairs a setup that nothing has open, in place on disk.
+     *
+     * A locomotive rename has to reach three places: the database, the setup in memory, and the setup
+     * on disk.  When a session is open the second and third are the same act.  When one is NOT open,
+     * the window used to do nothing at all and say why: "the file it would repair is read the next time
+     * it IS opened - by which time this rename is already in the locomotive database."
+     *
+     * That is wrong, and OB-062 is the finding.  Nothing repairs locomotive names at load: the file is
+     * read as it stands, so the old name survives in the placement, the home and the exclusions until
+     * somebody chooses that configuration - at which point parseAuto answers a locomotive it cannot
+     * resolve by invalidating the whole layout, days later, with nothing connecting it to the rename.
+     *
+     * The reason the window gave for standing back was sound about the SESSION and not about the file.
+     * Building a session opens every page, runs the caption migration, can raise a dialog and then
+     * writes a setup.json - so renaming a locomotive on a layout where autonomy has never been touched
+     * would fabricate a setup out of nothing.  A bare store does none of that: it reads one file, and
+     * only if that file is already there.
+     *
+     * @param layoutFolder the layout folder, the one holding config/autonomy
+     * @param from the name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     * @return true when a setup was found and rewritten, false when there was nothing to repair
+     * @throws IOException if the setup exists but cannot be read or written
+     */
+    public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to)
+        throws IOException
+    {
+        if (layoutFolder == null || from == null) return false;
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layoutFolder);
+
+        // Nothing is created for a layout that has never had a setup.  exists() asks whether the FILE
+        // is there, which is the same question the session path asks before it writes.
+        if (!store.exists()) return false;
+
+        store.load();
+
+        // Give it back the numbering the FILE was written under, before anything is saved.
+        //
+        // Nobody calls setPageIds on a bare store - there is no session to tell it what the pages are
+        // called - so pageIdToName is empty, and sharedFields() writes "pages" from exactly that map.
+        // Saving would therefore replace the file's record of what each id was called with {}.
+        //
+        // That record is the only evidence a page renumber ever happened: readShared compares it
+        // against the current index to tell a rename from a renumber, and pageOf resolves every stored
+        // id through it. Blanking it is the same data loss this class was repaired for two commits ago,
+        // arriving by a new door - a locomotive rename would quietly disarm the detection for the whole
+        // setup.
+        //
+        // Taking it from what was just read means save() writes the file back with the same page
+        // record and the same keys it came in with. The only thing this method changes is the
+        // locomotive name.
+        Map<String, String> nameToId = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
+        {
+            nameToId.put(page.getValue(), page.getKey());
+        }
+
+        store.setPageIds(nameToId);
+
+        if (to == null) store.locomotiveDeleted(from);
+        else store.locomotiveRenamed(from, to);
+
+        store.save();
+
+        return true;
+    }
+
     public void locomotiveRenamed(String from, String to)
     {
         if (from == null || to == null || from.equals(to)) return;

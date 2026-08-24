@@ -2746,7 +2746,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // time it IS opened - by which time this rename is already in the locomotive database.
         org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
-        if (session == null) return;
+        // No session open: repair the FILE, without building one (OB-062).
+        //
+        // The paragraph above is right that a session must not be built here, and wrong about what
+        // follows from that. It claimed the file "is read the next time it IS opened - by which time
+        // this rename is already in the locomotive database" - but nothing repairs locomotive names on
+        // load, so the old name simply survives in the placement, the home and the exclusions. The
+        // first thing to notice is parseAuto refusing the whole layout, days later.
+        //
+        // A bare store opens no pages, runs no migration, raises no dialog, and writes nothing unless
+        // the setup file is already there - so none of the fabrication the paragraph above guards
+        // against can happen by this route.
+        if (session == null)
+        {
+            String path = getLocalLayoutPath();
+
+            if (path == null || path.isEmpty()) return;
+
+            try
+            {
+                org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveOnDisk(
+                    new java.io.File(path), from, to);
+            }
+            catch (Exception e)
+            {
+                // Quiet for the same reason the session path is: the rename has already happened.
+                this.model.log(e);
+            }
+
+            return;
+        }
 
         // And nothing is written for a setup that has never been saved: save() would create the
         // folder and the file, which is the same fabrication by a shorter route.

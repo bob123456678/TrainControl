@@ -19,6 +19,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | TD-6 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
@@ -46,8 +47,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-142](#mt-142) | 2026-08-24 | A page keeps its identity when other pages change | fixed unvalidated | OB-059, OB-060, OB-061 |
 | [MT-143](#mt-143) | 2026-08-24 | Four small ones from the same test pass | fixed unvalidated | OB-054, OB-055, OB-056, OB-057 |
 | [MT-144](#mt-144) | 2026-08-24 | The editor window comes forward, and the info mark is an icon | fixed unvalidated | OB-058, OB-063 |
+| [MT-145](#mt-145) | 2026-08-24 | A locomotive rename reaches a setup nothing has open | fixed unvalidated | OB-062 |
+| [MT-146](#mt-146) | 2026-08-24 | A train may leave the point that holds a station back | fixed unvalidated | FR-001 |
+| [MT-147](#mt-147) | 2026-08-24 | The restored layout is the one you had | needs test | the 23 August data loss |
 
-Everything else - 113 of 144 - is **fixed validated** and needs nothing from you unless the
+Everything else - 112 of 147 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -1150,7 +1154,7 @@ test failed for exactly that reason, on syntax I had invented.
 
 ### MT-004 - 2026-08-20 - A three-way point in a route
 
-**Disposition:** fixed validated
+**Disposition:** fixed unvalidated
 **From:** LT-B5  
 **Written:** 2026-08-20
 
@@ -1159,6 +1163,18 @@ left. Then run the route and watch the ironwork: the motor that ends up straight
 and the other should follow after a pause.
 
 #### Comments
+
+**Claude, 2026-08-24.** Reopened. Adam's recorded result on this is **does not work**, and it was
+sitting at *fixed validated* - closed on the strength of the automated tests while the hands-on check
+had never passed. An entry whose owner has said it does not work is not validated, whatever the suite
+says.
+
+His way in: "Use DEBUG_SIMULATE_PACKETS = true to simulate that there is a station, and confirm that
+way." That flag lets the route run without the ironwork being present, so the ORDER of the two commands
+and the pause between them can be watched in the log rather than on the layout - which is the part that
+was actually in doubt. The model-level cover is real (`testThreeWaySwitch` pins the pause on the first
+command and requires each position to come back as itself), but it cannot answer "did the right motor
+move first on the bench".
 
 Works.  But it still syncs with CS2 on close- is that sync still needed for consistency?  Perhaps only sync if there exist central station sourced routes.
 
@@ -5866,6 +5882,11 @@ only recorded it at one end.
 **3. Going to a link's other end** with unsaved work asks Save / Discard / Cancel, and each answer does
 what it says.
 
+**Also, since the fix:** put a locomotive on a square whose copies can none of them be driven away
+from - the right-click **Place** item goes grey and says why. Now, with the same square under the
+pointer, press **Ctrl+V**. Nothing must happen, and the log should say why. Then start autonomy and try
+Ctrl+V again on any square: refused, for the other reason.
+
 #### Comments
 
 **Claude, 2026-08-23.** Three findings, and two of them are the same mistake I made twice.
@@ -6334,5 +6355,164 @@ uglier than either. It is a 14px icon now, drawn at its final size rather than r
 size every pixel is a decision, and reducing a large drawing produced a rounded box with two blobs in
 it. It sits beside the text as the label's icon, and is cleared alongside the tooltip it belongs to,
 because one branch sets it and every other branch has to be the one that takes it away.
+
+---
+
+<a id="mt-145"></a>
+
+### MT-145 - 2026-08-24 - A locomotive rename reaches a setup nothing has open
+
+**Disposition:** fixed unvalidated
+**From:** OB-062
+**Written:** 2026-08-24
+
+**What to do.** The point of this one is to rename a locomotive **before anything has touched autonomy
+in that session**, which is the window where it went wrong.
+
+1. Start TrainControl fresh on a layout that HAS an autonomy setup, with a configuration that places a
+   locomotive and gives it a home.
+2. Without opening the autonomy editor, without loading a configuration, and without going near the
+   Auto tab - **rename that locomotive** in the locomotive database.
+3. Now load the configuration. It must load cleanly, with the train placed and its home intact under
+   the NEW name. Before this fix it would refuse the whole layout.
+4. Then repeat the whole thing with a **delete** instead of a rename: the configuration must load, with
+   that locomotive simply no longer placed.
+
+**And the other half - nothing must be invented.** On a layout where autonomy has NEVER been set up (no
+`config/autonomy` folder at all), rename a locomotive. Check the folder afterwards: there must still be
+no autonomy setup. Renaming a locomotive is not a request for autonomy.
+
+**And the page record.** After the rename in step 2, open `config/autonomy/setup.json` in a text
+editor and find the `"pages"` entry near the top. It must still list your page names. If it reads
+`"pages": {}` the repair has blanked the one record that lets the app tell a page RENAME from a page
+RENUMBER - which is what cost you 19 point names on 23 August.
+
+#### Comments
+
+**Claude, 2026-08-24.** Found by review, filed as OB-062 and left unworked for Adam to place; he asked
+for it next.
+
+`repairAutonomyLocomotive` returned immediately when no session was built, and the comment explaining
+why was half right. Its reasoning about the SESSION is sound and stays: `getAutonomySession()` opens
+every page, runs the caption migration, can raise a dialog and then writes a `setup.json`, so building
+one here would create autonomy out of nothing on a layout where nobody asked for it.
+
+What was wrong was the sentence that followed - that the file "is read the next time it IS opened - by
+which time this rename is already in the locomotive database". Nothing repairs locomotive names at
+load. The file is read as it stands, so the old name survives in the placement, the home and the
+exclusions until somebody chooses that configuration; `parseAuto` then answers a locomotive it cannot
+resolve by invalidating the whole layout, days later, with nothing connecting it to the rename.
+
+A bare `AutonomyCompanionStore` is not a session: it opens no pages, runs no migration, raises no
+dialog, and `exists()` means it writes nothing at all unless the setup file is already there. So
+`repairLocomotiveOnDisk` does the repair by the one route that cannot fabricate anything.
+
+**The fix nearly caused the thing it was written to prevent.** Probing the new method rather than
+reading it showed the repaired file coming back with `"pages": {}`. Nobody calls `setPageIds` on a bare
+store - there is no session to tell it what the pages are called - so `sharedFields()` wrote that record
+from an empty map. It is the only evidence a renumber ever happened, and blanking it would have
+disarmed the detection for the whole setup: a LOCOMOTIVE rename quietly making the next PAGE renumber
+undetectable. The repair now hands the store back the numbering the file was written under before it
+saves, and a test asserts the file comes out carrying its page names, mutation-checked.
+
+Four tests at the store, two of them seen failing first - the third is the "creates nothing" rule,
+which a do-nothing implementation passes by definition and which is there to stop the fix being made
+the wrong way. And a fourth in `testLocomotiveIdentityPropagates` asking the SOURCE whether the
+null-session path actually calls it: testing the rule would otherwise leave the call as the only
+uncovered part, which in this codebase is usually where the defect is - `renamePage` was faultless and
+had no caller for weeks (MT-135), and `HomeLocomotiveMenu` lost four of its five callers with its tests
+still green (DD-A6).
+
+---
+
+<a id="mt-146"></a>
+
+### MT-146 - 2026-08-24 - A train may leave the point that holds a station back
+
+**Disposition:** fixed unvalidated
+**From:** FR-001
+**Written:** 2026-08-24
+
+**What to do.** You need a station **B** that you have held back by another point **Y**, and a way for a
+train to run from Y to B.
+
+1. Put a train on **Y** and nothing on B. Ask autonomy to run. It must be willing to send that train
+   from Y to B - the train leaving Y is the one movement that clears the condition, so it is exempt.
+2. Now put a **second** train on Y and a third somewhere else with a path to B. B must be refused to the
+   third train while the second stands on Y.
+3. Take the train off Y. B must become available again straight away - the restriction is a condition,
+   not a one-way door.
+4. If Y is a square reachable from two sides (it splits into two Points), stand a train on the OTHER
+   copy and repeat step 1. It must still be exempt: it is the same piece of track.
+
+#### Comments
+
+**Claude, 2026-08-24.** FR-001 shipped counting any train on the watched point, including the one being
+dispatched. Adam: "The condition should not apply to trains leaving - only departing."
+
+Without the exemption the one movement that clears the condition is the movement it forbids: a
+locomotive standing in the yard could never be sent to the platform the yard holds back, and while it
+sat there the platform was shut to everybody else too. Autonomy had no way out of that at all - only a
+person driving the train off by hand.
+
+It is the same choice `Edge.isOccupied` makes, for the reason `isLockHeld` records: a train parked next
+to a junction was a permanent roadblock for every route across it, and two of them could deadlock with
+no way out for either.
+
+Three tests in `testStationBlockedByAnotherPoint`, including the mutation check that the rule still
+holds for everybody else - `standing == null || standing.equals(loc)` collapses to `true` if the second
+clause is ever right about the wrong locomotive - and one for the twin copy, which is the subtle half.
+They needed a fixture with a way OUT of the yard: the old one had no edge leaving it, so the exemption
+had nothing to be asked about, which is exactly why nothing pinned this either way.
+
+---
+
+<a id="mt-147"></a>
+
+### MT-147 - 2026-08-24 - The restored layout is the one you had
+
+**Disposition:** needs test
+**From:** the 23 August data loss
+**Written:** 2026-08-24
+
+**What to do.** This is a check on YOUR railway, not on a fixture, and it is the one that matters most.
+
+Open the layout and go through each page:
+
+1. **1 - Main** should carry 20 stations and 26 point names. **2 - Bottom** should carry 13 stations
+   and 21 names. Nothing on the other three pages.
+2. The station at **Main (20,13)** should be a sensor on address **10** again - a test had left it on 1.
+3. Captions should read the same as they did, and each should point at the station it is about.
+4. The portal between **Bottom (10,9)** and **Main (15,5)** should be paired, both ways.
+5. Load **Autonomy 1h**: 59 points, four of them carrying locomotives. It must load without
+   complaining that a locomotive is in two places at once.
+6. Load **Autonomy 1**, **1j** and **1k** in turn. Each should have 58 points and load cleanly.
+7. Then close TrainControl, reopen, and look once more - the first pass is about memory, this one is
+   about the file.
+
+Anything missing here is not a bug in the restore to be argued about: say what is missing and it can be
+taken from the snapshots, which are kept.
+
+#### Comments
+
+**Claude, 2026-08-24.** The setup was rebuilt from the last pre-damage snapshot (12:07 on 23 August,
+byte-identical to the 01:18 one) with every key re-keyed into the current page numbering, and every key
+AND every square-valued value checked against the real tiles - 249 references, no orphans.
+
+The file was MIXED, which is what made it delicate: entries that survived the renumber kept
+old-numbering keys, which round-trip unchanged, while anything edited afterwards was written in the new
+numbering. Each key was bracketed against the 12:49 file to tell which numbering it was written in.
+Three things nearly went wrong and were caught by checking rather than by reasoning: `stationSignals`
+values are squares too and were left untranslated on the first attempt, a portal existed twice under
+the two numberings, and `disabledLinks` came back empty from a merge that had silently dropped them.
+
+Also restored: `1 - Main.cs2` from the 22:17 copy, which differs from what a test had left by exactly
+one element - the s88 address at (20,13). And 34 points orphaned under the old page name `1 - Main2`
+were cleared from `Autonomy 1h`; every one of their coordinates already existed under the live name
+carrying more attributes, so nothing was lost. Those duplicates are what "loc at s88 is standing
+somewhere else, and can't be at 2 places at once" was reporting.
+
+Backups, if any of this is wrong: `PRE-RESTORE-2213` (your state before the first restore) and
+`PRE-RESTORE-2258` (what the app left after it pruned).
 
 ---
