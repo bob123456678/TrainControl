@@ -3854,6 +3854,19 @@ public class Layout
                                 e.toString()
                             );
 
+                            // ABANDONED, which this did not say (OB-072).
+                            //
+                            // The run stopped every train and then reported success: the method ends
+                            // in `return !abandoned.get()`, and nothing on this path ever set it. So
+                            // the plain-timetable flow showed no "stopped at entry N" dialog and the
+                            // operator was told the run had finished normally - which is the exact
+                            // symptom the comment beside that dialog says was fixed.
+                            //
+                            // A leg that threw is the clearest abandonment there is. Set before the
+                            // trains are stopped, so nothing between here and the return can be
+                            // reached with the flag still false.
+                            abandoned.set(true);
+
                             // Stop execution
                             synchronized (this.activeLocomotives)
                             {

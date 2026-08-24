@@ -687,9 +687,28 @@ public class testLocomotiveIdentityPropagates
         String body = withoutComments(new String(
             Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
 
-        int at = body.indexOf("this.model.renameLoc(");
+        // EVERY renameLoc call site, not the first one.
+        //
+        // There are two: the edit dialog, and accepting a name the Central Station proposes. They are
+        // near-copies of one another, so when the first was missing this call the second was too -
+        // and a rule that stops at the first match would have reported the pair as covered after
+        // fixing one of them. That is this codebase's most frequent defect, and a guard against it
+        // should not be able to commit it.
+        java.util.List<Integer> sites = new ArrayList<>();
 
-        assertTrue(at > 0, "the rename call is gone - this rule has nothing to watch");
+        for (int at = body.indexOf("renameLoc("); at >= 0; at = body.indexOf("renameLoc(", at + 1))
+        {
+            // the declaration in the model, not a call from the window
+            if (body.lastIndexOf("model.renameLoc(", at + 16) != at - 6
+                && body.lastIndexOf("model.renameLoc(", at + 16) != at - 11) continue;
+
+            sites.add(at);
+        }
+
+        assertEquals(sites.size(), 2,
+            "expected two renameLoc call sites in the window - the edit dialog and the Central "
+            + "Station proposal. Found " + sites.size() + ", so either a door has been added without "
+            + "this rule being told, or one has gone and the rule is watching less than it says");
 
         // The refresh block that follows it, bounded by the catch that closes the method.
         //
@@ -700,16 +719,37 @@ public class testLocomotiveIdentityPropagates
         // A guard that cannot fail is worse than no guard - it reports the thing it watches as
         // covered. This one was written, run, seen green, and only found by removing the call it is
         // supposed to protect and watching it stay green.
-        int end = body.indexOf("catch (Exception", at);
+        List<String> silent = new ArrayList<>();
 
-        assertTrue(end > at && end - at < 4000,
-            "the refresh block could not be bounded, so this rule would read the rest of the file and "
-            + "pass whatever the code did");
+        for (int at : sites)
+        {
+            // The refresh block that follows, bounded by the next call site or by the catch that
+            // closes the method - whichever comes first.
+            //
+            // NOT bounded by the next javadoc, which is what the first version of this did:
+            // withoutComments has already removed every javadoc, so that search never matched, the
+            // window became the whole rest of the file, and the rule passed no matter what. A guard
+            // that cannot fail is worse than no guard - it reports the thing it watches as covered.
+            // Found by removing the call it protects and watching it stay green.
+            int end = body.indexOf("catch (Exception", at);
 
-        String after = body.substring(at, end);
+            int nextSite = sites.indexOf(at) + 1 < sites.size() ? sites.get(sites.indexOf(at) + 1) : -1;
 
-        assertTrue(after.contains("updateVisiblePoints"),
-            "renaming a locomotive does not rewrite the station labels, so the track diagram goes on "
-            + "showing the old name beside the train until something unrelated repaints it: " + after);
+            if (nextSite > at && (end < 0 || nextSite < end)) end = nextSite;
+
+            assertTrue(end > at && end - at < 6000,
+                "a refresh block could not be bounded, so this rule would read the rest of the file "
+                + "and pass whatever the code did");
+
+            if (!body.substring(at, end).contains("updateVisiblePoints"))
+            {
+                silent.add(body.substring(at, Math.min(at + 160, end)).trim());
+            }
+        }
+
+        assertEquals(silent, new ArrayList<String>(),
+            "a locomotive rename does not rewrite the station labels, so the track diagram goes on "
+            + "showing the old name beside the train until something unrelated repaints it (OB-081): "
+            + silent);
     }
 }

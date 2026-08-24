@@ -19053,6 +19053,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (response == JOptionPane.YES_OPTION)
                         {
+                            // The fourth door, and the one that had no check (OB-074).
+                            //
+                            // RouteCommand.isNameUsable's own rule says "three separate doors have to
+                            // agree" - the rename dialog and both route-editor doors enforce it. This
+                            // one applies a name the CENTRAL STATION proposes, and renameLoc writes
+                            // that name into every route that mentions the locomotive.
+                            //
+                            // Real Central Station names look like "SBB 460 (2)", which is exactly
+                            // what the condition parser rewrites into a broken expression: brackets
+                            // are grouping and commas separate. So accepting a proposal could corrupt
+                            // every route naming that locomotive - and unlike the other three doors,
+                            // the name here was not typed by anybody who could be told why not.
+                            if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
+                            {
+                                JOptionPane.showMessageDialog(this,
+                                    I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+
+                                continue;
+                            }
+
                             Locomotive l = model.getLocByName(currentName);
                             
                             // Check if the target loc already exists
@@ -19080,6 +19100,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 {
                                     this.model.getAutoLayout().sanitizeMultiUnits(l);
                                     this.model.getAutoLayout().refreshUI();
+
+                                    // And the station labels, as the rename dialog does (OB-081).
+                                    // This block is a copy of that one, so it had the same gap - which
+                                    // is why the guard for it reads the source of BOTH renameLoc
+                                    // call sites rather than the first one it finds.
+                                    this.updateVisiblePoints();
+                                    this.repaintAutoLocList(false);
                                 }
                             }
                         }
