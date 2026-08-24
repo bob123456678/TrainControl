@@ -512,6 +512,58 @@ public class Point
     private final List<String> protectingSignals = new ArrayList<>();
 
     /**
+     * Points whose occupancy makes this station unavailable to autonomy.
+     *
+     * FR-001, and the half of it that lock edges cannot express.  The build ALSO emits a lock edge
+     * ending at each watched square, which holds the station back while a route is running over that
+     * approach - but Edge.isLockHeld asks about a reservation and deliberately not about a train
+     * standing at the sensor beyond it, because counting a parked train made a locomotive beside a
+     * junction a permanent roadblock.  Adam asked for both.
+     *
+     * So this is the standing-train half, by NAME - which is what a configuration refers to a Point by,
+     * and what survives being written out and read back.
+     *
+     * Never null, so no caller has to check twice.
+     */
+    private final List<String> blockedBy = new ArrayList<>();
+
+    /**
+     * @return the points that make this station unavailable while they are occupied
+     */
+    public List<String> getBlockedBy()
+    {
+        return Collections.unmodifiableList(this.blockedBy);
+    }
+
+    /**
+     * Replaces the list of points that hold this station back.
+     *
+     * @param pointNames the point names, or null to clear
+     * @return this
+     */
+    public Point setBlockedBy(List<String> pointNames)
+    {
+        this.blockedBy.clear();
+
+        if (pointNames != null)
+        {
+            for (String one : pointNames)
+            {
+                // De-duplicated, and a point never blocks itself: standing at a station already decides
+                // whether it is free, so watching itself makes a station nothing can be sent to rather
+                // than one that is restricted.
+                if (one != null && !one.trim().isEmpty()
+                    && !one.equals(this.getName()) && !this.blockedBy.contains(one))
+                {
+                    this.blockedBy.add(one);
+                }
+            }
+        }
+
+        return this;
+    }
+
+    /**
      * @return the first signal protecting this platform, or null
      */
     public String getProtectingSignal()
@@ -859,6 +911,11 @@ public class Point
             }
 
             jsonObj.put("excludedLocs", locNames);
+        }
+
+        if (!this.blockedBy.isEmpty())
+        {
+            jsonObj.put("blockedBy", new JSONArray(this.blockedBy));
         }
                 
         if (this.coordinatesSet())

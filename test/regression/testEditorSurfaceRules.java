@@ -3,6 +3,8 @@ package regression;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -88,10 +90,26 @@ public class testEditorSurfaceRules
         assertEquals(writes, 1,
             "the facing MENU writes to the setup from " + writes + " places in AutonomyEditorPanel. Two "
             + "copies of this menu is how OB-039 survived being fixed: the redraw goes on the copy "
-            + "somebody is looking at, and the other one keeps the bug. "
-            + "Scoped to this file on purpose. LayoutRightclickAutonomyMenu also writes a facing, as "
-            + "part of MOVING a locomotive to a station, and it saves and repaints on its own - a "
-            + "different operation that happens to set the same field, not a second copy of this menu");
+            + "somebody is looking at, and the other one keeps the bug");
+
+        // And project-wide, which is the half this used to claim without checking (NR-4).
+        //
+        // The count above is about ONE file, and its message said "the facing is written from one
+        // place" as though that were a property of the codebase. It was not: a third writer added in
+        // any other file passed, and the surface OB-039 was actually reported from - the track
+        // diagram's own menu - is one of them.
+        //
+        // A named LIST rather than a count, following testTriggerWaitsSayNothing: a count says
+        // something is wrong and a list says what, and adding a writer means saying here which file it
+        // is in and why it is allowed to be a second one.
+        assertEquals(filesWriting("setFacing("),
+            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java",
+                "LayoutRightclickAutonomyMenu.java"),
+            "a facing is written to the setup from a file this rule has not been told about. Each of "
+            + "the three known ones redraws in its own way - the menu through placementChanged(), the "
+            + "diagram's right-click through updateVisiblePoints() as part of MOVING a locomotive, and "
+            + "the session's own migration before anything is on screen - so a fourth has to say which "
+            + "of those it is, or it is a copy of a menu that will keep the bug the others had fixed");
 
         assertTrue(redrawn,
             "the facing is recorded but nothing redraws (OB-039). The caption carries the arrow saying "
@@ -147,7 +165,18 @@ public class testEditorSurfaceRules
         assertTrue(PANEL.isFile(),
             "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+        // The CODE, with the comments taken out.
+        //
+        // This read the raw source, and the only "finally" within its window was the word inside the
+        // comment that explains why the clear is in a finally - so the assertion was satisfied by
+        // writing rather than by doing, and it failed in both directions: rewording that comment broke
+        // the build, and moving the clear into Done's handler WITH its comment left the test green.
+        // The real keyword sat 27 characters outside the window it was searching (TD-3).
+        //
+        // Two sibling tests already had this fix when this one was written, and a third gained it since:
+        // a test that reads source has to read the code.
+        String source = withoutComments(
+            new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8));
 
         int at = source.indexOf("signalWindowOpen = false");
 
@@ -367,6 +396,89 @@ public class testEditorSurfaceRules
             "the rebuild-from-setup load appears " + found + " times. It was extracted into "
             + "rebuildRunningLayoutFromSetup precisely so there would be one of it, and the last time "
             + "there were two, a fix went into one of them and left the other wrong (TD-9)");
+    }
+
+    /**
+     * Which files under src/ write through a given call, by simple name, sorted.
+     *
+     * Comments stripped, for the reason TD-3 exists: a rule about what the code DOES cannot be
+     * satisfied by what a comment mentions.
+     *
+     * @param call the text of the call, such as ".setFacing("
+     * @return the simple names of the files containing it
+     */
+    private List<String> filesWriting(String call) throws Exception
+    {
+        File src = new File("src");
+
+        assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
+            + " - a test that reads the source cannot pass by not finding it");
+
+        List<File> sources = new ArrayList<>();
+
+        collect(src, sources);
+
+        java.util.Set<String> found = new java.util.TreeSet<>();
+
+        for (File file : sources)
+        {
+            String body = withoutComments(
+                new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+            // The declaration is not a write, and neither is a reference to it in a javadoc - which
+            // the comment stripping above has already taken care of.
+            body = body.replace("public void setFacing(", "");
+
+            if (body.contains(call)) found.add(file.getName());
+        }
+
+        return new ArrayList<>(found);
+    }
+
+    private void collect(File from, List<File> into)
+    {
+        File[] children = from.listFiles();
+
+        if (children == null) return;
+
+        for (File child : children)
+        {
+            if (child.isDirectory()) collect(child, into);
+            else if (child.getName().endsWith(".java")) into.add(child);
+        }
+    }
+
+    /**
+     * A source file with its comments taken out.
+     *
+     * Copied rather than shared with the three other tests that do this: a test helper reaching into
+     * another test class is a dependency between things that are supposed to fail independently.
+     */
+    private String withoutComments(String body)
+    {
+        StringBuilder out = new StringBuilder();
+
+        boolean inLine = false, inBlock = false;
+
+        for (int i = 0; i < body.length(); i++)
+        {
+            char c = body.charAt(i);
+            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+
+            if (inLine)
+            {
+                if (c == '\n') { inLine = false; out.append(c); }
+            }
+            else if (inBlock)
+            {
+                if (c == '*' && next == '/') { inBlock = false; i++; }
+            }
+            else if (c == '/' && next == '/') inLine = true;
+            else if (c == '/' && next == '*') inBlock = true;
+            else out.append(c);
+        }
+
+        return out.toString();
     }
 
     /**

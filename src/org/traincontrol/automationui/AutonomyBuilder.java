@@ -838,6 +838,36 @@ public class AutonomyBuilder
                 // feedback - so the sensor cannot say which Points are one square.  The tile can.
                 if (nodes.size() > 1) json.put("block", point.getTile().toString());
 
+                // The points this station is held back by, by NAME (FR-001).
+                //
+                // The same setting is also emitted as LOCK EDGES further down, and the two answer
+                // different questions on purpose: a lock edge asks whether that approach is held by a
+                // route, and this asks whether a train is STANDING on the square. Adam asked for both.
+                //
+                // On every copy of the station, because the copies are one platform - the same reason
+                // the protecting signals are on every copy.
+                //
+                // One name per watched square, and the FIRST copy of it: the rule asks about the whole
+                // block, so any copy's name reaches the same piece of track, and writing them all would
+                // be several names for one answer.
+                List<TileKey> held = blockingPoints.get(point.getTile());
+
+                if (held != null && !held.isEmpty())
+                {
+                    JSONArray watching = new JSONArray();
+
+                    for (TileKey square : held)
+                    {
+                        List<Node> copies = nodesFor(square);
+
+                        if (copies.isEmpty()) continue;
+
+                        watching.put(nodeName(names.get(square), copies.get(0)));
+                    }
+
+                    if (watching.length() > 0) json.put("blockedBy", watching);
+                }
+
                 // The signals thrown to red while this platform is claimed.  On every copy, because
                 // the copies are one platform.
                 //

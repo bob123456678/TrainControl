@@ -1906,6 +1906,43 @@ public class Layout
             return false;
         }
 
+        // A station held back while another point has a train STANDING on it (FR-001).
+        //
+        // The other half of this setting is built into the configuration as lock edges, which ask
+        // whether that approach is held by a ROUTE - Edge.isLockHeld says so, and says why it stops
+        // there: counting a parked train made a locomotive beside a junction a permanent roadblock, and
+        // two could deadlock.  That reasoning is about track a route needs to CROSS.  This is a
+        // different question, asked only of a path DESTINATION and only about squares somebody named,
+        // so neither hazard applies - nothing here can hold up a route that was not going to that
+        // station anyway.
+        //
+        // Behind isAutoRunning, like the endpoint rules above it: this shapes what AUTONOMY chooses,
+        // and a person dispatching by hand is looking at the railway and has said what they want.
+        //
+        // The whole BLOCK, not just the named Point.  A square emitted as several copies is one piece
+        // of track, so a train on the eastbound copy of the watched point is standing on it, and asking
+        // only the copy that carries the name would answer clear with a train there.
+        //
+        // A name matching nothing blocks nothing, deliberately: renaming a point should not quietly
+        // retire a platform.
+        if (this.isAutoRunning())
+        {
+            Point destination = path.get(path.size() - 1).getEnd();
+
+            for (String blocker : destination.getBlockedBy())
+            {
+                Point watched = this.getPoint(blocker);
+
+                if (watched == null || watched.getBlockLocomotive() == null) continue;
+
+                logPathError(loc, path, logFailures,
+                    I18n.f("autolayout.errorDestinationBlockedByPoint",
+                        destination.getName(), blocker));
+
+                return false;
+            }
+        }
+
         // Preview the configuration
         EdgeConfigurationState validity = new EdgeConfigurationState();
         for (Edge e : path)
@@ -5824,6 +5861,34 @@ public class Layout
                     }
 
                     layout.getPoint(point.getString("name")).setProtectingSignals(signals);
+                }
+
+                // The points whose occupancy makes this station unavailable to autonomy (FR-001).
+                //
+                // Names, read verbatim: they may name a Point this loop has not created yet, and
+                // nothing resolves them at load - the rule asks by name at the moment it is applied, so
+                // a name matching nothing simply blocks nothing.  That is the tolerant direction and
+                // the deliberate one: refusing the configuration would take a whole layout out of
+                // service because one station lost the point it was paired with.
+                if (point.has("blockedBy"))
+                {
+                    List<String> blockers = new ArrayList<>();
+
+                    JSONArray named = point.optJSONArray("blockedBy");
+
+                    if (named != null)
+                    {
+                        for (int at = 0; at < named.length(); at++)
+                        {
+                            blockers.add(named.getString(at));
+                        }
+                    }
+                    else if (point.optString("blockedBy", null) != null)
+                    {
+                        blockers.add(point.getString("blockedBy"));
+                    }
+
+                    layout.getPoint(point.getString("name")).setBlockedBy(blockers);
                 }
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive
