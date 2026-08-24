@@ -1927,6 +1927,17 @@ public class Layout
 
             for (Point watched : destination.getBlockedBy())
             {
+                // NOT exempting the locomotive being dispatched, which is a decision rather than an
+                // oversight - and one worth re-reading, because Edge.isOccupied does exempt the asker.
+                //
+                // Adam's words were "exclude the autonomous selection of a station when another point
+                // is occupied", and a train standing on that point occupies it - including the train
+                // that is about to leave it.  So a locomotive in the yard cannot be sent to the
+                // platform the yard holds back, even though its own departure clears the condition.
+                //
+                // The literal reading is implemented.  If the intent was "occupied by somebody else",
+                // this is the line to change - one clause, matching isOccupied's shape - and the test
+                // beside it says which way round it is.
                 if (watched.getBlockLocomotive() == null) continue;
 
                 logPathError(loc, path, logFailures,

@@ -2895,7 +2895,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // every route; deleting left the name behind.
             for (MarklinRoute r : this.getRoutes())
             {
-                r.locomotiveDeleted(name);
+                // A condition naming the deleted locomotive is left in place on purpose - see the note
+                // on locomotiveDeleted - so it is said out loud instead.  That route will not fire
+                // again until somebody edits it, and a route that has silently stopped firing is
+                // exactly the failure nobody notices.
+                if (r.locomotiveDeleted(name))
+                {
+                    this.logf("route.warnConditionNamesDeletedLocomotive", r.getName(), name);
+                }
             }
         }
 

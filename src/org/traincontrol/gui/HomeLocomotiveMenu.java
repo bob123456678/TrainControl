@@ -275,7 +275,14 @@ final class HomeLocomotiveMenu
         // busywork when the station already knows the answer.
         JComboBox<String> selector = new JComboBox<>(names.toArray(new String[0]));
 
-        selector.setSelectedItem(p.getHomeLoc() != null ? p.getHomeLoc() : NONE);
+        // By NAME, because this combo holds names.
+        //
+        // This passed the Locomotive itself once a Point started holding one, and setSelectedItem takes
+        // an Object so it compiled.  A non-editable combo ignores a selection that is not in its model,
+        // so the dialog opened on "(none)" for a station that HAD a home - and pressing OK then applied
+        // that, clearing an assignment the operator never touched.  Opening the dialog and accepting it
+        // destroyed the setting it exists to show.
+        selector.setSelectedItem(p.getHomeLoc() != null ? p.getHomeLoc().getName() : NONE);
 
         Locomotive standingHere = p.getCurrentLocomotive();
 

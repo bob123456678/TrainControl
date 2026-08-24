@@ -258,6 +258,71 @@ public class testLocomotiveIdentityPropagates
             "the wrong command was removed - the accessory command is not about a locomotive");
     }
 
+    /**
+     * A CONDITION naming a deleted locomotive is reported and left alone.
+     *
+     * The reviewer was right that nothing covered this: the test above builds its route with null
+     * conditions, so a conditions sweep that did not exist could not be caught missing.
+     *
+     * It was right about the gap and wrong about the remedy, which is worth writing down because the
+     * remedy was mine. `locomotiveDeleted`'s own javadoc used to say a condition should be removed for
+     * the same reason a command is - "a condition that can never be true is a route that can never
+     * run". Conditions are combined with AND, so removing the dead term does not restore the route the
+     * operator wrote: it produces a route that fires on what is LEFT, which is a weaker condition than
+     * they ever agreed to. These routes throw switches and signals ahead of moving trains. A route that
+     * has quietly stopped firing is safe; one that quietly starts firing is not.
+     *
+     * So the condition stays and the operator is told.
+     */
+    @Test
+    public void testARouteConditionNamingADeletedLocomotiveIsReportedNotRemoved() throws Exception
+    {
+        MarklinRoute route = new MarklinRoute(model, "Propagation test route three", 0,
+            new ArrayList<>(Arrays.asList(
+                RouteCommand.RouteCommandLocomotiveSpeed(GOING, 40),
+                RouteCommand.RouteCommandAccessory(1,
+                    org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true))),
+            0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+            NodeExpression.fromList(
+                Arrays.asList(RouteCommand.RouteCommandAutoLocomotive(GOING, 47451))));
+
+        boolean stillNamed = route.locomotiveDeleted(GOING);
+
+        assertTrue(stillNamed,
+            "a condition naming the deleted locomotive was not reported. It cannot be satisfied, so "
+            + "this route will never fire again - and nothing on screen would say why");
+
+        assertEquals(NodeExpression.toList(route.getConditions()).size(), 1,
+            "the condition was removed. Conditions are ANDed, so dropping the dead term makes the "
+            + "route fire on a weaker condition than the operator ever wrote - and these routes throw "
+            + "switches ahead of moving trains");
+
+        assertEquals(route.getRoute().size(), 1,
+            "the COMMAND for the deleted locomotive should still be removed - it can do nothing, and "
+            + "leaving it makes the route look complete when it is not");
+
+        assertTrue(route.getRoute().get(0).isAccessory(),
+            "the wrong command was removed");
+    }
+
+    /**
+     * And a route that never mentioned it reports nothing.
+     */
+    @Test
+    public void testARouteWithoutTheLocomotiveReportsNothing() throws Exception
+    {
+        MarklinRoute route = new MarklinRoute(model, "Propagation test route four", 0,
+            new ArrayList<>(Arrays.asList(RouteCommand.RouteCommandAccessory(1,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true))),
+            0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+            NodeExpression.fromList(Arrays.asList(RouteCommand.RouteCommandFeedback(47451, true))));
+
+        assertFalse(route.locomotiveDeleted(GOING),
+            "a route that never named the locomotive was reported as affected by its deletion");
+
+        assertEquals(route.getRoute().size(), 1, "and nothing of its own was taken away");
+    }
+
     // --- the guard that outlasts all of the above --------------------------------------------------
 
     /**
@@ -356,9 +421,11 @@ public class testLocomotiveIdentityPropagates
         }
 
         assertEquals(suspect, new ArrayList<String>(),
-            "a locomotive is being compared with a NAME where the other side is the locomotive "
-            + "itself. String.equals takes an Object, so this compiles and answers false for ever - "
-            + "the comparison never matches and nothing anywhere says so: " + suspect);
+            "a locomotive is being used where a NAME is expected. Every one of these compiles: "
+            + "String.equals, Collection.contains and JComboBox.setSelectedItem all take an Object, "
+            + "so the comparison silently never matches - and Swing quietly ignores a selection it "
+            + "cannot find, which is how opening the home dialog came to clear the assignment it was "
+            + "showing. Take .getName() first: " + suspect);
     }
 
     private void collect(File from, List<File> into)
@@ -381,8 +448,12 @@ public class testLocomotiveIdentityPropagates
     {
         List<String> out = new ArrayList<>();
 
+        // Nested generics too.  This used [^>]* for the value type, so `Map<Locomotive,
+        // List<Edge>>` and `Map<Locomotive, List<Point>>` were invisible to it - both happen to be
+        // swept today, and a future one would have slipped past the guard meant to be the part that
+        // lasts.
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-            "private final (?:Map<Locomotive,[^>]*>|Set<Locomotive>|List<Locomotive>) (\\w+)")
+            "private final (?:Map<Locomotive,.*?>|Set<Locomotive>|List<Locomotive>) (\\w+)")
             .matcher(withoutComments(text));
 
         while (m.find()) out.add(m.group(1));

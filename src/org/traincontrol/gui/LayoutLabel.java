@@ -164,9 +164,9 @@ public final class LayoutLabel extends JLabel
             // The grey grid, which is where it actually comes from - the editor's restingBorder puts it
             // BACK after a hover, and this is what puts it there to begin with.
             //
-            // Asked of the same rule, so the toggle reaches both (FR-006).  Off, it is an empty border
-            // of the same width rather than none at all: a border occupies space, so a square without
-            // one is a pixel smaller than its neighbours and grew when the pointer crossed it.
+            // Asked of the same rule, so the toggle reaches both (FR-006).  Off, it is NOTHING - tiles
+            // sit flush, as they do in the viewer - and the hover outline reserves nothing either, so
+            // the pointer no longer pushes the diagram along in front of it.
             this.setBorder(LayoutEditor.restingBorder(false,
                 parent instanceof LayoutEditor && ((LayoutEditor) parent).isAutonomyMode(),
                 LayoutEditor.showGrid()));

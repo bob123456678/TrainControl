@@ -160,24 +160,36 @@ abstract public class Route
     }
 
     /**
-     * Takes a deleted locomotive out of this route.
+     * Takes a deleted locomotive out of this route's COMMANDS, and reports its conditions.
      *
      * Renaming has always been followed into a route and deleting never was, so a route went on naming
      * a locomotive that is not in the database - and what that does is quiet.  A command for a
      * locomotive that cannot be resolved does nothing when the route fires, and a route is a list of
-     * commands: one of them silently not applying looks exactly like a route that ran.  A CONDITION
-     * naming one is worse - Route.evaluate answers false for a locomotive it cannot find, so the route
-     * simply never fires again, with nothing on screen to say why.
+     * commands: one of them silently not applying looks exactly like a route that ran.  So the command
+     * is removed: it cannot do anything, and leaving it keeps the route looking complete while it is
+     * not.
      *
-     * Removed rather than blanked.  A command with no locomotive is not a command, and a condition that
-     * can never be true is a route that can never run: leaving either in place keeps the route looking
-     * complete while it is not.
+     * **The conditions are deliberately left alone, and an earlier version of this comment was wrong
+     * to say otherwise.**  It reasoned that a condition which can never be true is a route that can
+     * never run, and should go the same way.  That is true and the remedy is worse than the fault.
+     * Conditions are combined with AND - see NodeExpression.fromList - so a term naming a deleted
+     * locomotive makes the whole condition false, and the route stops firing.  Removing the term does
+     * not restore the route the operator had: it creates a route that fires on what is LEFT, which is a
+     * weaker condition than they ever wrote.  These routes throw switches and signals ahead of moving
+     * trains, so a route that has quietly stopped firing is safe and a route that quietly starts firing
+     * on a condition nobody agreed to is not.
+     *
+     * A term inside an OR could be dropped safely, since false is its identity there - but a rule that
+     * depends on where in the tree a term sits is one nobody can predict from the outside, and the
+     * caller is told either way.
      *
      * @param name the locomotive that no longer exists
+     * @return true if a CONDITION still names it, so the caller can say so - this route will not fire
+     *         until somebody edits it
      */
-    public void locomotiveDeleted(String name)
+    public boolean locomotiveDeleted(String name)
     {
-        if (name == null) return;
+        if (name == null) return false;
 
         for (java.util.Iterator<RouteCommand> commands = this.route.iterator(); commands.hasNext();)
         {
@@ -185,6 +197,15 @@ abstract public class Route
 
             if (namesALocomotive(rc) && name.equals(rc.getName())) commands.remove();
         }
+
+        if (this.getConditions() == null) return false;
+
+        for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
+        {
+            if (namesALocomotive(rc) && name.equals(rc.getName())) return true;
+        }
+
+        return false;
     }
 
     /**

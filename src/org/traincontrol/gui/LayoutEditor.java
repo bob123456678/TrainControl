@@ -394,6 +394,25 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         org.traincontrol.automationui.AutonomyCompanionStore
             .repairLocomotiveInSetup(this.autonomyAsOpened, from, to);
+
+        // And every snapshot on the undo stacks, which is the door Cancel is not.
+        //
+        // Each entry is a page snapshot holding this page's point properties - placements, homes and
+        // exclusions, by name - and restoring one writes it back AND SAVES.  So without this, an undo
+        // after a rename put the old name back on disk, and a configuration naming a locomotive that is
+        // not in the database is refused by parseAuto, which invalidates the whole layout.  Cancel and
+        // Ctrl+Z are two ways of saying the same thing, and only one of them was covered.
+        for (java.util.Map<String, Object> was : this.previousCaptions)
+        {
+            org.traincontrol.automationui.AutonomyCompanionStore
+                .repairLocomotiveInPageSnapshot(was, from, to);
+        }
+
+        for (java.util.Map<String, Object> was : this.previousCaptionsRedo)
+        {
+            org.traincontrol.automationui.AutonomyCompanionStore
+                .repairLocomotiveInPageSnapshot(was, from, to);
+        }
     }
 
     /**
@@ -3151,7 +3170,11 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param autonomy unused now that the grid is a choice - kept so the two-argument form still reads
      *        the same at its call sites
      * @param grid whether the grey grid is being drawn
-     * @return the border, never null
+     * @return the border, or NULL when nothing is to be drawn - which is the autonomy editor always,
+     *         and the track editor with the grid switched off.  Null rather than an empty border of
+     *         the same width, because an empty border still takes up room and the room shows the panel
+     *         behind it: a white grid where the grey one used to be (MT-127).  The hover outline
+     *         answers the same question, so nothing moves - see overlayLine.
      */
     public static Border restingBorder(boolean palette, boolean autonomy, boolean grid)
     {
@@ -3348,9 +3371,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     // This used to be "has a border, or we are in autonomy mode" - because the resting
                     // border was null in autonomy mode, and a label already put back to nothing had to
                     // not be skipped on the way to a highlight and back, or the first hover left a line
-                    // behind for good. The resting border is never null now (FR-006: a missing border
-                    // is missing SPACE, so hovering grew the square), which would have made that
-                    // condition quietly mean something else - "any label that has ever been touched".
+                    // behind for good. Asking what a component IS rather than whether it currently has
+                    // a border keeps that working whether the resting border is a line or nothing at
+                    // all - and with the grid off it is nothing, which is what the old condition would
+                    // have quietly turned into "any label that has ever been touched".
                     if (label instanceof LayoutLabel)
                     {
                         label.setBorder(restingBorder(newComponents.equals(panel), isAutonomyMode()));

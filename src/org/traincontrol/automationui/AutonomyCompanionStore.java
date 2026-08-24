@@ -982,7 +982,52 @@ public class AutonomyCompanionStore
     {
         if (configuration == null || !configuration.has("points")) return;
 
-        JSONObject points = configuration.getJSONObject("points");
+        repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
+    }
+
+    /**
+     * Follows a rename into one page snapshot - what snapshotPage returns, held by the editor's undo.
+     *
+     * A third holder of the same names, and the one that reaches DISK: the diagram editor pushes a
+     * snapshot onto its undo stack for every edit, and Ctrl+Z puts it back and saves.  So a rename made
+     * while the editor is open was repaired in the live store and in the Cancel snapshot, and an undo
+     * afterwards wrote the old name back over both - which parseAuto answers by invalidating the whole
+     * layout, days later and with nothing connecting it to the rename.
+     *
+     * The shape differs from a configuration's: here each value is already the POINTS object, keyed by
+     * square, rather than a configuration with a points child.  Hence the split below - the per-point
+     * work is one method with three callers rather than three copies that can disagree.
+     *
+     * @param snapshot what snapshotPage returned; changed in place
+     * @param from the old locomotive name
+     * @param to the new one, or null when it was deleted
+     */
+    @SuppressWarnings("unchecked")
+    public static void repairLocomotiveInPageSnapshot(Map<String, Object> snapshot, String from,
+        String to)
+    {
+        if (snapshot == null || from == null || from.equals(to)) return;
+
+        Object configurations = snapshot.get("configurations");
+
+        if (!(configurations instanceof Map)) return;
+
+        for (Object points : ((Map<String, JSONObject>) configurations).values())
+        {
+            if (points instanceof JSONObject) repairLocomotiveInPoints((JSONObject) points, from, to);
+        }
+    }
+
+    /**
+     * One square-keyed set of point properties: the placements, homes and exclusion lists in it.
+     *
+     * @param points square to that square's properties, changed in place
+     * @param from the old name
+     * @param to the new name, or null to remove it
+     */
+    private static void repairLocomotiveInPoints(JSONObject points, String from, String to)
+    {
+        if (points == null) return;
 
         for (String key : points.keySet())
         {

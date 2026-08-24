@@ -961,6 +961,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param value the label drawing its caption
      */
     /**
+     * Hands back the caption labels of every page currently in the grid cache.
+     *
+     * Called just before the cache is emptied, which is the one moment those grids are finished with:
+     * their containers are about to be unreachable, and a page rebuilt afterwards registers its
+     * captions again from scratch.
+     */
+    @SuppressWarnings("unchecked")
+    private void forgetCachedPageLabels()
+    {
+        for (JPanel cached : this.layoutCache.values())
+        {
+            if (cached == null) continue;
+
+            Object registered = cached.getClientProperty(LayoutGrid.CAPTIONS_REGISTERED);
+
+            if (registered instanceof java.util.Collection)
+            {
+                // Null container: the cache is being emptied, so the "is it cached" question below
+                // would answer yes about a page that is on its way out.
+                forgetLayoutStations((java.util.Collection<JLabel>) registered, null);
+            }
+        }
+    }
+
+    /**
      * Drops every caption label a retired grid registered.
      *
      * addLayoutStation prunes lazily, and only when a SUCCESSOR for the same square is registered by
@@ -14633,6 +14658,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.activeLoc = null;
                 }
 
+                // What Control+X is holding, if it is this locomotive.
+                //
+                // One more holder the sweep said nothing about, found by review. Cut a train off a
+                // square, delete the locomotive, press Control+V: the paste resolves a locomotive that
+                // is no longer in the database. Harmless in itself - it fails and logs - but it is the
+                // same shape as the five that were not harmless, and this is the door the source guard
+                // cannot see, because the holder is in the interface rather than in the layout.
+                if (l.equals(this.cutLocomotive)) this.cutLocomotive = null;
+
                 // Every PAGE of mappings, not only the one on screen.
                 //
                 // locMapping is a list of pages and this cleared the current one, so a locomotive
@@ -20346,6 +20380,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Reset cache
                         if (!useCache)
                         {
+                            // Every page in it is being thrown away, which is the moment those grids
+                            // are really finished with - and the only moment anything can tell.
+                            //
+                            // Without this the caption labels of every cached page stayed registered
+                            // for the session: discard() asks the window whether its container is
+                            // cached and stands down if it is, and this reset happens AFTERWARDS, so
+                            // the answer was always yes and the hand-back never ran.  The lazy prune
+                            // cannot recover them either - it needs a successor label for the same
+                            // square, and a caption that was CLEARED never gets one.
+                            forgetCachedPageLabels();
+
                             this.layoutCache = new HashMap<>();
                         }
 

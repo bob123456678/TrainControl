@@ -115,6 +115,16 @@ public class LayoutGrid
     private final java.util.List<javax.swing.JLabel> registeredCaptions = new java.util.ArrayList<>();
 
     /**
+     * Where a container remembers the caption labels the grid inside it registered.
+     *
+     * The page cache holds CONTAINERS, and when it is emptied those grids are finished with for good -
+     * but a container is all the window has at that moment, so it has to be able to get from one to the
+     * labels.  Hung on the container rather than kept in a map here, so it cannot outlive what it is
+     * about.
+     */
+    public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
+
+    /**
      * The grid currently drawn into each panel, so that building a new one can retire the old one.
      *
      * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
@@ -265,6 +275,9 @@ public class LayoutGrid
         // {
             container = new JPanel();
             container.setBackground(Color.white);
+
+            // The live list, so whatever this grid registers later is reachable from the container
+            container.putClientProperty(CAPTIONS_REGISTERED, registeredCaptions);
             
             // Things mess up without this
             //

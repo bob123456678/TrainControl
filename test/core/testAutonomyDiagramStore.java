@@ -1914,4 +1914,49 @@ public class testAutonomyDiagramStore
         assertEquals(point.getJSONArray("excludedLocs").length(), 0,
             "cancelling put back an exclusion naming a deleted locomotive");
     }
+
+    /**
+     * A rename reaches a PAGE snapshot too - what the editor's undo stack holds.
+     *
+     * The third holder of the same names, and the one that reaches disk. Cancel restores the setup as
+     * it was when the window opened; Ctrl+Z restores one page snapshot and SAVES. So a rename made
+     * while the editor is open was repaired in the live store and in the Cancel snapshot, and an undo
+     * afterwards wrote the old name back over both - which parseAuto answers by invalidating the whole
+     * layout, days later, with nothing connecting it to the rename.
+     *
+     * Found by review, after the Cancel door had been fixed and reported as done. Two ways of saying
+     * the same thing, one of them covered - which is this codebase's recurring shape.
+     */
+    @Test
+    public void testARenameReachesAPageSnapshotTheUndoStackHolds() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        place(store.getConfiguration("Only"), "1:4,4", "Old Name");
+
+        // What the editor pushes onto its undo stack for every edit
+        java.util.Map<String, Object> pushed = store.snapshotPage("1");
+
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        AutonomyCompanionStore.repairLocomotiveInPageSnapshot(pushed, "Old Name", "New Name");
+
+        // What Ctrl+Z does
+        store.restorePage("1", pushed);
+
+        org.json.JSONObject point = store.getConfiguration("Only")
+            .getJSONObject("points").getJSONObject("1:4,4");
+
+        assertEquals(point.getJSONObject("loc").getString("name"), "New Name",
+            "undoing an edit put the old locomotive name back, and restoring a page SAVES - so this "
+            + "is on disk, and a configuration naming a locomotive that is not in the database "
+            + "invalidates the whole layout");
+
+        assertEquals(point.getString("home"), "New Name",
+            "the home assignment in the restored page still names the old locomotive");
+
+        assertEquals(point.getJSONArray("excludedLocs").getString(0), "New Name",
+            "the exclusion in the restored page still names the old locomotive");
+    }
 }
