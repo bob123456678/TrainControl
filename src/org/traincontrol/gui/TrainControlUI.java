@@ -3625,21 +3625,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Not while trains are moving.  Rebuilding underneath a running railway is what
         // prepareAutonomyReload exists to refuse, and somebody editing during a run has already been
         // warned once; this is a courtesy, not a reason to stop their trains.
-        if (activeDiagramConfiguration != null && !isAutonomyBusy()
-            && getAutonomyViewerPanel() != null)
-        {
-            // WITHOUT capturing the running layout's state first.
-            //
-            // Both callers of this shape reach it BECAUSE the setup just changed, so the setup is the
-            // newer of the two by definition. An ordinary load folds the running layout's placements,
-            // homes and facings back into the configuration before replacing it - which here writes
-            // the stale answer back over the edit that asked for the rebuild, and then regenerates
-            // from the reverted configuration. The edit is undone on its way to being redrawn.
-            //
-            // An explicit edit beats an inferred one. A facing learned by watching where a train ended
-            // up is a guess; somebody choosing one is not.
-            getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
-        }
+        //
+        // THROUGH the extracted method, which was lifted out of this very block so the diagram's own
+        // menu could ask for the same thing - and then left here as a second copy of it (TD-9).  That
+        // duplication has already cost once: the reviewer who found the stale-capture defect found one
+        // of the two sites, and the fix had to be applied to both.  Left as it was there would be two
+        // again.
+        rebuildRunningLayoutFromSetup();
     }
 
     /**

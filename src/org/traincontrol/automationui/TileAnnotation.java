@@ -608,6 +608,11 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
+        // `editing` is deliberately NOT here, unlike in equals and hashCode.  On its own it paints
+        // nothing - it only says WHERE a badge goes, and with no badge there is nothing to place - so
+        // an annotation carrying it and nothing else is still blank.  Said out loud because the comment
+        // above is about a field being left out of this method, and the next reader should not have to
+        // work out whether this is the same mistake again.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
             && traces.isEmpty() && arrivals.isEmpty() && !occupied;
     }
@@ -1711,11 +1716,19 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
+        // `editing` is in here because it changes the PICTURE - it decides whether a station's badge
+        // moves out to the corner on a bend - and equals is what LayoutLabel asks to decide whether a
+        // redraw is needed.  Two annotations differing only in it were indistinguishable to that
+        // question (TD-11).
+        //
+        // The two populations of labels happen to be segregated today, so no live path reached it. It
+        // is left as a trap otherwise, twelve lines below a comment recording the same omission being
+        // made once before.
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
-            && occupied == other.occupied
+            && occupied == other.occupied && editing == other.editing
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -1726,7 +1739,7 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + arrivals.hashCode() * 7;
+            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + arrivals.hashCode() * 7;
     }
 
     @Override

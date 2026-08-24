@@ -182,7 +182,8 @@ public class testTriggerWaitsSayNothing
     {
         File src = new File("src");
 
-        if (!src.isDirectory()) return;
+        assertTrue(src.isDirectory(),
+            "cannot find " + src.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         java.util.Set<String> callers = new java.util.TreeSet<>();
 

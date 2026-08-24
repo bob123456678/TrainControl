@@ -121,7 +121,8 @@ public class testHomeAssignmentRules
     @Test
     public void testEachRuleIsStillWiredToSomething() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
 

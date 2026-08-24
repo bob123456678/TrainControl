@@ -56,7 +56,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingIsWrittenFromOnePlaceAndThatPlaceRedraws() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
 
@@ -107,7 +108,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingSubmenuIsBuiltOnce() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
 
@@ -141,7 +143,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheSignalFocusIsAlwaysTurnedOffAgain() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
 
@@ -167,7 +170,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheDeclutterIsOneDecision() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
 
@@ -241,7 +245,8 @@ public class testEditorSurfaceRules
     {
         File grid = new File("src/org/traincontrol/gui/LayoutGrid.java");
 
-        if (!grid.isFile()) return;
+        assertTrue(grid.isFile(),
+            "cannot find " + grid.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         List<String> lines = Files.readAllLines(grid.toPath(), StandardCharsets.UTF_8);
 
@@ -285,7 +290,8 @@ public class testEditorSurfaceRules
     @Test
     public void testARenameOnlyLabelsAStationThatHasNoLabel() throws Exception
     {
-        if (!PANEL.isFile()) return;
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
 
@@ -320,5 +326,45 @@ public class testEditorSurfaceRules
             + renames + ". If one was removed, this test should be updated rather than made to pass");
     }
 
+    /**
+     * The running layout is rebuilt from the setup in exactly ONE place.
+     *
+     * TD-9, from the three-day history review. `rebuildRunningLayoutFromSetup` was lifted out of
+     * `autonomyEditorClosed` so that an edit made from the diagram's own menu could ask for the same
+     * thing - its javadoc says so - and the original was left behind as a second copy of the same
+     * sixteen lines, comments and all.
+     *
+     * That duplication has already cost once. The stale-capture defect (NR-1) was reported at one of
+     * the two sites, and fixing it there left the other one wrong; the commit that fixed it says "the
+     * reviewer found one site; there were two". The ten-line explanation of WHY the load must skip its
+     * capture step was then written into both places rather than one.
+     *
+     * So this asserts the thing that stops a third copy: the load that rebuilds the running layout
+     * without capturing appears once in the whole file. It is deliberately about the CALL rather than
+     * about the comment - a comment can be copied and still be true; a second call is the defect.
+     */
+    @Test
+    public void testTheRunningLayoutIsRebuiltFromOnePlace() throws Exception
+    {
+        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
 
+        assertTrue(source.isFile(),
+            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
+
+        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+
+        int found = 0;
+
+        for (String line : text.split("\n"))
+        {
+            String code = line.contains("//") ? line.substring(0, line.indexOf("//")) : line;
+
+            if (code.contains("load(activeDiagramConfiguration, false, false)")) found++;
+        }
+
+        assertEquals(found, 1,
+            "the rebuild-from-setup load appears " + found + " times. It was extracted into "
+            + "rebuildRunningLayoutFromSetup precisely so there would be one of it, and the last time "
+            + "there were two, a fix went into one of them and left the other wrong (TD-9)");
+    }
 }

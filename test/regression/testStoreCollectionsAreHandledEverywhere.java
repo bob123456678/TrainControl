@@ -159,7 +159,8 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testEveryKeptCollectionIsHandledAtEverySite() throws Exception
     {
-        if (!SOURCE.isFile()) return;
+        assertTrue(SOURCE.isFile(),
+            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
 
@@ -195,7 +196,8 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testNoExemptionIsStale() throws Exception
     {
-        if (!SOURCE.isFile()) return;
+        assertTrue(SOURCE.isFile(),
+            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
 

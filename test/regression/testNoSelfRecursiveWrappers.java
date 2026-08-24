@@ -40,7 +40,8 @@ public class testNoSelfRecursiveWrappers
     {
         File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
 
-        if (!source.isFile()) return;
+        assertTrue(source.isFile(),
+            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
 
         List<String> lines = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
 
