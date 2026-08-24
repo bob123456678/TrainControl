@@ -298,3 +298,38 @@ a locomotive before anything has touched autonomy in that session.
 Filed rather than fixed: the repair wants a load-time pass over the setup, which is a different shape
 from the in-memory repairs beside it, and it is worth deciding whether that belongs here or in the
 store's own load.
+
+### FR-013 - 2026-08-24 - The store should hold objects, not strings
+
+**Kind:** feature request
+**Raised from:** Adam, after the page-renumber round
+**Filed:** 2026-08-24
+
+Adam: "Ideally: string keys only matter at import/export. Internally, we should always use objects. We
+can continue sorting by page name string and using the IDs as the unique identifiers."
+
+`AutonomyCompanionStore` keys its eleven collections by `"pageName:x,y"` STRINGS, and `tileDirections`
+additionally carries a `#dx,dy` route suffix that is parsed by hand at every site that touches it.
+`TileKey` already exists as the object those strings stand for.
+
+**Why this is worth doing, from this week's evidence.** Every defect in the page-renumber round was a
+string key meaning something other than what the reader assumed:
+
+- ids and names are both `String`, so a key built from an id and a key built from a name are the same
+  type and compile interchangeably - which is how `fromStored` came to resolve one through the wrong
+  map, and how a whole setup was reattached to the wrong pages with nothing looking wrong.
+- the `#` suffix has been got wrong twice: once as a dead `tileDirections.remove(key)` that could never
+  match a suffixed key (DD-A1), and once in `forgetSquares`, which had to grow a loop of its own to
+  handle it.
+- `isOnPage`, `rekeyOne`, `parseTileKey` and `pageOf` are all string surgery that a typed key would not
+  need.
+
+**What it is not.** Not a change to the FILE format: strings stay on disk, and the id/name translation
+stays exactly where it is, in `toStored`/`fromStored` at the boundary. Not a change to the UI's sort
+order either - pages still sort by name.
+
+**Shape of the work.** `Map<String, X>` becomes `Map<TileKey, X>` across the store; `tileDirections`
+becomes a compound key of square plus route rather than a string with a suffix; the boundary methods
+gain the conversion that is today spread through the class. Mechanical but wide, and it touches the one
+class that holds the data Adam has already lost once - so it wants its own commit with the battery
+green either side, and the existing round-trip tests are what make it safe to attempt.

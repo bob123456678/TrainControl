@@ -600,4 +600,68 @@ public class testEditorSurfaceRules
             "the hover outline reserves no space and draws nothing either, so hovering a square with "
             + "the grid off shows nothing at all");
     }
+
+    /**
+     * Emptying the page cache hands its caption labels back first.
+     *
+     * MT-134 item 3 is "open and close the editor a dozen times on a big layout and watch memory", and
+     * Adam asked for a test. The heap growth itself is a hands-on observation - there is no UI harness
+     * here to open a real editor a dozen times - but the DEFECT behind it is a rule about source, and
+     * that is what rots.
+     *
+     * Every page in the cache holds a grid, and every grid holds the caption labels it registered with
+     * the window. `discard()` asks the window whether its container is still cached and stands down if
+     * it is - so at the moment the cache is thrown away, nothing has handed those labels back and
+     * nothing ever will: the containers become unreachable while `layoutStations` still holds a
+     * reference to every label inside them. One page's worth per cache reset, for the life of the
+     * session.
+     *
+     * The lazy prune cannot recover them either. It needs a successor label for the same square, and a
+     * caption that was CLEARED never gets one.
+     *
+     * So: the assignment that empties the cache must be preceded by the hand-back. Read from source
+     * rather than exercised, because the thing being pinned is that a future edit which adds a second
+     * way to empty the cache does not forget - which is exactly how this arrived the first time.
+     */
+    @Test
+    public void testEmptyingThePageCacheHandsItsLabelsBack() throws Exception
+    {
+        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+
+        assertTrue(source.isFile(),
+            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass "
+            + "by not finding it. This returned quietly, so renaming or moving that file would have "
+            + "taken this rule with it and said nothing");
+
+        String[] lines = withoutComments(new String(
+            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8)).split("\n");
+
+        List<String> unguarded = new ArrayList<>();
+
+        for (int at = 0; at < lines.length; at++)
+        {
+            String line = lines[at];
+
+            // The FIELD's own initialiser is not a reset - there is nothing to hand back yet
+            if (!line.contains("layoutCache = new HashMap")) continue;
+            if (line.contains("public HashMap")) continue;
+
+            // Somewhere in the handful of lines above it, the hand-back
+            boolean handedBack = false;
+
+            for (int back = Math.max(0, at - 6); back < at; back++)
+            {
+                if (lines[back].contains("forgetCachedPageLabels()")) handedBack = true;
+            }
+
+            if (!handedBack) unguarded.add((at + 1) + ":  " + line.trim());
+        }
+
+        assertEquals(unguarded, new ArrayList<String>(),
+            "the page cache is emptied without handing its caption labels back first. Every container "
+            + "in it is about to become unreachable while layoutStations still holds a reference to "
+            + "every label inside it - one page's worth per reset, for the life of the session. That "
+            + "is the leak MT-134 asks about, and discard() cannot cover it: it stands down when the "
+            + "container is still cached, and the reset is what makes it not cached: " + unguarded);
+    }
 }

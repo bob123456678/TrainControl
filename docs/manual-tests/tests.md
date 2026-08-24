@@ -452,6 +452,9 @@ make sure there is a test for this.  close out if so.
 It exports a setup carrying a name, a station designation and a locomotive placement, checks the source
 files are byte-for-byte unchanged by the export, then imports the bundle into a folder that has never
 seen it and requires all three to arrive. Closed.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: the export/import round trip - `testDataSafetyRoundTrips.testTheExportedBundleComesBackWholeAndChangesNothing`. Closed.
+
 ---
 
 <a id="mt-075"></a>
@@ -516,6 +519,9 @@ that happened to be lying there.
 .bak": while looking through `cs2_sample_layout/config/gleisbilder/` today I passed `1 - Main.cs2.bak`
 and `1 - Main and neighbours.cs2.bak`. They are written beside the page, not in a backup folder, which
 is probably why they were easy to miss. Closed.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: the page files themselves - `testDataSafetyRoundTrips.testSavingAPageLeavesOneBackupAndAWholeFile` and `testLayoutFolderRobustness`. Closed.
+
 ---
 
 <a id="mt-076"></a>
@@ -744,6 +750,9 @@ platform was emitted with no protecting signal, on the reasoning that it is not 
 CAN be standing there - that is what your ruling says - and the signal decides what to show by asking
 every Point it protects, so it never asked that one. The signal showed green over an occupied platform.
 Fixed, with a test (UR-6).
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: a barred arrival - `testBarredArrivalIsNotADestination`, four tests including that unbarring restores it and that a barred copy keeps its protecting signal. Closed.
+
 ---
 
 <a id="mt-079"></a>
@@ -2288,7 +2297,11 @@ a file.
 
 Your other half - "the UI does not allow slashes, rightfully" - is the belt to that braces: the test
 covers the case where one arrives anyway, from a file written elsewhere or by an older build. Closed.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: a page named with a slash - `testLayoutFolderRobustness` and `testInvalidInput`. The UI also refuses one, which Adam confirmed: "the UI does not allow slashes, rightfully." Closed.
+
 ---
+
 <a id="mt-040"></a>
 
 ### MT-040 - 2026-08-21 - A page the folder does not hold
@@ -2331,7 +2344,11 @@ make sure there is a test case for this.
 **Claude, 2026-08-23.** "Make sure there is a test case for this." There is:
 `testLayoutFolderRobustness.testAMissingPageDoesNotStopTheOthers` - every other page loads, the missing
 one is named, and the folder is still the one being pointed at afterwards. Closed.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: a page the index promises and the folder does not hold - `testLayoutFolderRobustness.java:87`, "a missing page took the whole layout down". Closed.
+
 ---
+
 <a id="mt-041"></a>
 
 ### MT-041 - 2026-08-21 - One accessory drawn on several squares
@@ -3067,6 +3084,9 @@ above: `testDeleteAndInsertKeepTheSetup`. Deleting a square takes its own setup 
 inserting a line carries the setup of everything it pushes along; and a move reports both halves while a
 copy reports only its landings. Verified by mutation - making `forgetTiles` tell the setup nothing fails
 it. Closed.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: delete, shift and insert - `testDeleteAndInsertKeepTheSetup` and `testDiagramShiftKeepsSetup`, with `testDiscardedEditsDoNotDeleteSetup` for the Cancel path beside them. Closed.
+
 ---
 
 <a id="mt-063"></a>
@@ -5509,6 +5529,9 @@ link name should be visible rather than discovered later. Seen failing first.
 The build-failing guard that stops the next collection being left out of a bookkeeping site is
 `testStoreCollectionsAreHandledEverywhere`, and since OB-049 it also requires every rule the store
 offers to have a caller.
+
+**Claude, 2026-08-24.** Adam asked to confirm a test exists before closing this. It does: a setting outliving its track - `testAutonomyTileMove` (four tests) and `testAutonomyDiagramStore.java:1756`, "an unnamed station outlived its tile". Closed.
+
 ---
 
 <a id="mt-131"></a>
@@ -5700,6 +5723,24 @@ when their source file is not found. They are in the report and worth a pass, no
 Filed from this test: FR-012 (feature request - test case for memory usage).  They are in `issues.md` until they are picked up.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-08-24.** Adam: "1. is OK... 2/3 are OK but I still need to test autonomy over a link.
+3. write a test case for this."
+
+Item 3 is "open and close the editor a dozen times and watch memory", and the heap growth itself is a
+hands-on observation - there is no harness here that opens a real editor. What IS testable is the
+defect behind it, which is a rule about source and therefore the part that rots:
+`testEditorSurfaceRules.testEmptyingThePageCacheHandsItsLabelsBack`.
+
+Every page in the cache holds a grid, and every grid holds the caption labels it registered with the
+window. `discard()` stands down when its container is still cached - and the reset is what makes it not
+cached, so at the moment the cache is emptied nothing has handed those labels back and nothing ever
+will. One page's worth of labels per reset, for the life of the session. The rule is that the
+assignment which empties the cache is preceded by the hand-back; mutation-checked by removing the call
+and watching it fail.
+
+Item 1 and item 2 Adam has already run. What is left of this entry is "autonomy over a link", which he
+flagged as still to do.
 
 ---
 
