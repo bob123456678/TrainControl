@@ -59,8 +59,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
 | [MT-166](#mt-166) | 2026-08-24 | The backup dialog offers to show the file | fixed unvalidated | FR-019 |
 | [MT-167](#mt-167) | 2026-08-24 | The application does not freeze while trains are running | fixed unvalidated | OB-087 |
+| [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
 
-Everything else - 121 of 167 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 168 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7597,5 +7598,52 @@ keep it out of. Reverted to the live views, which is what has been running for w
 
 This entry exists because that class of fault is invisible to the automated battery: every test in it
 drives the model directly, and none of them has an event thread to freeze.
+
+---
+
+<a id="mt-168"></a>
+
+### MT-168 - 2026-08-24 - Capture records what full autonomy does, not only hand-driven moves
+
+**Disposition:** fixed unvalidated
+**From:** OB-088
+**Written:** 2026-08-24
+
+**Rebuild before running this.** The build the bug was reported from predates the fix by 41 minutes,
+and on that build it will fail exactly as reported.
+
+**What to do.**
+
+1. Turn **Capture Locomotive Commands** on, with autonomy stopped.
+2. Start full autonomy and let two or three moves happen.
+3. The timetable list should fill with them as they go.
+4. Stop, and check the captured entries are still there and name the right locomotives and stations.
+
+**Then the case that broke it**, which is the one worth a second run:
+
+5. With capture still on, do something that rebuilds the setup - apply a diagram edit, place a
+   locomotive on the diagram, or load a configuration.
+6. Check the **Capture** button is still lit, and then dispatch a train by hand.
+7. That move must be captured too.
+
+Step 6 is the whole bug: the button stayed lit over a layout that had stopped capturing, so it looked
+switched on and did nothing.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam, twice: "capture locomotive commands is capturing neither manual
+locomotive commands nor full autonomy commands into the timetable", and then "nothing gets added to
+the list while full autonomy is running".
+
+The capture flag lives on the `Layout` object and `parseAuto` replaces that object wholesale, so a
+fresh Layout started with capture off - and rebuilds happen far more often than they read. Applying a
+diagram edit, placing a locomotive and loading a configuration all come through there, and **starting
+full autonomy loads a configuration**, which is why it looked like an autonomy-specific fault.
+
+The flag is read before the old layout is discarded and applied after the new one exists.
+
+`test/regression/testTimetableCapture.java` covers it in three tests, and
+`testCaptureSurvivesTheLayoutBeingRebuilt` is about this case specifically - the gap that let the
+regression through, since nothing had tested capture across a rebuild.
 
 ---

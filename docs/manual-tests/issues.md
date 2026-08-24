@@ -251,51 +251,59 @@ does not require the distinction. My recommendation is 2 now and 3 only if you m
 
 
 
-### OB-084 - 2026-08-24 - testRenderingCost fails from a clean checkout, and says something real
+### OB-084 - 2026-08-24 - testRenderingCost is a coin toss, and the battery number depends on it
 
-**Not from this round.** Found while confirming the battery after the FBR fixes, and it is two facts
-that are worth keeping apart.
+**Not from this round.** Found while confirming a battery, and **re-diagnosed on 2026-08-24 after the
+first explanation turned out to be wrong** - the correction is below and is the more useful half.
 
-**The measurement.** Loading a **version 1** autonomy setup builds noticeably more labels than loading
-the version 2 the application writes. Same page, same cells, same content:
+**What is true, measured.** `ui.testRenderingCost.testLabelsBuiltPerCell` asserts at most two labels
+per cell, which on the page it measures is 672. Run five times against a single unchanged sample
+layout, the same page each time:
 
-| setup.json | page | cells | labels built |
+| run | cells | labels built | verdict |
 |---|---|---|---|
-| version 1, as committed in `cs2_sample_layout` | 2 - Bottom | 336 | **720** |
-| version 2, after any run has rewritten it | 2 - Bottom | 336 | **621** |
+| 1 | 336 | 720 | fails |
+| 2 | 336 | 621 | passes |
+| 3 | 336 | 685 | fails |
+| 4 | 336 | 720 | fails |
+| 5 | 336 | 597 | passes |
 
-Nothing else differs - `pointNames` is 47 and `captions` 35 in both, and the two files are the same
-data with the keys in a different order. So the migration path costs about a hundred extra label
-constructions, roughly a sixth, on a page of this size. That is the same family as
-[OB-053](#ob-053) - "the diagram builds two labels per cell" - which Adam has asked to be left alone
-for now, so this is filed beside it rather than fixed.
+Same fixture, same page, same build. **The test is non-deterministic** - roughly a coin toss - and
+`docs/reviews/README.md` has the paragraph for exactly this: "A regression test that only sometimes
+catches the regression is worse than none, because it reads as protection."
 
-**The test.** `ui.testRenderingCost.testLabelsBuiltPerCell` asserts at most two labels per cell, which
-is 672 here. 720 fails it and 621 passes.
+**What I said first, and why it was wrong.** The original entry said the number depended on the sample
+setup's `version` field: 720 for a version 1 file, 621 for the version 2 the application rewrites it
+as, so the test failed from a clean checkout and passed inside the battery because earlier classes had
+migrated the fixture. That was two measurements, one of each, and it fit. Run 3 above is a version 2
+file producing 685, and run 4 a version 2 file producing 720. The fixture contents are identical either
+way - the two files differ in the version number and two empty collections, nothing else.
 
-The battery runs classes alphabetically, so by the time `ui.testRenderingCost` runs, several `core.*`
-classes have already loaded and re-saved the sample layout - migrating it to version 2. The guard
-therefore passes in the battery and **fails from a clean `git checkout`**, which is exactly the shape
-this project's review discipline calls a test passing for the wrong reason: "Assert the precondition
-that makes a test meaningful."
+So the version had nothing to do with it, and the "clean checkout versus battery" story was a
+coincidence of two samples. I wrote a crisp causal claim from a sample of two, which is the mistake
+this session has spent most of its review effort on.
 
-Confirmed against a clean HEAD build with the fixture restored: 8 tests, 1 failure. With the fixture as
-a run leaves it: 8 tests, 0 failures. It is not a regression from the fix round - reverting every
-uncommitted change reproduces it.
+**The likely mechanism, offered as a lead rather than a finding.** The test resets
+`LayoutLabel.COUNT_CONSTRUCTED`, builds the grid inside `invokeAndWait`, and reads the counter as soon
+as that returns. Both `LayoutGrid` and `LayoutLabel` post work with `invokeLater` - and `LayoutLabel`
+also starts a worker thread - so anything the grid schedules rather than does is counted or not
+depending on where the event queue has got to. That would produce exactly this: a stable floor with a
+variable amount of extra work landing before the read. Not confirmed; whoever picks this up should
+confirm it before acting on it.
 
-**Two things that could be done, and they are independent:**
+**What this means for the battery numbers in this session's commits.** Several say "101 classes green"
+and several say "100 classes green, the one failure being OB-084". Both are honest reports of what ran,
+and the difference between them is this coin toss rather than anything about the code. No battery
+result in this session should be read as evidence about `testRenderingCost` either way.
 
-1. Make the test honest about what it measures - either assert the fixture's version first, or copy the
-   fixture to a temporary directory so it measures the committed state every time. Today the number it
-   reports depends on what ran before it, which makes it useless as a regression guard for the case it
-   was written for.
-2. Look at why the migration path builds the extra labels, when OB-053 is picked up. They are probably
-   the same rebuild.
+**What to do, in order.**
 
-**And one thing to know about the battery.** Every "101 classes green" in this session's commit messages
-was measured with the fixture already migrated. The number is honest about what ran; it is not honest
-about a clean checkout, and that is worth knowing before it is quoted as evidence again.
-
+1. Make the measurement deterministic - drain the event queue before reading the counter, or count on
+   the thread that builds. Until then the assertion means nothing.
+2. Then, and only then, look at whether the number is too high. The bound was written at 1.6 labels
+   per cell and the floor here is around 600 for 336 cells, which is 1.8 - so there may be a real
+   regression underneath, and it is invisible while the measurement is this noisy.
+3. The label duplication itself belongs to [OB-053](#ob-053), which Adam has asked to be left alone.
 
 
 ### OB-085 - 2026-08-24 - the staging scan could prove a blockedBy cycle impossible, and does not
@@ -369,82 +377,6 @@ hand-written (DD-D9), and the transient occupancy term stays out of any shared "
 predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
 separation is what makes the FR-017 window's two groups mean anything.
 
-### OB-087 - 2026-08-24 - crash during autonomy run
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 09:01  
-**Build:** commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-critical - ran autonomy with timetable capture on from the current state, app deadlocked.
-
-**Claude, 2026-08-24.** Your instinct was right to ask, and the answer has two halves.
-
-**On your build: nothing in it changed locking.** `b1e22b5b` is 28 commits behind, from 01:43. Every
-change to a `synchronized` keyword this session came after it. So whatever happened at 09:01, it was
-not something new in the app - and with Claude Code going down at the same moment, a machine-wide
-stall is the more economical explanation.
-
-**On the current tree: one WAS introduced this morning, by me, and it is now out again.** A review
-finding (DR-B7) pointed out that `Layout.getPoints()` and `getEdges()` hand out live views that
-off-thread readers walk while the event thread can be writing them, and asked for the treatment
-`getHomeStations` got: copy under the monitor. I applied it, and it was wrong twice over:
-
-- `getPoints()` is called from **five places in the UI** - the autonomy editor, the viewer, and three
-  menu paths. Synchronizing it puts the event thread on the Layout monitor, which a dispatch holds
-  across its per-command sleeps. That is exactly the freeze IAR-B2 had just removed from
-  `getActiveAccs`, reintroduced by another door in the same commit.
-- It is also called from inside this class's own loops - `deleteEdge` walks every edge while removing
-  one - so a copy per call turns a linear sweep quadratic.
-
-Reverted to the live views, which is what you have been running for weeks. The hazard DR-B7 names is
-real and now unaddressed; the right answer is the one the class already documents for its four
-UI-read collections - make the maps concurrent, so readers take no lock at all - and that needs null
-guards `getPoint`/`getEdge` do not have. Folded into [OB-086](#ob-086) rather than done in a hurry.
-
-**The two other locking changes in the current tree were checked and are clean.**
-`explainDestinationsGrouped` and `destinationsBarredFromAutonomy` are synchronized, and their only
-caller is the FR-017 window's worker thread - never the event thread. `getActiveAccs` had its
-`synchronized` REMOVED, which can only reduce freezing.
-
-**What would help if it happens again on a current build.** A thread dump says in one step what
-reading cannot: with the app hung, `jstack <pid>` from the JDK's `bin` folder, output pasted into a
-ticket. If it is a deadlock, the dump names both threads and both locks.
-
-### OB-088 - 2026-08-24 - capturing timetable commands still doesn't work
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 09:05  
-**Build:** commit b1e22b5b, build\classes, compiled 24 Aug 08:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe - COULD NOT CONFIRM THIS IS JAVA 8, the version TrainControl is built for; if the display looks wrong after launch, this is the first thing to check
-
-nothing gets added to the list while full autonomy is running
-
-**Claude, 2026-08-24. Already fixed - your build is 41 minutes too old.**
-
-`b1e22b5b` was built at 01:43. The fix for this is `86acd990` at 02:24, and the symptom it describes
-is word for word yours.
-
-The capture flag lives on the `Layout` object, and `parseAuto` replaces that object wholesale - so a
-fresh Layout started with capture off and every rebuild silently turned it off. Rebuilds happen far
-more often than they read: applying a diagram edit, placing a locomotive, and loading a configuration
-all come through there, and **starting full autonomy loads a configuration**. So the button stayed lit
-over a layout that was no longer capturing, which is precisely "nothing gets added to the list while
-full autonomy is running".
-
-The flag is now read before the old layout is discarded and applied after the new one exists.
-
-`test/regression/testTimetableCapture.java` covers it in three tests, and
-`testCaptureSurvivesTheLayoutBeingRebuilt` is the one about this case - it was the gap that let the
-regression through, since nothing had tested capture across a rebuild.
-
-**Please rebuild before retesting.** If it still fails on a current build, that is a new bug and worth
-filing fresh - and the ticket should say so, because this one will not be it.
-
-**Worth knowing for next time:** the Build line the triage app stamps on every ticket is what made this
-answerable in two minutes rather than an afternoon of hunting a phantom. Both of today's bug reports
-turned out to be about a build from before the relevant fix.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -498,6 +430,8 @@ not, never both.
 | 2026-08-24 | FR-014 | feature request | The caption menu items name the station | fixed unvalidated | [MT-162](tests.md#mt-162) |
 | 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | fixed unvalidated | [MT-163](tests.md#mt-163) |
 | 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | fixed unvalidated | [MT-166](tests.md#mt-166) |
+| 2026-08-24 | OB-087 | bug | A deadlock reported on an old build; a real one found and reverted | - | [MT-167](tests.md#mt-167) |
+| 2026-08-24 | OB-088 | bug | Capture stopped whenever the setup was rebuilt | - | [MT-168](tests.md#mt-168) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |

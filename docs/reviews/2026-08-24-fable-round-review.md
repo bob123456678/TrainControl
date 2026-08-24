@@ -359,15 +359,19 @@ caveat recorded below that this review's method would not have caught either.
 
 ### What the battery turned up, which is not this review's finding
 
-Confirming the fixes surfaced [OB-084](../manual-tests/issues.md): `ui.testRenderingCost` fails from a
-clean checkout and passes in the battery, because the classes that run before it migrate the sample
-layout from setup version 1 to version 2 - and a version 1 setup builds 720 labels for the page where a
-version 2 builds 621. Pre-existing, reproduced against a clean HEAD build, and filed rather than fixed:
-the label duplication belongs to OB-053, which Adam has asked to be left alone.
+Confirming the fixes surfaced [OB-084](../manual-tests/issues.md): `ui.testRenderingCost` fails
+intermittently. Pre-existing, and filed rather than fixed - the label duplication belongs to OB-053,
+which Adam has asked to be left alone.
 
-It bears on this document only in one way. Every "101 classes green" in this session's commits was
-measured with the fixture already migrated. That is honest about what ran and not about a clean
-checkout, and it is worth knowing before the number is quoted again as evidence.
+**The explanation given here first was wrong, and the correction is worth more than the finding.** It
+said the test failed from a clean checkout and passed in the battery, because earlier classes migrate
+the sample setup from version 1 to version 2, and that a version 1 file built 720 labels where a
+version 2 built 621. That was two measurements, one of each, and it fit. Five runs later the same
+version 2 file has produced 621, 685, 720 and 597 - the test is simply non-deterministic, the fixture
+contents are identical either way, and the version had nothing to do with it. See OB-084 for the table.
+
+It bears on this document in one way, unchanged in substance: no "classes green" figure in this
+session should be read as evidence about `testRenderingCost` either way.
 
 ---
 
