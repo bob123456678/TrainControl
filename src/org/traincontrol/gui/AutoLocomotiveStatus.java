@@ -546,6 +546,166 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private boolean noPathsNow;
 
     /**
+     * The whole list of stations and why each one is unavailable, in a window (FR-017).
+     *
+     * Worked out OFF the event thread, for the reason this file records twice already:
+     * `explainDestinations` walks every candidate route to every station and takes the Layout's
+     * monitor, and a dispatch holds that monitor across its per-command sleeps.  Computing it before
+     * showing the window would freeze the application for the length of a configuration phase with
+     * nothing on screen to say why - which is worse than the hover version was, because a click
+     * expects an answer.
+     *
+     * So the window opens at once saying it is working, and fills itself in when the answer arrives.
+     * The dialog being modal is what lets that work: a modal dialog runs its own event pump, so the
+     * invokeLater below is delivered while this call is still blocked inside it.
+     */
+    private void showWhyNot()
+    {
+        final javax.swing.JTextArea area =
+            new javax.swing.JTextArea(I18n.t("autolayout.ui.whyWorking"));
+
+        area.setEditable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+        area.setMargin(new java.awt.Insets(6, 6, 6, 6));
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(area);
+
+        scroll.setPreferredSize(new java.awt.Dimension(580, 380));
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        final Locomotive asked = locomotive;
+
+        new Thread(() ->
+        {
+            final String report = whyNotReport();
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                // Still the same locomotive: the panel is reused as trains are placed and cleared,
+                // and a slow answer must not land in a window that is now about a different train.
+                if (asked != locomotive) return;
+
+                area.setText(report);
+                area.setCaretPosition(0);
+            });
+        }).start();
+
+        JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(this), scroll,
+            I18n.f("autolayout.ui.whyTitle", locomotive == null ? "" : locomotive.getName()),
+            JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * Every station, grouped by whether autonomy could ever choose it, with the reason for each.
+     *
+     * Adam: "Order them by ones that can be chosen autonomously and ones that cannot, with the
+     * autonomous ones first."  The first group is the actionable one - those become available when a
+     * train moves or a route clears - and the second is a description of how the railway is set up,
+     * which is worth seeing but is not news.
+     *
+     * The grouping comes from the Layout rather than from matching the reason strings.  Two of the
+     * standing bars are translated sentences that would have to be compared by value, and this window
+     * would then be a second answer to "can autonomy pick this station" - drifting from the one the
+     * search itself uses is exactly how the reason and the grouping would come to disagree.
+     *
+     * Arrival-side copies are collapsed to the station a person would recognise, the same way the
+     * tooltip does it.  A station counts as choosable if ANY of its copies is: one reachable from one
+     * side and barred from the other is a station autonomy can choose.
+     *
+     * @return the report, never null
+     */
+    private String whyNotReport()
+    {
+        if (layout == null || locomotive == null) return "";
+
+        try
+        {
+            StringBuilder out = new StringBuilder();
+
+            org.traincontrol.automation.Point at = layout.getLocomotiveLocation(locomotive);
+
+            if (at != null)
+            {
+                out.append(I18n.f("autolayout.ui.whyStanding", locomotive.getName(), stationName(at)))
+                    .append("\n");
+            }
+
+            // Whatever stops the train itself moving comes first and on its own.  When a locomotive
+            // cannot start, a list of stations explains nothing - every one of them is unavailable for
+            // the same reason, which is not about them.
+            String cannotStart = layout.explainCannotStart(locomotive);
+
+            if (cannotStart != null)
+            {
+                return out.append("\n").append(cannotStart).append("\n").toString();
+            }
+
+            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive);
+            java.util.Set<String> barredPoints = layout.destinationsBarredFromAutonomy(locomotive);
+
+            java.util.Map<String, String> choosable = new java.util.TreeMap<>();
+            java.util.Map<String, String> barred = new java.util.TreeMap<>();
+
+            for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
+            {
+                if (entry.getValue() == null) continue;
+
+                String station = stationName(layout.getPoint(entry.getKey()));
+
+                if (barredPoints.contains(entry.getKey()))
+                {
+                    // Only when no copy of it has already gone into the other group.
+                    if (!choosable.containsKey(station) && !barred.containsKey(station))
+                    {
+                        barred.put(station, entry.getValue());
+                    }
+                }
+                else
+                {
+                    barred.remove(station);
+
+                    if (!choosable.containsKey(station)) choosable.put(station, entry.getValue());
+                }
+            }
+
+            if (choosable.isEmpty() && barred.isEmpty())
+            {
+                return out.append("\n").append(I18n.t("autolayout.ui.whyNothingToReport"))
+                    .append("\n").toString();
+            }
+
+            appendGroup(out, I18n.f("autolayout.ui.whyHeaderCandidates", choosable.size()), choosable);
+            appendGroup(out, I18n.f("autolayout.ui.whyHeaderBarred", barred.size()), barred);
+
+            return out.toString();
+        }
+        catch (RuntimeException e)
+        {
+            return I18n.t("autolayout.ui.whyCouldNotWorkOut") + "\n\n" + e;
+        }
+    }
+
+    /**
+     * One headed block of "station - reason" lines, skipped entirely when the group is empty.
+     *
+     * An empty heading is worse than no heading: it reads as a group whose contents failed to load.
+     */
+    private void appendGroup(StringBuilder out, String heading, java.util.Map<String, String> lines)
+    {
+        if (lines.isEmpty()) return;
+
+        out.append("\n").append(heading).append("\n");
+
+        for (java.util.Map.Entry<String, String> line : lines.entrySet())
+        {
+            out.append("    ").append(line.getKey()).append(" - ").append(line.getValue())
+                .append("\n");
+        }
+    }
+
+    /**
      * Works the reasons out when the pointer stops on the destination label, and not before.
      *
      * Hovering is one panel, once, and the user asking - which is the only time this cost is worth
@@ -555,6 +715,20 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         this.locDest.addMouseListener(new java.awt.event.MouseAdapter()
         {
+            /**
+             * FR-017: the whole list, in a window that stays put and can be scrolled.
+             *
+             * Adam: "let us also make it clickable and show the notes in a popup with a scrollable
+             * text area with the whole list of stations."  A tooltip cannot be scrolled and goes away
+             * while it is being read, and the hover version shows twelve stations and then an
+             * ellipsis - on a real railway the interesting one is often below that line.
+             */
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                if (noPathsNow) showWhyNot();
+            }
+
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e)
             {

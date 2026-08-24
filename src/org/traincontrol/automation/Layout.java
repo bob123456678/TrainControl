@@ -3296,6 +3296,72 @@ public class Layout
     }
 
     /**
+     * Why autonomy will never choose this point for this locomotive, or null when it is a candidate.
+     *
+     * The STANDING bars only - the ones that are a property of how the railway is set up rather than
+     * of what is happening on it this minute. A station occupied by another train is not here: it is
+     * a candidate that is busy, and it becomes available again when that train leaves.
+     *
+     * Pulled out of `explainDestinations` so that `destinationsBarredFromAutonomy` can ask the same
+     * question the explanation answers. Two copies of this list would be two answers to "can autonomy
+     * pick this station", and the popup that groups by it would disagree with the reason printed
+     * beside each line - which is the exact shape of defect this codebase keeps finding.
+     *
+     * @param end the candidate
+     * @param loc the locomotive asking - exclusions are per locomotive
+     * @return the reason, already translated, or null if nothing standing bars it
+     */
+    private String barredFromAutonomy(Point end, Locomotive loc)
+    {
+        if (!end.isActive()) return I18n.t("autolayout.why.inactive");
+
+        if (end.isReversing()) return I18n.t("autolayout.why.reversing");
+
+        if (!end.isAutoDestination()) return I18n.t("autolayout.why.notAutoDestination");
+
+        if (loc != null && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
+
+        return null;
+    }
+
+    /**
+     * Of the points `explainDestinations` reports on, the ones autonomy will never choose.
+     *
+     * FR-017, Adam: "Order them by ones that can be chosen autonomously and ones that cannot, with
+     * the autonomous ones first." The window needs the grouping, and the grouping is not recoverable
+     * from the reason strings - two of them are translated text that would have to be matched by
+     * value, and one of the standing bars can produce the same sentence as a transient one.
+     *
+     * By NAME, matching the keys of the map it partitions, so the caller does no lookup of its own.
+     *
+     * @param loc the locomotive asking
+     * @return the barred point names, empty when none are
+     */
+    synchronized public java.util.Set<String> destinationsBarredFromAutonomy(Locomotive loc)
+    {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+
+        if (loc == null) return out;
+
+        Point start = this.getLocomotiveLocation(loc);
+
+        if (start == null) return out;
+
+        for (Point end : this.points.values())
+        {
+            // The same three skips explainDestinations makes, so the two agree on what is even being
+            // reported on before they disagree about why.
+            if (!end.isDestination() || end.equals(start)) continue;
+
+            if (start.getBlock() != null && start.getBlock().equals(end.getBlock())) continue;
+
+            if (barredFromAutonomy(end, loc) != null) out.add(end.getName());
+        }
+
+        return out;
+    }
+
+    /**
      * Every station this locomotive might be sent to, and why each one is or is not available.
      *
      * The answer to "I pressed start and nothing happened", which is the commonest thing a new user
@@ -3343,32 +3409,27 @@ public class Layout
 
             if (start.getBlock() != null && start.getBlock().equals(end.getBlock())) continue;
 
-            String reason = null;
+            // The standing bar FIRST, and the transient one after it (FR-017).
+            //
+            // It used to read the other way round, so a station that autonomy will never choose
+            // reported "occupied by X" whenever a train happened to be sitting on it - the answer to
+            // a question the user did not ask, in place of the one they did. It also made the reason
+            // disagree with the grouping the popup now sorts by: barred, and yet filed under the
+            // stations autonomy could pick.
+            //
+            // Nothing is lost by the order. A station under a standing bar is not a candidate whoever
+            // is standing on it, so "occupied" was never the operative reason - it was just the first
+            // test that happened to match.
+            String reason = barredFromAutonomy(end, loc);
 
-            if (end.getBlockLocomotive() != null)
+            if (reason == null && end.getBlockLocomotive() != null)
             {
                 // The BLOCK, not the point: a train on another arrival-side copy of this square is
                 // standing on this platform, and naming the copy would be telling the user about the
                 // model rather than about their railway
                 reason = I18n.f("autolayout.why.occupied", end.getBlockLocomotive().getName());
             }
-            else if (!end.isActive())
-            {
-                reason = I18n.t("autolayout.why.inactive");
-            }
-            else if (end.isReversing())
-            {
-                reason = I18n.t("autolayout.why.reversing");
-            }
-            else if (!end.isAutoDestination())
-            {
-                reason = I18n.t("autolayout.why.notAutoDestination");
-            }
-            else if (end.getExcludedLocs().contains(loc))
-            {
-                reason = I18n.f("autolayout.why.excluded", loc.getName());
-            }
-            else
+            else if (reason == null)
             {
                 // Past the filter, so the question becomes whether any route is clear.  Every
                 // alternative is tried, exactly as pickPath does, because the first one being blocked

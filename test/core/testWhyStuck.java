@@ -236,6 +236,78 @@ public class testWhyStuck
     }
 
     /**
+     * A station autonomy will never choose is reported as barred, and says WHY it is barred.
+     *
+     * FR-017. The window groups the stations - "Order them by ones that can be chosen autonomously
+     * and ones that cannot, with the autonomous ones first" - and the grouping cannot be recovered
+     * from the reason strings: two of the standing bars are translated sentences that would have to
+     * be matched by value.  So the Layout answers it, and this pins that the answer exists and is
+     * about the right stations.
+     *
+     * The second half is the interesting one. `explainDestinations` used to test "occupied" FIRST, so
+     * a station barred from autonomy reported "occupied by X" whenever a train happened to be sitting
+     * on it - the answer to a question nobody asked, in place of the one they did.  It also made the
+     * reason disagree with the group the line was filed under: barred, and yet printed beside a
+     * heading saying autonomy could choose it.
+     *
+     * That is why the fixture puts a train on the barred station rather than leaving it empty.  With
+     * an empty one the test passes either way round, which would make it a test of nothing.
+     */
+    @Test
+    public void testAStationBarredFromAutonomySaysSoRatherThanThatItIsBusy() throws Exception
+    {
+        Layout layout = twoStations("WS9");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive other = model.getLocByName(model.getLocList().get(1));
+
+        layout.moveLocomotive(loc.getName(), "WS9_A", false);
+        layout.moveLocomotive(other.getName(), "WS9_B", false);
+
+        // Barred AND busy, which is the combination that used to answer the wrong one.
+        layout.getPoint("WS9_B").setAutoDestination(false);
+
+        assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS9_B"),
+            "a station that is not an autonomy destination was not reported as barred, so the window "
+            + "would file it under the stations autonomy could choose - where the user would wait for "
+            + "it to become available, which it never will");
+
+        String reason = layout.explainDestinations(loc).get("WS9_B");
+
+        assertEquals(reason, org.traincontrol.util.I18n.t("autolayout.why.notAutoDestination"),
+            "the reason given for a barred station is that it is busy rather than that it is barred. "
+            + "The train standing there will leave; the bar will not, so 'occupied' sends the user to "
+            + "wait for something that changes nothing.  Got: " + reason);
+    }
+
+    /**
+     * A station that is merely occupied is NOT barred.
+     *
+     * The other half of the pair, and the one that stops the fix above from being "call everything
+     * barred".  A station with a train on it is a candidate that is busy: it becomes available again
+     * when that train leaves, and it belongs in the group the user can do something about.
+     */
+    @Test
+    public void testAnOccupiedStationIsStillOneAutonomyCouldChoose() throws Exception
+    {
+        Layout layout = twoStations("WS10");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive other = model.getLocByName(model.getLocList().get(1));
+
+        layout.moveLocomotive(loc.getName(), "WS10_A", false);
+        layout.moveLocomotive(other.getName(), "WS10_B", false);
+
+        assertFalse(layout.destinationsBarredFromAutonomy(loc).contains("WS10_B"),
+            "a station whose only problem is the train standing on it was reported as barred from "
+            + "autonomy. It would then be listed under 'stations autonomy will never choose', which "
+            + "is a statement about the railway's setup - and this one is about this minute");
+
+        assertTrue(layout.explainDestinations(loc).get("WS10_B").contains(other.getName()),
+            "and its reason must still name the train in the way");
+    }
+
+    /**
      * Two stations joined both ways, named with a prefix so the tests cannot collide.
      */
     private static Layout twoStations(String prefix) throws Exception
