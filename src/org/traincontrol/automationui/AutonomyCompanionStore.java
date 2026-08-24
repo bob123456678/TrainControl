@@ -903,25 +903,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows a locomotive's new name into every configuration.
-     *
-     * Three things in a configuration hold a locomotive by NAME - the placement, the home assignment
-     * and the exclusion list - and none of them was repaired when one was renamed.  The active
-     * configuration got away with it by accident: captureFromLayout launders it back from the running
-     * layout, which holds locomotives by reference.  A configuration that was not active at the time
-     * was never touched at all.
-     *
-     * What that costs is not a lost placement.  parseAuto refuses a configuration naming a locomotive
-     * it cannot find, and answers a refusal by invalidating the WHOLE layout - so choosing that
-     * configuration weeks later stops the railway working, with an error naming a locomotive and
-     * nothing connecting it to the rename.
-     *
-     * EVERY configuration, including the inactive ones, which is the half that had no repair at all.
-     *
-     * @param from the old name
-     * @param to the new name
-     */
-    /**
      * Repairs a setup that nothing has open, in place on disk.
      *
      * A locomotive rename has to reach three places: the database, the setup in memory, and the setup
@@ -949,7 +930,71 @@ public class AutonomyCompanionStore
     public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to)
         throws IOException
     {
-        if (layoutFolder == null || from == null) return false;
+        if (from == null) return false;
+
+        return repairOnDisk(layoutFolder, store ->
+        {
+            if (to == null) store.locomotiveDeleted(from);
+            else store.locomotiveRenamed(from, to);
+        });
+    }
+
+    /**
+     * Carries a page rename into a setup nothing has open.
+     *
+     * The window renames the page in the store when a session is built.  When one is NOT built it used
+     * to call the LAZY getter, which builds a session - opening every page, running the caption
+     * migration, and then saving, which creates a setup.json.  So renaming a page on a layout where
+     * autonomy had never been touched invented one.
+     *
+     * @param layoutFolder the layout folder
+     * @param from the page name as it was
+     * @param to the new page name
+     * @return true when a setup was found and rewritten
+     * @throws IOException if the setup exists but cannot be read or written
+     */
+    public static boolean renamePageOnDisk(File layoutFolder, String from, String to)
+        throws IOException
+    {
+        if (from == null || to == null) return false;
+
+        return repairOnDisk(layoutFolder, store -> store.renamePage(from, to));
+    }
+
+    /**
+     * Forgets a deleted page in a setup nothing has open.  See renamePageOnDisk for why.
+     *
+     * @param layoutFolder the layout folder
+     * @param page the page being deleted
+     * @return true when a setup was found and rewritten
+     * @throws IOException if the setup exists but cannot be read or written
+     */
+    public static boolean deletePageOnDisk(File layoutFolder, String page) throws IOException
+    {
+        if (page == null) return false;
+
+        return repairOnDisk(layoutFolder, store -> store.deletePage(page));
+    }
+
+    /**
+     * Something that can be done to a store.
+     */
+    private interface Repair
+    {
+        void apply(AutonomyCompanionStore store);
+    }
+
+    /**
+     * Opens a setup that nothing has open, changes one thing about it, and puts it back.
+     *
+     * @param layoutFolder the layout folder, the one holding config/autonomy
+     * @param what the change to make
+     * @return true when a setup was found and rewritten, false when there was nothing to repair
+     * @throws IOException if the setup exists but cannot be read or written
+     */
+    private static boolean repairOnDisk(File layoutFolder, Repair what) throws IOException
+    {
+        if (layoutFolder == null) return false;
 
         AutonomyCompanionStore store = new AutonomyCompanionStore(layoutFolder);
 
@@ -983,14 +1028,43 @@ public class AutonomyCompanionStore
 
         store.setPageIds(nameToId);
 
-        if (to == null) store.locomotiveDeleted(from);
-        else store.locomotiveRenamed(from, to);
+        // Read AGAIN, now that it knows what the pages are called.
+        //
+        // The first read had no numbering to work with, so every key came back in ID form - which is
+        // harmless for a locomotive rename, because that changes names INSIDE configurations and never
+        // touches a tile key.  It is not harmless for renamePage or deletePage: both work on page
+        // NAMES, and against id-form keys they would match nothing and silently do nothing at all.
+        //
+        // The second read costs one file. Both directions then use the same map, so the keys written
+        // back are the keys that came in - which testRepairingOnDiskChangesOnlyTheLocomotive pins.
+        store.load();
+
+        what.apply(store);
 
         store.save();
 
         return true;
     }
 
+    /**
+     * Follows a locomotive's new name into every configuration.
+     *
+     * Three things in a configuration hold a locomotive by NAME - the placement, the home assignment
+     * and the exclusion list - and none of them was repaired when one was renamed.  The active
+     * configuration got away with it by accident: captureFromLayout launders it back from the running
+     * layout, which holds locomotives by reference.  A configuration that was not active at the time
+     * was never touched at all.
+     *
+     * What that costs is not a lost placement.  parseAuto refuses a configuration naming a locomotive
+     * it cannot find, and answers a refusal by invalidating the WHOLE layout - so choosing that
+     * configuration weeks later stops the railway working, with an error naming a locomotive and
+     * nothing connecting it to the rename.
+     *
+     * EVERY configuration, including the inactive ones, which is the half that had no repair at all.
+     *
+     * @param from the old name
+     * @param to the new name
+     */
     public void locomotiveRenamed(String from, String to)
     {
         if (from == null || to == null || from.equals(to)) return;
@@ -1934,6 +2008,29 @@ public class AutonomyCompanionStore
 
             if (isOnPage(bare, page)) squares.add(bare);
         }
+
+        // And squares on this page that only ever appear as a VALUE.
+        //
+        // A protecting signal, a blocker or the far end of a portal can sit on this page while having
+        // no entry of its own - nothing is recorded ABOUT that square, it is only pointed AT. Gathering
+        // by key alone missed those, so the pointer survived the page and dangled until the next
+        // reconcile happened to tidy it.
+        //
+        // renamePage handles the value half explicitly, by rekeying values as well as keys. This is
+        // the same half, and this method's own contract already claimed to cover it. Found by review.
+        for (List<String> signals : stationSignals.values())
+        {
+            for (String signal : signals) if (isOnPage(signal, page)) squares.add(signal);
+        }
+
+        for (List<String> blockers : blockedPoints.values())
+        {
+            for (String blocker : blockers) if (isOnPage(blocker, page)) squares.add(blocker);
+        }
+
+        for (String far : portals.values()) if (isOnPage(far, page)) squares.add(far);
+
+        for (String station : captions.values()) if (isOnPage(station, page)) squares.add(station);
 
         forgetSquares(squares);
 

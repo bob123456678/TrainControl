@@ -108,14 +108,21 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page that never had an id gets a fresh one, above every id ever issued.
+     * A new page never takes an id a LIVE page is using.
      *
-     * Not "one more than the count": with an id retired by a delete, the count and the highest id are
-     * different numbers, and reusing a retired one would hand a new page the settings of the deleted
-     * page that used to hold it.
+     * This is the property, and it is weaker than the one this test used to claim. The first version
+     * said "above every id ever issued" and then deleted a MIDDLE page to prove it - which the
+     * mechanism does handle, because the highest id was still in the file. Delete the page holding the
+     * HIGHEST id and its number is reissued: the index is the only record, and a number that is gone
+     * from it cannot be told from a number that was never used.
+     *
+     * Found by review, and worth stating plainly rather than papering over: what keeps that safe is
+     * not the numbering but `deletePage`, which forgets the deleted page's settings before its id
+     * becomes available again. The test below pins exactly that, because it is now the thing the
+     * safety rests on.
      */
     @Test
-    public void testANewPageGetsAnIdNobodyHasHad() throws IOException
+    public void testANewPageNeverTakesALivePagesId() throws IOException
     {
         write("Alpha", "Bravo", "Charlie");
 
@@ -123,9 +130,83 @@ public class testPageIdsAreDurable
 
         write("Alpha", "Charlie", "Delta");  // and a new page arrives
 
-        assertEquals(ids().get("Delta"), Integer.valueOf(4),
-            "a new page was given a retired id, so it inherits the deleted page's setup - which is "
-            + "the corruption a delete was fixed to stop, arriving by the other door");
+        Map<String, Integer> now = ids();
+
+        assertEquals(now.get("Alpha"), Integer.valueOf(1), "a surviving page moved");
+        assertEquals(now.get("Charlie"), Integer.valueOf(3), "a surviving page moved");
+
+        assertFalse(now.get("Delta").equals(now.get("Alpha"))
+            || now.get("Delta").equals(now.get("Charlie")),
+            "a new page was given an id a live page is using, so the two now share a setup: " + now);
+    }
+
+    /**
+     * And a page that DOES reuse a retired id inherits nothing from the page that had it.
+     *
+     * The case above cannot be prevented by the index alone - a retired highest id looks exactly like
+     * an id never issued. So the safety has to come from the other end: the deleted page's settings
+     * are forgotten at the moment it goes, so there is nothing left for its number to carry.
+     *
+     * This is the test that matters of the two. If `deletePage` ever stops being called - and its
+     * counterpart `renamePage` went weeks with no caller at all (MT-135) - this fails, and the failure
+     * says what the consequence is rather than that a number changed.
+     */
+    @Test
+    public void testAPageReusingARetiredIdInheritsNothing() throws IOException
+    {
+        write("Alpha", "Bravo");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey doomed = new TileKey("Bravo", 3, 3);
+
+        store.setPointName(doomed, "Bravo Platform");
+        store.setStation(doomed, true);
+        store.createConfiguration("Only", null);
+        store.save();
+
+        // Bravo goes, the way the window does it: the setup is told, and then the index is rewritten
+        store.deletePage("Bravo");
+        store.save();
+
+        write("Alpha");
+
+        // a new page arrives and takes the retired id - the case the index cannot prevent
+        write("Alpha", "Zulu");
+
+        assertEquals(ids().get("Zulu"), Integer.valueOf(2),
+            "the fixture did not reuse the retired id, so this tests nothing");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(idsAsNameToId());
+        reloaded.load();
+
+        TileKey sameSquare = new TileKey("Zulu", 3, 3);
+
+        assertNull(reloaded.getPointName(sameSquare),
+            "a brand new page arrived carrying the deleted page's station name. Its number was reused "
+            + "- which the index cannot help - so the only thing standing between the two was "
+            + "deletePage having forgotten the old page's settings");
+
+        assertFalse(reloaded.isStation(sameSquare),
+            "a brand new page arrived already carrying a station");
+    }
+
+    /**
+     * The index as the store wants it: name -> id.
+     */
+    private Map<String, String> idsAsNameToId()
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Integer> page : ids().entrySet())
+        {
+            out.put(page.getKey(), String.valueOf(page.getValue()));
+        }
+
+        return out;
     }
 
     /**

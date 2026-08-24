@@ -149,6 +149,9 @@ not, never both.
 | 2026-08-23 | OB-058 | bug | The Edit button brings an already-open editor forward | - | [MT-144](tests.md#mt-144) |
 | 2026-08-24 | OB-063 | bug | The info mark had no glyph, so the font drew a box | - | [MT-144](tests.md#mt-144) |
 | 2026-08-24 | OB-062 | bug | A locomotive rename did not reach a setup nothing had open | - | [MT-145](tests.md#mt-145) |
+| 2026-08-24 | OB-064 | bug | Renaming or deleting a page invented an autonomy setup | - | [MT-142](tests.md#mt-142) |
+| 2026-08-24 | OB-065 | bug | Page delete, rename, combine and the database sync ran during autonomy | - | [MT-141](tests.md#mt-141) |
+| 2026-08-24 | OB-066 | bug | deletePage left cross-page pointers to the deleted page | - | [MT-142](tests.md#mt-142) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-047 | bug | Neither editor opens while trains run | - | [MT-137](tests.md#mt-137) |
@@ -314,3 +317,24 @@ becomes a compound key of square plus route rather than a string with a suffix; 
 gain the conversion that is today spread through the class. Mechanical but wide, and it touches the one
 class that holds the data Adam has already lost once - so it wants its own commit with the battery
 green either side, and the existing round-trip tests are what make it safe to attempt.
+
+### OB-067 - 2026-08-24 - a page named "2" breaks the id/name translation
+
+**Kind:** bug
+**Raised from:** review of the last day of commits, at Adam's request
+**Filed:** 2026-08-24
+
+`toStored` and `pageOf` rest on an invariant stated in the code - "Ids are numeric and names are not, so
+the two never collide" - and nothing enforces it. `validateLayoutName` allows digits, so a page called
+"2" is legal, and people do name pages "1", "2", "3".
+
+A page whose NAME equals another page's ID misroutes both translations. The on-disk repair path added
+for OB-062 is the most exposed, because there every key sits in memory in id form and `toStored` would
+rewrite `"2:x,y"` through the page *named* "2".
+
+Filed rather than fixed because the fix is a policy choice and it is Adam's: either refuse a
+purely-numeric page name at validation - which would reject names somebody may already be using, so it
+needs a migration story - or stop the two sharing a namespace, which is the same direction as FR-013
+and would fall out of it for free.
+
+Nothing has hit this yet; it is a trap laid for later.

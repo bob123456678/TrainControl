@@ -3999,23 +3999,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return true;
         }
 
-        // Not while trains are moving.
-        //
-        // Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
-        // database, the track diagram, the autonomy config, or the locomotive placements."  Picking a
-        // train up off a square autonomy is currently routing over is the placement case of that, and
-        // this door had no check of any kind - the right-click menu asks isAutonomyBusy before it will
-        // even draw Place or Remove.
-        //
-        // Logged rather than dialogged, like the "does not know this square" case just above: this is a
-        // key press, and a modal dialog for each one is worse than a line saying why nothing happened.
-        if (isAutonomyBusy())
-        {
-            this.model.logf("autolayout.warnNoPlacementWhileRunning", point.getName());
-
-            return true;
-        }
-
         if (paste)
         {
             Locomotive placing = this.cutLocomotive != null ? this.cutLocomotive : this.getActiveLoc();
@@ -13705,6 +13688,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void doSync(Component c)
     {
+        // The DATABASE sync, which adds locomotives and deletes and re-adds routes.
+        //
+        // The state sync next door was guarded because it turns every function off; this one was not,
+        // and it is the more invasive of the two. The model defers only the address update - "A rename
+        // and a manual address change are both refused while running; a sync had no such guard" - and
+        // everything else in it proceeds. Found by review: one door of a pair fixed, which is this
+        // codebase's recurring shape.
+        if (refuseWhileAutonomyRunning(c)) return;
+
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.syncMenuItem.setEnabled(false);
@@ -18127,6 +18119,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void combineLinkedPages()
     {
+        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
+        if (refuseWhileAutonomyRunning(this)) return;
+
         if (refuseWhileEditorOpen()) return;
 
         if (!this.isLocalLayout())
@@ -18358,6 +18353,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // has already been written and the refresh is the part that has to happen.
         if (refuseWhileEditorOpen()) return;
 
+        // And not while trains are running (MT-141). This one already refused an open editor, which
+        // reads as though the question had been asked - but an editor being closed does not mean the
+        // railway is standing still, and renaming a page renumbers nothing now yet still rebuilds the
+        // session underneath whatever is moving.
+        if (refuseWhileAutonomyRunning(this)) return;
+
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
@@ -18453,13 +18454,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // layoutEditingComplete below rebuilds the session from the renamed pages, because that
                 // rebuild is what reconciles - and reconciling against a store still keyed by the old
                 // name is the whole of the bug.
-                if (rename && getAutonomySession() != null)
+                if (rename)
                 {
-                    getAutonomySession().getStore().renamePage(currentLayout, newLayoutName);
+                    // The session ALREADY BUILT, not the lazy getter - and only written to a setup
+                    // that is already there.
+                    //
+                    // getAutonomySession() builds one on demand: it opens every page, runs the caption
+                    // migration - which rewrites gleisbild files and can raise a dialog - and save()
+                    // then does folder().mkdirs() and writes setup.json unconditionally. So renaming a
+                    // page on a layout where autonomy had never been touched invented a setup out of
+                    // nothing and attributed it to a gesture with nothing to do with autonomy.
+                    //
+                    // repairAutonomyLocomotive guards exactly this, twice over, and says why. Its two
+                    // siblings - this and the delete below - were written in the same series and had
+                    // neither guard. Found by review.
+                    org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+                    if (session != null)
+                    {
+                        // In memory always: it costs nothing and is right either way.
+                        session.getStore().renamePage(currentLayout, newLayoutName);
+                    }
 
                     try
                     {
-                        getAutonomySession().save();
+                        if (session == null)
+                        {
+                            // No session: rewrite the file itself, which writes nothing at all unless
+                            // the setup is already there.
+                            org.traincontrol.automationui.AutonomyCompanionStore.renamePageOnDisk(
+                                new java.io.File(this.getLocalLayoutPath()),
+                                currentLayout, newLayoutName);
+                        }
+                        else if (session.exists())
+                        {
+                            session.save();
+                        }
                     }
                     catch (java.io.IOException e)
                     {
@@ -18502,7 +18532,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
-        
+
+        // Not while trains are moving, and not underneath an open editor.
+        //
+        // This had neither check. It deletes a page file, forgets that page's whole setup, and rewrites
+        // the index - then finishes through layoutEditingComplete, which rebuilds the autonomy session
+        // from the pages that are left, stopping the diagram driver and nulling the session under
+        // moving trains.
+        //
+        // Adam, MT-141: "Never allow any modifications to a running layout. This includes locomotive
+        // database, the track diagram, the autonomy config, or the locomotive placements." A page IS
+        // the track diagram. The locomotive doors were locked and the placement door was locked; the
+        // page doors are the same rule, and were missed - found by review.
+        if (refuseWhileAutonomyRunning(this)) return;
+
+        if (refuseWhileEditorOpen()) return;
+
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
@@ -18560,24 +18605,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     //
                     // renamePage has had a caller since OB-049. This is its counterpart, which never
                     // had one - the same omission, one method along.
-                    if (getAutonomySession() != null)
+                    // The page FIRST, and the setup after it.
+                    //
+                    // deleteLayoutFile is a bare delete and can fail - a file held open by a sync
+                    // client is the everyday case, and this layout lives under OneDrive. Done the
+                    // other way round, a failure left the setup already forgotten AND written for a
+                    // page that still exists. Forgetting needs nothing from the file, so it can wait
+                    // until the page has actually gone.
+                    this.model.getLayout(going).deleteLayoutFile();
+
+                    // The session ALREADY BUILT, and only a setup that is already there - the same
+                    // rule as the rename above, and for the same reason: saveWithoutReconciling ends
+                    // in store.save(), which creates the folder and the file.
+                    org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+                    try
                     {
-                        int forgotten = getAutonomySession().getStore().deletePage(going);
-
-                        if (forgotten > 0) this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
-
-                        try
+                        if (session == null)
                         {
-                            getAutonomySession().saveWithoutReconciling();
+                            org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
+                                new java.io.File(this.getLocalLayoutPath()), going);
                         }
-                        catch (java.io.IOException e)
+                        else
                         {
-                            // The page is going either way; only the record of it is at risk
-                            this.model.log(e);
+                            int forgotten = session.getStore().deletePage(going);
+
+                            if (forgotten > 0)
+                            {
+                                this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
+                            }
+
+                            if (session.exists()) session.saveWithoutReconciling();
                         }
                     }
-
-                    this.model.getLayout(going).deleteLayoutFile();
+                    catch (java.io.IOException e)
+                    {
+                        // The page is going either way; only the record of it is at risk
+                        this.model.log(e);
+                    }
 
                     layoutList.remove(going);
 

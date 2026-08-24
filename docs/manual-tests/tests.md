@@ -5926,8 +5926,13 @@ Ctrl+V over the same square calls `moveLocomotive` directly, with no "can it lea
 test either.
 
 Two ways to reach one action with the rule on only one of them, which is this codebase's recurring
-shape. The keyboard door now asks both questions - and asks them of the POINT rather than of the
-square's copies, because by then the copy is already chosen.
+shape. The keyboard door now asks the "can it leave" question - of the POINT rather than of the square's
+copies, because by then the copy is already chosen.
+
+**Correction, same day.** I also added a busy check to that door and said it "had no check of any
+kind". That was wrong: the handler already refuses all three keys while autonomy is busy, several lines
+higher, before the square is even resolved. My check sat behind it and could never fire. Review caught
+it; the dead branch is gone, and what is actually new here is the "no way out" rule alone.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
@@ -6196,6 +6201,27 @@ at all:
 The check was written out longhand at each of the four places that had it, which is how two came to be
 missed; it is one call now, so the next door added is one line rather than one more copy.
 
+**And four more doors, found by a second review.** The lockdown covered the locomotive database and the
+placements and stopped there. Adam's ruling also names the track diagram, and a PAGE is the track
+diagram:
+
+- **deleting a page** had no running check and no editor check at all. It deletes the page file,
+  forgets that page's whole setup and rewrites the index, then rebuilds the autonomy session - stopping
+  the diagram driver and nulling the session under moving trains.
+- **renaming or duplicating a page** refused an open editor, which reads as though the question had
+  been asked. An editor being closed does not mean the railway is standing still.
+- **combining linked pages** likewise.
+- **the database sync** - not the state sync, which was already guarded, but `doSync`, which adds
+  locomotives and deletes and re-adds routes. It is the more invasive of the pair and had nothing. The
+  model defers only the address update, and says so: "A rename and a manual address change are both
+  refused while running; a sync had no such guard."
+
+Six guarded doors now, all through the one helper.
+
+**So this entry is worth running twice** - once for the locomotive doors it was written for, and once
+with trains running to check that the Layouts menu refuses everything: delete, rename, duplicate,
+combine.
+
 ---
 
 <a id="mt-142"></a>
@@ -6258,7 +6284,31 @@ they are equally the correct call on a collection of locomotives, and a guard re
 at a time cannot tell which it is looking at. A guard that has to be argued with is one somebody
 eventually adds an exemption list to. Verified by putting the real defect back and watching it fail.
 
-Five tests, each seen failing first, in `testPageIdsAreDurable`. The delete and the durable ids are
+**Three corrections from a second review, all of them mine.**
+
+**The ids are not "above every id ever issued".** They are above the highest id still IN THE FILE, and
+those are different numbers the moment the highest-id page is the one deleted - the index is the only
+record, and a number gone from it cannot be told from one never used. My test proved the weaker claim
+by deleting a MIDDLE page, which the mechanism does handle. What actually keeps a reused id safe is
+`deletePage` having forgotten the old page's settings first, so there is nothing left for the number to
+carry. Both tests were rewritten to say that: one pins that no new page takes a LIVE page's id, and one
+pins that a page reusing a retired id inherits nothing - the second being the one that matters, and
+mutation-checked against `deletePage` doing nothing.
+
+**Renaming or deleting a page invented a setup on a layout that never had one.** Both paths called the
+LAZY session getter and then saved, and `store.save()` does `mkdirs()` and writes unconditionally.
+`repairAutonomyLocomotive` guards this exact hazard twice over and explains why; its two siblings,
+written in the same series, had neither guard. They use the already-built session now, write only to a
+setup that already exists, and otherwise repair the file directly - which writes nothing unless the
+file is there. The delete also happens in a safer order: the page file goes first, so a failure to
+delete it can no longer leave the setup forgotten for a page that still exists.
+
+**`deletePage` gathered only squares that appear as KEYS.** A protecting signal, a blocker or the far
+end of a portal can sit on the deleted page while nothing is recorded about it - only pointed at it -
+so the pointer survived the page and dangled until the next reconcile. `renamePage` handles that half
+explicitly and this method's own contract claimed to. It does now.
+
+Six tests, each seen failing first, in `testPageIdsAreDurable`. The delete and the durable ids are
 also why `AutonomySession.save`'s refusal to prune while the numbering is suspect is now a backstop
 rather than the fix.
 
