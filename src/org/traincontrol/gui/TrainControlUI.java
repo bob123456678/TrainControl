@@ -2866,6 +2866,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (tile == null || !this.isLocalLayout()) return null;
 
+        // Not while an editor holds the setup (OB-076).
+        //
+        // The editor's Cancel restores autonomyAsOpened - the whole setup as it was when that window
+        // opened - and saves it. An edit made from THIS menu while the editor is open is not in that
+        // snapshot, so Cancel silently reverted it and wrote the reversion to disk. The user named a
+        // station from the diagram, pressed Cancel in a window about something else, and lost the
+        // name with no connection between the two acts.
+        //
+        // Refused rather than repaired: the snapshot is repaired for locomotive renames, and doing the
+        // same for every setup edit would mean keeping two live editors in step, which is the trap
+        // that made the editors mutually exclusive in the first place. The editor is where the setup
+        // is edited while it is open.
+        //
+        // No menu at all rather than a greyed one, because this menu IS the autonomy surface here -
+        // greying every item would be a list of things you cannot do.
+        if (isLayoutEditorOpen()) return null;
+
         final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         if (session == null) return null;
@@ -3979,6 +3996,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (this.isAutonomyBusy())
         {
             this.model.logf("layout.warnDiagramKeyWhileBusy");
+
+            return true;
+        }
+
+        // Nor while an editor holds the setup (OB-076).
+        //
+        // These keys write a placement into the setup, and the editor's Cancel restores the setup as
+        // it was when that window opened - so a placement made here while the editor is open is
+        // reverted by a Cancel in a window about something else, and the reversion is written to disk.
+        // The tile menu stands down for the same reason.
+        if (isLayoutEditorOpen())
+        {
+            this.model.logf("layout.warnDiagramKeyWhileEditorOpen");
 
             return true;
         }
