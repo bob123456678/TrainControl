@@ -650,6 +650,28 @@ public class AutonomyCompanionStore
      *
      * @return an unmodifiable view
      */
+    /**
+     * Every square that has been given a name, in the order they were named.
+     *
+     * For pickers that offer POINTS to choose between: a square with no name is one the operator cannot
+     * recognise in a list, so it is not a choice that can be made sensibly.
+     *
+     * @return the named squares
+     */
+    public List<TileKey> getNamedTiles()
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        for (String key : pointNames.keySet())
+        {
+            TileKey tile = parseTileKey(key);
+
+            if (tile != null) out.add(tile);
+        }
+
+        return out;
+    }
+
     public Map<String, String> getPointNames()
     {
         return Collections.unmodifiableMap(pointNames);

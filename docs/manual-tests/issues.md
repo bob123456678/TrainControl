@@ -120,33 +120,6 @@ bookkeeping. The guard makes the omissions loud; it does not make them impossibl
 the file shorter. Left open at Adam's request rather than closed on the strength of a test.
 
 
-### FR-001 - 2026-08-22 - excluding points
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 19:27  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 19:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-similar to excluding locomotives, we should be able to exclude the autonomous selection of a station when another (specified) point is occupied.  This is similar to how explicit lock edges worked.
-
-### FR-006 - 2026-08-22 - editor grids
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:36  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the editor, make the gray grid an option you can toggle in the visibile elements.  on by default, but persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths when it is off.
-
-### FR-007 - 2026-08-22 - loading autonomy
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-22 21:41  
-**Build:** commit fc672631, build\classes, compiled 22 Aug 20:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-it should be possible to initially load autonomy from an import, not just forcing the creation of a new one.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -159,6 +132,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-23 | FR-001 | feature request | Station unavailable while another point is in use, as lock edges | fixed unvalidated | - |
+| 2026-08-22 | FR-006 | feature request | Editor grid is a toggle, and hovering no longer resizes a tile | fixed unvalidated | - |
+| 2026-08-22 | FR-007 | feature request | Autonomy can be set up by importing, from the menu with nothing set up | fixed unvalidated | - |
+| 2026-08-23 | FR-010 | feature request | Home locomotive picker filters, and offers the one being driven | fixed unvalidated | - |
+| 2026-08-23 | FR-011 | feature request | Add to autonomy uses the same filtering picker | fixed unvalidated | - |
+| 2026-08-23 | FR-012 | feature request | A dozen editor cycles must retain nothing | fixed validated | - |
 | 2026-08-22 | FR-008 | feature request | Route editor: Highlight on Diagram dropped, Test renamed Test Condition | fixed validated | - |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |
 | 2026-08-23 | OB-046 | bug | Go to the other end asks save/discard/cancel | - | [MT-137](tests.md#mt-137) |
@@ -290,31 +269,4 @@ they were filed under, and this mapping is how to trace one to the other.*
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
-
-### FR-010 - 2026-08-23 - home locomotive searching
-
-**Kind:** feature request  
-**Raised from:** MT-112 (Home assignments: the three rules that were unreachable)  
-**Filed:** 2026-08-23 11:22  
-**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the home locomotives window should have a textbox to allow filtering the list, making it easier to find a locomotive when there are many.  Also, add a "use current" button there.
-
-### FR-011 - 2026-08-23 - add to autonomy filtering
-
-**Kind:** feature request  
-**Raised from:** MT-122 (Adding a locomotive to autonomy from the track diagram)  
-**Filed:** 2026-08-23 11:25  
-**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-similar to home locomotives, make it so that the add to autonomy list of locomotives can be filtered using a textbox.  if it makes sense, reuse the same component as "home locomotives" while disabling its "use current" button.
-
-### FR-012 - 2026-08-23 - test case for memory usage
-
-**Kind:** feature request  
-**Raised from:** MT-134 (Four things the night review found)  
-**Filed:** 2026-08-23 12:01  
-**Build:** commit 62af99e6, build\classes, compiled 23 Aug 11:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-open and close the aditor a dozen times on a big layout and watch memory.  nothing to see if this is right.
 

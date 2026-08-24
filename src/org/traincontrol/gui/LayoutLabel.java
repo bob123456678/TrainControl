@@ -167,7 +167,9 @@ public final class LayoutLabel extends JLabel
             // Asked of the same rule, so the toggle reaches both (FR-006).  Off, it is an empty border
             // of the same width rather than none at all: a border occupies space, so a square without
             // one is a pixel smaller than its neighbours and grew when the pointer crossed it.
-            this.setBorder(LayoutEditor.restingBorder(false, false));
+            this.setBorder(LayoutEditor.restingBorder(false,
+                parent instanceof LayoutEditor && ((LayoutEditor) parent).isAutonomyMode(),
+                LayoutEditor.showGrid()));
         }
         
         // Every square on the MAIN window reports when the pointer is over it.

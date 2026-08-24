@@ -394,36 +394,68 @@ public class testEditorSurfaceRules
     {
         javax.swing.JLabel square = new javax.swing.JLabel();
 
-        java.awt.Insets on = LayoutEditor.restingBorder(false, false, true).getBorderInsets(square);
-        java.awt.Insets off = LayoutEditor.restingBorder(false, false, false).getBorderInsets(square);
+        assertNotNull(LayoutEditor.restingBorder(false, false, true),
+            "the grid is not drawn at all with the toggle on");
 
-        assertEquals(off.top, on.top, "a square without the grid is a different height from one with it");
-        assertEquals(off.left, on.left, "a square without the grid is a different width from one with it");
-        assertEquals(off.bottom, on.bottom);
-        assertEquals(off.right, on.right);
+        assertNull(LayoutEditor.restingBorder(false, false, false),
+            "with the grid off a square must rest in NO border. An empty border of the same width was "
+            + "tried and is wrong: it still takes up room, and the room shows the panel behind it - a "
+            + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
+            + "editor's own rule below pins");
 
-        assertTrue(on.left > 0, "the grid border takes up no room, so nothing below tests anything");
+        assertNull(LayoutEditor.restingBorder(false, true, true),
+            "with the grid off a square must rest in NO border. An empty border of the same width was "
+            + "tried and is wrong: it still takes up room, and the room shows the panel behind it - a "
+            + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
+            + "editor's own rule below pins");
+
+        assertTrue(LayoutEditor.restingBorder(false, false, true).getBorderInsets(square).left > 0,
+            "the grid border takes up no room, so nothing above tests anything");
     }
 
     /**
      * And the hover outline is the same size as both, which is what stops the diagram shifting.
      */
     @Test
-    public void testHoveringDoesNotResizeASquare()
+    public void testHoveringDoesNotResizeASquare() throws Exception
     {
         javax.swing.JLabel square = new javax.swing.JLabel();
 
-        // What highlightLabel puts on a square of the DIAGRAM - the palette keeps its thicker line
-        java.awt.Insets hovered = javax.swing.BorderFactory
-            .createLineBorder(java.awt.Color.BLUE, 1).getBorderInsets(square);
+        // The outline highlightLabel puts on a DIAGRAM square while the grid is off. Reached by
+        // reflection because it is the private half of a rule whose public half is restingBorder, and
+        // the two only mean anything together: what a square rests in, and what it wears when hovered.
+        java.lang.reflect.Method overlay =
+            LayoutEditor.class.getDeclaredMethod("overlayLine", java.awt.Color.class, int.class);
 
-        java.awt.Insets off = LayoutEditor.restingBorder(false, false, false).getBorderInsets(square);
+        overlay.setAccessible(true);
 
-        assertEquals(hovered.left, off.left,
-            "hovering a square changes its width while the grid is off, so the pointer pushes the "
-            + "diagram along in front of it (FR-006)");
+        javax.swing.border.Border hover =
+            (javax.swing.border.Border) overlay.invoke(null, java.awt.Color.BLUE, 1);
 
-        assertEquals(hovered.top, off.top,
-            "hovering a square changes its height while the grid is off");
+        java.awt.Insets hovered = hover.getBorderInsets(square);
+
+        assertEquals(hovered.left, 0,
+            "hovering a square reserves space while the grid is off, so it grows by a pixel and the "
+            + "pointer pushes the diagram along in front of it. With no grid a square rests in NO "
+            + "border, so its outline has to reserve nothing either (FR-006)");
+
+        assertEquals(hovered.top, 0, "hovering a square reserves height while the grid is off");
+        assertEquals(hovered.bottom, 0);
+        assertEquals(hovered.right, 0);
+
+        // And it still draws something - a border that reserves nothing AND paints nothing would pass
+        // the assertions above while making the hover invisible.
+        java.awt.image.BufferedImage picture =
+            new java.awt.image.BufferedImage(20, 20, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = picture.createGraphics();
+
+        hover.paintBorder(square, g, 0, 0, 20, 20);
+
+        g.dispose();
+
+        assertEquals(picture.getRGB(0, 0), java.awt.Color.BLUE.getRGB(),
+            "the hover outline reserves no space and draws nothing either, so hovering a square with "
+            + "the grid off shows nothing at all");
     }
 }

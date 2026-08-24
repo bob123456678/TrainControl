@@ -1168,6 +1168,14 @@ public class AutonomyEditorPanel extends JPanel
                 strings(target, "excludedLocs").size()),
                 () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
 
+            // FR-001: the same idea as excluded locomotives, about PLACES rather than trains - "we
+            // should be able to exclude the autonomous selection of a station when another (specified)
+            // point is occupied".  It sits beside them because it is the same kind of setting: a
+            // restriction on what autonomy may choose, which the railway works perfectly well without.
+            advanced.add(item(I18n.f("autolayout.ui.menuBlockedByPoints",
+                session.getStore().getBlockingPoints(target).size()),
+                () -> promptBlockingPoints(target)));
+
             menu.addSeparator();
         }
 
@@ -2466,6 +2474,85 @@ public class AutonomyEditorPanel extends JPanel
         if (!(chose instanceof Integer) || (Integer) chose != JOptionPane.OK_OPTION) return null;
 
         return list.getSelectedValue();
+    }
+
+    /**
+     * Asks which squares hold this station back (FR-001).
+     *
+     * A checklist of the other named points, rather than a picker of one: a station may be held back by
+     * more than one place, and the question "which of these" is answered faster by reading a list than
+     * by opening the same dialog repeatedly.
+     *
+     * Only NAMED points are offered. The restriction is written into the built configuration as lock
+     * edges pointing at the watched square, and a square with no name is one the operator cannot
+     * recognise in a list - the name is how they know which place it is.
+     */
+    private void promptBlockingPoints(TileKey station)
+    {
+        java.util.List<TileKey> choices = new java.util.ArrayList<>();
+
+        for (TileKey tile : session.getStore().getNamedTiles())
+        {
+            // Not the station itself: standing there already decides whether it is free, so watching
+            // itself would make it a station nothing can be sent to.
+            if (!tile.equals(station)) choices.add(tile);
+        }
+
+        if (choices.isEmpty())
+        {
+            JOptionPane.showMessageDialog(owner(),
+                I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith"));
+            return;
+        }
+
+        java.util.List<TileKey> already = session.getStore().getBlockingPoints(station);
+
+        JPanel panel = new JPanel();
+
+        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+
+        panel.add(new javax.swing.JLabel(
+            I18n.f("autosetup.ui.promptBlockedByPoints", describeTile(station))));
+
+        panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
+
+        java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
+
+        for (TileKey tile : choices)
+        {
+            javax.swing.JCheckBox box = new javax.swing.JCheckBox(
+                session.getStore().getPointName(tile), already.contains(tile));
+
+            box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+            boxes.add(box);
+            panel.add(box);
+        }
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
+
+        scroll.setPreferredSize(new java.awt.Dimension(320,
+            Math.min(340, 60 + choices.size() * 24)));
+
+        if (JOptionPane.showConfirmDialog(owner(), scroll,
+            I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
+        {
+            return;
+        }
+
+        java.util.List<TileKey> chosen = new java.util.ArrayList<>();
+
+        for (int at = 0; at < boxes.size(); at++)
+        {
+            if (boxes.get(at).isSelected()) chosen.add(choices.get(at));
+        }
+
+        session.getStore().setBlockingPoints(station, chosen);
+
+        // The restriction is built into the configuration as lock edges, so the running layout has to
+        // be regenerated for it to mean anything - the same seam every other setup edit uses.
+        placementChanged();
     }
 
     private void promptHome(TileKey tile)

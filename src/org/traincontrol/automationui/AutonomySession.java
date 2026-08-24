@@ -1663,7 +1663,8 @@ public class AutonomySession
             .withMandatoryTurns(mandatoryTurnTiles())
             .withParkingTiles(parkingTiles())
             .withBarredArrivals(barredArrivals())
-            .withProtectingSignals(protectingSignalNames());
+            .withProtectingSignals(protectingSignalNames())
+            .withBlockingPoints(store.getBlockingPoints());
     }
 
     /**
@@ -3075,7 +3076,6 @@ public class AutonomySession
     }
 
     /**
-     * One of a Point's operational properties, in the active configuration.    /**
      * One of a Point's operational properties, in the active configuration.
      *
      * Kept per configuration rather than beside the track, because these are what a configuration IS:

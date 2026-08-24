@@ -338,6 +338,35 @@ public class AutonomyBuilder
 
     private Map<TileKey, List<String>> protectingSignals = Collections.emptyMap();
 
+    /**
+     * Stations that are unavailable to autonomy while another square is occupied (FR-001).
+     *
+     * Expressed as LOCK EDGES rather than as a rule of its own, which is Adam's call and the reason
+     * there is no new concept in the running model: "add a lock edge ending with the requested S88 to
+     * be excluded.  that will allow you to mostly reuse the existing model."
+     *
+     * So every edge INTO the station gains, as a lock edge, every edge that ENDS at the square being
+     * watched - and the existing lock machinery does the rest.  What that means in practice is worth
+     * being exact about, because it is not quite the words of the request: a lock edge asks whether
+     * that track is HELD BY A ROUTE, not whether a train is standing at the sensor beyond it.
+     * Edge.isLockHeld says so and explains why - counting a parked train made a train beside a junction
+     * a permanent roadblock, and two of them could deadlock.  So the station is held back while
+     * something is running over the watched approach, and free again once that train has arrived and
+     * its path is released.
+     *
+     * @param blocking station square to the squares that hold it back
+     * @return this
+     */
+    public AutonomyBuilder withBlockingPoints(Map<TileKey, List<TileKey>> blocking)
+    {
+        this.blockingPoints = blocking == null
+            ? Collections.<TileKey, List<TileKey>>emptyMap() : blocking;
+
+        return this;
+    }
+
+    private Map<TileKey, List<TileKey>> blockingPoints = Collections.emptyMap();
+
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
         this.barredArrivals = barred == null
@@ -1034,6 +1063,40 @@ public class AutonomyBuilder
                         lock.put("start", otherPair[0]);
                         lock.put("end", otherPair[1]);
                         lockEdges.put(lock);
+                    }
+                }
+            }
+
+            // FR-001, on top of the locks the reduction derived: an edge arriving at a station somebody
+            // has held back gains every edge that ENDS at the square being watched.
+            //
+            // Every emitted copy of those edges, like the derived locks above - a split turns one piece
+            // of track into several named edges, and a restriction that named only one of them would be
+            // satisfied by routing over its twin.
+            //
+            // Squares that no longer exist are simply not found here, so a restriction watching deleted
+            // track quietly stops applying rather than taking the station out of service.  reconcile
+            // drops it from the setup on the next pass and says so.
+            List<TileKey> watched = blockingPoints.get(edge.getEnd());
+
+            if (watched != null)
+            {
+                for (TileKey square : watched)
+                {
+                    for (Map.Entry<ReducedEdge, List<String[]>> other : emitted.entrySet())
+                    {
+                        if (!square.equals(other.getKey().getEnd())) continue;
+
+                        for (String[] otherPair : other.getValue())
+                        {
+                            // Not this edge itself, which would make the station block its own approach
+                            if (otherPair[0].equals(pair[0]) && otherPair[1].equals(pair[1])) continue;
+
+                            JSONObject lock = new JSONObject();
+                            lock.put("start", otherPair[0]);
+                            lock.put("end", otherPair[1]);
+                            lockEdges.put(lock);
+                        }
                     }
                 }
             }

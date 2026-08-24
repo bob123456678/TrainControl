@@ -3139,17 +3139,74 @@ public class LayoutEditor extends PositionAwareJFrame
                 NEW_COMPONENT_BORDER_WIDTH);
         }
 
-        // An EMPTY border of the same width, never null.
+        // NULL when the grid is off, not an empty border of the same width.
         //
-        // A border occupies space, so a square with none is one pixel smaller in each direction than
-        // its neighbours with one - and hovering it, which puts a coloured line on, made it grow.  With
-        // the grid off that happened on every square the pointer crossed, so the whole diagram shifted
-        // under it (FR-006).  Autonomy mode has had the grid off since it was written and this is
-        // exactly what it did.
-        return grid
+        // An empty border still takes up room, and the room shows the panel behind it - a white grid
+        // where the grey one used to be, which is MT-127 and which testEditorSurfaceRules pins.  Tiles
+        // with the grid off have to sit flush, exactly as they do in the viewer.
+        //
+        // That leaves FR-006's other half - "make sure hovering doesn't increase tile widths when it is
+        // off" - to be answered on the HIGHLIGHT side instead, by a border that paints without
+        // reserving anything.  See overlayLine.
+        // The autonomy editor never draws it, whatever the toggle says.  That is MT-127, which Adam
+        // validated: its tiles sit flush, exactly as they do in the viewer, because the overlay it
+        // draws is busy enough without a grid under it.  The toggle governs the TRACK editor, which is
+        // where the grid is - and turning it off there now gets the same flush tiles.
+        return grid && !autonomy
             ? BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH)
-            : BorderFactory.createEmptyBorder(COMPONENT_BORDER_WIDTH, COMPONENT_BORDER_WIDTH,
-                COMPONENT_BORDER_WIDTH, COMPONENT_BORDER_WIDTH);
+            : null;
+    }
+
+    /**
+     * A line drawn ON a component rather than around it: it paints, and it reserves no space.
+     *
+     * The hover outline has to be visible without changing anything's size.  An ordinary LineBorder
+     * takes its width in insets, so putting one on a square that was resting with no border at all made
+     * that square a pixel bigger in each direction and pushed the diagram along in front of the pointer
+     * (FR-006).  A border is allowed to paint outside what it reserves; nothing else on the square draws
+     * in that outermost pixel, so the line has it to itself.
+     *
+     * Only needed where the resting border is null.  With the grid on, both borders are one-pixel lines
+     * and the sizes already match.
+     *
+     * @param color the outline colour
+     * @param width how thick to draw it
+     * @return a border that paints a line and reports no insets
+     */
+    private static Border overlayLine(final Color color, final int width)
+    {
+        return new javax.swing.border.AbstractBorder()
+        {
+            @Override
+            public void paintBorder(java.awt.Component c, java.awt.Graphics g,
+                int x, int y, int w, int h)
+            {
+                java.awt.Color was = g.getColor();
+
+                g.setColor(color);
+
+                for (int ring = 0; ring < width; ring++)
+                {
+                    g.drawRect(x + ring, y + ring, w - 1 - ring * 2, h - 1 - ring * 2);
+                }
+
+                g.setColor(was);
+            }
+
+            @Override
+            public java.awt.Insets getBorderInsets(java.awt.Component c)
+            {
+                return new java.awt.Insets(0, 0, 0, 0);
+            }
+
+            @Override
+            public java.awt.Insets getBorderInsets(java.awt.Component c, java.awt.Insets insets)
+            {
+                insets.set(0, 0, 0, 0);
+
+                return insets;
+            }
+        };
     }
 
     /**
@@ -3241,7 +3298,15 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
-            label.setBorder(BorderFactory.createLineBorder(color, this.getX((LayoutLabel) label) == -1 ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH));
+            boolean palette = this.getX((LayoutLabel) label) == -1;
+
+            int width = palette ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH;
+
+            // Sized the same as what this square was resting in, so hovering moves nothing.  A palette
+            // tile always rests in a line and keeps one; a diagram tile with the grid off rests in
+            // nothing, so its outline has to reserve nothing either - see overlayLine.
+            label.setBorder(restingBorder(palette, isAutonomyMode()) == null
+                ? overlayLine(color, width) : BorderFactory.createLineBorder(color, width));
         }
     }
     
