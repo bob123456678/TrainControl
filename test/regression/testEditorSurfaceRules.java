@@ -664,4 +664,80 @@ public class testEditorSurfaceRules
             + "is the leak MT-134 asks about, and discard() cannot cover it: it stands down when the "
             + "container is still cached, and the reset is what makes it not cached: " + unguarded);
     }
+
+    /**
+     * The caption menu items name the station they are about.
+     *
+     * FR-014, Adam: "the show station name here right click menu option in the autonomy editor should
+     * clearly indicate the current station being shown, in cases where the user just sees [---] on the
+     * diagram."
+     *
+     * A caption square draws the station's OCCUPANT, and a station with no train on it draws as
+     * `GraphLocAssign.NONE_LABEL` - three dashes. So on most of the railway most of the time, a
+     * captioned square says nothing whatever about which station it is captioning, and the menu was
+     * the only way to find out. It did not say either: one item read "Show a Station Name Here..." and
+     * the other "Clear This Square", and neither named anything.
+     *
+     * Two halves, and the second is the one worth a test.
+     *
+     * The names have to be in `addCaptionItems`, because BOTH menus build their caption items through
+     * it - the editor's own right-click and the deep menu handed to the track diagram. Half the
+     * defects in this file's history are a fix applied to one of a pair, and this file already holds
+     * three tests about exactly that. The deep menu happens to carry a `title()` naming the station
+     * already; the editor's own menu has none, and that is the menu Adam was looking at. So a fix
+     * written at a call site could have been written at the one that was already fine.
+     *
+     * Asserted as "the un-named keys are not used anywhere" rather than "the named keys are used
+     * here", because that is the version a second copy of the menu cannot get past.
+     */
+    @Test
+    public void testTheCaptionItemsNameTheStationTheyAreAbout() throws Exception
+    {
+        assertTrue(PANEL.isFile(),
+            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
+
+        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+
+        // The clear item is ALWAYS about a station - it is only offered when one is captioned - so
+        // there is no reading of the code in which an un-named clear is correct.
+        assertFalse(source.contains("\"autosetup.ui.menuClearStationHere\""),
+            "a caption is cleared through a menu item that does not say what it is clearing. That "
+            + "item only appears when a station IS captioned, and the square it sits on reads [---] "
+            + "whenever no train is standing there - so this asks the user to confirm removing "
+            + "something whose identity is not shown anywhere on screen (FR-014)");
+
+        // The named variants exist and are formatted, not looked up flat: I18n.f is what puts the
+        // station into them, and a plain t() on a key holding {0} would show the placeholder.
+        for (String key : new String[] {"menuShowStationHereNamed", "menuClearStationHereNamed"})
+        {
+            assertTrue(source.contains("I18n.f(\"autosetup.ui." + key + "\""),
+                "autosetup.ui." + key + " is not formatted with a station name. It carries a {0}, so "
+                + "asking for it with I18n.t would put the placeholder itself on the menu");
+        }
+
+        // And both live in the shared method, so a menu built somewhere else cannot quietly offer an
+        // un-named pair of its own.
+        int at = source.indexOf("private void addCaptionItems(");
+
+        assertTrue(at > 0, "addCaptionItems is gone. It is the one place both menus build their "
+            + "caption items, and this rule is about it being one place - so if it was split, this "
+            + "test should be rewritten rather than deleted");
+
+        int ends = source.indexOf("\n    }\n", at);
+
+        assertTrue(ends > at, "could not find the end of addCaptionItems");
+
+        String body = source.substring(at, ends);
+
+        assertTrue(body.contains("menuShowStationHereNamed") && body.contains("menuClearStationHereNamed"),
+            "the caption items are named somewhere other than addCaptionItems, which is the shared "
+            + "method both menus use. A name added at one call site is missing from the other, and "
+            + "the deep menu is the one that already showed the station - so a fix written there "
+            + "would have changed nothing for the menu FR-014 is about");
+
+        assertTrue(body.contains("describeTile("),
+            "addCaptionItems does not ask describeTile for the station's name. That is the method "
+            + "that falls back to the s88 address or the coordinates when a square has no authored "
+            + "name, which is the case where the user has least else to go on");
+    }
 }

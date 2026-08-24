@@ -1712,7 +1712,22 @@ public class AutonomyEditorPanel extends JPanel
     {
         boolean mine = label.trim().isEmpty() || captioned != null;
 
-        javax.swing.JMenuItem name = item(I18n.t("autosetup.ui.menuShowStationHere"),
+        // Both items NAME the station when there is one (FR-014).
+        //
+        // Adam: "the show station name here right click menu option in the autonomy editor should
+        // clearly indicate the current station being shown, in cases where the user just sees [---] on
+        // the diagram." A caption draws the station's OCCUPANT, and an empty station draws as
+        // GraphLocAssign.NONE_LABEL - so a square captioning a station with no train on it says
+        // nothing at all about which station it is. That is the ordinary state of most of the railway.
+        //
+        // Here rather than in the two menus, because both build their caption items through this
+        // method and a name added to one of them would be missing from the other - which is the shape
+        // of half the defects in this file's history. The deep menu also carries a title() naming the
+        // station; the editor's own menu has no title, and that is the menu Adam was looking at.
+        String showing = captioned == null ? null : describeTile(captioned);
+
+        javax.swing.JMenuItem name = item(showing == null ? I18n.t("autosetup.ui.menuShowStationHere")
+            : I18n.f("autosetup.ui.menuShowStationHereNamed", showing),
             () -> promptStationLabel(tile, component));
 
         name.setToolTipText(mine ? null : wrapped(I18n.t("autosetup.ui.tooltipTextInTheWay")));
@@ -1721,7 +1736,11 @@ public class AutonomyEditorPanel extends JPanel
 
         if (captioned != null)
         {
-            menu.add(item(I18n.t("autosetup.ui.menuClearStationHere"), () -> applyCaption(tile, null)));
+            // Naming what is about to be cleared matters more here than anywhere: this item is
+            // destructive, and "Clear This Square" on a square reading [---] asks the user to confirm
+            // the removal of something they cannot see the identity of.
+            menu.add(item(I18n.f("autosetup.ui.menuClearStationHereNamed", showing),
+                () -> applyCaption(tile, null)));
         }
     }
 
