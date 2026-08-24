@@ -163,7 +163,12 @@ public class testAutonomyStoreSettingsMatrix
         "pageNameToId",          // by page
         "pageIdToName",          // by page id
         "pageNamesWhenWritten",  // by page id
-        "pageIdConflicts"        // by page
+        "pageIdConflicts",       // by page
+        // By FIELD name, and deliberately outside every rule in this matrix: it holds the file's own
+        // JSON for pages that are not loaded, and is written back exactly as it came in.  Moving,
+        // building over, renaming or restoring it would be acting on squares of a page nobody can
+        // see - which is the loss it exists to prevent (OB-067).
+        "heldForAbsentPages"
     ));
 
     // =============================================================================================

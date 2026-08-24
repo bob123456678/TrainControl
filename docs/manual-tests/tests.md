@@ -54,8 +54,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-158](#mt-158) | 2026-08-24 | The autonomy editor's title, and the blocked-points window | fixed unvalidated | OB-082, OB-083 |
 | [MT-159](#mt-159) | 2026-08-24 | The backup is one archive holding all the state | fixed unvalidated | FR-015 |
 | [MT-160](#mt-160) | 2026-08-24 | The application starts, and the window does not freeze | fixed unvalidated | OB-077, OB-078, OB-079 |
+| [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
+| [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
+| [MT-163](#mt-163) | 2026-08-24 | The "no available paths" reasons, in a window | fixed unvalidated | FR-017 |
 
-Everything else - 121 of 160 - is **fixed validated** and needs nothing from you unless the
+Everything else - 121 of 163 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7223,5 +7226,141 @@ window. It runs on a thread now, guarded so a slow answer cannot land on a locom
 **Two callers left as they are**, and recorded: the right-click menu's `getPossiblePaths` and the
 synchronized `moveLocomotive` on paste. Both are gestures that already imply a wait, and neither runs
 while the monitor is held for seconds.
+
+---
+
+<a id="mt-161"></a>
+
+### MT-161 - 2026-08-24 - A page may be called "2" without stealing page 2's settings
+
+**Disposition:** fixed unvalidated
+**From:** OB-067, FR-013
+**Written:** 2026-08-24
+
+**What to do.** This one needs a page whose file is temporarily missing, which on your railway is the
+OneDrive case rather than something to arrange by hand. If you would rather not, say so and it can be
+left to the automated test that covers it.
+
+1. Note the id of one of your pages from `config/gleisbild.cs2` - say page 3 is "Upper Yard".
+2. Rename some OTHER page to **3**. A page called "3" is legal and stays legal.
+3. Move `Upper Yard.cs2` out of `config/gleisbilder/` and start TrainControl.
+4. The page called "3" must NOT be showing Upper Yard's stations, names or captions.
+5. Close TrainControl, put the file back, and start again. Upper Yard must have everything it had.
+
+**What matters is step 5 as much as step 4.** The old behaviour lost the settings in both directions at
+once: the live page collected them, and the absent page's copy was overwritten on the next save.
+
+#### Comments
+
+**Claude, 2026-08-24.** The keys are `"page:x,y"` strings. On disk the page part is an ID and in memory
+it is a NAME, and both halves of the translation are string lookups - so each rests on being handed the
+kind of string it expects. The code said as much: "ids are numeric and names are not, so the two never
+collide". `validateLayoutName` allows digits, so they do, and Adam ruled the name stays legal - "A page
+should be allowed to be named 2 - let FR-013 dissolve it."
+
+The reachable way in is a page that is not loaded, which is ordinary here: `pagesNotLoaded` exists
+because a OneDrive placeholder or a file held by the sync client is enough for CS2File to skip a page.
+An entry belonging to an absent page could not be translated, so it kept the file's id as its page part
+- and an id sitting where a name goes is indistinguishable from a page actually called that.
+
+The first fix was to leave such keys alone on the way OUT, and the test written for it showed that is
+not enough. The damage does not need a save: `getPointName(new TileKey("1", 3, 3))` already returned
+the absent page 1's station, in memory, because "1" is what both of them look like. The pun is in the
+representation, so no care at the boundary can unmake it.
+
+So nothing whose page is unknown enters memory at all. It waits as the exact JSON it arrived as and is
+merged back on save, and the file's record of what that id was called is kept too - otherwise one save
+during the absence would drop the only evidence a renumber can be told from a rename by.
+
+Two things the fix's own tests found:
+
+- The first rule held back RENAMED pages as well, which is the MT-135 loss caused by the mechanism
+  written to prevent it. `pageIsHere` now mirrors `pageOf` exactly rather than asking its own version
+  of the question.
+- A page whose file disappears has its id RETIRED by the index, so a page that goes away and comes
+  back is a new page with a new id, and its old settings stay behind under the old one. That is the id
+  system working - it is what stops a later page inheriting them - but it means the return in step 5
+  above depends on the index not having been rewritten while the file was away. Worth knowing; filed
+  as its own question rather than changed here.
+
+---
+
+<a id="mt-162"></a>
+
+### MT-162 - 2026-08-24 - The caption menu says which station a square is showing
+
+**Disposition:** fixed unvalidated
+**From:** FR-014
+**Written:** 2026-08-24
+
+**What to do.** Find a square that is showing a station's name and has no train standing at that
+station, so it reads as dashes.
+
+Right-click it, in the autonomy editor AND from the track diagram's own menu. Both should now offer
+**Show a Different Station Here... (now showing <name>)** and **Stop Showing <name>**, naming the
+station rather than saying "Clear This Square".
+
+On a square with no caption the first item should read as before - "Show a Station Name Here..." - and
+there should be no clear item at all.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "the show station name here right click menu option in the autonomy
+editor should clearly indicate the current station being shown, in cases where the user just sees
+[---] on the diagram."
+
+A caption draws the station's OCCUPANT, and an empty station draws as three dashes - so on most of the
+railway most of the time, a captioned square says nothing about which station it is about. The menu did
+not say either.
+
+Written into `addCaptionItems`, which both menus build their caption items through, rather than at
+either call site. The deep menu already carries a title naming the station and the editor's own menu
+has none - so a fix written where the reader happens to be looking could have landed on the menu that
+was already fine. The test asserts the un-named key is used NOWHERE, which is the form a second copy of
+the menu cannot get past.
+
+---
+
+<a id="mt-163"></a>
+
+### MT-163 - 2026-08-24 - The "no available paths" reasons, in a window
+
+**Disposition:** fixed unvalidated
+**From:** FR-017
+**Written:** 2026-08-24
+
+**What to do.** With autonomy loaded and a locomotive showing **No available paths**, click the
+information mark beside that text.
+
+1. A window opens with a scrollable list of every station and why each is unavailable.
+2. The stations autonomy could choose - occupied, route blocked - come FIRST, under their own heading.
+   The ones it will never choose - switched off, a reversing point, not marked as a destination, or
+   excluding this locomotive - come after.
+3. Read a station in the second group and check the reason is the standing one. A station that is both
+   barred AND has a train on it must say it is barred, not that it is occupied - that is the half of
+   this that changed behaviour.
+4. The window may take a moment to fill in and says so while it does. The rest of the application must
+   stay responsive throughout - try it while a train is being dispatched.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "let’s also make it clickable and show the notes in a popup with a
+scrollable text area with the whole list of stations. Order them by ones that can be chosen
+autonomously and ones that cannot, with the autonomous ones first."
+
+The hover tooltip stays; it now has a window behind it. A tooltip cannot be scrolled, goes away while
+it is being read, and this one showed twelve stations and then an ellipsis.
+
+The grouping is answered by the Layout rather than by matching the reason strings - two of the standing
+bars are translated sentences that would have to be compared by value, and this window would then be a
+second answer to "can autonomy pick this station".
+
+Asking that question surfaced step 3's change. `explainDestinations` tested "occupied" first, so a
+station autonomy will never choose reported "occupied by X" whenever a train happened to be sitting on
+it. The train will leave; the bar will not.
+
+Computed off the event thread, which this file's comments already insisted on twice. The window opens
+saying it is working and fills in when the answer arrives - a modal dialog runs its own event pump,
+which is what lets that work.
 
 ---

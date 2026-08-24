@@ -404,6 +404,43 @@ public class AutonomyCompanionStore
     private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
 
     /**
+     * Entries for pages the index cannot resolve, kept out of memory and written back verbatim.
+     *
+     * The one thing the boundary could not previously know (OB-067). A key is "page:x,y" and both
+     * halves of the translation are string lookups, so the page part has to be in the world its
+     * lookup expects - a NAME going out, an ID coming in. Nothing recorded which world it was in, so
+     * the code rested on "ids are numeric and names are not, and therefore never collide". They do:
+     * `validateLayoutName` allows digits, so a page may legally be called "2", and Adam ruled it must
+     * stay legal - "A page should be allowed to be named 2 - let FR-013 dissolve it."
+     *
+     * On the normal path there was never a fault: keys arrive in id form and are translated to names
+     * once, so each lookup is asked about the kind of string it holds. The exposed path is the
+     * on-disk repair added for OB-062, which loads WITHOUT numbering - every key stays in id form in
+     * memory, and writing it back then ran an id through the name map. "2:x,y" would have been
+     * rewritten through the page NAMED "2" and a page's settings reattached to a different page,
+     * which is the failure Adam has already lost data to twice.
+     *
+     * The first attempt at this made `toStored` leave such keys alone on the way out, and a test
+     * written for it showed why that is not enough. The damage does not need a save: an entry that
+     * kept the file's id as its page part is ALREADY indistinguishable, in memory, from an entry
+     * belonging to a page genuinely called that. `getPointName(new TileKey("1", 3, 3))` returned the
+     * absent page 1's station, because "1" is what both of them look like. The pun is in the
+     * representation, so no amount of care at the boundary can unmake it.
+     *
+     * Hence holding rather than resolving. Nothing whose page is unknown is put into the live
+     * collections at all; it waits here, as the exact JSON it arrived as, and is merged back on save.
+     * Every key in memory is therefore a page NAME of a page that is loaded - which is the invariant
+     * the code has always assumed and never had.
+     *
+     * When the page comes back - a OneDrive placeholder that hydrates, a file the sync client had
+     * open - its id resolves, nothing is held, and the entries load normally. Nothing is lost by
+     * being away.
+     *
+     * Field name -> the JSONObject or JSONArray of entries held for it.
+     */
+    private final Map<String, Object> heldForAbsentPages = new LinkedHashMap<>();
+
+    /**
      * @param layoutFolder the local layout folder - the one holding config/gleisbilder
      */
     public AutonomyCompanionStore(File layoutFolder)
@@ -1399,6 +1436,21 @@ public class AutonomyCompanionStore
             pages.put(entry.getKey(), entry.getValue());
         }
 
+        // And what the file already knew about ids that are NOT in the index right now.
+        //
+        // A page whose file is missing has its entries held rather than loaded (heldForAbsentPages),
+        // and this is the other half of not losing anything while it is away: without it, one save
+        // during the absence drops the record of what that id was called, which is the only evidence
+        // a renumber can be told from a rename by. The entries would survive and the means of
+        // recognising them would not.
+        //
+        // Never over a live one - an id the index has now is authoritative, and this map is by
+        // definition older.
+        for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
+        {
+            if (!pages.containsKey(entry.getKey())) pages.put(entry.getKey(), entry.getValue());
+        }
+
         root.put("pages", new JSONObject(pages));
 
         root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
@@ -1416,6 +1468,17 @@ public class AutonomyCompanionStore
         // and its old name sat in the set for ever because nothing prunes it.
         root.put("excludedPages", new JSONArray(translatePages(excludedPages)));
         root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
+
+        // Whatever was held back because its page is not loaded goes back in exactly as it came
+        // (OB-067).  Without this, one save while a page's file is missing deletes that page's whole
+        // setup - the same loss the page-id work was done for, arriving through absence rather than
+        // through a rename.
+        for (String field : new String[] {"pointNames", "stations", "tileLengths", "tileDirections",
+            "barredArrivals", "stationSignals", "blockedPoints", "portals", "captions", "linkNames",
+            "excludedPages", "disabledLinks"})
+        {
+            mergeHeld(root, field);
+        }
 
         // written back last, so a field this build does not model survives a round trip
         for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
@@ -1718,6 +1781,7 @@ public class AutonomyCompanionStore
         disabledPortals.clear();
         unknownSharedFields.clear();
         pageNamesWhenWritten.clear();
+        heldForAbsentPages.clear();
         pageIdConflicts.clear();
     }
 
@@ -3162,6 +3226,179 @@ public class AutonomyCompanionStore
 
 
     /**
+     * The shared object with every entry naming an absent page taken out of it and held.
+     *
+     * Only when the numbering is known at all. A store loaded with no index - which is what the
+     * on-disk repair path does on its first read - knows nothing about any page, and holding
+     * everything would empty it. Nothing can be misresolved there either, because the name map is as
+     * empty as the id map, so the keys stay as they are and are written back as they are.
+     *
+     * @param root the shared object as read, with "pages" already taken from it
+     * @return a copy safe to read into the live collections
+     */
+    private JSONObject withoutAbsentPages(JSONObject root)
+    {
+        heldForAbsentPages.clear();
+
+        if (pageIdToName.isEmpty()) return root;
+
+        JSONObject out = new JSONObject();
+
+        for (String field : root.keySet())
+        {
+            out.put(field, root.get(field));
+        }
+
+        // Keyed by a square, with a value that is nobody's business here.
+        for (String field : new String[] {"pointNames", "tileLengths", "tileDirections",
+            "barredArrivals", "linkNames"})
+        {
+            holdEntries(out, field, false, false);
+        }
+
+        // Keyed by a square, and the value is a square too.
+        for (String field : new String[] {"portals", "captions"})
+        {
+            holdEntries(out, field, true, false);
+        }
+
+        // Keyed by a square, and the value is one square or several.
+        for (String field : new String[] {"stationSignals", "blockedPoints"})
+        {
+            holdEntries(out, field, false, true);
+        }
+
+        // A list of squares.
+        for (String field : new String[] {"stations", "disabledLinks"})
+        {
+            holdElements(out, field, false);
+        }
+
+        // A list of whole PAGES, so the element is the page part itself.
+        holdElements(out, "excludedPages", true);
+
+        return out;
+    }
+
+    /**
+     * Moves the entries of one keyed field whose squares are not all here into the held set.
+     *
+     * @param root the copy being filtered, edited in place
+     * @param field which field
+     * @param valueIsASquare whether the value names a square as well
+     * @param valueIsSquares whether the value is one square or an array of them
+     */
+    private void holdEntries(JSONObject root, String field, boolean valueIsASquare,
+        boolean valueIsSquares)
+    {
+        JSONObject src = root.optJSONObject(field);
+
+        if (src == null) return;
+
+        JSONObject keep = new JSONObject();
+        JSONObject held = new JSONObject();
+
+        for (String key : src.keySet())
+        {
+            Object value = src.get(key);
+
+            boolean here = allHere(key);
+
+            if (here && valueIsASquare && value instanceof String) here = allHere((String) value);
+
+            if (here && valueIsSquares)
+            {
+                if (value instanceof String)
+                {
+                    here = allHere((String) value);
+                }
+                else if (value instanceof JSONArray)
+                {
+                    JSONArray each = (JSONArray) value;
+
+                    for (int at = 0; here && at < each.length(); at++)
+                    {
+                        here = allHere(String.valueOf(each.get(at)));
+                    }
+                }
+            }
+
+            if (here) keep.put(key, value); else held.put(key, value);
+        }
+
+        if (held.length() > 0) heldForAbsentPages.put(field, held);
+
+        root.put(field, keep);
+    }
+
+    /**
+     * The same for a field that is a bare list.
+     *
+     * @param wholePages true when the elements are page names rather than squares
+     */
+    private void holdElements(JSONObject root, String field, boolean wholePages)
+    {
+        JSONArray src = root.optJSONArray(field);
+
+        if (src == null) return;
+
+        JSONArray keep = new JSONArray();
+        JSONArray held = new JSONArray();
+
+        for (int at = 0; at < src.length(); at++)
+        {
+            String element = String.valueOf(src.get(at));
+
+            boolean here = wholePages ? pageIsHere(element) : allHere(element);
+
+            if (here) keep.put(src.get(at)); else held.put(src.get(at));
+        }
+
+        if (held.length() > 0) heldForAbsentPages.put(field, held);
+
+        root.put(field, keep);
+    }
+
+    /**
+     * Puts the held entries of one field back into what is about to be written.
+     *
+     * Never over one that is live: a page that has come back is authoritative, and the held copy is
+     * by definition older than anything the running application has done since.
+     *
+     * @param root the object being built for the file
+     * @param field which field
+     */
+    private void mergeHeld(JSONObject root, String field)
+    {
+        Object held = heldForAbsentPages.get(field);
+
+        if (held instanceof JSONObject && root.optJSONObject(field) != null)
+        {
+            JSONObject into = root.getJSONObject(field);
+            JSONObject from = (JSONObject) held;
+
+            for (String key : from.keySet())
+            {
+                if (!into.has(key)) into.put(key, from.get(key));
+            }
+        }
+        else if (held instanceof JSONArray && root.optJSONArray(field) != null)
+        {
+            JSONArray into = root.getJSONArray(field);
+            JSONArray from = (JSONArray) held;
+
+            Set<String> seen = new LinkedHashSet<>();
+
+            for (int at = 0; at < into.length(); at++) seen.add(String.valueOf(into.get(at)));
+
+            for (int at = 0; at < from.length(); at++)
+            {
+                if (seen.add(String.valueOf(from.get(at)))) into.put(from.get(at));
+            }
+        }
+    }
+
+    /**
      * Reads the shared half of a setup object in, over a store already emptied of it.
      *
      * Split out of load() so that importing can put a MERGED object through exactly the same
@@ -3174,7 +3411,7 @@ public class AutonomyCompanionStore
      *
      * @param root
      */
-    private void readShared(JSONObject root)
+    private void readShared(JSONObject wholeRoot)
     {
         // FIRST, because everything below is translated out of page ids and the translation needs to
         // know what those ids were called when this file was written.
@@ -3183,7 +3420,11 @@ public class AutonomyCompanionStore
         // rather than by an untranslate* call below - so lengths were resolved against an empty map
         // while the other ten were resolved against a full one.  Harmless for as long as the
         // translation ignored this map, and wrong the moment it stopped ignoring it.
-        readStringMap(root, "pages", pageNamesWhenWritten);
+        readStringMap(wholeRoot, "pages", pageNamesWhenWritten);
+
+        // Everything naming a page that is not loaded is taken out here and held, rather than read in
+        // with the file's id standing in for a page name (OB-067). See heldForAbsentPages.
+        JSONObject root = withoutAbsentPages(wholeRoot);
 
         readStringMap(root, "pointNames", pointNames);
         readStringSet(root, "stations", stations);
@@ -3244,9 +3485,11 @@ public class AutonomyCompanionStore
             }
         }
 
-        for (String key : root.keySet())
+        // From the whole object, not the filtered copy: an unmodelled field is written back verbatim
+        // and the filter has no business editing it.
+        for (String key : wholeRoot.keySet())
         {
-            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, root.get(key));
+            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, wholeRoot.get(key));
         }
     }
 
@@ -3270,6 +3513,7 @@ public class AutonomyCompanionStore
         disabledPortals.clear();
         unknownSharedFields.clear();
         pageNamesWhenWritten.clear();
+        heldForAbsentPages.clear();
         pageIdConflicts.clear();
         configurations.clear();
         activeConfiguration = null;
@@ -3388,6 +3632,9 @@ public class AutonomyCompanionStore
 
         if (colon < 0) return key;
 
+        // Every key in memory now belongs to a page that is loaded - anything else was held back at
+        // read time rather than let in wearing an id where a name goes (OB-067, see
+        // heldForAbsentPages). So this map is the right map to ask, whatever the page is called.
         String id = pageNameToId.get(key.substring(0, colon));
 
         return id == null ? key : id + key.substring(colon);
@@ -3439,6 +3686,67 @@ public class AutonomyCompanionStore
         String now = pageIdToName.get(id);
 
         return now == null ? id : now;
+    }
+
+    /**
+     * Whether a stored page part names a page that is actually here.
+     *
+     * The question `pageOf` cannot answer by its return value: it hands back the id when it fails,
+     * and an id is a legal page name, so the caller cannot tell success from failure by looking.
+     *
+     * @param stored the page part of a stored key - an id, or a name on a file old enough
+     * @return true when it resolves to a page in the current index
+     */
+    private boolean pageIsHere(String stored)
+    {
+        String whenWritten = pageNamesWhenWritten.get(stored);
+
+        // The two ways pageOf succeeds, in its order, because this has to agree with it exactly.  It
+        // asks the same two questions and this asks whether either of them was answered - a third
+        // opinion about which pages exist is the last thing this class needs.
+        //
+        // RENUMBERED: the name the file recorded is still in the index, under whatever number.
+        if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return true;
+
+        // RENAMED, or simply unmoved: the index knows this id.  This is the case page ids exist for,
+        // and leaving it out held back the whole of a renamed page - which is the MT-135 loss, caused
+        // by the mechanism written to prevent it.
+        if (pageIdToName.containsKey(stored)) return true;
+
+        // The file names this id and neither question found it: the page is genuinely not loaded.
+        if (whenWritten != null) return false;
+
+        // Otherwise it is a NAME, and an unambiguous one.  Files written before keys were stored by
+        // id hold names, and a page added since the index was read has no id yet - both were always
+        // meant to survive, and testAnExcludedPageWithNoIdKeepsItsName says so.  Nothing can be
+        // confused here: no id in the index and none in the file's own record is this string, so
+        // there is no second reading for it to be mistaken for.
+        return true;
+    }
+
+    /**
+     * Whether every square a stored entry names belongs to a page that is here.
+     *
+     * The VALUE side matters as much as the key side. A caption is a square pointing at a station, a
+     * portal is a square paired with another, and a station's signals are squares too - so an entry
+     * anchored on a loaded page can still name one that is absent, and half-translating it leaves the
+     * same id-as-name in memory that this whole mechanism exists to prevent.
+     *
+     * @param parts the stored keys the entry is made of - its key, and any square it names
+     * @return true when all of them are resolvable
+     */
+    private boolean allHere(String... parts)
+    {
+        for (String part : parts)
+        {
+            if (part == null) continue;
+
+            int colon = part.lastIndexOf(':');
+
+            if (!pageIsHere(colon < 0 ? part : part.substring(0, colon))) return false;
+        }
+
+        return true;
     }
 
     private Map<String, String> translateKeys(Map<String, String> map, boolean storing)

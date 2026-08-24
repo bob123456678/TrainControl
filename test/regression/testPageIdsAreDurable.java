@@ -195,6 +195,112 @@ public class testPageIdsAreDurable
     }
 
     /**
+     * A page named "1" does not collect the settings of the page whose id is 1.
+     *
+     * OB-067, and the thing FR-013 named as its correctness bar. The keys are "page:x,y" strings, and
+     * on disk the page part is an ID while in memory it is a NAME. Both halves of the translation are
+     * string lookups, so each rests on being handed the kind of string it expects - and the code said
+     * as much: "ids are numeric and names are not, so the two never collide". `validateLayoutName`
+     * allows digits, so they do. Adam ruled the name stays legal: "A page should be allowed to be
+     * named 2 - let FR-013 dissolve it."
+     *
+     * The reachable way in is a page that is not loaded, which is an ordinary thing on this railway -
+     * `pagesNotLoaded` exists because a OneDrive placeholder or a file held by the sync client is
+     * enough for CS2File to skip a page. An entry belonging to an absent page cannot be translated to
+     * a name, so it stays in the file's own id form in memory, waiting to be written back untouched.
+     * Writing it back then ran that id through the NAME map - and if a live page happens to be called
+     * "1", the absent page's settings were handed to it.
+     *
+     * Both directions of the loss matter and both are asserted: the live page named "1" must not
+     * inherit anything, and the absent page must still have everything when its file comes back.
+     *
+     * The shape Adam asked these to take: a mutation, a check, a save, a load, and verification that
+     * the mutation is still there while the rest stays the same.
+     */
+    @Test
+    public void testAPageNamedAfterAnotherPagesIdCollectsNothing() throws IOException
+    {
+        write("Ghost", "Alpha");
+
+        assertEquals(ids().get("Ghost"), Integer.valueOf(1),
+            "the fixture needs Ghost to hold id 1, since the collision under test is with a page "
+            + "later named \"1\"");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey onGhost = new TileKey("Ghost", 3, 3);
+        TileKey onAlpha = new TileKey("Alpha", 4, 4);
+
+        store.setPointName(onGhost, "Ghost Platform");
+        store.setPointName(onAlpha, "Alpha Platform");
+        store.save();
+
+        // Ghost's page file goes away - a placeholder that never hydrated, which is the case
+        // pagesNotLoaded was written for - and a new page arrives called "1".
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "1")), null);
+
+        assertNotEquals(ids().get("1"), Integer.valueOf(1),
+            "the fixture needs the page NAMED 1 to hold some other id, or the collision it is here "
+            + "to reproduce is not set up");
+
+        // Loaded and saved with Ghost absent, which is all it takes: the entry cannot be resolved to
+        // a name, so it stays in id form, and the save is where it used to be handed away.
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPageIds(idsAsNameToId());
+        reopened.load();
+        reopened.save();
+
+        AutonomyCompanionStore after = new AutonomyCompanionStore(layout);
+
+        after.setPageIds(idsAsNameToId());
+        after.load();
+
+        assertNull(after.getPointName(new TileKey("1", 3, 3)),
+            "the page named \"1\" came back holding the station of the page whose ID is 1. Its name "
+            + "was run through the map of page names on the way to disk, and an absent page's whole "
+            + "setup was handed to whichever live page happened to be called after its number "
+            + "(OB-067)");
+
+        assertEquals(after.getPointName(onAlpha), "Alpha Platform",
+            "Alpha's own station did not survive a save with another page absent");
+
+        // And the other half, which is the one that matters: the absent page's entry is still in the
+        // file, under the id it was written with, after a save that happened while it was away.
+        //
+        // Asserted on the FILE rather than by bringing the page back and reading it. Bringing it back
+        // is a separate question with a separate answer: writeLayoutIndex retires the id of a page
+        // that is not in the list, so a page whose file disappears and returns is a NEW page with a
+        // new id, and its old entries stay behind under the old one. That is the id system working as
+        // designed - it is what stops a later page inheriting them - but it means a page that goes
+        // away and comes back does not automatically pick its settings up again, which is worth
+        // knowing and is not this test's subject.
+        String written = new String(Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(written.contains("1:3,3"),
+            "the absent page's station is no longer in the file at all. One save while its page was "
+            + "missing was enough to drop it - the same loss the page-id work was done for, arriving "
+            + "through absence rather than through a rename.  File:\n" + written);
+
+        assertTrue(written.contains("Ghost Platform"),
+            "the absent page's key survived but its value did not.  File:\n" + written);
+
+        assertEquals(after.getPointName(onAlpha), "Alpha Platform",
+            "and Alpha must be untouched throughout");
+    }
+
+    /**
+     * Where the shared setup is written.
+     */
+    private File setupFile()
+    {
+        return new File(new File(new File(layout, "config"), "autonomy"), "setup.json");
+    }
+
+    /**
      * The index as the store wants it: name -> id.
      */
     private Map<String, String> idsAsNameToId()
