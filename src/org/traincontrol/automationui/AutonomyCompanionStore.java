@@ -71,9 +71,9 @@ public class AutonomyCompanionStore
     private final File layoutFolder;
 
     // --- shared: one copy per layout, describing the physical diagram ---------------------------
-    private final Map<String, String> pointNames = new LinkedHashMap<>();
-    private final Set<String> stations = new LinkedHashSet<>();
-    private final Map<String, Integer> tileLengths = new LinkedHashMap<>();
+    private final Map<TileKey, String> pointNames = new LinkedHashMap<>();
+    private final Set<TileKey> stations = new LinkedHashSet<>();
+    private final Map<TileKey, Integer> tileLengths = new LinkedHashMap<>();
     private final Map<String, String> tileDirections = new LinkedHashMap<>();
 
     /**
@@ -88,7 +88,7 @@ public class AutonomyCompanionStore
      * A comma-separated list of side names, so it reads plainly in the file and needs no schema of its
      * own.
      */
-    private final Map<String, String> barredArrivals = new LinkedHashMap<>();
+    private final Map<TileKey, String> barredArrivals = new LinkedHashMap<>();
 
     /**
      * Which sides trains may not arrive by.
@@ -100,7 +100,7 @@ public class AutonomyCompanionStore
     {
         Set<TilePorts.Side> out = new LinkedHashSet<>();
 
-        String stored = tile == null ? null : barredArrivals.get(tile.toString());
+        String stored = tile == null ? null : barredArrivals.get(tile);
 
         if (stored == null) return out;
 
@@ -136,7 +136,7 @@ public class AutonomyCompanionStore
             // Nothing is stored for the default, so a setup nobody has touched has nothing to
             // reconcile, and a square whose restriction is lifted stops carrying one rather than
             // carrying an empty one.
-            barredArrivals.remove(tile.toString());
+            barredArrivals.remove(tile);
 
             return;
         }
@@ -150,7 +150,7 @@ public class AutonomyCompanionStore
             text.append(side.name());
         }
 
-        barredArrivals.put(tile.toString(), text.toString());
+        barredArrivals.put(tile, text.toString());
     }
 
     /**
@@ -160,16 +160,16 @@ public class AutonomyCompanionStore
     {
         Map<TileKey, Set<TilePorts.Side>> out = new LinkedHashMap<>();
 
-        for (String key : barredArrivals.keySet())
+        for (TileKey key : barredArrivals.keySet())
         {
-            TileKey tile = parseTileKey(key);
+            TileKey tile = key;
 
             if (tile != null) out.put(tile, getBarredArrivals(tile));
         }
 
         return out;
     }
-    private final Map<String, String> portals = new LinkedHashMap<>();
+    private final Map<TileKey, TileKey> portals = new LinkedHashMap<>();
 
     /**
      * The signals that protect each station, keyed by the station's square.
@@ -184,7 +184,7 @@ public class AutonomyCompanionStore
      * Keyed like the portals - square to square - so it survives a page rename for the same reason
      * they do, and so it is reconciled away when the station goes.
      */
-    private final Map<String, List<String>> stationSignals = new LinkedHashMap<>();
+    private final Map<TileKey, List<TileKey>> stationSignals = new LinkedHashMap<>();
 
     /**
      * Squares whose occupancy makes a station unavailable to autonomy (FR-001).
@@ -193,7 +193,7 @@ public class AutonomyCompanionStore
      * same reason: a station may be held back by more than one place, and each of them is a SQUARE
      * here, resolved to a Point name only when the configuration is built.
      */
-    private final Map<String, List<String>> blockedPoints = new LinkedHashMap<>();
+    private final Map<TileKey, List<TileKey>> blockedPoints = new LinkedHashMap<>();
 
     /**
      * @param station the station's square
@@ -205,13 +205,13 @@ public class AutonomyCompanionStore
 
         if (station == null) return out;
 
-        List<String> keys = blockedPoints.get(station.toString());
+        List<TileKey> keys = blockedPoints.get(station);
 
         if (keys == null) return out;
 
-        for (String key : keys)
+        for (TileKey key : keys)
         {
-            TileKey blocker = parseTileKey(key);
+            TileKey blocker = key;
 
             if (blocker != null) out.add(blocker);
         }
@@ -229,7 +229,7 @@ public class AutonomyCompanionStore
     {
         if (station == null) return;
 
-        List<String> keys = new ArrayList<>();
+        List<TileKey> keys = new ArrayList<>();
 
         if (blockers != null)
         {
@@ -238,15 +238,15 @@ public class AutonomyCompanionStore
                 // De-duplicated here rather than in the picker, and never the station itself: standing
                 // at a station already decides whether it is free, so watching it from itself makes a
                 // station nothing can be sent to rather than one that is restricted.
-                if (blocker != null && !blocker.equals(station) && !keys.contains(blocker.toString()))
+                if (blocker != null && !blocker.equals(station) && !keys.contains(blocker))
                 {
-                    keys.add(blocker.toString());
+                    keys.add(blocker);
                 }
             }
         }
 
-        if (keys.isEmpty()) blockedPoints.remove(station.toString());
-        else blockedPoints.put(station.toString(), keys);
+        if (keys.isEmpty()) blockedPoints.remove(station);
+        else blockedPoints.put(station, keys);
     }
 
     /**
@@ -256,9 +256,9 @@ public class AutonomyCompanionStore
     {
         Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
 
-        for (String key : blockedPoints.keySet())
+        for (TileKey key : blockedPoints.keySet())
         {
-            TileKey station = parseTileKey(key);
+            TileKey station = key;
 
             if (station == null) continue;
 
@@ -291,13 +291,13 @@ public class AutonomyCompanionStore
 
         if (station == null) return out;
 
-        List<String> keys = stationSignals.get(station.toString());
+        List<TileKey> keys = stationSignals.get(station);
 
         if (keys == null) return out;
 
-        for (String key : keys)
+        for (TileKey key : keys)
         {
-            TileKey signal = parseTileKey(key);
+            TileKey signal = key;
 
             if (signal != null) out.add(signal);
         }
@@ -325,7 +325,7 @@ public class AutonomyCompanionStore
     {
         if (station == null) return;
 
-        List<String> keys = new ArrayList<>();
+        List<TileKey> keys = new ArrayList<>();
 
         if (signals != null)
         {
@@ -333,17 +333,17 @@ public class AutonomyCompanionStore
             {
                 // De-duplicated here rather than in the picker, so that nothing else which writes this
                 // - an import, a restored snapshot - can leave one signal in the list twice
-                if (signal != null && !keys.contains(signal.toString())) keys.add(signal.toString());
+                if (signal != null && !keys.contains(signal)) keys.add(signal);
             }
         }
 
         if (keys.isEmpty())
         {
-            stationSignals.remove(station.toString());
+            stationSignals.remove(station);
         }
         else
         {
-            stationSignals.put(station.toString(), keys);
+            stationSignals.put(station, keys);
         }
     }
 
@@ -354,9 +354,9 @@ public class AutonomyCompanionStore
     {
         Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
 
-        for (String key : stationSignals.keySet())
+        for (TileKey key : stationSignals.keySet())
         {
-            TileKey station = parseTileKey(key);
+            TileKey station = key;
 
             if (station == null) continue;
 
@@ -381,8 +381,8 @@ public class AutonomyCompanionStore
      * It also means autonomy no longer writes to the layout file at all, which is where the worst defect
      * in this feature lived: saving regenerated the page and deleted anything the parser could not model.
      */
-    private final Map<String, String> captions = new LinkedHashMap<>();
-    private final Map<String, String> linkNames = new LinkedHashMap<>();
+    private final Map<TileKey, TileKey> captions = new LinkedHashMap<>();
+    private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
     private final Set<String> excludedPages = new LinkedHashSet<>();
 
     private String activeConfiguration = null;
@@ -767,7 +767,7 @@ public class AutonomyCompanionStore
 
     public String getPointName(TileKey tile)
     {
-        return pointNames.get(tile.toString());
+        return pointNames.get(tile);
     }
 
     /**
@@ -791,9 +791,9 @@ public class AutonomyCompanionStore
     {
         List<TileKey> out = new ArrayList<>();
 
-        for (String key : pointNames.keySet())
+        for (TileKey key : pointNames.keySet())
         {
-            TileKey tile = parseTileKey(key);
+            TileKey tile = key;
 
             if (tile != null) out.add(tile);
         }
@@ -801,37 +801,52 @@ public class AutonomyCompanionStore
         return out;
     }
 
+    /**
+     * Every square that has been given a name, printed.
+     *
+     * Kept in the PRINTED form (FR-013). The store holds squares now, but this is a public accessor
+     * whose callers key their own maps by the same strings, and Adam's rule for this work was "string
+     * keys only matter at import/export" - a display accessor is the nearest thing to an export.
+     * Converting it would ripple into callers that have no reason to change.
+     */
     public Map<String, String> getPointNames()
     {
-        return Collections.unmodifiableMap(pointNames);
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> named : pointNames.entrySet())
+        {
+            out.put(named.getKey().toString(), named.getValue());
+        }
+
+        return Collections.unmodifiableMap(out);
     }
 
     public void setPointName(TileKey tile, String name)
     {
         if (name == null || name.trim().isEmpty())
         {
-            pointNames.remove(tile.toString());
+            pointNames.remove(tile);
         }
         else
         {
-            pointNames.put(tile.toString(), name.trim());
+            pointNames.put(tile, name.trim());
         }
     }
 
     public boolean isStation(TileKey tile)
     {
-        return stations.contains(tile.toString());
+        return stations.contains(tile);
     }
 
     public void setStation(TileKey tile, boolean station)
     {
         if (station)
         {
-            stations.add(tile.toString());
+            stations.add(tile);
         }
         else
         {
-            stations.remove(tile.toString());
+            stations.remove(tile);
         }
     }
 
@@ -841,7 +856,7 @@ public class AutonomyCompanionStore
      */
     public int getTileLength(TileKey tile)
     {
-        Integer value = tileLengths.get(tile.toString());
+        Integer value = tileLengths.get(tile);
 
         return value == null ? 0 : value;
     }
@@ -856,11 +871,11 @@ public class AutonomyCompanionStore
     {
         if (length <= 0)
         {
-            tileLengths.remove(tile.toString());
+            tileLengths.remove(tile);
         }
         else
         {
-            tileLengths.put(tile.toString(), length);
+            tileLengths.put(tile, length);
         }
     }
 
@@ -901,18 +916,18 @@ public class AutonomyCompanionStore
 
     public String getLinkName(TileKey tile)
     {
-        return linkNames.get(tile.toString());
+        return linkNames.get(tile);
     }
 
     public void setLinkName(TileKey tile, String name)
     {
         if (name == null || name.trim().isEmpty())
         {
-            linkNames.remove(tile.toString());
+            linkNames.remove(tile);
         }
         else
         {
-            linkNames.put(tile.toString(), name.trim());
+            linkNames.put(tile, name.trim());
         }
     }
 
@@ -923,13 +938,13 @@ public class AutonomyCompanionStore
      * autonomy runs is a fact about the diagram, and it would be strange for one configuration to see
      * a hole in the track that another does not.
      */
-    private final Set<String> disabledPortals = new LinkedHashSet<>();
+    private final Set<TileKey> disabledPortals = new LinkedHashSet<>();
 
     public boolean isPortalDisabled(TileKey tile)
     {
         if (tile == null) return false;
 
-        if (disabledPortals.contains(tile.toString())) return true;
+        if (disabledPortals.contains(tile)) return true;
 
         // The PARTNER as well, which is the same question TileGraph.portalClosed asks (TD-2).
         //
@@ -944,7 +959,7 @@ public class AutonomyCompanionStore
         // the defect was.
         TileKey partner = getPortalPartner(tile);
 
-        return partner != null && disabledPortals.contains(partner.toString());
+        return partner != null && disabledPortals.contains(partner);
     }
 
     /**
@@ -980,17 +995,17 @@ public class AutonomyCompanionStore
     {
         if (disabled)
         {
-            disabledPortals.add(tile.toString());
+            disabledPortals.add(tile);
         }
         else
         {
-            disabledPortals.remove(tile.toString());
+            disabledPortals.remove(tile);
         }
     }
 
     public TileKey getPortalPartner(TileKey tile)
     {
-        return parseTileKey(portals.get(tile.toString()));
+        return portals.get(tile);
     }
 
     /**
@@ -1004,13 +1019,13 @@ public class AutonomyCompanionStore
         unpairPortal(a);
         unpairPortal(b);
 
-        portals.put(a.toString(), b.toString());
-        portals.put(b.toString(), a.toString());
+        portals.put(a, b);
+        portals.put(b, a);
     }
 
     public void unpairPortal(TileKey tile)
     {
-        String partner = portals.remove(tile.toString());
+        TileKey partner = portals.remove(tile);
 
         if (partner != null) portals.remove(partner);
     }
@@ -1498,7 +1513,7 @@ public class AutonomyCompanionStore
         root.put("pointNames", new JSONObject(translateKeys(pointNames, true)));
         root.put("stations", new JSONArray(translateSet(stations)));
         root.put("tileLengths", new JSONObject(translateLengths()));
-        root.put("tileDirections", new JSONObject(translateKeys(tileDirections, true)));
+        root.put("tileDirections", new JSONObject(translateSuffixedKeys(tileDirections)));
         root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals, true)));
         root.put("stationSignals", new JSONObject(translateTileListMap(stationSignals)));
         root.put("blockedPoints", new JSONObject(translateTileListMap(blockedPoints)));
@@ -2088,7 +2103,7 @@ public class AutonomyCompanionStore
     {
         rekey(pointNames, from, to);
         rekey(tileLengths, from, to);
-        rekey(tileDirections, from, to);
+        rekeySuffixed(tileDirections, from, to);
         rekey(barredArrivals, from, to);
 
         // Both halves, like the captions: the key is the station's square and the value is the
@@ -2110,9 +2125,9 @@ public class AutonomyCompanionStore
 
         // And a link switched off is remembered by its square, so a rename turned every one of them
         // back on - silently, and only on the renamed page.
-        Set<String> renamedPortals = new LinkedHashSet<>();
+        Set<TileKey> renamedPortals = new LinkedHashSet<>();
 
-        for (String key : disabledPortals)
+        for (TileKey key : disabledPortals)
         {
             renamedPortals.add(rekeyOne(key, from, to));
         }
@@ -2120,9 +2135,9 @@ public class AutonomyCompanionStore
         disabledPortals.clear();
         disabledPortals.addAll(renamedPortals);
 
-        Set<String> renamedStations = new LinkedHashSet<>();
+        Set<TileKey> renamedStations = new LinkedHashSet<>();
 
-        for (String key : stations)
+        for (TileKey key : stations)
         {
             renamedStations.add(rekeyOne(key, from, to));
         }
@@ -2182,21 +2197,21 @@ public class AutonomyCompanionStore
     {
         if (page == null) return 0;
 
-        Set<String> squares = new LinkedHashSet<>();
+        Set<TileKey> squares = new LinkedHashSet<>();
 
         // Every collection keyed by square.  Named individually rather than gathered by a helper so
         // that testStoreCollectionsAreHandledEverywhere governs this method too - a collection added
         // later has to be added here, and the test says so before anybody notices in the field.
-        for (String key : new LinkedHashSet<>(pointNames.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(tileLengths.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(barredArrivals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(linkNames.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(stationSignals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(blockedPoints.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(portals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(captions.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(stations)) if (isOnPage(key, page)) squares.add(key);
-        for (String key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(pointNames.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(tileLengths.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(barredArrivals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(linkNames.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(stationSignals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(blockedPoints.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(portals.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(captions.keySet())) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(stations)) if (isOnPage(key, page)) squares.add(key);
+        for (TileKey key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);
 
         // tileDirections is keyed by the square AND a route across it, so its keys carry a suffix.
         // forgetSquares takes bare squares and strips the suffix itself, so the bare square is what
@@ -2205,9 +2220,9 @@ public class AutonomyCompanionStore
         {
             int at = key.lastIndexOf('#');
 
-            String bare = at >= 0 ? key.substring(0, at) : key;
+            TileKey bare = parseTileKey(at >= 0 ? key.substring(0, at) : key);
 
-            if (isOnPage(bare, page)) squares.add(bare);
+            if (bare != null && isOnPage(bare, page)) squares.add(bare);
         }
 
         // And squares on this page that only ever appear as a VALUE.
@@ -2219,19 +2234,19 @@ public class AutonomyCompanionStore
         //
         // renamePage handles the value half explicitly, by rekeying values as well as keys. This is
         // the same half, and this method's own contract already claimed to cover it. Found by review.
-        for (List<String> signals : stationSignals.values())
+        for (List<TileKey> signals : stationSignals.values())
         {
-            for (String signal : signals) if (isOnPage(signal, page)) squares.add(signal);
+            for (TileKey signal : signals) if (isOnPage(signal, page)) squares.add(signal);
         }
 
-        for (List<String> blockers : blockedPoints.values())
+        for (List<TileKey> blockers : blockedPoints.values())
         {
-            for (String blocker : blockers) if (isOnPage(blocker, page)) squares.add(blocker);
+            for (TileKey blocker : blockers) if (isOnPage(blocker, page)) squares.add(blocker);
         }
 
-        for (String far : portals.values()) if (isOnPage(far, page)) squares.add(far);
+        for (TileKey far : portals.values()) if (isOnPage(far, page)) squares.add(far);
 
-        for (String station : captions.values()) if (isOnPage(station, page)) squares.add(station);
+        for (TileKey station : captions.values()) if (isOnPage(station, page)) squares.add(station);
 
         forgetSquares(squares);
 
@@ -2299,15 +2314,15 @@ public class AutonomyCompanionStore
         moveTiles(null, tiles);
     }
 
-    private static Set<String> asKeys(java.util.Collection<TileKey> tiles)
+    private static Set<TileKey> asKeys(java.util.Collection<TileKey> tiles)
     {
-        Set<String> keys = new LinkedHashSet<>();
+        Set<TileKey> keys = new LinkedHashSet<>();
 
         if (tiles == null) return keys;
 
         for (TileKey tile : tiles)
         {
-            if (tile != null) keys.add(tile.toString());
+            if (tile != null) keys.add(tile);
         }
 
         return keys;
@@ -2336,7 +2351,7 @@ public class AutonomyCompanionStore
      */
     public void moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
     {
-        Map<String, String> byKey = new LinkedHashMap<>();
+        Map<TileKey, TileKey> byKey = new LinkedHashMap<>();
 
         if (moves != null)
         {
@@ -2346,7 +2361,7 @@ public class AutonomyCompanionStore
 
                 if (move.getKey().equals(move.getValue())) continue;
 
-                byKey.put(move.getKey().toString(), move.getValue().toString());
+                byKey.put(move.getKey(), move.getValue());
             }
         }
 
@@ -2360,16 +2375,16 @@ public class AutonomyCompanionStore
         //
         // A landing square that is ALSO a source is left alone: it is being vacated in the same
         // gesture, and its own entry travels with it.
-        Set<String> landing = new LinkedHashSet<>();
+        Set<TileKey> landing = new LinkedHashSet<>();
 
-        for (String to : byKey.values())
+        for (TileKey to : byKey.values())
         {
             if (!byKey.containsKey(to)) landing.add(to);
         }
 
         // And the squares the caller says were built over by something other than a move: a bulk
         // column edit clears the whole destination line, including the squares whose source was blank.
-        for (String over : asKeys(builtOver))
+        for (TileKey over : asKeys(builtOver))
         {
             if (!byKey.containsKey(over)) landing.add(over);
         }
@@ -2387,7 +2402,17 @@ public class AutonomyCompanionStore
         // square the track had walked away from, and the next reconcile - which does know about the
         // suffix - dropped them.  That is the same loss moveTiles exists to prevent, hiding behind a
         // key shape.
-        moveSuffixedKeys(tileDirections, byKey);
+        // A string view of the moves, for the one collection that is still string-keyed.  Built here
+        // rather than kept alongside, so there is exactly one map of moves and no chance of the two
+        // disagreeing - which is the failure this whole conversion is about.
+        Map<String, String> byKeyAsStrings = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, TileKey> move : byKey.entrySet())
+        {
+            byKeyAsStrings.put(move.getKey().toString(), move.getValue().toString());
+        }
+
+        moveSuffixedKeys(tileDirections, byKeyAsStrings);
         moveKeys(barredArrivals, byKey);
         moveKeys(linkNames, byKey);
 
@@ -2420,14 +2445,28 @@ public class AutonomyCompanionStore
 
             // The ones staying put first, so a tile arriving on a square that is not moving replaces
             // what was there rather than the other way round.
+            // The configuration's keys are the PRINTED form - it is JSON - so each is parsed before
+            // being asked about (FR-013).
+            //
+            // `byKey.containsKey(aString)` compiles, because containsKey takes Object, and is always
+            // false. That is the whole defect class this conversion is against, and it was reproduced
+            // here within an hour of doing the conversion: the settings matrix caught it as "what a
+            // configuration says about the square did not travel with the tile".
             for (String key : points.keySet())
             {
-                if (!byKey.containsKey(key)) moved.put(key, points.get(key));
+                TileKey tile = parseTileKey(key);
+
+                if (tile == null || !byKey.containsKey(tile)) moved.put(key, points.get(key));
             }
 
             for (String key : points.keySet())
             {
-                if (byKey.containsKey(key)) moved.put(byKey.get(key), points.get(key));
+                TileKey tile = parseTileKey(key);
+
+                if (tile != null && byKey.containsKey(tile))
+                {
+                    moved.put(byKey.get(tile).toString(), points.get(key));
+                }
             }
 
             configuration.put("points", moved);
@@ -2460,7 +2499,7 @@ public class AutonomyCompanionStore
 
         out.put("pointNames", onPage(pointNames, page));
         out.put("tileLengths", onPage(tileLengths, page));
-        out.put("tileDirections", onPage(tileDirections, page));
+        out.put("tileDirections", onPageSuffixed(tileDirections, page));
         out.put("barredArrivals", onPage(barredArrivals, page));
         out.put("linkNames", onPage(linkNames, page));
         // COPIED, not shared.  Every other collection here holds strings and numbers, which cannot
@@ -2523,18 +2562,18 @@ public class AutonomyCompanionStore
     {
         if (page == null || snapshot == null) return;
 
-        putBack(pointNames, page, (Map<String, String>) snapshot.get("pointNames"));
-        putBack(tileLengths, page, (Map<String, Integer>) snapshot.get("tileLengths"));
-        putBack(tileDirections, page, (Map<String, String>) snapshot.get("tileDirections"));
-        putBack(barredArrivals, page, (Map<String, String>) snapshot.get("barredArrivals"));
-        putBack(linkNames, page, (Map<String, String>) snapshot.get("linkNames"));
-        putBack(stationSignals, page, copyLists((Map<String, List<String>>) snapshot.get("stationSignals")));
-        putBack(blockedPoints, page, copyLists((Map<String, List<String>>) snapshot.get("blockedPoints")));
-        putBack(portals, page, (Map<String, String>) snapshot.get("portals"));
-        putBack(captions, page, (Map<String, String>) snapshot.get("captions"));
+        putBack(pointNames, page, (Map<TileKey, String>) snapshot.get("pointNames"));
+        putBack(tileLengths, page, (Map<TileKey, Integer>) snapshot.get("tileLengths"));
+        putBackSuffixed(tileDirections, page, (Map<String, String>) snapshot.get("tileDirections"));
+        putBack(barredArrivals, page, (Map<TileKey, String>) snapshot.get("barredArrivals"));
+        putBack(linkNames, page, (Map<TileKey, String>) snapshot.get("linkNames"));
+        putBack(stationSignals, page, copyLists((Map<TileKey, List<TileKey>>) snapshot.get("stationSignals")));
+        putBack(blockedPoints, page, copyLists((Map<TileKey, List<TileKey>>) snapshot.get("blockedPoints")));
+        putBack(portals, page, (Map<TileKey, TileKey>) snapshot.get("portals"));
+        putBack(captions, page, (Map<TileKey, TileKey>) snapshot.get("captions"));
 
-        putMembersBack(stations, page, (Set<String>) snapshot.get("stations"));
-        putMembersBack(disabledPortals, page, (Set<String>) snapshot.get("disabledPortals"));
+        putMembersBack(stations, page, (Set<TileKey>) snapshot.get("stations"));
+        putMembersBack(disabledPortals, page, (Set<TileKey>) snapshot.get("disabledPortals"));
 
         Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
 
@@ -2577,6 +2616,24 @@ public class AutonomyCompanionStore
      * itself contain a colon - so the comparison is on the prefix rather than on a split.
      */
     /**
+     * Whether a square is on a page (FR-013).
+     *
+     * One field comparison. The string form of this parsed the key to find its page part, which is
+     * where OB-071 lived - it split on the first colon while four other sites split on the last, so
+     * every square on a page whose name contained one was read as belonging to a different page.
+     *
+     * There is nothing here to get wrong any more, which is the point of the conversion.
+     *
+     * @param key the square
+     * @param page the page name
+     * @return whether it is on that page
+     */
+    private static boolean isOnPage(TileKey key, String page)
+    {
+        return key != null && key.getPage().equals(page);
+    }
+
+    /**
      * Whether a stored key belongs to this page.
      *
      * By what the key PARSES to, not by what it starts with.  A key is "page:x,y" and a page name may
@@ -2608,13 +2665,13 @@ public class AutonomyCompanionStore
      * @param from a map whose values are lists, or null
      * @return a copy holding copies
      */
-    private static Map<String, List<String>> copyLists(Map<String, List<String>> from)
+    private static Map<TileKey, List<TileKey>> copyLists(Map<TileKey, List<TileKey>> from)
     {
-        Map<String, List<String>> out = new LinkedHashMap<>();
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
 
         if (from == null) return out;
 
-        for (Map.Entry<String, List<String>> entry : from.entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : from.entrySet())
         {
             out.put(entry.getKey(), entry.getValue() == null
                 ? null : new ArrayList<>(entry.getValue()));
@@ -2623,11 +2680,11 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    private static <T> Map<String, T> onPage(Map<String, T> from, String page)
+    private static <T> Map<TileKey, T> onPage(Map<TileKey, T> from, String page)
     {
-        Map<String, T> out = new LinkedHashMap<>();
+        Map<TileKey, T> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, T> entry : from.entrySet())
+        for (Map.Entry<TileKey, T> entry : from.entrySet())
         {
             if (isOnPage(entry.getKey(), page)) out.put(entry.getKey(), entry.getValue());
         }
@@ -2635,11 +2692,11 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    private static Set<String> membersOnPage(Set<String> from, String page)
+    private static Set<TileKey> membersOnPage(Set<TileKey> from, String page)
     {
-        Set<String> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
-        for (String key : from)
+        for (TileKey key : from)
         {
             if (isOnPage(key, page)) out.add(key);
         }
@@ -2647,9 +2704,9 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    private static <T> void putBack(Map<String, T> into, String page, Map<String, T> was)
+    private static <T> void putBack(Map<TileKey, T> into, String page, Map<TileKey, T> was)
     {
-        for (java.util.Iterator<String> keys = into.keySet().iterator(); keys.hasNext();)
+        for (java.util.Iterator<TileKey> keys = into.keySet().iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next(), page)) keys.remove();
         }
@@ -2657,9 +2714,9 @@ public class AutonomyCompanionStore
         if (was != null) into.putAll(was);
     }
 
-    private static void putMembersBack(Set<String> into, String page, Set<String> was)
+    private static void putMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
-        for (java.util.Iterator<String> keys = into.iterator(); keys.hasNext();)
+        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next(), page)) keys.remove();
         }
@@ -2676,7 +2733,7 @@ public class AutonomyCompanionStore
      *
      * @param squares stored keys, "page:x,y"
      */
-    private void forgetSquares(Set<String> squares)
+    private void forgetSquares(Set<TileKey> squares)
     {
         forgetSquares(squares, null);
     }
@@ -2705,11 +2762,11 @@ public class AutonomyCompanionStore
      * as not - which would spare a label that some other tile has just been built over the top of, and
      * leave a station's name written on track it has nothing to do with.
      */
-    private void forgetSquares(Set<String> squares, Map<String, String> arriving)
+    private void forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
     {
         if (squares == null || squares.isEmpty()) return;
 
-        for (String key : squares)
+        for (TileKey key : squares)
         {
             pointNames.remove(key);
             tileLengths.remove(key);
@@ -2719,7 +2776,7 @@ public class AutonomyCompanionStore
             blockedPoints.remove(key);
             portals.remove(key);
 
-            String names = captions.get(key);
+            TileKey names = captions.get(key);
 
             if (names == null || arriving == null || !key.equals(arriving.get(names)))
             {
@@ -2742,11 +2799,16 @@ public class AutonomyCompanionStore
             String key = keys.next();
             int at = key.lastIndexOf('#');
 
-            if (squares.contains(at >= 0 ? key.substring(0, at) : key)) keys.remove();
+            // Parsed before being asked: `squares` holds squares, and Set.contains takes Object, so
+            // handing it the string form compiles and answers false for ever (FR-013). The matrix
+            // caught this as "which way trains may run survived its square being built over".
+            TileKey bare = parseTileKey(at >= 0 ? key.substring(0, at) : key);
+
+            if (bare != null && squares.contains(bare)) keys.remove();
         }
 
         // And what named them
-        for (java.util.Iterator<Map.Entry<String, String>> pairs = portals.entrySet().iterator();
+        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = portals.entrySet().iterator();
             pairs.hasNext();)
         {
             if (squares.contains(pairs.next().getValue())) pairs.remove();
@@ -2757,16 +2819,16 @@ public class AutonomyCompanionStore
         // No exception for the arriving tiles, and none is possible: a square that is being vacated is
         // never in this set - moveTiles builds it by excluding them - so a caption naming one of those
         // is not looked at here at all.  It is repointed afterwards instead.
-        for (java.util.Iterator<Map.Entry<String, String>> pairs = captions.entrySet().iterator();
+        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = captions.entrySet().iterator();
             pairs.hasNext();)
         {
             if (squares.contains(pairs.next().getValue())) pairs.remove();
         }
 
-        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = stationSignals.entrySet().iterator(); pairs.hasNext();)
         {
-            Map.Entry<String, List<String>> pair = pairs.next();
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
             pair.getValue().removeAll(squares);
 
@@ -2775,10 +2837,10 @@ public class AutonomyCompanionStore
 
         // The same for the squares a station is held back by: a restriction naming track that has been
         // built over is one nothing can satisfy or clear.
-        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = blockedPoints.entrySet().iterator(); pairs.hasNext();)
         {
-            Map.Entry<String, List<String>> pair = pairs.next();
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
             pair.getValue().removeAll(squares);
 
@@ -2792,11 +2854,63 @@ public class AutonomyCompanionStore
 
             JSONObject points = configuration.getJSONObject("points");
 
-            for (String key : squares)
+            for (TileKey key : squares)
             {
-                points.remove(key);
+                points.remove(key.toString());
             }
         }
+    }
+
+    /**
+     * `onPage` for the one collection still keyed by a string (FR-013 stage 1).
+     *
+     * `tileDirections` carries a route suffix on its key - "page:x,y#dx,dy" - so it cannot hold a
+     * TileKey until that becomes a compound key, which is stage two. Erasure forbids overloading the
+     * TileKey versions of these, since `Map<String, T>` and `Map<TileKey, T>` are the same signature
+     * once the types are gone, so they take their own names as `moveSuffixedKeys` already does.
+     *
+     * These three exist to be DELETED. When tileDirections gains its compound key there is no
+     * string-keyed collection left and all four suffixed helpers go with it.
+     */
+    private static <T> Map<String, T> onPageSuffixed(Map<String, T> from, String page)
+    {
+        Map<String, T> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, T> entry : from.entrySet())
+        {
+            if (isOnPage(entry.getKey(), page)) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
+    /**
+     * `putBack` for the string-keyed collection - see onPageSuffixed.
+     */
+    private static <T> void putBackSuffixed(Map<String, T> into, String page, Map<String, T> was)
+    {
+        for (java.util.Iterator<String> keys = into.keySet().iterator(); keys.hasNext();)
+        {
+            if (isOnPage(keys.next(), page)) keys.remove();
+        }
+
+        if (was != null) into.putAll(was);
+    }
+
+    /**
+     * `rekey` for the string-keyed collection - see onPageSuffixed.
+     */
+    private static <T> void rekeySuffixed(Map<String, T> map, String fromPage, String toPage)
+    {
+        Map<String, T> renamed = new LinkedHashMap<>();
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            renamed.put(rekeyOne(entry.getKey(), fromPage, toPage), entry.getValue());
+        }
+
+        map.clear();
+        map.putAll(renamed);
     }
 
     /**
@@ -2845,16 +2959,16 @@ public class AutonomyCompanionStore
     /**
      * Rewrites the keys of a map, moved keys winning over ones that merely stayed.
      */
-    private static <T> void moveKeys(Map<String, T> map, Map<String, String> moves)
+    private static <T> void moveKeys(Map<TileKey, T> map, Map<TileKey, TileKey> moves)
     {
-        Map<String, T> out = new LinkedHashMap<>();
+        Map<TileKey, T> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, T> entry : map.entrySet())
+        for (Map.Entry<TileKey, T> entry : map.entrySet())
         {
             if (!moves.containsKey(entry.getKey())) out.put(entry.getKey(), entry.getValue());
         }
 
-        for (Map.Entry<String, T> entry : map.entrySet())
+        for (Map.Entry<TileKey, T> entry : map.entrySet())
         {
             if (moves.containsKey(entry.getKey())) out.put(moves.get(entry.getKey()), entry.getValue());
         }
@@ -2869,15 +2983,15 @@ public class AutonomyCompanionStore
      * Separately named rather than overloaded: erasure makes both signatures the same method, so a
      * list-valued copy of any of these helpers needs its own name whether or not that reads better.
      */
-    private static void moveListValues(Map<String, List<String>> map, Map<String, String> moves)
+    private static void moveListValues(Map<TileKey, List<TileKey>> map, Map<TileKey, TileKey> moves)
     {
-        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : map.entrySet())
         {
-            List<String> out = new ArrayList<>();
+            List<TileKey> out = new ArrayList<>();
 
-            for (String value : entry.getValue())
+            for (TileKey value : entry.getValue())
             {
-                String moved = moves.get(value);
+                TileKey moved = moves.get(value);
 
                 out.add(moved == null ? value : moved);
             }
@@ -2889,11 +3003,11 @@ public class AutonomyCompanionStore
     /**
      * Repoints values that name a square that moved.  In place: the entry stays where it is.
      */
-    private static void moveValues(Map<String, String> map, Map<String, String> moves)
+    private static void moveValues(Map<TileKey, TileKey> map, Map<TileKey, TileKey> moves)
     {
-        for (Map.Entry<String, String> entry : map.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : map.entrySet())
         {
-            String moved = moves.get(entry.getValue());
+            TileKey moved = moves.get(entry.getValue());
 
             if (moved != null) entry.setValue(moved);
         }
@@ -2902,13 +3016,13 @@ public class AutonomyCompanionStore
     /**
      * The same for a set of squares.
      */
-    private static void moveMembers(Set<String> set, Map<String, String> moves)
+    private static void moveMembers(Set<TileKey> set, Map<TileKey, TileKey> moves)
     {
-        Set<String> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
-        for (String key : set)
+        for (TileKey key : set)
         {
-            String moved = moves.get(key);
+            TileKey moved = moves.get(key);
 
             out.add(moved == null ? key : moved);
         }
@@ -2998,16 +3112,16 @@ public class AutonomyCompanionStore
     {
         Reconciliation report = new Reconciliation();
 
-        Set<String> keys = new LinkedHashSet<>();
+        Set<TileKey> keys = new LinkedHashSet<>();
 
         for (TileKey tile : existing)
         {
-            keys.add(tile.toString());
+            keys.add(tile);
         }
 
-        report.droppedTileProperties.addAll(dropMissing(tileLengths, keys, false));
-        report.droppedTileProperties.addAll(dropMissing(tileDirections, keys, true));
-        report.droppedTileProperties.addAll(dropMissing(barredArrivals, keys, false));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(tileLengths, keys)));
+        report.droppedTileProperties.addAll(dropMissingSuffixed(tileDirections, keys));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(barredArrivals, keys)));
         // dropMissing tests the KEY - the station's square.  The VALUES are squares too, and this was
         // the one square-referencing collection whose values reconcile never looked at: portals are
         // checked on both ends, and a caption's two ends inside reconcileCaptions.  forgetSquares covers a signal
@@ -3015,19 +3129,19 @@ public class AutonomyCompanionStore
         // survived every save, ready to be INHERITED by whatever is drawn at those coordinates next.
         // That is the defect the linkNames drop below was written for, applied to the one collection
         // that commands real hardware: autonomy would start throwing an accessory nobody paired.
-        report.droppedTileProperties.addAll(dropMissing(stationSignals, keys, false));
-        report.droppedTileProperties.addAll(dropMissing(blockedPoints, keys, false));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(stationSignals, keys)));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(blockedPoints, keys)));
 
-        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = stationSignals.entrySet().iterator(); pairs.hasNext();)
         {
-            Map.Entry<String, List<String>> pair = pairs.next();
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
             // A NEW list rather than removing from the one held: a page snapshot may be holding it for
             // the editor's undo, and editing it in place is how undo came to restore the deletion.
-            List<String> kept = new ArrayList<>();
+            List<TileKey> kept = new ArrayList<>();
 
-            for (String signal : pair.getValue())
+            for (TileKey signal : pair.getValue())
             {
                 if (keys.contains(signal)) kept.add(signal);
                 else report.droppedTileProperties.add("protecting signal at " + signal);
@@ -3040,14 +3154,14 @@ public class AutonomyCompanionStore
         // And the squares a station is held back by, on the same rule and for the same reason: a
         // restriction watching a square that no longer exists cannot be satisfied, and would be
         // INHERITED by whatever is drawn there next.
-        for (java.util.Iterator<Map.Entry<String, List<String>>> pairs
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = blockedPoints.entrySet().iterator(); pairs.hasNext();)
         {
-            Map.Entry<String, List<String>> pair = pairs.next();
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
-            List<String> kept = new ArrayList<>();
+            List<TileKey> kept = new ArrayList<>();
 
-            for (String blocker : pair.getValue())
+            for (TileKey blocker : pair.getValue())
             {
                 if (keys.contains(blocker)) kept.add(blocker);
                 else report.droppedTileProperties.add("restriction watching " + blocker);
@@ -3066,9 +3180,9 @@ public class AutonomyCompanionStore
         //
         // Reported like everything else here, because a diagram edit that quietly costs a link name
         // should be visible rather than discovered later.
-        report.droppedTileProperties.addAll(dropMissing(linkNames, keys, false));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(linkNames, keys)));
 
-        for (String key : dropMissingMembers(disabledPortals, keys))
+        for (TileKey key : dropMissingMembers(disabledPortals, keys))
         {
             report.droppedTileProperties.add("link switched off at " + key);
         }
@@ -3077,14 +3191,21 @@ public class AutonomyCompanionStore
         // about.  Text pointing at track that no longer exists is the orphan this whole change removes.
         report.droppedTileProperties.addAll(reconcileCaptions(keys));
 
-        List<String> goneTiles = new ArrayList<>();
+        List<TileKey> goneTiles = new ArrayList<>();
 
-        for (String key : pointNames.keySet())
+        for (TileKey key : pointNames.keySet())
         {
             if (!keys.contains(key)) goneTiles.add(key);
         }
 
-        for (String key : goneTiles)
+        // Squares, not their printed form (FR-013).
+        //
+        // This gathered `key.toString()` and then asked `pointNames.get(aString)` and
+        // `stations.remove(aString)`. Both compile - Map.get and Set.remove take Object - and both do
+        // nothing at all, so a name whose square had gone was neither forgotten nor reported. The
+        // report is printed at the point it is written instead, which is the only place the printed
+        // form is wanted.
+        for (TileKey key : goneTiles)
         {
             String name = pointNames.get(key);
 
@@ -3113,14 +3234,16 @@ public class AutonomyCompanionStore
         // Only the unnamed ones.  A named station whose tile is gone is kept above when a configuration
         // still refers to it, so the user can find it; nothing can refer to one with no name, so that
         // rule has nothing to say here.
-        List<String> orphanStations = new ArrayList<>();
+        List<TileKey> orphanStations = new ArrayList<>();
 
-        for (String key : stations)
+        for (TileKey key : stations)
         {
             if (!keys.contains(key) && !pointNames.containsKey(key)) orphanStations.add(key);
         }
 
-        for (String key : orphanStations)
+        // Squares here too, for the same reason as goneTiles above: `stations.remove(aString)` is a
+        // no-op that compiles.
+        for (TileKey key : orphanStations)
         {
             stations.remove(key);
             report.droppedTileProperties.add("station at " + key);
@@ -3129,11 +3252,11 @@ public class AutonomyCompanionStore
         // a portal whose partner is gone is half a pairing, which is worse than none
         List<String> brokenPairings = new ArrayList<>();
 
-        for (Map.Entry<String, String> entry : portals.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : portals.entrySet())
         {
             if (!keys.contains(entry.getKey()) || !keys.contains(entry.getValue()))
             {
-                brokenPairings.add(entry.getKey());
+                brokenPairings.add(entry.getKey().toString());
             }
         }
 
@@ -3203,17 +3326,17 @@ public class AutonomyCompanionStore
      */
     public void applyTo(TileGraph graph)
     {
-        for (Map.Entry<String, String> entry : portals.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : portals.entrySet())
         {
-            TileKey from = parseTileKey(entry.getKey());
-            TileKey to = parseTileKey(entry.getValue());
+            TileKey from = entry.getKey();
+            TileKey to = entry.getValue();
 
             if (from != null && to != null) graph.pairPortals(from, to);
         }
 
-        for (String id : disabledPortals)
+        for (TileKey id : disabledPortals)
         {
-            TileKey tile = parseTileKey(id);
+            TileKey tile = id;
 
             if (tile != null) graph.disablePortal(tile);
         }
@@ -3528,39 +3651,32 @@ public class AutonomyCompanionStore
         // with the file's id standing in for a page name (OB-067). See heldForAbsentPages.
         JSONObject root = withoutAbsentPages(wholeRoot);
 
-        readStringMap(root, "pointNames", pointNames);
-        readStringSet(root, "stations", stations);
+        // Read AND translated in one step, per field (FR-013).
+        //
+        // This was two passes: fill each collection with the FILE's keys, then walk eleven of them
+        // rewriting the keys in place. The order of those two lists had to agree, by eye, for ever -
+        // and the state between them was every collection holding stored keys in fields the rest of
+        // the class reads as memory keys, which is the state OB-067 was about. Neither the agreement
+        // nor the state exists now: a reader that does not translate cannot put anything into a
+        // TileKey-keyed map.
+        readSquareMap(root, "pointNames", pointNames);
+        readSquareSet(root, "stations", stations);
+        readSquareMap(root, "barredArrivals", barredArrivals);
+        readSquareListMap(root, "stationSignals", stationSignals);
+        readSquareListMap(root, "blockedPoints", blockedPoints);
+        readSquarePairMap(root, "portals", portals);
+        readSquarePairMap(root, "captions", captions);
+        readSquareMap(root, "linkNames", linkNames);
+        readSquareIntMap(root, "tileLengths", tileLengths);
+
+        // Still string-keyed, and still translated afterwards: tileDirections carries a route suffix
+        // on its key, and excludedPages and disabledLinks are a page set and a square set that are
+        // read as raw strings. Stage two of FR-013 takes the first of those.
         readStringMap(root, "tileDirections", tileDirections);
-        readStringMap(root, "barredArrivals", barredArrivals);
-        readStringListMap(root, "stationSignals", stationSignals);
-        readStringListMap(root, "blockedPoints", blockedPoints);
-        readStringMap(root, "portals", portals);
-        readStringMap(root, "captions", captions);
-        readStringMap(root, "linkNames", linkNames);
         readStringSet(root, "excludedPages", excludedPages);
-        readStringSet(root, "disabledLinks", disabledPortals);
+        readSquareSet(root, "disabledLinks", disabledPortals);
 
-        JSONObject lengths = root.optJSONObject("tileLengths");
-
-        if (lengths != null)
-        {
-            for (String key : lengths.keySet())
-            {
-                tileLengths.put(fromStored(key), lengths.getInt(key));
-            }
-        }
-
-        // stored against page ids; brought back to the names the rest of the application uses
-        untranslate(pointNames);
         untranslate(tileDirections);
-        untranslate(barredArrivals);
-        untranslateTileListMap(stationSignals);
-        untranslateTileListMap(blockedPoints);
-        untranslate(linkNames);
-        untranslatePortals();
-        untranslateTileMap(captions);
-        untranslateSet(stations);
-        untranslateSet(disabledPortals);
         untranslatePages(excludedPages);
 
         pageIdConflicts.clear();
@@ -3639,7 +3755,7 @@ public class AutonomyCompanionStore
      */
     private int versionWritten()
     {
-        for (List<String> signals : stationSignals.values())
+        for (List<TileKey> signals : stationSignals.values())
         {
             if (signals != null && signals.size() > 1) return 2;
         }
@@ -3851,13 +3967,33 @@ public class AutonomyCompanionStore
         return true;
     }
 
-    private Map<String, String> translateKeys(Map<String, String> map, boolean storing)
+    /**
+     * `translateKeys` for the one collection still keyed by a string - see onPageSuffixed.
+     *
+     * Storing only: the read side translates as it reads now, so nothing asks for the other
+     * direction any more.
+     */
+    private Map<String, String> translateSuffixedKeys(Map<String, String> map)
     {
         Map<String, String> out = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> entry : map.entrySet())
         {
-            out.put(storing ? toStored(entry.getKey()) : fromStored(entry.getKey()), entry.getValue());
+            out.put(toStored(entry.getKey()), entry.getValue());
+        }
+
+        return out;
+    }
+
+    private Map<String, String> translateKeys(Map<TileKey, String> map, boolean storing)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry : map.entrySet())
+        {
+            String key = entry.getKey().toString();
+
+            out.put(storing ? toStored(key) : fromStored(key), entry.getValue());
         }
 
         return out;
@@ -3869,7 +4005,7 @@ public class AutonomyCompanionStore
 
         for (Map.Entry<String, String> entry : map.entrySet())
         {
-            out.put(fromStored(entry.getKey()), entry.getValue());
+            out.put(fromStored(entry.getKey().toString()), entry.getValue());
         }
 
         map.clear();
@@ -3877,7 +4013,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same as untranslatePortals, for any map whose keys AND values are both squares.
+     * For a map whose keys AND values are both squares - portals, and captions.
      */
     private void untranslateTileMap(Map<String, String> map)
     {
@@ -3885,81 +4021,45 @@ public class AutonomyCompanionStore
 
         for (Map.Entry<String, String> entry : map.entrySet())
         {
-            out.put(fromStored(entry.getKey()), fromStored(entry.getValue()));
+            out.put(fromStored(entry.getKey().toString()), fromStored(entry.getValue().toString()));
         }
 
         map.clear();
         map.putAll(out);
     }
 
-    /**
-     * The same for a map whose values are lists of squares.
-     */
-    private void untranslateTileListMap(Map<String, List<String>> map)
-    {
-        Map<String, List<String>> out = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<String>> entry : map.entrySet())
-        {
-            List<String> values = new ArrayList<>();
-
-            for (String value : entry.getValue())
-            {
-                values.add(fromStored(value));
-            }
-
-            out.put(fromStored(entry.getKey()), values);
-        }
-
-        map.clear();
-        map.putAll(out);
-    }
-
-    private Map<String, Object> translateTileListMap(Map<String, List<String>> map)
+    private Map<String, Object> translateTileListMap(Map<TileKey, List<TileKey>> map)
     {
         Map<String, Object> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : map.entrySet())
         {
             List<String> values = new ArrayList<>();
 
-            for (String value : entry.getValue())
+            for (TileKey value : entry.getValue())
             {
-                values.add(toStored(value));
+                values.add(toStored(value.toString()));
             }
 
             // One is written as a bare string, which is what every version before this one wrote and
             // is all a station with a single signal - most of them - ever needs.  A file gains an
             // array only where somebody has actually paired a second signal.
-            out.put(toStored(entry.getKey()), values.size() == 1 ? values.get(0) : new JSONArray(values));
+            out.put(toStored(entry.getKey().toString()), values.size() == 1 ? values.get(0) : new JSONArray(values));
         }
 
         return out;
     }
 
-    private Map<String, String> translateTileMap(Map<String, String> map)
+    private Map<String, String> translateTileMap(Map<TileKey, TileKey> map)
     {
         Map<String, String> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : map.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : map.entrySet())
         {
-            out.put(toStored(entry.getKey()), toStored(entry.getValue()));
+            out.put(toStored(entry.getKey().toString()), toStored(entry.getValue().toString()));
         }
 
         return out;
-    }
-
-    private void untranslatePortals()
-    {
-        Map<String, String> out = new LinkedHashMap<>();
-
-        for (Map.Entry<String, String> entry : portals.entrySet())
-        {
-            out.put(fromStored(entry.getKey()), fromStored(entry.getValue()));
-        }
-
-        portals.clear();
-        portals.putAll(out);
     }
 
     private void untranslateSet(Set<String> set)
@@ -4015,13 +4115,13 @@ public class AutonomyCompanionStore
         pages.addAll(out);
     }
 
-    private Set<String> translateSet(Set<String> set)
+    private Set<String> translateSet(Set<TileKey> set)
     {
         Set<String> out = new LinkedHashSet<>();
 
-        for (String key : set)
+        for (TileKey key : set)
         {
-            out.add(toStored(key));
+            out.add(toStored(key.toString()));
         }
 
         return out;
@@ -4031,9 +4131,9 @@ public class AutonomyCompanionStore
     {
         Map<String, Integer> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, Integer> entry : tileLengths.entrySet())
+        for (Map.Entry<TileKey, Integer> entry : tileLengths.entrySet())
         {
-            out.put(toStored(entry.getKey()), entry.getValue());
+            out.put(toStored(entry.getKey().toString()), entry.getValue());
         }
 
         return out;
@@ -4051,7 +4151,7 @@ public class AutonomyCompanionStore
     {
         if (captionTile == null) return null;
 
-        return parseTileKey(captions.get(captionTile.toString()));
+        return captions.get(captionTile);
     }
 
     /**
@@ -4070,11 +4170,11 @@ public class AutonomyCompanionStore
 
         if (stationTile == null)
         {
-            captions.remove(captionTile.toString());
+            captions.remove(captionTile);
             return;
         }
 
-        captions.put(captionTile.toString(), stationTile.toString());
+        captions.put(captionTile, stationTile);
     }
 
     /**
@@ -4089,13 +4189,17 @@ public class AutonomyCompanionStore
 
         if (stationTile == null) return out;
 
-        String wanted = stationTile.toString();
-
-        for (Map.Entry<String, String> entry : captions.entrySet())
+        // Compared as SQUARES (FR-013).
+        //
+        // This held the printed form and asked `wanted.equals(entry.getValue())`, which compiles -
+        // String.equals takes Object - and is false for every entry once the values are squares. The
+        // symptom was a platform captioned at both ends reporting none: "both ends of the platform
+        // name it, expected 2, found 0".
+        for (Map.Entry<TileKey, TileKey> entry : captions.entrySet())
         {
-            if (wanted.equals(entry.getValue()))
+            if (stationTile.equals(entry.getValue()))
             {
-                TileKey where = parseTileKey(entry.getKey());
+                TileKey where = entry.getKey();
 
                 if (where != null) out.add(where);
             }
@@ -4112,10 +4216,10 @@ public class AutonomyCompanionStore
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : captions.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : captions.entrySet())
         {
-            TileKey where = parseTileKey(entry.getKey());
-            TileKey what = parseTileKey(entry.getValue());
+            TileKey where = entry.getKey();
+            TileKey what = entry.getValue();
 
             if (where != null && what != null) out.put(where, what);
         }
@@ -4144,29 +4248,27 @@ public class AutonomyCompanionStore
      *
      * The page still has to exist: a caption on a page somebody deleted is about a diagram that is gone.
      */
-    private List<String> reconcileCaptions(Set<String> existing)
+    private List<String> reconcileCaptions(Set<TileKey> existing)
     {
         Set<String> pagesLeft = new LinkedHashSet<>();
 
-        for (String key : existing)
+        for (TileKey tile : existing)
         {
-            TileKey tile = parseTileKey(key);
-
             if (tile != null) pagesLeft.add(tile.getPage());
         }
 
         List<String> dropped = new ArrayList<>();
 
-        for (Map.Entry<String, String> entry : new LinkedHashMap<>(captions).entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : new LinkedHashMap<>(captions).entrySet())
         {
-            TileKey where = parseTileKey(entry.getKey());
+            TileKey where = entry.getKey();
 
             boolean pageLeft = where != null && pagesLeft.contains(where.getPage());
 
             if (pageLeft && existing.contains(entry.getValue())) continue;
 
             captions.remove(entry.getKey());
-            dropped.add(entry.getKey());
+            dropped.add(entry.getKey().toString());
         }
 
         return dropped;
@@ -4176,9 +4278,9 @@ public class AutonomyCompanionStore
     {
         Map<String, String> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : portals.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : portals.entrySet())
         {
-            out.put(toStored(entry.getKey()), toStored(entry.getValue()));
+            out.put(toStored(entry.getKey().toString()), toStored(entry.getValue().toString()));
         }
 
         return out;
@@ -4214,6 +4316,25 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * The same square on a renamed page, or the square unchanged (FR-013).
+     *
+     * A construction rather than string surgery. The string form had to find the page part and splice
+     * a new one in front of the coordinates, and it had to agree with `parseTileKey` about where that
+     * part ended - an agreement kept by comment, and broken once.
+     *
+     * @param key the square
+     * @param fromPage the old page name
+     * @param toPage the new one
+     * @return the square on the new page, or the original when it was not on the old one
+     */
+    private static TileKey rekeyOne(TileKey key, String fromPage, String toPage)
+    {
+        if (key == null) return null;
+
+        return key.getPage().equals(fromPage) ? new TileKey(toPage, key.getX(), key.getY()) : key;
+    }
+
+    /**
      * The same key on a renamed page.
      *
      * Same rule as isOnPage, and it matters more here: renaming "Yard" would have rewritten every key
@@ -4238,11 +4359,11 @@ public class AutonomyCompanionStore
         return toPage + ":" + parsed.getX() + "," + parsed.getY() + suffix;
     }
 
-    private static <T> void rekey(Map<String, T> map, String fromPage, String toPage)
+    private static <T> void rekey(Map<TileKey, T> map, String fromPage, String toPage)
     {
-        Map<String, T> renamed = new LinkedHashMap<>();
+        Map<TileKey, T> renamed = new LinkedHashMap<>();
 
-        for (Map.Entry<String, T> entry : map.entrySet())
+        for (Map.Entry<TileKey, T> entry : map.entrySet())
         {
             renamed.put(rekeyOne(entry.getKey(), fromPage, toPage), entry.getValue());
         }
@@ -4251,21 +4372,21 @@ public class AutonomyCompanionStore
         map.putAll(renamed);
     }
 
-    private static void rekeyValues(Map<String, String> map, String fromPage, String toPage)
+    private static void rekeyValues(Map<TileKey, TileKey> map, String fromPage, String toPage)
     {
-        for (Map.Entry<String, String> entry : map.entrySet())
+        for (Map.Entry<TileKey, TileKey> entry : map.entrySet())
         {
             entry.setValue(rekeyOne(entry.getValue(), fromPage, toPage));
         }
     }
 
-    private static void rekeyListValues(Map<String, List<String>> map, String fromPage, String toPage)
+    private static void rekeyListValues(Map<TileKey, List<TileKey>> map, String fromPage, String toPage)
     {
-        for (Map.Entry<String, List<String>> entry : map.entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : map.entrySet())
         {
-            List<String> out = new ArrayList<>();
+            List<TileKey> out = new ArrayList<>();
 
-            for (String value : entry.getValue())
+            for (TileKey value : entry.getValue())
             {
                 out.add(rekeyOne(value, fromPage, toPage));
             }
@@ -4275,17 +4396,39 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Squares, as the strings a report shows a person (FR-013).
+     *
+     * The reconciliation report is read by somebody rather than by code, so it stays a list of
+     * strings; this is the one door where a square becomes its printed form. Collected here rather
+     * than at five call sites so the printed form has one definition.
+     *
+     * @param squares what was dropped
+     * @return the same, printed
+     */
+    private static List<String> asStrings(List<TileKey> squares)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (TileKey square : squares)
+        {
+            out.add(square.toString());
+        }
+
+        return out;
+    }
+
+    /**
      * The same, for a plain set of squares.
      *
      * @param members squares the set remembers
      * @param existing the squares the diagram still has
      * @return the ones that were dropped
      */
-    private static List<String> dropMissingMembers(Set<String> members, Set<String> existing)
+    private static List<TileKey> dropMissingMembers(Set<TileKey> members, Set<TileKey> existing)
     {
-        List<String> gone = new ArrayList<>();
+        List<TileKey> gone = new ArrayList<>();
 
-        for (String key : members)
+        for (TileKey key : members)
         {
             if (!existing.contains(key)) gone.add(key);
         }
@@ -4295,16 +4438,40 @@ public class AutonomyCompanionStore
         return gone;
     }
 
-    private static <T> List<String> dropMissing(Map<String, T> map, Set<String> existing, boolean suffixed)
+    private static <T> List<TileKey> dropMissing(Map<TileKey, T> map, Set<TileKey> existing)
+    {
+        List<TileKey> gone = new ArrayList<>();
+
+        for (TileKey key : map.keySet())
+        {
+            if (!existing.contains(key)) gone.add(key);
+        }
+
+        for (TileKey key : gone)
+        {
+            map.remove(key);
+        }
+
+        return gone;
+    }
+
+    /**
+     * The same for the one collection still keyed by a string, whose key carries a route suffix.
+     *
+     * The `suffixed` flag this used to take is gone with the type: a TileKey-keyed map cannot have a
+     * suffix, so the question only arises here.  Goes when tileDirections does (FR-013 stage 2).
+     */
+    private static <T> List<String> dropMissingSuffixed(Map<String, T> map, Set<TileKey> existing)
     {
         List<String> gone = new ArrayList<>();
 
         for (String key : map.keySet())
         {
-            String tile = suffixed && key.lastIndexOf('#') >= 0
-                ? key.substring(0, key.lastIndexOf('#')) : key;
+            int hash = key.lastIndexOf('#');
 
-            if (!existing.contains(tile)) gone.add(key);
+            TileKey tile = parseTileKey(hash >= 0 ? key.substring(0, hash) : key);
+
+            if (tile == null || !existing.contains(tile)) gone.add(key);
         }
 
         for (String key : gone)
@@ -4313,6 +4480,135 @@ public class AutonomyCompanionStore
         }
 
         return gone;
+    }
+
+    /**
+     * Reads a square-keyed field, translating each key as it arrives (FR-013).
+     *
+     * One step, where this was two: fill the map with the FILE's keys, then rewrite them in place.
+     * The state in between - a map full of stored keys, in a field the rest of the class reads as
+     * memory keys - is the state OB-067 was about, and it cannot be written down any more.
+     *
+     * A key that will not parse is dropped rather than kept as something unusable. That is not new:
+     * `parseTileKey` has always returned null for one, and every caller has always skipped it.
+     *
+     * @param root the shared object
+     * @param field which field
+     * @param into the collection to fill
+     */
+    private void readSquareMap(JSONObject root, String field, Map<TileKey, String> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            TileKey tile = parseTileKey(fromStored(key));
+
+            if (tile != null) into.put(tile, object.getString(key));
+        }
+    }
+
+    /**
+     * The same, for the one field whose values are numbers.
+     */
+    private void readSquareIntMap(JSONObject root, String field, Map<TileKey, Integer> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            TileKey tile = parseTileKey(fromStored(key));
+
+            if (tile != null) into.put(tile, object.getInt(key));
+        }
+    }
+
+    /**
+     * The same, where the VALUE is a square as well - a portal's partner, a caption's station.
+     *
+     * An entry whose value will not parse is dropped whole. Half of a pairing is worse than none: a
+     * portal with no partner and a caption pointing nowhere are both states the rest of the class
+     * would have to guard against for ever.
+     */
+    private void readSquarePairMap(JSONObject root, String field, Map<TileKey, TileKey> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            TileKey tile = parseTileKey(fromStored(key));
+            TileKey value = parseTileKey(fromStored(object.getString(key)));
+
+            if (tile != null && value != null) into.put(tile, value);
+        }
+    }
+
+    /**
+     * The same, where the value is one square or an array of them.
+     *
+     * A member that will not parse is dropped and the rest of the list kept, which is the tolerant
+     * direction this file chose everywhere else: one bad name must not cost a station its whole set
+     * of protecting signals.
+     */
+    private void readSquareListMap(JSONObject root, String field, Map<TileKey, List<TileKey>> into)
+    {
+        JSONObject object = root.optJSONObject(field);
+
+        if (object == null) return;
+
+        for (String key : object.keySet())
+        {
+            TileKey tile = parseTileKey(fromStored(key));
+
+            if (tile == null) continue;
+
+            List<TileKey> values = new ArrayList<>();
+
+            Object raw = object.get(key);
+
+            if (raw instanceof JSONArray)
+            {
+                JSONArray each = (JSONArray) raw;
+
+                for (int i = 0; i < each.length(); i++)
+                {
+                    TileKey member = parseTileKey(fromStored(each.getString(i)));
+
+                    if (member != null) values.add(member);
+                }
+            }
+            else
+            {
+                TileKey only = parseTileKey(fromStored(String.valueOf(raw)));
+
+                if (only != null) values.add(only);
+            }
+
+            into.put(tile, values);
+        }
+    }
+
+    /**
+     * A set of squares, translated as it is read.
+     */
+    private void readSquareSet(JSONObject root, String field, Set<TileKey> into)
+    {
+        JSONArray array = root.optJSONArray(field);
+
+        if (array == null) return;
+
+        for (int i = 0; i < array.length(); i++)
+        {
+            TileKey tile = parseTileKey(fromStored(array.getString(i)));
+
+            if (tile != null) into.add(tile);
+        }
     }
 
     private static void readStringMap(JSONObject root, String field, Map<String, String> into)
