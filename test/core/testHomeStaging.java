@@ -2221,6 +2221,13 @@ public class testHomeStaging
      * It fails safe - no train moves wrongly - but partial execution is precisely what staging exists
      * to avoid, and a plan that cannot be carried out is worse than a plan refused up front, because
      * the refusal arrives after the trains have started moving.
+     *
+     * **Which half of the fix this pins.** Mutation-checking it showed the impossibility SCAN is what
+     * catches this scenario: reverting only the search's check left the test green, and both had to be
+     * reverted before it failed. The search-side check covers a case this does not reach - a blocker
+     * that arrives on the watched square partway through a multi-move plan, where the scan's snapshot
+     * of the starting state says nothing. Recorded because the single-site mutation was run first and
+     * would have supported the wrong conclusion about what is covered.
      */
     @Test
     public void testAHomeHeldBackByAnOccupiedPointIsRefusedWhenPlanning() throws Exception
