@@ -558,11 +558,45 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e)
             {
-                locDest.setToolTipText(noPathsNow ? whyNotToolTip() : null);
-
                 // A pointer that says "there is something to read here", matching the mark on the text
                 locDest.setCursor(java.awt.Cursor.getPredefinedCursor(
                     noPathsNow ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+
+                if (!noPathsNow)
+                {
+                    locDest.setToolTipText(null);
+
+                    return;
+                }
+
+                // Worked out OFF the event thread (OB-079).
+                //
+                // explainDestinations walks every candidate route to every station and takes the
+                // Layout's monitor to do it - and a dispatch holds that monitor across its per-command
+                // sleeps. So hovering this label while a train was being dispatched froze the whole
+                // window for the length of the configuration phase, seconds at a time.
+                //
+                // The same mistake this file already records one paragraph up, where the reasons were
+                // moved OUT of updateState for exactly this reason: "that is the freeze this file's
+                // own comments say must never happen, reintroduced by the feature meant to explain
+                // it". Moving them to a hover put them back on the event thread by another door.
+                //
+                // The tooltip arrives a moment later, which is what a tooltip does anyway. Nothing is
+                // shown while it is being worked out rather than a placeholder, because a tooltip that
+                // changes under the pointer reads as a glitch.
+                final Locomotive asked = locomotive;
+
+                new Thread(() ->
+                {
+                    final String why = whyNotToolTip();
+
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        // Still the same locomotive, and still in the state the answer was about: the
+                        // panel is reused, and a slow answer must not land on a train it is not about.
+                        if (asked == locomotive && noPathsNow) locDest.setToolTipText(why);
+                    });
+                }).start();
             }
         });
     }
