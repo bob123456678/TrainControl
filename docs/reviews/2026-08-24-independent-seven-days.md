@@ -95,8 +95,8 @@ avoid, and the planner should refuse up front.
 
 | | Finding | Disposition |
 |---|---|---|
-| **ISD-B1** | A page that fails to load has its whole setup pruned | **Fixed** in `f0a2` round — `OB-068`, MT-148 |
-| **ISD-B2** | The timetable is an unrepaired holder of locomotive and station names | **Fixed (locomotive half)** — `OB-069`, MT-149; the STATION half remains open |
+| **ISD-B1** | A page that fails to load has its whole setup pruned | **Fixed** in `a2decb01` — `OB-068`, MT-148 |
+| **ISD-B2** | The timetable is an unrepaired holder of locomotive and station names | **Fixed (locomotive half)** in `a2decb01` — `OB-069`, MT-149; the STATION half remains open |
 | **ISD-B3** | Closing the app never asks the open editor about unsaved work | **Open** — `OB-070` |
 | **ISD-B4** | A Central Station rename proposal bypasses the unusable-name guard | **Open** — `OB-074` |
 | **ISD-B5** | Combining linked pages fabricates a setup, on a worker thread | **Fixed** in `38ccbfc8` (= `FV-B1`) |
@@ -105,7 +105,7 @@ avoid, and the planner should refuse up front.
 | **ISD-B8** | Legacy import writes homes without the one-home sweep | **Open** — `OB-075` |
 | **ISD-B9** | The editor's Cancel reverts edits made from the main window | **Open** — `OB-076` |
 
-### ISD-B1 — the highest-value item still open
+### ISD-B1 — the highest-value item the review found
 
 `CS2File.parseLayout` deliberately skips a page that will not parse or whose file is missing — the
 everyday OneDrive case, an unhydrated placeholder or a sync lock — and `readShared` is relaxed about it
