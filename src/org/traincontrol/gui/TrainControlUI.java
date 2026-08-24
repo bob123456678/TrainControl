@@ -2622,6 +2622,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param name the feedback's name
      * @param state whether it is now occupied
      */
+    /**
+     * Follows a locomotive's new name into every autonomy configuration, and saves.
+     *
+     * The setup lives here rather than in the model, so the model asks for this rather than doing it -
+     * see View.  Saved on the spot for the same reason the route repair is written through: the repair
+     * only helps if it is still there after a restart, and the state it is repairing is fatal - a
+     * configuration naming a locomotive that no longer exists invalidates the whole layout when it is
+     * chosen.
+     *
+     * @param from the old name
+     * @param to the new name
+     */
+    @Override
+    public void autonomyLocomotiveRenamed(String from, String to)
+    {
+        repairAutonomyLocomotive(from, to);
+    }
+
+    /**
+     * @param name the locomotive that no longer exists
+     */
+    @Override
+    public void autonomyLocomotiveDeleted(String name)
+    {
+        repairAutonomyLocomotive(name, null);
+    }
+
+    private void repairAutonomyLocomotive(String from, String to)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return;
+
+        try
+        {
+            if (to == null) session.getStore().locomotiveDeleted(from);
+            else session.getStore().locomotiveRenamed(from, to);
+
+            session.getStore().save();
+        }
+        catch (Exception e)
+        {
+            // Quiet, deliberately.  This runs inside renaming or deleting a locomotive, which has
+            // already happened by the time it is called - a failure to write the sidecar must not turn
+            // a completed rename into an error the user cannot act on.
+            this.model.log(e);
+        }
+    }
+
     @Override
     public void feedbackChanged(String name, boolean state)
     {

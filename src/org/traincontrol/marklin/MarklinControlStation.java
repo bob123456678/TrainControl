@@ -2882,6 +2882,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
 
             this.rebuildLocIdCache();
+
+            // The autonomy setup holds locomotives by name, in every configuration - see the note in
+            // renameLoc.  A deleted one is taken out rather than followed.
+            if (this.view != null) this.view.autonomyLocomotiveDeleted(name);
         }
 
         return res;
@@ -2944,12 +2948,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // cannot move it out of the consists, exclusion sets or run lists that hold it.  This used
             // to need a sweep - see the note on MarklinLocomotive.hashCode.
             //
-            // State held by NAME does still need repairing, and there are two such places - the routes
-            // below, and autonomy home assignments.
+            // State held by NAME does still need repairing, and there are THREE such places - the
+            // routes below, autonomy home assignments in the running layout, and the autonomy SETUP,
+            // which holds a name in each configuration's placements, homes and exclusion lists.  The
+            // last of those was missed: the active configuration got away with it because
+            // captureFromLayout launders it back from the running layout, and a configuration that was
+            // not active at the time was never repaired at all - so choosing it later invalidated the
+            // whole layout over a name that no longer resolved.
             if (this.hasAutoLayout())
             {
                 this.getAutoLayout().locomotiveRenamed(name, newName);
             }
+
+            if (this.view != null) this.view.autonomyLocomotiveRenamed(name, newName);
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())

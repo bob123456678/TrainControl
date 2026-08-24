@@ -1410,4 +1410,116 @@ public class testAutonomyDiagramStore
             "a page with no id in the index lost its exclusion. Files written before this change hold "
             + "NAMES, and a page added since the index was read has no id yet - both have to survive");
     }
+
+    /**
+     * Renaming a locomotive repairs EVERY configuration, not only the one that is running.
+     *
+     * UR-9, from the uninformed review. Three places in a configuration hold a locomotive by NAME - the
+     * placement, the home assignment and the exclusion list - and neither renameLoc nor deleteLoc
+     * touched any of them. `captureFromLayout` launders the ACTIVE configuration back from the running
+     * layout, so a rename is repaired there if a capture happens; a configuration that was not active
+     * at the time is never touched at all.
+     *
+     * The consequence is not a lost placement. `parseAuto` refuses a configuration naming a locomotive
+     * that is not in the database, and answers a refusal by invalidating the WHOLE layout - so
+     * switching to that configuration later stops the railway working, with an error naming a
+     * locomotive and nothing connecting it to a rename made days earlier.
+     *
+     * MarklinControlStation's own comment says which state needs this: "State held by NAME does still
+     * need repairing, and there are two such places - the routes below, and autonomy home assignments."
+     * There were three.
+     */
+    @Test
+    public void testRenamingALocomotiveRepairsEveryConfiguration() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.createConfiguration("Put away", null);
+        store.setActiveConfiguration("Running");
+
+        place(store.getConfiguration("Running"), "1:4,4", "Old Name");
+        place(store.getConfiguration("Put away"), "1:9,2", "Old Name");
+
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        for (String which : new String[]{"Running", "Put away"})
+        {
+            org.json.JSONObject point = store.getConfiguration(which).getJSONObject("points")
+                .getJSONObject("Running".equals(which) ? "1:4,4" : "1:9,2");
+
+            assertEquals(point.getJSONObject("loc").getString("name"), "New Name",
+                which + ": the placement still names the old locomotive. parseAuto refuses a name it "
+                + "cannot find and invalidates the WHOLE configuration, so this stops the railway "
+                + "working the next time this configuration is chosen (UR-9)");
+
+            assertEquals(point.getString("home"), "New Name",
+                which + ": the home assignment still names the old locomotive");
+
+            assertEquals(point.getJSONArray("excludedLocs").getString(0), "New Name",
+                which + ": the exclusion still names the old locomotive, so the station it was kept "
+                + "out of now accepts it under its new name");
+        }
+    }
+
+    /**
+     * And deleting one takes it out of every configuration rather than leaving a name nothing resolves.
+     */
+    @Test
+    public void testDeletingALocomotiveClearsItFromEveryConfiguration() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.createConfiguration("Put away", null);
+        store.setActiveConfiguration("Running");
+
+        place(store.getConfiguration("Running"), "1:4,4", "Gone");
+        place(store.getConfiguration("Put away"), "1:9,2", "Gone");
+
+        store.locomotiveDeleted("Gone");
+
+        for (String which : new String[]{"Running", "Put away"})
+        {
+            org.json.JSONObject point = store.getConfiguration(which).getJSONObject("points")
+                .getJSONObject("Running".equals(which) ? "1:4,4" : "1:9,2");
+
+            assertFalse(point.has("loc"),
+                which + ": a deleted locomotive is still placed. The name resolves to nothing, and "
+                + "parseAuto answers that by invalidating the whole configuration (UR-9)");
+
+            assertFalse(point.has("home"), which + ": the home assignment still names it");
+
+            assertEquals(point.getJSONArray("excludedLocs").length(), 0,
+                which + ": the exclusion still names it");
+        }
+    }
+
+    /**
+     * And a locomotive that shares nothing but a prefix is left alone.
+     */
+    @Test
+    public void testRepairingOneLocomotiveDoesNotTouchAnother() throws IOException
+    {
+        store.createConfiguration("Only", null);
+        store.setActiveConfiguration("Only");
+
+        place(store.getConfiguration("Only"), "1:4,4", "BR 01");
+        place(store.getConfiguration("Only"), "1:5,4", "BR 011");
+
+        store.locomotiveRenamed("BR 01", "Renamed");
+
+        assertEquals(store.getConfiguration("Only").getJSONObject("points")
+            .getJSONObject("1:5,4").getJSONObject("loc").getString("name"), "BR 011",
+            "a locomotive whose name merely begins with the renamed one was renamed too");
+    }
+
+    /**
+     * A placement, a home and an exclusion on one square, as the builder writes them.
+     */
+    private void place(org.json.JSONObject configuration, String key, String loc)
+    {
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        configuration.getJSONObject("points").put(key, new org.json.JSONObject()
+            .put("loc", new org.json.JSONObject().put("name", loc))
+            .put("home", loc)
+            .put("excludedLocs", new org.json.JSONArray().put(loc)));
+    }
 }

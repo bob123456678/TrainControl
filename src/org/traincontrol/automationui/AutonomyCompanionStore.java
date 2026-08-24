@@ -741,6 +741,105 @@ public class AutonomyCompanionStore
         if (partner != null) portals.remove(partner);
     }
 
+    /**
+     * Follows a locomotive's new name into every configuration.
+     *
+     * Three things in a configuration hold a locomotive by NAME - the placement, the home assignment
+     * and the exclusion list - and none of them was repaired when one was renamed.  The active
+     * configuration got away with it by accident: captureFromLayout launders it back from the running
+     * layout, which holds locomotives by reference.  A configuration that was not active at the time
+     * was never touched at all.
+     *
+     * What that costs is not a lost placement.  parseAuto refuses a configuration naming a locomotive
+     * it cannot find, and answers a refusal by invalidating the WHOLE layout - so choosing that
+     * configuration weeks later stops the railway working, with an error naming a locomotive and
+     * nothing connecting it to the rename.
+     *
+     * EVERY configuration, including the inactive ones, which is the half that had no repair at all.
+     *
+     * @param from the old name
+     * @param to the new name
+     */
+    public void locomotiveRenamed(String from, String to)
+    {
+        if (from == null || to == null || from.equals(to)) return;
+
+        repairLocomotive(from, to);
+    }
+
+    /**
+     * Takes a deleted locomotive out of every configuration.
+     *
+     * The placement and the home go; the exclusion is dropped from the list.  Leaving any of them names
+     * a locomotive that resolves to nothing, which is the same fatal state as a stale rename.
+     *
+     * @param name the locomotive that no longer exists
+     */
+    public void locomotiveDeleted(String name)
+    {
+        if (name == null) return;
+
+        repairLocomotive(name, null);
+    }
+
+    /**
+     * @param from the name to look for
+     * @param to the name to put in its place, or null to remove it
+     */
+    private void repairLocomotive(String from, String to)
+    {
+        for (JSONObject configuration : configurations.values())
+        {
+            if (!configuration.has("points")) continue;
+
+            JSONObject points = configuration.getJSONObject("points");
+
+            for (String key : points.keySet())
+            {
+                JSONObject point = points.optJSONObject(key);
+
+                if (point == null) continue;
+
+                JSONObject placed = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                if (placed != null && from.equals(placed.optString("name", null)))
+                {
+                    if (to == null) point.remove(AutonomyBuilder.LOCOMOTIVE);
+                    else placed.put("name", to);
+                }
+
+                if (from.equals(point.optString(HOME_KEY, null)))
+                {
+                    if (to == null) point.remove(HOME_KEY);
+                    else point.put(HOME_KEY, to);
+                }
+
+                JSONArray excluded = point.optJSONArray(EXCLUDED_LOCS_KEY);
+
+                if (excluded == null) continue;
+
+                JSONArray kept = new JSONArray();
+
+                for (int at = 0; at < excluded.length(); at++)
+                {
+                    String was = excluded.optString(at, null);
+
+                    if (was == null) continue;
+
+                    if (!from.equals(was)) kept.put(was);
+                    else if (to != null) kept.put(to);
+                }
+
+                point.put(EXCLUDED_LOCS_KEY, kept);
+            }
+        }
+    }
+
+    /** Named here rather than borrowed: AutonomyBuilder keeps its copy private. */
+    private static final String HOME_KEY = "home";
+
+    private static final String EXCLUDED_LOCS_KEY = "excludedLocs";
+
     public Set<String> getExcludedPages()
     {
         return Collections.unmodifiableSet(excludedPages);

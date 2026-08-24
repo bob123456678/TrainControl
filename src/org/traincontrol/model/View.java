@@ -38,6 +38,26 @@ public interface View
      * @param state whether it is now occupied
      */
     public void feedbackChanged(String name, boolean state);
+
+    /**
+     * Follows a locomotive's new name into the autonomy setup, in every configuration.
+     *
+     * The setup holds locomotives by NAME - the placement, the home assignment and the exclusion list -
+     * and it lives with the interface rather than with the model, so the model cannot repair it itself.
+     * Left alone, a configuration that was not active at the time goes on naming a locomotive that no
+     * longer exists, and parseAuto answers a name it cannot find by invalidating the whole layout.
+     *
+     * @param from the old name
+     * @param to the new name
+     */
+    public void autonomyLocomotiveRenamed(String from, String to);
+
+    /**
+     * The same for a locomotive that has been deleted: it is taken out rather than followed.
+     *
+     * @param name the locomotive that no longer exists
+     */
+    public void autonomyLocomotiveDeleted(String name);
     
     /**
      * Regenerates the layout display
