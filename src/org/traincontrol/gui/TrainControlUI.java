@@ -13516,8 +13516,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
-        // Auto-save confirmation
-        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
+        // Trains first, whatever the autosave setting says.
+        //
+        // This whole block used to sit inside `if (this.autosave.isSelected() && ...)`, under a comment
+        // calling it the auto-save confirmation. It is not: it stops the railway and asks whether to
+        // exit with trains at speed, and neither of those has anything to do with whether the setup is
+        // saved on exit. With autosave unticked, closing the window while trains were running neither
+        // stopped them nor asked - the app exited and the locomotives kept going.
+        //
+        // Found by review. The condition it grew inside is still below, doing what it is named for.
+        if (this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -15704,6 +15712,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed
+        // The biggest diagram change there is, and it had no check at all.
+        //
+        // This clears every layout and re-reads them from the Central Station. Done during a run, the
+        // diagram is replaced under moving trains, resetAutonomySession skips its state capture
+        // BECAUSE trains are running - losing every placement since the last save - and the Start and
+        // graceful-stop controls are removed from the window while Layout.runLocomotives carries on
+        // driving. Adam, MT-141: not while the layout is running.
+        if (refuseWhileAutonomyRunning(this)) return;
+
+        if (refuseWhileEditorOpen()) return;
+
         // Hide the tab in case loading fails but the model still has the local diagram
         this.switchCSLayoutMenuItem.setEnabled(false);
 
@@ -15769,6 +15788,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_initializeLocalLayoutMenuItemActionPerformed
 
     private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
+        // Swapping the layout FOLDER is swapping the whole railway - the diagram, the setup and the
+        // configurations at once. The same rule as switching to the CS layout, above.
+        if (refuseWhileAutonomyRunning(this)) return;
+
+        if (refuseWhileEditorOpen()) return;
+
         JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
@@ -16028,6 +16053,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_timetableCaptureActionPerformed
 
     private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
+
+        // Not under an open editor, for the same reason Start Autonomy is not (MT-135).
+        //
+        // Adam: "I was also able to start autonomy while the editor was open. This should not be
+        // possible." That was fixed at the Start button and at nothing else - and this button and
+        // Return Home start trains just as surely, over a diagram the editor is still changing.
+        // isAutonomyBusy, which both of them do ask, knows nothing about an editor being open.
+        //
+        // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
+        if (refuseWhileEditorOpen()) return;
 
         this.executeTimetable.setEnabled(false);
 
@@ -17008,6 +17043,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void requestReturnToHome()
     {
+        // As Start Autonomy and Execute Timetable: this drives every train on the layout, and an open
+        // editor means the diagram it is driving over is being changed underneath it.
+        if (refuseWhileEditorOpen()) return;
+
         final Layout layout = this.model.getAutoLayout();
 
         if (this.isAutonomyBusy())
@@ -18179,12 +18218,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk.
                 // Included for even one build, every sensor on it becomes a second Point for a sensor
                 // that already has one.
-                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+                // The session ALREADY BUILT, and only a setup that is already there.
+                //
+                // The third door of this family, and the one the last pass missed: the lazy getter
+                // builds a session - opening every page and running the caption migration - and
+                // saveQuietly then writes setup.json unconditionally, so combining two pages on a
+                // layout that never had autonomy created one out of a drawing gesture.
+                //
+                // Nothing is lost by declining: excludeRepeatedSensorPages shuts a combined page
+                // automatically the first time a setup IS created, which is what this exclusion is
+                // for.
+                org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
                 if (session != null)
                 {
                     session.setPageExcluded(combined, true);
-                    session.saveQuietly();
+
+                    if (session.exists()) session.saveQuietly();
                 }
 
                 // Re-read, so the new page exists as an object with its own file behind it
@@ -18488,7 +18538,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         else if (session.exists())
                         {
-                            session.save();
+                            // WITHOUT reconciling, like its twin below.
+                            //
+                            // save() prunes the setup against the pages this session holds - and those
+                            // pages still carry the OLD name at this moment. LayoutDiagram.saveChanges
+                            // writes a new FILE; it never renames the object, and refreshLayouts does
+                            // not run until layoutEditingComplete, later.
+                            //
+                            // So the store has just been rekeyed to the new name and reconcile is
+                            // handed a set of squares under the old one: every name, station, length,
+                            // direction, signal, caption and disabled link on the renamed page reads as
+                            // track that has been deleted, and is dropped and written. That is the
+                            // MT-135 loss exactly, by a second route - and the report that would have
+                            // said so is discarded at this call site.
+                            //
+                            // The delete path already used saveWithoutReconciling for this reason. I
+                            // rewrote this block in the same commit and left the reconciling call in
+                            // it; review caught it.
+                            session.saveWithoutReconciling();
                         }
                     }
                     catch (java.io.IOException e)

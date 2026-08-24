@@ -4142,6 +4142,28 @@ public class Layout
             return false;
         }
 
+        // Already being DISPATCHED, which is not the same as already running.
+        //
+        // A locomotive joins activeLocomotives only after configureAndLockPath returns, and that call
+        // is seconds long: it throws every turnout and signal on the path with a wait between each, and
+        // then validates the actuation. For the whole of that window the check above answers "not
+        // busy", so a second dispatch of the SAME locomotive passed every test and started too.
+        //
+        // Both threads then drive one physical train and each one's completion unlocks points the other
+        // is still relying on - which is the invariant Point.reserve's comment describes, broken from
+        // above. Two gestures a couple of seconds apart reach it: double-click a route in the Auto tab
+        // and then dispatch another from the diagram's right-click menu, whose items do not re-check
+        // when they are clicked.
+        //
+        // takingPath has been maintained since the lock-symmetry work and was only ever counted, for
+        // the maximum-trains cap - never asked whether a particular locomotive is in it. Found by
+        // review.
+        if (this.takingPath.contains(loc))
+        {
+            this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
+            return false;
+        }
+
         Point start = path.get(0).getStart();
 
         if (!loc.equals(start.getCurrentLocomotive()))
