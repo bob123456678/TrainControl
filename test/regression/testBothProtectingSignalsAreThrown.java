@@ -369,6 +369,109 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * A failure while LOCKING a path releases what it has taken.
+     *
+     * UR-11, from the uninformed review. The two returned-false failures of `configureAndLockPath` are
+     * handled - `handleMisconfiguredPath` plus `takingPath.remove` - and a THROWN one was not. It
+     * escaped the lock loop into `executePath`'s catch, whose comment says why it deliberately does not
+     * unlock:
+     *
+     *   "The locomotive may be physically standing on those edges, and releasing them would let another
+     *   train be routed into occupied track."
+     *
+     * That is true of a failure MID-RUN and false of a failure while locking: `loc.setSpeed(speed)` is
+     * not issued until after configureAndLockPath has returned, so the train has not moved. The rule was
+     * lifted from the case whose precondition made it safe.
+     *
+     * Two things were left behind, and neither ever clears. Every edge taken so far stays occupied for
+     * the rest of the session, along with its lock edges - so that track is refused to every train.
+     * And `reserve` has already put the locomotive on those Points and deliberately does not sweep, so
+     * it is recorded at several places at once; `pickPath` then takes the first Point in iteration order
+     * where the locomotive matches, which can be a mid-path Point it is not standing on, and configures
+     * a whole route - real ironwork - for a departure from a station the train is not at.
+     *
+     * The throw is injected rather than provoked. `configureEdge` reaches `setSwitched`, which calls
+     * into Swing on the driving thread and then onto the network, and neither can be made to fail on
+     * demand from a test. What the fix is about is not which call throws but what is left behind when
+     * one does.
+     */
+    @Test
+    public void testAThrowWhileLockingReleasesTheTrack() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+
+        for (int address : new int[]{47431, 47432, 47433})
+        {
+            if (!model.isFeedbackSet(Integer.toString(address))) model.newFeedback(address, null);
+        }
+
+        layout.createPoint("LK A", true, "47431");
+        layout.createPoint("LK B", false, "47432");
+        layout.createPoint("LK C", true, "47433");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Edge first = layout.createEdge("LK A", "LK B");
+
+        // The second edge fails the moment the path tries to set it up - after the first has been
+        // locked and this one's Point reserved.
+        // Not on the FIRST ask.  isPathClear previews the configuration of every edge before anything is
+        // locked - its own comment says so - so a subclass that throws unconditionally throws there, with
+        // nothing taken yet and nothing to leave behind.  That version of this test passed against the
+        // unfixed code, which is the trap worth recording: the injected failure has to land where the
+        // real one would.
+        final java.util.concurrent.atomic.AtomicInteger asked =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+        Edge second = new Edge(layout.getPoint("LK B"), layout.getPoint("LK C"))
+        {
+            @Override
+            public java.util.Map<String, org.traincontrol.base.Accessory.accessorySetting> getConfigCommands()
+            {
+                if (asked.incrementAndGet() > 1)
+                {
+                    throw new IllegalStateException("the accessory went away mid-lock");
+                }
+
+                return super.getConfigCommands();
+            }
+        };
+
+        layout.getPoint("LK A").setLocomotive(loc);
+
+        List<Edge> path = new LinkedList<>();
+        path.add(first);
+        path.add(second);
+
+        try
+        {
+            layout.configureAndLockPath(path, loc);
+
+            fail("the injected failure did not reach the lock loop, so nothing below tests anything");
+        }
+        catch (RuntimeException expected)
+        {
+            // what executePath's handler sees
+        }
+
+        assertFalse(first.isOccupied(loc),
+            "the edges locked before the failure are still occupied. Nothing clears them, so that "
+            + "track - and every lock edge behind it - is refused to every train for the rest of the "
+            + "session (UR-11)");
+
+        assertNull(layout.getPoint("LK B").getCurrentLocomotive(),
+            "the locomotive is still reserved on a Point in the middle of the path it never took. "
+            + "reserve does not sweep, so it is now recorded in two places at once - and pickPath takes "
+            + "the first one it finds, which can be a station the train is not standing at (UR-11)");
+
+        assertEquals(layout.getPoint("LK A").getCurrentLocomotive(), loc,
+            "the locomotive was swept off the point it is actually standing on");
+    }
+
+    /**
      * A layout with one platform guarded at each end.
      *
      * The s88 numbers and the run-wide delays are here because `fromJSON` invalidates the WHOLE layout

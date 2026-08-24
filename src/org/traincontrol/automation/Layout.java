@@ -2273,6 +2273,23 @@ public class Layout
         boolean configureFailed = false;
         int edgesLocked = 0;
 
+        // A THROW out of the lock loop, kept to be rethrown once the track has been given back.
+        //
+        // The two returned-false failures below release what they took; a thrown one did not.  It went
+        // straight out to executePath's handler, which deliberately does not unlock - "the locomotive
+        // may be physically standing on those edges, and releasing them would let another train be
+        // routed into occupied track".  That is true of a failure MID-RUN and false here: this method
+        // returns before loc.setSpeed is issued, so the train has not moved.  The rule was lifted from
+        // the case whose precondition made it safe.
+        //
+        // Two things were left behind and neither ever clears.  Every edge taken stays occupied for the
+        // session, with its lock edges, so that track is refused to every train.  And reserve has put
+        // the locomotive on those Points and deliberately does not sweep, so it stands in several
+        // places at once - pickPath then takes the first in iteration order, which can be a mid-path
+        // Point it is not standing on, and throws real ironwork for a departure from a station the
+        // train is not at.
+        RuntimeException lockFailure = null;
+
         synchronized (this)
         {
             // Return if this path isn't clear
@@ -2287,6 +2304,8 @@ public class Layout
             // - which is exactly what let two trains past a cap of one.
             this.takingPath.add(loc);
 
+            try
+            {
             for (Edge e : path)
             {
                 e.setOccupied();
@@ -2311,6 +2330,26 @@ public class Layout
 
                 loc.delay(CONFIGURE_SLEEP);
             }
+            }
+            catch (RuntimeException e)
+            {
+                // Released OUTSIDE the monitor, like the configureFailed path below and for the same
+                // reason - so what is recorded here is only which failure to rethrow.
+                lockFailure = e;
+            }
+        }
+
+        if (lockFailure != null)
+        {
+            // Exactly what a configuration failure does, and only the edges actually taken: releasing
+            // the rest would call setUnoccupied on edges never held, which also clears their lock edges
+            // - and those may belong to another locomotive by now.
+            this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            this.takingPath.remove(loc);
+
+            // Rethrown rather than turned into false.  Nothing here knows what went wrong, and a fault
+            // reported as "the path was occupied" is one nobody can act on.
+            throw lockFailure;
         }
 
         if (configureFailed)
@@ -2448,21 +2487,34 @@ public class Layout
         // the operator-facing message names each misconfigured accessory once, in first-seen order.
         Set<String> misconfigured = new LinkedHashSet<>();
 
-        for (Edge e : path)
+        // Guarded, because working out WHAT to say must not be able to stop the release below.
+        //
+        // This is also reached from the lock loop's failure handler, and the failure being handled
+        // there may be the same call that fails here - reading a path's configuration is how an edge is
+        // set up in the first place.  A release that cannot happen leaves the track occupied for the
+        // rest of the session, which is far worse than an operator message that names nothing.
+        try
         {
-            for (String name : e.getConfigCommands().keySet())
+            for (Edge e : path)
             {
-                Accessory acc = control.getAccessoryByName(name);
-                accessorySetting state = e.getConfigCommands().get(name);
-                boolean d = Accessory.isThrow(state);
-
-                // An accessory that is not in the database at all is named too - otherwise the
-                // operator is told the path is misconfigured without being told which part
-                if (acc == null || !acc.isConfirmedAt(d))
+                for (String name : e.getConfigCommands().keySet())
                 {
-                    misconfigured.add(name + " (" + state.toString().toLowerCase() + ")");
+                    Accessory acc = control.getAccessoryByName(name);
+                    accessorySetting state = e.getConfigCommands().get(name);
+                    boolean d = Accessory.isThrow(state);
+
+                    // An accessory that is not in the database at all is named too - otherwise the
+                    // operator is told the path is misconfigured without being told which part
+                    if (acc == null || !acc.isConfirmedAt(d))
+                    {
+                        misconfigured.add(name + " (" + state.toString().toLowerCase() + ")");
+                    }
                 }
             }
+        }
+        catch (RuntimeException e)
+        {
+            this.control.log(e);
         }
 
         // Stop this locomotive so it cannot move onto the unset path.
