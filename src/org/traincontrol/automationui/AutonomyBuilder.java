@@ -796,11 +796,24 @@ public class AutonomyBuilder
                 // The signals thrown to red while this platform is claimed.  On every copy, because
                 // the copies are one platform.
                 //
+                // Including a copy whose arrival side is barred, which this used to leave out by also
+                // asking `stops`.  A bar stops autonomy routing a train in; it does not stop a person
+                // driving one in, and it does not stop one being placed there by hand - so a train can
+                // be standing on that copy.  refreshOneSignal decides by asking every Point whose
+                // protecting signals hold the accessory, and a copy left out is not asked: the signal
+                // showed GREEN over an occupied platform, which is the failure protection exists to
+                // prevent.
+                //
+                // Safe to emit on a non-station.  setProtectingSignals stores what it is given and
+                // parseAuto does not check it against `station` - unlike the terminus flag two blocks
+                // below, where the model refuses the pair and answers a refusal by invalidating the
+                // whole configuration.  That is why `stops` is consulted there and not here.
+                //
                 // One is written as a bare string and several as an array, which is the shape parseAuto
                 // reads and the shape every version before this one wrote.
                 List<String> protecting = protectingSignals.get(point.getTile());
 
-                if (protecting != null && !protecting.isEmpty() && stops)
+                if (protecting != null && !protecting.isEmpty())
                 {
                     json.put("protectingSignal", protecting.size() == 1
                         ? (Object) protecting.get(0) : new JSONArray(protecting));

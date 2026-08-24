@@ -1576,7 +1576,11 @@ public class AutonomyCompanionStore
         out.put("tileDirections", onPage(tileDirections, page));
         out.put("barredArrivals", onPage(barredArrivals, page));
         out.put("linkNames", onPage(linkNames, page));
-        out.put("stationSignals", onPage(stationSignals, page));
+        // COPIED, not shared.  Every other collection here holds strings and numbers, which cannot
+        // change underneath a snapshot; this one holds LISTS, and forgetTiles calls removeAll on them
+        // in place - so deleting the signal's square emptied the snapshot's list too and undo restored
+        // the deletion.
+        out.put("stationSignals", copyLists(onPage(stationSignals, page)));
         out.put("portals", onPage(portals, page));
         out.put("captions", onPage(captions, page));
 
@@ -1597,7 +1601,16 @@ public class AutonomyCompanionStore
 
             for (String key : from.keySet())
             {
-                if (isOnPage(key, page)) kept.put(key, from.get(key));
+                // Deep, for the same reason as the signals above and with more at stake: this is where
+                // the facings, the placements, the homes and the maximum lengths live, and
+                // setPointProperty writes them with points.getJSONObject(id).put(...) - straight into
+                // the object a shared snapshot would be holding.  Undo then restored the edit.
+                if (!isOnPage(key, page)) continue;
+
+                Object value = from.get(key);
+
+                kept.put(key, value instanceof JSONObject
+                    ? new JSONObject(((JSONObject) value).toString()) : value);
             }
 
             points.put(entry.getKey(), kept);
@@ -1627,7 +1640,7 @@ public class AutonomyCompanionStore
         putBack(tileDirections, page, (Map<String, String>) snapshot.get("tileDirections"));
         putBack(barredArrivals, page, (Map<String, String>) snapshot.get("barredArrivals"));
         putBack(linkNames, page, (Map<String, String>) snapshot.get("linkNames"));
-        putBack(stationSignals, page, (Map<String, List<String>>) snapshot.get("stationSignals"));
+        putBack(stationSignals, page, copyLists((Map<String, List<String>>) snapshot.get("stationSignals")));
         putBack(portals, page, (Map<String, String>) snapshot.get("portals"));
         putBack(captions, page, (Map<String, String>) snapshot.get("captions"));
 
@@ -1654,7 +1667,16 @@ public class AutonomyCompanionStore
 
             if (was != null)
             {
-                for (String key : was.keySet()) rebuilt.put(key, was.get(key));
+                // Copied on the way back as well, so the store and the snapshot do not end up sharing
+                // again: a snapshot is held for as long as the editor might undo, and the very next
+                // edit would write through it.
+                for (String key : was.keySet())
+                {
+                    Object value = was.get(key);
+
+                    rebuilt.put(key, value instanceof JSONObject
+                        ? new JSONObject(((JSONObject) value).toString()) : value);
+                }
             }
 
             entry.getValue().put("points", rebuilt);
@@ -1689,6 +1711,27 @@ public class AutonomyCompanionStore
         }
 
         return parsed != null && parsed.getPage().equals(page);
+    }
+
+    /**
+     * The same map with each list copied, so that nothing which edits a list in place can reach it.
+     *
+     * @param from a map whose values are lists, or null
+     * @return a copy holding copies
+     */
+    private static Map<String, List<String>> copyLists(Map<String, List<String>> from)
+    {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+
+        if (from == null) return out;
+
+        for (Map.Entry<String, List<String>> entry : from.entrySet())
+        {
+            out.put(entry.getKey(), entry.getValue() == null
+                ? null : new ArrayList<>(entry.getValue()));
+        }
+
+        return out;
     }
 
     private static <T> Map<String, T> onPage(Map<String, T> from, String page)

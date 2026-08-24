@@ -454,4 +454,87 @@ public class testAutonomyTileMove
 
         return out;
     }
+
+    /**
+     * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too.
+     *
+     * UR-5, from the uninformed review. `snapshotPage` copies each map, entry by entry, and shares the
+     * VALUES. For eight of the ten collections that is exactly right - the values are strings and
+     * numbers, which cannot change underneath anybody. Two of them hold something mutable:
+     *
+     *  - `stationSignals` maps a station to a LIST of signals, and `forgetTiles` calls `removeAll` on
+     *    that list in place, so deleting the signal's square empties the snapshot's list as well.
+     *  - `configurations` maps a name to a JSONObject holding the points, and `setPointProperty` does
+     *    `points.getJSONObject(id).put(key, value)` - straight into the object the snapshot is holding.
+     *
+     * Undo then restores what it captured, which by then is the edit. The facings, placements, homes
+     * and maximum lengths are all point properties, so this is most of what a station carries - and the
+     * snapshot's own comment says why they are in it at all: "A snapshot without them restores half a
+     * station."
+     *
+     * The failure is quiet in the worst way. Undo appears to work, the diagram goes back, and the
+     * setup that was supposed to come back with it silently does not.
+     *
+     * Restore copies too, for the same reason in the other direction: an undo that hands the store the
+     * snapshot's own lists leaves the two sharing again, and the next edit corrupts a snapshot that is
+     * still being held for a second undo.
+     */
+    @Test
+    public void testASnapshotDoesNotShareWhatTheStoreCanStillChange()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey station = new TileKey("1 - Main", 4, 4);
+        TileKey signal = new TileKey("1 - Main", 5, 4);
+
+        store.setStation(station, true);
+        store.setProtectingSignal(station, signal);
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        // Deleting the signal's square: removeAll, straight into the list the snapshot is holding
+        store.forgetTiles(Arrays.asList(signal));
+
+        assertTrue(store.getProtectingSignals(station).isEmpty(),
+            "the pairing did not go away, so the undo below proves nothing");
+
+        store.restorePage("1 - Main", before);
+
+        assertEquals(store.getProtectingSignals(station), Arrays.asList(signal),
+            "undo did not bring the protecting signal back. The snapshot shared the store's own list "
+            + "and forgetTiles emptied it in place, so what undo restored was the deletion (UR-5)");
+    }
+
+    /**
+     * The same for the half of a station's setup that lives in the configuration.
+     */
+    @Test
+    public void testASnapshotDoesNotSharePointProperties() throws Exception
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        store.createConfiguration("Undo test", null);
+        store.setActiveConfiguration("Undo test");
+
+        TileKey tile = new TileKey("1 - Main", 6, 2);
+
+        org.json.JSONObject configuration = store.getConfiguration("Undo test");
+
+        configuration.put("points", new org.json.JSONObject());
+        configuration.getJSONObject("points").put(tile.toString(),
+            new org.json.JSONObject().put("facing", "N"));
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        // What setPointProperty does: points.getJSONObject(id).put(key, value), in place
+        configuration.getJSONObject("points").getJSONObject(tile.toString()).put("facing", "S");
+
+        store.restorePage("1 - Main", before);
+
+        assertEquals(store.getConfiguration("Undo test").getJSONObject("points")
+            .getJSONObject(tile.toString()).getString("facing"), "N",
+            "undo did not put the facing back. The snapshot held the very JSONObject that "
+            + "setPointProperty writes into, so the facing, the placement, the home and the maximum "
+            + "length are all captured by reference and undo restores the edit (UR-5)");
+    }
 }

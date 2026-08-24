@@ -150,9 +150,100 @@ public class testBarredArrivalIsNotADestination
         page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
 
+        // A signal off to one side, to pair with the platform.  Wired as parsing a real layout does:
+        // without an accessory it has no address to command and the pairing is dropped on the way to
+        // the built configuration.
+        page.addComponent(componentType.SIGNAL, 1, 2, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
+
+        page.getComponent(1, 2).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, 23, org.traincontrol.base.Accessory.accessoryType.SIGNAL,
+            accessoryDecoderType.MM2, "Signal 23", false, 0));
+
         page.setPageId("1");
 
         return page;
+    }
+
+    /**
+     * A barred copy still carries the protecting signal, because it is still the same platform.
+     *
+     * UR-6, from the uninformed review. The builder emits the pairing under
+     * `protecting != null && !protecting.isEmpty() && stops`, two lines below a comment that says the
+     * opposite: "The signals thrown to red while this platform is claimed. On every copy, because the
+     * copies are one platform."
+     *
+     * `stops` is false exactly when this copy's arrival side is barred, so the copy trains may not be
+     * SENT to is also the copy that does not hold its signal red. That matters because of what a bar
+     * means - Adam, on MT-078: autonomy will not route into a barred side, and a person may. So a train
+     * can be standing on that copy, and when it is, nothing protects the platform: `refreshOneSignal`
+     * decides by asking every Point whose protecting signals contain the accessory, and this one is not
+     * among them. The signal shows green over an occupied platform.
+     *
+     * Two copies of one square are two Points to the model and one piece of track on the railway. A
+     * train standing on either is a train standing at the platform.
+     *
+     * Nothing refuses a protecting signal on a non-station: `setProtectingSignals` stores what it is
+     * given and parseAuto does not check it against `station`. That was worth confirming before
+     * removing the condition, because the `stops` variable exists for a case where the model DOES
+     * refuse - a terminus that is not a destination - and answers a refusal by invalidating the whole
+     * layout.
+     */
+    @Test
+    public void testABarredCopyStillHoldsItsProtectingSignal() throws IOException
+    {
+        TileKey platform = guardedTwoEndedStation();
+
+        java.util.List<TilePorts.Side> sides = session.arrivalSides(platform);
+
+        assertEquals(sides.size(), 2, "the fixture must be reachable from two sides - got " + sides);
+
+        session.setBarredArrivals(platform,
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(sides.get(0))));
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfigurationForInspection());
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        int copies = 0, guarded = 0;
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.getJSONObject(i);
+
+            if (!platform.toString().equals(point.optString("block", null))) continue;
+
+            copies++;
+
+            if (point.has("protectingSignal")) guarded++;
+        }
+
+        assertEquals(copies, 2,
+            "the platform did not come out as two copies, so there is no barred copy to test");
+
+        assertEquals(guarded, copies,
+            "the barred copy was emitted without its protecting signal. A train can still be standing "
+            + "there - a bar stops autonomy routing in, not a person driving in - and that copy is not "
+            + "among the Points the signal asks about, so the platform shows GREEN while it is "
+            + "occupied (UR-6)");
+    }
+
+    /**
+     * The same run of track, with a signal beside it paired to the platform.
+     */
+    private TileKey guardedTwoEndedStation() throws IOException
+    {
+        TileKey platform = twoEndedStation();
+
+        TileKey signal = new TileKey("main", 1, 2);
+
+        session.setProtectingSignals(platform, Arrays.asList(signal));
+
+        assertFalse(session.protectingSignalNames().getOrDefault(platform,
+            java.util.Collections.<String>emptyList()).isEmpty(),
+            "the signal did not reach an accessory name, so nothing would be emitted whatever the "
+            + "builder decided");
+
+        return platform;
     }
 
     private void delete(File f)
