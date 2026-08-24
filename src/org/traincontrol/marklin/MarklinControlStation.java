@@ -3702,11 +3702,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             final CountDownLatch latch = new CountDownLatch(1);
 
+            // Whether the window was actually built (FBR-C3).
+            //
+            // Without it the caller below cannot tell: invokeLater only enqueues, so the try/catch
+            // around it never sees anything the posted lambda throws, and nothing else after await()
+            // asks.  The comment on the countDown claimed control was handed "back to a caller that
+            // can log and exit"; there was no such caller, and a failed build left a live process with
+            // no window, one log line, and display() throwing on the event thread.
+            final java.util.concurrent.atomic.AtomicBoolean built =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 try
                 {
                     theUI.setViewListener(model, latch);
+
+                    built.set(true);
                 }
                 catch (Throwable ex)
                 {
@@ -3736,13 +3748,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // building a window is exactly the case that used to walk past this handler.
                     //
                     // Counting down after a FAILED build is deliberate. It hands control back to a
-                    // caller that can log and exit rather than one that waits for something which is
-                    // never going to happen.
+                    // caller that logs and exits - see the `built` flag above and the check after
+                    // await() - rather than to one waiting for something that is never going to
+                    // happen.
                     latch.countDown();
                 }
             });
 
             latch.await();
+
+            // And now the caller the countDown's comment promised (FBR-C3).
+            //
+            // Going on to display() a window that failed to build gets a second exception on the
+            // event thread and a process running with nothing on screen. Whatever went wrong was
+            // already logged where it was caught; this says what is being done about it and stops.
+            if (!built.get())
+            {
+                model.logf("ui.fatalErrorInitializing");
+
+                System.exit(0);
+            }
+
             model.logf("ui.rendering");
             
             try
@@ -3755,6 +3781,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             catch (Exception ex)
             {
+                // Reachable only for a failure to POST the task - the lambda's own exceptions
+                // land on the event thread, which is why the flag above exists rather than this
+                // catch being widened to look as though it covers them.
                 model.logf("ui.fatalErrorInitializing");
                 model.log(ex);
                 System.exit(0);

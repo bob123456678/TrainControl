@@ -2603,12 +2603,24 @@ public class AutonomyEditorPanel extends JPanel
             // itself would make it a station nothing can be sent to.
             if (tile.equals(station)) continue;
 
-            // And not a square that IS this station by another name (OB-083, "ensure self-selection
-            // is impossible"). A caption sits on a square of its own and points AT the station, and it
-            // carries a name, so it appeared in this list as though it were somewhere else - choosing
-            // it would have held the station back with itself, by the back door the check above closes
-            // at the front.
-            if (station.equals(session.getCaptionTarget(tile))) continue;
+            // And not a CAPTION square, whichever station it is about (OB-083, extended by FBR-C4).
+            //
+            // Adam's rule was "ensure self-selection is impossible", and the check that answered it
+            // excluded captions of THIS station only: a caption sits on a square of its own and points
+            // at the station, so it appeared here as though it were somewhere else. A caption about a
+            // DIFFERENT station is the same square in every other respect - it is not track, the
+            // reducer emits no point for it, and AutonomyBuilder drops it with a bare `continue`. The
+            // user picks a restriction, the dialog accepts it, and the built configuration simply does
+            // not contain it: FR-001 never holds the station back and nothing anywhere says so.
+            //
+            // A safety restriction the operator believes is on and is not is worse than one they were
+            // never offered.
+            if (session.getCaptionTarget(tile) != null) continue;
+
+            // Nor a square that is not in play at all. The graph is built from the pages autonomy is
+            // allowed to see - `new TileGraph(pages, store.getExcludedPages())` - so a named square on
+            // an excluded page is absent from it, and produces no point for the same reason.
+            if (session.getGraph() != null && !session.getGraph().getTiles().containsKey(tile)) continue;
 
             choices.add(tile);
         }

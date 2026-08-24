@@ -575,18 +575,23 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         scroll.setPreferredSize(new java.awt.Dimension(580, 380));
         scroll.getVerticalScrollBar().setUnitIncrement(16);
 
-        final Locomotive asked = locomotive;
-
         new Thread(() ->
         {
             final String report = whyNotReport();
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // Still the same locomotive: the panel is reused as trains are placed and cleared,
-                // and a slow answer must not land in a window that is now about a different train.
-                if (asked != locomotive) return;
-
+                // No guard on which locomotive this is about, and the one that used to stand here was
+                // worse than nothing (FBR-C1).
+                //
+                // It captured `locomotive` into a local and compared the two, under a comment saying
+                // "the panel is reused as trains are placed and cleared". The field is final and
+                // assigned once in the constructor: a panel is built for one locomotive and thrown
+                // away with it, so the comparison could not fail and the sentence described a design
+                // this class does not have. A reader trusting it would go looking for the reassignment.
+                //
+                // What is actually true is smaller: this window may be closed before the answer
+                // arrives, and writing to a text area nobody is looking at costs nothing.
                 area.setText(report);
                 area.setCaretPosition(0);
             });
@@ -642,8 +647,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 return out.append("\n").append(cannotStart).append("\n").toString();
             }
 
-            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive);
-            java.util.Set<String> barredPoints = layout.destinationsBarredFromAutonomy(locomotive);
+            // Both halves under ONE acquisition of the Layout monitor (FBR-C6).
+            //
+            // Asked separately, the reasons and the grouping could be computed against two different
+            // states - a train arrives, or a station is switched off, between the two calls - and a
+            // line would sit under the wrong heading for one opening of the window. Transient, and it
+            // contradicted the reason this was built with a single barredFromAutonomy in the first
+            // place: so that the reason and the group it is printed under cannot disagree.
+            Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive);
+
+            java.util.Map<String, String> reasons = destinations.getReasons();
+            java.util.Set<String> barredPoints = destinations.getBarred();
 
             java.util.Map<String, String> choosable = new java.util.TreeMap<>();
             java.util.Map<String, String> barred = new java.util.TreeMap<>();
@@ -758,17 +772,24 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // The tooltip arrives a moment later, which is what a tooltip does anyway. Nothing is
                 // shown while it is being worked out rather than a placeholder, because a tooltip that
                 // changes under the pointer reads as a glitch.
-                final Locomotive asked = locomotive;
-
                 new Thread(() ->
                 {
                     final String why = whyNotToolTip();
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
-                        // Still the same locomotive, and still in the state the answer was about: the
-                        // panel is reused, and a slow answer must not land on a train it is not about.
-                        if (asked == locomotive && noPathsNow) locDest.setToolTipText(why);
+                        // Still in the STATE the answer was about, which is the half of this guard that
+                        // was ever real (FBR-C1).
+                        //
+                        // It used to also check that the locomotive had not changed under it. It cannot:
+                        // the field is final and a panel belongs to one locomotive for its whole life.
+                        // The check was dead and the comment beside it described a reuse pattern that
+                        // does not exist.
+                        //
+                        // noPathsNow does change. A train can be dispatched while the reasons are being
+                        // worked out, and a tooltip explaining why there are no paths does not belong on
+                        // a label that has since started showing one.
+                        if (noPathsNow) locDest.setToolTipText(why);
                     });
                 }).start();
             }

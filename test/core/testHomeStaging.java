@@ -1523,6 +1523,63 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
+    /**
+     * A blocker with a home of its own does not make staging impossible.
+     *
+     * FBR-B1, from the Fable review of this round, and it is my own OB-073 fix being wrong in the
+     * half its own note said was doing the work.
+     *
+     * The impossibility scan proves one thing: "no move can ever end there". Every test in it is
+     * state-INDEPENDENT for that reason - inactive origin, exclusion, length, terminus, disconnection -
+     * and `connected`, one method below the scan, says the rule out loud: "Deliberately blind to
+     * occupancy... A route blocked merely by another train is not impossible - moving that train is
+     * exactly what the planner is for."
+     *
+     * The OB-073 fix put the state-AWARE `canRest(l, home, this.start)` into that scan. It reads the
+     * starting occupancy, so a locomotive standing on a watched square proved the goal unreachable -
+     * including when that locomotive is itself being staged somewhere else, and the plan's own first
+     * move vacates the square. IMPOSSIBLE is shown to the operator as a proof, with the blocked
+     * locomotives named, and it skips the search entirely.
+     *
+     * The fixture the round shipped could not catch it: its blocker has no home, so it genuinely
+     * cannot be moved and IMPOSSIBLE is right for it. This one gives the blocker a home elsewhere,
+     * which is the difference between "in the way" and "stuck".
+     *
+     * Same shape as the last two of these: a rule copied to a place whose contract did not hold the
+     * precondition that made it safe.
+     */
+    @Test
+    public void testABlockerWithAHomeOfItsOwnIsNotAProofOfImpossibility() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        // A wants HS B, which is held back while HS D is occupied.
+        layout.getPoint("HS B").setBlockedBy(
+            java.util.Arrays.asList(layout.getPoint("HS D")));
+
+        assign(layout, LOC_A, "HS B");
+
+        // And B has a home of its own, which is NOT the square it is standing on. Staging will move
+        // it, and moving it clears the square A is waiting for.
+        assign(layout, LOC_B, "HS C");
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS A", false), "the fixture could not be arranged");
+        assertTrue(layout.moveLocomotive(LOC_B, "HS D", false),
+            "could not stand the blocker on the watched point");
+
+        HomeStaging.Plan plan = layout.planReturnToHome();
+
+        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "the planner called a movable blocker a proof of impossibility. B is standing on the "
+            + "square that holds A's home back, and B is being staged to HS C - so the first move of "
+            + "the plan clears it. IMPOSSIBLE is presented to the operator as a proof, with the "
+            + "locomotives named, and it skips the search that would have found the two-move answer "
+            + "(FBR-B1).  Got: " + plan.getOutcome());
+
+        assertFalse(plan.getBlocked().contains(loc(LOC_A)),
+            "and A must not be named as blocked when what is in its way is about to leave");
+    }
+
     /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
     private static void assign(Layout layout, String locName, String stationName) throws Exception
     {

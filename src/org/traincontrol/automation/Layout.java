@@ -3296,6 +3296,58 @@ public class Layout
     }
 
     /**
+     * The reasons and the grouping, answered together under one lock.
+     *
+     * FBR-C6.  Asked as two calls, each synchronized on this Layout, the window's two halves could be
+     * computed against two different states - a train arrives, or a station is switched off, between
+     * them - and a line would sit under the wrong heading.  It is transient and the next click fixes
+     * it, but it contradicted the reason FR-017 was built around a single `barredFromAutonomy` in the
+     * first place: so that the reason printed beside a station and the group it is printed under
+     * cannot disagree.  Two locks put the disagreement back a level up.
+     *
+     * @param loc the locomotive asking
+     * @return both halves, of one moment
+     */
+    synchronized public Destinations explainDestinationsGrouped(Locomotive loc)
+    {
+        return new Destinations(explainDestinations(loc), destinationsBarredFromAutonomy(loc));
+    }
+
+    /**
+     * Why each station is unavailable, and which of them autonomy would never choose anyway.
+     *
+     * A holder rather than two return values.  It exists so the two can be taken together; handing
+     * them back separately would let a caller acquire them separately again, which is the defect.
+     */
+    public static class Destinations
+    {
+        private final java.util.Map<String, String> reasons;
+        private final java.util.Set<String> barred;
+
+        Destinations(java.util.Map<String, String> reasons, java.util.Set<String> barred)
+        {
+            this.reasons = reasons;
+            this.barred = barred;
+        }
+
+        /**
+         * @return point name to the reason it is unavailable, null where it is available
+         */
+        public java.util.Map<String, String> getReasons()
+        {
+            return reasons;
+        }
+
+        /**
+         * @return the point names autonomy will never choose, whatever is happening on the railway
+         */
+        public java.util.Set<String> getBarred()
+        {
+            return barred;
+        }
+    }
+
+    /**
      * Why autonomy will never choose this point for this locomotive, or null when it is a candidate.
      *
      * The STANDING bars only - the ones that are a property of how the railway is set up rather than

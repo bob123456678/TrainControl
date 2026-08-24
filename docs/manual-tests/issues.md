@@ -251,6 +251,53 @@ does not require the distinction. My recommendation is 2 now and 3 only if you m
 
 ---
 
+### OB-084 - 2026-08-24 - testRenderingCost fails from a clean checkout, and says something real
+
+**Not from this round.** Found while confirming the battery after the FBR fixes, and it is two facts
+that are worth keeping apart.
+
+**The measurement.** Loading a **version 1** autonomy setup builds noticeably more labels than loading
+the version 2 the application writes. Same page, same cells, same content:
+
+| setup.json | page | cells | labels built |
+|---|---|---|---|
+| version 1, as committed in `cs2_sample_layout` | 2 - Bottom | 336 | **720** |
+| version 2, after any run has rewritten it | 2 - Bottom | 336 | **621** |
+
+Nothing else differs - `pointNames` is 47 and `captions` 35 in both, and the two files are the same
+data with the keys in a different order. So the migration path costs about a hundred extra label
+constructions, roughly a sixth, on a page of this size. That is the same family as
+[OB-053](#ob-053) - "the diagram builds two labels per cell" - which Adam has asked to be left alone
+for now, so this is filed beside it rather than fixed.
+
+**The test.** `ui.testRenderingCost.testLabelsBuiltPerCell` asserts at most two labels per cell, which
+is 672 here. 720 fails it and 621 passes.
+
+The battery runs classes alphabetically, so by the time `ui.testRenderingCost` runs, several `core.*`
+classes have already loaded and re-saved the sample layout - migrating it to version 2. The guard
+therefore passes in the battery and **fails from a clean `git checkout`**, which is exactly the shape
+this project's review discipline calls a test passing for the wrong reason: "Assert the precondition
+that makes a test meaningful."
+
+Confirmed against a clean HEAD build with the fixture restored: 8 tests, 1 failure. With the fixture as
+a run leaves it: 8 tests, 0 failures. It is not a regression from the fix round - reverting every
+uncommitted change reproduces it.
+
+**Two things that could be done, and they are independent:**
+
+1. Make the test honest about what it measures - either assert the fixture's version first, or copy the
+   fixture to a temporary directory so it measures the committed state every time. Today the number it
+   reports depends on what ran before it, which makes it useless as a regression guard for the case it
+   was written for.
+2. Look at why the migration path builds the extra labels, when OB-053 is picked up. They are probably
+   the same rebuild.
+
+**And one thing to know about the battery.** Every "101 classes green" in this session's commit messages
+was measured with the fixture already migrated. The number is honest about what ran; it is not honest
+about a clean checkout, and that is worth knowing before it is quoted as evidence again.
+
+---
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

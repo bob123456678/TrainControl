@@ -3409,7 +3409,9 @@ public class AutonomyCompanionStore
      * The active configuration is deliberately not read here: importing a configuration must not
      * change which one is running.
      *
-     * @param root
+     * @param wholeRoot the shared object as it came off disk.  The local `root` below is NOT this: it
+     *     is the copy with absent pages filtered out, and the difference between the two names is
+     *     load-bearing here (FBR-C5).
      */
     private void readShared(JSONObject wholeRoot)
     {

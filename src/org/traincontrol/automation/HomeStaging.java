@@ -324,8 +324,15 @@ public final class HomeStaging
             // firstClearRoute refuses an inactive origin, so the search can only exhaust and answer
             // "maybe".  One flag test turns that into a proof, the same upgrade the pairwise goal scan
             // below gives conflicting homes.
+            //
+            // couldEverRest, not the state-aware canRest (FBR-B1).  The OB-073 fix put the state-aware
+            // form here and it does not belong: it reads the STARTING occupancy, so a locomotive
+            // merely standing in the way proved the goal unreachable - including one that is itself
+            // being staged elsewhere, whose departure is the plan's own first move.  `connected`, four
+            // lines further down, states the rule that was broken: "A route blocked merely by another
+            // train is not impossible - moving that train is exactly what the planner is for."
             if (!locationOf(this.start, l).isActive()
-                || !canRest(l, home, this.start)
+                || !couldEverRest(l, home)
                 || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
 
@@ -1006,6 +1013,78 @@ public final class HomeStaging
         }
 
         return true;
+    }
+
+    /**
+     * Whether ANY arrangement could park this locomotive at this home.
+     *
+     * The impossibility scan's question, and it has to be answerable without knowing who is standing
+     * where - because IMPOSSIBLE is shown to the operator as a proof, with the blocked locomotives
+     * named, and it skips the search entirely.  `connected` states the doctrine for the whole class:
+     * "A route blocked merely by another train is not impossible - moving that train is exactly what
+     * the planner is for."
+     *
+     * The one occupancy that IS a proof is a blocker nobody will move.  FR-001 holds a station back
+     * while a watched square is occupied, so if that square carries a locomotive with no home, or one
+     * already standing on its home, no plan can clear it: staging moves locomotives to their homes and
+     * nothing else, so that square is occupied at the end of every arrangement there is.  A blocker
+     * with a home elsewhere is the opposite case and is not this method's business - the search vacates
+     * squares as it takes moves and will find the ordering.
+     *
+     * FBR-B1.  The OB-073 fix asked the state-aware canRest here, which answered "no" for both kinds;
+     * the fixture it shipped with had an unhomed blocker, so it could not tell them apart.  The
+     * same shape as the two before it: a rule moved to a place whose contract did not carry the
+     * precondition that made it safe.
+     *
+     * @param loc the locomotive being planned
+     * @param home where it is trying to get to
+     * @return false only when no arrangement can put it there
+     */
+    private boolean couldEverRest(Locomotive loc, Point home)
+    {
+        if (!canRest(loc, home)) return false;
+
+        for (Point watched : home.getBlockedBy())
+        {
+            if (watched == null) continue;
+
+            if (heldByAnImmovable(watched, loc)) return false;
+
+            if (watched.getS88() == null) continue;
+
+            // Sensor siblings, for the reason canEnter gives: two active points reporting one sensor
+            // are one detection section, and the runtime asks getBlockLocomotive, which is block-aware.
+            for (Point sibling : this.pointsBySensor.getOrDefault(watched.getS88(),
+                java.util.Collections.<Point>emptyList()))
+            {
+                if (sibling.equals(watched)) continue;
+
+                if (heldByAnImmovable(sibling, loc)) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether this square carries a locomotive that staging will never move off it.
+     *
+     * Two kinds, and they are the same kind: staging moves a locomotive to its home and does nothing
+     * else, so one with no home and one already standing on its home are both immovable.  Anything
+     * else has somewhere to go, and its going is what the search is for.
+     *
+     * @param p the watched square
+     * @param loc the locomotive being planned, exempt as it is at runtime
+     */
+    private boolean heldByAnImmovable(Point p, Locomotive loc)
+    {
+        Locomotive there = this.start.get(p);
+
+        if (there == null || there.equals(loc)) return false;
+
+        Point itsHome = this.homes.get(there);
+
+        return itsHome == null || itsHome.equals(locationOf(this.start, there));
     }
 
     /**
