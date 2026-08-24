@@ -3708,10 +3708,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     theUI.setViewListener(model, latch);
                 }
-                catch (IOException ex)
+                catch (Throwable ex)
                 {
                     model.logf("ui.errorInitializing");
-                    model.log(ex);
+                    model.log(ex instanceof Exception ? (Exception) ex : new Exception(ex));
 
                     try
                     {
@@ -3720,7 +3720,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     {
                         Thread.currentThread().interrupt();
                     }
-                }                
+                }
+                finally
+                {
+                    // Counted down whatever happened (OB-077).
+                    //
+                    // The only countDown was the last statement of setViewListener, so anything that
+                    // stopped it reaching that line left the latch at one - and the wait below has no
+                    // timeout. The catch above logged, slept, and returned without counting down; a
+                    // RuntimeException or an Error did not even reach it. Either way the application
+                    // hung for ever with no window and nothing on screen to say why, which is the
+                    // worst symptom a start-up fault can have.
+                    //
+                    // Throwable rather than IOException for the same reason: an Error thrown while
+                    // building a window is exactly the case that used to walk past this handler.
+                    //
+                    // Counting down after a FAILED build is deliberate. It hands control back to a
+                    // caller that can log and exit rather than one that waits for something which is
+                    // never going to happen.
+                    latch.countDown();
+                }
             });
 
             latch.await();

@@ -3702,7 +3702,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!isLayoutEditorOpen()) return false;
 
-        JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
+        // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078).
+        //
+        // Two callers ask this from a raw worker thread - editRoute and the route-duplicate loop -
+        // and building and showing a modal JOptionPane off the EDT mispaints on a good day and
+        // deadlocks on a bad one. Both of those sites sit immediately outside an invokeLater whose
+        // own comment explains why the check beside it had to move inside; this one was left where it
+        // was.
+        //
+        // invokeLater rather than invokeAndWait: the caller has already decided to refuse, and making
+        // it block until somebody dismisses a dialog would hold a worker - and, from the EDT, would
+        // deadlock outright.
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
+        }
+        else
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen")));
+        }
 
         return true;
     }
