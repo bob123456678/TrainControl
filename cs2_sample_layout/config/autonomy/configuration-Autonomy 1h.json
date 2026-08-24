@@ -15,66 +15,75 @@
     "turnOnFunctionsOnDeparture": true,
     "simulate": true
   },
-  "name": "Autonomy 1j",
+  "name": "Autonomy 1h",
   "points": {
-    "1 - Main:0,11": {
-      "maxTrainLength": 0
-    },
+    "1 - Main:0,11": {},
     "1 - Main:20,14": {
-      "maxTrainLength": 0,
-      "facing": "E"
+      "canReverse": true
     },
     "1 - Main:20,12": {
-      "maxTrainLength": 0
+      "facing": "E"
     },
+    "1 - Main:20,13": {},
     "1 - Main:21,6": {
       "canReverse": true
     },
-    "1 - Main:7,6": {
-      "maxTrainLength": 0
-    },
+    "1 - Main:7,6": {},
     "2 - Bottom:16,5": {
       "maxTrainLength": 0
     },
     "1 - Main:5,9": {},
+    "1 - Main:7,7": {
+      "maxTrainLength": 0,
+      "facing": "S"
+    },
     "2 - Bottom:14,4": {
       "maxTrainLength": 0
     },
-    "1 - Main:9,6": {},
+    "1 - Main:9,6": {
+      "mustReverse": true,
+      "autoDestination": false
+    },
     "1 - Main:0,3": {},
     "1 - Main:4,5": {
-      "maxTrainLength": 0
+      "mustReverse": true,
+      "autoDestination": false
     },
     "1 - Main:2,7": {
-      "maxTrainLength": 0
+      "mustReverse": true,
+      "autoDestination": false
     },
-    "1 - Main:1,10": {
+    "1 - Main:1,10": {},
+    "1 - Main:6,4": {
       "loc": {
-        "name": "75 407 DB"
+        "name": "BR 232 241-0"
       },
-      "maxTrainLength": 0,
-      "facing": "E"
+      "facing": "N"
     },
-    "1 - Main:6,4": {},
     "2 - Bottom:16,9": {
       "maxTrainLength": 0
     },
-    "1 - Main:4,3": {
-      "mustReverse": true,
-      "maxTrainLength": 0,
-      "autoDestination": false
-    },
+    "1 - Main:4,3": {},
     "1 - Main:2,5": {
-      "maxTrainLength": 0
+      "mustReverse": true,
+      "autoDestination": false
     },
     "1 - Main:18,7": {},
     "2 - Bottom:16,13": {},
     "2 - Bottom:3,7": {},
     "2 - Bottom:7,1": {},
-    "1 - Main:14,3": {},
-    "1 - Main:10,6": {},
-    "1 - Main:10,9": {},
+    "1 - Main:14,3": {
+      "loc": {
+        "name": "MY 1106"
+      },
+      "facing": "E"
+    },
+    "1 - Main:10,6": {
+      "mustReverse": true,
+      "autoDestination": false
+    },
     "1 - Main:12,7": {},
+    "1 - Main:10,9": {},
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {
@@ -91,7 +100,7 @@
     },
     "1 - Main:8,6": {
       "mustReverse": true,
-      "maxTrainLength": 0
+      "autoDestination": false
     },
     "2 - Bottom:17,6": {
       "maxTrainLength": 0
@@ -99,7 +108,11 @@
     "2 - Bottom:13,5": {
       "maxTrainLength": 0
     },
-    "1 - Main:13,11": {},
+    "1 - Main:13,11": {
+      "loc": {
+        "name": "BR 628 2"
+      }
+    },
     "1 - Main:17,10": {},
     "1 - Main:6,9": {},
     "2 - Bottom:19,0": {
@@ -111,10 +124,13 @@
     },
     "1 - Main:1,3": {},
     "1 - Main:3,1": {},
-    "1 - Main:5,4": {
-      "maxTrainLength": 0
-    },
     "1 - Main:7,2": {},
+    "1 - Main:5,4": {
+      "loc": {
+        "name": "75 407 DB"
+      },
+      "facing": "N"
+    },
     "1 - Main:10,13": {},
     "2 - Bottom:17,8": {
       "maxTrainLength": 0
@@ -129,9 +145,6 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {},
-    "1 - Main:11,7": {},
-    "1 - Main:20,13": {
-      "maxTrainLength": 0
-    }
+    "1 - Main:11,7": {}
   }
 }
