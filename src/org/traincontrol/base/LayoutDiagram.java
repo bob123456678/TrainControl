@@ -852,8 +852,7 @@ public class LayoutDiagram
             int position = 0;
             Integer id = null;
 
-            for (String line : java.nio.file.Files.readAllLines(index.toPath(),
-                java.nio.charset.StandardCharsets.UTF_8))
+            for (String line : readIndexLines(index))
             {
                 String trimmed = line.trim();
 
@@ -898,6 +897,45 @@ public class LayoutDiagram
         }
 
         return out;
+    }
+
+    /**
+     * The index file's lines, decoded by something that will not refuse them.
+     *
+     * SV-B1.  `Files.readAllLines(path, UTF_8)` throws `MalformedInputException` on a byte that is not
+     * valid UTF-8, and every build before 2026-07-27 wrote this file with a `FileWriter` - that is, in
+     * the platform's own encoding.  So an index written by an older TrainControl, or by anything else
+     * on a Windows box, could not be read at all.
+     *
+     * On its own that was survivable: the old behaviour treated an unreadable index as no index,
+     * reissued the numbers and wrote the file back as UTF-8, which quietly healed it.  The refusal
+     * added for DR-B4 removed that escape and made it permanent - the index could never be written
+     * again, and the message told the operator to try again in a moment, which would never work.  In
+     * the delete path it threw AFTER the page file was gone and the setup had forgotten it, leaving an
+     * entry for a page that no longer exists.
+     *
+     * ISO-8859-1 is the fallback because it is total: every byte sequence decodes, so this cannot
+     * throw, and it round-trips the bytes for anything in the Latin-1 range - which is what a European
+     * Windows machine writing page names actually produced.  A name that decodes differently is a name
+     * that does not match, and a page whose name does not match is renumbered - so the fallback is not
+     * merely tidier, it is the difference between keeping the ids and losing them.
+     *
+     * @param index the file
+     * @return its lines
+     * @throws IOException only when the file genuinely cannot be read - missing, locked, unreadable
+     */
+    private static List<String> readIndexLines(File index) throws IOException
+    {
+        try
+        {
+            return java.nio.file.Files.readAllLines(index.toPath(),
+                java.nio.charset.StandardCharsets.UTF_8);
+        }
+        catch (java.nio.charset.MalformedInputException notUtf8)
+        {
+            return java.nio.file.Files.readAllLines(index.toPath(),
+                java.nio.charset.StandardCharsets.ISO_8859_1);
+        }
     }
 
     /**
@@ -1013,6 +1051,11 @@ public class LayoutDiagram
         // again in a moment, and the alternative is a silent renumber of everything the operator owns.
         if (existing.isEmpty() && getUnreadableIndex() != null)
         {
+            // Reachable only for a file that cannot be READ - missing, locked, a device error. A file
+            // this build cannot DECODE no longer comes here at all (SV-B1): readIndexLines falls back
+            // to a total charset, so an index written by an older TrainControl is read rather than
+            // refused. That distinction is the whole safety of this throw. Refusing something a retry
+            // can fix is a delay; refusing something a retry cannot fix is a layout nobody can save.
             throw new IOException("The layout index could not be read, so the pages were not renumbered."
                 + "  Nothing was written.  Try again in a moment: " + getUnreadableIndex().getMessage());
         }

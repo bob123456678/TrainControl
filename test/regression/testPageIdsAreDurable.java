@@ -389,9 +389,24 @@ public class testPageIdsAreDurable
      * behaviour catches it.
      *
      * The property is the one OB-067 was closed on, stated per field: put something on a page, take
-     * that page's file away, load and save, and it is all still in the file. A store that is missing a
-     * field from the hold loses it here; one that is missing it from the merge loses it here; one that
-     * holds it with the wrong shape loses the half of it that names a square somewhere else.
+     * that page's file away, load and save, and it is all still in the file.
+     *
+     * **What it catches, measured rather than argued.** Three mutations, each compiled and run:
+     *
+     * - Held but not merged back - the mutation the finding itself used - fails it, naming the
+     *   collection: `the "blockedPoints" collection lost entries to one save while a page's file was
+     *   missing`.
+     * - A field's SHAPE downgraded, `captions` from SQUARE_VALUE to PLAIN, fails it on the caption
+     *   assertion. That is the half no name-matching can check, and it only fails because the fixture
+     *   puts a caption on a LOADED page pointing at a station on the absent one. With every square on
+     *   the absent page the key-side check decides everything, the shape is never exercised, and all
+     *   four square-valued fields could be downgraded with this test still green (SV-C1).
+     * - A field removed from `HELD_FIELDS` altogether fails it too, on the same assertion.
+     *
+     * The version of this comment written a few hours earlier said the third of those did NOT fail,
+     * and explained at length why that was acceptable. The reasoning was sound and the conclusion was
+     * stale: it was true of the weaker fixture. Which is the argument for measuring a claim about a
+     * test instead of deriving it.
      */
     @Test
     public void testASaveWhileAPageIsAbsentLosesNothingOfIt() throws IOException
@@ -407,6 +422,15 @@ public class testPageIdsAreDurable
         TileKey ghostFar = new TileKey("Ghost", 5, 5);
         TileKey ghostCaption = new TileKey("Ghost", 6, 6);
 
+        // A square on the LIVE page whose VALUE points at the absent one (SV-C1).
+        //
+        // Without this every square in the fixture sat on the absent page, so the key-side check alone
+        // decided every entry and the SHAPE half of HELD_FIELDS was never exercised - downgrading all
+        // four square-valued fields to PLAIN left this test green, while its own javadoc claimed only
+        // behaviour could catch that. A caption on a loaded page pointing at a station on an absent
+        // one is the ordinary way that happens, and it is the entry a wrong shape lets through.
+        TileKey liveCaption = new TileKey("Alpha", 7, 7);
+
         // One of each shape the hold classifies, so a field dropped or misclassified shows up.
         store.setPointName(ghost, "Ghost Platform");
         store.setStation(ghost, true);
@@ -415,6 +439,7 @@ public class testPageIdsAreDurable
         store.setProtectingSignals(ghost, java.util.Arrays.asList(ghostSignal));
         store.setBlockingPoints(ghost, java.util.Arrays.asList(ghostSignal));
         store.setCaption(ghostCaption, ghost);
+        store.setCaption(liveCaption, ghost);
         store.setLinkName(ghostFar, "Ghost Link");
         store.pairPortals(ghost, ghostFar);
         store.setPortalDisabled(ghostFar, true);
@@ -440,6 +465,19 @@ public class testPageIdsAreDurable
 
         reopened.setPageIds(idsAsNameToId());
         reopened.load();
+
+        // The entries really ARE held, which nothing here asserted before (SV-C1). A test that only
+        // checks the file still has them passes just as well when they were never taken out - and
+        // "taken out" is the whole mechanism.
+        assertNull(reopened.getPointName(ghost),
+            "an entry for a page that is not loaded is in the live collections. Holding it is what "
+            + "keeps a page id out of a page-name field, so this is the mechanism not running at all");
+
+        assertNull(reopened.getCaptionTarget(liveCaption),
+            "a caption on a LOADED page pointing at a station on an absent one was not held. Its KEY "
+            + "resolves, so only the value-side check can catch it - which is the shape half of "
+            + "HELD_FIELDS, and the half no amount of name-matching can verify (SV-C1)");
+
         reopened.save();
 
         String after = read(setupFile());
@@ -518,6 +556,72 @@ public class testPageIdsAreDurable
     private String read(File file) throws IOException
     {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * An index written in the platform's encoding is read, not refused.
+     *
+     * SV-B1. `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
+     * whatever encoding the machine defaulted to. Reading it strictly as UTF-8 throws
+     * `MalformedInputException` on any byte that is not valid UTF-8 - and a page called
+     * "Bahnhof S\u00fcd" written by an older TrainControl on a Windows box is exactly that.
+     *
+     * That was survivable while an unreadable index simply meant "no index": the pages were renumbered
+     * and the file rewritten as UTF-8, which healed it. DR-B4 added a refusal to renumber on a failed
+     * read - right for a locked file, and catastrophic here, because it made the condition permanent.
+     * The index could never be written again, and the message said to try again in a moment.
+     *
+     * So this asserts the two things that matter and are easy to get wrong separately: the ids survive
+     * the read, and the write goes through.
+     */
+    @Test
+    public void testAnIndexInThePlatformEncodingIsStillReadableAndWritable() throws IOException
+    {
+        write("Alpha", "Bahnhof Sud");
+
+        File index = new File(new File(layout, "config"), "gleisbild.cs2");
+
+        assertTrue(index.isFile(), "the fixture wrote no index");
+
+        // Rewrite it the way a pre-2026-07-27 build would have: the same content, with one name
+        // carrying a byte that is not valid UTF-8.
+        String asWritten = new String(Files.readAllBytes(index.toPath()), StandardCharsets.UTF_8)
+            .replace("Bahnhof Sud", "Bahnhof S\u00fcd");
+
+        Files.write(index.toPath(), asWritten.getBytes(StandardCharsets.ISO_8859_1));
+
+        // The precondition that makes this test mean anything: strict UTF-8 really does refuse it.
+        try
+        {
+            Files.readAllLines(index.toPath(), StandardCharsets.UTF_8);
+
+            fail("the fixture is not actually invalid UTF-8, so this test would pass without the fix");
+        }
+        catch (java.nio.charset.MalformedInputException expected)
+        {
+            // what the old build's file looks like
+        }
+
+        Map<String, Integer> ids = ids();
+
+        assertEquals(ids.get("Alpha"), Integer.valueOf(1),
+            "the ids were lost reading an index written in the platform encoding, so every page is "
+            + "about to be renumbered and every stored setting reattached (SV-B1).  Got: " + ids);
+
+        assertEquals(ids.size(), 2, "both pages should have come back.  Got: " + ids);
+
+        // And the write must go through. Before the fallback this threw, permanently, because the
+        // condition it refuses on is one that a retry cannot clear.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "Bahnhof S\u00fcd", "Zulu")), null, 0);
+
+        Map<String, Integer> after = ids();
+
+        assertEquals(after.get("Alpha"), Integer.valueOf(1),
+            "Alpha was renumbered by a write that should have kept every id it could read.  Got: "
+            + after);
+
+        assertNotNull(after.get("Zulu"), "the new page was not added.  Got: " + after);
     }
 
     /**

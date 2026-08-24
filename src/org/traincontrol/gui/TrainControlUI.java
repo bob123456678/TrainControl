@@ -1462,7 +1462,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+            // The FIELD, never getAutonomySession() (SV-B2).
+            //
+            // That method is a lazy builder: it parses every page, runs the caption migration - which
+            // writes to disk - and can put a dialog on screen. This runs on the event thread, in the
+            // middle of writing the layout index, and forty lines above it this same file already says
+            // not to do that. Worse in the delete path, where it would build a session over a page
+            // list that still includes the page being deleted, and CACHE it.
+            //
+            // No session means no floor, which is the behaviour this had before the floor existed. The
+            // case the floor is FOR - a setup with page ids worth protecting - is exactly the case
+            // where the session is already built.
+            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
             return session == null ? 0 : session.getStore().highestPageIdSeen();
         }

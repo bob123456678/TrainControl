@@ -4962,7 +4962,17 @@ public class Layout
      * its per-command sleeps. That is precisely the freeze IAR-B2 had just removed from
      * `getActiveAccs`, reintroduced by a different door in the same commit.
      *
-     * SECOND, these are called from inside this class's own loops - `deleteEdge` walks every edge to
+     * SECOND, and this is the one the revert note first missed, it is an outright DEADLOCK rather
+     * than a freeze. `TrainControlUI.updateVisiblePoints` and `repaintAutoLocList` are synchronized on
+     * the UI and call `getPoints()`, so they would take the Layout monitor while holding the UI's.
+     * The opposite order already exists and is unavoidable: `configureAndLockPath` holds the Layout
+     * monitor and reaches `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which is
+     * synchronized on the UI. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread
+     * every monitor tick during a run, so both halves fire on an ordinary run. AB-BA, unrecoverable,
+     * and it would have looked exactly like the deadlock Adam reported from a build that did not have
+     * it.
+     *
+     * THIRD, these are called from inside this class's own loops - `deleteEdge` walks every edge to
      * strip lock references while removing one - so a copy per call turns a linear sweep into a
      * quadratic one on a layout of any size.
      *
