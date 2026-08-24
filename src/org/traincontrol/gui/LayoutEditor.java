@@ -4426,6 +4426,28 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
+     * The same save / discard / cancel question, asked by the main window before it exits.
+     *
+     * Commit febb8529's rule is "one save/discard/cancel question, asked wherever a page is left", and
+     * it was enforced at every door out of this window - switching page, switching mode, jumping to a
+     * link's other end - but not at the biggest one. `WindowClosed` never consulted the editor and
+     * called System.exit, so closing the application discarded whatever was open in it without asking
+     * (OB-070).
+     *
+     * In autonomy mode it was worse than a silent discard: the exit capture saves the setup, so work
+     * the user was about to Cancel could be COMMITTED on the way out.
+     *
+     * Public so the window can ask; it delegates rather than restating the rule, because a second copy
+     * of that dialog would be a second thing to keep in step.
+     *
+     * @return true when it is all right to proceed - saved, discarded, or nothing to settle
+     */
+    public boolean maySettleBeforeExit()
+    {
+        return settleUnsavedWork();
+    }
+
+    /**
      * Save, discard, or stay - asked once, wherever a page is being left with work on it.
      *
      * Three answers, not two. Closing offers two because closing is final: the window is going whatever

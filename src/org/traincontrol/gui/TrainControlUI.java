@@ -13535,6 +13535,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
+        // The open editor first of all, because this is a door out of it (OB-070).
+        //
+        // "One save/discard/cancel question, asked wherever a page is left" was enforced at every door
+        // out of the editor except the biggest: this handler never consulted it and went on to
+        // System.exit, so closing the application discarded whatever was open without asking. In
+        // autonomy mode it was worse than a discard - the exit capture below SAVES the setup, so work
+        // the user was about to Cancel could be committed on the way out.
+        //
+        // Cancel here cancels the exit, which is what DO_NOTHING_ON_CLOSE makes possible: returning
+        // from this handler leaves the window open.
+        if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit())
+        {
+            return;
+        }
+
         // Trains first, and not conditional on a setting that has nothing to do with them.
         //
         // This block used to sit inside `if (this.autosave.isSelected() && ...)`, under a comment
