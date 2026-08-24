@@ -8,6 +8,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
@@ -330,6 +331,51 @@ public class testBarredArrivalIsNotADestination
         page.setPageId("1");
 
         return page;
+    }
+
+    /**
+     * Barring every way in is INFORMATION, because a person can still drive a train there.
+     *
+     * MT-078. Adam's finding was that a manual dispatch reached a station whose arrivals were barred
+     * from that side, and his ruling settles what the rule is: barred arrivals are advisory. Autonomy
+     * will not route into a barred side; a person looking at the railway may. "We should let the user
+     * know a train can't come in in any way (warning). If manual only, it's info."
+     *
+     * So the two severities belong to two different conditions, and both already existed - one of them
+     * with the wrong one. A station with every side barred is reachable BY HAND, so blocking the whole
+     * setup from starting over it was wrong: that is information. The case where nothing can arrive by
+     * any means is a square no track reaches, which is POINT_ISOLATED, and that is a warning already.
+     *
+     * The contrived layout is built and the setting changed programmatically, which is what the entry
+     * asked for.
+     */
+    @Test
+    public void testAStationWithEveryArrivalBarredIsOnlyInformation() throws IOException
+    {
+        TileKey platform = twoEndedStation();
+
+        java.util.List<TilePorts.Side> sides = session.arrivalSides(platform);
+
+        assertEquals(sides.size(), 2, "the fixture must be reachable from two sides - got " + sides);
+
+        session.setBarredArrivals(platform, new java.util.LinkedHashSet<>(sides));
+
+        assertTrue(session.shutStations().containsKey(platform),
+            "barring every side did not shut the station, so nothing below tests anything");
+
+        AutonomyChecks.Finding shut = null;
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (AutonomyChecks.NO_ARRIVALS_LEFT.equals(finding.getMessageKey())) shut = finding;
+        }
+
+        assertNotNull(shut, "no finding was raised for a station nothing can be routed to");
+
+        assertEquals(shut.getSeverity(), AutonomyChecks.Severity.INFO,
+            "a station with every arrival barred is reported as " + shut.getSeverity() + ". It is "
+            + "still reachable by hand - a bar stops autonomy routing in, not a person driving in - so "
+            + "this must not block the setup from starting (MT-078)");
     }
 
     private void delete(File f)

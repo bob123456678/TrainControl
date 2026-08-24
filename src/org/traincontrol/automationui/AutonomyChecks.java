@@ -685,7 +685,17 @@ public class AutonomyChecks
             // "main:3,1" is not something a user can look for on their own diagram.
             ReducedPoint point = reducer == null ? null : reducer.getPoints().get(entry.getKey());
 
-            findings.add(new Finding(Severity.ERROR, NO_ARRIVALS_LEFT,
+            // INFORMATION, not an error, and Adam settled why (MT-078): "We should let the user know a
+            // train can't come in in any way (warning). If manual only, it's info."
+            //
+            // Barring every side stops AUTONOMY sending a train here; it does not stop a person driving
+            // one in, because a bar is advisory - autonomy will not route into a barred side and a hand
+            // dispatch may. So the station is still reachable, and a finding that blocks the whole
+            // setup from starting over a platform the operator can still use is the wrong answer.
+            //
+            // The case Adam calls a warning - nothing can come in ANY way - is a different condition
+            // and already has one: POINT_ISOLATED, where no track reaches the square at all.
+            findings.add(new Finding(Severity.INFO, NO_ARRIVALS_LEFT,
                 point == null || point.getName() == null || point.getName().trim().isEmpty()
                     ? entry.getKey().toString() : point.getName(),
                 entry.getKey()));

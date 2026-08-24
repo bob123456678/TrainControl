@@ -2798,11 +2798,24 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station shut from every direction is reported.
+     * A station shut from every direction is reported - as INFORMATION.
      *
      * The editor will not let anybody tick the last way in, so this is for the ways round it - a
-     * diagram edited after the fact, or a file written by hand.  The consequence is quiet and total:
-     * the station simply stops being a destination, with nothing on screen to say why.
+     * diagram edited after the fact, or a file written by hand.  It has to be said out loud, because
+     * the consequence is quiet: the station stops being somewhere autonomy will send a train, with
+     * nothing on screen to say why.
+     *
+     * **This test used to require an ERROR, and Adam overruled that on 2026-08-23** (MT-078): "We
+     * should let the user know a train can't come in in any way (warning). If manual only, it's info."
+     *
+     * A bar is advisory. Autonomy will not route into a barred side; a person driving by hand may - so
+     * the platform is still reachable, and an ERROR blocks the whole setup from starting over a station
+     * the operator can still use. The case that IS a warning - nothing can arrive by any means - is a
+     * square no track reaches, which is POINT_ISOLATED and is a warning already.
+     *
+     * The old assertion said "a station autonomy can never use is not a suggestion". That was a fair
+     * reading and it was the wrong half of the question: it is not a suggestion, and it is not a
+     * reason to stop the railway either.
      */
     @Test
     public void testAStationWithEveryWayInBarredIsReported() throws Exception
@@ -2832,12 +2845,15 @@ public class testAutonomyDiagramSession
                 reported = true;
 
                 assertEquals(finding.getSeverity(),
-                    org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
-                    "a station autonomy can never use is not a suggestion");
+                    org.traincontrol.automationui.AutonomyChecks.Severity.INFO,
+                    "a station with every way in barred is still reachable by hand, so reporting it "
+                    + "as an ERROR stops the whole setup running over something the operator can "
+                    + "still use (MT-078)");
             }
         }
 
-        assertTrue(reported, "nothing told the user their station is unreachable");
+        assertTrue(reported,
+            "nothing told the user autonomy will no longer send a train to their station");
     }
 
     /**

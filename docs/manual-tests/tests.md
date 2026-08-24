@@ -19,7 +19,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
 | [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
 | [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
@@ -27,7 +26,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
 | [MT-060](#mt-060) | 2026-08-22 | testAutoDetect needs a Central Station | needs test | hands-on testing |
-| [MT-078](#mt-078) | 2026-08-18 | Barred arrival is honoured | needs test | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train; **reopened** 2026-08-22 |
 | [MT-079](#mt-079) | 2026-08-18 | Barred terminus loads | fixed unvalidated | 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train |
 | [MT-080](#mt-080) | 2026-08-18 | Collect what the new model offers | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
 | [MT-081](#mt-081) | 2026-08-18 | Collect what the old model offered | needs test | 2026-08-18 manual test plan, Tier 4 - the routing comparison (the one that matters most) |
@@ -46,7 +44,7 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-139](#mt-139) | 2026-08-23 | A train dispatched by hand now counts as a run | fixed unvalidated | - |
 | [MT-140](#mt-140) | 2026-08-23 | Bless the baseline once you are happy with the railway | needs decision | - |
 
-Everything else - 111 of 140 - is **fixed validated** and needs nothing from you unless the
+Everything else - 113 of 140 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -635,7 +633,7 @@ that shows as the reopened marker rather than as a disposition I have taken back
 
 ### MT-078 - 2026-08-18 - Barred arrival is honoured
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** 2026-08-18 manual test plan, Tier 3 - autonomy in simulation, one train; **reopened** 2026-08-22  
 **Written:** 2026-08-18
 
@@ -716,6 +714,33 @@ So there are two possible rules and they need different tests:
 
 I have not guessed, because the two differ in what the railway does with a train you dispatched by hand,
 and that is your call rather than mine. Tell me which and the test follows in either case.
+
+**Claude, 2026-08-23 - answered and done.** Adam: "the first one. We should let the user know a train
+can't come in in any way (warning). If manual only, it's info."
+
+So the rule is that a barred arrival is ADVISORY: autonomy will not route a train into a barred side, and
+a person driving one by hand may. What you saw was the design working.
+
+**What changed.** Your two severities turned out to belong to two conditions that both already existed,
+one of them with the wrong severity:
+
+- **Every way in barred** was an ERROR, which blocks the whole setup from starting. It is INFO now. The
+  platform is still reachable - by hand - so refusing to run the railway over it was the wrong answer,
+  and the message now says so: "You can still send one there by hand."
+- **Nothing can come in by any means** - a square no track reaches at all - is `POINT_ISOLATED`, and it
+  is a WARNING already. Nothing to change.
+
+**The test you asked for**, on a contrived layout with the setting changed programmatically:
+`testBarredArrivalIsNotADestination.testAStationWithEveryArrivalBarredIsOnlyInformation`. It bars both
+sides of a two-ended platform and requires the finding to be INFO. Verified by mutation - putting ERROR
+back fails it. The build half you already had is
+`testTheBarredCopyIsNotAStation`.
+
+**One thing your report turned up that was a real bug**, found while checking this: the barred copy of a
+platform was emitted with no protecting signal, on the reasoning that it is not a station. But a train
+CAN be standing there - that is what your ruling says - and the signal decides what to show by asking
+every Point it protects, so it never asked that one. The signal showed green over an occupied platform.
+Fixed, with a test (UR-6).
 ---
 
 <a id="mt-079"></a>
@@ -1113,7 +1138,7 @@ test failed for exactly that reason, on syntax I had invented.
 
 ### MT-004 - 2026-08-20 - A three-way point in a route
 
-**Disposition:** fixed unvalidated  
+**Disposition:** fixed validated
 **From:** LT-B5  
 **Written:** 2026-08-20
 
@@ -1175,6 +1200,33 @@ or to leave this as a hands-on check with a real three-way in front of you.
 
 I would rather add the seam than leave an ordering rule untested, but it is a change to production code
 for a test's benefit, so I am asking first.
+
+**Claude, 2026-08-23 - done, and I was wrong about needing a change to the app.**
+
+Adam: "refer to the wizard code in the 2.8.1 route editor - it has the correct ordering."
+
+I read it. The route editor decides nothing about the order itself - `RouteEditorFrame` hands the whole
+question to `ThreeWaySwitch`, and says why in a comment: "nothing about the order or the pause is decided
+here, or in two places, which is how the two would drift apart." So the wizard's ordering and the
+ordering under test are the same rule, which is the answer to what I asked.
+
+**And the seam I asked for is not needed.** I said the order in which the two motors were commanded was
+not observable, so testing it would mean adding a recording hook to production code for a test's benefit.
+That was wrong: a route executes its commands in the order they appear in its text, so the text IS the
+record. The test reads them back through `RouteCommand.fromLine` and asserts the order off the PARSED
+commands - the release first, carrying its pause, then the throw.
+
+`testRouteEditorRoundTripCases.testEachPositionKeepsItsOrderThroughTheRouteText`. That test previously
+could not fail: it built the route text from the same list, in the same order, that it read the two
+commands from, so a reversed pair swapped all three together (TD-6). Reversing `expand` now fails it.
+
+Also covered at the model level, which I had not credited: `testThreeWaySwitch` pins the pause on the
+first command, requires each position to come back as itself, and states the rule for right - "settles
+the first and then turns the second".
+
+One thing writing it taught me, worth recording because it is easy to get backwards: STRAIGHT releases
+BOTH motors. It is the position neither of them chooses, so "the second command is the throw" is true of
+every position except that one.
 ---
 <a id="mt-005"></a>
 
