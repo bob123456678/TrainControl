@@ -62,7 +62,24 @@ public class Point
     //
     // Null means no assignment, which is the state every existing layout is in - and in that state the
     // home of a locomotive is still simply where it was standing when the graph loaded.
-    private String homeLoc;
+    /**
+     * The locomotive this station is the home of, or null.
+     *
+     * The LOCOMOTIVE, not its name.  It was a name, and five separate mechanisms existed only because
+     * of that: a rename had to be followed into it, a deletion had to clear it, a load had to drop
+     * names that matched nothing, and the resolved answer was kept a second time in Layout.homeStations
+     * and rebuilt to stay in step.  Three of the defects fixed this week were that duplication.
+     *
+     * Holding the object makes most of it stop existing rather than get fixed: a rename changes the
+     * object, so every reference to it is already right, and a locomotive that is not in the database
+     * cannot be pointed at.  What is left is the two rules that are really about the railway - one
+     * locomotive has one station, and a station whose locomotive has been deleted has none - and both
+     * of those are now identity checks beside their neighbours rather than string comparisons.
+     *
+     * The FILE still holds a name, because a file has to; that boundary is in Layout.parseAuto and
+     * Point.toJSON, and it is now the only place a home is a string.
+     */
+    private Locomotive homeLoc;
 
     // Unique ID for any new node
     private static Integer id = 0;
@@ -520,17 +537,22 @@ public class Point
      * standing at the sensor beyond it, because counting a parked train made a locomotive beside a
      * junction a permanent roadblock.  Adam asked for both.
      *
-     * So this is the standing-train half, by NAME - which is what a configuration refers to a Point by,
-     * and what survives being written out and read back.
+     * The POINTS themselves, not their names.  A file holds names because a file has to, and
+     * Layout.parseAuto resolves them once every point exists - so this and toJSON are the boundary, and
+     * everywhere in between a restriction either points at a real place or is not there at all.
+     *
+     * That is what makes the rule below a lookup rather than a search: asking whether a named point is
+     * occupied meant resolving the name on every path check, and answering "not occupied" for a name
+     * that no longer matched anything - which is indistinguishable from the restriction being satisfied.
      *
      * Never null, so no caller has to check twice.
      */
-    private final List<String> blockedBy = new ArrayList<>();
+    private final List<Point> blockedBy = new ArrayList<>();
 
     /**
      * @return the points that make this station unavailable while they are occupied
      */
-    public List<String> getBlockedBy()
+    public List<Point> getBlockedBy()
     {
         return Collections.unmodifiableList(this.blockedBy);
     }
@@ -541,19 +563,18 @@ public class Point
      * @param pointNames the point names, or null to clear
      * @return this
      */
-    public Point setBlockedBy(List<String> pointNames)
+    public Point setBlockedBy(List<Point> points)
     {
         this.blockedBy.clear();
 
-        if (pointNames != null)
+        if (points != null)
         {
-            for (String one : pointNames)
+            for (Point one : points)
             {
                 // De-duplicated, and a point never blocks itself: standing at a station already decides
                 // whether it is free, so watching itself makes a station nothing can be sent to rather
                 // than one that is restricted.
-                if (one != null && !one.trim().isEmpty()
-                    && !one.equals(this.getName()) && !this.blockedBy.contains(one))
+                if (one != null && one != this && !this.blockedBy.contains(one))
                 {
                     this.blockedBy.add(one);
                 }
@@ -754,7 +775,7 @@ public class Point
      * The locomotive assigned to this station, by name, or null.
      * @return
      */
-    public String getHomeLoc()
+    public Locomotive getHomeLoc()
     {
         return this.homeLoc;
     }
@@ -772,9 +793,9 @@ public class Point
      *
      * @param homeLoc
      */
-    public void setHomeLoc(String homeLoc)
+    public void setHomeLoc(Locomotive homeLoc)
     {
-        this.homeLoc = homeLoc == null || homeLoc.trim().isEmpty() ? null : homeLoc;
+        this.homeLoc = homeLoc;
     }
 
     /**
@@ -868,7 +889,9 @@ public class Point
         
         if (this.homeLoc != null)
         {
-            jsonObj.put("home", this.homeLoc);
+            // By NAME, because a file has to.  This and Layout.parseAuto are now the only two places a
+            // home is a string; everywhere in between it is the locomotive.
+            jsonObj.put("home", this.homeLoc.getName());
         }
         
         if (this.currentLoc != null)
@@ -915,7 +938,13 @@ public class Point
 
         if (!this.blockedBy.isEmpty())
         {
-            jsonObj.put("blockedBy", new JSONArray(this.blockedBy));
+            // By NAME, because a file has to.  The other side of this boundary is Layout.parseAuto,
+            // which resolves them once every point exists.
+            List<String> named = new ArrayList<>();
+
+            for (Point blocker : this.blockedBy) named.add(blocker.getName());
+
+            jsonObj.put("blockedBy", new JSONArray(named));
         }
                 
         if (this.coordinatesSet())

@@ -164,7 +164,11 @@ public final class HomeStaging
         {
             Map.Entry<Locomotive, Point> entry = it.next();
 
-            boolean assigned = entry.getKey().getName().equals(entry.getValue().getHomeLoc());
+            // Identity, not a name.  This read getName().equals(getHomeLoc()) and went on compiling
+            // when the home became a Locomotive - String.equals takes an Object, so it simply answered
+            // false for ever, and every assigned home was quietly treated as positional.  Nothing
+            // failed; the strict contract just stopped applying.
+            boolean assigned = entry.getKey().equals(entry.getValue().getHomeLoc());
             boolean standingOnIt = entry.getKey().equals(occupancy.get(entry.getValue()));
 
             if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName()))
@@ -944,7 +948,9 @@ public final class HomeStaging
 
         for (Locomotive l : toExclude)
         {
-            if (l != null && p.getHomeLoc().equals(l.getName())) return p.getHomeLoc();
+            // Identity now that a Point holds the locomotive rather than its name.  The answer is still
+            // a NAME because this is what the warning shows the user.
+            if (l != null && l.equals(p.getHomeLoc())) return p.getHomeLoc().getName();
         }
 
         return null;

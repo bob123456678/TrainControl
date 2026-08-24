@@ -2959,18 +2959,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // cannot move it out of the consists, exclusion sets or run lists that hold it.  This used
             // to need a sweep - see the note on MarklinLocomotive.hashCode.
             //
-            // State held by NAME does still need repairing, and there are THREE such places - the
-            // routes below, autonomy home assignments in the running layout, and the autonomy SETUP,
-            // which holds a name in each configuration's placements, homes and exclusion lists.  The
-            // last of those was missed: the active configuration got away with it because
-            // captureFromLayout launders it back from the running layout, and a configuration that was
-            // not active at the time was never repaired at all - so choosing it later invalidated the
-            // whole layout over a name that no longer resolved.
-            if (this.hasAutoLayout())
-            {
-                this.getAutoLayout().locomotiveRenamed(name, newName);
-            }
-
+            // State held by NAME does still need repairing, and there are TWO such places: the routes
+            // below, and the autonomy SETUP, which holds a name in each configuration's placements,
+            // homes and exclusion lists.
+            //
+            // There were three.  The running layout's home assignments were the third, and they are
+            // gone from this list because a Point now holds the LOCOMOTIVE rather than its name - a
+            // rename changes the object, so there is nothing left to repair.  The setup keeps its
+            // repair because a file has to hold a name.
             if (this.view != null) this.view.autonomyLocomotiveRenamed(name, newName);
             
             // Update names in routes

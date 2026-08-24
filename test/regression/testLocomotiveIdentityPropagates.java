@@ -97,7 +97,7 @@ public class testLocomotiveIdentityPropagates
         Locomotive going = loc(GOING);
 
         layout.getPoint("PR A").setLocomotive(going);
-        layout.getPoint("PR B").setHomeLoc(GOING);
+        layout.getPoint("PR B").setHomeLoc(going);
         layout.getPoint("PR B").setExcludedLocs(
             new java.util.HashSet<>(Arrays.asList(going)));
 
@@ -174,16 +174,28 @@ public class testLocomotiveIdentityPropagates
 
         Locomotive going = loc(GOING);
 
-        layout.getPoint("PR B").setHomeLoc(GOING);
+        layout.getPoint("PR B").setHomeLoc(going);
 
-        layout.locomotiveRenamed(GOING, "Somewhere else entirely");
+        // A rename is nothing this has to be told about any more.
+        //
+        // This assertion used to be that the repair had FOLLOWED the rename, because a Point held the
+        // locomotive's name and Layout.locomotiveRenamed existed to walk every point fixing it. The
+        // Point holds the locomotive now, so the object that gets renamed IS the object the assignment
+        // points at - there is nothing to repair, and that method is gone.
+        String was = going.getName();
 
-        assertEquals(layout.getPoint("PR B").getHomeLoc(), "Somewhere else entirely",
-            "the home assignment still names the old locomotive. It is held by NAME, so nothing about "
-            + "renaming the object repairs it - and on the next load it is a locomotive that is not in "
-            + "the database, which invalidates the whole configuration");
+        try
+        {
+            going.rename("Somewhere else entirely");
 
-        layout.getPoint("PR B").setHomeLoc(GOING);
+            assertSame(layout.getPoint("PR B").getHomeLoc(), going,
+                "the assignment stopped pointing at its locomotive when the locomotive was renamed");
+        }
+        finally
+        {
+            going.rename(was);
+        }
+
         layout.setHomeLocomotive("PR B", GOING);
 
         layout.locDeleted(going);
@@ -292,6 +304,74 @@ public class testLocomotiveIdentityPropagates
             + "about: " + missing + ". Each one keeps a deleted locomotive alive somewhere - a claim "
             + "that lowers the cap on running trains, a sensor something is waiting on, a timetable "
             + "entry that drives it. Sweep it, or say here why it does not need sweeping");
+    }
+
+    /**
+     * Nothing compares a home or a placement against a NAME.
+     *
+     * The one hazard of holding objects instead of strings, and the type system does not cover it:
+     * `String.equals` takes an `Object`, so `loc.getName().equals(point.getHomeLoc())` went on
+     * compiling when the home became a `Locomotive` - and simply answered false for ever. Two
+     * production sites did exactly that, and neither failed loudly:
+     *
+     *  - `HomeStaging` decided whether a home was ASSIGNED or merely positional, so every assigned
+     *    home was quietly treated as positional and the strict contract stopped applying.
+     *  - the locomotive status panel decided whether a train was standing at its assigned home.
+     *
+     * A test caught the first. Nothing would have caught the second, which is why this exists: it is
+     * textual, so it sees what the compiler cannot.
+     */
+    @Test
+    public void testNoHomeOrPlacementIsComparedWithAName() throws Exception
+    {
+        File src = new File("src");
+
+        assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
+            + " - a test that reads the source cannot pass by not finding it");
+
+        List<File> sources = new ArrayList<>();
+
+        collect(src, sources);
+
+        List<String> suspect = new ArrayList<>();
+
+        for (File file : sources)
+        {
+            String[] lines = withoutComments(new String(
+                Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).split("\n");
+
+            for (int at = 0; at < lines.length; at++)
+            {
+                String line = lines[at];
+
+                // getName().equals( ... getHomeLoc() or getCurrentLocomotive() ... )
+                if (!line.contains("getName().equals(")) continue;
+
+                if (line.contains("getHomeLoc()") || line.contains("getCurrentLocomotive()")
+                    || line.contains("getBlockLocomotive()"))
+                {
+                    suspect.add(file.getName() + ":" + (at + 1) + "  " + line.trim());
+                }
+            }
+        }
+
+        assertEquals(suspect, new ArrayList<String>(),
+            "a locomotive is being compared with a NAME where the other side is the locomotive "
+            + "itself. String.equals takes an Object, so this compiles and answers false for ever - "
+            + "the comparison never matches and nothing anywhere says so: " + suspect);
+    }
+
+    private void collect(File from, List<File> into)
+    {
+        File[] children = from.listFiles();
+
+        if (children == null) return;
+
+        for (File child : children)
+        {
+            if (child.isDirectory()) collect(child, into);
+            else if (child.getName().endsWith(".java")) into.add(child);
+        }
     }
 
     /**

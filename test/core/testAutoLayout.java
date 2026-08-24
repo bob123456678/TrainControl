@@ -1146,7 +1146,7 @@ public class testAutoLayout
 
         String hadBlock = point.getBlock();
         String hadSignal = point.getProtectingSignal();
-        String hadHome = point.getHomeLoc();
+        org.traincontrol.base.Locomotive hadHome = point.getHomeLoc();
         boolean wasActive = point.isActive();
 
         try
@@ -1154,7 +1154,7 @@ public class testAutoLayout
             // Everything optional set to a non-default, so nothing is omitted for being absent
             point.setBlock("main:9,9");
             point.setProtectingSignal("Signal 12");
-            point.setHomeLoc("Test loc 1");
+            point.setHomeLoc(model.getLocByName("Test loc 1"));
             point.setMaxTrainLength(7);
             point.setPriority(3);
             point.setSpeedMultiplier(0.75);

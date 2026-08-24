@@ -345,12 +345,26 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A name matching no point blocks nothing, rather than taking the station out of service.
+     * A name matching no point is DROPPED as the file is read, rather than kept and asked about.
+     *
+     * This used to be "a dangling name blocks nothing", which was true but only by accident: the rule
+     * resolved the name on every path check and treated "no such point" as "not occupied". A Point
+     * holds the points themselves now, so a name that resolves to nothing never becomes a restriction
+     * at all - it is reported once, where the file is read, and then does not exist.
+     *
+     * The behaviour a user sees is the same, and that is deliberate: refusing the path, or the
+     * configuration, would take a station out of service because the point it was paired with was
+     * renamed. What changed is that the restriction is no longer carried around in a state where it
+     * cannot mean anything.
      */
     @Test
-    public void testADanglingNameBlocksNothing() throws Exception
+    public void testAnUnresolvableRestrictionIsDroppedRatherThanCarried() throws Exception
     {
         Layout layout = built("Somewhere that was deleted");
+
+        assertTrue(layout.getPoint("BK B").getBlockedBy().isEmpty(),
+            "a restriction naming a point that does not exist was kept. It can never be satisfied or "
+            + "cleared, and it is written back out on every save");
 
         Locomotive driven = model.getLocByName(model.getLocList().get(0));
 
@@ -360,8 +374,7 @@ public class testStationBlockedByAnotherPoint
         path.add(layout.getEdge("BK A", "BK B"));
 
         assertTrue(layout.isPathClear(path, driven, false),
-            "a station paired with a point that no longer exists is out of service for good. Refusing "
-            + "is the worse answer: renaming a point should not quietly retire a platform");
+            "and the station is still usable - renaming a point should not quietly retire a platform");
     }
 
     /**
@@ -399,8 +412,13 @@ public class testStationBlockedByAnotherPoint
 
         assertNotNull(back, "the configuration did not parse: " + Layout.getLastError());
 
-        assertEquals(back.getPoint("BK B").getBlockedBy(), Arrays.asList("BK YARD"),
+        assertEquals(back.getPoint("BK B").getBlockedBy(), Arrays.asList(back.getPoint("BK YARD")),
             "the restriction did not survive the configuration, so it is lost on the next start");
+
+        // The POINT of the reloaded layout, not merely something with the same name: the file holds a
+        // name and parseAuto resolves it, so what comes back has to be this layout's own object.
+        assertSame(back.getPoint("BK B").getBlockedBy().get(0), back.getPoint("BK YARD"),
+            "the restriction came back as something other than the point it names");
     }
 
     /**

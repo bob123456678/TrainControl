@@ -823,7 +823,7 @@ public class testHomeStaging
 
         assertNull(layout.getPoint("HS D").getHomeLoc(),
             "the station it was assigned to before has to let go of it");
-        assertEquals(layout.getPoint("HS C").getHomeLoc(), LOC_A);
+        assertEquals(layout.getPoint("HS C").getHomeLoc(), loc(LOC_A));
         assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS C"));
     }
 
@@ -963,7 +963,7 @@ public class testHomeStaging
 
         Layout reloaded = load(layout.toJSON());
 
-        assertEquals(reloaded.getPoint("HS D").getHomeLoc(), LOC_A);
+        assertEquals(reloaded.getPoint("HS D").getHomeLoc(), loc(LOC_A));
         assertEquals(reloaded.getHomeStation(loc(LOC_A)), reloaded.getPoint("HS D"));
         assertTrue(reloaded.hasHomeLocomotives());
     }
@@ -1004,7 +1004,7 @@ public class testHomeStaging
 
         layout.setHomeLocomotive("HS D", LOC_C);
 
-        assertEquals(layout.getPoint("HS D").getHomeLoc(), LOC_C, "precondition: the assignment was made");
+        assertEquals(layout.getPoint("HS D").getHomeLoc(), loc(LOC_C), "precondition: the assignment was made");
 
         layout.locDeleted(loc(LOC_C));
 
@@ -1037,14 +1037,15 @@ public class testHomeStaging
 
         try
         {
-            assertEquals(layout.getPoint("HS D").getHomeLoc(), renamed,
-                "the assignment is held by name, so a rename has to be followed through");
+            assertSame(layout.getPoint("HS D").getHomeLoc(), model.getLocByName(renamed),
+                "the assignment is the LOCOMOTIVE, so a rename is nothing it has to be told about - "
+                + "the object it points at is the object that was renamed");
 
             // Only a rebuild proves it: that is what resolves names, and what would have dropped a
             // stale one
             layout.rebuildHomeStations();
 
-            assertEquals(layout.getPoint("HS D").getHomeLoc(), renamed,
+            assertSame(layout.getPoint("HS D").getHomeLoc(), model.getLocByName(renamed),
                 "and it survives being re-derived rather than being reported missing and dropped");
             assertEquals(layout.getHomeStation(model.getLocByName(renamed)), layout.getPoint("HS D"));
         }
@@ -1068,35 +1069,57 @@ public class testHomeStaging
         layout.setHomeLocomotive("HS D", LOC_A);
         layout.renamePoint("HS D", "HS Depot");
 
-        assertEquals(layout.getPoint("HS Depot").getHomeLoc(), LOC_A);
+        assertEquals(layout.getPoint("HS Depot").getHomeLoc(), loc(LOC_A));
         assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS Depot"));
     }
 
     /**
-     * An assignment stores the locomotive name exactly as it was given.
+     * An assignment is the locomotive itself, so there is no name to get wrong.
      *
-     * Locomotive names are only checked for being blank when they are created, never trimmed, so
-     * surrounding space is part of the name.  Trimming it when it is stored would produce a name that
-     * matches no locomotive - and the next rebuild would report it missing from the database and
-     * silently drop the assignment, for a locomotive that is sitting right there.
+     * **This test used to be about a string.** It required an assignment to store the name exactly as
+     * given, because locomotive names are never trimmed and surrounding space is part of the name - so
+     * trimming on the way in produced a name matching no locomotive, and the next rebuild reported it
+     * missing from the database and dropped the assignment for a locomotive sitting right there.
+     *
+     * A Point holds the LOCOMOTIVE now, so none of that is representable: there is nothing to trim,
+     * nothing to mismatch, and no blank-versus-null distinction to get on the wrong side of. What is
+     * left to assert is the property that replaced it - the object goes in and the same object comes
+     * back, whatever it is called.
      */
     @Test
-    public void testAnAssignmentDoesNotAlterTheNameItIsGiven()
+    public void testAnAssignmentIsTheLocomotiveItself()
     {
         Layout layout = load(ring(LOC_A, null, null));
 
         Point d = layout.getPoint("HS D");
 
-        d.setHomeLoc("  padded name  ");
+        Locomotive alpha = loc(LOC_A);
 
-        assertEquals(d.getHomeLoc(), "  padded name  ",
-            "a name is stored as given - trimming it would stop it matching its own locomotive");
+        d.setHomeLoc(alpha);
 
-        d.setHomeLoc("   ");
-        assertNull(d.getHomeLoc(), "but blank is how a station says it has no locomotive of its own");
+        assertSame(d.getHomeLoc(), alpha,
+            "the assignment is not the locomotive that was given to it");
+
+        // Renaming is the case this refactor exists for: the object is the same object, so the
+        // assignment needs no repair and cannot be left naming something that is gone.
+        String was = alpha.getName();
+
+        try
+        {
+            alpha.rename("HS alpha renamed");
+
+            assertSame(d.getHomeLoc(), alpha,
+                "the assignment stopped pointing at its locomotive when the locomotive was renamed. "
+                + "That is the whole reason this is an object rather than a name");
+        }
+        finally
+        {
+            alpha.rename(was);
+        }
 
         d.setHomeLoc(null);
-        assertNull(d.getHomeLoc());
+
+        assertNull(d.getHomeLoc(), "null is how a station says it has no locomotive of its own");
     }
 
     /**
@@ -1369,7 +1392,7 @@ public class testHomeStaging
 
             if (here == null) continue;
 
-            if (here.getName().equals(point.getHomeLoc())) atAssignedHome++;
+            if (here.equals(point.getHomeLoc())) atAssignedHome++;
             if (point.equals(layout.getHomeStation(here))) atDerivedHome++;
         }
 

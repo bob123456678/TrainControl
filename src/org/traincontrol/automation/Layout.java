@@ -750,11 +750,10 @@ public class Layout
         {
             p.removeExcludedLoc(l);
 
-            // The home assignment naming it, which is held by NAME and so cannot be dropped by identity
-            // the way the exclusion above is.  Left behind, it is written back out on every save and
-            // reported on every load as a locomotive that is not in the database - and until then the
-            // menus go on offering a station assigned to something that no longer exists.
-            if (l.getName().equals(p.getHomeLoc())) p.setHomeLoc(null);
+            // The home assignment, which is now the same shape as the exclusion above it: the Point
+            // holds the locomotive, so this is identity like its neighbour rather than a name
+            // comparison that had to be remembered separately.
+            if (l.equals(p.getHomeLoc())) p.setHomeLoc(null);
 
             // And the locomotive STANDING here, which is the sixth thing this sweep did not clear
             // (UR-3).
@@ -819,8 +818,9 @@ public class Layout
      * assignments anywhere - every layout that existed before this - the fallback is the only thing that
      * runs, and the result is exactly what claiming at load produced.
      *
-     * An assignment naming a locomotive that is not in the database is reported and removed - the name
-     * is dangling, and nothing can resolve it later.  The layout itself is never invalidated over it.
+     * A dangling assignment is no longer possible here: a Point holds the LOCOMOTIVE, so there is
+     * nothing to resolve and nothing that can fail to.  Reading a name out of a file is the one place
+     * that can still meet one, and parseAuto reports it there.
      */
     synchronized public void rebuildHomeStations()
     {
@@ -828,19 +828,9 @@ public class Layout
 
         for (Point p : this.points.values())
         {
-            if (p.getHomeLoc() == null) continue;
+            Locomotive l = p.getHomeLoc();
 
-            Locomotive l = this.control.getLocByName(p.getHomeLoc());
-
-            if (l == null)
-            {
-                // Dropped, not kept.  A name matching no locomotive cannot become an assignment again
-                // by itself, so leaving it on the point stores something that only looks like state -
-                // it would be written back out on every save and re-reported on every load.
-                this.control.logf("autolayout.warnHomeLocomotiveNotInDatabase", p.getHomeLoc(), p.getName());
-                p.setHomeLoc(null);
-                continue;
-            }
+            if (l == null) continue;
 
             if (this.homeStations.containsKey(l))
             {
@@ -854,7 +844,7 @@ public class Layout
                 // by iteration order, with this log line as the only notice.  AutonomySession.setHome
                 // sweeps now, so a hand-edited file is once again the way in - but the sentence is left
                 // out rather than restored, because it is what stopped anybody looking here (TD-8).
-                this.control.logf("autolayout.warnHomeLocomotiveAssignedTwice", p.getHomeLoc(), p.getName());
+                this.control.logf("autolayout.warnHomeLocomotiveAssignedTwice", l.getName(), p.getName());
                 p.setHomeLoc(null);
                 continue;
             }
@@ -870,32 +860,6 @@ public class Layout
         }
     }
 
-    /**
-     * Repoints assignments at a locomotive that has just been renamed.
-     *
-     * Everything else the layout holds - exclusions, the run list, occupancy - holds locomotives by
-     * reference and hashes them by identity, so a rename cannot dislodge any of it, and renameLoc says
-     * so.  A home assignment is the one exception: it is stored as a name, so that it can outlive the
-     * locomotive being absent from the graph.  Without this the name dangles the instant it is renamed,
-     * and the next rebuild reports it as missing from the database and drops it - losing an assignment
-     * over an edit that had nothing to do with it.
-     *
-     * The map itself needs no repair and is deliberately not rebuilt: it is keyed by the locomotive
-     * object, which is the same object it always was.  Rebuilding would re-derive the home of every
-     * unassigned locomotive from wherever it happens to be standing.
-     *
-     * @param oldName
-     * @param newName
-     */
-    synchronized public void locomotiveRenamed(String oldName, String newName)
-    {
-        if (oldName == null || newName == null || oldName.equals(newName)) return;
-
-        for (Point p : this.points.values())
-        {
-            if (oldName.equals(p.getHomeLoc())) p.setHomeLoc(newName);
-        }
-    }
 
     /**
      * Assigns a station to a locomotive by name, or clears the assignment when name is null.
@@ -913,17 +877,28 @@ public class Layout
             throw new Exception(I18n.f("autolayout.errorPointDoesNotExist", pointName));
         }
 
+        // Resolved once, here, which is the boundary: the caller says a name because a menu and a file
+        // both speak in names, and everything past this line is the locomotive.
+        Locomotive loc = locName == null || locName.trim().isEmpty()
+            ? null : this.control.getLocByName(locName);
+
+        if (locName != null && !locName.trim().isEmpty() && loc == null)
+        {
+            throw new Exception(I18n.f("autolayout.warnHomeLocomotiveNotInDatabase", locName,
+                p.getName()));
+        }
+
         // One station per locomotive: assigning it somewhere new gives up wherever it was assigned
         // before, or two stations would be waiting for the same train and neither could be satisfied.
-        if (locName != null)
+        if (loc != null)
         {
             for (Point other : this.points.values())
             {
-                if (other != p && locName.equals(other.getHomeLoc())) other.setHomeLoc(null);
+                if (other != p && loc.equals(other.getHomeLoc())) other.setHomeLoc(null);
             }
         }
 
-        p.setHomeLoc(locName);
+        p.setHomeLoc(loc);
 
         this.rebuildHomeStations();
     }
@@ -1943,21 +1918,20 @@ public class Layout
         // of track, so a train on the eastbound copy of the watched point is standing on it, and asking
         // only the copy that carries the name would answer clear with a train there.
         //
-        // A name matching nothing blocks nothing, deliberately: renaming a point should not quietly
-        // retire a platform.
+        // The points themselves, so there is nothing to resolve here and nothing that can fail to.
+        // A restriction naming a point that does not exist is dropped when the file is read, which is
+        // the one place a name is still involved.
         if (this.isAutoRunning())
         {
             Point destination = path.get(path.size() - 1).getEnd();
 
-            for (String blocker : destination.getBlockedBy())
+            for (Point watched : destination.getBlockedBy())
             {
-                Point watched = this.getPoint(blocker);
-
-                if (watched == null || watched.getBlockLocomotive() == null) continue;
+                if (watched.getBlockLocomotive() == null) continue;
 
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorDestinationBlockedByPoint",
-                        destination.getName(), blocker));
+                        destination.getName(), watched.getName()));
 
                 return false;
             }
@@ -5633,6 +5607,13 @@ public class Layout
         Integer maxDelay;
         Integer defaultLocSpeed;
         
+        // What each point is held back by, by NAME, until every point exists.
+        //
+        // The array is in file order rather than dependency order, so a restriction routinely names a
+        // point further down it.  Resolved after the loop, next to the home assignments, which wait
+        // for the same reason.
+        java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
+
         // Validate basic required data
         try
         {
@@ -5910,6 +5891,11 @@ public class Layout
                 // service because one station lost the point it was paired with.
                 if (point.has("blockedBy"))
                 {
+                    // Kept as names for now and resolved after the loop.
+                    //
+                    // A restriction can name a point this loop has not created yet - the array is in
+                    // file order, not dependency order - so nothing can be resolved until every point
+                    // exists.  Same reason the home assignments used to wait for the rebuild.
                     List<String> blockers = new ArrayList<>();
 
                     JSONArray named = point.optJSONArray("blockedBy");
@@ -5926,7 +5912,7 @@ public class Layout
                         blockers.add(point.getString("blockedBy"));
                     }
 
-                    layout.getPoint(point.getString("name")).setBlockedBy(blockers);
+                    blockersByPoint.put(point.getString("name"), blockers);
                 }
 
                 // Read verbatim and not resolved here.  A point's assignment can name a locomotive
@@ -5934,7 +5920,27 @@ public class Layout
                 // until every point exists - see the rebuild after the loop.
                 if (point.has("home"))
                 {
-                    layout.getPoint(point.getString("name")).setHomeLoc(point.optString("home", null));
+                    // The boundary.  A file holds a name; a Point holds the locomotive - so this is
+                    // where the two meet, and the only place a home can be dangling.
+                    //
+                    // Reported and dropped rather than refused, which is what rebuildHomeStations used
+                    // to do further down: a name that matches nothing cannot resolve later, and
+                    // invalidating a whole layout over one assignment is a much worse answer than
+                    // losing the assignment.
+                    String named = point.optString("home", null);
+
+                    if (named != null && !named.trim().isEmpty())
+                    {
+                        Locomotive home = control.getLocByName(named);
+
+                        if (home == null)
+                        {
+                            control.logf("autolayout.warnHomeLocomotiveNotInDatabase", named,
+                                point.getString("name"));
+                        }
+
+                        layout.getPoint(point.getString("name")).setHomeLoc(home);
+                    }
                 }
                 
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)
@@ -6577,6 +6583,37 @@ public class Layout
         }
 
         layout.setLocomotivesToRun(locsToRun);
+
+        // The FR-001 restrictions, now that every point exists.
+        //
+        // A name matching no point is dropped and said out loud rather than kept: it can never be
+        // resolved later, so leaving it would store something that only looks like state - and it would
+        // be written back out on every save.  Dropping one restriction is also much the better answer
+        // than refusing the configuration, which would take a whole layout out of service because one
+        // station lost the point it was paired with.
+        for (java.util.Map.Entry<String, List<String>> entry : blockersByPoint.entrySet())
+        {
+            Point held = layout.getPoint(entry.getKey());
+
+            if (held == null) continue;
+
+            List<Point> watching = new ArrayList<>();
+
+            for (String name : entry.getValue())
+            {
+                Point watched = layout.getPoint(name);
+
+                if (watched == null)
+                {
+                    control.logf("autolayout.warnBlockingPointNotFound", name, entry.getKey());
+                    continue;
+                }
+
+                watching.add(watched);
+            }
+
+            held.setBlockedBy(watching);
+        }
 
         // Applied only now, because an assignment may name a locomotive placed at any point, and until
         // every point exists there is no way to tell an assignment that will be honoured from one whose

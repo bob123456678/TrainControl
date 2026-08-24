@@ -100,7 +100,8 @@ final class HomeLocomotiveMenu
         JMenuItem menuItem = new JMenuItem(
             I18n.f(
                 "autolayout.ui.menuHomeLocomotive",
-                (p.getHomeLoc() != null ? shortName(p.getHomeLoc()) : I18n.t("autolayout.ui.none"))
+                (p.getHomeLoc() != null ? shortName(p.getHomeLoc().getName())
+                    : I18n.t("autolayout.ui.none"))
             )
         );
 
@@ -259,9 +260,9 @@ final class HomeLocomotiveMenu
         // until it is changed.  Leaving that name out of the list would make the current assignment the
         // one thing that cannot be chosen - opening this dialog and pressing OK would then quietly
         // reassign the station to whatever happened to be listed first.
-        if (p.getHomeLoc() != null && !names.contains(p.getHomeLoc()))
+        if (p.getHomeLoc() != null && !names.contains(p.getHomeLoc().getName()))
         {
-            names.add(0, p.getHomeLoc());
+            names.add(0, p.getHomeLoc().getName());
         }
 
         // The blank choice, which is how a station says it has no locomotive of its own.  It is what

@@ -210,7 +210,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Reading the point the locomotive is standing on answers only what was actually assigned,
             // matches the graph exactly, and takes no lock - this runs on the EDT.
             final Point at = layout.getLocomotiveLocation(locomotive);
-            final boolean atAssignedHome = at != null && locomotive.getName().equals(at.getHomeLoc());
+            // Identity: see the note in HomeStaging on why the name comparison this replaced kept
+            // compiling and always answered false.
+            final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
             // Grey out locomotives on inactive points / not on the graph
             if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
