@@ -3685,8 +3685,86 @@ public class AutonomyEditorPanel extends JPanel
 
         dialog.setContentPane(panel);
         dialog.pack();
-        dialog.setLocationRelativeTo(owner());
+
+        // Not smaller than it packed to (OB-107).
+        //
+        // Adam: "the window can be resized below its minimum height." pack() sizes a window to what
+        // its contents need and then says nothing about it, so dragging the edge up hid the buttons
+        // at the bottom - which are how the pairing is finished.
+        dialog.setMinimumSize(dialog.getSize());
+
+        // Beside the diagram rather than on top of it (OB-107).
+        //
+        // Adam: "the signal protecting this station pops up over the middle of the diagram.  see if
+        // you can offset it."  Centring is the usual right answer and is the wrong one here: this
+        // window's own text says the signals "are outlined on the diagram behind this window", so
+        // centring covers the very thing it is asking the reader to look at.
+        //
+        // Offset from centre rather than pinned to a corner, so it still reads as belonging to the
+        // window it came from, and clamped to the owner so it cannot land off-screen on a small
+        // display or a second monitor.
+        placeBesideOwner(dialog);
+
         dialog.setVisible(true);
+    }
+
+    /**
+     * Puts a dialog beside the diagram rather than over the middle of it.
+     *
+     * For the windows that describe something drawn on the diagram behind them - the paired signals
+     * are outlined while this is open, and a window centred on them hides what it is describing
+     * (OB-107).
+     *
+     * Offset from the owner's centre rather than pinned to a corner: a dialog that appears in the
+     * corner of the screen reads as belonging to nothing, and this one belongs to the editor it came
+     * from. Clamped so it stays within the owner, which keeps it on the same monitor.
+     *
+     * @param dialog a packed dialog, ready to show
+     */
+    private void placeBesideOwner(java.awt.Window dialog)
+    {
+        java.awt.Window parent = javax.swing.SwingUtilities.getWindowAncestor(owner());
+
+        if (parent == null)
+        {
+            dialog.setLocationRelativeTo(owner());
+
+            return;
+        }
+
+        dialog.setLocation(besideOwner(parent.getBounds(), dialog.getSize()));
+    }
+
+    /**
+     * Where a dialog goes so that it does not sit on the middle of the window behind it.
+     *
+     * Public and static, and taking rectangles rather than windows, so that the ONE thing worth
+     * checking about it can be checked without showing a modal dialog and driving it from a test - a
+     * dialog that blocks is not something a battery can open. Everything this decides is a function of
+     * the two rectangles, so there is nothing left in the caller to get wrong except which rectangles
+     * it passes.
+     *
+     * Up and to the left of centre rather than pinned to a corner: a window that appears in the corner
+     * of the screen reads as belonging to nothing, and this one belongs to the editor it came from.
+     *
+     * @param parent the bounds of the window the dialog belongs to, in screen coordinates
+     * @param dialog the size the dialog packed to
+     * @return the screen point to put the dialog's top left corner at
+     */
+    public static java.awt.Point besideOwner(java.awt.Rectangle parent, java.awt.Dimension dialog)
+    {
+        // A fraction of the slack rather than a fixed offset, so it scales with how much room there
+        // is, with a floor for the case where there is barely any.
+        int x = parent.x + Math.max(12, (parent.width - dialog.width) / 8);
+        int y = parent.y + Math.max(12, (parent.height - dialog.height) / 6);
+
+        // Never off the parent's bottom or right, for a dialog as large as the window it belongs to.
+        // The inner max is what stops a dialog LARGER than its parent being pushed off the top left
+        // instead - it would rather overhang the bottom right than start off-screen.
+        x = Math.min(x, Math.max(parent.x, parent.x + parent.width - dialog.width));
+        y = Math.min(y, Math.max(parent.y, parent.y + parent.height - dialog.height));
+
+        return new java.awt.Point(x, y);
     }
 
     /**

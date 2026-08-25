@@ -3894,32 +3894,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * What page a stored id means, which is not always the page that holds that id now.
-     *
-     * Two different things can have happened since this file was written, and they want opposite
-     * answers - the same pair readShared tells apart to raise its warning:
-     *
-     *   renamed    - the same page, called something else.  The id is the part that held still, so the
-     *                current index is right and the settings follow the page.
-     *   renumbered - a DIFFERENT page holds this id now.  The NAME is the part that held still, so the
-     *                current index is wrong: it would attach a page of names, lengths and stations to
-     *                whatever track happens to sit at that number today.
-     *
-     * The deciding question is the same one pageIdConflicts asks - whether the name this id used to
-     * carry still exists somewhere.  If it does, this is a renumber and the name is followed.
-     *
-     * This is why "pages" is written at all, and until now it was only ever used to warn: the reading
-     * went through the current index either way, so a renumber silently reattached the whole setup and
-     * the next save reconciled away every setting whose coordinates did not exist on the page it had
-     * been given to.  Adam lost 19 point names, 14 stations, 22 directions and 15 captions that way on
-     * 2026-08-23, to a page rename that moved one page to the end of the index.
-     *
-     * Both branches agree whenever nothing has moved, which is the ordinary case.
-     *
-     * @param id the page id as stored in the file
-     * @return the page name those settings belong to, or the id itself when nothing is known about it
-     */
-    /**
      * The page a stored key names, or null when the index does not know it.
      *
      * The ONE place that answers "which page is this", asked two ways by the two methods below
@@ -3946,6 +3920,32 @@ public class AutonomyCompanionStore
         return pageIdToName.get(stored);
     }
 
+    /**
+     * What page a stored id means, which is not always the page that holds that id now.
+     *
+     * Two different things can have happened since this file was written, and they want opposite
+     * answers - the same pair readShared tells apart to raise its warning:
+     *
+     *   renamed    - the same page, called something else.  The id is the part that held still, so the
+     *                current index is right and the settings follow the page.
+     *   renumbered - a DIFFERENT page holds this id now.  The NAME is the part that held still, so the
+     *                current index is wrong: it would attach a page of names, lengths and stations to
+     *                whatever track happens to sit at that number today.
+     *
+     * The deciding question is the same one pageIdConflicts asks - whether the name this id used to
+     * carry still exists somewhere.  If it does, this is a renumber and the name is followed.
+     *
+     * This is why "pages" is written at all, and until now it was only ever used to warn: the reading
+     * went through the current index either way, so a renumber silently reattached the whole setup and
+     * the next save reconciled away every setting whose coordinates did not exist on the page it had
+     * been given to.  Adam lost 19 point names, 14 stations, 22 directions and 15 captions that way on
+     * 2026-08-23, to a page rename that moved one page to the end of the index.
+     *
+     * Both branches agree whenever nothing has moved, which is the ordinary case.
+     *
+     * @param id the page id as stored in the file
+     * @return the page name those settings belong to, or the id itself when nothing is known about it
+     */
     private String pageOf(String id)
     {
         String resolved = resolvePage(id);
