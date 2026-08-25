@@ -1151,7 +1151,14 @@ public class testPageIdsAreDurable
      * `forgetHeldPages` had the line and `deletePage` did not, three hundred lines apart, which is
      * this repository's most-repeated defect shape applied to a rule invented the same day.
      *
-     * MUTATION: removing `pageNamesWhenWritten.values().remove(page)` from `deletePage` fails this.
+     * MUTATION: removing the `pageNameToId` / `pageIdToName` removals from `deletePage` fails this.
+     *
+     * NOT the `pageNamesWhenWritten` line, which this javadoc named until a validation pass ran the
+     * mutation and found all 19 tests still green. That line is inert here and the comment beside it
+     * says so - `sharedFields` rebuilds the file’s "pages" map from the live index, so removing only
+     * the record changed nothing at all. It is the index removal that does the work. Recorded because
+     * a stated mutation that does not fail its own test is the exact defect this project keeps
+     * finding, and it was in the fix for one.
      */
     @Test
     public void testADeletedPageIsNotReportedAsMerelyMissing() throws IOException

@@ -16529,8 +16529,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // not be offered in this case".  Asking is a promise to fetch, and a question whose
                 // yes cannot be honoured is worse than the file being quietly absent - the archive
                 // would come back incomplete having asked permission to be complete.
-                if ((localLayout == null || localLayout.isEmpty()) && this.model != null
-                    && this.model.getNetworkCommState()
+                // Through the one predicate, like the other two offers (validation pass).
+                //
+                // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads
+                // through CS2File, which reads a local layout folder perfectly happily - so a
+                // simulated session syncs successfully and calls itself connected.  Adam found that
+                // once already: "switch to central station layout is NOT greyed out in debug/simulate
+                // mode."  This offer was the third site and was still asking the loose half.
+                if ((localLayout == null || localLayout.isEmpty())
+                    && isCentralStationConnected()
                     && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
                 {
                     try
@@ -17963,10 +17970,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether autonomy could be started right now.
      *
-     * The Start button's own enabled state, which is where this question has always been answered -
-     * requestStartAutonomy asks it and throws if the answer is no. Exposed so a menu can GREY the item
-     * rather than offer it and then refuse (OB-050): a configuration in the "fix it" state cannot start,
-     * and being told so after clicking is worse than seeing it before.
+     * Whether Start would be accepted, asked the way the guard asks it.
+     *
+     * Exposed so a menu can GREY the item rather than offer it and then refuse (OB-050).
+     *
+     * **Two things this javadoc used to say that were not true,** both corrected after a review found
+     * the second one: it said "requestStartAutonomy asks it", and requestStartAutonomy asks the
+     * button's enabled state directly; and it implied the button's enabled state already knew about
+     * the checks, which it does not - the button is deliberately left enabled and explains at press
+     * time.
+     *
+     * What it does NOT ask, and deliberately: `isRemoteLayout`. `refuseAutonomyStartWhileBroken`
+     * refuses that case too, but a remote layout has no autonomy session at all, so the Start button
+     * is already disabled and the extra term would be dead weight. If that ever stops being true this
+     * is the place it has to be added.
      *
      * @return whether Start would be accepted
      */

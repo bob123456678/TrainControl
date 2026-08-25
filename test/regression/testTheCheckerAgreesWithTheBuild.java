@@ -306,6 +306,89 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
+     * A train parked where it turned round is not reported as facing an impossible way.
+     *
+     * `facingChoices` offers where a train could be sent ONWARD from a square, so it never offers an
+     * arrival side. A train that turned round is pointing back at the side it came in by - so on a
+     * berth whose only copy is the turning one, the single facing the square can actually hold was
+     * reported as impossible.
+     *
+     * Sixteen squares on this fixture are of that shape - every parking berth plus four reversing
+     * points - and it appears on the railway the first time autonomy parks a train in one, because
+     * `captureFromLayout` writes that facing back.
+     *
+     * **This test exists because the fix shipped without one.** The carve-out was written into
+     * {@link #testEveryFacingTheBuildEmitsIsOneTheEditorOffers} when the arrival-sides consolidation
+     * was checked, and into the production check afterwards - and a validation pass then found that
+     * deleting it from the production check left every class green, because nothing anywhere
+     * referenced FACING_IMPOSSIBLE. A behaviour change with no guard is one that can be undone by
+     * accident.
+     *
+     * It lives here rather than beside the session's other tests because their fixture is a synthetic
+     * three-square page with no berth on it - there is no square there that a train can turn round on,
+     * so the case cannot be built.
+     *
+     * MUTATION: removing the `isTurnAround(...) && arrivalSides(...).contains(recorded)` carve-out
+     * from `AutonomySession.facingsThatCannotBeHeld` fails this test.
+     */
+    @Test
+    public void testATrainParkedWhereItTurnedRoundIsNotAnImpossibleFacing()
+    {
+        TileKey berth = null;
+        Side turned = null;
+
+        // The first square that is a berth in the sense this is about: a train may turn round on it,
+        // and the side it would then face is one facingChoices does not offer.
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (!session.isTurnAround(tile)) continue;
+
+            for (Side arrival : session.arrivalSides(tile))
+            {
+                if (session.facingChoices(tile).contains(arrival)) continue;
+
+                berth = tile;
+                turned = arrival;
+
+                break;
+            }
+
+            if (berth != null) break;
+        }
+
+        assertNotNull(berth,
+            "this fixture has no square a train can turn round on whose turned facing is not also "
+            + "offered onward - so the case the carve-out exists for cannot be built here, and this "
+            + "test would pass by testing nothing");
+
+        session.placeLocomotive(berth, firstLocomotive());
+
+        session.setFacing(berth, turned);
+
+        List<AutonomyChecks.Finding> after = session.check();
+
+        for (AutonomyChecks.Finding finding : after)
+        {
+            assertNotEquals(finding.getMessageKey(), AutonomyChecks.FACING_IMPOSSIBLE,
+                "a train parked where it turned round was reported as holding a facing its square "
+                + "cannot hold - and on a berth with one copy that is the only facing the square CAN "
+                + "hold.  Square: " + berth + ", facing " + turned);
+        }
+
+        session.placeLocomotive(berth, null);
+    }
+
+    /**
+     * Any locomotive the database has, for a placement whose identity does not matter.
+     *
+     * @return its name
+     */
+    private static String firstLocomotive()
+    {
+        return model.getLocList().get(0);
+    }
+
+    /**
      * Every facing the build gives a copy is a facing the editor would have offered for that square.
      *
      * The pair kept in step by a sentence.  `AutonomySession.onwardFrom` walks `getRoutes(tile)` to
