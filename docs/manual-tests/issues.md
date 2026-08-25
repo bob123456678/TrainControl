@@ -637,9 +637,17 @@ switch. Which of the two bugs you saw depended only on what that state happened 
 a greyed tab is this one, visible with a setup available but not loaded is OB-095.
 `refreshAutonomyPrompt` already answers both correctly; it simply was not being asked.
 
-The second half of this entry - making the "autonomy needs a layout stored on this computer" notice
-clickable so it can download one - is a feature rather than a defect and is NOT done. It stays here,
-and this entry stays open for it.
+**Claude, 2026-08-24, later.** The second half is done too.
+
+That notice was a true sentence and a greyed one, which leaves the reader knowing what is wrong and
+not what to do - and the thing to do lives in a different menu, under a name that says nothing about
+autonomy. Where somebody reads the sentence is where the offer belongs, so the item is now live and
+runs the same download the Layouts menu does.
+
+**Only when a download would actually answer it.** That branch is taken for other reasons as well - no
+viewer panel yet, a session that failed to open - and an offer that cannot help is worse than the
+greyed line it replaced, because pressing it teaches the reader that the notice lies. So it asks
+whether the layout is the station’s copy first, and falls back to the old dead sentence otherwise.
 
 also, the "autonomy needs a layout stored on this computer" notice should be clickable and allow the user to download one.
 

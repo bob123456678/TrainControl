@@ -185,6 +185,31 @@ public class AutonomyMenu extends JMenu
 
         if (actions == null || session == null)
         {
+            // A dead sentence, unless a download would answer it (OB-093).
+            //
+            // Adam: "the 'autonomy needs a layout stored on this computer' notice should be clickable
+            // and allow the user to download one."
+            //
+            // It is a true statement and it was a greyed one, which leaves the reader knowing what is
+            // wrong and not what to do - and the thing to do lives in a different menu, under a name
+            // that says nothing about autonomy. Where somebody reads the sentence is where the offer
+            // belongs.
+            //
+            // ONLY when a download is actually the answer. This branch is also taken for reasons a
+            // download would not touch - no viewer panel yet, a session that failed to open - and an
+            // offer that cannot help is worse than the greyed line it replaced, because pressing it
+            // teaches the reader that the notice lies.
+            if (ui.isRemoteLayout())
+            {
+                JMenuItem offer = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossibleDownload"));
+
+                offer.addActionListener(event -> ui.downloadCentralStationLayout());
+
+                add(offer);
+
+                return;
+            }
+
             JMenuItem none = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossible"));
             none.setEnabled(false);
             add(none);

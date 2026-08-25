@@ -20892,6 +20892,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Checks if layout files are being loaded from the local filesystem
      * @return 
      */
+    /**
+     * Whether the track diagram in use lives on the Central Station rather than on this computer.
+     *
+     * Public because the autonomy menu has to ask it: autonomy needs a local layout, and the notice
+     * saying so is only worth offering a download from when a download is what would fix it.
+     *
+     * @return true when the layout is the station's copy
+     */
+    public boolean isRemoteLayout()
+    {
+        return !isLocalLayout();
+    }
+
+    /**
+     * Fetches the Central Station's layout files onto this computer, as the Layouts menu item does.
+     *
+     * Public for the same reason and with the same caller: the "autonomy needs a layout stored on this
+     * computer" notice is the place somebody reads that sentence, so it is the place the offer to fix
+     * it belongs (OB-093).
+     */
+    public void downloadCentralStationLayout()
+    {
+        downloadCSLayoutMenuItemActionPerformed(null);
+    }
+
     private boolean isLocalLayout()
     {
         return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
