@@ -1134,12 +1134,6 @@ public class AutonomySession
     }
 
     /**
-     * Puts back a whole snapshot, and writes it out.
-     *
-     * @param was a snapshot from snapshotSetup
-     * @return whether it reached the file
-     */
-    /**
      * Notes what the setup looks like now, so an editing session that dies can be undone (OB-108).
      *
      * @return whether the note reached the disk
@@ -1179,6 +1173,12 @@ public class AutonomySession
         return true;
     }
 
+    /**
+     * Puts back a whole snapshot, and writes it out.
+     *
+     * @param was a snapshot from snapshotSetup
+     * @return whether it reached the file
+     */
     public boolean restoreSetup(org.json.JSONObject was)
     {
         if (was == null) return true;
