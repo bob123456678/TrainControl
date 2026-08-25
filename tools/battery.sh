@@ -49,6 +49,26 @@ RUN_ID="battery-$$"
 
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 
+# Adam's own railway, hashed before and after the whole run.
+#
+# A test class can watch its OWN writes - testTheGoldenLayoutHoldsTogether does - but not
+# another class's, and the write that actually happened came from a class that had no idea it
+# was near his layout: two of them start the real window, which opens whatever the saved UI
+# state names.
+#
+# It went unnoticed for two days.  This is the scope that would have caught it on the first run.
+LIVE="cs2_sample_layout"
+
+fingerprint()
+{
+    if [ -d "$LIVE" ]
+    then
+        find "$LIVE" -type f -exec sha256sum {} \; 2>/dev/null | sort
+    fi
+}
+
+live_before=$(fingerprint)
+
 pass=0
 fail=0
 skip=0
@@ -72,18 +92,57 @@ do
 
     out=$("$JAVA" $JAVA_FLAGS -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" 2>&1 | tail -4)
 
-    if echo "$out" | grep -q "Failures: 0"
+    summary=$(echo "$out" | grep 'Total tests run')
+
+    if [ -z "$summary" ]
     then
-        pass=$((pass+1))
-    elif echo "$out" | grep -q "Total tests run"
-    then
-        fail=$((fail+1)); failed="$failed\n  $cls: $(echo "$out" | grep 'Total tests run')"
-    else
         # A class that produced no summary did not run.  Reported as a failure on purpose: a runner
         # that reads only "Failures:" calls a class that never started clean.
         fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN"
+
+    elif ! echo "$summary" | grep -q "Failures: 0"
+    then
+        fail=$((fail+1)); failed="$failed\n  $cls: $summary"
+
+    elif echo "$summary" | grep -q "Skips: 0"
+    then
+        pass=$((pass+1))
+
+    else
+        # GREEN IS NOT "no failures" (found 2026-08-25).
+        #
+        # A class whose @BeforeClass throws reports every one of its tests as SKIPPED and none as
+        # failed, so "Failures: 0" was true of a class that had tested nothing at all.
+        # core.testAutonomyDiagramSampleLayout sat like that - 13 tests, 0 passed, 13 skipped -
+        # and every battery in this session counted it among the green.  The stale coordinate that
+        # broke it went in with the fixture separation and nothing said a word for two days.
+        #
+        # Counted apart rather than as a failure, because a skip can be legitimate: several
+        # classes need a display and say so.  The point is that it must not read as "fine".
+        skip=$((skip+1)); skipped="$skipped\n  $cls: $summary"
     fi
 done
 
-echo "classes green: $pass   classes with failures: $fail"
+live_after=$(fingerprint)
+
+echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
 echo -e "$failed"
+
+if [ "$skip" -gt 0 ]
+then
+    echo ""
+    echo "These classes reported no failures because they ran nothing.  A skipped class is not a"
+    echo "green class - check whether the skip is deliberate (needing a display) or a broken setup:"
+    echo -e "$skipped"
+fi
+
+if [ "$live_before" != "$live_after" ]
+then
+    echo ""
+    echo "*** THE TEST SUITE WROTE TO $LIVE ***"
+    echo ""
+    echo "That folder is Adam's real railway and holds his accumulated autonomy setup, which is"
+    echo "not recoverable.  Find the class that did it before trusting anything above."
+    echo ""
+    diff <(echo "$live_before") <(echo "$live_after") | grep '^[<>]' | sed 's/^/  /'
+fi
