@@ -106,12 +106,12 @@
     "1 - Main:12,9": {
       "maxTrainLength": 0,
       "excludedLocs": [
+        "EA 3005 DSB",
         "ER 2035 DSB",
         "MF 5028 DSB",
         "MY 1150 DSB",
-        "EA 3005 DSB",
-        "SP45-204",
-        "MZ 1425 DSB"
+        "MZ 1425 DSB",
+        "SP45-204"
       ],
       "priority": -3,
       "canReverse": true
@@ -197,8 +197,8 @@
     },
     "2 - Bottom:7,12": {},
     "1 - Main:17,7": {"excludedLocs": [
-      "MY 1150 DSB",
       "EA 3005 DSB",
+      "MY 1150 DSB",
       "MZ 1425 DSB"
     ]},
     "2 - Bottom:4,6": {},
@@ -210,12 +210,12 @@
       "maxTrainLength": 0,
       "facing": "E",
       "excludedLocs": [
+        "EA 3005 DSB",
         "ER 2035 DSB",
         "MF 5028 DSB",
         "MY 1150 DSB",
-        "EA 3005 DSB",
-        "SP45-204",
-        "MZ 1425 DSB"
+        "MZ 1425 DSB",
+        "SP45-204"
       ],
       "priority": -2
     },
