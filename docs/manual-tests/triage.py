@@ -2784,6 +2784,50 @@ def _ledger_row_cells(line):
     return [p.strip() for p in parts[1:-1]]
 
 
+def undated_followups(issues_text):
+    """Inbox entries whose later additions do not say who wrote them and when.
+
+    Adam, 2026-08-24: "once there is a follow up, we need to clearly demarcate old comments (such as
+    with a date)".  `tests.md` has had this as rule 6 since the file existed; `issues.md` did not, so
+    an item picked up, deferred and re-scoped over four days read as one voice speaking once.
+
+    The shape checked is the one the rule asks for: every paragraph that OPENS in bold, after the
+    first, must carry a date.  A paragraph that opens in bold is how both files mark a new voice, and
+    the ones that do not are ordinary prose inside somebody's comment.
+
+    Deliberately blind to the metadata the triage app stamps - Kind, Raised from, Filed, Build - which
+    open in bold on their own line and belong to the original filing.
+    """
+
+    import re as _re
+
+    inbox_at = issues_text.find("## Inbox")
+
+    if inbox_at < 0:
+        return []
+
+    end = issues_text.find("\n## ", inbox_at + 1)
+    inbox = issues_text[inbox_at:end if end > 0 else len(issues_text)]
+
+    authors = ("Claude", "Adam")
+
+    out = []
+
+    for entry in _re.finditer(r"### ((?:OB|FR)-\d+) - .*?(?=\n### (?:OB|FR)-|\Z)", inbox, _re.S):
+        ref = entry.group(1)
+
+        for run in _re.finditer(r"\*\*([^*]{2,90}?)\*\*", entry.group(0)):
+            label = run.group(1).strip()
+
+            if not any(label.startswith(a) for a in authors):
+                continue
+
+            if not _re.search(r"20\d\d-\d\d-\d\d", label):
+                out.append({"ref": ref, "attribution": label[:70]})
+
+    return out
+
+
 def cli_verify_ledger(_args):
     """Compare the ledger table in tests.md against what the entries themselves say.
 
@@ -2925,6 +2969,8 @@ def cli_verify_ledger(_args):
             if seen[ref] == 2:
                 duplicate_refs.append(ref)
 
+    undated = undated_followups(read_text(ISSUES_MD)[0])
+
     out = {
         "duplicate_tags": doc.duplicate_tags,
         "duplicate_refs": duplicate_refs,
@@ -2940,9 +2986,10 @@ def cli_verify_ledger(_args):
         "what_notes": what_notes,
         "from_notes": from_notes,
         "invalid_disposition": invalid_disposition,
+        "undated_followups": undated,
         "clean": not (missing or stale or disposition_drift or date_drift or duplicate_refs
                       or doc.duplicate_tags or duplicate_ledger_rows or malformed_ledger_rows
-                      or bad_href or invalid_disposition),
+                      or bad_href or invalid_disposition or undated),
     }
 
     return out, (0 if out["clean"] else 3)

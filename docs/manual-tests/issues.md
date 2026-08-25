@@ -107,7 +107,7 @@ guards it was one of thirty-five classes `ant test` never ran - and DD-A2 was cl
 **Its own commit, nothing else in it,** and read DD-D9 first: `reconcile` and `applyTo` must stay
 hand-written even if this lands.
 
-**What is already done, 2026-08-23** - see [MT-130](tests.md#mt-130):
+**Claude, 2026-08-23.** What is already done - see [MT-130](tests.md#mt-130):
 
 - The two live defects DD-A1 found are fixed. `reconcile` was keeping a deleted square's link name and
   switched-off flag, so the next link drawn there inherited both; and `forgetSquares` carried a line
@@ -171,8 +171,8 @@ gain the conversion that is today spread through the class. Mechanical but wide,
 class that holds the data Adam has already lost once - so it wants its own commit with the battery
 green either side, and the existing round-trip tests are what make it safe to attempt.
 
-**Where this stands, 2026-08-24.** The correctness bar this item set itself is met; the refactor it
-describes is not started.
+**Claude, 2026-08-24.** Where this stands: the correctness bar this item set itself is met; the
+refactor it describes is not started.
 
 **Done** - "the work is not finished until a page id and a page name can no longer be mistaken for one
 another by any code path". They cannot be, and [MT-161](tests.md#mt-161) holds it. Entries belonging to
@@ -203,7 +203,8 @@ Two things to carry into it:
 Left open deliberately, and not started rather than half done: this is the class holding the data Adam
 has already lost twice, and a conversion abandoned in the middle is worse than one not begun.
 
-**Stage one landed, 2026-08-24** - `0c79bbe7`, with [MT-171](tests.md#mt-171) to check on the railway.
+**Claude, 2026-08-24.** Stage one landed - `0c79bbe7`, with [MT-171](tests.md#mt-171) to check on
+the railway.
 
 Nine of the ten square-keyed collections hold `TileKey`: point names, tile lengths, barred arrivals,
 portals, captions, station signals, blocked points, link names, the station set and the disabled-portal
@@ -396,7 +397,7 @@ not bitten either, until they did.
 
 Plus eight C findings in the same document, which are the same subject at lower stakes.
 
-**Two more added 2026-08-24, from the reopen audit:**
+**Claude, 2026-08-24.** Two more, from the reopen audit:
 
 - **RA-C2.** A blocked-points entry that is carried through because the picker no longer offers it
   renders as a blank check box when its square has lost its name. The picker also has no automated
@@ -505,7 +506,7 @@ rather than about the code.
 
 ### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
 
-**Adam, testing MT-161 on commit 8db330da:** "When I renamed '5 - Test' to 5, the main page (1 - Main,
+**Adam, 2026-08-24, testing MT-161 on commit 8db330da:** "When I renamed '5 - Test' to 5, the main page (1 - Main,
 id 5) became excluded from autonomy and lost all its train placement."
 
 **Reproduced before anything was touched**, with a probe on a six-page fixture: the file held

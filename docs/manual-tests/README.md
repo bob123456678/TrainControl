@@ -97,6 +97,19 @@ produce: a feature nobody had even designed yet, filed the moment it was picked 
 regression test, sitting in the Tests ledger indistinguishable from one. See its own entry for the
 retirement.
 
+**An entry that has been added to since it was filed says so, per addition.** The original filing
+stands as written and is never edited. Everything after it opens with who and when - `**Claude,
+2026-08-24.**`, `**Adam, 2026-08-24.**` - in the order it was written, oldest first. That is the same
+rule `tests.md` has had as rule 6, and it is here because `issues.md` did not have it: an item picked
+up, deferred, partly done and then re-scoped over four days read as one voice speaking at one moment,
+and the reader had no way to tell the sentence written before the work from the one written after it.
+
+It matters most on the items that stay open longest, which are exactly the ones nobody remembers the
+shape of. `FR-013` had four separate additions under three different headings; `OB-025` had two.
+
+`verify-ledger` checks it: an Inbox entry whose body carries more than one paragraph-leading bold run
+must have a dated attribution on every one after the first.
+
 **A bug's ref is `OB-###`; a feature request's is `FR-###`** - separate counters, so the ref alone
 says which of the two paths above an item is on. `OB` is the older of the two and kept its numbering
 when the split happened; nothing already filed was renumbered.
