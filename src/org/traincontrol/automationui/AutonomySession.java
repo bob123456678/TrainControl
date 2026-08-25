@@ -89,8 +89,43 @@ public class AutonomySession
      * @param diagrams every page of the layout
      * @throws IOException if the setup exists but cannot be read
      */
+    /**
+     * Whether a page has been renamed since these page objects were handed over.
+     *
+     * A rename rekeys the STORE and writes a new diagram file. It does not rename the LayoutDiagram
+     * objects this session is holding, and it cannot: `saveChanges` writes a file, and the graph and
+     * the reducer were derived from the old names when `open` ran. So between a rename and the next
+     * `open`, this session's naming and its store disagree - the store says "1 - Main2", everything
+     * derived from the pages still says "1 - Main".
+     *
+     * Nothing reads the naming in that window except `captureFromLayout`, which is why this exists
+     * rather than a general repair: see the refusal there for what it cost.
+     */
+    private boolean pagesStale = false;
+
+    /**
+     * Says that a page has been renamed and these page objects no longer describe the setup.
+     *
+     * Called by the rename itself. Cleared by the next `open`, which is what makes it true again.
+     */
+    public void markPagesStale()
+    {
+        this.pagesStale = true;
+    }
+
+    /**
+     * @return whether a rename has happened since these pages were opened
+     */
+    public boolean arePagesStale()
+    {
+        return this.pagesStale;
+    }
+
     public void open(List<LayoutDiagram> diagrams) throws IOException
     {
+        // These pages are current by definition: they are the ones just read from disk.
+        this.pagesStale = false;
+
         this.pages = diagrams == null ? new ArrayList<LayoutDiagram>() : new ArrayList<>(diagrams);
 
         Map<String, String> pageIds = new LinkedHashMap<>();
@@ -2241,6 +2276,28 @@ public class AutonomySession
     public void captureFromLayout(String layoutJson, String configurationName)
     {
         if (layoutJson == null || reducer == null || configurationName == null) return;
+
+        // Not after a rename (MT-135, MT-171, MT-174).
+        //
+        // This writes what the running Layout knows back into the configuration, keyed by tile - and it
+        // works out those keys from THIS session's naming, which a rename has just made stale. The
+        // store was rekeyed to the new page name; the graph, the reducer and the page objects still
+        // carry the old one. So every placement was written a second time under the old name, beside
+        // the correctly renamed one, and a locomotive that is in two places at once fails the whole
+        // setup:
+        //
+        //   "TopMainR2Inter holds a locomotive that is also recorded as standing somewhere else. A
+        //    locomotive can only be in one place, and autonomy refuses the whole setup while it is in
+        //    two" - Adam, MT-135, with the same four squares this reproduces on the sample layout.
+        //
+        // Renaming back did it again under the other name, which is why undoing did not undo it.
+        //
+        // Refused rather than repaired, and nothing is lost by refusing. The rename has already
+        // written the store through saveWithoutReconciling, so the state is on disk. What this call
+        // adds is whatever the RUNNING layout knows that the store does not - and a rename is refused
+        // while autonomy is running, so there is nothing in that gap. The session is about to be
+        // discarded and rebuilt from the renamed pages in any case.
+        if (pagesStale) return;
 
         org.json.JSONObject configuration = store.getConfiguration(configurationName);
 

@@ -6002,6 +6002,45 @@ Then, renaming it back adds the following:
 
 So it looks like there is some station loss and locomotive mapping loss too.
 
+**Claude, 2026-08-24.** Found and fixed, and it is one cause for MT-135, MT-174 and half of MT-171.
+
+**The rename was never the problem. What runs after it was.** `LayoutPageEdit.renameOrDuplicate`
+rekeys the store and writes it, and that part is correct - the test written for MT-174 passes and
+passed while this was happening. What the window does NEXT is `layoutEditingComplete`, which re-reads
+the diagrams and then calls `resetAutonomySession`, and that captures the running Layout's state back
+into the configuration before letting the session go.
+
+`captureFromLayout` works its tile keys out from the SESSION'S naming - the graph, the reducer and the
+page objects it was opened with. A rename does not touch any of those. `LayoutDiagram.saveChanges`
+writes a new file; it never renames the object, and the graph was derived before the rename happened.
+So the store said `1 - Main2` and everything derived from the pages still said `1 - Main`, and the
+capture wrote every placement back a second time under the old name, beside the correctly renamed one.
+
+A locomotive in two places fails the whole setup, which is what Adam saw:
+
+> TopMainR2Inter holds a locomotive that is also recorded as standing somewhere else. A locomotive can
+> only be in one place, and autonomy refuses the whole setup while it is in two.
+
+Renaming back did the same thing under the other name, which is why undoing did not undo it - his
+second list of errors names `1 - Main2` squares where the first named `1 - Main` ones.
+
+**Reproduced on the sample layout, on the same squares he reported**: four locomotives each in two
+places, at 6,4 and 14,3 and 13,11. Errors went from 79 to 83, all four new ones
+`checkDuplicateLocomotive`.
+
+**Fixed** by having the rename say what it has done - `session.markPagesStale()` - and having
+`captureFromLayout` refuse while that is true. Refused rather than repaired, and nothing is lost:
+the rename has already written the store, and a rename is refused while autonomy is running, so there
+is nothing the running layout knows that the store does not. The session is discarded and rebuilt from
+the renamed pages moments later in any case.
+
+**Why the MT-174 test missed it**, since that test was written two hours earlier for exactly this
+subject. Two reasons, either sufficient. It stopped at the rename and never ran the capture that
+follows. And it compared stored settings without ever running the CHECKS - and this damage does not
+look like data going missing, it looks like twice as much data, which no equality on the settings I
+was comparing would notice. What the operator meets is not a missing station; it is the check refusing
+to build. The new test asserts on the checks.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
@@ -8022,6 +8061,25 @@ stations do not travel with a moved tile. they vanish until the tile is moved ba
 
 renaming a page MOVES locomotives to othre stations, not just deleted them.  make a COMPREHENSIVE AND REALISTIC test case to reproduce these bugs, then fix them.
 
+**Claude, 2026-08-24.** Two separate faults in this entry. One is fixed; the other is not, and this
+entry stays open for it.
+
+**The rename half is fixed.** "Renaming a page MOVES locomotives to other stations" is the duplicate
+placement written up on [MT-135](#mt-135): the capture that runs after a rename recorded every
+locomotive a second time under the page's old name. A train that appears at two squares reads as
+having moved to one of them. Reproduced on the sample layout on the same squares Adam reported, and
+covered by `testARenameDoesNotLeaveLocomotivesInTwoPlaces`, which fails without the fix.
+
+**The moved-tile half is NOT fixed and is not yet understood**: "stations do not travel with a moved
+tile. they vanish until the tile is moved back, at which point the loc is vanished." That is
+`moveTiles`, a different operation from a rename - dragging a tile in the editor - and nothing in this
+round touched it. It is not a consequence of the rename fault and will not have been fixed by fixing
+it.
+
+Left open deliberately rather than closed on the strength of the half that is done. The next step is
+the same one that worked here: drive `moveTiles` through the call the editor makes, run the checks
+afterwards rather than comparing stored settings, and see what the operator would see.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
@@ -8204,6 +8262,18 @@ about whether to ask; everything about what then happens is covered.
 **Adam, 2026-08-24 (triage).** Does not work.
 
 Renaming to an ID no longer causes issues.  However, renaming a page with autonomy cofig still wipes it and adds errors.  Refer to the current state.
+
+**Claude, 2026-08-24.** Fixed - the full account is on [MT-135](#mt-135), which reported the same
+thing from the other end.
+
+Short version: the rename is correct and the capture that runs after it was not. `resetAutonomySession`
+writes the running layout's state back into the configuration using page names the rename has just made
+stale, so every placement was recorded twice - once under each name - and a locomotive in two places
+makes autonomy refuse the whole setup.
+
+The test on this entry passed throughout, which is the part worth keeping. It stopped at the rename
+and never ran what the window does next, and it compared stored settings rather than running the
+checks. It now does both.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 

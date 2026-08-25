@@ -179,6 +179,171 @@ public class testRenameRoundTripThroughTheUIPath
     // --- what the setup holds -------------------------------------------------------------------
 
     /**
+     * The whole gesture, including what the window does AFTER the rename.
+     *
+     * Adam, MT-171: "renaming a page MOVES locomotives to other stations, not just deleted them.  make
+     * a COMPREHENSIVE AND REALISTIC test case to reproduce these bugs, then fix them." And MT-135, with
+     * the errors it produced on his railway: "TopMainR2Inter holds a locomotive that is also recorded
+     * as standing somewhere else."
+     *
+     * The test above this one renames a page and reads the setup back, and it passes, and it passed
+     * while his railway was being wrecked. Two things were missing from it, and each on its own is
+     * enough to miss this.
+     *
+     * **It stopped at the rename.** The window does not. `layoutEditingComplete` re-reads the diagrams
+     * and then `resetAutonomySession` captures the running Layout's state back into the configuration
+     * before letting the session go. That capture is the step that does the damage, and no test had
+     * ever run it.
+     *
+     * **It compared stored settings, and never ran the CHECKS.** The damage does not look like a
+     * setting going missing. Every placement is still there - there are simply twice as many of them,
+     * the second copy keyed to the page's old name. Comparing what the store holds sees more data, not
+     * less, and "more" does not fail an equality unless you happen to look at the right key. What the
+     * OPERATOR sees is the check refusing to build the setup.
+     *
+     * So this asserts on the checks, which is the thing he actually meets, and it drives the sequence
+     * the window drives. It reproduces on the sample layout exactly as reported: four locomotives, each
+     * in two places, on the same squares as his - 6,4 and 14,3 and 13,11.
+     */
+    @Test
+    public void testARenameDoesNotLeaveLocomotivesInTwoPlaces() throws Exception
+    {
+        File folder = aWorkingCopy();
+
+        List<LayoutDiagram> pages = pagesIn(folder);
+
+        AutonomySession session = new AutonomySession(folder);
+        session.open(pages);
+
+        String page = aPageWithSettings(session, pages);
+        String renamed = page + "2";
+
+        String active = session.getStore().getActiveConfiguration();
+
+        assertNotNull(active, "the sample setup has no active configuration to capture into");
+
+        int errorsBefore = errorCount(session);
+        int placedBefore = placements(session).size();
+
+        assertTrue(placedBefore > 0,
+            "no locomotives are placed in this configuration, so a test about placements being "
+            + "duplicated cannot fail");
+
+        // The running layout, as loading a configuration builds it.
+        model.parseAuto(session.buildConfiguration());
+
+        assertNotNull(model.getAutoLayout(), "the configuration did not build into a layout");
+
+        // THE MUTATION, through the menu's own call.
+        LayoutPageEdit.renameOrDuplicate(namesOf(pages), diagram(pages, page),
+            folder.getAbsolutePath(), page, renamed, true, false, false, session, model);
+
+        // AND WHAT THE WINDOW DOES NEXT, on the same session: resetAutonomySession captures the
+        // running layout's state before letting the session go.  This is the step that was never
+        // tested and the step that did the damage.
+        session.captureFromLayout(model.getAutoLayout().toJSON(), active);
+        session.saveWithoutReconciling();
+
+        // THE LOAD.
+        AutonomySession after = reopened(folder);
+
+        Map<String, String> placedAfter = placements(after);
+
+        assertEquals(placedAfter.size(), placedBefore,
+            "the rename changed how many locomotives are placed, from " + placedBefore + " to "
+            + placedAfter.size() + ".  Each one is recorded twice - once under the new page name and "
+            + "once under the old, because the capture that runs after a rename works its tile keys "
+            + "out from page objects the rename has just made stale: " + duplicatesIn(placedAfter));
+
+        assertEquals(duplicatesIn(placedAfter), "",
+            "a locomotive is recorded in two places at once, which makes autonomy refuse the whole "
+            + "setup - \"a locomotive can only be in one place\" (MT-135)");
+
+        assertEquals(errorCount(after), errorsBefore,
+            "renaming a page added " + (errorCount(after) - errorsBefore) + " errors to a setup that "
+            + "had " + errorsBefore + ".  This is what Adam sees: the page is renamed and the setup "
+            + "will no longer run");
+    }
+
+    /**
+     * tile -> locomotive, out of the active configuration, which is where placements live.
+     */
+    private static Map<String, String> placements(AutonomySession session)
+    {
+        Map<String, String> out = new LinkedHashMap<>();
+
+        String active = session.getStore().getActiveConfiguration();
+
+        if (active == null) return out;
+
+        org.json.JSONObject configuration = session.getStore().getConfiguration(active);
+
+        if (configuration == null || !configuration.has("points")) return out;
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject extras = points.optJSONObject(key);
+
+            if (extras == null) continue;
+
+            org.json.JSONObject standing = extras.optJSONObject("loc");
+
+            if (standing == null) continue;
+
+            String name = standing.optString("name", "");
+
+            if (!name.trim().isEmpty()) out.put(key, name);
+        }
+
+        return out;
+    }
+
+    /**
+     * Any locomotive standing on more than one square, named with its squares, or "" if none is.
+     *
+     * Returned as text rather than as a boolean so that a failure says WHICH train is in two places -
+     * which is the first thing anybody reading the failure will want and the first thing the operator
+     * is told by the check this mirrors.
+     */
+    private static String duplicatesIn(Map<String, String> placed)
+    {
+        Map<String, List<String>> byLocomotive = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : placed.entrySet())
+        {
+            List<String> where = byLocomotive.get(entry.getValue());
+
+            if (where == null)
+            {
+                where = new ArrayList<>();
+                byLocomotive.put(entry.getValue(), where);
+            }
+
+            where.add(entry.getKey());
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        for (Map.Entry<String, List<String>> entry : byLocomotive.entrySet())
+        {
+            if (entry.getValue().size() > 1)
+            {
+                out.append(out.length() > 0 ? "; " : "")
+                   .append(entry.getKey()).append(" at ").append(entry.getValue());
+            }
+        }
+
+        return out.toString();
+    }
+
+    private static int errorCount(AutonomySession session)
+    {
+        return session.errorCount();
+    }
+
+    /**
      * Everything the setup records about one page, flattened so that two of them can be compared whole.
      *
      * Flattened rather than compared collection by collection on purpose. A comparison written by hand

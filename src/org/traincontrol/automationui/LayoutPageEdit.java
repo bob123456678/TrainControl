@@ -181,6 +181,16 @@ public class LayoutPageEdit
             {
                 // In memory always: it costs nothing and is right either way.
                 session.getStore().renamePage(currentLayout, newLayoutName);
+
+                // And the session is now holding page objects that describe a layout that no longer
+                // exists under those names.  Everything derived from them - the graph, the reducer,
+                // the naming captureFromLayout works its tile keys out from - was built before this
+                // line and still says the old name, while the store now says the new one.
+                //
+                // Saying so here rather than leaving each reader to notice: the one reader that did
+                // not notice wrote every placement back a second time under the old page name, and a
+                // locomotive recorded in two places fails the entire setup (MT-135).
+                session.markPagesStale();
             }
 
             try
