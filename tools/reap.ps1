@@ -32,8 +32,23 @@ param
     [string] $RunId
 )
 
+# The id is matched WHOLE, not as a prefix (found 2026-08-25, by review).
+#
+# This was `...=$RunId*`, and RUN_ID is "battery-$$" - a process id.  The trailing wildcard made
+# battery-777 match battery-7777, so one battery killed another battery's JVMs.  Three- and
+# four-digit pids sharing a prefix are ordinary on Windows.
+#
+# The file used to claim "two batteries can run at once and neither touches the other - proven rather
+# than assumed"; the proof used three ids, none of which was a prefix of another.  Review ran it
+# again with battery-777, battery-7777 and battery-888 and watched battery-7777 die.
+#
+# The flag is the last thing on the command line in this harness, but not necessarily: the match
+# anchors on what follows the id instead - a space or the end of the string.
 $mine = Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
-    Where-Object { $_.CommandLine -like "*traincontrol.batteryRun=$RunId*" }
+    Where-Object {
+        $_.CommandLine -like "*traincontrol.batteryRun=$RunId" -or
+        $_.CommandLine -like "*traincontrol.batteryRun=$RunId *"
+    }
 
 foreach ($p in $mine)
 {

@@ -681,9 +681,20 @@ public class testAutonomyStoreSettingsMatrix
      * a defect today; it is a dependency nothing states, and it means a rename performed by any path
      * that does not call `renamePage` orphans the configuration and nothing else.
      *
-     * MUTATION: making `toStored` return its argument unchanged - writing page NAMES into setup.json,
-     * which is the defect `excludedPages` really had - fails this test, and fails neither of the two
-     * above.
+     * MUTATION: this test does NOT catch `toStored` returning its argument unchanged, and an earlier
+     * version of this javadoc claimed it did.
+     *
+     * Review ran it: with `toStored` neutered the class reports one failure, and it is
+     * `testEveryIdKeyedSettingSurvivesARenameNothingSaw`, not this one. The reason is written out
+     * sixty lines below and is worth reading before trusting any of these four columns - this test
+     * renames the page IN MEMORY before saving, so the new name is already in the keys and never
+     * needs translating. A setup written with page names in it survives that perfectly well.
+     *
+     * The two javadocs were written the same day and said opposite things. Anyone trimming this
+     * matrix on the strength of the old one would have deleted the only column that can catch a raw
+     * name in setup.json - the MT-135 loss.
+     *
+     * What this column does catch is a setting that does not survive a rename at all.
      */
     @Test
     public void testEverySettingSurvivesItsPageBeingRenamedOnDisk() throws IOException

@@ -121,6 +121,18 @@ do
     # the one that describes the whole run.
     summary=$(echo "$out" | grep 'Total tests run' | tail -1)
 
+    # TestNG's summary is TWO lines, and this read one (found 2026-08-25, by review).
+    #
+    #     Total tests run: 1, Failures: 0, Skips: 0
+    #     Configuration Failures: 1, Skips: 0
+    #
+    # A class whose @AfterClass throws prints exactly that, and the first line alone says green.  The
+    # teardowns in this suite are load-bearing: testBothProtectingSignalsAreThrown puts two of Adam's
+    # real signals back to GREEN in its teardown and says why, and testARouteDoesNotThrowSwitchesUnderATrain
+    # clears the auto layout in its own.  A teardown that threw would leave the railway changed and be
+    # reported as a clean run.
+    configFailures=$(echo "$out" | grep 'Configuration Failures' | tail -1)
+
     if [ -z "$summary" ]
     then
         # A class that produced no summary did not run.  Reported as a failure on purpose: a runner
@@ -130,6 +142,24 @@ do
     elif ! echo "$summary" | grep -q "Failures: 0"
     then
         fail=$((fail+1)); failed="$failed\n  $cls: $summary"
+
+    elif [ -n "$configFailures" ] && ! echo "$configFailures" | grep -q "Configuration Failures: 0"
+    then
+        fail=$((fail+1)); failed="$failed\n  $cls: $summary / $configFailures"
+
+    elif echo "$summary" | grep -q "Total tests run: 0"
+    then
+        # ZERO tests is not zero failures (found 2026-08-25, by review).
+        #
+        # The skip fix below catches "Skips: N".  A class that discovers no tests at all prints
+        # "Total tests run: 0, Failures: 0, Skips: 0", which satisfies both of those and landed in the
+        # pass branch - so support/CS3TestServer.java and support/TestStationAddress.java, which hold
+        # no tests, were counted among the green on every run.  The number was inflated by two.
+        #
+        # The same shape catches a class that has lost its @Test annotations, or was disabled for
+        # debugging and never restored.  Counted with the skips rather than as a failure, for the same
+        # reason: it needs looking at, not alarming about.
+        skip=$((skip+1)); skipped="$skipped\n  $cls: $summary (no tests in this class)"
 
     elif echo "$summary" | grep -q "Skips: 0"
     then

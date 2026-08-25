@@ -78,8 +78,20 @@ public class testRenameRoundTripThroughTheUIPath
         // WHAT THE SETUP HOLDS FOR THAT PAGE, before anything happens to it.
         Map<String, String> before = settingsOn(session, page, pages, page);
 
-        assertFalse(before.isEmpty(),
-            "the page chosen has no settings on it, so a rename that lost them all would pass");
+        // The SQUARE settings, not the whole map (LD-5).
+        //
+        // This asked `before.isEmpty()`, which can never be true: `settingsOn` ends with an
+        // unconditional `#excluded` entry plus one `#config/<name>` per configuration, and has a
+        // single return. So the guard against "this page has nothing on it, and a rename that lost
+        // everything would pass" could only fire on a layout with no pages at all.
+        //
+        // The same file diagnoses this exactly, forty lines from here, and fixed the assertion it was
+        // written for without carrying it back to this one: "the map it returns is never empty ...
+        // which is the more dangerous kind of wrong".
+        assertFalse(squareSettings(before).isEmpty(),
+            "the page chosen has no SQUARE settings on it, so a rename that lost them all would "
+            + "pass. Only the per-square entries count - the exclusion flag and the per-configuration "
+            + "entries are always present, whatever the page holds");
 
         int idBefore = idOf(folder, page);
 
@@ -543,7 +555,12 @@ public class testRenameRoundTripThroughTheUIPath
 
         for (LayoutDiagram diagram : pages)
         {
-            int size = settingsOn(session, diagram.getName(), pages, diagram.getName()).size();
+            // Counted by SQUARE settings, for the same reason the caller's guard is: every page
+            // reports at least the exclusion flag and one entry per configuration, so counting the
+            // whole map picks whichever page has the most CONFIGURATIONS rather than the most
+            // settings - and on a setup with one configuration, whichever comes first.
+            int size = squareSettings(
+                settingsOn(session, diagram.getName(), pages, diagram.getName())).size();
 
             if (size > most)
             {
@@ -552,7 +569,8 @@ public class testRenameRoundTripThroughTheUIPath
             }
         }
 
-        assertNotNull(best, "the sample setup records nothing about any page");
+        assertNotNull(best, "the sample setup records nothing about any square on any page, so there "
+            + "is no page here whose rename could lose anything");
 
         return best;
     }

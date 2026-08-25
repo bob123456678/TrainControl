@@ -1901,6 +1901,16 @@ public class testHomeStaging
      * rather than "run it twice and hope the hashes differ" - which is a coin toss dressed as a test.
      *
      * MUTATION: removing the `Collections.sort(locNames)` from `Point.toJSON` fails this.
+     *
+     * **It did not, for a day.** The two sets below were `HashSet`s, and a HashSet discards insertion
+     * order - with three elements in a sixteen-slot table both iterate identically, so this compared
+     * two strings that were equal whatever `toJSON` did. Review ran the mutation this javadoc names
+     * eight times and got eight passes, then changed one word and got a failure. `LinkedHashSet`
+     * keeps the order the fixture is built in, which is the only thing that makes "built in opposite
+     * orders" mean anything.
+     *
+     * The one word is the difference between this test and no test, on the property that stopped the
+     * window quietly rewriting Adam's own railway on every launch.
      */
     @Test
     public void testAnUnchangedLayoutSerialisesTheSameWayTwice() throws Exception
@@ -1911,8 +1921,10 @@ public class testHomeStaging
         java.util.List<String> names = Arrays.asList(LOC_A, LOC_B, LOC_C);
 
         // The same three locomotives, added in opposite orders.
-        java.util.Set<Locomotive> forward = new java.util.HashSet<>();
-        java.util.Set<Locomotive> backward = new java.util.HashSet<>();
+        // LinkedHashSet, NOT HashSet - see the javadoc.  A HashSet throws away the very thing this
+        // test is built on.
+        java.util.Set<Locomotive> forward = new java.util.LinkedHashSet<>();
+        java.util.Set<Locomotive> backward = new java.util.LinkedHashSet<>();
 
         for (String name : names) forward.add(loc(name));
 
