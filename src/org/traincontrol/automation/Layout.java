@@ -3368,6 +3368,27 @@ public class Layout
     }
 
     /**
+     * Whether autonomy could ever choose this point as a destination.
+     *
+     * The standing bars only - inactive, reversing, not an auto destination - asked through the same
+     * `barredFromAutonomy` the "no available paths" window groups by, so there is ONE list of reasons
+     * a station is never picked. That method's own comment says why: "Two copies of this list would be
+     * two answers to 'can autonomy pick this station'", and the diagram deciding which captions to
+     * draw is a third caller that would otherwise have grown its own.
+     *
+     * Asked with no locomotive, deliberately. Per-locomotive exclusions are a fact about one train,
+     * and this answers a question about the SQUARE - a station excluded for one locomotive is still
+     * somewhere trains are sent, and its name still belongs on the diagram.
+     *
+     * @param end the candidate station
+     * @return true when nothing standing bars it
+     */
+    synchronized public boolean isChoosableByAutonomy(Point end)
+    {
+        return end != null && barredFromAutonomy(end, null) == null;
+    }
+
+    /**
      * Why autonomy will never choose this point for this locomotive, or null when it is a candidate.
      *
      * The STANDING bars only - the ones that are a property of how the railway is set up rather than

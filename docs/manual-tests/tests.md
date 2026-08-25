@@ -9183,6 +9183,25 @@ layout nothing is inactive yet, so everything is shown.
 one place to the person looking at it, and hiding its name because one of its directions is a dead end
 would be a lie about the other.
 
+**Adam, 2026-08-25.** "Flipping the new setting has no effect- labels on inactive terminuses do not
+go away in the track diagram"
+
+**Claude, 2026-08-25.** Two faults, and the second is the one that matters.
+
+**The predicate was wrong.** I used `Point.isDestination()`, which is a different flag from the
+question being asked. "Can autonomy choose this station" is answered by the standing bars in
+`barredFromAutonomy`: inactive, reversing, not an auto destination. An inactive terminus passes
+`isDestination` - so the very stations Adam wanted gone were the ones being kept. It asks
+`Layout.isChoosableByAutonomy` now, which is that same method, made public rather than restated:
+`barredFromAutonomy`'s own comment says two copies of its list would be two answers to one question,
+and the diagram was about to become the third caller with its own.
+
+**And a third place decided visibility.** `showStaticAutonomyLayer` set every caption to its own
+`show` parameter wholesale, ran whenever the overlay was drawn, and overwrote both other sites without
+asking anything about the station - so the setting genuinely had no effect. All three sites go through
+the one rule now, and `testEveryCaptionVisibilityDecisionAsksTheRule` fails if a fourth appears or if
+that one reverts. Mutation-checked by putting the blanket setter back.
+
 The visibility rule lives in one method that both the overlay switch and this setting ask, so the two
 cannot disagree - the overlay still wins, and this only decides which captions come back when it is
 on. Applied to labels already drawn rather than left for the next rebuild: the grid rebuilds for a

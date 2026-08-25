@@ -573,6 +573,14 @@ this morning - but the seven it lists have not been worked through.
 
 add a crop / pan function to local locomotive icons at the time of image selection.
 
+### OB-107 - 2026-08-25 - signal protecting this station popup usability
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 01:05  
+**Build:** commit 8db330da, build\classes, compiled 25 Aug 00:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the signal protecting this station pops up over the middle of the diagram.  see if you can offset it.  also, the window can be resized below its minimum height.
 
 ## What has been picked up
 

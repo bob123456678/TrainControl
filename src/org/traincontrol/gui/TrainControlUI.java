@@ -1079,16 +1079,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (autonomyOverlayToggle != null && !autonomyOverlayToggle.isOverlayShown()) return false;
 
+        return captionIsActive(station);
+    }
+
+    /**
+     * Whether this square is one autonomy can actually use, for Show Inactive Labels.
+     *
+     * Split from captionShouldShow so that a caller which already knows the overlay's state - the
+     * static layer, which is handed it - can ask this half alone rather than have the overlay
+     * consulted twice with two possible answers mid-toggle.
+     *
+     * @param station the sensor's square
+     * @return whether its caption belongs on screen, ignoring the overlay switch
+     */
+    private boolean captionIsActive(org.traincontrol.automationui.TileGraph.TileKey station)
+    {
         if (prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT)) return true;
 
         if (station == null || this.model == null || !this.model.hasAutoLayout()) return true;
 
-        // Any copy of this square that autonomy could send a train to is enough: a square split into
-        // several Points is one place to the person looking at it, and hiding its name because one of
-        // its directions is a dead end would be a lie about the other.
+        // Any copy of this square autonomy could choose is enough: a square split into several Points
+        // is one place to the person looking at it, and hiding its name because one of its directions
+        // is barred would be a lie about the other.
+        //
+        // isChoosableByAutonomy, NOT isDestination - which was the first version of this and the
+        // reason Adam saw no effect. isDestination is a different flag; the question "will autonomy
+        // ever pick this" is answered by the standing bars in barredFromAutonomy: inactive, reversing,
+        // not an auto destination. An inactive terminus passes isDestination and is exactly what he
+        // wanted gone.
         for (org.traincontrol.automation.Point point : getAutonomyPointsForTile(station))
         {
-            if (point.isDestination()) return true;
+            if (this.model.getAutoLayout().isChoosableByAutonomy(point)) return true;
         }
 
         return false;
@@ -3523,9 +3544,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Hidden rather than emptied: the text is written by updateStationLabels from a worker as
         // trains move, so a label cleared here would fill itself in again at the next report.
-        for (Set<JLabel> labels : layoutStations.values())
+        // Per square, not wholesale (FR-023).
+        //
+        // This used to set every caption to `show`, which is why flipping Show Inactive Labels
+        // appeared to do nothing: it is the third place that decides caption visibility, it runs
+        // whenever the overlay is drawn, and it overwrote the other two without asking anything about
+        // the station. Adam: "Flipping the new setting has no effect."
+        //
+        // `show` still wins when it is false - the overlay off means no captions at all - and when it
+        // is true the per-station rule decides which come back.
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> square
+            : layoutStations.entrySet())
         {
-            for (JLabel label : labels) label.setVisible(show);
+            boolean visible = show && captionIsActive(square.getKey());
+
+            for (JLabel label : square.getValue()) label.setVisible(visible);
         }
 
         // Cleared BEFORE anything can return.  This only ever walks tiles that are IN the graph, so a

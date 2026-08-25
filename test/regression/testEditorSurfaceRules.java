@@ -816,4 +816,90 @@ public class testEditorSurfaceRules
             + "that falls back to the s88 address or the coordinates when a square has no authored "
             + "name, which is the case where the user has least else to go on");
     }
+
+    /**
+     * Java source with its // comments stripped, so a check reads code and not the prose about it.
+     */
+    private static String codeOnly(String source)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String line : source.split("\n", -1))
+        {
+            int slashes = line.indexOf("//");
+
+            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * Every caption on the diagram is shown or hidden by the same rule.
+     *
+     * FR-023 added a second reason to hide a station's name - it is one autonomy will never choose -
+     * beside the one that already existed, the overlay switch. Adam reported the new setting having no
+     * effect, and the reason was a THIRD place deciding: `showStaticAutonomyLayer` set every label to
+     * its own `show` parameter wholesale, ran whenever the overlay was drawn, and overwrote the other
+     * two without asking anything about the station.
+     *
+     * That is this codebase's most repeated defect - one decision written in more than one place -
+     * and it is exactly what the DR findings are about. So this insists there is one rule and that
+     * every site asks it, rather than trusting three call sites to stay in step.
+     */
+    @Test
+    public void testEveryCaptionVisibilityDecisionAsksTheRule() throws Exception
+    {
+        String source = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        assertTrue(source.contains("private boolean captionIsActive("),
+            "captionIsActive is gone.  It is the one answer to 'should this station's name be drawn', "
+            + "and the sites below are supposed to share it");
+
+        // Every line that shows or hides one of the diagram's caption labels.
+        java.util.List<String> deciders = new java.util.ArrayList<>();
+
+        for (String line : source.split("\n"))
+        {
+            String trimmed = line.trim();
+
+            if (!trimmed.contains(".setVisible(")) continue;
+
+            // The caption labels, and nothing else this window shows or hides.
+            if (!trimmed.startsWith("value.setVisible") && !trimmed.contains("label.setVisible"))
+            {
+                continue;
+            }
+
+            deciders.add(trimmed);
+        }
+
+        assertEquals(deciders.size(), 3,
+            "there are now " + deciders.size() + " places setting a caption label's visibility, not "
+            + "three.  A new one is not wrong in itself - but it has to ask the same rule, and this "
+            + "test is here because the third one did not: " + deciders);
+
+        for (String decider : deciders)
+        {
+            assertTrue(decider.contains("captionShouldShow") || decider.contains("visible"),
+                "a caption's visibility is being set from something other than the shared rule: "
+                + decider + ".  Setting them wholesale is what made Show Inactive Labels appear to do "
+                + "nothing (FR-023)");
+        }
+
+        // And the blanket setter in particular, by name, because it is the one that got it wrong.
+        int at = source.indexOf("public void showStaticAutonomyLayer(");
+
+        assertTrue(at > 0, "showStaticAutonomyLayer is gone - if renamed, rename it here");
+
+        String body = source.substring(at, Math.min(source.length(), at + 2600));
+
+        assertTrue(body.contains("captionIsActive("),
+            "showStaticAutonomyLayer no longer asks captionIsActive, so it is back to setting every "
+            + "caption wholesale - which is precisely the state Adam reported as 'Flipping the new "
+            + "setting has no effect'");
+    }
+
 }
