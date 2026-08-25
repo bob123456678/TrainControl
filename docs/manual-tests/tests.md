@@ -64,8 +64,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-173](#mt-173) | 2026-08-24 | The diagram strip offers Fix, not Start, when the setup has errors | fixed unvalidated | OB-090 |
 | [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092 |
 | [MT-175](#mt-175) | 2026-08-24 | Capture fills the timetable, and the table shows it filling | fixed unvalidated | MT-149, OB-097 |
+| [MT-176](#mt-176) | 2026-08-24 | What a run did survives renaming or deleting a page | fixed unvalidated | DW-A1, DW-C1 |
 
-Everything else - 124 of 175 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 176 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -8525,5 +8526,60 @@ attach the callback itself and end up testing its own wiring.
 Mutation-checked both ways. Deleting the two call sites - replaying `d8db4879` exactly - fails the
 guard. Disabling the mechanism fails the run test on "nothing was told" while the capture assertion
 still passes, which is the evidence that the two halves are genuinely independent.
+
+---
+
+<a id="mt-176"></a>
+
+### MT-176 - 2026-08-24 - What a run did survives renaming or deleting a page
+
+**Disposition:** fixed unvalidated
+**From:** DW-A1, DW-C1 (the day review)
+**Written:** 2026-08-24
+
+This one matters more than most on this list: the defect it covers could put a train into an occupied
+block, and I introduced it myself a few hours before it was found.
+
+1. Load a configuration and start autonomy. Let at least one train complete a run, so it ends up
+   somewhere other than where it started.
+2. Stop autonomy. Note where the trains are now.
+3. Rename any page.
+4. The trains must still be where step 2 left them - on the diagram, and after closing and reopening
+   TrainControl. If any train is back at its pre-run position, this has regressed.
+5. Repeat steps 1-3 but DELETE a page instead of renaming one. The deleted page's settings must stay
+   gone; the other pages' trains must stay where the run left them.
+
+#### Comments
+
+**Claude, 2026-08-24.** DW-A1, and it is worth being plain that this was my own defect, found by the
+day review a few hours after I wrote it.
+
+The rename fix marked the session's pages stale and had `captureFromLayout` refuse while that held. My
+reasoning was "a rename is refused while autonomy is running, so there is nothing in that gap the
+running layout knows that the store does not". The gap is not DURING a run - it is after one.
+
+`captureFromLayout` is the only thing that folds a run's outcome into the configuration, and it has
+exactly three callers: loading another configuration, the save on the way out, and the reset after a
+diagram edit. **Stopping autonomy captures nothing.** So between the end of a run and one of those
+three, where the trains ended up lives only in the running Layout - and a rename triggers the third
+one, which is precisely the capture I had taught the session to refuse. Run, stop, rename, and every
+placement the run produced is discarded, on every page rather than only the renamed one.
+
+**Why that is worse than losing settings.** Occupancy is derived from placements - `Point.isOccupied`
+is `currentLoc != null`, and `isPathClear` never consults the s88 - so the rebuilt configuration puts
+the trains back where they were before the run, and pressing Start can route one into a block that is
+physically occupied.
+
+**Fixed by an order, not a guard.** The capture now happens BEFORE the page changes, while the naming
+and the store still agree, and `renamePage` carries the captured entries across with everything else.
+The stale flag stays as a backstop for the capture that follows.
+
+**DW-C1, the unswept sibling.** Deleting a page had the same shape in reverse: `deletePage` forgets the
+settings, and the capture that ran afterwards wrote them straight back from the old session's naming -
+so a delete looked as though it half worked. It captures first now too.
+
+`testARunSurvivesAPageRename` covers both orders in one test on purpose: capturing first keeps the
+run, capturing afterwards loses it. Either assertion alone is a statement about one arrangement;
+together they say the difference is the ORDER and nothing else, which is the whole claim.
 
 ---

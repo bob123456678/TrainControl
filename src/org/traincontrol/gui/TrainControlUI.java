@@ -2060,6 +2060,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Folds what the running layout knows back into the configuration, and writes it.
+     *
+     * This is the ONLY thing that does that. A run moves locomotives, and where they ended up lives in
+     * the running Layout until one of the three callers of this folds it into the setup - loading
+     * another configuration, the save on the way out, and the reset after a diagram edit. Stopping
+     * autonomy does not capture; nothing else does either.
+     *
+     * DW-A1, and it is a defect I introduced earlier tonight. The rename fix marked the session stale
+     * and had captureFromLayout refuse while that held, on the reasoning that "a rename is refused
+     * while autonomy is running, so there is nothing in that gap the running layout knows". The gap I
+     * failed to think about is not during a run - it is AFTER one. Run, stop, rename a page, and the
+     * reset's capture is the one being refused, so every placement the run produced is discarded, on
+     * every page rather than just the renamed one.
+     *
+     * That is worse than losing settings. Occupancy is derived from placements - `Point.isOccupied` is
+     * `currentLoc != null`, and `isPathClear` never consults the s88 - so the rebuilt configuration
+     * puts trains where they were before the run, and Start can then route one into a block that is
+     * physically occupied.
+     *
+     * So the capture happens BEFORE the page changes, while the naming and the store still agree with
+     * each other, and `renamePage` then rekeys what was captured along with everything else. The stale
+     * flag stays as a backstop for the capture that follows.
+     *
+     * Written, not reconciled - see the caller in resetAutonomySession for why that matters on the
+     * editor path.
+     */
+    private void captureRunningLayout()
+    {
+        if (autonomySession == null || activeDiagramConfiguration == null
+            || this.model == null || !this.model.hasAutoLayout()
+            || !this.model.getAutoLayout().isValid()
+            || this.model.getAutoLayout().isRunning())
+        {
+            return;
+        }
+
+        try
+        {
+            autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),
+                activeDiagramConfiguration);
+
+            // Written, not reconciled.  This runs because the diagram is being REPLACED - a
+            // re-download, or an editor closing - and on the editor path the pages this session holds
+            // are the ones the editor mutated in place.  Cancel reverts by re-reading from disk into
+            // new page objects, so those mutations are exactly what the user just discarded, and
+            // reconciling against them deleted every setting on every square they had deleted and
+            // thought better of.  The next explicit save reconciles against pages that are current.
+            autonomySession.saveWithoutReconciling();
+        }
+        catch (Exception e)
+        {
+            this.model.log(e);
+        }
+    }
+
+    /**
      * Drops the autonomy setup, so the next request reads it again.  Called when the layout changes
      * underneath it - a session holding pages that are no longer loaded would describe a diagram nobody
      * is looking at.
@@ -2069,30 +2125,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save what this session knows BEFORE forgetting it.  Nulling activeDiagramConfiguration first
         // meant the exit-path capture - which is gated on it - skipped everything, so re-downloading
         // the diagram silently threw away every placement, home and setting made since the last save.
-        if (autonomySession != null && activeDiagramConfiguration != null
-            && this.model != null && this.model.hasAutoLayout()
-            && this.model.getAutoLayout().isValid()
-            && !this.model.getAutoLayout().isRunning())
-        {
-            try
-            {
-                autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),
-                    activeDiagramConfiguration);
-
-                // Written, not reconciled.  This runs because the diagram is being REPLACED - a
-                // re-download, or an editor closing - and on the editor path the pages this session
-                // holds are the ones the editor mutated in place.  Cancel reverts by re-reading from
-                // disk into new page objects, so those mutations are exactly what the user just
-                // discarded, and reconciling against them deleted every setting on every square they
-                // had deleted and thought better of.  The next explicit save reconciles against pages
-                // that are current.
-                autonomySession.saveWithoutReconciling();
-            }
-            catch (Exception e)
-            {
-                this.model.log(e);
-            }
-        }
+        captureRunningLayout();
 
         autonomySession = null;
 
@@ -18897,6 +18930,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // way to catch bugs across these complex types of features."
                 String currentLayout = this.LayoutList.getSelectedItem().toString();
 
+                // What the last run did, folded in while the naming still agrees with the store
+                // (DW-A1).  After the rename below it cannot be: the store is rekeyed and the pages
+                // this session holds are not, which is the whole reason the capture that follows is
+                // refused.  Doing it here means the run's placements are IN the configuration by the
+                // time renamePage rekeys it, so they travel with everything else.
+                captureRunningLayout();
+
                 org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
                     this.model.getLayoutList(), this.model.getLayout(currentLayout),
                     this.getLocalLayoutPath(), currentLayout, newLayoutName,
@@ -19016,6 +19056,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         else
                         {
+                            // Before forgetting the page, for the same reason as the rename (DW-C1).
+                            //
+                            // The capture that runs afterwards works its keys out from a session whose
+                            // pages still include this one, so it wrote the deleted page's settings
+                            // straight back - deletePage forgets them and the capture returns them,
+                            // which makes deleting a page look as though it half worked.
+                            captureRunningLayout();
+
                             int forgotten = session.getStore().deletePage(going);
 
                             if (forgotten > 0)
