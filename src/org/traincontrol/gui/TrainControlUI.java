@@ -2393,6 +2393,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             session.open(pages);
 
+            // A setup left mid-edit is put back to how it was before that edit started (OB-108).
+            //
+            // Nothing to do on almost every start: the note only survives when the last run died with
+            // the layout editor open, and then disk holds a setup keyed to squares the user dragged
+            // and page files with the track still where it was.  Left alone, the next reconciling save
+            // would prune the difference as track that does not exist.
+            //
+            // After open, so that the pages are known and rebuild has something to build against, and
+            // before anything can save - opening does not reconcile, only saving does.
+            if (session.revertUnfinishedEdit())
+            {
+                this.model.log("The last layout edit did not finish; the autonomy setup has been put "
+                    + "back to how it was before it started");
+            }
+
             // Captions written into the layout file by an earlier version are brought into the setup
             // when it opens.  A page that could not be rewritten leaves its old labels behind, and the
             // migration simply runs again next time - but the user is told, because until it succeeds

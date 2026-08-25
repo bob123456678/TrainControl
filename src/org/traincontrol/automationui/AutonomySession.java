@@ -1139,6 +1139,46 @@ public class AutonomySession
      * @param was a snapshot from snapshotSetup
      * @return whether it reached the file
      */
+    /**
+     * Notes what the setup looks like now, so an editing session that dies can be undone (OB-108).
+     *
+     * @return whether the note reached the disk
+     */
+    public boolean beginEditSession()
+    {
+        return store.rememberBeforeEdit(store.snapshotSetup());
+    }
+
+    /**
+     * The editing session ended properly, so there is nothing to undo.
+     */
+    public void endEditSession()
+    {
+        store.forgetBeforeEdit();
+    }
+
+    /**
+     * Puts the setup back to before an editing session that never ended, if there was one.
+     *
+     * Called once at startup. Almost always finds nothing, which is the point: the note is only left
+     * behind when the process died with the layout editor open, and then disk holds a setup keyed to
+     * squares the diagram never moved.
+     *
+     * @return true when something was put back
+     */
+    public boolean revertUnfinishedEdit()
+    {
+        org.json.JSONObject was = store.unfinishedEdit();
+
+        if (was == null) return false;
+
+        restoreSetup(was);
+
+        store.forgetBeforeEdit();
+
+        return true;
+    }
+
     public boolean restoreSetup(org.json.JSONObject was)
     {
         if (was == null) return true;

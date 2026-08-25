@@ -3910,6 +3910,95 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Where the setup as it stood before an editing session is kept (OB-108).
+     *
+     * @return the sidecar file, which exists only while an edit is in progress
+     */
+    private File beforeEditFile()
+    {
+        return new File(folder(), "setup-before-edit.json");
+    }
+
+    /**
+     * Writes down what the setup looked like before the layout editor started changing it.
+     *
+     * **Why this is on disk and not in memory.** The editor already keeps a snapshot in memory and
+     * puts it back on Cancel, and that works for every ordinary ending. The case it cannot cover is
+     * the one OB-108 is about: the process dying while the editor is open. The setup has been written
+     * after every drag - deliberately, because the session is rebuilt from disk after each one - while
+     * the diagram is only written at Save. So disk is left holding a setup keyed to the moved squares
+     * and page files with the track where it was, and the next reconciling save prunes the difference
+     * as track that does not exist.
+     *
+     * A snapshot that lives in memory is lost by exactly the event it exists to survive.
+     *
+     * Adam, 2026-08-25, asked which of three remedies: "ob-108 - revert to pre save state." So the
+     * pre-edit setup is kept beside the setup itself, and put back if it is still there next time -
+     * which can only mean the last session did not finish.
+     *
+     * @param was what snapshotSetup returned when the editor opened
+     * @return whether it reached the disk
+     */
+    public boolean rememberBeforeEdit(JSONObject was)
+    {
+        if (!isUsable() || was == null) return false;
+
+        try
+        {
+            folder().mkdirs();
+
+            writeJson(beforeEditFile(), was);
+
+            return true;
+        }
+        catch (IOException couldNotWrite)
+        {
+            // The edit goes ahead either way.  Refusing to let somebody edit the layout because a
+            // safety net could not be written would be a worse trade than the net being absent.
+            return false;
+        }
+    }
+
+    /**
+     * Forgets the pre-edit snapshot, because the editing session ended properly.
+     *
+     * Both endings count: Save, where the diagram and the setup are now in step, and Cancel, where
+     * the editor has already put the setup back itself. What must NOT clear it is anything else - the
+     * whole mechanism is "if this is still here, the last session did not finish".
+     */
+    public void forgetBeforeEdit()
+    {
+        File was = beforeEditFile();
+
+        if (was.isFile()) was.delete();
+    }
+
+    /**
+     * The setup as it stood before an editing session that never ended.
+     *
+     * @return the snapshot, or null when the last session closed properly - which is almost always
+     */
+    public JSONObject unfinishedEdit()
+    {
+        File was = beforeEditFile();
+
+        if (!was.isFile()) return null;
+
+        try
+        {
+            return new JSONObject(new String(Files.readAllBytes(was.toPath()),
+                StandardCharsets.UTF_8));
+        }
+        catch (IOException | RuntimeException unreadable)
+        {
+            // Unreadable is not the same as absent, and the safe answer is the same as absent: leave
+            // the setup alone.  Reverting to something that will not parse would be the loss this is
+            // meant to prevent, caused by the thing meant to prevent it.
+            return null;
+        }
+    }
+
+    /**
      * The lowest version that can read what is about to be written.
      *
      * Not simply VERSION.  Bumping every file to 2 would make every setup this build touches

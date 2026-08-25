@@ -434,6 +434,9 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         this.autonomyAsOpened = null;
+
+        // The session ended properly, so there is nothing left to revert (OB-108).
+        if (autonomy != null) autonomy.endEditSession();
     }
 
     private void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
@@ -502,6 +505,18 @@ public class LayoutEditor extends PositionAwareJFrame
             ? null : ui.getAutonomySession();
 
         this.autonomyAsOpened = opened == null ? null : opened.snapshotSetup();
+
+        // And the same snapshot on DISK (OB-108).
+        //
+        // The one above is for Cancel and works for every ordinary ending. The case it cannot cover is
+        // the process dying while this editor is open: the setup has been written after every drag,
+        // deliberately, while the diagram is only written at Save - so disk would be left holding a
+        // setup keyed to squares the diagram never moved, and the next reconciling save would prune
+        // the difference as track that does not exist.
+        //
+        // A snapshot in memory is lost by exactly the event it exists to survive. Adam: "revert to
+        // pre save state."
+        if (opened != null) opened.beginEditSession();
         
         // Mirror address preference
         this.showAddressCheckbox.setSelected(l.getShowAddress());
@@ -4824,6 +4839,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // The snapshot exists for Cancel, and this is not one.
             this.autonomyAsOpened = null;
 
+            // And the disk note goes too: the diagram and the setup are in step again (OB-108).
+            if (parent.getAutonomySession() != null) parent.getAutonomySession().endEditSession();
+
             return true;
         }
         catch (Exception ex)
@@ -5579,6 +5597,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             // Kept, so nothing can put them back.  The snapshot exists only for Cancel.
             this.autonomyAsOpened = null;
+
+            // And the disk note goes too (OB-108).
+            if (parent.getAutonomySession() != null) parent.getAutonomySession().endEditSession();
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {

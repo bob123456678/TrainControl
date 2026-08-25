@@ -176,6 +176,117 @@ public class testCancelRestoresPlacements
             + "and locomotives going");
     }
 
+    /**
+     * An editing session that never ended is put back to how it was before it started (OB-108).
+     *
+     * Adam, 2026-08-25, choosing between three remedies: "ob-108 - revert to pre save state."
+     *
+     * The class above this test is the in-memory Cancel, and it covers every ordinary ending. What it
+     * cannot cover is the one thing it is a snapshot against: **the process dying while the editor is
+     * open.** The setup is written after every gesture, deliberately, because the session is rebuilt
+     * from disk after each one; the diagram is only written at Save. So a crash leaves disk holding a
+     * setup keyed to squares the user dragged and page files with the track still where it was, and the
+     * next reconciling save prunes the difference as track that does not exist.
+     *
+     * A snapshot that lives in memory is lost by exactly the event it exists to survive.
+     *
+     * The crash is played by throwing the session away and opening a new one on the same folder, which
+     * is all a restart is from the setup's point of view.
+     *
+     * MUTATION: making `rememberBeforeEdit` return false without writing the sidecar - so the note is
+     * never taken - fails this test.  So does dropping the `forgetBeforeEdit` from `endEditSession`,
+     * on the control below.
+     */
+    @Test
+    public void testAnEditThatNeverFinishedIsPutBack() throws IOException
+    {
+        TileKey sensor = furnished();
+
+        // The editor opening, which is where beginEditSession is called from
+        assertTrue(session.beginEditSession(), "the note was not written, so nothing below tests it");
+
+        // The edit, written as it goes the way every gesture writes it
+        session.forgetTiles(Collections.singletonList(sensor));
+        session.saveWithoutReconciling();
+
+        assertNull(session.getLocomotiveNameAt(sensor),
+            "the edit did not take, so this test is not exercising the case");
+
+        // The crash: no Save, no Cancel, nothing.  A restart is a new session on the same folder.
+        AutonomySession afterTheCrash = new AutonomySession(layout);
+
+        afterTheCrash.open(Arrays.asList(pageOnDisk()));
+
+        assertTrue(afterTheCrash.revertUnfinishedEdit(),
+            "the unfinished edit was not noticed, so the setup would be left describing squares the "
+            + "diagram never moved and the next save would prune them");
+
+        assertEquals(afterTheCrash.getLocomotiveNameAt(sensor), "BR 218",
+            "the placement did not come back after a crash mid-edit");
+
+        assertTrue(afterTheCrash.getStore().isStation(sensor),
+            "the station did not come back after a crash mid-edit");
+
+        // And it is spent: a second start finds nothing to do, or every later start would keep
+        // dragging the setup back to a state that is now several edits old.
+        AutonomySession startedAgain = new AutonomySession(layout);
+
+        startedAgain.open(Arrays.asList(pageOnDisk()));
+
+        assertFalse(startedAgain.revertUnfinishedEdit(),
+            "the note outlived the revert, so every subsequent start would undo the user again");
+    }
+
+    /**
+     * An editing session that DID end leaves nothing behind to revert (OB-108).
+     *
+     * The control for the test above, and the half that decides whether the mechanism is safe: the
+     * whole meaning of the note is "if this is still here, the last session did not finish".  If a
+     * clean Save left it behind, the next start would throw away the edit the user just saved - which
+     * is a far worse failure than the one being fixed.
+     *
+     * Both endings are checked, because the editor has both and they are wired separately.
+     */
+    @Test
+    public void testAnEditThatFinishedLeavesNothingBehind() throws IOException
+    {
+        TileKey sensor = furnished();
+
+        // Ending one: Save.
+        session.beginEditSession();
+        session.forgetTiles(Collections.singletonList(sensor));
+        session.saveWithoutReconciling();
+        session.endEditSession();
+
+        AutonomySession afterSave = new AutonomySession(layout);
+
+        afterSave.open(Arrays.asList(pageOnDisk()));
+
+        assertFalse(afterSave.revertUnfinishedEdit(),
+            "a saved edit was treated as unfinished, so the next start would undo what the user just "
+            + "saved");
+
+        assertNull(afterSave.getLocomotiveNameAt(sensor),
+            "the saved edit was reverted anyway");
+
+        // Ending two: Cancel, which puts the setup back itself and then closes the session.
+        org.json.JSONObject asOpened = afterSave.snapshotSetup();
+
+        afterSave.beginEditSession();
+        afterSave.setPointName(new TileKey("main", 3, 1), "Somewhere");
+        afterSave.saveWithoutReconciling();
+        afterSave.restoreSetup(asOpened);
+        afterSave.endEditSession();
+
+        AutonomySession afterCancel = new AutonomySession(layout);
+
+        afterCancel.open(Arrays.asList(pageOnDisk()));
+
+        assertFalse(afterCancel.revertUnfinishedEdit(),
+            "a cancelled edit was treated as unfinished.  Cancel has already put the setup back, so a "
+            + "second revert on top of it is undoing an undo");
+    }
+
     // ------------------------------------------------------------------------------------------
 
     /**
