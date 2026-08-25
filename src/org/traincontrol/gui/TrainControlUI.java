@@ -2544,14 +2544,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Everything that follows an autonomy configuration loading successfully, in one place so the panel
-     * load and the startup resume cannot drift apart: the dependent tabs appear, the monitor follows the
-     * new layout, the overlay switches on, and the view jumps to the track it is all about.
-     *
-     * @param name the configuration that loaded, for the log
-     * @param resumed whether this was the startup resume rather than the user pressing the button
-     */
-    /**
      * Re-attaches the panels that describe a running railway to the layout that is running it.
      *
      * The timetable and the locomotive status panel are descriptions of path starts and path ends and
@@ -2576,6 +2568,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+    /**
+     * Everything that follows an autonomy configuration loading successfully, in one place so the panel
+     * load and the startup resume cannot drift apart: the dependent tabs appear, the monitor follows the
+     * new layout, the overlay switches on, and the view jumps to the track it is all about.
+     *
+     * @param name the configuration that loaded, for the log
+     * @param resumed whether this was the startup resume rather than the user pressing the button
+     */
     public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
         // both from the JSON path, and for the same reasons: the route list repaints against the new
@@ -20889,10 +20889,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ));
     
     /**
-     * Checks if layout files are being loaded from the local filesystem
-     * @return 
-     */
-    /**
      * Whether the track diagram in use lives on the Central Station rather than on this computer.
      *
      * Public because the autonomy menu has to ask it: autonomy needs a local layout, and the notice
@@ -20917,6 +20913,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         downloadCSLayoutMenuItemActionPerformed(null);
     }
 
+    /**
+     * Checks if layout files are being loaded from the local filesystem
+     * @return 
+     */
     private boolean isLocalLayout()
     {
         return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));

@@ -754,13 +754,41 @@ public class testEditorSurfaceRules
             + "whenever no train is standing there - so this asks the user to confirm removing "
             + "something whose identity is not shown anywhere on screen (FR-014)");
 
-        // The named variants exist and are formatted, not looked up flat: I18n.f is what puts the
-        // station into them, and a plain t() on a key holding {0} would show the placeholder.
+        // Each named variant is asked for in the form its own VALUE requires.
+        //
+        // This used to assert that both keys were fetched with I18n.f, on the stated grounds that
+        // "it carries a {0}". That was true of both when it was written and is the kind of fact a
+        // test should not be holding in its head: MT-162 took the placeholder out of
+        // menuShowStationHereNamed - the menu was naming the same station twice in two lines - and
+        // this failed, naming a reason that had stopped being true. A guard that has to be edited
+        // whenever the thing it guards legitimately changes teaches people to edit guards.
+        //
+        // So it reads the bundle. A value with a placeholder must be formatted, because I18n.t would
+        // put the {0} on the menu; a value without one must NOT be, because I18n.f with an argument
+        // nothing consumes is a caller that thinks it is saying something it is not. Both directions
+        // matter, and only the first was ever checked.
+        java.util.Properties bundle = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream(
+            "src/org/traincontrol/resources/messages.properties"))
+        {
+            bundle.load(in);
+        }
+
         for (String key : new String[] {"menuShowStationHereNamed", "menuClearStationHereNamed"})
         {
-            assertTrue(source.contains("I18n.f(\"autosetup.ui." + key + "\""),
-                "autosetup.ui." + key + " is not formatted with a station name. It carries a {0}, so "
-                + "asking for it with I18n.t would put the placeholder itself on the menu");
+            String value = bundle.getProperty("autosetup.ui." + key);
+
+            assertNotNull(value, "autosetup.ui." + key + " is gone from the bundle");
+
+            boolean placeholder = value.contains("{0}");
+
+            assertEquals(source.contains("I18n.f(\"autosetup.ui." + key + "\""), placeholder,
+                "autosetup.ui." + key + " reads \"" + value + "\", which " + (placeholder
+                    ? "carries a placeholder - so it has to be fetched with I18n.f, or the {0} itself "
+                      + "appears on the menu"
+                    : "carries no placeholder - so fetching it with I18n.f passes an argument nothing "
+                      + "uses, which is a caller under the impression it is naming the station"));
         }
 
         // And both live in the shared method, so a menu built somewhere else cannot quietly offer an

@@ -84,12 +84,6 @@ public class AutonomySession
     }
 
     /**
-     * Reads the setup for these pages and derives everything from it.
-     *
-     * @param diagrams every page of the layout
-     * @throws IOException if the setup exists but cannot be read
-     */
-    /**
      * Whether a page has been renamed since these page objects were handed over.
      *
      * A rename rekeys the STORE and writes a new diagram file. It does not rename the LayoutDiagram
@@ -121,6 +115,12 @@ public class AutonomySession
         return this.pagesStale;
     }
 
+    /**
+     * Reads the setup for these pages and derives everything from it.
+     *
+     * @param diagrams every page of the layout
+     * @throws IOException if the setup exists but cannot be read
+     */
     public void open(List<LayoutDiagram> diagrams) throws IOException
     {
         // These pages are current by definition: they are the ones just read from disk.
