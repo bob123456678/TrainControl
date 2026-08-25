@@ -862,6 +862,20 @@ public class Layout
     {
         if (l == null || p == null) return;
 
+        // Adam's rule reaches the DERIVED homes too (LD-8).
+        //
+        // A square drawn as more than one graph Point cannot be a home, because "is the train home?"
+        // would have more than one answer - and nothing about that is less true when the home was
+        // derived from where a train happens to be standing rather than assigned by hand. Refusing it
+        // only at the assignment door left the invalid state as the DEFAULT on any layout where a
+        // train is parked on such a square, which is where the rule matters most: a layout with no
+        // assignments at all is exactly the one that runs on derived homes.
+        //
+        // Silent, because nobody asked for this one. An assignment is a request and gets a refusal
+        // with a reason; a derived home is the graph noticing where a train is, and a square that
+        // cannot be a home is simply not noticed.
+        if (p.getBlock() != null) return;
+
         // Already has a home: keep it.  Moving a locomotive by hand does not re-home it.
         if (this.homeStations.containsKey(l)) return;
 
@@ -955,10 +969,18 @@ public class Layout
 
         // Refused at the MODEL door, not only in the menu.
         //
-        // The menu asks canBeHome and greys the item, which stops a click. It does not stop a
-        // hand-edited file, an imported configuration or the scripting API, and this is a state Adam
-        // has ruled invalid rather than merely unwise - "any home with two graph points should be
-        // refused" - so the one door everything comes through is where it belongs.
+        // The menu asks canBeHome and greys the item, which stops a click. It does not stop the
+        // scripting API, and this is a state Adam has ruled invalid rather than merely unwise - "any
+        // home with two graph points should be refused".
+        //
+        // This is NOT "the one door everything comes through", which is what the first version of
+        // this comment claimed and review disproved by walking the other two. `parseAuto` calls
+        // `Point.setHomeLoc` directly, so a hand-edited or imported configuration came straight past
+        // here; and the POSITIONAL default in claimHome makes a square the home of whatever is
+        // standing on it, with no check at all - which is the state every layout with no explicit
+        // assignments is in, including Adam's own. Both are handled now, each in its own place,
+        // because neither can use the throw: a load must not refuse the whole layout over one line,
+        // and a derived home is not something a caller asked for.
         //
         // Only when a home is being SET. Clearing one is always allowed: a layout that has somehow
         // reached the invalid state must be able to get out of it.
@@ -6406,7 +6428,24 @@ public class Layout
                                 point.getString("name"));
                         }
 
-                        layout.getPoint(point.getString("name")).setHomeLoc(home);
+                        Point homeAt = layout.getPoint(point.getString("name"));
+
+                        // The same rule the assignment door enforces, at the door a FILE comes
+                        // through (LD-8).
+                        //
+                        // Said and skipped rather than thrown: a configuration is read line by line
+                        // and one invalid home is not a reason to refuse the whole railway. The
+                        // operator is told, because a home that silently did not load is a Return
+                        // Home that silently does something else.
+                        if (home != null && homeAt.getBlock() != null)
+                        {
+                            control.logf("autolayout.errorHomeSquareIsSeveralPoints",
+                                home.getName(), homeAt.getName());
+                        }
+                        else
+                        {
+                            homeAt.setHomeLoc(home);
+                        }
                     }
                 }
                 

@@ -14459,7 +14459,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         String conflict = route.conflictingAccessory();
 
-        if (conflict == null) return false;
+        // No conflict any more means YES, not no (LD-8).
+        //
+        // This returned false for "there is nothing to confirm" and for "the user said no", and both
+        // callers treat false as "do not run it". Autonomy releases accessories from its own threads
+        // as trains move, so the conflict really can clear between the caller's check and this one -
+        // and when it did, the route did nothing at all, with no dialog and no log line, because the
+        // model's own refusal was never reached either.
+        //
+        // The question this method answers is "may this route run", and with no conflict the answer
+        // is plainly yes.
+        if (conflict == null) return true;
 
         Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
@@ -20580,7 +20590,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (crop.isSelected())
                 {
-                    String cropped = cropLocIcon(source, l, f);
+                    // Cancel is not a failure, and treating it as one was destructive (LD-6).
+                    //
+                    // cropLocIcon returned null for both "the user pressed Cancel" and "the picture
+                    // could not be read", and the line below then fell back to the UNCROPPED file -
+                    // so pressing Cancel in the crop dialog set the full photograph as the icon and
+                    // deleted the crop that was there before. Escape and the window's close box
+                    // landed in the same place.
+                    //
+                    // The dialog's own javadoc already said null meant "leave everything exactly as
+                    // it was, not a failure"; the two contracts were written the same day and the
+                    // code followed the wrong one.
+                    boolean[] cancelled = {false};
+
+                    String cropped = cropLocIcon(source, l, f, cancelled);
+
+                    // Nothing is assigned and nothing is deleted: the locomotive keeps the icon it
+                    // had, which is what cancelling a dialog means.
+                    if (cancelled[0]) return;
 
                     if (cropped != null) chosenURL = cropped;
                 }
@@ -20622,11 +20649,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param parent the component the dialog should centre on
      * @param l the locomotive the icon is for; its name is used to make the file recognisable
      * @param chosen the picture the user picked, never written to
+     * @param cancelled set to true when the user dismissed the crop dialog, which is NOT a failure:
+     *                  the caller must then change nothing at all. Collapsing the two used to set the
+     *                  uncropped photograph as the icon and delete the crop it replaced (LD-6)
      * @return the URL of the cropped icon, or null if there is nothing to use - the user cancelled,
      *         the picture could not be read, or the folder could not be written - in which case the
      *         caller must fall back to the uncropped original
      */
-    private String cropLocIcon(Component parent, Locomotive l, File chosen)
+    private String cropLocIcon(Component parent, Locomotive l, File chosen, boolean[] cancelled)
     {
         BufferedImage picture;
 
@@ -20651,7 +20681,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         BufferedImage cropped = LocIconCropDialog.crop(parent, picture, LOC_ICON_WIDTH,
             LOC_ICON_HEIGHT);
 
-        if (cropped == null) return null;
+        // The dialog returns null only when the user said no - Cancel, Escape, or the close box. Its
+        // own javadoc calls that "leave everything exactly as it was, not a failure", and the caller
+        // needs to be able to tell it apart from the failures above, which DO fall back to the file
+        // the user picked.
+        if (cropped == null)
+        {
+            if (cancelled != null) cancelled[0] = true;
+
+            return null;
+        }
 
         // A fresh name every time, never the same file overwritten.  getLocImage caches by URL, and
         // the cache has no way to know a file behind a URL it has already read has changed - reusing

@@ -1101,6 +1101,11 @@ public final class HomeStaging
      * Split out of {@link #canBeHome} so the refusal can say which of the two reasons it is - a
      * greyed item with no explanation is the thing OB-050 was about.
      *
+     * For a day it had no caller but canBeHome, so the stated purpose was unrealised and both doors
+     * went on treating the two reasons as one: the right-click menu warned "no train can come to rest
+     * here" about a square whose problem was that it is two places, then let the operator proceed into
+     * a throw. Review found it. Both doors ask this now, and each acts on the answer it is about.
+     *
      * @param loc the locomotive being assigned
      * @param at the square
      * @return a message key, or null when the assignment is fine

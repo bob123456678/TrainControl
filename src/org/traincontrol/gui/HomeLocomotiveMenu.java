@@ -344,7 +344,28 @@ final class HomeLocomotiveMenu
         // actually wrong was finding out from a dialog that blames the track.
         Locomotive chosen = ui.getModel().getLocByName(choice);
 
-        if (chosen != null && !HomeStaging.canBeHome(chosen, p))
+        // WHICH of the two reasons, not just "one of them" (LD-9).
+        //
+        // canBeHome is false for two unrelated things and this treated them as one, so a square that
+        // is more than one graph Point produced the dialog below - "no train can come to rest here",
+        // which is a different claim and not the true one. Worse, that dialog is deliberately
+        // warn-and-proceed, so answering Yes went on to setHomeLocomotive, which THROWS for that case
+        // and put up a second dialog contradicting the first.
+        //
+        // The button that offers an action has to ask the guard's own predicate. Adam ruled the
+        // multi-Point square invalid, so it is refused here rather than offered; "cannot come to rest"
+        // he did not, so it stays a warning, for the reason written below.
+        String whyNot = chosen == null ? null : HomeStaging.whyNotAHome(chosen, p);
+
+        if ("autolayout.errorHomeSquareIsSeveralPoints".equals(whyNot))
+        {
+            JOptionPane.showMessageDialog(dialogParent,
+                I18n.f("autolayout.errorHomeSquareIsSeveralPoints", choice, p.getName()));
+
+            return;
+        }
+
+        if (whyNot != null)
         {
             int proceed = JOptionPane.showOptionDialog(
                 dialogParent,

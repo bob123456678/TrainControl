@@ -431,17 +431,6 @@ public final class LayoutLabel extends JLabel
                                             && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
                                         ? (org.traincontrol.marklin.MarklinRoute) c.getRoute() : null;
 
-                                    if (onTile != null && onTile.conflictingAccessory() != null)
-                                    {
-                                        if (!tcUI.confirmRouteOverActivePath(onTile, tcUI)) return;
-
-                                        lastClicked = System.currentTimeMillis();
-
-                                        new Thread(() -> onTile.execRouteOverridingConflicts()).start();
-
-                                        return;
-                                    }
-
                                     lastClicked = System.currentTimeMillis();
 
                                     // Everything below this point blocks, so none of it belongs on the
@@ -496,6 +485,38 @@ public final class LayoutLabel extends JLabel
                                                 {
                                                     Thread.currentThread().interrupt();
                                                 }
+                                            }
+                                        }
+
+                                        // The route conflict is asked HERE, not before the worker
+                                        // (LD-7).
+                                        //
+                                        // This block used to sit above, between the power-off dialog
+                                        // that sets powerOnFirst and the worker that consumes it, and
+                                        // it returned - so agreeing to "turn the power on and proceed"
+                                        // ran the route into a dead track with the power still off,
+                                        // silently. That is precisely the case this whole feature was
+                                        // built for: recovering a turnout that did not take its
+                                        // command, after an emergency stop.
+                                        //
+                                        // Asking after the power is on is also the better moment on
+                                        // its own terms - it is closer to the action, so the answer is
+                                        // less likely to have gone stale between the question and the
+                                        // command.
+                                        if (onTile != null)
+                                        {
+                                            String conflict = onTile.conflictingAccessory();
+
+                                            if (conflict != null)
+                                            {
+                                                if (!tcUI.confirmRouteOverActivePath(onTile, tcUI))
+                                                {
+                                                    return;
+                                                }
+
+                                                onTile.execRouteOverridingConflicts();
+
+                                                return;
                                             }
                                         }
 

@@ -1944,6 +1944,79 @@ public class testHomeStaging
     }
 
     /**
+     * Adam's home rule reaches the two doors homes actually come from (LD-8).
+     *
+     * The assignment door was given the rule and its comment claimed to be "the one door everything
+     * comes through". Review walked the other two and it is not:
+     *
+     *   - `parseAuto` calls `Point.setHomeLoc` directly, so a hand-edited or imported configuration
+     *     installed the forbidden home unchallenged - which is the case the model door was added FOR,
+     *     since a file cannot be greyed out.
+     *   - the POSITIONAL default in `claimHome` makes a square the home of whatever is standing on
+     *     it, with no check at all. That is the state every layout with no explicit assignments is
+     *     in, including Adam's own - so the state he ruled invalid was the DEFAULT wherever a train
+     *     happened to be parked on a multi-Point square.
+     *
+     * The rule matters most exactly where it was missing. Its purpose is to stop the planner and the
+     * runtime disagreeing about "is the train home?", and a derived home makes them disagree just as
+     * well as an assigned one.
+     *
+     * Both doors are checked here, in the order they can be reached.
+     *
+     * MUTATION: putting back `homeAt.setHomeLoc(home)` unconditionally in `parseAuto` fails the first
+     * half; removing the `p.getBlock() != null` return from `claimHome` fails the second.
+     */
+    @Test
+    public void testTheHomeRuleReachesTheDoorsHomesActuallyComeFrom() throws Exception
+    {
+        // The file door: a configuration naming a home on a square that is two graph Points.
+        Layout fromFile = load(blockAssigningItsWatchedSquare(LOC_A));
+
+        Point copy = fromFile.getPoint("HS W2");
+
+        assertNotNull(copy.getBlock(),
+            "the fixture did not take: this test needs a square emitted as more than one Point");
+
+        assertNull(copy.getHomeLoc(),
+            "a configuration file installed a home on a square that is two graph points. The "
+            + "assignment door refuses this and a file comes past it, which is the door the rule was "
+            + "added for - a file cannot be greyed out");
+
+        // And the control: an ordinary square in the same file keeps the home it was given, so the
+        // load is not simply dropping homes.
+        Layout ordinary = load(ring(LOC_A, LOC_B, LOC_C));
+
+        Point plain = ordinary.getPoint("HS D");
+
+        assertNull(plain.getBlock(), "the control square must not be a multi-point square");
+
+        ordinary.setHomeLocomotive("HS D", LOC_A);
+
+        assertEquals(plain.getHomeLoc(), loc(LOC_A),
+            "an ordinary square stopped accepting a home, so the rule refuses more than it was asked");
+
+        ordinary.setHomeLocomotive("HS D", null);
+
+        // The positional door: a train standing on such a square must not derive a home from it.
+        Layout derived = load(blockOfTwoWatching(null, null));
+
+        Point standing = derived.getPoint("HS W2");
+
+        assertNotNull(standing.getBlock(), "the fixture did not take");
+
+        standing.setLocomotive(loc(LOC_A));
+
+        derived.rebuildHomeStations();
+
+        assertFalse(derived.getHomeStations().containsValue(standing),
+            "a train parked on a square that is two graph points was given it as a home by the "
+            + "positional default. Nobody assigned it, which is exactly why it went unnoticed - and "
+            + "it is the state Adam ruled invalid, arrived at by default rather than by a choice");
+
+        standing.setLocomotive(null);
+    }
+
+    /**
      * A square that is more than one graph Point cannot be a home (Adam's ruling, 2026-08-25).
      *
      * Asked whether the staging planner should stop treating a shared sensor as one square for FR-001,
@@ -2816,6 +2889,33 @@ public class testHomeStaging
      * @param locOnC the same locomotive on HS C instead - the control - or null
      * @return the graph JSON
      */
+    /**
+     * The block fixture, with a HOME assigned to the second copy of the watched square.
+     *
+     * Built by rewriting what `square` produced rather than by hand, and asserting the rewrite landed,
+     * so a change to the square fixture cannot silently yield a config with no assignment in it -
+     * which would make the test using it pass while testing nothing. Same device as `ringAssigning`.
+     *
+     * @param homeAtW2 the locomotive named as the home
+     * @return the graph JSON
+     */
+    private static String blockAssigningItsWatchedSquare(String homeAtW2)
+    {
+        // Through json() on both sides, like ringAssigning: the fixture emits single quotes and
+        // json() converts them, so a raw fragment never matches what blockOfTwoWatching returns.
+        String raw = square("HS W2", null, "HSW", false, null);
+        String plain = json(raw);
+        String assigned = json(raw.substring(0, raw.length() - 1)
+            + ", 'home': '" + homeAtW2 + "'}");
+
+        String config = blockOfTwoWatching(null, null);
+
+        assertTrue(config.contains(plain),
+            "precondition: the block fixture must still emit HS W2 plainly");
+
+        return config.replace(plain, assigned);
+    }
+
     private static String blockOfTwoWatching(String locOnW2, String locOnC)
     {
         return json("{'points': ["

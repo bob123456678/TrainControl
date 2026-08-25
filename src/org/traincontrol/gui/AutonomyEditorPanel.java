@@ -2841,7 +2841,14 @@ public class AutonomyEditorPanel extends JPanel
 
         if (loc == null) return true;
 
-        return org.traincontrol.automation.HomeStaging.canBeHome(loc, point);
+        // Only the "cannot come to rest" half, which is what this method is named for and what its
+        // caller warns about (LD-9).
+        //
+        // canBeHome also answers false for a square that is more than one graph Point, and that is a
+        // refusal rather than a warning - the model throws for it. Rolling the two together here made
+        // this method warn about resting for a square whose problem is nothing to do with resting.
+        return !"autolayout.errorHomeCannotRestHere".equals(
+            org.traincontrol.automation.HomeStaging.whyNotAHome(loc, point));
     }
 
     /**
