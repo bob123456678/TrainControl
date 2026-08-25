@@ -2784,6 +2784,43 @@ def _ledger_row_cells(line):
     return [p.strip() for p in parts[1:-1]]
 
 
+def entries_without_a_separator(tests_text):
+    """Test entries whose section does not end with the rule that closes it.
+
+    Every entry runs from its own anchor to the next one and closes with a line of three dashes. An
+    entry missing that runs on into the next one - so the next entry's anchor sits inside its body,
+    and anything reading the file by section gets one entry where there are two.
+
+    Adam, 2026-08-25: "MT-177 works but I cannot submit it in the triage app for some reason."
+
+    It was not about MT-177. Moving the picked-up OB entries into the MTs their receipts name
+    inserted at the end of the captured section, which is AFTER the closing rule - so the rule ended
+    up mid-entry and three sections ran together. This is cheap to check and was not being checked,
+    which is why an editing script could do it silently and the first sign was an application
+    refusing a submission.
+    """
+
+    import re as _re
+
+    anchors = [m for m in _re.finditer(r'^<a id="(mt-\d+)"></a>$', tests_text, _re.M)]
+
+    out = []
+
+    for at, anchor in enumerate(anchors):
+        start = anchor.end()
+        end = anchors[at + 1].start() if at + 1 < len(anchors) else len(tests_text)
+
+        body = [line.strip() for line in tests_text[start:end].split("\n") if line.strip()]
+
+        if not body:
+            continue
+
+        if body[-1] != "---":
+            out.append({"ref": anchor.group(1).upper(), "ends_with": body[-1][:60]})
+
+    return out
+
+
 def entries_without_kind(issues_text):
     """Inbox entries with no **Kind:** line.
 
@@ -3003,6 +3040,7 @@ def cli_verify_ledger(_args):
 
     undated = undated_followups(read_text(ISSUES_MD)[0])
     no_kind = entries_without_kind(read_text(ISSUES_MD)[0])
+    no_rule = entries_without_a_separator(read_text(TESTS_MD)[0])
 
     out = {
         "duplicate_tags": doc.duplicate_tags,
@@ -3021,10 +3059,11 @@ def cli_verify_ledger(_args):
         "invalid_disposition": invalid_disposition,
         "undated_followups": undated,
         "entries_without_kind": no_kind,
+        "entries_without_a_separator": no_rule,
         "clean": not (missing or stale or disposition_drift or date_drift or duplicate_refs
                       or doc.duplicate_tags or duplicate_ledger_rows or malformed_ledger_rows
                       or bad_href or invalid_disposition or undated
-                      or no_kind),
+                      or no_kind or no_rule),
     }
 
     return out, (0 if out["clean"] else 3)
