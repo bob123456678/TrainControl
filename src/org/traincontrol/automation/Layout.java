@@ -714,10 +714,27 @@ public class Layout
     {
         Set<Accessory> activeAccessories = new HashSet<>();
         
-        for (List<Edge> activeEdges : this.activeLocomotives.values())
+        for (Map.Entry<Locomotive, List<Edge>> active : this.activeLocomotives.entrySet())
         {
-            for (Edge e : activeEdges)
+            for (Edge e : active.getValue())
             {
+                // Only the part of the path the train has not finished with.
+                //
+                // Adam, 2026-08-25: "once a train passes, signals on the route, but behind the train,
+                // should still be allowed to be changed by auto routes."  He is right, and this walked
+                // the WHOLE path for the whole run - so an accessory the train cleared thirty seconds
+                // ago was reported as active until the run ended.
+                //
+                // isLockHeld is the same flag executePath clears as the train goes
+                // (setLockedEdgeUnoccupied), so this follows the train rather than the plan.
+                //
+                // NOTE, because it is the difference between this being a fix and being cosmetic: the
+                // progressive release only runs when atomicRoutes is OFF.  With it on - which is what
+                // Adam's own configuration uses - the whole path is deliberately held until the run
+                // ends, so this changes nothing for him and the whole path stays protected.  That is
+                // what atomic means, and narrowing it further would be arguing with the setting.
+                if (!e.isLockHeld(active.getKey())) continue;
+
                 for (String acc : e.getConfigCommands().keySet())
                 {
                     Accessory a = this.control.getAccessoryByName(acc);
