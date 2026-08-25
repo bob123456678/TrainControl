@@ -8106,6 +8106,29 @@ throughout and the panel was simply never repainted.
 selection dragged? And did the station reappear if you closed and reopened the editor without moving
 the tile back - because if it did, the data was there all along and this is a repaint.
 
+**Adam, 2026-08-24.** "It seems like it works now!"
+
+**Claude, 2026-08-24.** Recorded, and with a caveat, because I never reproduced this half and so cannot
+say I fixed it.
+
+The likeliest explanation is that it was never independent: it was the rename corruption seen from
+another angle. While placements were being duplicated, a locomotive was recorded in two places, which
+makes autonomy refuse the ENTIRE setup - and a refused setup has no running Layout, so the labels have
+no locomotive to read. That is consistent with everything observed: with the duplicates gone the
+labels have something true to show, and it explains why four realistic reproductions of the move
+itself came back clean. It also matches this entry's own other sentence - "renaming a page MOVES
+locomotives to other stations" is the same duplication described from the other side.
+
+**The caveat.** Data already corrupted by a rename made BEFORE the fix stays corrupted; the fix stops
+new duplicates, it does not remove old ones. If a locomotive ever reads as being in two places again,
+the autonomy editor's list will say so in as many words, and the count on the diagram strip will show
+it as an error rather than a warning.
+
+Marked fixed unvalidated rather than validated: what Adam confirmed is that the symptom is gone, which
+is not the same as this entry having a test that would catch its return. The move is covered by
+`testAMovedTileCarriesItsSetup`; the label path it turns on still is not, and cannot be without a
+window.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
