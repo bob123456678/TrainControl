@@ -2733,6 +2733,50 @@ public class AutonomySession
     }
 
     /**
+     * How many things must be dealt with before this setup will run.
+     *
+     * The one definition of "broken", because there were two and they disagreed. Starting autonomy is
+     * refused when the checks report any ERROR (OB-057), while the diagram strip decided what to offer
+     * from hasBlockingProblems() - which asks the GRAPH only, about scissors crossings and unpaired
+     * links. A setup with four unnamed stations has no blocking problem and four errors, so the strip
+     * went on showing a live Start button that every press of was refused.
+     *
+     * Adam, OB-090: "the fix it button is not shown, rather just start autonomy when the config had
+     * worked before."
+     *
+     * Blocking problems are counted through check() rather than added to it - AutonomyChecks copies
+     * every one of them in as an ERROR finding - with hasBlockingProblems() kept in the disjunction
+     * below because check() returns nothing at all when the graph has not been derived yet.
+     *
+     * @return the number of ERROR findings
+     */
+    public int errorCount()
+    {
+        int errors = 0;
+
+        for (AutonomyChecks.Finding finding : check())
+        {
+            if (finding.getSeverity() == AutonomyChecks.Severity.ERROR) errors++;
+        }
+
+        return errors;
+    }
+
+    /**
+     * Whether anything must be dealt with before this setup will run.
+     *
+     * Wider than hasBlockingProblems(): that one asks whether the graph can be BUILT, this one whether
+     * the setup can be RUN, and the second is the question every affordance that offers to run it has
+     * to ask. See errorCount().
+     *
+     * @return
+     */
+    public boolean hasErrors()
+    {
+        return hasBlockingProblems() || errorCount() > 0;
+    }
+
+    /**
      * Whether anything would stop this being built.
      * @return
      */

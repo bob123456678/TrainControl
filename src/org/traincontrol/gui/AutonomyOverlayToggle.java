@@ -152,6 +152,14 @@ public class AutonomyOverlayToggle extends JPanel
         run.setMargin(new java.awt.Insets(0, 10, 0, 10));
         run.addActionListener(e ->
         {
+            // Fixing is not starting: this one goes to the editor, at the first thing found, exactly
+            // as the count beside it does.
+            if (fixing)
+            {
+                ui.openAutonomyEditor(firstFinding);
+                return;
+            }
+
             if (source != null) source.doClick();
         });
 
@@ -227,6 +235,22 @@ public class AutonomyOverlayToggle extends JPanel
             : stop != null && stop.isEnabled() ? stop
             : start != null && start.isEnabled() ? start : null;
 
+        // Fix it rather than Start, when starting would be refused (OB-090).
+        //
+        // The Start button's enabled state says nothing about the checks - errors are asked at press
+        // time, in refuseAutonomyStartWhileBroken - so this strip mirrored a live Start button while
+        // every press of it produced a dialog saying no.  That is the OB-057 shape at a third site:
+        // "it says there are errors, but the start autonomy button is still visible."
+        //
+        // Adam, OB-090: "the setup refuses to run when there are errors.  it runs on warnings, but on
+        // errors it should say fix it."  So warnings are left entirely alone - a setup with fifty of
+        // them starts, and the strip goes on offering Start.
+        //
+        // Against START only.  Stop wins the line above and must keep winning: an error appearing
+        // while trains are running is the moment stopping matters most, and swapping the brake for a
+        // button that opens an editor would take it away.
+        fixing = source != null && source == start && lastTotalErrors > 0;
+
         if (source == null)
         {
             run.setVisible(false);
@@ -236,10 +260,15 @@ public class AutonomyOverlayToggle extends JPanel
             return;
         }
 
-        run.setText(source.getText());
-        run.setToolTipText(source.getToolTipText());
+        run.setText(fixing ? I18n.t("autosetup.ui.btnFixSetup") : source.getText());
+
+        run.setToolTipText(fixing
+            ? I18n.t("autosetup.ui.tooltipFixSetup") : source.getToolTipText());
+
         run.setFont(source.getFont());
-        run.setBackground(source.getBackground());
+
+        // The Start button's green says "ready", which is the one thing this state is not.
+        run.setBackground(fixing ? FIX_COLOUR : source.getBackground());
 
         // Held to the checkbox's height.  This strip is the scroll pane's column header, so its height
         // is whatever its tallest child asks for - and a button at its natural size is taller than a
@@ -297,6 +326,17 @@ public class AutonomyOverlayToggle extends JPanel
     private org.traincontrol.automationui.TileGraph.TileKey firstFinding;
 
     /**
+     * Whether the run button is currently offering to fix the setup rather than to start it.
+     */
+    private boolean fixing;
+
+    /**
+     * The Fix button's fill: an amber that reads as the same family of news as the count beside it,
+     * rather than the Start button's green.
+     */
+    private static final java.awt.Color FIX_COLOUR = new java.awt.Color(255, 226, 180);
+
+    /**
      * Shows what the checks currently say.
      *
      * @param errors how many things are wrong
@@ -314,6 +354,12 @@ public class AutonomyOverlayToggle extends JPanel
         lastPageWarnings = pageWarnings;
         lastTotalErrors = totalErrors;
         lastTotalWarnings = totalWarnings;
+
+        // The run button turns on the error count, so it is re-decided here rather than only when a
+        // button's enabled state changes.  Errors appear and go without either button moving - a page
+        // renamed, a station named at last - and every early return below would otherwise leave the
+        // strip offering whatever it last decided.
+        syncRun();
 
         if (totalErrors + totalWarnings == 0)
         {

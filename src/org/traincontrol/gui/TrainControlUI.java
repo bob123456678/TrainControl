@@ -3777,16 +3777,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (getAutonomySession() == null) return false;
 
-        int errors = 0;
-
-        for (org.traincontrol.automationui.AutonomyChecks.Finding finding
-            : getAutonomySession().check())
-        {
-            if (finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR)
-            {
-                errors++;
-            }
-        }
+        // Asked of the session rather than counted here, so that the strip deciding what to OFFER and
+        // this deciding what to ALLOW cannot drift apart.  They had (OB-090).
+        int errors = getAutonomySession().errorCount();
 
         if (errors == 0) return false;
 
