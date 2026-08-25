@@ -902,4 +902,101 @@ public class testEditorSurfaceRules
             + "setting has no effect'");
     }
 
+    /**
+     * The blocked-points picker offers every stored entry, refuses the station itself, and names what
+     * it draws.
+     *
+     * RA-C2.  Nothing automated pinned any of this dialog's rules: the test that did -
+     * `testTheBlockedPointsPickerOffersOnlySquaresThatResolve` - was deleted with the FBR-B3/C7 revert,
+     * correctly, because it pinned the filters that revert removed (FBR-D20).  The filters went and the
+     * source rule went with them, and the rules that SURVIVED the revert were left with nothing.  Store
+     * level `setBlockingPoints` behaviour is tested by four classes; the dialog's offer-and-carry logic
+     * is tested by none, and it is where the last three defects in this family were.
+     *
+     * The three rules, and what each costs when it goes:
+     *
+     *   - **The station itself is never offered** (OB-083).  Watching itself makes it a station nothing
+     *     can ever be sent to, and the second door - a caption that points AT this station, carrying a
+     *     name of its own - is the back way into the same state.
+     *   - **Every stored entry is offered, whatever the filters say** (FSR-C5).  This dialog is the only
+     *     way to edit blockedPoints and `setBlockingPoints` REPLACES the stored list, so an entry it
+     *     hides is either deleted on OK (FBR-A2) or permanent, and both are worse than showing it.
+     *   - **The check box says what it is** (RA-C2).  The carried entries are precisely the squares that
+     *     have lost their name, and `getPointName` returns null for those - so the box that exists to
+     *     let the operator remove something they cannot identify rendered with no text at all.
+     *
+     * Source-level for the same reason as the caption rule above: the fault is textual - a filter that
+     * stops being qualified, a label fetched from the wrong accessor - and a dialog cannot be driven
+     * from a test in this application.
+     *
+     * Mutation this must fail: in `AutonomyEditorPanel.promptBlockingPoints`, put the check-box label
+     * back to `session.getStore().getPointName(tile)`.  Run 2026-08-25: 1 of 14 tests in this class
+     * fails, this one.  Second mutation: drop the `&& !already.contains(tile)` qualifier from the
+     * self-caption filter, which is FSR-C5 undone.  Run 2026-08-25: this test fails again, and nothing
+     * else in the class moves.
+     */
+    @Test
+    public void testTheBlockedPointsPickerCarriesAndNamesWhatIsStored() throws Exception
+    {
+        assertTrue(PANEL.isFile(), "cannot find " + PANEL.getAbsolutePath()
+            + " - a test that reads the source cannot pass by not finding it");
+
+        // Carriage returns stripped, because the window below ends on a newline and four spaces and a
+        // closing brace, and this repository checks out CRLF on Windows (FBR-C8)
+        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
+            .replace("\r", "");
+
+        int at = source.indexOf("private void promptBlockingPoints(");
+
+        assertTrue(at > 0, "promptBlockingPoints is gone.  It is the only door onto blockedPoints, so "
+            + "if it was renamed, rename it here; if it was removed, the restriction can no longer be "
+            + "edited at all and this test should say so rather than be deleted");
+
+        int ends = source.indexOf("\n    }\n", at);
+
+        assertTrue(ends > at, "could not find the end of promptBlockingPoints");
+
+        // Comments stripped, so a rule is proved by the code and not by the prose about it - this
+        // method's comments name every one of the identifiers below, several times each
+        String body = codeOnly(source.substring(at, ends));
+
+        assertTrue(body.length() > 800, "promptBlockingPoints reads as only " + body.length()
+            + " characters of code, so the window closed early and every assertion below is being made "
+            + "about a fragment");
+
+        // What is stored has to be read before the offer is built, because it is what decides the
+        // offer.  Read after, it can only be used to tick boxes that are already on the list.
+        assertTrue(body.indexOf("getBlockingPoints(station)") < body.indexOf("getNamedTiles()"),
+            "promptBlockingPoints builds its list of choices before reading what is already stored. "
+            + "The stored entries are what the filters have to be qualified BY (FSR-C5), so a read "
+            + "that happens afterwards can only tick boxes - and an entry the filters hid is then "
+            + "deleted the moment OK is pressed, because setBlockingPoints replaces the list (FBR-A2)");
+
+        assertTrue(body.contains("tile.equals(station)"),
+            "the station itself is no longer refused as a square that holds it back.  Standing there "
+            + "already decides whether it is free, so watching itself makes it a station nothing can "
+            + "be sent to (OB-083)");
+
+        assertTrue(body.contains("getCaptionTarget(tile)") && body.contains("!already.contains(tile)"),
+            "the self-caption filter is gone, or is no longer qualified by what is already stored. "
+            + "Unqualified it hides a stored entry, and this dialog is the only way to remove one - so "
+            + "the restriction becomes permanent with nothing on screen saying it is there (FSR-C5). "
+            + "Absent altogether, a caption pointing at this station is offered as though it were "
+            + "somewhere else, which is self-selection by the back door (OB-083)");
+
+        assertTrue(body.contains("for (TileKey held : already)"),
+            "the carried-entries loop is gone.  It is what puts a stored entry the filters never "
+            + "reached onto the list - a square that has since lost its name, or the station itself "
+            + "from before that was refused - and without it those entries cannot be removed by "
+            + "anybody, ever (FSR-C5)");
+
+        assertTrue(body.contains("new javax.swing.JCheckBox(\n                describeTile(tile)")
+                || body.contains("new javax.swing.JCheckBox(describeTile(tile)"),
+            "the check boxes are labelled with something other than describeTile.  The loop above "
+            + "exists to offer squares that have LOST their name, and getPointName is a plain map "
+            + "lookup that returns null for exactly those - so the box drawn for one renders with no "
+            + "text at all, ticked, asking the operator to keep or remove a thing it will not name "
+            + "(RA-C2).  describeTile falls back to the s88 address and then to the coordinates");
+    }
+
 }

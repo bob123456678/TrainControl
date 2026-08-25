@@ -51,7 +51,9 @@ JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 
 pass=0
 fail=0
+skip=0
 failed=""
+skipped=""
 
 for f in $(find test -name "*.java" | sort)
 do

@@ -217,6 +217,7 @@
         <test-one-class class="testCS3NotFoundDetection"/>
         <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>
         <test-one-class class="testFacingFollowsTheTrack"/>
+        <test-one-class class="testTheCheckerAgreesWithTheBuild"/>
         <test-one-class class="testBothProtectingSignalsAreThrown"/>
         <test-one-class class="testCommandTableMarks"/>
         <test-one-class class="testHomeAssignmentRules"/>

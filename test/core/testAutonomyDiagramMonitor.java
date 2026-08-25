@@ -3,12 +3,20 @@ package core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.DiagramMonitor;
+import org.traincontrol.automationui.GraphReducer;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
@@ -373,6 +381,371 @@ public class testAutonomyDiagramMonitor
 
         assertNotNull(monitor.getPublished(), "there is always a picture, even if it is empty");
         assertTrue(monitor.getPublished().isEmpty());
+    }
+
+    // =============================================================================================
+    // The monitor actually running: a train on real track, and a picture published about it
+    // =============================================================================================
+
+    /**
+     * A train on a claimed path is published as a lit line of squares, and it moves as the train does.
+     *
+     * TA-B9 of the 2026-08-24 test suite audit: every test above that installs a Publisher hands the
+     * monitor a `LayoutSource` whose `get()` returns null, and `compute()` returns at its null-layout
+     * check before it does anything.  So the milestone rule, the run concatenation, the location
+     * fallback and the lock wash - the 128 lines the operator is actually watching - were reached by no
+     * test at all, and a monitor that published nothing for ever passed the class.
+     *
+     * The railway here is real rather than mocked: two sensors with three plain squares between them,
+     * reduced by the real GraphReducer into one edge each way, which is what gives the edge a genuine
+     * list of squares to light.  Only the running Layout is a stand-in, because a real one needs
+     * hardware to move a train along it - and the three methods `compute` asks it are exactly the three
+     * overridden here, so what is faked is the railway's ANSWERS, not the monitor's work.
+     *
+     * Three pictures, in the order the operator sees them:
+     *
+     *   1. Path claimed, train has reached nothing: five squares, all ACTIVE, train mark on the square
+     *      it is standing on.
+     *   2. Train has reached the first Point: that square turns REACHED and the rest stay ACTIVE.
+     *   3. Train has reached the far Point: the whole line is REACHED and the mark has moved to the
+     *      far end.  The mark following the LAST milestone rather than `getLocomotiveLocation` is the
+     *      point of the fallback, and this is the only test that reaches it.
+     *
+     * Mutations this must fail, all run 2026-08-25 against a mutant compiled outside the repository:
+     *
+     *   - `DiagramMonitor.refresh`, publish deleted (`if (publisher != null) publisher.publish(...)`
+     *     removed): passed the whole class before; now fails 2 of 21, this test and the lock one.
+     *   - `compute`, milestones ignored (`boolean reached = false`): fails 1 of 21, here, on "the far
+     *     end of a completed run should show as reached".
+     */
+    @Test
+    public void testATrainOnAClaimedPathIsPublishedAndFollowedAsItMoves() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 5);
+        feedback(page, 1, 1, 22);
+        straight(page, 2, 1);
+        straight(page, 3, 1);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 24);
+
+        GraphReducer reducer = reduce(graph(page));
+
+        ReducedEdge west = edgeBetween(reducer, key("main", 1, 1), key("main", 5, 1));
+
+        assertNotNull(west, "the fixture did not reduce to an edge, so there is nothing to light");
+
+        assertEquals(west.getPath().size(), 3,
+            "the three plain squares should be inside the edge - they are what the line is drawn "
+            + "along, and an edge with no path lights only its endpoints");
+
+        // The two indexes the driver hands the monitor, here built by hand so the names are ours
+        Map<String, ReducedEdge> edges = new LinkedHashMap<>();
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        Point west88 = new Point("West", false, null);
+        Point east88 = new Point("East", false, null);
+
+        Edge run = new Edge(west88, east88);
+
+        edges.put(run.getName(), west);
+        tiles.put("West", key("main", 1, 1));
+        tiles.put("East", key("main", 5, 1));
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        StubLayout layout = new StubLayout();
+
+        layout.active.put(locomotive(), Arrays.asList(run));
+        layout.standingAt = west88;
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
+            new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    published.add(new LinkedHashMap<>(overlays));
+                }
+            });
+
+        // 1. the path is claimed and the train has reached nothing yet
+        monitor.refresh();
+
+        assertEquals(published.size(), 1,
+            "the monitor published nothing about a train standing on a claimed path.  Nothing on the "
+            + "diagram moves until it does");
+
+        Map<TileKey, TileOverlay> claimed = published.get(published.size() - 1);
+
+        assertEquals(claimed.keySet(),
+            new LinkedHashSet<>(Arrays.asList(key("main", 1, 1), key("main", 2, 1),
+                key("main", 3, 1), key("main", 4, 1), key("main", 5, 1))),
+            "the whole run, endpoints included, should be lit - not the endpoints alone and not the "
+            + "track in between alone");
+
+        for (TileKey tile : claimed.keySet())
+        {
+            assertEquals(claimed.get(tile).getState(), State.ACTIVE,
+                tile + " should be claimed-but-not-reached until the train gets there");
+        }
+
+        assertTrue(claimed.get(key("main", 1, 1)).hasTrain(),
+            "the square the train is standing on carries no train mark");
+
+        assertFalse(claimed.get(key("main", 5, 1)).hasTrain(),
+            "a train mark appeared on a square the train has not got to");
+
+        // 2. the same picture again publishes nothing - every publish repaints
+        monitor.refresh();
+
+        assertEquals(published.size(), 1,
+            "an identical picture was published twice, so a still layout repaints as often as a "
+            + "moving one");
+
+        // 3. the train reaches the near Point
+        layout.milestones.add(west88);
+
+        monitor.refresh();
+
+        assertEquals(published.size(), 2, "the train moved and the diagram was not told");
+
+        Map<TileKey, TileOverlay> partway = published.get(published.size() - 1);
+
+        assertEquals(partway.get(key("main", 1, 1)).getState(), State.REACHED,
+            "the square the train has passed should show as reached");
+
+        assertEquals(partway.get(key("main", 3, 1)).getState(), State.ACTIVE,
+            "the track ahead of the train is claimed, not reached");
+
+        // 4. and the far Point.  The mark follows the LAST milestone, which is the whole reason the
+        // location fallback exists: getLocomotiveLocation answers an arbitrary one of the several
+        // Points a running train reserves, and would leave the mark behind
+        layout.milestones.add(east88);
+
+        monitor.refresh();
+
+        assertEquals(published.size(), 3, "the train reached its destination and nothing was drawn");
+
+        Map<TileKey, TileOverlay> arrived = published.get(published.size() - 1);
+
+        assertEquals(arrived.get(key("main", 5, 1)).getState(), State.REACHED,
+            "the far end of a completed run should show as reached");
+
+        assertTrue(arrived.get(key("main", 5, 1)).hasTrain(),
+            "the train mark did not follow the train to the end of its run");
+
+        assertFalse(arrived.get(key("main", 1, 1)).hasTrain(),
+            "the train mark was left behind on the square the train started from");
+    }
+
+    /**
+     * Track held clear for somebody else's path is washed, and it is a different wash from the path.
+     *
+     * The other half of `compute` no test reached (TA-B9).  Two separate lines of track: a train claims
+     * the first, and the second is on its path's lock list - which on a real layout is the track a
+     * conflicting move would use.  The operator has to be able to tell "my train is going here" from
+     * "this is being held clear so it can", and until now nothing checked that either was drawn.
+     *
+     * Mutations this must fail, run 2026-08-25: deleting the publish in `refresh`, as above (2 of 21);
+     * and separately, returning from `compute` before the lock-wash loop at its end, which fails this
+     * test alone (1 of 21) - so the wash is covered here and nowhere else.
+     */
+    @Test
+    public void testTrackHeldClearForARunIsWashedRatherThanClaimed() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 6);
+        feedback(page, 1, 1, 22);
+        straight(page, 2, 1);
+        straight(page, 3, 1);
+        feedback(page, 4, 1, 24);
+
+        // A second line, not touching the first
+        feedback(page, 1, 3, 26);
+        straight(page, 2, 3);
+        straight(page, 3, 3);
+        feedback(page, 4, 3, 28);
+
+        GraphReducer reducer = reduce(graph(page));
+
+        ReducedEdge taken = edgeBetween(reducer, key("main", 1, 1), key("main", 4, 1));
+        ReducedEdge held = edgeBetween(reducer, key("main", 1, 3), key("main", 4, 3));
+
+        assertNotNull(taken, "the claimed line did not reduce to an edge");
+        assertNotNull(held, "the held line did not reduce to an edge, so there is nothing to wash");
+
+        Point a = new Point("A", false, null);
+        Point b = new Point("B", false, null);
+        Point c = new Point("C", false, null);
+        Point d = new Point("D", false, null);
+
+        Edge claimed = new Edge(a, b);
+        Edge conflicting = new Edge(c, d);
+
+        claimed.addLockEdge(conflicting);
+
+        Map<String, ReducedEdge> edges = new LinkedHashMap<>();
+        edges.put(claimed.getName(), taken);
+        edges.put(conflicting.getName(), held);
+
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+        tiles.put("A", key("main", 1, 1));
+        tiles.put("B", key("main", 4, 1));
+        tiles.put("C", key("main", 1, 3));
+        tiles.put("D", key("main", 4, 3));
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        StubLayout layout = new StubLayout();
+
+        layout.active.put(locomotive(), Arrays.asList(claimed));
+        layout.standingAt = a;
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
+            new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    published.add(new LinkedHashMap<>(overlays));
+                }
+            });
+
+        monitor.refresh();
+
+        assertEquals(published.size(), 1, "nothing was published for a train with a locked path");
+
+        Map<TileKey, TileOverlay> picture = published.get(0);
+
+        for (TileKey tile : Arrays.asList(key("main", 1, 1), key("main", 2, 1), key("main", 3, 1),
+            key("main", 4, 1)))
+        {
+            assertEquals(picture.get(tile).getState(), State.ACTIVE,
+                tile + " is on the train's own path and should be claimed, not merely held clear");
+        }
+
+        for (TileKey tile : Arrays.asList(key("main", 1, 3), key("main", 2, 3), key("main", 3, 3),
+            key("main", 4, 3)))
+        {
+            assertNotNull(picture.get(tile), tile + " is being held clear for a running train and "
+                + "nothing was drawn on it, so the operator cannot see why it is unavailable");
+
+            assertEquals(picture.get(tile).getState(), State.LOCKED,
+                tile + " is held clear for somebody else's path, which is a different thing from "
+                + "being on it");
+        }
+    }
+
+    /**
+     * A running Layout, stubbed down to the three questions the monitor asks it.
+     *
+     * Not a mock of the monitor's own work: `compute` reads `getActiveLocomotives`,
+     * `getReachedMilestones` and `getLocomotiveLocation` and nothing else from the layout, so these
+     * three answers are the whole of the railway as far as it is concerned.  Getting a real Layout into
+     * these states needs a train physically moving over sensors.
+     */
+    private static final class StubLayout extends org.traincontrol.automation.Layout
+    {
+        final Map<org.traincontrol.base.Locomotive, List<Edge>> active = new LinkedHashMap<>();
+
+        final List<Point> milestones = new ArrayList<>();
+
+        Point standingAt;
+
+        StubLayout()
+        {
+            super(null);
+        }
+
+        @Override
+        public Map<org.traincontrol.base.Locomotive, List<Edge>> getActiveLocomotives()
+        {
+            return active;
+        }
+
+        @Override
+        public List<Point> getReachedMilestones(org.traincontrol.base.Locomotive loc)
+        {
+            return milestones;
+        }
+
+        @Override
+        public Point getLocomotiveLocation(org.traincontrol.base.Locomotive loc)
+        {
+            return standingAt;
+        }
+    }
+
+    private static DiagramMonitor.LayoutSource source(final org.traincontrol.automation.Layout layout)
+    {
+        return new DiagramMonitor.LayoutSource()
+        {
+            @Override
+            public org.traincontrol.automation.Layout get()
+            {
+                return layout;
+            }
+        };
+    }
+
+    /**
+     * A locomotive with no control station behind it - the monitor only ever uses it as a map key and
+     * hands it back to the layout.
+     */
+    private static org.traincontrol.base.Locomotive locomotive()
+    {
+        return new org.traincontrol.marklin.MarklinLocomotive(null, 3,
+            org.traincontrol.marklin.MarklinLocomotive.decoderType.MFX, "BR 89");
+    }
+
+    // --- track, built the way testAutonomyDiagramReducer builds it ---------------------------------
+
+    private LayoutDiagram page(String name, int sx, int sy)
+    {
+        return new LayoutDiagram(name, sx, sy, null, null);
+    }
+
+    private void straight(LayoutDiagram page, int x, int y) throws java.io.IOException
+    {
+        page.addComponent(componentType.STRAIGHT, x, y, 0, 0, 0, 0,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+    }
+
+    /**
+     * A feedback tile lying east-west, which is how FEEDBACK is drawn at orientation 0.  The address is
+     * the RAW one as it appears in a CS2 file; CS2File halves it for the logical address.
+     */
+    private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws java.io.IOException
+    {
+        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+    }
+
+    private TileGraph graph(LayoutDiagram... pages)
+    {
+        return new TileGraph(new ArrayList<>(Arrays.asList(pages)),
+            java.util.Collections.<String>emptySet());
+    }
+
+    private GraphReducer reduce(TileGraph graph)
+    {
+        GraphReducer reducer = new GraphReducer(graph, null);
+        reducer.reduce();
+        return reducer;
+    }
+
+    private TileKey key(String page, int x, int y)
+    {
+        return new TileKey(page, x, y);
+    }
+
+    private ReducedEdge edgeBetween(GraphReducer reducer, TileKey start, TileKey end)
+    {
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            if (edge.getStart().equals(start) && edge.getEnd().equals(end)) return edge;
+        }
+
+        return null;
     }
 
     private TileOverlay merge(State a, State b)

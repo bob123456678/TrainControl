@@ -1343,7 +1343,8 @@ public class AutonomyViewerPanel extends JPanel
     {
         try
         {
-            session().save();
+            // DR-B10: the answer is shown rather than dropped.
+            AutonomyReport.show(this, session().save());
         }
         catch (IOException e)
         {

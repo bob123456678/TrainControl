@@ -3554,26 +3554,17 @@ public class Layout
      * should not apply to trains leaving, only departing" - and the whole BLOCK is asked rather than
      * the named copy, because a square emitted as several copies is one piece of track.
      *
+     * Both of those sentences now describe `Point.heldBackBy`, which is where the rule lives (DR-B2).
+     * This method is the runtime's NAME for it - the live-block variant - and it stays because the
+     * fence above it is this tier's business: the rule only applies here while autonomy is running.
+     *
      * @param destination the station being arrived at
      * @param loc the locomotive arriving, exempt where it is itself the occupant
      * @return the watched square with somebody else standing on it, or null
      */
     private Point blockingOccupantOf(Point destination, Locomotive loc)
     {
-        if (destination == null) return null;
-
-        for (Point watched : destination.getBlockedBy())
-        {
-            if (watched == null) continue;
-
-            Locomotive standing = watched.getBlockLocomotive();
-
-            if (standing == null || standing.equals(loc)) continue;
-
-            return watched;
-        }
-
-        return null;
+        return Point.heldBackBy(destination, loc);
     }
 
     /**

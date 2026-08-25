@@ -2686,8 +2686,16 @@ public class AutonomyEditorPanel extends JPanel
 
         for (TileKey tile : choices)
         {
+            // describeTile, not getPointName, and the carried entries above are the whole reason.
+            //
+            // That loop exists to offer "a square that has since lost its name" - and getPointName is
+            // a plain map lookup, so for exactly that square it returns null and the check box renders
+            // with NO TEXT AT ALL: a ticked, blank box the operator is being asked to keep or remove
+            // without being told what it is (RA-C2).  describeTile is the fallback built for this - the
+            // s88 where the square is a sensor, its coordinates otherwise - and the caption rule in
+            // testEditorSurfaceRules pins it here for the same reason it pins it there.
             javax.swing.JCheckBox box = new javax.swing.JCheckBox(
-                session.getStore().getPointName(tile), already.contains(tile));
+                describeTile(tile), already.contains(tile));
 
             box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
@@ -5920,50 +5928,10 @@ public class AutonomyEditorPanel extends JPanel
     {
         try
         {
-            AutonomyCompanionStore.Reconciliation report = session.save();
-
-            if (!report.isClean())
-            {
-                // Say WHAT happened and WHY, not just a list of names (OB-052).
-                //
-                // This showed the names alone, with no title and no sentence - Adam: "I got a popup
-                // message with no context and just a list of stations. unclear why." Worse, the two
-                // lists mean opposite things: one names stations that have been FORGOTTEN, the other
-                // names stations that have been KEPT because something still refers to them. Run
-                // together with no headings, the reader cannot tell which of their stations they have
-                // just lost.
-                StringBuilder text = new StringBuilder();
-
-                if (!report.getForgottenNames().isEmpty())
-                {
-                    text.append(I18n.t("autosetup.ui.infoNamesForgotten")).append("\n\n");
-
-                    for (String forgotten : report.getForgottenNames())
-                    {
-                        text.append("    ").append(forgotten).append("\n");
-                    }
-                }
-
-                if (!report.getNamesStillReferenced().isEmpty())
-                {
-                    if (text.length() > 0) text.append("\n");
-
-                    text.append(I18n.t("autosetup.ui.infoNamesStillReferenced")).append("\n\n");
-
-                    for (Map.Entry<String, List<String>> entry
-                        : report.getNamesStillReferenced().entrySet())
-                    {
-                        text.append("    ").append(entry.getKey())
-                            .append(" - ").append(entry.getValue()).append("\n");
-                    }
-                }
-
-                if (text.length() > 0)
-                {
-                    JOptionPane.showMessageDialog(owner(), text.toString(),
-                        I18n.t("autosetup.ui.titleSetupTidied"), JOptionPane.INFORMATION_MESSAGE);
-                }
-            }
+            // Shown through the one display every door uses now (DR-B10).  This was the only
+            // door that showed it at all; the other five threw the answer away, including the refusal
+            // that says a page's settings were left alone because its file is not loaded.
+            AutonomyReport.show(owner(), session.save());
 
             refresh();
 

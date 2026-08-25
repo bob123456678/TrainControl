@@ -592,6 +592,105 @@ public class Point
     }
 
     /**
+     * Who is standing on a watched square, for the FR-001 rule below.
+     *
+     * The rule is one question - "is any square this station is held back by occupied by somebody
+     * else?" - but there are two legitimate places to look for the answer, and they cannot be merged
+     * because they are asked about different worlds:
+     *
+     *  - the LIVE railway, which `onTheLiveBlock()` answers by asking `getBlockLocomotive`; this is
+     *    what `isPathClear` and the FR-017 why-window use, and it is the authority, because it is the
+     *    copy that actually refuses the arrival;
+     *  - a PLANNED state, which the staging planner answers out of its own shadow occupancy map,
+     *    because "could this move happen after three other moves" has no answer on live feedback.
+     *
+     * Splitting the occupancy source out is what lets the rule itself - which squares are consulted,
+     * and which locomotive is exempt - live in exactly one place.  Before this, three copies of that
+     * iteration existed and answered differently (DR-B2).
+     */
+    public interface Occupancy
+    {
+        /**
+         * @param track a square this station is held back by
+         * @param exempt the locomotive being routed, which does not count as an occupant of it
+         * @return whether anybody OTHER than exempt is standing on the same piece of track
+         */
+        boolean heldBySomebodyOtherThan(Point track, Locomotive exempt);
+    }
+
+    /**
+     * The live railway's answer: the whole BLOCK, not just the named Point.
+     *
+     * A square emitted as several copies is one piece of track, so a train on the eastbound copy of the
+     * watched point is standing on it, and asking only the copy that carries the name would answer
+     * clear with a train there.
+     */
+    public static Occupancy onTheLiveBlock()
+    {
+        return (track, exempt) ->
+        {
+            Locomotive standing = track.getBlockLocomotive();
+
+            return standing != null && !standing.equals(exempt);
+        };
+    }
+
+    /**
+     * The square holding this destination back, or null when none is (FR-001).
+     *
+     * ONE expression of the rule.  It used to be written three times - the runtime check in
+     * `isPathClear`, the staging planner's `canRest`, and the replay oracle in the staging tests - and
+     * the three answered differently on real layouts, which is the defect DR-B2 named.  Everything that
+     * asks the question now asks it here; what a caller supplies is only where to look for occupancy.
+     *
+     * The train LEAVING the watched square is exempt.  Adam, asked directly: "The condition should not
+     * apply to trains leaving - only departing."  Without the exemption the one movement that clears
+     * the condition is the movement it forbids: a locomotive standing in the yard could never be sent
+     * to the platform the yard holds back, and while it sat there the platform was shut to everybody
+     * else too.
+     *
+     * Note what this does NOT decide: whether the rule is in force at all.  The runtime fences it
+     * behind `isAutoRunning` because it shapes what AUTONOMY chooses, and the planner applies it always
+     * because staging executes with autonomy running.  That fence is a property of the caller, not of
+     * the rule, so it stays at the call sites - and the staging audit carries an exemption for exactly
+     * that difference (DR-B1).
+     *
+     * @param destination the station being arrived at; a null destination is held back by nothing
+     * @param arriving the locomotive arriving, exempt where it is itself the occupant
+     * @param occupancy where to look for who is standing where
+     * @return the watched square somebody else is standing on, or null when the destination is free
+     */
+    public static Point heldBackBy(Point destination, Locomotive arriving, Occupancy occupancy)
+    {
+        if (destination == null) return null;
+
+        for (Point watched : destination.getBlockedBy())
+        {
+            // Never null in practice - setBlockedBy drops nulls and parseAuto resolves names before it
+            // is called - but the two production copies of this loop guarded it differently, one of
+            // them defending against something its own constructor made impossible.  Guarded once here
+            // so no caller has to decide again.
+            if (watched == null) continue;
+
+            if (occupancy.heldBySomebodyOtherThan(watched, arriving)) return watched;
+        }
+
+        return null;
+    }
+
+    /**
+     * The rule asked of the live railway, which is what everything outside the staging planner wants.
+     *
+     * @param destination the station being arrived at
+     * @param arriving the locomotive arriving, exempt where it is itself the occupant
+     * @return the watched square somebody else is standing on, or null
+     */
+    public static Point heldBackBy(Point destination, Locomotive arriving)
+    {
+        return heldBackBy(destination, arriving, onTheLiveBlock());
+    }
+
+    /**
      * @return the first signal protecting this platform, or null
      */
     public String getProtectingSignal()

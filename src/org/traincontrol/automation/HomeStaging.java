@@ -85,12 +85,24 @@ public final class HomeStaging
     /** Which points report each sensor, so a sensor can be released when its point is vacated. */
     private final Map<String, List<Point>> pointsBySensor;
 
+    /**
+     * Which points are copies of one square, which is what the RUNTIME means by "the same piece of
+     * track" - `Point.getBlockLocomotive` asks the block and nothing else.
+     *
+     * The planner had no block index at all and used the shared sensor as a stand-in for it.  That is
+     * a superset on a builder-emitted layout, where every copy of a square carries that square's s88 -
+     * but it is not a superset where the square has NO sensor, and there the planner was the LOOSER
+     * half: a train standing on the unnamed copy of a watched square was invisible to it, so it planned
+     * an arrival the runtime then refused.  That is OB-073's symptom arriving by a second door.
+     */
+    private final Map<String, List<Point>> pointsByBlock;
+
     /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
     private final Set<String> launchPads;
 
     private HomeStaging(Layout layout, Map<Point, Locomotive> start, Map<Locomotive, Point> homes,
         List<Point> stations, Set<String> sensorsSet, Map<String, List<Point>> pointsBySensor,
-        Set<String> launchPads)
+        Map<String, List<Point>> pointsByBlock, Set<String> launchPads)
     {
         this.launchPads = launchPads;
         this.layout = layout;
@@ -99,6 +111,7 @@ public final class HomeStaging
         this.stations = stations;
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
+        this.pointsByBlock = pointsByBlock;
 
     }
 
@@ -113,12 +126,26 @@ public final class HomeStaging
         List<Point> stations = new ArrayList<>();
         Set<String> sensorsSet = new HashSet<>();
         Map<String, List<Point>> pointsBySensor = new HashMap<>();
+        Map<String, List<Point>> pointsByBlock = new HashMap<>();
 
         for (Point p : layout.getPoints())
         {
             if (p.isDestination() && p.isActive()) stations.add(p);
 
             if (p.getCurrentLocomotive() != null) occupancy.put(p, p.getCurrentLocomotive());
+
+            // The block index, taken here for the same reason as everything else in this method: the
+            // planner must not read live state later.  Only squares emitted as more than one Point
+            // carry a block at all, so most layouts put nothing in this map.
+            if (p.getBlock() != null)
+            {
+                if (!pointsByBlock.containsKey(p.getBlock()))
+                {
+                    pointsByBlock.put(p.getBlock(), new ArrayList<>());
+                }
+
+                pointsByBlock.get(p.getBlock()).add(p);
+            }
 
             if (p.getS88() != null)
             {
@@ -178,7 +205,7 @@ public final class HomeStaging
         }
 
         return new HomeStaging(layout, occupancy, homes, stations,
-            sensorsSet, pointsBySensor, launchPads);
+            sensorsSet, pointsBySensor, pointsByBlock, launchPads);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -378,6 +405,63 @@ public final class HomeStaging
             }
         }
 
+        // And goals that hold EACH OTHER back, which is the second thing a pairwise scan can prove
+        // (OB-085, raised as FSR-C3).
+        //
+        // The comment above used to say there is "no state-independent statement to make about an
+        // FR-001 blocker". That is too strong, and here is the counterexample. Suppose HS C is held
+        // back while HS D is occupied, and HS D is held back while HS C is occupied, and the two are
+        // the homes of two different locomotives. In the finished arrangement each train stands on its
+        // own home, so each is standing on the square that closes the other station - and a station is
+        // only checked when a train ARRIVES, so the question is which of the two arrives last. Whoever
+        // it is, the other train is already parked on the square holding this one back. No ordering
+        // works, and no occupancy has been read to know it.
+        //
+        // What it costs without this is not wrongness but time and a weaker answer: the search
+        // exhausts its budget and reports NO_PLAN_FOUND - "no arrangement found, it may still be
+        // possible" - about something that is provably not.
+        //
+        // **The two exemptions are the whole of the care here,** because the last two things put into
+        // this scan were both wrong and both looked obviously right:
+        //
+        //  - ONE direction is not impossible, and must not be reported as such. If only HS C watches
+        //    HS D, the arrangement is simply ordered: park at HS C first, while HS D is still empty,
+        //    then park at HS D, which nothing watches. That is an ordinary plan and the search finds
+        //    it. testAOneWayHoldIsJustAnOrdering is the control that holds this.
+        //  - Two trains ALREADY on their own homes need no arrival at all, so nothing is ever checked
+        //    and the arrangement stands as it is. Reporting that pair as impossible would call a
+        //    railway that is already correct unfixable. Only one of the two has to be away for the
+        //    proof to hold: a train sitting on its home can step aside and come back, but coming back
+        //    is an arrival, and it finds the other train parked on the square that holds it.
+        //
+        // Pairwise, like the scan above, and deliberately not generalised to longer cycles. A
+        // three-station cycle is equally impossible and is still answered with NO_PLAN_FOUND, which
+        // claims less than the truth and claims nothing false. Pairs are what a wrong click produces.
+        for (Map.Entry<Locomotive, Point> a : this.homes.entrySet())
+        {
+            if (!this.start.containsValue(a.getKey())) continue;
+
+            for (Map.Entry<Locomotive, Point> b : this.homes.entrySet())
+            {
+                if (a.getKey().equals(b.getKey()) || !this.start.containsValue(b.getKey())) continue;
+
+                // Two homes on one piece of track are the scan above's business, and asking this one
+                // about them would double-report the same fault under a different explanation.
+                if (a.getValue() == null || b.getValue() == null) continue;
+                if (a.getValue().equals(b.getValue()) || onOneTrack(a.getValue(), b.getValue())) continue;
+
+                if (!watchesTrack(a.getValue(), b.getValue())) continue;
+                if (!watchesTrack(b.getValue(), a.getValue())) continue;
+
+                // Both already parked: nothing arrives, so nothing is checked.
+                if (a.getValue().equals(locationOf(this.start, a.getKey()))
+                    && b.getValue().equals(locationOf(this.start, b.getKey()))) continue;
+
+                if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
+                if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
+            }
+        }
+
         if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable);
 
         List<Move> moves = search();
@@ -446,6 +530,27 @@ public final class HomeStaging
                 // canRest correctly refuses, and every audit on a layout with a free excluded station
                 // reported a disagreement between two runtime methods rather than a planner defect.
                 if (p.getExcludedLocs().contains(loc)) continue;
+
+                // And the fourth, in the same shape as the three above it: FR-001 (DR-B1).
+                //
+                // OB-073 added the rule to both sides on different terms.  The runtime's copy is fenced
+                // behind isAutoRunning - it shapes what AUTONOMY chooses, and a person dispatching by
+                // hand is looking at the railway - and this audit runs from planReturnToHome with the
+                // layout at rest.  The planner's copy applies always, because staging executes with
+                // autonomy running.  So on any layout using FR-001, a train standing on a watched
+                // square made the audit accuse the planner of a defect for applying the rule it is
+                // supposed to apply - a false accusation from the one instrument that exists to find
+                // real divergence, in a channel only read when something else is already being chased.
+                //
+                // No isAutoRunning fence on the exemption, like the three above: when autonomy IS
+                // running, getPossiblePaths applies the rule itself through isPathClear, so the
+                // destination is not in runtimeSays and there is nothing here to skip.
+                //
+                // The PLANNER'S question, asked exactly as canRest asks it, rather than "does p have a
+                // blockedBy list".  An exemption that wide would skip every FR-001 destination and
+                // blind the audit to a genuine mis-copy of the rule; this one skips only the
+                // destinations somebody is standing in the way of right now.
+                if (Point.heldBackBy(p, loc, plannedOccupancy(this.start)) != null) continue;
 
                 if (!plannerSays.contains(p))
                 {
@@ -1003,8 +1108,10 @@ public final class HomeStaging
      * trains leaving, only departing" - so a train standing on the watched square may still be sent to
      * the station that square holds back.
      *
-     * Sensor siblings count, for the reason canEnter gives: two active points reporting one sensor are
-     * one detection section, and the runtime asks getBlockLocomotive, which is block-aware.
+     * WHICH squares are consulted and WHO is exempt are no longer decided here: that is the rule, and
+     * the rule lives in Point.heldBackBy (DR-B2).  All this contributes is where to look for occupancy
+     * - the planned state rather than the live railway - which is the one thing about FR-001 that is
+     * genuinely this class's business.
      *
      * @param loc the locomotive being planned
      * @param at where it would come to rest
@@ -1015,24 +1122,127 @@ public final class HomeStaging
     {
         if (!canRest(loc, at)) return false;
 
-        for (Point watched : at.getBlockedBy())
+        return Point.heldBackBy(at, loc, plannedOccupancy(state)) == null;
+    }
+
+    /**
+     * The staging planner's answer to "who is standing on the same piece of track as this square" -
+     * the second of Point.Occupancy's two named variants, and the one that reads the PLAN.
+     *
+     * Asked of the planned state rather than the live railway, because that is what the rest of this
+     * class reasons about: by the time a move happens the trains are where the plan put them, not
+     * where they are now.  That is why this variant has to exist at all.
+     *
+     * It consults three things, and the third is the deliberate divergence from the runtime:
+     *
+     *  - the square itself;
+     *  - the other copies of it, by BLOCK.  This is exactly what the runtime's getBlockLocomotive does,
+     *    and the planner did not do it: a train on a copy the restriction does not name was invisible
+     *    to the planner while the runtime could see it plainly.  On a square with a sensor the sibling
+     *    rule below happened to cover the same pairs; on a square with none, nothing did, and the
+     *    planner was the looser half - which is a plan the railway refuses, OB-073's own symptom.
+     *  - the other points reporting the same SENSOR, which the runtime does NOT consult.  Two active
+     *    points on one feedback are one detection section, so the planner is right that they cannot
+     *    both hold a train - but AutonomyBuilder says outright that a sensor is not a square: "a
+     *    station, its approach guard and a reversing point can be three Points on one feedback - so the
+     *    sensor cannot say which Points are one square."  On such a layout this refuses arrivals the
+     *    runtime would allow.  It fails SAFE - a refused plan, never a wrong movement - but it is the
+     *    "planner is the stricter half" shape, whose symptom is NO_PLAN_FOUND.  Left in force
+     *    deliberately, because dropping it changes which stations staging offers on a real railway, and
+     *    that is Adam's decision rather than a refactor's.  It is pinned in both directions by
+     *    testTheStagingPlannerIsTheStricterHalfOnASharedSensor, so it cannot move by accident.
+     *
+     * @param state who is standing where, in the plan
+     * @return the occupancy source for Point.heldBackBy
+     */
+    private Point.Occupancy plannedOccupancy(final Map<Point, Locomotive> state)
+    {
+        return (track, exempt) ->
         {
-            if (watched == null) continue;
+            if (heldBySomebodyElse(track, exempt, state)) return true;
 
-            if (heldBySomebodyElse(watched, loc, state)) return false;
+            for (Point sibling : sameTrackAs(track))
+            {
+                if (heldBySomebodyElse(sibling, exempt, state)) return true;
+            }
 
-            if (watched.getS88() == null) continue;
+            return false;
+        };
+    }
 
-            for (Point sibling : this.pointsBySensor.getOrDefault(watched.getS88(),
+    /**
+     * The other points the planner treats as one piece of track with this one.
+     *
+     * @param track the square being asked about
+     * @return its block copies and its sensor siblings, never including the square itself
+     */
+    private List<Point> sameTrackAs(Point track)
+    {
+        List<Point> out = new ArrayList<>();
+
+        if (track.getBlock() != null)
+        {
+            for (Point copy : this.pointsByBlock.getOrDefault(track.getBlock(),
                 java.util.Collections.<Point>emptyList()))
             {
-                if (sibling.equals(watched)) continue;
-
-                if (heldBySomebodyElse(sibling, loc, state)) return false;
+                if (!copy.equals(track)) out.add(copy);
             }
         }
 
-        return true;
+        if (track.getS88() != null)
+        {
+            for (Point sibling : this.pointsBySensor.getOrDefault(track.getS88(),
+                java.util.Collections.<Point>emptyList()))
+            {
+                // A copy that is both a block sibling and a sensor sibling - which is every copy on a
+                // builder-emitted layout - is asked once.  Twice would be harmless here and misleading
+                // to anyone counting, since the two terms are meant to be visibly different sets.
+                if (!sibling.equals(track) && !out.contains(sibling)) out.add(sibling);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether a station is held back by the piece of track another station stands on (OB-085).
+     *
+     * The structural half of FR-001: not "is somebody standing there", which is a question about
+     * state, but "would somebody standing there close this station", which is a question about the
+     * graph and has the same answer whatever the trains are doing.
+     *
+     * The track rather than the square, because a watched square and the station in question can be
+     * different Points of one block or one detection section - the same widening
+     * {@link #plannedOccupancy} applies when it reads occupancy.
+     *
+     * @param station the station whose restrictions are being read
+     * @param track the square being asked about
+     * @return true when a train standing on that track would hold this station back
+     */
+    private boolean watchesTrack(Point station, Point track)
+    {
+        if (station == null || track == null) return false;
+
+        for (Point watched : station.getBlockedBy())
+        {
+            if (watched == null) continue;
+
+            if (watched.equals(track) || sameTrackAs(watched).contains(track)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether two squares are one piece of track as far as the planner is concerned.
+     *
+     * @param a one square
+     * @param b the other
+     * @return true when a train on one is a train on the other
+     */
+    private boolean onOneTrack(Point a, Point b)
+    {
+        return a != null && b != null && sameTrackAs(a).contains(b);
     }
 
     /**

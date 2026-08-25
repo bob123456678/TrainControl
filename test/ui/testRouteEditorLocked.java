@@ -2,6 +2,7 @@ package ui;
 
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
@@ -130,7 +131,16 @@ public class testRouteEditorLocked
 
         org.traincontrol.gui.RouteEditorFrame frame = open(locked(true));
 
-        for (javax.swing.text.JTextComponent field : fieldsIn(frame.getContentPane()))
+        List<javax.swing.text.JTextComponent> fields = fieldsIn(frame.getContentPane());
+
+        // Assert the variable, not the control.  This loop used to be vacuous-if-empty, and its
+        // non-vacuity companion opens a DIFFERENT window down a different branch - so a locked frame
+        // that built no fields at all would have passed both (TA-B10)
+        assertTrue(fields.size() > 0,
+            "the locked window has no text fields at all, so the loop below proves nothing about "
+            + "what the keyboard can reach");
+
+        for (javax.swing.text.JTextComponent field : fields)
         {
             assertFalse(field.isFocusable(),
                 "a text field on a route belonging to the Central Station still takes the caret: \""
@@ -138,6 +148,190 @@ public class testRouteEditorLocked
         }
 
         close(frame);
+    }
+
+    /**
+     * No cell of a locked route's tables will accept a keystroke.
+     *
+     * The surface this class's own javadoc is about - "the plus, the trash, the arrows" - and until
+     * TA-B10 of the 2026-08-24 test suite audit nothing in the repository so much as named the gate
+     * that holds it.  The tests above walk the component TREE, and a cell editor is not in the tree
+     * until the cell is already being edited; by then the gate has been passed.  The gate itself is
+     * `isCellEditable` on the table model, and deleting the `if (locked) return false;` at the top of
+     * it made a station-owned route's command and condition cells typeable with the whole class green.
+     *
+     * Asked of the MODEL rather than of the JTable, because that is where the rule lives and where the
+     * cell editor asks it.  Every cell of every table, including the adding row at the bottom.
+     *
+     * Mutation this must fail: delete `if (locked) return false;` from the command table model's
+     * `isCellEditable` (RouteEditorFrame.java, around :2751).  Run 2026-08-25 against a mutant
+     * compiled outside the repository: 1 of 8 fails, this test, on "row 0 column 3".  Before it, the
+     * whole class was green under that mutant.
+     */
+    @Test
+    public void testNoCellOfALockedRouteCanBeEdited() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame frame = open(locked(true));
+
+        List<javax.swing.JTable> tables = tablesIn(frame.getContentPane());
+
+        assertTrue(tables.size() >= 2, "the locked window should hold a command table and a "
+            + "condition table; found " + tables.size() + ", so the sweep below sees less than the "
+            + "window does");
+
+        int cells = 0;
+
+        for (javax.swing.JTable table : tables)
+        {
+            javax.swing.table.TableModel model = table.getModel();
+
+            for (int row = 0; row < model.getRowCount(); row++)
+            {
+                for (int column = 0; column < model.getColumnCount(); column++)
+                {
+                    cells++;
+
+                    assertFalse(model.isCellEditable(row, column),
+                        "row " + row + " column " + column + " of a route belonging to the Central "
+                        + "Station will accept a keystroke.  The station sends this route again on "
+                        + "the next sync, so anything typed here is lost - and the window says so "
+                        + "everywhere except in the one place that decides");
+                }
+            }
+        }
+
+        assertTrue(cells > 0, "no cell was examined, so nothing above tested anything");
+
+        close(frame);
+    }
+
+    /**
+     * And an ordinary route has cells that take one, or the sweep above passes on empty tables.
+     *
+     * The same window, the same tables, the same question - only the lock differs.  The companion to
+     * the focusability test opens a different frame down a different branch, which is how a
+     * vacuous-if-empty loop survived next to a non-vacuity guard that could not see it.
+     */
+    @Test
+    public void testAnOrdinaryRouteHasCellsThatCanBeEdited() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame frame = open(locked(false));
+
+        boolean any = false;
+
+        for (javax.swing.JTable table : tablesIn(frame.getContentPane()))
+        {
+            javax.swing.table.TableModel model = table.getModel();
+
+            for (int row = 0; row < model.getRowCount(); row++)
+            {
+                for (int column = 0; column < model.getColumnCount(); column++)
+                {
+                    any = any || model.isCellEditable(row, column);
+                }
+            }
+        }
+
+        assertTrue(any, "a local route has no cell the keyboard can reach, which would make the "
+            + "editor useless rather than safe - and would make the locked sweep prove nothing");
+
+        close(frame);
+    }
+
+    /**
+     * A locked route draws none of the row marks, and an ordinary one draws them.
+     *
+     * The marks are values the table PAINTS rather than buttons in cells, which is the whole reason
+     * greying the tables was not enough: the click that works them belongs to the window, not to the
+     * cell.  `offersToAddCommands` asks about the plus; this asks about the other three, by looking
+     * for the mark strings themselves anywhere in the tables.
+     *
+     * Mutation this must fail: the editability gate is a different branch and deleting it does not
+     * move these, so this is checked against the drawing branch - `if (column == DELETE) return
+     * DELETE_ROW; if (column == DUPLICATE) return COPY_ROW;`, the lock dropped from both
+     * (RouteEditorFrame.java around :2704).  Run 2026-08-25: 1 of 8 fails, this test.
+     */
+    @Test
+    public void testALockedRouteDrawsNoRowMarks() throws Exception
+    {
+        needsADisplay();
+
+        List<String> marks = Arrays.asList(
+            org.traincontrol.gui.RouteEditorFrame.markMoveUp(),
+            org.traincontrol.gui.RouteEditorFrame.markMoveDown(),
+            org.traincontrol.gui.RouteEditorFrame.markDelete(),
+            org.traincontrol.gui.RouteEditorFrame.markCopy());
+
+        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
+
+        // The control first: unless an ordinary route draws them, finding none on a locked one says
+        // nothing at all
+        assertTrue(marksFound(ordinary, marks) > 0,
+            "an ordinary route draws none of " + marks + ", so their absence on a locked one means "
+            + "nothing.  Either the marks were renamed or the table stopped drawing them");
+
+        close(ordinary);
+
+        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
+
+        assertEquals(marksFound(owned, marks), 0,
+            "a route belonging to the Central Station is still drawing the trash and the arrows.  "
+            + "They are painted values rather than buttons, so a disabled table does nothing about "
+            + "them - which is how a working plus survived on a locked route");
+
+        close(owned);
+    }
+
+    /**
+     * How many cells of the window's tables hold one of the row marks.
+     */
+    private static int marksFound(org.traincontrol.gui.RouteEditorFrame frame, List<String> marks)
+    {
+        int found = 0;
+
+        for (javax.swing.JTable table : tablesIn(frame.getContentPane()))
+        {
+            for (int row = 0; row < table.getRowCount(); row++)
+            {
+                for (int column = 0; column < table.getColumnCount(); column++)
+                {
+                    Object value = table.getValueAt(row, column);
+
+                    if (value != null && marks.contains(value.toString())) found++;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /**
+     * Every table in a window, however deeply it is nested.
+     *
+     * A JTable is a Container, but what it holds is the cell editor currently open - never the cells -
+     * so the walk stops at one rather than descending into it.
+     */
+    private static List<javax.swing.JTable> tablesIn(java.awt.Container where)
+    {
+        List<javax.swing.JTable> found = new ArrayList<>();
+
+        for (java.awt.Component part : where.getComponents())
+        {
+            if (part instanceof javax.swing.JTable)
+            {
+                found.add((javax.swing.JTable) part);
+            }
+            else if (part instanceof java.awt.Container)
+            {
+                found.addAll(tablesIn((java.awt.Container) part));
+            }
+        }
+
+        return found;
     }
 
     /**

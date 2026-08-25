@@ -3136,6 +3136,49 @@ public class AutonomyCompanionStore
         private final List<String> droppedTileProperties = new ArrayList<>();
         private final List<String> forgottenNames = new ArrayList<>();
         private final Map<String, List<String>> namesStillReferenced = new LinkedHashMap<>();
+        private final List<String> declinedBecauseAbsent = new ArrayList<>();
+
+        /**
+         * A reconciliation that did not happen, and the pages that stopped it (DR-B10).
+         *
+         * The no-argument constructor above says "nothing was reconciled" and says nothing about why,
+         * so a caller holding one cannot tell a clean layout from a layout it was refused permission
+         * to tidy. Those are opposite situations: the first needs no message and the second is the one
+         * moment somebody could put the missing page back before its id is retired.
+         *
+         * @param absent the pages the setup knows about that are not loaded, possibly empty when the
+         *        refusal was a suspect numbering instead
+         * @return a reconciliation that reports the refusal
+         */
+        public static Reconciliation declined(List<String> absent)
+        {
+            Reconciliation out = new Reconciliation();
+
+            if (absent != null) out.declinedBecauseAbsent.addAll(absent);
+
+            return out;
+        }
+
+        /**
+         * Pages that were not loaded when a save declined to reconcile.
+         *
+         * @return their names, empty when nothing was declined - or when the refusal was a suspect
+         *         numbering rather than a missing page
+         */
+        public List<String> getDeclinedBecauseAbsent()
+        {
+            return Collections.unmodifiableList(this.declinedBecauseAbsent);
+        }
+
+        /**
+         * Whether this reconciliation was refused rather than simply finding nothing.
+         *
+         * @return true when the setup was not judged at all
+         */
+        public boolean wasDeclined()
+        {
+            return !this.declinedBecauseAbsent.isEmpty();
+        }
 
         /**
          * Lengths and directions removed because their tile is gone.  A tile carries these, so they go

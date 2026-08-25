@@ -3530,6 +3530,71 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A save that declines to tidy up SAYS SO, and names the pages (DR-B10).
+     *
+     * The test next door proves the setup survives a page that did not load. This one is about the
+     * other half of that finding, which had no coverage at all: nobody was ever told.
+     *
+     * `absent` was computed inside `save()` and used only as a boolean. The comment beside it said a
+     * caller "can ask store.pagesNotLoaded the same question" - and no caller did; the method's only
+     * two references were inside `save()` itself. Meanwhile five of the six doors that call `save()`
+     * threw the returned Reconciliation away, so the one moment when putting the missing file back
+     * would have fixed everything passed in silence, while the next page operation quietly retired
+     * that page's id.
+     *
+     * The distinction the report could not previously make is the point: an EMPTY reconciliation and a
+     * REFUSED one were the same object. "Nothing needed tidying" and "I was not allowed to tidy" are
+     * opposite situations and only one of them is worth interrupting somebody for.
+     *
+     * MUTATION: having `save()` return a plain `new Reconciliation()` for the incomplete case - which
+     * is what it did - fails this test.
+     */
+    @Test
+    public void testASaveThatDeclinesToTidySaysWhichPagesStoppedIt() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        session.setPointName(new TileKey("second", 1, 1), "Second Platform");
+        session.save();
+
+        // Everything is here, so nothing stops it and nothing is said.
+        AutonomySession whole = new AutonomySession(layout);
+
+        whole.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        assertTrue(whole.pagesSafeToJudge(),
+            "with every page loaded the setup should be safe to judge, or the assertion below is "
+            + "testing the wrong thing");
+
+        assertFalse(whole.save().wasDeclined(),
+            "a save with nothing missing reported itself as refused, which would put a dialog in "
+            + "front of somebody on an ordinary save");
+
+        // --- and now with the second page missing ------------------------------------------------
+        AutonomySession partial = new AutonomySession(layout);
+
+        partial.open(Arrays.asList(runOfTrack()));
+
+        assertFalse(partial.pagesSafeToJudge(),
+            "the session cannot tell that a page it knows about is missing, so nothing below is "
+            + "being tested");
+
+        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation report = partial.save();
+
+        assertTrue(report.wasDeclined(),
+            "a save that left the whole setup alone reported itself as an ordinary clean save, so "
+            + "every door showing this to somebody would say nothing");
+
+        assertTrue(report.getDeclinedBecauseAbsent().contains("second"),
+            "the refusal did not name the page that caused it, which is the one thing that makes it "
+            + "actionable - the reader has to know which file to put back.  Got: "
+            + report.getDeclinedBecauseAbsent());
+    }
+
+    /**
      * A page that did not load keeps its setup.
      *
      * OB-068. `CS2File.parseLayout` skips a page whose file will not parse or is not there, quietly and

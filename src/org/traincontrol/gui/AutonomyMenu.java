@@ -724,7 +724,8 @@ public class AutonomyMenu extends JMenu
 
                 try
                 {
-                    session.save();
+                    // DR-B10: the answer is shown rather than dropped.
+                    AutonomyReport.show(ui, session.save());
                 }
                 catch (java.io.IOException io)
                 {

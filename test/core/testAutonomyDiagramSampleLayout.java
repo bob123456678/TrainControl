@@ -58,6 +58,17 @@ public class testAutonomyDiagramSampleLayout
 {
     private static final String LAYOUT = "test_layout";
 
+    /**
+     * The two ends of the one doorway between the pages autonomy is looking at.
+     *
+     * Found once in the setup and kept, rather than each test writing the coordinates down again.
+     * Three of them did, and all three were wrong: the arrow moved from 15,5 to 14,5 and every test in
+     * this class was skipped from the @BeforeClass while the battery reported the class green, because
+     * a skip is not a failure.
+     */
+    private static TileKey mainLink;
+    private static TileKey bottomLink;
+
     private MarklinControlStation model;
     private List<LayoutDiagram> pages;
     private TileGraph graph;
@@ -138,14 +149,26 @@ public class testAutonomyDiagramSampleLayout
         // The CS2 file records only a destination PAGE, never a destination tile, which is why pairing
         // has to be authored at all: had Top Parking stayed in, its two arrows back to Main would have
         // made the pairing genuinely ambiguous and no amount of reading the file would settle it.
-        TileKey mainLink = findLink("1 - Main", 15, 5);
-        TileKey bottomLink = findLink("2 - Bottom", 10, 9);
+        // FOUND rather than written down, because a written-down coordinate is exactly what went
+        // stale. This said 15,5 for Main, and the arrow sits at 14,5 - so every test in this class was
+        // skipped from its @BeforeClass, and the battery called the class green because a skip is not
+        // a failure. Thirteen tests reported as passing while none of them ran.
+        //
+        // A link tile records its destination PAGE and nothing more, which is why the pairing has to
+        // be authored at all; but with Top Parking excluded there is exactly ONE arrow on Main
+        // pointing at Bottom and one on Bottom pointing back, so the pair is forced and can be looked
+        // up. The two arrows on Main pointing at Top Parking are left unpaired, which is what an
+        // unnamed link should do now that its destination is outside autonomy.
+        mainLink = onlyLinkFrom("1 - Main", "2 - Bottom", pages);
+        bottomLink = onlyLinkFrom("2 - Bottom", "1 - Main", pages);
 
         // Fail rather than carry on unpaired.  Tolerating a missing link tile let a wrong coordinate
         // masquerade as a diagram with no cross-page routes at all, which is indistinguishable in the
         // output from the pairing working and the two pages genuinely not connecting.
-        assertNotNull(mainLink, "no link tile on Main at 15,5 - the pairing coordinates are stale");
-        assertNotNull(bottomLink, "no link tile on Bottom at 10,9 - the pairing coordinates are stale");
+        assertNotNull(mainLink, "no link tile on Main pointing at Bottom - the fixture has changed "
+            + "shape, and this class cannot pair the two pages without one");
+        assertNotNull(bottomLink, "no link tile on Bottom pointing at Main - the fixture has changed "
+            + "shape, and this class cannot pair the two pages without one");
 
         graph.pairPortals(mainLink, bottomLink);
 
@@ -170,16 +193,54 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * The link tile at these coordinates, if it is still there.  Returns null rather than failing, so a
-     * layout edited later does not break the harness in a way that hides everything else it reports.
+     * The one link tile on a page that points at another named page.
+     *
+     * A link records its destination page as a raw address counting from zero, so the page it means
+     * is `pages.get(getRawAddress())` - the same arithmetic the tooltip does when it prints
+     * "layout.linkPage" with the address plus one.
+     *
+     * Returns null unless there is EXACTLY one, which is the property the pairing rests on: the whole
+     * reason pairing has to be authored is that the file names a destination page and never a
+     * destination tile, so two arrows to one page would be genuinely ambiguous and no amount of
+     * reading the file would settle it. Silently taking the first would hide that.
+     *
+     * @param from the page to search
+     * @param to the page the arrow should point at
+     * @param pages every page, in the order the index gives them
+     * @return the square, or null when there is not exactly one
      */
-    private TileKey findLink(String page, int x, int y)
+    private static TileKey onlyLinkFrom(String from, String to, List<LayoutDiagram> pages)
     {
-        TileKey key = new TileKey(page, x, y);
+        TileKey found = null;
 
-        org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(key);
+        for (LayoutDiagram page : pages)
+        {
+            if (!from.equals(page.getName())) continue;
 
-        return c != null && c.isLink() ? key : null;
+            for (int x = 0; x < page.getSx(); x++)
+            {
+                for (int y = 0; y < page.getSy(); y++)
+                {
+                    org.traincontrol.base.LayoutDiagramComponent c = page.getComponent(x, y);
+
+                    if (c == null || !c.isLink()) continue;
+
+                    int at = c.getRawAddress();
+
+                    if (at < 0 || at >= pages.size()) continue;
+
+                    if (!to.equals(pages.get(at).getName())) continue;
+
+                    // A second one means the pairing is ambiguous, which is a different fixture from
+                    // the one this class is written for.
+                    if (found != null) return null;
+
+                    found = new TileKey(from, x, y);
+                }
+            }
+        }
+
+        return found;
     }
 
     /**
@@ -580,7 +641,13 @@ public class testAutonomyDiagramSampleLayout
             derived.add(p.getS88());
         }
 
+        // Sensors that are DRAWN on a page autonomy is looking at.  A legacy point whose sensor is
+        // not among them is out of scope by choice rather than missing by defect - which is the rule
+        // this class already states on derivableSensors, applied here rather than restated.
+        Set<Integer> inScope = derivableSensors();
+
         List<String> missing = new ArrayList<>();
+        List<String> outOfScope = new ArrayList<>();
 
         for (Object o : legacy.getJSONArray("points"))
         {
@@ -590,18 +657,28 @@ public class testAutonomyDiagramSampleLayout
 
             int s88 = point.getInt("s88");
 
-            if (!derived.contains(s88))
-            {
-                missing.add(point.getString("name") + " (s88 " + s88 + ")");
-            }
+            if (derived.contains(s88)) continue;
+
+            if (inScope.contains(s88)) missing.add(point.getString("name") + " (s88 " + s88 + ")");
+            else outOfScope.add(point.getString("name") + " (s88 " + s88 + ")");
         }
 
-        // Every sensor the hand-built configuration uses is now drawn on a participating page, so this
-        // is a plain requirement again: one it relies on that the diagram does not derive means the
-        // diagram failed to read something real.  (An allowance lived here while two parking sensors
-        // appeared only on the excluded page; the layout was corrected instead.)
+        // COMPUTED, not listed.  A previous version of this note said "every sensor the hand-built
+        // configuration uses is now drawn on a participating page, so this is a plain requirement
+        // again" - and named the two parking sensors as an allowance that had been removed because
+        // "the layout was corrected instead". On the frozen fixture that is not true: s88 1017 and
+        // 1024 are drawn only on 3 - Top Parking and 4 - Combined, both of which this class excludes.
+        // The two squares on Main that look like them carry 1016 and 1023, which are different
+        // sensors.
+        //
+        // So the allowance was right and hardcoding its removal was what went stale. Asking whether
+        // the sensor is drawn on a participating page cannot go stale, keeps the assertion's teeth for
+        // the case it was written for - a sensor that IS in scope and was not derived means the
+        // diagram failed to read something real - and reports the rest rather than hiding them.
         assertTrue(missing.isEmpty(),
-            "sensors the hand-built graph uses but the diagram did not derive: " + missing);
+            "sensors the hand-built graph uses, drawn on a page autonomy is looking at, that the "
+            + "diagram did not derive: " + missing
+            + " (out of scope, drawn only on excluded pages: " + outOfScope + ")");
     }
 
     /**
@@ -1133,10 +1210,11 @@ public class testAutonomyDiagramSampleLayout
     {
         TileGraph open = new TileGraph(pages, excludedPages);
 
-        TileKey mainLink = linkAt(open, "1 - Main", 15, 5);
-        TileKey bottomLink = linkAt(open, "2 - Bottom", 10, 9);
+        // The same two ends the setup found, checked against THIS graph rather than assumed onto it.
+        TileKey here = linkAt(open, mainLink);
+        TileKey there = linkAt(open, bottomLink);
 
-        if (mainLink != null && bottomLink != null) open.pairPortals(mainLink, bottomLink);
+        if (here != null && there != null) open.pairPortals(here, there);
 
         for (TileKey tile : open.getTiles().keySet())
         {
@@ -1360,9 +1438,16 @@ public class testAutonomyDiagramSampleLayout
         }
     }
 
-    private TileKey linkAt(TileGraph g, String page, int x, int y)
+    /**
+     * The same square in another graph, if that graph has a link there too.
+     *
+     * @param g the graph to look in
+     * @param key the square, from the paired-up graph the setup built
+     * @return the key, or null when this graph has no link there
+     */
+    private TileKey linkAt(TileGraph g, TileKey key)
     {
-        TileKey key = new TileKey(page, x, y);
+        if (key == null) return null;
 
         org.traincontrol.base.LayoutDiagramComponent c = g.getTiles().get(key);
 
@@ -1778,11 +1863,11 @@ public class testAutonomyDiagramSampleLayout
     @Test
     public void testALinkSwitchedOffAtOneEndIsShutAtBoth()
     {
-        TileKey here = findLink("1 - Main", 15, 5);
-        TileKey there = findLink("2 - Bottom", 10, 9);
+        TileKey here = mainLink;
+        TileKey there = bottomLink;
 
-        assertNotNull(here, "no link tile on Main at 15,5");
-        assertNotNull(there, "no link tile on Bottom at 10,9");
+        assertNotNull(here, "the setup found no link on Main pointing at Bottom");
+        assertNotNull(there, "the setup found no link on Bottom pointing at Main");
 
         graph.pairPortals(here, there);
 

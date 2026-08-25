@@ -2685,23 +2685,19 @@ public class AutonomySession
 
         // "May turn round here" on a square with one way in cannot mean what it says: there is no
         // straight on to carry on to, so every train turns whatever the setting.
+        //
+        // Through arrivalSides rather than by walking the edges here, which is what this used to do.
+        // The walk and the door differ on exactly one case - a square an edge lands at having arrived
+        // by no side of the grid, where the door declines to split the square at all and the walk
+        // silently dropped that edge and split on the rest - and the answer has to be the BUILD's,
+        // because the build is what the user is being told about (DR-B6/DD-A7).
         Set<TileKey> pointless = new LinkedHashSet<>();
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
             if (!isTurnAround(tile) || isMustTurnAround(tile)) continue;
 
-            Set<Side> arrivals = new LinkedHashSet<>();
-
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-            {
-                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
-                {
-                    arrivals.add(edge.getEntrySide());
-                }
-            }
-
-            if (arrivals.size() < 2) pointless.add(tile);
+            if (arrivalSides(tile).size() < 2) pointless.add(tile);
         }
 
         // Squares a train can reach and then not leave: it arrived by one side, the only way on is back
@@ -2712,23 +2708,19 @@ public class AutonomySession
         {
             if (isTurnAround(tile)) continue;
 
-            Set<Side> arrivals = new LinkedHashSet<>();
+            // Departures are still gathered here: the split is about ARRIVALS, so there is no door to
+            // ask for the other half, and the builder gathers them the same way in departureSides.
             Set<Side> departures = new LinkedHashSet<>();
 
             for (GraphReducer.ReducedEdge edge : reducer.getEdges())
             {
-                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
-                {
-                    arrivals.add(edge.getEntrySide());
-                }
-
                 if (edge.getStart().equals(tile) && edge.getExitSide() != null)
                 {
                     departures.add(edge.getExitSide());
                 }
             }
 
-            for (Side arrival : arrivals)
+            for (Side arrival : arrivalSides(tile))
             {
                 // The track the train is standing on, not every side the square has.
                 //
@@ -3103,9 +3095,16 @@ public class AutonomySession
      * N-E curve by N leaves by E, and saying it faces S describes a train sitting across the rails.
      * This sentence used to state that simpler rule as the reason (NR-7).
      *
+     * The sides come from arrivalSides - the same door the build splits on - rather than from a walk
+     * of the reduced edges written out here, which is what this used to do and which is a second
+     * author for one rule (DR-B6).  A square the door declines to split offers no facing at all, which
+     * is right: the build emits it whole, with no facing recorded on it to offer.
+     *
      * Ordered the same way the builder orders its copies, so the first answer here is the one a
      * placement with no facing recorded actually gets - and more exactly so than when that was
-     * written, since onwardFrom and AutonomyBuilder.facingOf now answer alike.
+     * written, since onwardFrom and AutonomyBuilder.facingOf now answer alike.  That last claim used
+     * to be a sentence and nothing else; testTheCheckerAgreesWithTheBuild asserts it against the
+     * facings the build actually emits.
      *
      * @param tile
      * @return the possible facings, empty when nothing reaches the square and a single entry - which
@@ -3113,22 +3112,9 @@ public class AutonomySession
      */
     public List<Side> facingChoices(TileKey tile)
     {
-        Set<Side> arrivals = new java.util.TreeSet<>();
-
-        if (reducer != null)
-        {
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-            {
-                if (edge.getEnd().equals(tile) && edge.getEntrySide() != null)
-                {
-                    arrivals.add(edge.getEntrySide());
-                }
-            }
-        }
-
         Set<Side> out = new java.util.LinkedHashSet<>();
 
-        for (Side arrival : arrivals) out.addAll(onwardFrom(tile, arrival));
+        for (Side arrival : arrivalSides(tile)) out.addAll(onwardFrom(tile, arrival));
 
         return new ArrayList<>(out);
     }
@@ -3945,6 +3931,39 @@ public class AutonomySession
     }
 
     /**
+     * Whether this session can safely judge what the diagram no longer has (DR-B10).
+     *
+     * The decision "a page that is not loaded must not be judged" was enforced by four separate
+     * mechanisms - this one, the store's held entries, `captureFromLayout`'s pagesInPlay, and
+     * `forgetArrivalsThatNoLongerExist`'s station-index membership test - all individually correct and
+     * none of them named. A fifth was always coming: every pruner added to this class needs it.
+     *
+     * Two ways the picture can be incomplete, and they are different faults with the same remedy:
+     *
+     *  - a page's file did not load, so its settings look exactly like settings for track that has
+     *    been deleted. `CS2File` skips a page whose file will not parse or is not there, and this
+     *    layout lives in OneDrive, where an unhydrated placeholder is an ordinary Tuesday;
+     *  - the numbering is suspect, meaning a renumber has happened and nothing has re-keyed the setup
+     *    yet - so every entry is name-keyed to the WRONG page and "this square does not exist" is
+     *    being asked about coordinates that were never on that page.
+     *
+     * Either way the remedy is the same and it is the one OB-068 established: save, but do not prune.
+     *
+     * @return true when everything the setup knows about is here and correctly numbered
+     */
+    public boolean pagesSafeToJudge()
+    {
+        java.util.Set<String> loadedNames = new LinkedHashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            loadedNames.add(page.getName());
+        }
+
+        return !store.isPageNumberingSuspect() && store.pagesNotLoaded(loadedNames).isEmpty();
+    }
+
+    /**
      * Writes the setup out, and forgets what the diagram no longer has.
      *
      * Reconciled at save rather than at load, so a diagram edited between sessions is tidied at the
@@ -3955,8 +3974,6 @@ public class AutonomySession
      */
     public AutonomyCompanionStore.Reconciliation save() throws IOException
     {
-        forgetArrivalsThatNoLongerExist();
-
         // Every tile of EVERY page, including the excluded ones.  The graph omits excluded pages by
         // construction, so reconciling against it made every setting on such a page look like it
         // belonged to a deleted tile - and saving then destroyed the lot, permanently, with
@@ -4011,16 +4028,25 @@ public class AutonomySession
 
         java.util.List<String> absent = store.pagesNotLoaded(loadedNames);
 
-        boolean incomplete = store.isPageNumberingSuspect() || !absent.isEmpty();
+        boolean incomplete = !pagesSafeToJudge();
 
         // Not logged from here: this class has no logger, deliberately - it is the model half of the
-        // setup and every message about it belongs to a window. A caller that wants to say so can ask
-        // store.pagesNotLoaded the same question; the important half is that nothing is destroyed
-        // while the answer is non-empty.
+        // setup and every message about it belongs to a window. Callers are told through the
+        // Reconciliation this returns, which now carries the names (DR-B10); the important half is
+        // that nothing is destroyed while the answer is non-empty.
 
         AutonomyCompanionStore.Reconciliation report = incomplete
-            ? new AutonomyCompanionStore.Reconciliation()
+            ? AutonomyCompanionStore.Reconciliation.declined(absent)
             : store.reconcile(existing);
+
+        // Pruned only once the guard above has agreed the picture is complete (DR-B10).
+        //
+        // This ran as the FIRST statement of this method, before `incomplete` was computed at all. It
+        // was protected by two accidents rather than by the rule it is built around - held entries
+        // never reach the live map, and it skips squares whose station index does not know them - and
+        // nothing at the call said so. Every pruner ever added to this class will need this guard, so
+        // it is inside it now rather than beside it.
+        if (!incomplete) forgetArrivalsThatNoLongerExist();
 
         store.save();
 

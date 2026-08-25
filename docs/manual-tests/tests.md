@@ -59,6 +59,13 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | fixed unvalidated | OB-098, OB-100, OB-101, OB-104 |
 | [MT-180](#mt-180) | 2026-08-25 | Three things the interface was not saying | fixed unvalidated | OB-102, OB-103, OB-105 |
 | [MT-181](#mt-181) | 2026-08-25 | Show Inactive Labels | fixed unvalidated | FR-023 |
+| [MT-182](#mt-182) | 2026-08-25 | The signal window opens beside the diagram, not on it | fixed unvalidated | OB-107 |
+| [MT-183](#mt-183) | 2026-08-25 | The wait mark is a grey hourglass | fixed unvalidated | FR-024 |
+| [MT-184](#mt-184) | 2026-08-25 | Cropping a locomotive icon | fixed unvalidated | FR-022 |
+| [MT-185](#mt-185) | 2026-08-25 | A page the layout cannot see, when you edit another one | needs test | FR-018 |
+| [MT-186](#mt-186) | 2026-08-25 | Nothing about the railway changed when the last string key went | fixed unvalidated | FR-013 |
+| [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
+| [MT-188](#mt-188) | 2026-08-25 | The blocked-points picker names what it is offering | fixed unvalidated | OB-086 |
 
 Everything else - 124 of 181 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -9260,5 +9267,282 @@ something unrelated redrew the diagram.
 **Adam, 2026-08-25 (triage).** Works.
 
 *Run against commit 8db330da, build\classes, compiled 25 Aug 00:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-182"></a>
+
+### MT-182 - 2026-08-25 - The signal window opens beside the diagram, not on it
+
+**Disposition:** fixed unvalidated
+**From:** OB-107
+**Written:** 2026-08-25
+
+1. Open the autonomy editor and pick **the signal protecting this station** on a station square.
+2. The window should open up and to the LEFT of centre, not over the middle of the diagram - the
+   signals it is describing are outlined on the diagram behind it, and that is the point.
+3. It should still be plainly over the TrainControl window rather than off in a corner of the screen.
+4. Drag its bottom edge upwards. It should stop at the size it opened at: the buttons that finish the
+   pairing must never be draggable out of sight.
+5. Do the same on a maximised window and on a small one.
+
+#### Comments
+
+**Claude, 2026-08-25.** Adam: "the signal protecting this station pops up over the middle of the
+diagram. see if you can offset it. also, the window can be resized below its minimum height."
+
+Both, and the first was worse than a nuisance - the window's own text says the signals "are outlined
+on the diagram behind this window", so centring hid the very thing it was telling the reader to look
+at.
+
+The placement is a public static function of two rectangles, `AutonomyEditorPanel.besideOwner`, so it
+could be tested without opening a modal dialog. Two automated tests cover it, both mutation-proven:
+returning the centred point fails them, and so does a dialog larger than the window it belongs to
+being pushed off the top-left, which is the half of the clamp the ordinary case never exercises.
+
+---
+
+<a id="mt-183"></a>
+
+### MT-183 - 2026-08-25 - The wait mark is a grey hourglass
+
+**Disposition:** fixed unvalidated
+**From:** FR-024
+**Written:** 2026-08-25
+
+1. Switch to a track diagram page that has not been shown yet this session, so the tiles have to be
+   decoded. While it loads there should be a large grey HOURGLASS where the turning arc used to be.
+2. Watch it: the sand should run from the top bulb into the bottom over about three seconds, and the
+   glass should then turn over and start again. There should be no frame where the sand jumps back up.
+3. The same mark appears, smaller, in the busy dialog - the one shown while something long is running.
+   Check it looks right at that size too.
+4. Nothing should be drawn outside the space the mark is given, including while it is turning.
+
+#### Comments
+
+**Claude, 2026-08-25.** Adam: "change the very large spinner shown on top of loading track diagrams
+to a large gray hourglass icon instead. animate if possible."
+
+Drawn rather than shipped as a GIF, for the same reason the arc was: one less asset to scale for a
+high-DPI screen and keep in step with the theme.
+
+Two attempts at the shape were wrong and both were only visible in a picture - straight triangles read
+as a bow tie, and adding a frame to settle it drew a rectangle with an X in it. The third has curved
+sides. Five automated tests render it and measure the pixels, because a source-reading guard would
+have passed on both bow ties.
+
+Worth knowing what those tests do NOT cover, since it is the part you are best placed to judge: the
+curve the sand level follows as it falls. Both bulbs read the same number, so the areas sum to the
+same constant whatever curve it is, and no assertion here can see it. If the fall looks wrong to you,
+that is a real report and nothing will have caught it.
+
+---
+
+<a id="mt-184"></a>
+
+### MT-184 - 2026-08-25 - Cropping a locomotive icon
+
+**Disposition:** fixed unvalidated
+**From:** FR-022
+**Written:** 2026-08-25
+
+1. Right-click a locomotive and choose to set its icon. The file chooser should now carry a
+   **Crop / pan the image** tick box, and it should be UNTICKED the first time.
+2. Leave it unticked and pick a picture. Everything should behave exactly as it did before.
+3. Now do it again with the box ticked. A crop window should open: the picture moves under a fixed
+   frame, the frame is locked to the shape the icon is actually drawn at, and the slider or the mouse
+   wheel zooms in up to eight times.
+4. Drag the picture as far as it will go in each direction. The frame must stay completely covered -
+   no blank edge, ever. Zoom right in, drag into a corner, then zoom all the way back out and check
+   the same thing.
+5. Try a TALL photograph, which is the case this exists for.
+6. **Reset** returns to a centre crop. **Cancel** leaves the whole picture in use, as before.
+7. OK, and check the icon on the main window. Then set another icon for the same locomotive and check
+   the first crop file was cleaned up rather than left behind.
+8. Your original photograph must be untouched - check its size and timestamp.
+
+#### Comments
+
+**Claude, 2026-08-25.** Adam: "add a crop / pan function to local locomotive icons at the time of
+image selection."
+
+The crop is written as a new PNG beside the locomotive database, never over your own file.
+
+**A judgement call to confirm or overturn.** The tick box is OFF until you turn it on, which keeps an
+untouched flow byte-for-byte what it was, at the cost of discoverability - you would not know the
+feature existed unless you noticed the box. Making the dialog always open instead, with Cancel meaning
+today's behaviour, is a one-line change. Say which you would rather.
+
+Four automated tests cover the arithmetic - the output size and the clamp - because a view dragged off
+the edge does not throw and does not leave a blank: it produces a smaller rectangle which is then
+stretched, so the only symptom is a locomotive that looks slightly wrong. Both clamp mutations fail
+them.
+
+---
+
+<a id="mt-185"></a>
+
+### MT-185 - 2026-08-25 - A page the layout cannot see, when you edit another one
+
+**Disposition:** needs test
+**From:** FR-018
+**Written:** 2026-08-25
+
+This one needs setting up deliberately, and it is worth doing once: it is the case that has cost you a
+page's settings before.
+
+1. With TrainControl closed, make one page of your layout unreadable - the simplest honest way is to
+   set its `.cs2` file offline in OneDrive so it becomes a placeholder, or open it in another program
+   that holds it.
+2. Start TrainControl. That page will not load, and the log should say so.
+3. Now rename, delete or duplicate a DIFFERENT page. Before anything happens you should be asked about
+   the page that is missing, BY NAME, with three answers.
+4. Choose **Keep them**. Finish the edit. Then make the file readable again and restart: the page
+   should come back as ITSELF, with its stations, names and captions still attached - not as a new
+   page with a blank setup.
+5. Repeat, and this time choose **Cancel**. Nothing at all should change: the page you were editing
+   should still be there under its old name, and the layout untouched.
+6. Repeat once more with a page you really have deleted, and answer **They were deleted**. The log
+   should say how many held settings were discarded.
+7. Then the ordinary case, which is the one that matters most: with every page loading normally, do a
+   rename, a delete, a duplicate and a combine. **You should never see this question.** If it appears
+   when nothing is missing, that is a defect.
+
+#### Comments
+
+**Claude, 2026-08-25.** Adam, on the three options I offered: "if we are talking about orphaned data,
+why not warn the user and then prune? maybe I am misunderstanding the distinction"
+
+He was not misunderstanding it - he dissolved it. All three of my options assumed the application had
+to guess whether a page was deleted or merely unreadable, and ranked themselves by how well each
+guessed. It is the only participant that cannot tell. The person who just renamed a page knows.
+
+So it asks, and the second answer does the half none of my options addressed: a genuinely deleted
+page's settings were held under a retired id for ever, growing setup.json with data that could never
+attach to anything again.
+
+The question is asked BEFORE anything is destroyed, at all three doors. Offered at the index write it
+would have come after the page file was already deleted, which is not a cancel at all.
+
+Four automated tests, seven mutations. Two of them were rewritten after the first version of each
+passed under its own stated mutation - a single absent page cannot tell a selective prune from an
+emptying one.
+
+---
+
+<a id="mt-186"></a>
+
+### MT-186 - 2026-08-25 - Nothing about the railway changed when the last string key went
+
+**Disposition:** fixed unvalidated
+**From:** FR-013
+**Written:** 2026-08-25
+
+The same shape as MT-171, for the second and last stage. Nothing here should LOOK different; the
+point is to confirm it is not.
+
+1. Open a layout with a real setup and check the diagram: station names, captions, lengths, portals,
+   the lot.
+2. **Directions especially.** Find a square where you have set which way trains may run - a crossing
+   or a switch carrying more than one route - and check each route still shows the direction you gave
+   it. This is the collection that changed.
+3. Rename a page. Everything above should follow it.
+4. Move a tile that has a direction on it in the layout editor. The direction should move with it.
+5. Delete a page. Only that page's settings should go.
+6. Restart, and check the whole thing again.
+
+#### Comments
+
+**Claude, 2026-08-25.** `tileDirections` was the last collection keyed by a string - "page:x,y#state,
+index" - parsed by hand at every site that touched it. It holds a typed key now, and the six
+string-keyed duplicate helpers that existed only to be deleted are deleted.
+
+The suffix had been got wrong twice while it was a string: a removal that could never match, and a
+loop that had to grow its own copy. Neither is expressible now.
+
+Its test was found by breaking it: swapping the two route numbers on the way in passed all 64 tests in
+the store's own class and all 9 in the settings matrix, because every fixture in the repository used
+route 0,0 - a pair that reads the same either way round. Step 2 above is the hands-on version of the
+test that closed that hole.
+
+---
+
+<a id="mt-187"></a>
+
+### MT-187 - 2026-08-25 - Return Home, after FR-001 became one rule
+
+**Disposition:** needs test
+**From:** OB-085, OB-086
+**Written:** 2026-08-25
+
+FR-001 - a station held back while another square is occupied - existed in three inequivalent forms.
+It is one rule now, and one real defect fell out of consolidating them, so this wants driving on the
+railway rather than reading.
+
+1. Set up at least one station with a **blocked by** restriction naming a square that a train can
+   actually be standing on. Run Return Home with that square clear: the plan should use the station.
+2. Now with a train standing on the watched square: the plan should not send anything to that station
+   until the train has moved.
+3. **The one that changed.** Find a watched square that is drawn as more than one Point - a square the
+   builder emitted several copies of - and that has NO feedback address. Stand a train on one copy
+   that the restriction does not name. Return Home should now refuse the station; before this it
+   planned the arrival and the railway then refused it, which is a fleet stopping half-staged.
+4. Give two stations restrictions that name each other's square, and make them the homes of two
+   different locomotives. Return Home should say **impossible** and name both locomotives, rather than
+   grinding and reporting "no arrangement found".
+5. Then remove ONE of the two restrictions and try again. It should now find a plan - park at the
+   restricted one first, then the other. A refusal here would be wrong.
+6. Finally, an ordinary Return Home on your railway with nothing unusual set up, to confirm none of
+   this changed the normal case.
+
+#### Comments
+
+**Claude, 2026-08-25.** Three forms became two, and the third was simply wrong - the test oracle had
+no departing-train exemption, so it would have failed a legal plan whose move IS the train leaving the
+watched square.
+
+The real defect is step 3. The planner used a shared sensor as a stand-in for the block and had no
+block index at all, so on a watched square with no feedback it could not see a train on another copy
+while the runtime could see it plainly. The planner was the LOOSER half, which is the dangerous
+direction.
+
+Step 4 is new: two homes each held back by the other are impossible from the graph alone, whoever is
+standing where, and the search used to spend its whole budget to say "maybe". Step 5 is the control,
+and it is the assertion that matters most - the last two things put into that scan were both wrong and
+both looked obviously right.
+
+**A decision for you, and one line of code either way.** The staging planner still treats two Points
+sharing a feedback address as one piece of track for this rule; the runtime does not. They answer
+differently on purpose and I left it alone, because collapsing it changes which stations Return Home
+offers on a real railway. For collapsing: the runtime is the authority, since it is the copy that
+actually refuses the leg. Against: the sensor rule is the planner's only protection against putting
+two trains on one detection section, and watched squares - approach guards, yard throats - are exactly
+where sensors get shared. A test pins it in both directions, so it cannot drift while you decide.
+
+---
+
+<a id="mt-188"></a>
+
+### MT-188 - 2026-08-25 - The blocked-points picker names what it is offering
+
+**Disposition:** fixed unvalidated
+**From:** OB-086
+**Written:** 2026-08-25
+
+1. Give a station a **blocked by** restriction naming a square.
+2. Now take that square's NAME away - clear it in the autonomy editor, or delete the point name.
+3. Open the blocked-points picker for that station again. The restriction should still be listed and
+   still ticked, and it should be LABELLED - with the square's coordinates if it has nothing better -
+   rather than appearing as a ticked box with nothing beside it.
+4. Untick it and confirm it goes; tick it again and confirm it comes back.
+
+#### Comments
+
+**Claude, 2026-08-25.** The picker carries an entry it no longer offers, precisely so that a
+restriction you set cannot vanish because the square lost its name - and then labelled it with the
+name it had just established was absent, which renders as a blank tick box.
+
+A source rule now pins all three of the picker's surviving filters, so this cannot be undone quietly.
+Mutation-checked: putting the old label back fails it.
 
 ---

@@ -1605,6 +1605,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Writes a line to the log when a save left the setup alone because a page is not loaded (DR-B10).
+     *
+     * For the save doors that fire constantly - an edit, a placement - where a dialog would be
+     * unusable. The refusal is correct and is what stops a page whose file has not hydrated costing
+     * its settings, but it happened in complete silence at five of the six doors that could see it,
+     * while the next page operation quietly retired that page's id in the background.
+     *
+     * @param report what the save returned; null and clean reports say nothing
+     */
+    private void noteIfTheSetupWasNotTidied(
+        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation report)
+    {
+        if (report == null || !report.wasDeclined()) return;
+
+        StringBuilder names = new StringBuilder();
+
+        for (String page : report.getDeclinedBecauseAbsent())
+        {
+            if (names.length() > 0) names.append(", ");
+
+            names.append(page);
+        }
+
+        this.model.logf("autosetup.logSetupNotTidied", names.toString());
+    }
+
+    /**
      * Settles what happens to pages the layout index holds that nothing can see (FR-018).
      *
      * Writing the index retires the id of any page not in the list it is given, which is what stops a
@@ -1639,6 +1666,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
             this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
+
+        // The index has to be READABLE before any caller of this touches the disk (RA-C3).
+        //
+        // writeLayoutIndex refuses a layout whose index is present and unreadable - a sync client
+        // holding gleisbild.cs2 open, which on this railway is an ordinary Tuesday - and it refuses it
+        // at the END of every one of these operations, by which time the page file has been deleted
+        // and the setup has forgotten it.  What survives is an index naming a page that no longer
+        // exists, and layoutEditingComplete never runs, so the window does not even refresh.  SV-B1
+        // narrowed this to a genuinely locked file; it did not remove it.
+        //
+        // Asked here because all three writers already come through this method, all three already
+        // treat null as "do not proceed", and the read has just been done a line above - so this costs
+        // nothing and closes the same hole at three doors rather than one.  getUnreadableIndex is null
+        // when there is simply no index yet, so a layout that has never had one is unaffected.
+        if (LayoutDiagram.getUnreadableIndex() != null)
+        {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                I18n.f("layout.ui.errorSavingLayoutWithMessage",
+                    LayoutDiagram.getUnreadableIndex().getMessage()));
+
+            return null;
+        }
 
         if (absent.isEmpty()) return absent;
 
@@ -3354,7 +3403,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 try
                 {
-                    session.save();
+                    // LOGGED rather than shown (DR-B10).  This door fires on an ordinary edit and the
+                    // one below on every placement, so a dialog here would be a dialog nobody could
+                    // work through - but the refusal has to reach somebody, and until now it reached
+                    // nobody at all from any of the five doors that dropped this answer.
+                    noteIfTheSetupWasNotTidied(session.save());
                 }
                 catch (java.io.IOException e)
                 {
@@ -4589,7 +4642,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            session.save();
+            // Logged rather than shown, for the reason given at the other placement door (DR-B10).
+            noteIfTheSetupWasNotTidied(session.save());
         }
         catch (java.io.IOException e)
         {
