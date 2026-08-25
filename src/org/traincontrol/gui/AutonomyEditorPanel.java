@@ -1726,8 +1726,18 @@ public class AutonomyEditorPanel extends JPanel
         // station; the editor's own menu has no title, and that is the menu Adam was looking at.
         String showing = captioned == null ? null : describeTile(captioned);
 
+        // The name is NOT repeated here (MT-162).
+        //
+        // Adam: "remove the currently part since we have the 'Stop showing <name>' already".  This
+        // item used to read "Show a Different Station Here... (now showing Platform 3)" directly
+        // above an item reading "Stop Showing Platform 3", so the menu named the same station twice
+        // in two lines and the second one was the one that needed it.
+        //
+        // The two keys still differ, and that difference is the part worth keeping: "a Station Name"
+        // when the square shows none, "a Different Station" when it already shows one.  That says
+        // which situation you are in without spending a line on which station it is.
         javax.swing.JMenuItem name = item(showing == null ? I18n.t("autosetup.ui.menuShowStationHere")
-            : I18n.f("autosetup.ui.menuShowStationHereNamed", showing),
+            : I18n.t("autosetup.ui.menuShowStationHereNamed"),
             () -> promptStationLabel(tile, component));
 
         name.setToolTipText(mine ? null : wrapped(I18n.t("autosetup.ui.tooltipTextInTheWay")));

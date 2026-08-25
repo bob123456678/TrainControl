@@ -7605,6 +7605,14 @@ the menu cannot get past.
 
 They both appear, but in show a different (currently <name>), you and remove the currently part since we have the "Stop showing <name>" already.
 
+**Claude, 2026-08-24.** Done. The item read "Show a Different Station Here... (now showing Platform
+3)" directly above one reading "Stop Showing Platform 3", so the menu named the same station twice in
+two lines and the second one was the line that needed it.
+
+The two menu keys still differ, and that difference is the part worth keeping: "a Station Name" when
+the square shows none, "a Different Station" when it already shows one. That says which situation you
+are in without spending a line on which station it is.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
@@ -8284,6 +8292,17 @@ second and none of the first. `AutonomySession.errorCount()` is now the single a
 **Adam, 2026-08-24 (triage).** Works, with notes.
 
 works, but I would like a shaded background in light yellow when fix it is active.  then change the color of the fix it button back to white.
+
+**Claude, 2026-08-24.** Done, and it is the better call. Colouring the button left the one warm thing
+on the panel inside a control the eye reads as a button first and a warning second; shading the band
+says the same thing about the whole strip, which is what it is actually about.
+
+The band is a light yellow rather than the amber the button had - it runs the full width of the
+diagram, so it has to sit under black text without becoming the loudest thing on screen. The findings
+count keeps its own stronger amber and red, which still read against a tint.
+
+The strip is repainted when the error count changes as well as when the page does, since errors appear
+and go without anything else about the strip moving.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 

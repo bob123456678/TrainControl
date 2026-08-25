@@ -251,6 +251,10 @@ public class AutonomyOverlayToggle extends JPanel
         // button that opens an editor would take it away.
         fixing = source != null && source == start && lastTotalErrors > 0;
 
+        // The band's colour follows this, so it is repainted here as well as when the page changes -
+        // errors appear and go without anything else about the strip moving.
+        paintState();
+
         if (source == null)
         {
             run.setVisible(false);
@@ -267,8 +271,14 @@ public class AutonomyOverlayToggle extends JPanel
 
         run.setFont(source.getFont());
 
-        // The Start button's green says "ready", which is the one thing this state is not.
-        run.setBackground(fixing ? FIX_COLOUR : source.getBackground());
+        // White, with the STRIP behind it carrying the colour instead (MT-173).
+        //
+        // Adam: "I would like a shaded background in light yellow when fix it is active.  then change
+        // the color of the fix it button back to white."  The first attempt coloured the button and
+        // left the strip white, which put the one warm thing on the panel inside a control the eye
+        // reads as a button first and a warning second.  Shading the band and leaving the button plain
+        // says the same thing about the whole strip rather than about the button.
+        run.setBackground(fixing ? java.awt.Color.WHITE : source.getBackground());
 
         // Held to the checkbox's height.  This strip is the scroll pane's column header, so its height
         // is whatever its tallest child asks for - and a button at its natural size is taller than a
@@ -331,10 +341,14 @@ public class AutonomyOverlayToggle extends JPanel
     private boolean fixing;
 
     /**
-     * The Fix button's fill: an amber that reads as the same family of news as the count beside it,
-     * rather than the Start button's green.
+     * The strip's fill while the setup has something that must be dealt with before it will run.
+     *
+     * A light yellow rather than the amber the button itself first used: this colours a band the full
+     * width of the diagram, so it has to sit under black text at a glance without becoming the loudest
+     * thing on screen. The findings count keeps its own stronger amber and red - a word coloured
+     * inside a tinted band still reads.
      */
-    private static final java.awt.Color FIX_COLOUR = new java.awt.Color(255, 226, 180);
+    private static final java.awt.Color FIX_BACKGROUND = new java.awt.Color(255, 248, 205);
 
     /**
      * Shows what the checks currently say.
@@ -483,7 +497,11 @@ public class AutonomyOverlayToggle extends JPanel
      */
     private void paintState()
     {
-        java.awt.Color background = excluded ? EXCLUDED_BACKGROUND : java.awt.Color.WHITE;
+        // Excluded wins, and the two cannot both be true anyway: an excluded page shows no run button
+        // at all, so `fixing` is false there by construction.  Ordered explicitly regardless, because
+        // "cannot happen" is a poor reason for the answer to depend on which branch is written first.
+        java.awt.Color background = excluded ? EXCLUDED_BACKGROUND
+            : fixing ? FIX_BACKGROUND : java.awt.Color.WHITE;
 
         setBackground(background);
 
