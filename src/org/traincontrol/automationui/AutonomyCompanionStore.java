@@ -4343,18 +4343,35 @@ public class AutonomyCompanionStore
         // instead: overwritten with the setup as it stands now, which reverts to the present and
         // therefore changes nothing.
         //
-        // Reported either way, because a silent failure here is the whole defect wearing different
-        // clothes - intermittent, and depending on whether the sync client happened to have the file
-        // open.
-        try
+        // **Written IN PLACE, not through writeAtomically, and that distinction is the whole fix.**
+        // The first version of this used writeJson, which ends in Files.move(REPLACE_EXISTING) - and
+        // on Windows replacing a file needs the same DELETE access the delete above just failed to
+        // get. So the fallback failed in exactly the case it was written for, the note kept its
+        // PRE-EDIT contents, and the next start found a well-formed current-version note and reverted
+        // a cleanly saved edit while logging that the edit had not finished. A fix that fails only in
+        // the scenario it exists for is worse than none, because it reads as covered.
+        //
+        // An independent review found it and measured the asymmetry that makes it fixable: in that
+        // same lock state delete() fails and the atomic move fails, but a plain truncating write
+        // succeeds. Of the three primitives, writeAtomically picked the one that shares the delete's
+        // failure mode.
+        //
+        // Torn writes are acceptable here and nowhere else in this class: a half-written note fails
+        // unfinishedEdit's shape check, so it is refused, kept, and reported - which is the safe
+        // outcome. There is nothing to protect, because the content being overwritten is the thing
+        // being disposed of.
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(was))
         {
-            writeJson(was, snapshotSetup());
+            out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));
+
+            out.flush();
         }
-        catch (IOException norThat)
+        catch (IOException | RuntimeException norThat)
         {
             return false;
         }
 
+        // Still false: the note is harmless now, but it is still there, and the caller says so.
         return false;
     }
 

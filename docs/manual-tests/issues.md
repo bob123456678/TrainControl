@@ -297,6 +297,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-25 | FB-A1..C2 | bug | [Independent pass over the last day](../reviews/2026-08-25-independent-fable.md) - two more A, one of them a defect in an LD fix | fixed unvalidated | - |
 | 2026-08-25 | LD-A1..C5 | bug | [The last day, reviewed](../reviews/2026-08-25-last-day.md) - six A and seven B, seven of them from that same day; C6-C9 left open | fixed unvalidated | - |
 | 2026-08-25 | OB-108 | bug | A layout edit that never finished is put back to how it was | - | [MT-191](tests.md#mt-191) |
 | 2026-08-25 | OB-025 | bug | The store keeps a registry of what it keeps | fixed unvalidated | - |

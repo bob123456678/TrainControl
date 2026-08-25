@@ -341,6 +341,38 @@ public class MarklinRoute extends Route
      */
     private String[] accessoryHeldByAutonomy()
     {
+        for (RouteCommand rc : this.route)
+        {
+            String[] why = heldReason(rc);
+
+            if (why != null) return why;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether autonomy holds the accessory THIS ONE command would set, asked fresh.
+     *
+     * **Asked per command, immediately before the command, because a route takes seconds to run.**
+     * The guard used to be evaluated once before the loop, and `execRoute` sleeps
+     * `SLEEP_INTERVAL` plus the command's own delay between every pair of commands. So a dispatch
+     * that locked a path while the route was part way through was invisible to it, and the route
+     * went on to throw a turnout the path had just configured and validated - which is AU-A2 itself,
+     * surviving in a window seconds wide, through all three doors including the s88 trigger with
+     * nobody present.
+     *
+     * Found by an independent review that reproduced it with a timestamped log: the route committed
+     * at 24.209, autonomy locked the turnout at 24.711, and the route set it against the path at
+     * 26.764 while `getActiveAccs` contained it.
+     *
+     * @param rc the command about to be sent
+     * @return the accessory's name and the message key for the refusal, or null when it is safe
+     */
+    private String[] heldReason(RouteCommand rc)
+    {
+        if (rc == null || !rc.isAccessory()) return null;
+
         if (!this.network.hasAutoLayout() || !this.network.isAutonomyRunning()) return null;
 
         java.util.Collection<Accessory> locked = this.network.getAutoLayout().getActiveAccs();
@@ -366,38 +398,33 @@ public class MarklinRoute extends Route
             if (point.getCurrentLocomotive() != null) protecting.addAll(point.getProtectingSignals());
         }
 
-        for (RouteCommand rc : this.route)
+        // By address AND protocol, which is how the route names it and how the station resolves it -
+        // a bare address is ambiguous across decoder types on this railway.
+        MarklinAccessory accessory =
+            this.network.getAccessoryByAddressIfPresent(rc.getAddress(), rc.getProtocol());
+
+        if (accessory == null) return null;
+
+        if (locked.contains(accessory))
         {
-            if (rc == null || !rc.isAccessory()) continue;
+            return new String[] {accessory.getName(), "route.refusedAccessoryOnActivePath"};
+        }
 
-            // By address AND protocol, which is how the route names it and how the station resolves
-            // it - a bare address is ambiguous across decoder types on this railway.
-            MarklinAccessory accessory =
-                this.network.getAccessoryByAddressIfPresent(rc.getAddress(), rc.getProtocol());
-
-            if (accessory == null) continue;
-
-            if (locked.contains(accessory))
-            {
-                return new String[] {accessory.getName(), "route.refusedAccessoryOnActivePath"};
-            }
-
-            // The ASPECT matters here, and it does not for the case above.
-            //
-            // A turnout on a locked path must not move at all - any position but the one the path
-            // configured is wrong for the train crossing it. A protecting signal is different: the
-            // only harmful command is the one that turns protection OFF. A route setting it red is
-            // doing exactly what protection would do, and refusing that was pure over-strictness -
-            // it fired for every route touching any signal of any platform with a train parked at it,
-            // and because accessories are skipped as a group, it took the whole route's turnouts with
-            // it. Found by review, which reproduced it with no path locked anywhere.
-            //
-            // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
-            if (!rc.getSetting() && protecting.contains(accessory.getName()))
-            {
-                return new String[] {accessory.getName(),
-                    "route.refusedSignalProtectingOccupiedPlatform"};
-            }
+        // The ASPECT matters here, and it does not for the case above.
+        //
+        // A turnout on a locked path must not move at all - any position but the one the path
+        // configured is wrong for the train crossing it. A protecting signal is different: the only
+        // harmful command is the one that turns protection OFF. A route setting it red is doing
+        // exactly what protection would do, and refusing that was pure over-strictness - it fired for
+        // every route touching any signal of any platform with a train parked at it, and because
+        // accessories are skipped as a group, it took the whole route's turnouts with it. Found by
+        // review, which reproduced it with no path locked anywhere.
+        //
+        // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
+        if (!rc.getSetting() && protecting.contains(accessory.getName()))
+        {
+            return new String[] {accessory.getName(),
+                "route.refusedSignalProtectingOccupiedPlatform"};
         }
 
         return null;
@@ -503,6 +530,31 @@ public class MarklinRoute extends Route
                             {
                                 // Skipped as a group when any of them is on a locked path - see above.
                                 if (skipAccessories) continue;
+
+                                // And asked AGAIN, immediately before the command.
+                                //
+                                // The check above is made once and this loop takes seconds: it sleeps
+                                // SLEEP_INTERVAL plus each command's own delay between every pair of
+                                // commands. So a dispatch that locked a path while the route was part
+                                // way through was invisible, and the route went on to throw a turnout
+                                // the path had just configured - AU-A2 itself, surviving in a window
+                                // seconds wide, through the s88 door with nobody present.
+                                //
+                                // Once it trips, every LATER accessory is skipped too, so the route
+                                // does not go on setting some of its ironwork and not the rest as
+                                // conditions change under it. Partially set is a real cost and it is
+                                // the smaller one: the alternative is throwing a switch under a train
+                                // that is crossing it.
+                                String[] now = overrideConflicts ? null : heldReason(rc);
+
+                                if (now != null)
+                                {
+                                    skipAccessories = true;
+
+                                    this.network.logf(now[1], this.getName(), now[0]);
+
+                                    continue;
+                                }
 
                                 int idd = rc.getAddress();
                                 boolean state = rc.getSetting();

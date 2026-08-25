@@ -505,19 +505,35 @@ public final class LayoutLabel extends JLabel
                                         // command.
                                         if (onTile != null)
                                         {
-                                            String conflict = onTile.conflictingAccessory();
-
-                                            if (conflict != null)
+                                            // Off this worker before anything can block on a person.
+                                            //
+                                            // submitSwitching has ONE thread and it is shared by
+                                            // every tile in the application. Asking the question here
+                                            // would hold it for as long as the dialog stands
+                                            // unanswered, and no tile anywhere would respond - the
+                                            // same freeze the power-state wait was given a deadline
+                                            // to avoid, forty lines above, differing only in that a
+                                            // person ends this one.
+                                            //
+                                            // The power is already on by the time this runs, which is
+                                            // the ordering the relocation was for, so the handoff
+                                            // costs nothing.
+                                            new Thread(() ->
                                             {
-                                                if (!tcUI.confirmRouteOverActivePath(onTile, tcUI))
+                                                if (onTile.conflictingAccessory() != null)
                                                 {
+                                                    if (tcUI.confirmRouteOverActivePath(onTile, tcUI))
+                                                    {
+                                                        onTile.execRouteOverridingConflicts();
+                                                    }
+
                                                     return;
                                                 }
 
-                                                onTile.execRouteOverridingConflicts();
+                                                component.execSwitching();
+                                            }).start();
 
-                                                return;
-                                            }
+                                            return;
                                         }
 
                                         component.execSwitching();

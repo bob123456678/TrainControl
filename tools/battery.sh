@@ -203,3 +203,25 @@ then
     echo ""
     diff <(echo "$live_before") <(echo "$live_after") | grep '^[<>]' | sed 's/^/  /'
 fi
+
+# And an EXIT CODE, so this can be read by something other than a person.
+#
+# The script reported failures as text and exited on whatever the last `if` happened to leave behind,
+# which is success.  Nothing reads it that way today - it is read by eye - so this costs nothing now
+# and stops being a trap the first time somebody puts it behind `&&` or in CI, which is exactly when
+# nobody would be watching the text.
+#
+# A class that tested nothing counts.  It is not a failure, but it is not a pass either, and a caller
+# asking "was this run good" is asking about both.  The text above distinguishes them; the code does
+# not have to.
+if [ "$fail" -gt 0 ] || [ "$live_before" != "$live_after" ]
+then
+    exit 1
+fi
+
+if [ "$skip" -gt 0 ]
+then
+    exit 2
+fi
+
+exit 0

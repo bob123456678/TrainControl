@@ -205,6 +205,134 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A route already under way when a dispatch begins does not set the accessory either.
+     *
+     * Found by an independent review, which reproduced it with a timestamped log: the route committed
+     * at 24.209, autonomy configured and locked the turnout at 24.711, and the route set it against
+     * the locked path at 26.764 - with a poller confirming `getActiveAccs()` contained it the whole
+     * time. No refusal and no log line.
+     *
+     * The guard was asked ONCE, before the command loop. And that loop takes seconds: `execRoute`
+     * sleeps `SLEEP_INTERVAL` plus each command's own delay between every pair of commands. So a
+     * dispatch that locked a path while a route was part way through was invisible to it, and AU-A2 -
+     * "the train is routed off the path that was protecting it" - survived in a window seconds wide,
+     * through all three doors including the s88 trigger with nobody present. Adam's railway has 39
+     * s88-triggered routes, many of them multi-command.
+     *
+     * **What this costs, said plainly.** The guard is now asked again immediately before each
+     * accessory command, so a route can be stopped part way through with some of its ironwork set and
+     * the rest not. That is a real cost. It is the smaller one: the alternative is throwing a switch
+     * under a train that is crossing it. Once it trips, every later accessory is skipped too, so the
+     * route does not go on flipping between the two states as conditions change under it.
+     *
+     * The window is opened deliberately here with a command delay, rather than raced: the first
+     * command carries a delay long enough for the dispatch to lock the path while the route sits
+     * between its two commands.
+     *
+     * MUTATION: asking the guard only once - removing the `heldReason(rc)` re-check from the loop -
+     * fails this test.
+     */
+    @Test
+    public void testARouteAlreadyRunningDoesNotThrowTheSwitchEither() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("MF_A", false, null);
+        layout.createPoint("MF_B", true, S88);
+
+        Edge ab = layout.createEdge("MF_A", "MF_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        // The path owns it and sets it STRAIGHT when it locks.
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("MF_A").setLocomotive(loc);
+
+        // Two commands: a harmless one that holds the route open, then the one that would throw the
+        // turnout.  The delay on the first is the window.
+        List<RouteCommand> commands = new ArrayList<>();
+
+        RouteCommand waits = RouteCommand.RouteCommandAccessory(SWITCH_AHEAD,
+            Accessory.accessoryDecoderType.MM2, true);
+
+        waits.setDelay(2500);
+
+        commands.add(waits);
+        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, true));
+
+        MarklinRoute midFlight = new MarklinRoute(model, "RG midflight", 84931, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        // Started BEFORE anything is locked, so the up-front check sees a clear railway and commits -
+        // which is the precondition, and the whole point.
+        assertNull(midFlight.conflictingAccessory(),
+            "precondition: nothing is locked yet, so the route must look safe when it starts. If it "
+            + "does not, this test is exercising the up-front check rather than the window after it");
+
+        // The dispatch is held OPEN while the route runs, rather than the two being raced.
+        //
+        // execRoute starts a thread of its own and returns at once - the first version of this test
+        // wrapped it in another thread and joined that, which returned immediately and let every
+        // assertion run before the route had reached its second command. It passed with the guard
+        // deleted, which is how it was found.
+        //
+        // So the path is locked and then held for longer than the route's first delay, from inside
+        // the started callback. The route's second command therefore lands while the lock is
+        // definitely held, with no dependence on how long a dispatch happens to take.
+        layout.setCallback("hold the path", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            try
+            {
+                Thread.sleep(4000);
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return null;
+        });
+
+        midFlight.execRoute(false);
+
+        // Let it issue its first command and enter the delay before the path is taken.
+        Thread.sleep(400);
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertFalse(turnout.isSwitched(),
+                "a route that was already running when the dispatch began went on to throw a turnout "
+                + "the path had just configured and validated. The guard was asked once, before the "
+                + "command loop, and that loop takes seconds - so the train is routed off the path "
+                + "that was protecting it, which is the defect the up-front check was added to stop");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A route may set a protecting signal RED over an occupied platform. It may not set it GREEN.
      *
      * The guard has two halves and they are not the same rule. A turnout on a locked path must not
