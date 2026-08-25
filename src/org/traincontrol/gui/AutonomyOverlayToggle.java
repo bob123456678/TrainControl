@@ -249,7 +249,19 @@ public class AutonomyOverlayToggle extends JPanel
         // Against START only.  Stop wins the line above and must keep winning: an error appearing
         // while trains are running is the moment stopping matters most, and swapping the brake for a
         // button that opens an editor would take it away.
-        fixing = source != null && source == start && lastTotalErrors > 0;
+        // The GUARD'S own number, not this strip's cached copy (AU-C1).
+        //
+        // `lastTotalErrors` is whatever the last setFindings call left behind, so it was a third
+        // opinion about "would Start be refused" - alongside canStartAutonomy and
+        // refuseAutonomyStartWhileBroken, which both ask the session live. Any path that changes the
+        // findings without firing this strip's listener would have left it offering Start where the
+        // guard refuses, which is the OB-057 shape at the surface that was fixed for it.
+        //
+        // Falls back to the cached number only when there is no window to ask - which is a strip built
+        // before its owner, not a running application.
+        int errors = ui != null ? ui.autonomyErrorCount() : lastTotalErrors;
+
+        fixing = source != null && source == start && errors > 0;
 
         // The band's colour follows this, so it is repainted here as well as when the page changes -
         // errors appear and go without anything else about the strip moving.

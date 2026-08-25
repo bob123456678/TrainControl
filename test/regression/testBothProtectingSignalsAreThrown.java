@@ -285,6 +285,94 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * A hand dispatch protects the platform of a train that is just standing there (AU-B7).
+     *
+     * The test next door covers the DESTINATION of the dispatched train. This one is about a train
+     * nobody dispatched, and it is the case the sweep exists for.
+     *
+     * While nothing is running the protection refresh is deliberately silent - trains are placed and
+     * taken off by hand then, and driving real signals from a setup gesture is what that silence
+     * exists to prevent. So a train placed at a protected platform while idle produces NO occupancy
+     * change, and nothing will ever command that platform's signal on its own.
+     *
+     * `runLocomotives` and `executeTimetableInternal` both sweep every protecting signal the moment
+     * they set `running`, for exactly that reason. `executePath` - the diagram's right-click dispatch -
+     * became a full run in the MT-139 work, counting its thread and engaging every guard, and did not
+     * inherit the sweep. So starting autonomy threw that platform red and hand-dispatching a different
+     * train left it green with a train standing at it.
+     *
+     * Adam's rule, quoted inside `executePath` itself: "The same thing should happen in manual
+     * operation vs auto - the same switches and signals set, and guards applied." Two of the three
+     * doors did.
+     *
+     * Found by a review pass, which built the probe this is written from.
+     *
+     * MUTATION: removing the `refreshAllProtectingSignals()` call from `executePath` fails this test.
+     */
+    @Test
+    public void testAHandDispatchProtectsAPlatformSomebodyIsAlreadyStandingIn() throws Exception
+    {
+        for (String feedback : new String[] {"47431", "47432", "47433"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        // The two the dispatch runs between, and a third where somebody is already standing.
+        layout.createPoint("HD A", true, "47431");
+        layout.createPoint("HD B", true, "47432");
+        layout.createPoint("HD P", true, "47433");
+
+        // Only the STANDING train's platform is protected, so nothing about the dispatch itself can
+        // account for the signal moving.
+        layout.getPoint("HD P").setProtectingSignal(far.getName());
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("HD A", "HD B"));
+
+        Locomotive driving = model.getLocByName(model.getLocList().get(0));
+        Locomotive standing = model.getLocByName(model.getLocList().get(1));
+
+        assertNotEquals(driving.getName(), standing.getName(),
+            "this test needs two different locomotives");
+
+        assertTrue(layout.moveLocomotive(driving.getName(), "HD A", false),
+            "precondition - the train that will be dispatched must be placed");
+
+        assertTrue(layout.moveLocomotive(standing.getName(), "HD P", false),
+            "precondition - somebody must be standing at the protected platform");
+
+        // Placed by hand while idle, so the signal has NOT been commanded - that silence is the
+        // behaviour the sweep exists to compensate for, and asserting it here is what stops this test
+        // passing for the wrong reason.
+        far.setState(Accessory.accessorySetting.GREEN);
+
+        assertFalse(far.isSwitched(),
+            "precondition - placing a train while nothing is running must not command its signal, or "
+            + "there would be nothing for the sweep to do");
+
+        assertTrue(layout.executePath(path, driving, 30, null),
+            "the hand dispatch did not complete, so nothing below tests anything");
+
+        assertTrue(far.isSwitched(),
+            "a train was standing at a protected platform, somebody hand-dispatched a DIFFERENT train, "
+            + "and the platform stayed GREEN for the whole dispatch.  Starting autonomy or executing a "
+            + "timetable sweeps the signals at that moment for exactly this reason; the right-click "
+            + "dispatch became a run and did not inherit the sweep");
+
+        layout.getPoint("HD A").setLocomotive(null);
+        layout.getPoint("HD B").setLocomotive(null);
+        layout.getPoint("HD P").setLocomotive(null);
+    }
+
+    /**
      * A train dispatched BY HAND protects the platform it is heading for.
      *
      * UR-2, from the uninformed review, and Adam's ruling on it: "The same thing should happen in

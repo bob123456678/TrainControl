@@ -4272,7 +4272,25 @@ public class Layout
         // Nested under autonomy, which has already counted its own thread, so this can only reach zero
         // when the LAST thing finishes - and reaching zero announces the end of the run, which is how
         // the interface learns to re-enable what it disabled.
-        this.locomotiveThreads.incrementAndGet();
+        boolean firstThing = this.locomotiveThreads.incrementAndGet() == 1;
+
+        // And the signals are swept, exactly as the other two doors into a run sweep them (AU-B7).
+        //
+        // runLocomotives and executeTimetableInternal both do this the moment they set running, for a
+        // reason that applies here word for word: while nothing is running the refresh is deliberately
+        // silent, so a train PLACED BY HAND produces no occupancy change, and nothing will ever command
+        // its platform's signal. Start autonomy and it goes red; hand-dispatch a different train and it
+        // stayed green for the whole dispatch, with a train standing at it.
+        //
+        // This door became a run in the MT-139 work - it counts its thread, engages every guard and
+        // throws its own destination's signal - and did not inherit the sweep. Adam's rule is quoted a
+        // few lines above and is the reason this is a defect rather than a difference: "The same thing
+        // should happen in manual operation vs auto - the same switches and signals set."
+        //
+        // Only when this is the FIRST thing running, and only outside autonomy: autonomy swept at its
+        // own start, and sweeping again per dispatch would command every signal on the layout each time
+        // a path begins.
+        if (firstThing && !isAutoRunning()) refreshAllProtectingSignals();
 
         try
         {
