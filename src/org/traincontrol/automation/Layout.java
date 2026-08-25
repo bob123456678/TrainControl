@@ -409,6 +409,19 @@ public class Layout
      */
     private final Set<Locomotive> takingPath;
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
+
+    /**
+     * Edges of a running path that the train has completely finished with - tail and all.
+     *
+     * Separate from the LOCK, deliberately, because they answer different questions.  The lock asks
+     * "may another train be routed here", and with atomicRoutes on the answer is deliberately no for
+     * the whole run.  This asks "is there still a train on top of this", and once the tail has gone
+     * past, the answer is no whatever the lock says.
+     *
+     * Adam, 2026-08-25: "once a train passes, signals on the route, but behind the train, should
+     * still be allowed to be changed by auto routes."
+     */
+    private final Map<Locomotive, Set<Edge>> clearedEdges;
     private final Map<Locomotive, String> locomotivePendingS88;
 
     /**
@@ -576,6 +589,9 @@ public class Layout
         this.activeLocomotives = new ConcurrentHashMap<>();
         this.takingPath = Collections.newSetFromMap(new ConcurrentHashMap<Locomotive, Boolean>());
         this.locomotiveMilestones = new ConcurrentHashMap<>();
+        // Same reason as the rest of these: written on locomotive threads, read by the UI and by the
+        // route guard without a lock.
+        this.clearedEdges = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();
         this.homeStations = new LinkedHashMap<>();
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
@@ -716,6 +732,8 @@ public class Layout
         
         for (Map.Entry<Locomotive, List<Edge>> active : this.activeLocomotives.entrySet())
         {
+            Set<Edge> cleared = this.clearedEdges.get(active.getKey());
+
             for (Edge e : active.getValue())
             {
                 // Only the part of the path the train has not finished with.
@@ -725,15 +743,25 @@ public class Layout
                 // the WHOLE path for the whole run - so an accessory the train cleared thirty seconds
                 // ago was reported as active until the run ended.
                 //
-                // isLockHeld is the same flag executePath clears as the train goes
-                // (setLockedEdgeUnoccupied), so this follows the train rather than the plan.
+                // Two tests, because there are two ways an edge stops mattering and neither implies
+                // the other:
                 //
-                // NOTE, because it is the difference between this being a fix and being cosmetic: the
-                // progressive release only runs when atomicRoutes is OFF.  With it on - which is what
-                // Adam's own configuration uses - the whole path is deliberately held until the run
-                // ends, so this changes nothing for him and the whole path stays protected.  That is
-                // what atomic means, and narrowing it further would be arguing with the setting.
+                //   isLockHeld - the edge was given up entirely.  Only happens with atomicRoutes off.
+                //   cleared    - the train's tail has gone past it.  Happens in both modes, and is the
+                //                one that answers Adam's case: with atomicRoutes on the lock is held
+                //                for the whole run BY DESIGN, so the lock alone can never say the
+                //                train has moved on.  The tail bookkeeping in executePath is what
+                //                says so, and it is the same computation that decides when an edge is
+                //                safe to unlock - not a second opinion about the same thing.
+                //
+                // What this deliberately does NOT do is go by the train's position alone.  An edge is
+                // only cleared once a train's LENGTH has gone past it, so a turnout under the middle
+                // of a train is still refused.  Where no lengths are configured the railway already
+                // treats an edge as clear the moment the front passes (`lengthTraversed == 0`), which
+                // is the same trade it has always made for unlocking.
                 if (!e.isLockHeld(active.getKey())) continue;
+
+                if (cleared != null && cleared.contains(e)) continue;
 
                 for (String acc : e.getConfigCommands().keySet())
                 {
@@ -758,6 +786,7 @@ public class Layout
         this.locomotivesToRun.remove(l);
         this.activeLocomotives.remove(l);
         this.locomotiveMilestones.remove(l);
+        this.clearedEdges.remove(l);
 
         // The claim on a path slot.  Left behind it lowers the cap on how many trains may run for the
         // rest of the session - a leak that makes the railway quieter and quieter with nothing to say
@@ -4360,6 +4389,7 @@ public class Layout
             {
                 this.activeLocomotives.remove(loc);
                 this.locomotiveMilestones.remove(loc);
+                this.clearedEdges.remove(loc);
             }
 
             // And any unfinished claim on a slot, for the same reason the registration is cleared:
@@ -4523,6 +4553,7 @@ public class Layout
                 // with no lock and no ConcurrentModificationException, so the getters need no locking.
                 this.locomotiveMilestones.put(loc, new CopyOnWriteArrayList<>());
                 this.locomotiveMilestones.get(loc).add(start);
+                this.clearedEdges.put(loc, ConcurrentHashMap.<Edge>newKeySet());
                 this.activeLocomotives.put(loc, path);
 
                 // Counted for real now, so the claim is given up.  Kept as a union rather than a sum
@@ -4642,7 +4673,20 @@ public class Layout
                 // This can be useful, but extra care needs to be taken if any paths cross over
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
-                if (!this.atomicRoutes && isCurrentLayout())
+                //
+                // The condition below used to be `!this.atomicRoutes && isCurrentLayout()`, so with
+                // atomic routes on - which is what Adam's own configuration uses - none of this ran
+                // and nothing anywhere knew where the train's tail was.  It now runs in both modes;
+                // what atomicRoutes still decides is whether the edge is UNLOCKED, which is a
+                // different question and stays exactly as it was.
+                //
+                //   cleared  - "the train is no longer on top of this".  Both modes.
+                //   unlocked - "another train may be routed here".  Non-atomic only, as before.
+                //
+                // Two questions, one answer to when the tail has gone by, computed once.  Adam,
+                // 2026-08-25: "once a train passes, signals on the route, but behind the train,
+                // should still be allowed to be changed by auto routes."
+                if (isCurrentLayout())
                 {
                     if (i > 0)
                     {       
@@ -4653,6 +4697,12 @@ public class Layout
                         {
                             for (int index : toUnlock)
                             {
+                                Set<Edge> cleared = this.clearedEdges.get(loc);
+
+                                if (cleared != null) cleared.add(path.get(index));
+
+                                if (this.atomicRoutes) continue;
+
                                 synchronized (this.activeLocomotives)
                                 {
                                     path.get(index).setLockedEdgeUnoccupied();
@@ -4674,7 +4724,9 @@ public class Layout
                         }
                         else
                         {
-                            if (control.isDebug())
+                            // Still under the train.  In atomic mode nothing was going to be unlocked
+                            // anyway, so this only reports in the mode it can happen in.
+                            if (control.isDebug() && !this.atomicRoutes)
                             {
                                 this.control.logf(
                                     "autolayout.infoNotUnlockingTraversedEdgeDueToTrainLength",
@@ -4835,6 +4887,7 @@ public class Layout
         
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
+            this.clearedEdges.remove(loc);
                                   
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())

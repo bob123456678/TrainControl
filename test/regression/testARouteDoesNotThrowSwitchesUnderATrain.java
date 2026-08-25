@@ -50,6 +50,14 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
     private static final String S88 = "48401";
 
+    /** The middle sensors of the three-leg path, so the train has somewhere to be part way along. */
+    private static final String S88_MID = "48402";
+
+    private static final String S88_MID2 = "48403";
+
+    /** A second accessory, so "behind" and "ahead" can be told apart at the same instant. */
+    private static final int SWITCH_AHEAD = 85;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -188,6 +196,149 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         assertTrue(turnout.isSwitched(),
             "with autonomy not running the route did not switch the accessory either, so the guard is "
             + "refusing routes generally rather than refusing this one case");
+    }
+
+    /**
+     * An accessory the train has already gone past is still settable; one ahead of it is not.
+     *
+     * Adam, 2026-08-25, on the guard the rest of this class is about: "be careful with auto disallowed
+     * routes to avoid regression.  once a train passes, signals on the route, but behind the train,
+     * should still be allowed to be changed by auto routes, for example."
+     *
+     * He was right, and the first version was over-strict for exactly the reason he suspected.  The
+     * guard asked whether the edge's LOCK was still held - and with `atomicRoutes` on, which is what
+     * his own configuration uses, the lock is held for the whole path until the run ends, by design.
+     * So every accessory on a long run was refused for the whole of it, including the ones the train
+     * cleared in the first thirty seconds.  On a railway with 39 s88-triggered routes that is a lot of
+     * silent refusals.
+     *
+     * Locking and clearance are different questions.  The lock asks "may another train be routed
+     * here", and atomic means no for the whole run.  This asks "is there a train on top of this", and
+     * the railway already computed the answer - it is what decides when an edge may be released in
+     * non-atomic mode.  It simply was not computed when nothing was going to be released.  Now it is,
+     * in both modes, by the same code, so the two cannot drift apart.
+     *
+     * **Position is not the test; the tail is.**  An edge is only cleared once the train's LENGTH has
+     * gone past it, so a turnout under the middle of a train stays refused.
+     *
+     * Two accessories, checked at the SAME moment, so this cannot pass by the guard being uniformly
+     * off: at the instant the train has crossed the first leg, that leg's turnout must be free and the
+     * last leg's must not.
+     *
+     * **Three legs, not two, and that is a fact about the railway rather than about this test.** An
+     * edge is only released once the train has reached the end of the edge AFTER it - "unlock 1 edge
+     * prior to the current one", as the dispatch loop puts it, so that clearance always trails the
+     * train by a whole edge. Clearance is now computed by that same code, so it inherits the same
+     * conservatism: on a two-edge path the first edge is never cleared mid-run, because there is no
+     * third leg to reach. That is the existing trade for unlocking and it stays exactly as it was.
+     *
+     * For the same reason the assertions read the FIRST and LAST observation rather than a numbered
+     * leg: the dispatch loop fires its progress callback before it does the release, so the clearance
+     * becomes visible one leg after the train crossed the edge. Pinning this test to leg two would
+     * make it a test of that ordering rather than of the guard.
+     *
+     * MUTATION: making `getActiveAccs` ignore `clearedEdges` again - the state this test was written
+     * for - fails it on the behind-the-train half while the ahead-of-the-train half still passes.
+     */
+    @Test
+    public void testAnAccessoryBehindTheTrainIsStillSettable() throws Exception
+    {
+        for (String s : new String[] {S88, S88_MID, S88_MID2})
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        // The setting Adam runs, and the one the old guard could not see past.
+        layout.setAtomicRoutes(true);
+
+        layout.createPoint("BH_A", false, null);
+        layout.createPoint("BH_B", false, S88_MID);
+        layout.createPoint("BH_C", false, S88_MID2);
+        layout.createPoint("BH_D", true, S88);
+
+        Edge ab = layout.createEdge("BH_A", "BH_B");
+        Edge bc = layout.createEdge("BH_B", "BH_C");
+        Edge cd = layout.createEdge("BH_C", "BH_D");
+
+        MarklinAccessory behind =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        MarklinAccessory ahead =
+            model.newSwitch(SWITCH_AHEAD, Accessory.accessoryDecoderType.MM2, false);
+
+        behind.setSwitched(false);
+        ahead.setSwitched(false);
+
+        ab.addConfigCommand(behind.getName(), Accessory.accessorySetting.STRAIGHT);
+        cd.addConfigCommand(ahead.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("BH_A").setLocomotive(loc);
+
+        // Accumulated per leg, never overwritten - the started callback fires once per leg, and a
+        // single variable here would let the last leg speak for all of them.  That mistake is recorded
+        // at length on the first test in this class.
+        final List<Boolean> behindHeld = new ArrayList<>();
+        final List<Boolean> aheadHeld = new ArrayList<>();
+
+        layout.setCallback("behind probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            behindHeld.add(layout.getActiveAccs().contains(behind));
+            aheadHeld.add(layout.getActiveAccs().contains(ahead));
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab, bc, cd), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(behindHeld.size() >= 3,
+                "the run reported fewer than three legs, so there was never a moment with one leg "
+                + "behind the train and one ahead - which is the only moment this test is about.  "
+                + "Got " + behindHeld.size());
+
+            int last = behindHeld.size() - 1;
+
+            // The train has only just left: everything on the path is still in front of it.
+            assertTrue(behindHeld.get(0),
+                "precondition: when the train sets off the path must own the first turnout, or the "
+                + "guard has nothing to find and this test would pass for the wrong reason");
+
+            assertTrue(aheadHeld.get(0),
+                "precondition: when the train sets off the last turnout must be held too");
+
+            // The train has finished with the first leg, and has still to cross the last.  BOTH of
+            // these are read from the same observation, so neither a guard that is uniformly on nor
+            // one that is uniformly off can satisfy them together.
+            assertFalse(behindHeld.get(last),
+                "a turnout the train had already gone past was still refused.  With atomicRoutes on "
+                + "the lock is held for the whole run by design, so a guard that only reads the lock "
+                + "refuses every accessory on the path for the whole run - which is the regression "
+                + "Adam predicted");
+
+            assertTrue(aheadHeld.get(last),
+                "the turnout the train had NOT yet reached stopped being protected.  That is the "
+                + "original bug back again, and it is the half that matters: this must not be a "
+                + "guard that simply lets everything through once a run is under way");
+        }
+        finally
+        {
+            layout.setAtomicRoutes(false);
+            model.clearAutoLayout();
+        }
     }
 
     /**
