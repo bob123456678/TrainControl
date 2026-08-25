@@ -2597,6 +2597,25 @@ public class AutonomySession
 
             if (offered.isEmpty() || offered.contains(recorded)) continue;
 
+            // A train that turned round is pointing back at the side it came in by (automation
+            // review, C).
+            //
+            // `facingChoices` offers where a train could be sent ONWARD from here, so it never offers
+            // an arrival side. On a square a train may turn round on - every parking berth, and every
+            // reversing point - the facing a turning copy actually holds IS an arrival side, and on a
+            // berth with only that one copy it is the only facing the square can hold. So this
+            // reported the one correct answer as impossible.
+            //
+            // Written into `testEveryFacingTheBuildEmitsIsOneTheEditorOffers` when the arrival-sides
+            // consolidation was checked, and not into the production consumer - the twin, three
+            // hundred lines away. On the frozen fixture it is 16 squares, and it appears on the
+            // railway the first time autonomy parks a train in a berth, because captureFromLayout
+            // writes that facing back.
+            if (isTurnAround(placed.getKey()) && arrivalSides(placed.getKey()).contains(recorded))
+            {
+                continue;
+            }
+
             out.add(placed.getKey());
         }
 

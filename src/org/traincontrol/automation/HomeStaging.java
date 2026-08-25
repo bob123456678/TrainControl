@@ -542,15 +542,24 @@ public final class HomeStaging
                 // supposed to apply - a false accusation from the one instrument that exists to find
                 // real divergence, in a channel only read when something else is already being chased.
                 //
-                // No isAutoRunning fence on the exemption, like the three above: when autonomy IS
-                // running, getPossiblePaths applies the rule itself through isPathClear, so the
-                // destination is not in runtimeSays and there is nothing here to skip.
+                // The RUNTIME'S question, not the planner's (automation review, C).
                 //
-                // The PLANNER'S question, asked exactly as canRest asks it, rather than "does p have a
-                // blockedBy list".  An exemption that wide would skip every FR-001 destination and
-                // blind the audit to a genuine mis-copy of the rule; this one skips only the
-                // destinations somebody is standing in the way of right now.
-                if (Point.heldBackBy(p, loc, plannedOccupancy(this.start)) != null) continue;
+                // This asked `plannedOccupancy(this.start)` - which is exactly what `canRest` asks,
+                // on exactly these arguments, since firstClearRoute is called from here with
+                // this.start. The two cancelled: the planner dropping p and the exemption skipping p
+                // happened under identical conditions, so a planner mis-copy of FR-001 could never
+                // produce a disagreement. The comment that stood here claimed the narrowing bought
+                // visibility of exactly that, and it did not.
+                //
+                // Asking the live-block variant instead keeps the exemption honest: it skips the
+                // destinations the RAILWAY would refuse, so the planner refusing one for its own
+                // reasons - a sensor sibling, or a mis-copied rule - still shows up as a divergence,
+                // which is the only thing this instrument exists for.
+                //
+                // No isAutoRunning fence on it, like the three above: when autonomy IS running,
+                // getPossiblePaths applies the rule itself through isPathClear, so the destination is
+                // not in runtimeSays and there is nothing here to skip.
+                if (Point.heldBackBy(p, loc) != null) continue;
 
                 if (!plannerSays.contains(p))
                 {
@@ -1178,16 +1187,7 @@ public final class HomeStaging
      */
     private List<Point> sameTrackAs(Point track)
     {
-        List<Point> out = new ArrayList<>();
-
-        if (track.getBlock() != null)
-        {
-            for (Point copy : this.pointsByBlock.getOrDefault(track.getBlock(),
-                java.util.Collections.<Point>emptyList()))
-            {
-                if (!copy.equals(track)) out.add(copy);
-            }
-        }
+        List<Point> out = blockCopiesOf(track);
 
         if (track.getS88() != null)
         {
@@ -1227,10 +1227,50 @@ public final class HomeStaging
         {
             if (watched == null) continue;
 
-            if (watched.equals(track) || sameTrackAs(watched).contains(track)) return true;
+            if (watched.equals(track) || blockCopiesOf(watched).contains(track)) return true;
         }
 
         return false;
+    }
+
+    /**
+     * The other Points that are the same square as this one, by BLOCK and nothing else.
+     *
+     * Deliberately narrower than {@link #sameTrackAs}, and the difference is the whole of what makes
+     * the impossibility proof legitimate.
+     *
+     * `sameTrackAs` also unions the points reporting the same SENSOR, which the runtime does not
+     * consult. That widening is the planner being conservative on purpose, and `plannedOccupancy`
+     * says exactly what it is worth: "It fails SAFE - a refused plan, never a wrong movement - but it
+     * is the 'planner is the stricter half' shape, whose symptom is NO_PLAN_FOUND."
+     *
+     * A refused plan and a PROOF are not the same claim. IMPOSSIBLE names locomotives and asserts that
+     * no arrangement exists, so it may only be built out of the relation the railway actually
+     * enforces - which is the block, the same thing `getBlockLocomotive` asks.
+     *
+     * The first version of the OB-085 scan used `sameTrackAs`, and a review built the counterexample:
+     * two ordinary platforms, one one-way hold, and an approach guard sharing a feedback address with
+     * the other platform - which AutonomyBuilder says outright is normal, "a station, its approach
+     * guard and a reversing point can be three Points on one feedback". The railway stages it in two
+     * moves. Return Home said impossible and named both locomotives. That is the third time something
+     * put into this scan has been wrong, and the first two were caught the same way.
+     *
+     * @param track the square being asked about
+     * @return its block copies, never including the square itself
+     */
+    private List<Point> blockCopiesOf(Point track)
+    {
+        List<Point> out = new ArrayList<>();
+
+        if (track.getBlock() == null) return out;
+
+        for (Point copy : this.pointsByBlock.getOrDefault(track.getBlock(),
+            java.util.Collections.<Point>emptyList()))
+        {
+            if (!copy.equals(track)) out.add(copy);
+        }
+
+        return out;
     }
 
     /**
@@ -1242,6 +1282,9 @@ public final class HomeStaging
      */
     private boolean onOneTrack(Point a, Point b)
     {
+        // The WIDE relation here, unlike watchesTrack above, and the asymmetry is deliberate: this
+        // decides what the cycle scan SKIPS, and skipping more can only make it claim less. Two homes
+        // sharing a sensor are the pairwise goal scan's business anyway.
         return a != null && b != null && sameTrackAs(a).contains(b);
     }
 

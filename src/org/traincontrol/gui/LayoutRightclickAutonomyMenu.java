@@ -124,17 +124,29 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 
-                // Greyed when it could not start (OB-050).
+                // Greyed when it could not start (OB-050), and the sentence that used to stand here
+                // was wrong (UI review, B1).
                 //
-                // A configuration with blocking findings - the "fix it" state - cannot start, and this
-                // menu offered the item anyway and reported the refusal in a dialog afterwards. The
-                // Start button has always known; it just was not asked.
+                // It said "the Start button has always known; it just was not asked". It had not:
+                // canStartAutonomy was the Start button's enabled state, and no writer of that flag
+                // consults the checks - the button is deliberately left enabled and explains at press
+                // time. So a setup in the "fix it" state offered this item live, and pressing it got
+                // a dialog. Two controls on one window, feet apart, disagreeing about one action.
+                //
+                // canStartAutonomy asks refuseAutonomyStartWhileBroken's own number now, which is the
+                // rule this repository has paid for six times in two days: the control that OFFERS an
+                // action asks the predicate the guard asks.
                 menuItem.setEnabled(ui.canStartAutonomy());
 
                 if (!ui.canStartAutonomy())
                 {
+                    // And say which of the two reasons it is.  The tooltip was hardcoded to the
+                    // waiting-for-trains message, which is a lie whenever Start is off for any other
+                    // reason - including the one immediately above.
                     menuItem.setToolTipText(AutonomyEditorPanel.wrapped(
-                        I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
+                        ui.autonomyErrorCount() > 0
+                            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", ui.autonomyErrorCount())
+                            : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
                 }
 
                 menuItem.addActionListener(event -> 

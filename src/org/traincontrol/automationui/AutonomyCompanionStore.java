@@ -587,9 +587,19 @@ public class AutonomyCompanionStore
     {
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
-        // The page PARTS a stored key could carry for these pages: the ids the file recorded them
-        // under, and the names themselves for a setup old enough to be keyed by name.
-        Set<String> parts = new LinkedHashSet<>(goneByName);
+        // The IDS the file recorded these pages under, and only those (store review, C1).
+        //
+        // This began as "the ids, and the names too, for a setup old enough to be keyed by name" - and
+        // the names half is both dead and dangerous. Dead, because `pageIsHere` answers true for any
+        // bare unrecognised name, so a name-keyed entry is never held in the first place and there is
+        // nothing here for it to match. Dangerous, because a page may legally be called "5" - Adam's
+        // ruling, and OB-092 is that page - so declaring the page NAMED "5" gone would delete every
+        // held entry belonging to the page with ID 5.
+        //
+        // That is the id-as-name pun the whole hold exists to prevent, reintroduced by the method that
+        // empties it. `untranslatePages` states the discriminator a screen away: "the file's own pages
+        // record is the discriminator: an id this file wrote is in it, and a name is not."
+        Set<String> parts = new LinkedHashSet<>();
 
         for (Map.Entry<String, String> was : pageNamesWhenWritten.entrySet())
         {
@@ -2293,6 +2303,15 @@ public class AutonomyCompanionStore
         {
             pageNameToId.put(to, renamedId);
             pageIdToName.put(renamedId, to);
+
+            // And what that id was CALLED when the file was written, or every save between here and
+            // the next load declines to reconcile - and, since DR-B10, warns - naming the page under
+            // the name it no longer has (store review, B1).
+            //
+            // Transient rather than permanent, because sharedFields rewrites this map from
+            // pageIdToName at the next save. Fixed anyway: the window between a rename and a reload is
+            // exactly when somebody is editing, which is when the saves happen.
+            pageNamesWhenWritten.put(renamedId, to);
         }
 
         // Configurations DO key by tile - setPointProperty and captureFromLayout both write
@@ -2401,6 +2420,36 @@ public class AutonomyCompanionStore
         // page that is gone cannot be excluded from autonomy.  Left behind, the name sits in the set
         // for ever, and a page later created with the same name would silently start out excluded.
         excludedPages.remove(page);
+
+        // And the record of what that page was called, which is the same one line forgetHeldPages
+        // ends with - and the twin this method was missing (store review, B1).
+        //
+        // `pageNamesWhenWritten` is written back out as the file's "pages" map, so a stale entry
+        // survives every reload. `pagesNotLoaded` walks it, so a page the operator deliberately
+        // DELETED was named for ever as one that had merely failed to load - which makes
+        // `pagesSafeToJudge` false for the rest of the layout's life. The store then never reconciles
+        // anything again, and since DR-B10 it also raises a warning dialog on every editor save,
+        // naming the page that was deleted on purpose.
+        //
+        // FR-018 could not clear it either: it offers the "it was deleted" answer for pages the INDEX
+        // still holds, and a deleted page is not in the index.
+        //
+        // Same line in renamePage, where the symptom is transient rather than permanent - the record
+        // is rewritten at the next load - but the saves in between decline and warn under the OLD name.
+        pageNamesWhenWritten.values().remove(page);
+
+        // And out of the index this store is holding, which is what `sharedFields` rebuilds the file's
+        // "pages" map from - so removing only the record above changed nothing at all, and the first
+        // version of this fix was ineffective for exactly that reason.
+        //
+        // Safe for the id floor, and this is the part worth being sure about. `highestPageIdSeen`
+        // reserves ids so a new page cannot inherit an absent page's settings (IAR-A1) - but that is
+        // about a page whose file merely did not load, whose settings are still here. This page's
+        // settings have just been forgotten, three lines above. There is nothing left for a reissued
+        // id to collect.
+        String deletedId = pageNameToId.remove(page);
+
+        if (deletedId != null) pageIdToName.remove(deletedId);
 
         // And the configurations, which key by square too.  renamePage's note records what happens
         // when they are missed: "a rename silently dropped every placement, home, terminus and length

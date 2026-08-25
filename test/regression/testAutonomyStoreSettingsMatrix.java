@@ -54,7 +54,20 @@ public class testAutonomyStoreSettingsMatrix
     private static final TileKey ELSEWHERE = new TileKey(PAGE, 9, 9);
     private static final TileKey ON_ANOTHER_PAGE = new TileKey(OTHER_PAGE, 2, 2);
 
-    private static final RouteId ROUTE = new RouteId(0, 0);
+    /**
+     * ASYMMETRIC, and that is the whole of why this constant has a comment.
+     *
+     * It was `RouteId(0, 0)`, which reads the same either way round - so every column of this matrix
+     * that carries a direction across a move, a rename, a delete or a restore could not see the route
+     * half of the key at all. A review proved it: making `DirectionKey.withSquare` throw the route
+     * away and substitute route 0,0 - which would silently collapse every direction on a switch onto
+     * one route, last write wins, on any page rename - passed 209 tests across seven classes.
+     *
+     * Every fixture in the repository used 0,0. The same discovery had already been made once for the
+     * READ path, when swapping the two numbers in `readDirectionMap` passed everything; it was not
+     * carried to the write path.
+     */
+    private static final RouteId ROUTE = new RouteId(1, 3);
 
     private static final String CONFIGURATION = "Evening";
 

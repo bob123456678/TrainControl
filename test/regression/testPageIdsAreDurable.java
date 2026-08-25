@@ -1132,6 +1132,122 @@ public class testPageIdsAreDurable
             + "nothing anywhere says so: " + after);
     }
 
+    /**
+     * A deleted page stops being reported as one that merely did not load (store review, B1).
+     *
+     * `deletePage` cleared the twelve collections, the excluded-page set and the configurations, and
+     * left the setup's own record of what that page id was CALLED - which is written back out as the
+     * file's "pages" map and therefore survives every reload.
+     *
+     * What that costs is not a lost setting but a store that stops working. `pagesNotLoaded` walks
+     * that record, so a page the operator deliberately deleted is named for ever as one that failed to
+     * load; `AutonomySession.pagesSafeToJudge` is therefore false for the rest of the layout's life;
+     * and a session that cannot judge never reconciles anything again. Since DR-B10 it also raises a
+     * warning dialog on every editor save, naming the page that was deleted on purpose.
+     *
+     * FR-018 cannot clear it either - it offers the "it was deleted" answer for pages the INDEX still
+     * holds, and a deleted page is not in the index. So there is no way out of the state at all.
+     *
+     * `forgetHeldPages` had the line and `deletePage` did not, three hundred lines apart, which is
+     * this repository's most-repeated defect shape applied to a rule invented the same day.
+     *
+     * MUTATION: removing `pageNamesWhenWritten.values().remove(page)` from `deletePage` fails this.
+     */
+    @Test
+    public void testADeletedPageIsNotReportedAsMerelyMissing() throws IOException
+    {
+        write("Alpha", "Ghost");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        store.setPointName(new TileKey("Ghost", 3, 3), "Ghost Platform");
+        store.setPointName(new TileKey("Alpha", 4, 4), "Alpha Platform");
+        store.save();
+
+        // Deleted through the door the menu uses, in the order the menu uses it.
+        store.deletePage("Ghost");
+        store.save();
+
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha")), null, store.highestPageIdSeen());
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPageIds(idsAsNameToId());
+        reopened.load();
+
+        assertTrue(reopened.pagesNotLoaded(Arrays.asList("Alpha")).isEmpty(),
+            "a page that was DELETED is still reported as one that merely did not load, so the setup "
+            + "can never be judged again - it will not reconcile, and it warns on every save about a "
+            + "page the operator got rid of on purpose.  Got: "
+            + reopened.pagesNotLoaded(Arrays.asList("Alpha")));
+
+        assertEquals(reopened.getPointName(new TileKey("Alpha", 4, 4)), "Alpha Platform",
+            "the page that stayed lost its settings, which is a different and worse bug");
+    }
+
+    /**
+     * A page named after another page’s id keeps its own held settings when that other page goes.
+     *
+     * The id-as-name pun, arriving through the method written to close it (store review, C1).
+     * `forgetHeldPages` matched held keys against a set holding both the page NAMES it was given and
+     * the ids those names were written under. A page may legally be called "5" - Adam ruled it must
+     * stay legal, "A page should be allowed to be named 2 - let FR-013 dissolve it" - so declaring the
+     * page NAMED "5" gone deleted every held entry belonging to the page with ID 5.
+     *
+     * The names half could never match anything legitimate anyway: `pageIsHere` answers true for any
+     * bare unrecognised name, so a name-keyed entry is never held in the first place. It could only
+     * ever produce this false positive.
+     *
+     * MUTATION: putting the page names back into `parts` fails this test.
+     */
+    @Test
+    public void testDeletingAPageNamedAfterAnIdLeavesThatIdAlone() throws IOException
+    {
+        // "5" is a page name; Main is the page that actually holds id 5.
+        write("5", "Beta", "Gamma", "Delta", "Main");
+
+        assertEquals(ids().get("Main"), (Integer) 5,
+            "the fixture is not what it says it is: Main must hold id 5 for this to test the pun");
+        assertEquals(ids().get("5"), (Integer) 1, "the page NAMED 5 must not also hold id 5");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        store.setPointName(new TileKey("5", 1, 1), "Five Platform");
+        store.setPointName(new TileKey("Main", 2, 2), "Main Platform");
+        store.save();
+
+        // Both pages go missing, so both are HELD - which is the only state forgetHeldPages acts on.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Beta")), null, store.highestPageIdSeen());
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPageIds(idsAsNameToId());
+        reopened.load();
+
+        assertNull(reopened.getPointName(new TileKey("Main", 2, 2)),
+            "the fixture did not take: Main's entry is not being held, so nothing below is tested");
+
+        // Only the page NAMED "5" is gone.
+        reopened.forgetHeldPages(Arrays.asList("5"));
+        reopened.save();
+
+        String after = read(setupFile());
+
+        assertFalse(after.contains("Five Platform"),
+            "the page that was actually declared gone kept its settings.  File:\n" + after);
+
+        assertTrue(after.contains("Main Platform"),
+            "deleting the page NAMED \"5\" took the settings of the page whose ID is 5.  That is the "
+            + "id-as-name pun the whole hold exists to prevent, arriving through the method written "
+            + "to empty it.  File:\n" + after);
+    }
+
     private void write(String... pages) throws IOException
     {
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),

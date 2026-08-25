@@ -1632,6 +1632,85 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Shows a plain message, from whatever thread asks.
+     *
+     * A modal dialog put up from a worker is a dialog that may never paint, and the page-editing paths
+     * all run on one because they parse the whole layout. Written once because this method already had
+     * two dialogs and had marshalled exactly one of them.
+     *
+     * @param message what to say
+     */
+    private void showOnTheEventThread(String message)
+    {
+        Runnable say = () -> javax.swing.JOptionPane.showMessageDialog(this, message);
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            say.run();
+
+            return;
+        }
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(say);
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotSay)
+        {
+            this.model.log(couldNotSay);
+        }
+    }
+
+    /**
+     * The file a stored image URL names, or null when it does not name one.
+     *
+     * A locomotive's local image is stored as a URL string, so `new File(...)` on it is wrong - it
+     * produces a path with the scheme still on the front, which never exists. Written once because
+     * this was got right in two places and wrong in a third (UI review, C4).
+     *
+     * @param url the stored value
+     * @return the file, or null for anything that is not a readable file: URL
+     */
+    private static File fileOf(String url)
+    {
+        if (url == null) return null;
+
+        try
+        {
+            java.net.URI uri = new java.net.URI(url);
+
+            if (!"file".equalsIgnoreCase(uri.getScheme())) return null;
+
+            return new File(uri);
+        }
+        catch (java.net.URISyntaxException | IllegalArgumentException notAFileUrl)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Whether there is a real Central Station on the other end of the wire.
+     *
+     * The one definition, because the Layouts menu had it and the Autonomy menu's download offer did
+     * not (UI review, C1). With no station answering, or in simulate mode, the Layouts menu correctly
+     * greys Download while the Autonomy menu offered it live - and pressing it walked the operator
+     * through a folder chooser before failing.
+     *
+     * Both halves are needed, and the second one took two attempts. `getNetworkCommState` reports
+     * whether the last SYNC succeeded, and a sync reads through CS2File, which reads a local layout
+     * folder perfectly happily - so on a machine with a local layout a simulated session syncs
+     * successfully and calls itself connected. Adam: "switch to central station layout is NOT greyed
+     * out in debug/simulate mode."
+     *
+     * @return true when a Central Station is reachable and this is not a simulation
+     */
+    public boolean isCentralStationConnected()
+    {
+        return this.model != null && this.model.getNetworkCommState() && !this.model.isSimulation();
+    }
+
+    /**
      * Settles what happens to pages the layout index holds that nothing can see (FR-018).
      *
      * Writing the index retires the id of any page not in the list it is given, which is what stops a
@@ -1682,9 +1761,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // when there is simply no index yet, so a layout that has never had one is unaffected.
         if (LayoutDiagram.getUnreadableIndex() != null)
         {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                I18n.f("layout.ui.errorSavingLayoutWithMessage",
-                    LayoutDiagram.getUnreadableIndex().getMessage()));
+            // On the event thread, like the question below it.  One of this method's two dialogs was
+            // marshalled and the other was not, under a comment on the first saying why it had to be -
+            // and combineLinkedPages really does call this from a worker.
+            showOnTheEventThread(I18n.f("layout.ui.errorSavingLayoutWithMessage",
+                LayoutDiagram.getUnreadableIndex().getMessage()));
 
             return null;
         }
@@ -14214,7 +14295,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     YES_NO_OPTS[0]
                 );
                 
-                if(dialogResult == JOptionPane.NO_OPTION) return;
+                // Anything but Yes, so that Escape and the close box do not shut the application
+                // down with trains at speed (UR-1’s twin).
+                if (dialogResult != JOptionPane.YES_OPTION) return;
             }
         }
         
@@ -16206,7 +16289,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 YES_NO_OPTS[0]
             );
 
-            if(dialogResult == JOptionPane.NO_OPTION) return;
+            // Anything but Yes.  This one wipes the whole captured timetable with no undo, and
+            // Escape - which means no - was reaching it.
+            if (dialogResult != JOptionPane.YES_OPTION) return;
 
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
             this.repaintTimetable();
@@ -16996,7 +17081,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             YES_NO_OPTS[0]
                         );
                         
-                        if (dialogResult == JOptionPane.NO_OPTION)
+                        // Anything but Yes - declining is what Escape means.
+                        if (dialogResult != JOptionPane.YES_OPTION)
                         {
                             // The other four early returns in this handler re-enable; this one did not,
                             // so declining the warning - the prudent answer, and the one the warning
@@ -17742,7 +17828,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             YES_NO_OPTS[0] // default selection
                         );
                         
-                        if (dialogResult == JOptionPane.NO_OPTION)
+                        // Anything but Yes: Escape was discarding the unsaved autonomy JSON.
+                        if (dialogResult != JOptionPane.YES_OPTION)
                         {
                             return;
                         }
@@ -17885,7 +17972,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean canStartAutonomy()
     {
-        return this.startAutonomy != null && this.startAutonomy.isEnabled();
+        return this.startAutonomy != null && this.startAutonomy.isEnabled()
+            && autonomyErrorCount() == 0;
+    }
+
+    /**
+     * How many blocking findings the loaded setup has, or zero when there is nothing to ask.
+     *
+     * The guard's own number. `refuseAutonomyStartWhileBroken` reads exactly this and refuses when it
+     * is not zero, and it says why: "asked of the session rather than counted here, so that the strip
+     * deciding what to OFFER and this deciding what to ALLOW cannot drift apart."
+     *
+     * They had drifted anyway, one door further along. `canStartAutonomy` was the Start BUTTON's
+     * enabled state and nothing else, and no writer of that flag consults the checks - the button is
+     * deliberately left enabled and explains at press time. The comment on the right-click item that
+     * asked it claimed "the Start button has always known; it just was not asked", which was simply
+     * untrue, and it is the same sentence pattern OB-057 and OB-090 both wore.
+     *
+     * @return the number of errors, zero when there is no session or no configuration
+     */
+    public int autonomyErrorCount()
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        return session == null ? 0 : session.errorCount();
     }
 
     public void requestStartAutonomy() throws Exception
@@ -20091,7 +20201,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     YES_NO_OPTS[0] // default selection = "No"
                 );
 
-                if (dialogResult == JOptionPane.NO_OPTION) return;
+                // Anything but Yes.
+                if (dialogResult != JOptionPane.YES_OPTION) return;
          
                 this.model.getAutoLayout().getTimetable().remove(index);
                 this.repaintTimetable();
@@ -20177,7 +20288,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 YES_NO_OPTS[0]
             );
 
-            if(dialogResult == JOptionPane.NO_OPTION) return;
+            // Anything but Yes.
+            if (dialogResult != JOptionPane.YES_OPTION) return;
 
             this.getModel().getAutoLayout().resetTimetable();
             this.repaintTimetable();
@@ -20274,9 +20386,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (l.getLocalImageURL() != null)
             {
-                File currentIcon = new File(l.getLocalImageURL());
+                // Through a URI, because that is what the value IS (UI review, C4).
+                //
+                // `new File(String)` on a "file:/..." URI produces a path that never exists, so
+                // currentPath was always null and the chooser never opened where the current icon
+                // lives - a silent no-op since the day it was written. FR-022's own new code got this
+                // right in isLocIconFile and deleteLocIconFile; this line is its twin, one method away.
+                //
+                // And it must NOT open in tc_loc_icons, which is where a cropped icon lives: that is
+                // the application's own folder, not somewhere the operator keeps photographs. So the
+                // chooser starts where the current icon is only when that is somewhere else.
+                File currentIcon = fileOf(l.getLocalImageURL());
 
-                if (currentIcon.exists())
+                if (currentIcon != null && currentIcon.exists()
+                    && !org.traincontrol.util.Util.isLocIconFile(l.getLocalImageURL()))
                 {
                     currentPath = currentIcon.getParent();
                 }
@@ -21733,8 +21856,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // that does not exist.
             //
             // Adam: "switch to central station layout is NOT greyed out in debug/simulate mode."
-            final boolean connected = this.model != null && this.model.getNetworkCommState()
-                && !this.model.isSimulation();
+            final boolean connected = isCentralStationConnected();
 
             // Set UI label
             if (!isLocalLayout())

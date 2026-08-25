@@ -1673,6 +1673,68 @@ public class testHomeStaging
     }
 
     /**
+     * A sensor shared with an approach guard does not make an ordinary layout impossible (OB-085).
+     *
+     * **The third thing put into this scan that was wrong, and the review that found it built exactly
+     * the counterexample the ticket asked for.** The scan asked "would a train standing there close
+     * this station" through the planner's `sameTrackAs`, which unions block copies AND the points
+     * reporting the same feedback address. The sensor half is the planner being conservative on
+     * purpose, and its own javadoc prices that conservatism honestly: it costs a refused plan, never a
+     * wrong movement.
+     *
+     * A refused plan and a PROOF are not the same claim. IMPOSSIBLE names locomotives and asserts no
+     * arrangement exists, so it may only be built out of the relation the railway enforces - the
+     * block. Built out of the wider one, this fixture came back IMPOSSIBLE with both locomotives
+     * named, for an arrangement the railway performs in two moves.
+     *
+     * The two tests already here could not see it: both build their restrictions out of direct Point
+     * references, so neither reaches `sameTrackAs` at all. The control that exists precisely to stop
+     * this over-claim was blind to the way it actually happened - which is the same lesson as the
+     * first two attempts, arriving a third time.
+     *
+     * MUTATION: putting `sameTrackAs` back in place of `blockCopiesOf` inside `watchesTrack` fails
+     * this test, with IMPOSSIBLE and both locomotives named.
+     */
+    @Test
+    public void testASharedSensorDoesNotMakeAnOrdinaryLayoutImpossible() throws Exception
+    {
+        Layout layout = load(twoHomesAndAGuardSharingASensor());
+
+        assign(layout, LOC_A, "HS C");
+        assign(layout, LOC_B, "HS D");
+
+        // One way: HS C waits for HS D to be clear.
+        layout.getPoint("HS C").setBlockedBy(Arrays.asList(layout.getPoint("HS D")));
+
+        // The other way is about the GUARD, not about HS C.
+        layout.getPoint("HS D").setBlockedBy(Arrays.asList(layout.getPoint("HS W2")));
+
+        assertEquals(layout.getPoint("HS W2").getS88(), layout.getPoint("HS C").getS88(),
+            "the fixture did not take: the guard has to share HS C's feedback for this to be the "
+            + "case that went wrong");
+
+        assertNull(layout.getPoint("HS W2").getBlock(),
+            "the fixture did not take: the guard must NOT be a block copy of anything, or this is a "
+            + "different case entirely");
+
+        assertNotEquals(layout.getPoint("HS W2"), layout.getPoint("HS C"),
+            "the fixture did not take: they have to be different squares");
+
+        // What the railway says, asked in the order the arrangement is built - the same call
+        // isPathClear makes.
+        assertNull(Point.heldBackBy(layout.getPoint("HS C"), loc(LOC_A)),
+            "precondition: with HS D empty the railway lets a train into HS C, so an arrangement "
+            + "exists and IMPOSSIBLE would be a false claim");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertNotEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "an ordinary layout - one one-way hold, and an approach guard sharing a feedback address "
+            + "with the other platform - was declared impossible.  The railway stages it: park at "
+            + "HS C while HS D is empty, then park at HS D.  Blocked: " + plan.getBlocked());
+    }
+
+    /**
      * A hold in ONE direction is an ordering, not an impossibility (OB-085).
      *
      * The control, and the assertion that matters most in this pair. The scan above proves a cycle;
@@ -2617,6 +2679,42 @@ public class testHomeStaging
     }
 
     /**
+     * Two homes, a one-way hold, and an approach guard that shares a feedback with the other home.
+     *
+     * The counterexample against the OB-085 impossibility proof, built by a review and kept because
+     * it is the case that scan is prone to getting wrong.
+     *
+     * HS C is held back while HS D is occupied - an ordinary one-way restriction. HS D is held back
+     * while its approach guard HS W2 is occupied, and HS W2 shares a feedback address with HS C, which
+     * AutonomyBuilder says outright is normal: "a station, its approach guard and a reversing point
+     * can be three Points on one feedback - so the sensor cannot say which Points are one square."
+     *
+     * There is no cycle. HS W2 is not HS C; a train on HS C is not a train on HS W2. The railway
+     * stages it in two moves, in the obvious order.
+     *
+     * No block anywhere, deliberately: these squares are not copies of one another, and the difference
+     * between "shares a sensor" and "is the same block" is the entire point of the fixture.
+     *
+     * @return the graph JSON
+     */
+    private static String twoHomesAndAGuardSharingASensor()
+    {
+        return json("{'points': ["
+            + square("HS A", 0, null, true, LOC_A) + ","
+            + square("HS B", 1, null, true, LOC_B) + ","
+            + square("HS C", 2, null, true, null) + ","
+            + square("HS D", 3, null, true, null) + ","
+            + square("HS W2", 2, null, false, null)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS A") + ","
+            + edge("HS B", "HS C") + "," + edge("HS C", "HS B") + ","
+            + edge("HS C", "HS D") + "," + edge("HS D", "HS C") + ","
+            + edge("HS D", "HS A") + "," + edge("HS A", "HS D") + ","
+            + edge("HS W2", "HS D") + "," + edge("HS D", "HS W2")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * HS A - HS B, with HS B watched by an EMPTY square and sharing its feedback with an occupied one.
      *
      * The narrowness fixture for the audit's FR-001 exemption: HS B carries a blockedBy list, so an
@@ -2699,8 +2797,13 @@ public class testHomeStaging
      * being chased.
      *
      * MUTATION-CHECKED. Deleting the FR-001 exemption from auditAgainstRuntime - the line reading
-     * `if (Point.heldBackBy(p, loc, plannedOccupancy(this.start)) != null) continue;` - fails this test
-     * and no other: 1 failure in the 65 of this class.
+     * `if (Point.heldBackBy(p, loc) != null) continue;` - fails this test and no other.
+     *
+     * That line asked `plannedOccupancy(this.start)` when it was written, which a later review showed
+     * was the planner’s own question on the planner’s own arguments: the exemption and the thing
+     * being audited cancelled exactly, so no planner mis-copy of FR-001 could ever produce a
+     * divergence. It asks the live-block variant now - what the RAILWAY would refuse - so the
+     * instrument can still see the planner disagreeing with it.
      */
     @Test
     public void testTheParityAuditIsSilentAboutAStationHeldBackByAnOccupiedSquare() throws Exception

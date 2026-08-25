@@ -210,7 +210,7 @@ public class AutonomyMenu extends JMenu
             // asking a narrower question than the guard. Twice was apparently not enough for me to
             // check the third one I wrote, a few hours later, in a commit whose message is about that
             // very rule.
-            if (ui.isRemoteLayout() && ui.hasPagesToDownload())
+            if (ui.isRemoteLayout() && ui.hasPagesToDownload() && ui.isCentralStationConnected())
             {
                 JMenuItem offer = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossibleDownload"));
 
