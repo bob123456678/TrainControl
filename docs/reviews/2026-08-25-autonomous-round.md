@@ -51,6 +51,25 @@ where not to look again.
 
 ## A - wrong behaviour on the layout, or data silently lost
 
+### AU-A3 - the route guard discarded the emergency stop it shared a route with
+
+**Found by:** the second validation pass, which measured `getPowerState()` rather than reasoning about
+it. **Fixed:** `6b6e6bd4`.
+
+AU-A2's refusal returned before the command loop, so every command in the route went - not only the
+accessory ones. A route that cuts the power **and** sets a trap point, which is the shape a safety
+route on an s88 trigger naturally has, was refused entirely because of the turnout. The stop did not
+run, through the door that fires by itself, with nobody present.
+
+"Refused whole" is a good argument about accessories - setting three switches of five leaves the layout
+in a state nobody chose - and it is not an argument for suppressing a stop, which is safe to obey
+whatever else is true. The accessories go as a group now; everything else runs.
+
+**This is the round's clearest lesson about itself.** AU-A2 was the most serious defect found, its fix
+was written carefully, its test was mutation-proven, and the fix introduced a worse defect than the one
+it removed. The only reason it did not ship that way is that somebody was asked to attack it
+specifically.
+
 ### AU-A2 - an executed route threw switches on track autonomy had locked
 
 **Found by:** the independent whole-application pass, which proved it by running it.
@@ -257,6 +276,30 @@ track that does not exist.
 file format, or a heuristic whose false-positive rate is unmeasured - and that is Adam's call rather
 than one to make at the end of a long round. OB-108 sets out the three options and what each costs.
 
+### AU-B9 - the route guard could not see a protecting signal
+
+**Found by:** the second validation pass, proved with a probe. **Fixed:** `6b6e6bd4`.
+
+`getActiveAccs()` walks the config commands of active edges. A protecting signal is not one - it is
+driven separately, by occupancy. So a route could turn a platform's signal green with a train standing
+at it, and nothing re-asserts it until the next occupancy change: a green aspect inviting a
+hand-driven train into an occupied platform, for as long as the train stays there.
+
+AU-A2 one step over, and invisible until AU-A2's guard existed to be tested.
+
+### AU-B10 - the cycle scan read a list it was extending
+
+**Found by:** the second validation pass. **Fixed:** `6b6e6bd4`.
+
+The skip added in `6523a90b` asks whether a locomotive was already proved stuck for its own reasons.
+Read against the live `unreachable` list, an entry that the same loop had just added answered that too -
+so one proved cycle silently suppressed another. Demonstrated with three locomotives in two genuine
+mutual cycles: the second pair went unnamed, the operator repairs what was named, re-runs, and it is
+still impossible.
+
+Which is the same harm the skip was added to remove, pointing the other way. It reads a snapshot taken
+before the loop now.
+
 ---
 
 ## C - worth doing, no urgency
@@ -336,6 +379,28 @@ Swept for by pattern rather than by file, after AU-B1 showed the sweep was worth
   connected. Adam found that once already, for a different offer.
 - `canStartAutonomy`'s own javadoc claimed "requestStartAutonomy asks it", which it does not - the same
   false sentence removed from a comment forty lines away in the previous commit.
+
+### AU-C12 - the Keyboard tab neither warns nor refuses
+
+`TrainControlUI.UpdateSwitchState` calls `setAccessoryState` during a run with no autonomy check at
+all. The diagram tile warns and lets you say OK; routes now refuse outright; the keyboard is silent.
+Three surfaces, three different answers to one question. **Open** - it wants Adam's view on which of
+the three answers is the right one, since making them agree means changing two of them.
+
+### AU-C13 - `getAutonomySession()` is a lazy builder now reachable from a Swing listener
+
+It parses every layout page, runs the caption migration - which writes to disk - and can put a dialog
+on screen. `TrainControlUI` says so in a comment: *"The FIELD, never getAutonomySession()."* The strip
+now reaches it from a `PropertyChangeListener` on the Start button's enabled state, and caches only on
+success, so a layout whose session will not open re-attempts the whole build per property change.
+**Open** - the correctness of asking the guard's own number is right and should not be undone; what it
+wants is a cached accessor with invalidation.
+
+### AU-C14 - my signal test made a sibling flaky
+
+It took the feedback addresses `testAThrowWhileLockingReleasesTheTrack` uses, and a simulated dispatch
+clears its feedback from a detached thread - so on a loaded machine the clear had not landed when the
+sibling ran. Two failures in eighteen runs. Fixed in `6b6e6bd4`; six consecutive runs green.
 
 ### AU-C11 - `sharesSection` is AU-A1's shape, twelve lines above it, and is NOT changed
 
@@ -446,7 +511,8 @@ own reasons should not make the other one impossible too. Fixed in `6523a90b`.
 | Finding | Disposition |
 |---|---|
 | AU-A1 | fixed, `4419d1cf` and `6523a90b`; counterexample kept as a fixture |
-| AU-A2 | fixed, `7e2c6f81` |
+| AU-A2 | fixed, `7e2c6f81`, and corrected in `6b6e6bd4` - see AU-A3 |
+| AU-A3 | fixed, `6b6e6bd4` |
 | AU-A2 | fixed, `4419d1cf` |
 | AU-B1 | fixed, `4419d1cf` |
 | AU-B2 | fixed, `4419d1cf` |
@@ -460,6 +526,11 @@ own reasons should not make the other one impossible too. Fixed in `6523a90b`.
 | AU-B7 | fixed, `8117b2a7` |
 | AU-B8 | filed as OB-108 - three remedies, each trading something real away |
 | AU-C7 | fixed, `8117b2a7` |
+| AU-B9 | fixed, `6b6e6bd4` |
+| AU-B10 | fixed, `6b6e6bd4` |
+| AU-C12 | open - three surfaces disagree; making them agree changes two of them |
+| AU-C13 | open - the fix is right, the cost wants a cached accessor |
+| AU-C14 | fixed, `6b6e6bd4` |
 | AU-C8 | fixed, `2ac2ee5e` |
 | AU-C9 | fixed, `2ac2ee5e`; the audit exemption remains unguarded and says so |
 | AU-C10 | fixed, `2ac2ee5e` |
@@ -468,3 +539,34 @@ own reasons should not make the other one impossible too. Fixed in `6523a90b`.
 | AU-C5 | open - pre-existing, needs a page name containing `#` |
 | AU-C6 | open - unreachable today; the contradictory comments are the live half |
 | AU-D1 to AU-D8 | not defects |
+
+---
+
+## What this round says about how it went
+
+Worth writing down, because it is the only part of this document that will still be useful when every
+finding above has been forgotten.
+
+**Three of the four A findings were made in this session, by me, as or beside the fix for a finding of
+the same shape.** An impossibility proof built out of a heuristic that fails safe only in the other
+role. A collection missing one line that its twin, written the same day, ends with. A comment asserting
+that a guard had always known something it had never asked. And then AU-A3, which is the sharpest of
+them: the fix for the round's most serious defect introduced a worse one, was carefully written, was
+mutation-proven, and would have shipped if nobody had been asked to attack it specifically.
+
+**The reviews that found the most were the ones told to look differently, not to look again.** The
+three axis passes over the diff found real defects in the code they were pointed at. The pass told to
+start from what previous reviews said they had NOT covered found the worst defect in the round, in code
+that had not been touched for weeks and where both sides of the seam were individually correct. The
+pass told to attack the fixes found that one of them was worse than the bug.
+
+**Four defects were caught by running a stated mutation rather than by writing one.** In each case the
+javadoc claimed a mutation that did not actually fail the test: the hourglass sand count, the first
+version of the FR-018 prune test, the delete-page record line, and the route guard's own first test. A
+mutation claim is a testable statement, and it is worth testing.
+
+**Two harness defects had each been hiding a real one for two days.** A battery that called a class
+green when it had run nothing, and a test suite quietly rewriting the operator's own railway. Neither
+was in any reviewer's scope, and both were found by pulling on a loose thread. That is an argument for
+the loose threads getting the same attention as the diffs.
+
