@@ -8862,7 +8862,6 @@ Filed from this test: OB-104 (bug - autonomy tab not greyed out when using CS la
 
 *Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
----
 
 **From [OB-093](issues.md), filed 2026-08-24 - "autonomy checkbox visible when it shouldn't be".** The entry as it stood when it was picked up:
 
@@ -8953,6 +8952,8 @@ application sets on its own components, so that change made this window smaller 
 rather than the same as them - which is why the same request arrived twice. Measured instead:
 ninety-eight components in the gui package use Segoe UI at 14 against one at 12, so 14 is the standard
 here. The family still comes from the look and feel; only the size is pinned.
+
+---
 
 <a id="mt-178"></a>
 
@@ -9088,7 +9089,6 @@ the unreachable failure error works.
 
 *Run against commit 8db330da, build\classes, compiled 25 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
----
 
 **From [OB-098](issues.md) - "switch to cs layout is possible even when not connected to a cs".** The entry as filed:
 
@@ -9125,6 +9125,8 @@ capture locomotive commands button can still be toggled while trains are returni
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.
+
+---
 
 <a id="mt-180"></a>
 
@@ -9168,7 +9170,6 @@ resource must not stop the application asking for an IP address.
 
 *Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
----
 
 **From [OB-102](issues.md) - "directions shown in timetable stations".** The entry as filed:
 
@@ -9196,6 +9197,8 @@ if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 no traincontrol window icon in IP prompt
+
+---
 
 <a id="mt-181"></a>
 
