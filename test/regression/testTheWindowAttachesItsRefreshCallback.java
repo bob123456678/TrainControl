@@ -28,6 +28,23 @@ import org.testng.annotations.Test;
  */
 public class testTheWindowAttachesItsRefreshCallback
 {
+    /**
+     * Java source with its // comments removed, so a check reads the code and not the prose about it.
+     */
+    private static String withoutComments(String source)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String line : source.split("\n", -1))
+        {
+            int slashes = line.indexOf("//");
+
+            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
+        }
+
+        return out.toString();
+    }
+
     @Test
     public void testTrainControlUIAttachesTheRefreshCallback() throws Exception
     {
@@ -51,6 +68,36 @@ public class testTheWindowAttachesItsRefreshCallback
         // configuration load - which is the state this would be in if somebody "tidied" the second
         // call away as a duplicate.
         int attached = source.split("attachAutonomyRefresh\\(", -1).length - 1;
+
+        // A locomotive rename repairs the setup and must then say so (MT-153).
+        //
+        // Same rule, second site. repairAutonomyLocomotive rewrites the placements, homes and
+        // exclusions that name the locomotive and saves them, and the data comes out right - but the
+        // station labels and the locomotive panel are written by methods that only run when something
+        // calls them, so the window went on naming a locomotive that no longer exists. Adam: "I
+        // renamed MY 1106 to MY Y1106. It vanished from autonomy, with MY 1106 still placed and at
+        // location ???? in the UI."
+        int repair = source.indexOf("private void repairAutonomyLocomotive");
+
+        assertTrue(repair > 0, "repairAutonomyLocomotive is gone - if it was renamed, rename it here");
+
+        // To the end of that method, which is the next one declared after it.
+        int nextMethod = source.indexOf("\n    @Override", repair);
+
+        String body = withoutComments(nextMethod > repair ? source.substring(repair, nextMethod)
+            : source.substring(repair));
+
+        // The CALL, with its parentheses, and with the comments stripped first.
+        //
+        // The first version of this asked whether the method body contained the string
+        // "updateVisiblePoints" anywhere. It did - in the comment I had just written explaining why
+        // the call was there - so deleting the call left the test green. An assertion that its own
+        // documentation satisfies is not an assertion, and this one was caught only because it was
+        // mutation-checked before being trusted.
+        assertTrue(body.contains("updateVisiblePoints()"),
+            "repairing a renamed locomotive no longer refreshes the station labels, so the diagram "
+            + "will go on showing the old name over a locomotive that no longer answers to it "
+            + "(MT-153).  The data repair alone is not the fix - it was never the broken half");
 
         assertTrue(attached >= 3,
             "attachAutonomyRefresh appears " + attached + " times: it should be declared once and "

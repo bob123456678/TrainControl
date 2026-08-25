@@ -7204,6 +7204,32 @@ first match would have reported the pair as covered after fixing one.
 
 I renamed MY 1106 to MY Y1106.  It vanished from autonomy, with MY 1106 still placed and at location ???? in the UI.
 
+**Claude, 2026-08-24.** Fixed, and the data was never the broken half.
+
+I drove a real locomotive rename through a real setup - the sample layout has MY 1106 placed on it,
+which made this straightforward. The placement follows the new name, survives a save and a reload,
+and builds into a valid layout with no new errors. `repairAutonomyLocomotive` does its job.
+
+What it does not do is tell anything to redraw. The station labels on the diagram are written by
+`updateVisiblePoints` and the locomotive panel by `repaintAutoLocListLite`, and neither runs on its
+own - they run when something calls them. Nothing did. So the diagram went on showing MY 1106 over a
+locomotive that no longer answers to that name, and the panel went on showing a location it could no
+longer resolve. That is "still placed" and "location ????" exactly.
+
+The rename now posts both refreshes. Posted rather than called: this runs on the event thread inside
+a rename dialog, and `updateVisiblePoints` is synchronized on the window and reaches into the layout,
+which is the DR-B7 deadlock shape if both locks are taken from here.
+
+**Three of these now** - the timetable that captured perfectly into a table nobody repainted, OB-097,
+and this - all from the same habit of repairing state and stopping there.
+`testTheWindowAttachesItsRefreshCallback` now guards this site too.
+
+**And a note on that guard, because it nearly did not work.** Its first version asked whether the
+method body contained the string "updateVisiblePoints" anywhere. It did - in the comment I had just
+written explaining why the call was there - so deleting the call left the test green. It reads the
+code with comments stripped now, and looks for the call with its parentheses. Caught only because it
+was mutation-checked before being trusted.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

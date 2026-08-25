@@ -2943,6 +2943,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 openEditor.autonomyLocomotiveRenamed(from, to);
             }
+
+            // AND THE WINDOW, which is still showing the old name (MT-153).
+            //
+            // Adam: "I renamed MY 1106 to MY Y1106.  It vanished from autonomy, with MY 1106 still
+            // placed and at location ???? in the UI."
+            //
+            // Everything above repairs the DATA, and the data was never the problem - driving this
+            // rename through a real setup shows the placement following the new name, surviving a
+            // reload, and building into a valid layout with no new errors. What none of it does is
+            // tell anything to redraw. The station labels on the diagram are written by
+            // updateVisiblePoints and the locomotive panel by repaintAutoLocListLite, and neither runs
+            // on its own: they run when something calls them. So the diagram went on showing a
+            // locomotive that no longer exists under that name, which is what "still placed" and the
+            // unresolved location are.
+            //
+            // The same shape as the timetable that captured perfectly into a table nobody repainted,
+            // and as OB-097. Three now, all from the same habit of repairing state and stopping there.
+            //
+            // Posted rather than called: this runs on the event thread inside a rename dialog, and
+            // updateVisiblePoints is synchronized on this window and reaches into the layout - taking
+            // both locks in that order from here is the DR-B7 deadlock shape.
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                updateVisiblePoints();
+                repaintAutoLocListLite();
+            });
         }
         catch (Exception e)
         {
@@ -5716,6 +5742,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the pages just changed wholesale, so a session describing the old ones - and anything
             // still monitoring or capturing against it - has to go
             this.resetAutonomySession();
+
+            // OB-093, Adam: "when using a CS2 layout and the autonomy tab is greyed out, the autonomy
+            // checkbox is still visible on the track diagram page." resetAutonomySession greys the Auto
+            // tab itself (setAutonomyDependentTabs(false)), but the diagram strip's checkbox is a
+            // SEPARATE affordance driven by autonomyOverlayToggle.setLoaded, which every other caller
+            // reaches through autonomySetupChanged/refreshAutonomyPrompt - the one this switch-source
+            // path never called. The strip kept whatever "loaded" it last had, so a CS2 layout with no
+            // stored autonomy diagram greyed the tab and left the checkbox offering to show an overlay
+            // for nothing. Same question, asked here too.
+            this.refreshAutonomyPrompt();
 
             if (!this.model.getLayoutList().isEmpty())
             {
@@ -20993,12 +21029,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // at, and saved it.
         setHoveredDiagramTile(null, -1, -1);
 
-        this.LayoutGridRenderer.submit(() -> 
-        { 
+        // OB-094, Adam: "switch to central station layout remains selectable even when already using
+        // a central station layout." repaintPathLabel used to run from INSIDE the submission below,
+        // so it queued behind whatever LayoutGridRenderer - a single-thread pool - was already doing.
+        // That pool's own job is rebuilding the diagram grid, which is the slow part of a CS sync; the
+        // menu item stayed at its GUI-builder default (enabled) for exactly as long as that rebuild
+        // took, and switchCSLayoutMenuItemActionPerformed's own resync is the single biggest producer
+        // of that backlog. Called directly here instead, so the menu state settles on the EDT as soon
+        // as isLocalLayout() has its new answer, not whenever the grid finishes repainting.
+        repaintPathLabel();
+
+        this.LayoutGridRenderer.submit(() ->
+        {
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                repaintPathLabel();
-
                 if (this.model.getLayoutList().isEmpty())
                 {
                     this.KeyboardTab.setEnabledAt(1, false);
