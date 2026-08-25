@@ -258,7 +258,6 @@ element
  .id=0x30e
  .typ=gerade
  .artikel=-1
- .text=Point:BottomInnerOtherside
 element
  .id=0x30f
  .typ=gerade
@@ -402,7 +401,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR2
 element
  .id=0x506
  .typ=gerade
@@ -487,7 +485,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR1
 element
  .id=0x605
  .typ=gerade
@@ -653,7 +650,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR1Inter
 element
  .id=0x804
  .typ=fahrstrasse
@@ -725,7 +721,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:TopMainR2Inter
 element
  .id=0x901
  .typ=gerade
@@ -746,7 +741,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:Tunnel
 element
  .id=0x909
  .typ=s88kontakt
@@ -856,7 +850,6 @@ element
  .id=0xa0d
  .typ=gerade
  .artikel=-1
- .text=Point:BottomInner
 element
  .id=0xa0e
  .typ=fahrstrasse
@@ -964,7 +957,6 @@ element
  .id=0xb0e
  .typ=gerade
  .artikel=-1
- .text=Point:BottomSecondary
 element
  .id=0xb0f
  .typ=gerade
@@ -999,7 +991,6 @@ element
  .typ=gerade
  .drehung=1
  .artikel=-1
- .text=Point:BottomExitVIrt
 element
  .id=0xc06
  .typ=linksweiche
@@ -1053,7 +1044,6 @@ element
  .id=0xc10
  .typ=gerade
  .artikel=-1
- .text=Point:BottomMainA
 element
  .id=0xc11
  .typ=gerade
@@ -1134,7 +1124,6 @@ element
  .id=0xd10
  .typ=gerade
  .artikel=-1
- .text=Point:BottomMainB
 element
  .id=0xd11
  .typ=gerade
@@ -1192,7 +1181,6 @@ element
  .id=0xe10
  .typ=gerade
  .artikel=-1
- .text=Point:BottomMainC
 element
  .id=0xe11
  .typ=gerade
@@ -1220,7 +1208,3 @@ element
  .typ=prellbock
  .drehung=1
  .artikel=-1
-element
- .id=0xf10
- .artikel=-1
- .text=Point:BottomMainCTerm

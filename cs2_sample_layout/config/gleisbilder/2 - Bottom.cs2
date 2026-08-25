@@ -49,7 +49,6 @@ element
  .id=0xd
  .typ=gerade
  .artikel=-1
- .text=Point:LowerBack
 element
  .id=0xe
  .typ=gerade
@@ -1070,7 +1069,6 @@ element
  .id=0xe10
  .typ=gerade
  .artikel=-1
- .text=Point:LowerFront
 element
  .id=0xe11
  .typ=gerade

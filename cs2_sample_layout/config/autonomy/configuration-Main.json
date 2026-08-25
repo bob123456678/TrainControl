@@ -1,0 +1,205 @@
+{
+  "globals": {
+    "minDelay": 1,
+    "atomicRoutes": true,
+    "maxActiveTrains": 0,
+    "preArrivalSpeedReduction": 0.5,
+    "defaultLocSpeed": 35,
+    "maxLatency": 0,
+    "timetable": [],
+    "maxDelay": 5,
+    "turnOffFunctionsOnArrival": false,
+    "maxLocInactiveSeconds": 0,
+    "activateRoutes": false,
+    "activateRouteIDs": [],
+    "turnOnFunctionsOnDeparture": true
+  },
+  "name": "Main",
+  "points": {
+    "1 - Main:0,11": {
+      "loc": {"name": "EN57-947"},
+      "maxTrainLength": 0,
+      "facing": "E",
+      "priority": -1
+    },
+    "1 - Main:19,14": {
+      "maxTrainLength": 0,
+      "priority": 2,
+      "canReverse": true
+    },
+    "1 - Main:21,6": {"canReverse": true},
+    "1 - Main:7,6": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:16,5": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:5,9": {},
+    "2 - Bottom:14,4": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:9,9": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:9,6": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:19,12": {"maxTrainLength": 0},
+    "1 - Main:19,13": {"maxTrainLength": 0},
+    "1 - Main:0,3": {},
+    "1 - Main:2,1": {},
+    "1 - Main:1,10": {
+      "loc": {"name": "EN57-203"},
+      "maxTrainLength": 0,
+      "facing": "N",
+      "priority": -2
+    },
+    "2 - Bottom:16,9": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:6,1": {},
+    "1 - Main:4,4": {
+      "loc": {"name": "2-8-4 3505 SP"},
+      "maxTrainLength": 0,
+      "facing": "S",
+      "priority": 2
+    },
+    "1 - Main:6,2": {},
+    "1 - Main:18,7": {},
+    "2 - Bottom:16,13": {},
+    "2 - Bottom:3,7": {"mustReverse": true},
+    "1 - Main:12,9": {
+      "maxTrainLength": 0,
+      "excludedLocs": [
+        "MY 1150 DSB",
+        "MF 5028 DSB",
+        "SP45-204",
+        "MZ 1425 DSB",
+        "EA 3005 DSB",
+        "ER 2035 DSB"
+      ],
+      "priority": -3
+    },
+    "1 - Main:16,10": {},
+    "2 - Bottom:7,1": {},
+    "1 - Main:10,7": {"speedMultiplier": 0.9},
+    "1 - Main:12,11": {"maxTrainLength": 0},
+    "2 - Bottom:17,10": {},
+    "2 - Bottom:13,13": {},
+    "2 - Bottom:13,14": {
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:8,14": {},
+    "2 - Bottom:17,12": {},
+    "2 - Bottom:11,2": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:9,13": {},
+    "1 - Main:6,7": {
+      "loc": {"name": "ET22-245"},
+      "maxTrainLength": 0,
+      "facing": "N",
+      "priority": -2
+    },
+    "1 - Main:4,9": {},
+    "1 - Main:20,6": {"canReverse": true},
+    "1 - Main:8,6": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:17,6": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:13,5": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:15,4": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:19,0": {"maxTrainLength": 0},
+    "2 - Bottom:22,10": {},
+    "1 - Main:3,3": {},
+    "1 - Main:1,3": {},
+    "1 - Main:5,4": {
+      "maxTrainLength": 0,
+      "priority": 1
+    },
+    "2 - Bottom:17,8": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "1 - Main:3,5": {
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false,
+      "priority": 1
+    },
+    "2 - Bottom:8,7": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    "2 - Bottom:7,12": {},
+    "1 - Main:17,7": {
+      "mustReverse": true,
+      "excludedLocs": [
+        "MY 1150 DSB",
+        "MZ 1425 DSB",
+        "EA 3005 DSB"
+      ]
+    },
+    "2 - Bottom:4,6": {},
+    "2 - Bottom:14,10": {},
+    "2 - Bottom:11,13": {},
+    "1 - Main:8,12": {},
+    "1 - Main:13,3": {
+      "maxTrainLength": 0,
+      "excludedLocs": [
+        "MY 1150 DSB",
+        "MF 5028 DSB",
+        "SP45-204",
+        "MZ 1425 DSB",
+        "EA 3005 DSB",
+        "ER 2035 DSB"
+      ],
+      "priority": -2
+    },
+    "1 - Main:11,7": {}
+  }
+}
