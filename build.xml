@@ -209,6 +209,7 @@
         <test-one-class class="testTimetableCaptureThroughARealRun"/>
         <test-one-class class="testTheWindowAttachesItsRefreshCallback"/>
         <test-one-class class="testAMovedTileCarriesItsSetup"/>
+        <test-one-class class="testBackupArchiveNamesTheLayout"/>
         <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>
         <test-one-class class="testFacingFollowsTheTrack"/>
         <test-one-class class="testBothProtectingSignalsAreThrown"/>

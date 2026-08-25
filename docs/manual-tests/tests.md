@@ -7437,7 +7437,34 @@ individually, because a file held open by a sync client is the everyday case her
 
 **Adam, 2026-08-24 (triage).** Works, with notes.
 
-Content is good, but we are missing the folder name of the active layout (i.e., zip file contains "config" instead of "cs2_sample_layout").  
+Content is good, but we are missing the folder name of the active layout (i.e., zip file contains "config" instead of "cs2_sample_layout").
+
+**Claude, 2026-08-24.** This one needs a second look from you rather than another change from me, and
+here is why.
+
+The fix you are asking for was already in the build you tested. It landed in `c830704f` at 10:21,
+from an earlier note of yours; the build you ran was compiled from `8db330da`, made at 14:12. The code
+puts the layout folder into the archive under its own name - `cs2_sample_layout/config/...` - falling
+back to `layout` only if the folder name cannot be read at all.
+
+So either the fix does not work or the archive you opened was made before 10:21. Nothing in the report
+tells those apart, and guessing between them is how a working fix gets "fixed" again into something
+worse.
+
+I have settled the half that can be settled here. `testBackupArchiveNamesTheLayout` builds a layout
+folder of the real shape, hands it to `Util.zipInto` under a prefixed key exactly as the backup does,
+and checks the archive: `cs2_sample_layout/config/gleisbild.cs2` and
+`cs2_sample_layout/config/autonomy/setup.json` are both there, nothing is filed under a bare
+`config/`, and `UIState.data` stays at the top where it belongs. The mechanism does what it says.
+
+**Please take a FRESH backup and look at that one.** If it still says `config`, say so and I will dig
+properly - it would mean something between the key and the archive that this test does not cover.
+
+**Your second question, answered rather than changed:** a Central Station layout is not skipped. When
+there is no local layout path, the backup ASKS whether to include the station's files, downloads them
+into a temporary folder, and puts them in the archive under `central-station-layout`. If the download
+fails it is listed in the incomplete-backup dialog and the rest of the archive is still written. So it
+already does the option you said you would prefer.  
 
 Also, what happens when a CS2 layout is being used- do we skip this step, or do we download the files from the CS2 and then same them?  The latter would be preferred if serviceable.
 
