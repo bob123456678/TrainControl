@@ -9594,7 +9594,16 @@ something that used to happen.
    route left over from manual operation whose trigger sensor an autonomy train will cross, enable it
    and let a run go past. There is nobody to ask, so it should be **refused and logged** rather than
    throwing the switch - and the log line should name the accessory.
-8. Finally, with autonomy STOPPED, run all of those routes again. Every one should work exactly as it
+8. **The mid-route case, which is the one a review found and you ruled on.** Take a route with
+   several commands and a delay on an early one - long enough to give you a few seconds. Start it from
+   the Routes tab while nothing is running, so it begins with a clear railway and no dialog. Then,
+   while it is still working through its commands, start an autonomy run that takes a path over one of
+   that route's turnouts. You should get the SAME dialog, naming the route and the accessory, part way
+   through. Say Cancel: the turnout must not move. Do it again and say OK: it should move, and the rest
+   of the route should finish without asking again.
+9. And the same thing with the route fired by an **s88 trigger** instead. There is nobody to ask, so it
+   should stop setting accessories and log - no dialog at all.
+10. Finally, with autonomy STOPPED, run all of those routes again. Every one should work exactly as it
    always has, with no dialogs.
 
 #### Comments
@@ -9644,6 +9653,18 @@ signal of any platform with a train parked at it - with nothing locked anywhere 
 accessories are skipped as a group, one such signal took every turnout in that route with it. On a
 railway with 39 s88-triggered routes and trains standing at platforms, which is all the time, that is
 most of your routes quietly not working. Review reproduced it.
+
+**Adam, 2026-08-25, on what should happen when the conflict appears part way through a route:** "ask
+me, at the two human doors."
+
+An independent reviewer found that the guard was asked once, before the command loop - and that loop
+sleeps between every pair of commands, so a dispatch that locked a path while a route was already
+running was invisible to it. Their probe: the route committed at 24.209, autonomy locked the turnout at
+24.711, and the route set it against the locked path at 26.764.
+
+The guard is asked again before each accessory now, and when it trips the two human doors get the same
+question they were asked before the route started. The answer holds for the rest of that route rather
+than being asked per command. The s88 door stops without asking. Steps 8 and 9 are that.
 
 **The exact logic, since you asked for it.** An accessory is guarded when it is commanded by an edge
 that (a) is on a path a running locomotive holds, and (b) that locomotive's train has not yet cleared.

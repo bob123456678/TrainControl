@@ -509,7 +509,11 @@ public class MarklinRoute extends Route
                     //
                     // So this stays the answer for the s88 trigger door, which fires with nobody
                     // present, and the two doors with a person at them ask first.
-                    String[] conflict = overrideConflicts ? null : accessoryHeldByAutonomy();
+                    // A local, because the parameter is captured by the thread this runs on and so
+                    // cannot be assigned; the mid-route question below moves this one.
+                    boolean override = overrideConflicts;
+
+                    String[] conflict = override ? null : accessoryHeldByAutonomy();
 
                     boolean skipAccessories = conflict != null;
 
@@ -545,15 +549,41 @@ public class MarklinRoute extends Route
                                 // conditions change under it. Partially set is a real cost and it is
                                 // the smaller one: the alternative is throwing a switch under a train
                                 // that is crossing it.
-                                String[] now = overrideConflicts ? null : heldReason(rc);
+                                String[] now = override ? null : heldReason(rc);
 
                                 if (now != null)
                                 {
-                                    skipAccessories = true;
-
                                     this.network.logf(now[1], this.getName(), now[0]);
 
-                                    continue;
+                                    // Asked, if there is somebody to ask (Adam, 2026-08-25: "ask me,
+                                    // at the two human doors").
+                                    //
+                                    // `auto` is the s88 trigger door, which fires with nobody
+                                    // present - there the only safe answer is to stop, and it does.
+                                    // The two doors a person uses get the same question they were
+                                    // asked before the route started, for the same reason: a turnout
+                                    // that did not take its command is exactly when somebody needs to
+                                    // set it.
+                                    //
+                                    // ONCE, not per command. The answer is remembered for the rest of
+                                    // this route by turning on the override - being asked again at
+                                    // every remaining accessory would be unusable, and would let one
+                                    // route end up half in each state anyway.
+                                    if (!auto && this.network.getGUI() != null
+                                        && this.network.getGUI().confirmRouteConflictMidway(
+                                            this, now[0]))
+                                    {
+                                        override = true;
+                                    }
+                                    else
+                                    {
+                                        // Every LATER accessory too, so the route does not go on
+                                        // setting some of its ironwork and not the rest as conditions
+                                        // change under it.
+                                        skipAccessories = true;
+
+                                        continue;
+                                    }
                                 }
 
                                 int idd = rc.getAddress();

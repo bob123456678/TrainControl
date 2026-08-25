@@ -14455,9 +14455,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
         java.awt.Component over)
     {
+        return confirmRouteOverActivePath(route, over, null);
+    }
+
+    /**
+     * @param known the accessory to name, when the caller has already established it; null to ask
+     */
+    public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
+        java.awt.Component over, String known)
+    {
         if (route == null) return false;
 
-        String conflict = route.conflictingAccessory();
+        String conflict = known != null ? known : route.conflictingAccessory();
 
         // No conflict any more means YES, not no (LD-8).
         //
@@ -21228,6 +21237,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.autoLocPanel.repaint();
             this.locCommandPanels.repaint();
         });
+    }
+
+    @Override
+    public boolean confirmRouteConflictMidway(Route r, String accessory)
+    {
+        // The same dialog the two doors ask BEFORE a route starts, asked again when the railway
+        // changed under it (Adam, 2026-08-25: "ask me, at the two human doors").
+        //
+        // One wording for both moments on purpose. From where the operator stands they are the same
+        // question - autonomy has taken this accessory, do you want it set anyway - and the fact that
+        // one is asked before the first command and the other between two of them is an implementation
+        // detail he has no reason to learn.
+        //
+        // Reached only from a route a person started; the s88 trigger door stops without asking,
+        // because there is nobody there. Called on the route's own thread, and the dialog marshals
+        // itself onto the event thread, so this blocks that route and nothing else.
+        if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
+
+        return confirmRouteOverActivePath((org.traincontrol.marklin.MarklinRoute) r, this, accessory);
     }
 
     @Override

@@ -88,6 +88,26 @@ public interface View
     public void emergencyStopTriggered(Route r);
 
     /**
+     * Asks whether to carry on with a route that has hit a conflict PART WAY THROUGH.
+     *
+     * The model does not put up dialogs, and this is not it doing so: it is the model handing the
+     * question to whoever is at the door, exactly as emergencyStopTriggered above hands over the fact
+     * that a route cut the power.
+     *
+     * Only asked when a person started the route - the routes tab or the diagram's route tile. The
+     * s88 trigger door has nobody to ask and stops on its own.
+     *
+     * Adam, 2026-08-25, choosing between three ways of handling the case: "ask me, at the two human
+     * doors". The alternative he turned down was letting the route finish and merely logging it,
+     * which is the one that can move a switch under a train.
+     *
+     * @param r the route part way through executing
+     * @param accessory the accessory autonomy has taken since the route started
+     * @return true to set it anyway and finish the route, false to leave the rest of its accessories
+     */
+    public boolean confirmRouteConflictMidway(Route r, String accessory);
+
+    /**
      * Shows a non-blocking alert dialog to the user (used by autonomy to report a path that could not
      * be configured).  Must not block the calling thread.
      * @param message the message to display

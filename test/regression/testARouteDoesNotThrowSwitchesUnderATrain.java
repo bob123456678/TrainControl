@@ -222,8 +222,19 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * **What this costs, said plainly.** The guard is now asked again immediately before each
      * accessory command, so a route can be stopped part way through with some of its ironwork set and
      * the rest not. That is a real cost. It is the smaller one: the alternative is throwing a switch
-     * under a train that is crossing it. Once it trips, every later accessory is skipped too, so the
-     * route does not go on flipping between the two states as conditions change under it.
+     * under a train that is crossing it. Once the answer is settled it holds for the rest of the
+     * route, so it does not go on flipping between the two states as conditions change under it.
+     *
+     * **Which branch this covers.** Adam ruled that a conflict appearing mid-route should ASK, at the
+     * two doors with a person at them, and stop on its own at the s88 trigger door. This test runs
+     * with no interface attached - `init` is called with `showUI` false, so `getGUI()` is null - so it
+     * exercises the branch with nobody to ask, which is the one that must never move the switch. It is
+     * also exactly what the s88 door does.
+     *
+     * The other branch, where somebody says yes, is not reachable from here: the model's View is final
+     * and set at construction, so a stub cannot be injected into the shared fixture. Its model half is
+     * already covered by testSomebodyCanRunTheRouteAnyway, which drives the same override this sets;
+     * the dialog itself is MT-189.
      *
      * The window is opened deliberately here with a command delay, rather than raced: the first
      * command carries a delay long enough for the dispatch to lock the path while the route sits
