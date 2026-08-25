@@ -6556,6 +6556,13 @@ rather than the fix.
 
 This seems to work, but add a thorough test case for it since you already know what should happen.
 
+**Claude, 2026-08-24.** There is a thorough one: `testPageIdentitySurvivesASequenceOfOperations`, in
+`test/regression/testPageIdsAreDurable.java`, which is the class this entry is about - twelve tests
+between them, covering a retired id not being handed out two writes later, a save while a page is
+absent, an index in the platform encoding, and renaming a page to another page's id.
+
+The entry named the class but not that test, which is why the request still looked open.
+
 *Run against commit b1e22b5b.*
 
 **Claude, 2026-08-24.** Adam: **works with notes** - "This seems to work, but add a thorough test
@@ -6674,6 +6681,27 @@ because one branch sets it and every other branch has to be the one that takes i
 **Adam, 2026-08-24 (triage).** Works, with notes.
 
 Works, but let's also make it clickable and show the notes in a popup with a scrollable text area with the whole list of stations.  Order them by ones that can be chosen autonomously and ones that cannot, with the autonomous ones first.
+
+**Claude, 2026-08-24.** Adam asked whether this was already done. It is - all of it - and it was in the
+build he tested, so this is a note about discoverability rather than a missing feature. Checked
+against the code rather than remembered, because "already done" has been wrong twice tonight:
+
+- **Clickable.** `locDest` carries the icon and its `mouseClicked` calls `showWhyNot()` whenever the
+  panel is in the no-paths state.
+- **A hand cursor** appears on hover in that state, which is the affordance saying it can be pressed.
+- **A popup with a scrollable text area.** `showWhyNot` builds a `JTextPane` inside a `JScrollPane`
+  sized 580 by 380.
+- **The whole list.** It reports `explainDestinationsGrouped`, where the HOVER version deliberately
+  stops at twelve stations and an ellipsis - the code comment beside it says the interesting station is
+  often below that line, which is very likely what prompted this note.
+- **Autonomous ones first.** `whyHeaderCandidates` is appended before `whyHeaderBarred`.
+
+It landed at 04:58 on 24 August; the build tested here was compiled from a 14:12 commit. So the likely
+story is that the hover tooltip was read, the truncation noticed, and the icon never clicked.
+
+No code change. If the intent was that the popup should be easier to FIND - a hint in the tooltip
+saying it can be clicked, say - that is a different and reasonable request; say so and it is a small
+change.
 
 *Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
@@ -6805,6 +6833,14 @@ had nothing to be asked about, which is exactly why nothing pinned this either w
 **Adam, 2026-08-24 (triage).** Could not run this.
 
 Make a test case for this since you already list the steps.  Reopen only if test case fails.
+
+**Claude, 2026-08-24.** Covered, and it does not fail. `test/regression/testStationBlockedByAnotherPoint.java`
+carries sixteen tests on this rule, including the three that matter for the steps listed here:
+`testATrainStandingOnTheWatchedPointHoldsTheStationBack`,
+`testATrainLeavingTheWatchedPointMayStillBeSentThere` and
+`testTheExemptionIsOnlyForTheTrainThatIsLeaving`.
+
+Per the instruction, not reopened.
 
 *Run against commit 62af99e6, build\classes, compiled 24 Aug 01:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
@@ -7088,6 +7124,14 @@ hazard was found and nobody came back for these. Covered by
 
 can't test colons in names because the UI disallows colons.  test in a test case instead.
 
+**Claude, 2026-08-24.** Already done, and this entry already said so a few lines above - the test is
+`testAPageNameContainingAColonKeepsItsOwnSetup`, in `test/core/testAutonomyDiagramStore.java`, and it
+was mutation-checked when written.
+
+Worth keeping the observation, though: the UI disallowing colons does not make the rule untestable, it
+makes it untestable BY HAND. A page name with a colon can still arrive from a layout authored
+elsewhere or an older file, which is why the code has to keep splitting on the last one.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
@@ -7123,6 +7167,16 @@ and the rest counted so the choice is reported rather than made silently.
 
 make a test case for this using a generated json file
 
+**Claude, 2026-08-24.** There is one already: `testAnImportLeavesOneHomePerLocomotive`, in
+`test/core/testAutonomyDiagramSession.java`, and it does exactly what this asks - it builds a legacy
+`autonomy.json` in which one locomotive is named as the home of two stations, imports it, and checks
+both halves of the rule.
+
+It asserts that exactly ONE of the two squares comes out as that locomotive's home, and separately
+that `duplicateHomes` counted the one it dropped - because a choice made on the user's behalf that is
+not reported is the part of this that was actually wrong. The entry never named it, which is why this
+still read as outstanding.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
@@ -7137,6 +7191,15 @@ make a test case for this using a generated json file
 
 **What to do.** Hold one station back with another (the "unavailable while occupied" menu), then
 delete the watched square from the diagram and save.
+
+**Claude, 2026-08-24.** There are two already, both in `test/regression/testStationBlockedByAnotherPoint.java`:
+
+- `testDeletingAPointClearsItFromEveryBlockedByList` - the rule this entry is about.
+- `testDeletingTheWatchedSquareDropsTheRestriction` - the same thing from the other end, checking the
+  station it was holding back is freely available again.
+
+`testTheRestrictionSurvivesTheFile` covers the half the entry calls out as the one that used to
+differ, a save and a reload. The entry never named any of them.
 
 The station it was holding back must be freely available again - and must still be after closing and
 reopening TrainControl, which is the half that used to differ.
