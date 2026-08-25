@@ -2188,6 +2188,16 @@ public class AutonomyCompanionStore
 
         if (setup.isFile() && !setup.delete()) failed.add(setup.getName());
 
+        // And the pre-edit note, which is not part of the setup but describes it.
+        //
+        // Left behind it does two things, and the second is serious: the folder is never empty, so the
+        // "way back out of having set autonomy up at all" leaves it there; and the next session build
+        // finds the note and restores the whole deleted setup, then saves it. The operator confirms a
+        // two-step deletion, watches it happen, and gets it all back on restart.
+        File note = beforeEditFile();
+
+        if (note.isFile() && !note.delete()) failed.add(note.getName());
+
         clear();
 
         // Only if it is now empty.  A folder somebody keeps something else in is not this method’s
@@ -4302,11 +4312,36 @@ public class AutonomyCompanionStore
      * the editor has already put the setup back itself. What must NOT clear it is anything else - the
      * whole mechanism is "if this is still here, the last session did not finish".
      */
-    public void forgetBeforeEdit()
+    public boolean forgetBeforeEdit()
     {
         File was = beforeEditFile();
 
-        if (was.isFile()) was.delete();
+        if (!was.isFile()) return true;
+
+        if (was.delete()) return true;
+
+        // The delete failed, and on this railway that is not exotic: the setup lives under OneDrive,
+        // `save()` goes through writeAtomically because the folder can be locked by a sync client, and
+        // `heldForAbsentPages` calls an unhydrated placeholder "an ordinary Tuesday".
+        //
+        // A note that cannot be removed is a note that will be APPLIED, and applying it after a clean
+        // Save undoes the work that was just saved. So if it cannot be taken away it is made harmless
+        // instead: overwritten with the setup as it stands now, which reverts to the present and
+        // therefore changes nothing.
+        //
+        // Reported either way, because a silent failure here is the whole defect wearing different
+        // clothes - intermittent, and depending on whether the sync client happened to have the file
+        // open.
+        try
+        {
+            writeJson(was, snapshotSetup());
+        }
+        catch (IOException norThat)
+        {
+            return false;
+        }
+
+        return false;
     }
 
     /**
@@ -4314,15 +4349,32 @@ public class AutonomyCompanionStore
      *
      * @return the snapshot, or null when the last session closed properly - which is almost always
      */
+    /**
+     * Whether a pre-edit note is on disk at all, whatever this build can make of it.
+     *
+     * The other half of `unfinishedEdit` returning null, which means two different things: there was
+     * no note, or there was one and it cannot be used. The first is the ordinary case and says
+     * nothing; the second is worth a line in the log, or it is refused again at every start for ever
+     * in silence.
+     *
+     * @return true when the file exists
+     */
+    public boolean hasUnfinishedEditNote()
+    {
+        return beforeEditFile().isFile();
+    }
+
     public JSONObject unfinishedEdit()
     {
         File was = beforeEditFile();
 
         if (!was.isFile()) return null;
 
+        JSONObject note;
+
         try
         {
-            return new JSONObject(new String(Files.readAllBytes(was.toPath()),
+            note = new JSONObject(new String(Files.readAllBytes(was.toPath()),
                 StandardCharsets.UTF_8));
         }
         catch (IOException | RuntimeException unreadable)
@@ -4332,6 +4384,35 @@ public class AutonomyCompanionStore
             // meant to prevent, caused by the thing meant to prevent it.
             return null;
         }
+
+        // And the same checks `load()` makes, which this did not carry across when the contract moved
+        // from memory to disk.
+        //
+        // `restoreSetup` was written for what `snapshotSetup` produces, so it clears the store and
+        // then reads - which is safe when the object is known to be the right shape and unsafe when it
+        // came off a disk written by another run and possibly another build. Review fed it four
+        // sidecars: `{}` threw out of `getJSONObject("shared")` after the clear, leaving autonomy
+        // dead for the rest of the session and the note still there to do it again next time; a
+        // well-formed but empty one emptied the setup and saved it; a version 99 one was accepted
+        // where `load()` would have refused it. Only "not JSON at all" was handled.
+        //
+        // `load()`'s own javadoc says why it has these: "a load that fails now leaves the setup
+        // exactly as it was", and silently dropping fields a newer build wrote "would lose the user's
+        // work on the next save".
+        //
+        // Refused and KEPT, not deleted. A note this build cannot read is one a DIFFERENT build wrote
+        // and can - a version 99 note belongs to the newer TrainControl that will be run next, and
+        // deleting it here would throw away that build's safety net on the way past. The cost of
+        // keeping it is that it is refused again at every start, so `hasUnfinishedEditNote` exists to
+        // let the caller say so out loud rather than leaving it silent.
+        if (!(note.opt("shared") instanceof JSONObject)
+            || !(note.opt("configurations") instanceof JSONObject)
+            || note.getJSONObject("shared").optInt("version", VERSION) > VERSION)
+        {
+            return null;
+        }
+
+        return note;
     }
 
     /**

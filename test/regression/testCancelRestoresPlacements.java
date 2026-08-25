@@ -287,6 +287,139 @@ public class testCancelRestoresPlacements
             + "second revert on top of it is undoing an undo");
     }
 
+    /**
+     * A pre-edit note that is not the right shape is refused, not applied (LD-4).
+     *
+     * `restoreSetup` was written for what `snapshotSetup` produces: it clears the store and then reads.
+     * That is safe when the object is known to be the right shape, and unsafe the moment the contract
+     * moves from memory to a FILE - written by another run, possibly by another build. Only "not JSON
+     * at all" was handled.
+     *
+     * Review fed it four notes. `{}` threw out of `getJSONObject("shared")` after the clear, which
+     * leaves autonomy dead for the rest of the session AND leaves the note in place to do it again at
+     * every start. A version 99 one was accepted, where `load()` refuses exactly that with "silently
+     * dropping fields it does not recognise would lose the user's work on the next save".
+     *
+     * Three of the four are handled. The fourth - well-formed but empty - turned out not to be
+     * refusable at all, and the list below says why.
+     *
+     * So `unfinishedEdit` now makes the same checks `load()` makes, and throws away a note it cannot
+     * use - because a note that cannot be applied protects nothing, and kept it would be re-read and
+     * re-refused for ever with nothing said.
+     *
+     * MUTATION: removing the shape and version checks from `unfinishedEdit` fails this test on the
+     * first note.
+     */
+    @Test
+    public void testANoteThatCannotBeTrustedIsNotApplied() throws IOException
+    {
+        TileKey sensor = furnished();
+
+        // On DISK, because everything below opens a fresh session that can only see what is there.
+        session.saveWithoutReconciling();
+
+        // "config/autonomy", not "autonomy" - the store's own FOLDER.  The first version of this test
+        // wrote one directory up, so `unfinishedEdit` never saw any of these notes and three of the
+        // four assertions below were satisfied by a file nothing was reading.  The fourth caught it.
+        java.io.File note = new java.io.File(new java.io.File(layout, "config/autonomy"),
+            "setup-before-edit.json");
+
+        // NOT in this list: a well-formed but EMPTY note.
+        //
+        // Review offered it as a fourth bad case and it is not one. A note is a snapshot taken
+        // when the editor opened, so an empty one is exactly what a setup that was empty at that
+        // moment produces - and reverting to empty is then correct, which is the whole point
+        // when the user built the setup during the edit and the process died. Nothing in the
+        // file tells that apart from a corrupt note, and refusing it would break the case the
+        // mechanism exists for.
+        String[] rubbish =
+        {
+            "{}",
+            "{\"shared\":{\"version\":99},\"configurations\":{}}",
+            "not json at all",
+        };
+
+        for (String bad : rubbish)
+        {
+            note.getParentFile().mkdirs();
+
+            java.nio.file.Files.write(note.toPath(),
+                bad.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            AutonomySession restarted = new AutonomySession(layout);
+
+            restarted.open(Arrays.asList(pageOnDisk()));
+
+            assertFalse(restarted.revertUnfinishedEdit(),
+                "a note this build cannot use was applied anyway: " + bad);
+
+            assertEquals(restarted.getLocomotiveNameAt(sensor), "BR 218",
+                "the setup was damaged by a note that could not be used: " + bad);
+
+            assertTrue(restarted.getStore().isStation(sensor),
+                "the station went with it: " + bad);
+
+            // KEPT, not deleted - and this is the assertion that changed its mind.  A note this
+            // build cannot read is one a different build wrote and can: a version 99 note belongs to
+            // the newer TrainControl that will be run next, and deleting it on the way past would
+            // throw away that build's safety net.  What must not happen is silence, so the session
+            // can tell "there was no note" from "there was one and it was refused", and the interface
+            // says the second out loud.
+            assertTrue(note.isFile(),
+                "a note this build cannot read was deleted rather than left for the build that can: "
+                + bad);
+
+            assertTrue(restarted.unusableEditNote(),
+                "a refused note was indistinguishable from no note at all, so nothing can report it "
+                + "and it is refused again at every start in silence: " + bad);
+        }
+    }
+
+    /**
+     * Deleting the whole setup deletes the note too, or the setup comes back (LD-4).
+     *
+     * `deleteEverything` removed every configuration and the setup itself and left the note. Two
+     * consequences, and the second is the serious one: the folder is never empty, so the way back out
+     * of having set autonomy up at all leaves it behind - and the next session build finds the note,
+     * restores the whole deleted setup and saves it. The operator confirms a two-step deletion,
+     * watches it happen, and gets all of it back on restart.
+     *
+     * MUTATION: dropping the note's delete from `deleteEverything` fails this test.
+     */
+    @Test
+    public void testDeletingEverythingDeletesTheNoteToo() throws IOException
+    {
+        TileKey sensor = furnished();
+
+        session.saveWithoutReconciling();
+
+        // The precondition, stated rather than assumed: without it every assertion below - all of
+        // which say something is GONE - would be satisfied by a setup that was never there.
+        AutonomySession beforehand = new AutonomySession(layout);
+
+        beforehand.open(Arrays.asList(pageOnDisk()));
+
+        assertEquals(beforehand.getLocomotiveNameAt(sensor), "BR 218",
+            "the fixture did not reach the disk, so this test would pass without deleting anything");
+
+        assertTrue(session.beginEditSession(), "the note was not written, so nothing below tests it");
+
+        session.getStore().deleteEverything();
+
+        AutonomySession restarted = new AutonomySession(layout);
+
+        restarted.open(Arrays.asList(pageOnDisk()));
+
+        assertFalse(restarted.revertUnfinishedEdit(),
+            "a deleted setup was put back by the note the editor left behind");
+
+        assertNull(restarted.getLocomotiveNameAt(sensor),
+            "the deleted setup came back after a restart");
+
+        assertFalse(restarted.getStore().isStation(sensor),
+            "the deleted station came back after a restart");
+    }
+
     // ------------------------------------------------------------------------------------------
 
     /**

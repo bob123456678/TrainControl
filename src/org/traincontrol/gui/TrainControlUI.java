@@ -2419,6 +2419,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log("The last layout edit did not finish; the autonomy setup has been put "
                     + "back to how it was before it started");
             }
+            else if (!editorOpen && session.unusableEditNote())
+            {
+                // Said, because the alternative is silence for ever.  A note this build cannot read
+                // is kept - it belongs to whichever build wrote it, and a newer one will want it -
+                // so without this line it is refused again at every start and nothing ever mentions
+                // the file.
+                this.model.log("A record of an unfinished layout edit could not be used and has been "
+                    + "left in place: config/autonomy/setup-before-edit.json");
+            }
 
             // Captions written into the layout file by an earlier version are brought into the setup
             // when it opens.  A page that could not be rewritten leaves its old labels behind, and the

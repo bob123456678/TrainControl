@@ -474,7 +474,13 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (this.autonomySessionForTheNote != null)
         {
-            this.autonomySessionForTheNote.endEditSession();
+            // Said out loud when it fails.  The note lives under OneDrive and the delete can lose to a
+            // sync client - in which case the store leaves a harmless one behind instead, and this is
+            // the only place that knows it happened.
+            if (!this.autonomySessionForTheNote.endEditSession() && parent.getModel() != null)
+            {
+                parent.getModel().log("Could not clear the record of this editing session");
+            }
 
             this.autonomySessionForTheNote = null;
         }

@@ -1146,20 +1146,39 @@ public class AutonomySession
     /**
      * The editing session ended properly, so there is nothing to undo.
      */
-    public void endEditSession()
+    public boolean endEditSession()
     {
-        store.forgetBeforeEdit();
+        return store.forgetBeforeEdit();
     }
 
     /**
      * Puts the setup back to before an editing session that never ended, if there was one.
      *
-     * Called once at startup. Almost always finds nothing, which is the point: the note is only left
-     * behind when the process died with the layout editor open, and then disk holds a setup keyed to
-     * squares the diagram never moved.
+     * Called whenever a session is BUILT - which is at startup, and also on every page-set change,
+     * diagram re-download, page combine and layout reload, because each of those throws the session
+     * away and the next caller rebuilds it. The caller is responsible for not asking while an editor
+     * is open; `TrainControlUI.getAutonomySession` says how and why.
+     *
+     * Almost always finds nothing, which is the point: the note is left behind only when the process
+     * died with the layout editor open, and then disk holds a setup keyed to squares the diagram never
+     * moved. The first version of this javadoc said "called once at startup", which is what made the
+     * defects around it look impossible while reading it.
      *
      * @return true when something was put back
      */
+    /**
+     * Whether a pre-edit note is on disk that this build could not use.
+     *
+     * Asked after `revertUnfinishedEdit` returns false, which by itself does not say whether there was
+     * nothing to do or something that could not be done.
+     *
+     * @return true when a note is there and was refused
+     */
+    public boolean unusableEditNote()
+    {
+        return store.hasUnfinishedEditNote() && store.unfinishedEdit() == null;
+    }
+
     public boolean revertUnfinishedEdit()
     {
         org.json.JSONObject was = store.unfinishedEdit();
