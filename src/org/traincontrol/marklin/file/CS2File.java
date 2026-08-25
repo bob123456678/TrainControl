@@ -1928,8 +1928,49 @@ public final class CS2File
         {
             logMessage("No routes were downloaded from the Central Station.", noRoutes, false);
         }
+
+        // Adam, after running this against a CS3: "if the user confirms the CS download, we should
+        // also download CS3 data files if using a CS3."
+        //
+        // Everything above is the CS2-format /config/ export, which a CS3 also serves for the track
+        // diagram itself - see getCS3LayoutUrl(), whose own comment records that this app displays
+        // those offline CS2 files rather than parsing the CS3's native /app/api/gbs layout data.  But
+        // MarklinControlStation does NOT trust the same /config/ export for accessories and routes on
+        // a CS3: getRenameProposals and the sync path both branch on isCS3() to read parseRoutesCS3()
+        // /parseLocomotivesCS3() from the JSON API instead, which is the app's own admission that
+        // magnetartikel.cs2 and fahrstrassen.cs2 are not authoritative there. So a CS3 backup taken
+        // above is missing exactly the two file types it just fetched - mirrored here from the
+        // already-used getCS3MagDBUrl()/getCS3RouteDBUrl() (see fetchCS3LocDB, parseRoutesCS3), not
+        // invented for this fix.
+        //
+        // this.control can be null (unit tests build a CS2File with no station attached), and a
+        // Central Station that never answers the device-info probe leaves isCS3() at its default of
+        // false, so a plain CS2 - or a test fixture - takes none of this path.
+        if (this.control != null && this.control.isCS3())
+        {
+            // Tolerated exactly like fahrstrassen.cs2 above, and for the same reason: an empty
+            // accessory or route list is a real station state, not a fetch problem, and should not
+            // fail a backup that already succeeded at the CS2-format files.
+            try
+            {
+                copyAtomically(this.getCS3MagDBUrl(), new File(configDir, "CS3_mags.json"));
+            }
+            catch (Exception noCS3Mags)
+            {
+                logMessage("No CS3 accessory data was downloaded from the Central Station.", noCS3Mags, false);
+            }
+
+            try
+            {
+                copyAtomically(this.getCS3RouteDBUrl(), new File(configDir, "CS3_automatics.json"));
+            }
+            catch (Exception noCS3Routes)
+            {
+                logMessage("No CS3 route data was downloaded from the Central Station.", noCS3Routes, false);
+            }
+        }
     }
-    
+
     /**
      * Fetches a URL and writes it to a file, all of it or none of it.
      *

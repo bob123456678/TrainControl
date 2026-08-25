@@ -8057,6 +8057,31 @@ only them is complete rather than half of something.
 
 Works.  But if the user confirms the CS download, we should also download CS3 data files if using a CS3.
 
+**Claude, 2026-08-24.** Done, and deliberately narrowly.
+
+A CS3 serves the CS2-format `/config/` export, which is what the download already fetched, and this
+application deliberately uses those offline files for the track DIAGRAM rather than the CS3 native
+layout API - `getCS3LayoutUrl` says so itself, and records that parsing it is not supported.
+
+But the application does NOT trust that same export for accessories and routes on a CS3: the sync path
+and `getRenameProposals` both branch on `isCS3()` to read the JSON API instead. That is the
+application admitting `magnetartikel.cs2` and `fahrstrassen.cs2` are not authoritative there - so a
+CS3 backup was missing the good copy of exactly the two things it had just fetched the doubtful copy
+of. Those two are now fetched as well, from the endpoints that already existed for them.
+
+Each is tolerated separately, like `fahrstrassen.cs2` above it: an empty accessory or route list is a
+real state of a station, not a fetch failure, and must not fail a download that has already succeeded.
+A plain CS2 takes none of this path, and neither does a station that never answered the device probe.
+
+**Not done, on purpose:** the CS3 native layout API, because what it would duplicate is already
+fetched in a format this application can actually read; and the CS3 locomotive database, because this
+download never fetched `lokomotive.cs2` for a CS2 either - adding only the CS3 side would put the two
+out of step in a new direction.
+
+Needs your confirmation against real hardware: I have no CS3 here, so what is verified is that the
+code compiles, guards a null station, uses endpoints that already existed, and does not disturb the
+CS2 path.
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
