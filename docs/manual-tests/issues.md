@@ -548,217 +548,12 @@ that remembered which bundle keys carried a placeholder instead of reading them.
 this morning - but the seven it lists have not been worked through.
 
 
-### OB-090 - 2026-08-24 - autonomy error count inconsistent, fix it button doesn't show
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 18:08  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the current config, the autonomy error count is 4 but shows as 8.  also, the fix it button is not shown, rather just "start autonomy" when the config had worked before.
-
-**Claude, 2026-08-24. Two halves, and only one was arithmetic.**
-
-**The count was right and the label was wrong.** The strip shows ONE number, deliberately -
-`totalErrors + totalWarnings` - under a red foreground when any of them are errors. With four of each
-it says 8, and there is nothing in the words to stop that being read as the error count. The comment
-beside it argued that splitting "says nothing a reader can act on differently"; you read it as errors,
-and you wrote the application, which settles that. It now reads `4 errors, 4 warnings - 3 on this
-page`.
-
-**The Fix button is a design question, so it is left for you.** It appears when
-`session.hasBlockingProblems()`, and that asks the GRAPH only - scissors crossings, unaddressed
-switches, unpaired links. Your four errors come from the CHECKS - unreachable stations, closed runs,
-unnamed points - which are ERROR severity in the lists but do not block a build. So the setup really
-does still load and run, which is why you were offered "start autonomy", and it is also why the
-config "had worked before".
-
-Three ways to go, and I did not pick one because each trades something real:
-
-1. **Leave it.** The errors are listed, and clicking one opens the editor at that spot - which is what
-   the hint under the list says. Nothing is hidden; it just is not a button.
-2. **Offer Fix instead of Start whenever there are ERROR findings.** Matches what you expected. Costs
-   you the ability to start a setup that has an error you have decided to live with - and you have
-   run this one with them.
-3. **Offer both.** Truthful, and one more control on a panel that already has several.
-
-My inclination is 2 if you consider an ERROR finding something that should always be dealt with before
-running, and 1 if some of them are ones you knowingly ignore. That is a question about your railway
-rather than about the code.
-
-**Adam, 2026-08-24.** "090- wrong, the setup refuses to run when there are errors.  it runs on
-warnings, but on errors it should say fix it."
-
-**Claude, 2026-08-24.** He is right and the three options above were built on a false premise of mine.
-
-I wrote that these errors "do not block a build, so the setup really does still load and run". It does
-load. It does not RUN: `refuseAutonomyStartWhileBroken` has refused to start autonomy on any ERROR
-finding since OB-057, and all three ways of pressing Start - the button, the strip's mirror, the
-station right-click - go through it. I had read `hasBlockingProblems()`, seen that the check errors do
-not appear in it, and stopped there without looking at the press path. The question was never open;
-option 2 was already the law of the application, and asking Adam to choose it was asking him to
-re-decide something he had decided in OB-057.
-
-**What was actually broken** is that the things which OFFER to start it were never told. Two questions
-existed where there should be one:
-
-- `hasBlockingProblems()` - can the GRAPH be built? Scissors crossings, unaddressed switches, unpaired
-  links.
-- the checks - can the SETUP be run? Unnamed stations, unlabelled stations, duplicate locomotives, no
-  stations at all.
-
-Four unnamed stations are four of the second and none of the first, so the strip showed a live green
-Start over a setup that answered every press with a dialog. That is the OB-057 shape at a third site.
-
-**Fixed in `8ea781fe`.** `AutonomySession.errorCount()` is now the one definition, and both the refusal
-and the strip ask it. The strip offers "Fix it" in amber, going to the editor at the first finding.
-Stop still wins - an error appearing while trains are running is the moment stopping matters most.
-Warnings do nothing, per the second half of Adam's sentence. [MT-173](tests.md#mt-173).
 
 
-### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
 
-**Kind:** bug  
-**Adam, 2026-08-24, testing MT-161 on commit 8db330da:** "When I renamed '5 - Test' to 5, the main page (1 - Main,
-id 5) became excluded from autonomy and lost all its train placement."
 
-**Reproduced before anything was touched**, with a probe on a six-page fixture: the file held
-`"excludedPages": ["6"]` before the rename - correctly, the id of the page being renamed - and
-`["5"]` after it. On reload the exclusion had moved to "1 - Main".
 
-**Cause.** `renamePage` rekeys eleven collections and then leaves the store's OWN numbering stale. It
-never told `pageNameToId` that the page it knows as "5 - Test" now answers to "5", so the next save
-asked about the new name, got nothing, and took `translatePages`' fallback: write the bare page NAME.
-`untranslatePages` reads every value in that array as an ID. A page called "5" comes back as whichever
-page holds id 5.
 
-The exclusion is only the visible half. An excluded page is not in the graph, so every placement on it
-goes with it - which is the "lost all its train placement" half of the report.
-
-**Fixed** in `renamePage`: the rename moves the page in `pageNameToId` and `pageIdToName` as well,
-leaving the id alone, since a rename is the one thing ids exist to survive. Plus a defence at the read
-side - a value the file never recorded as an id is read as a name, using the file's own `pages` record
-as the discriminator.
-
-**Test:** `testRenamingAPageToAnotherPagesIdMovesOnlyThatPage`, seen red for exactly Adam's symptom.
-
-**Why the existing rename tests missed it, which is the part worth keeping.** There are several and
-they are thorough about what a rename must CARRY. Not one renamed a page to a string that is also a
-live id, because no fixture anywhere had a page named like a number - so the collision could not
-arise. Same shape as TA-A1 and CR-C3: the fixture decided the answer before the assertions did. The new
-test checks every collection, and checks the OTHER page as hard as the renamed one.
-
-### OB-093 - 2026-08-24 - autonomy checkbox visible when it shouldn't be
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 21:05  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when using a CS2 layout and the autonomy tab is greyed out, the autonomy checkbox is still visible on the track diagram page.
-
-**Claude, 2026-08-24.** Fixed, together with [OB-095](#ob-095) - they are one fault seen from two
-states.
-
-The Autonomy Controls checkbox on the diagram strip is shown or hidden by `AutonomyOverlayToggle`'s
-`setLoaded`, and every legitimate caller reaches that through `refreshAutonomyPrompt`.
-`initializeTrackDiagram` - which runs for "Switch to Central Station Layout", "Choose Local Data
-Folder" and "Download CS Layout" - called `resetAutonomySession`, which correctly greys the Auto tab,
-and never called `refreshAutonomyPrompt`. So the checkbox kept whatever state it had before the
-switch. Which of the two bugs you saw depended only on what that state happened to be: visible beside
-a greyed tab is this one, visible with a setup available but not loaded is OB-095.
-`refreshAutonomyPrompt` already answers both correctly; it simply was not being asked.
-
-**Claude, 2026-08-24, later.** The second half is done too.
-
-That notice was a true sentence and a greyed one, which leaves the reader knowing what is wrong and
-not what to do - and the thing to do lives in a different menu, under a name that says nothing about
-autonomy. Where somebody reads the sentence is where the offer belongs, so the item is now live and
-runs the same download the Layouts menu does.
-
-**Only when a download would actually answer it.** That branch is taken for other reasons as well - no
-viewer panel yet, a session that failed to open - and an offer that cannot help is worse than the
-greyed line it replaced, because pressing it teaches the reader that the notice lies. So it asks
-whether the layout is the station’s copy first, and falls back to the old dead sentence otherwise.
-
-also, the "autonomy needs a layout stored on this computer" notice should be clickable and allow the user to download one.
-
-### OB-094 - 2026-08-24 - switch to central station layout remains selectable
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 21:07  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-switch to central station layout remains selectable even when already using a central station layout.  it should be greyed out.
-
-**Claude, 2026-08-24.** Fixed. The enabling rule was already right and never ran in time.
-
-`repaintPathLabel` greys this item whenever the layout is not local, which is exactly what this asks
-for. It was being called from inside a submission to `LayoutGridRenderer`, a single-thread executor
-whose job is rebuilding the diagram grid - so it queued behind that rebuild. Switching to a Central
-Station layout is itself the biggest producer of that work, so the item stayed at its designer default
-of enabled for as long as the grid took, which is precisely when somebody would look at it.
-
-Called directly now. Safe from any thread: `repaintPathLabel` wraps its whole body in `invokeLater`,
-so it still touches Swing only on the event thread - it simply no longer waits for the grid.
-
-### OB-095 - 2026-08-24 - show autonomy controls checkbox visibility
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 21:08  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when autonomy is available but not loaded, the show autonomy controls checkbox should be hidden.
-
-**Claude, 2026-08-24.** Fixed by the same one-line change as [OB-093](#ob-093), where the reasoning is
-written out. Same missing call, different starting state.
-
-### OB-096 - 2026-08-24 - background of no available paths window
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 21:10  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-make the text area of "no available paths window" with the text be white.
-
-**Claude, 2026-08-24.** Fixed, and with it the font size that [MT-163](tests.md#mt-163) and
-[MT-160](tests.md#mt-160) asked for twice.
-
-FlatLaf derives a non-editable text pane's background from the panel behind it, which is a grey; every
-other text area in this application sets white explicitly rather than trusting the look and feel.
-
-The font is the more interesting half. It had already been "fixed" once, by taking UIManager's
-`Label.font` whole, on the reasoning that asking the look and feel makes "the standard size of all
-other windows" true by construction. It does not: FlatLaf's label font is SMALLER than the size this
-application sets on its own components, so that change made this window smaller than its neighbours
-rather than the same as them - which is why the same request arrived twice. Measured instead:
-ninety-eight components in the gui package use Segoe UI at 14 against one at 12, so 14 is the standard
-here. The family still comes from the look and feel; only the size is pinned.
-
-### OB-097 - 2026-08-24 - synchronization issue with autonomy UI
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 21:11  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-a route finished, but the loc status panel under Locomotive Commands still indicated an active route.
-
-**Claude, 2026-08-24.** Not a synchronisation problem, and the same cause as the timetable one.
-
-The locomotive status panel redraws when the layout announces that a path has started or finished. The
-registration that made it do so lived inside the method that built the GraphStream graph window, which
-wanted the same notification, and was deleted with that window in `d8db4879`. So the panel showed
-whatever it last showed - a route that had finished went on reading as active until something else
-happened to repaint it.
-
-The timetable lost the other of that callback's two calls, which Adam reported separately as capture
-not working at all. Fixed together: `AutonomyRefreshCallback.attach`, called from the window after
-every `parseAuto`. See [MT-149](tests.md#mt-149) for the full account and
-[MT-175](tests.md#mt-175) to check it.
 
 ## What has been picked up
 
@@ -772,6 +567,13 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-24 | OB-097 | bug | A finished route still read as active on the locomotive panel | - | [MT-175](tests.md#mt-175) |
+| 2026-08-24 | OB-096 | bug | The no-available-paths window: white text area, standard font size | - | [MT-177](tests.md#mt-177) |
+| 2026-08-24 | OB-095 | bug | Show autonomy controls checkbox visible with nothing loaded | - | [MT-177](tests.md#mt-177) |
+| 2026-08-24 | OB-094 | bug | Switch to Central Station Layout stayed selectable on a station layout | - | [MT-177](tests.md#mt-177) |
+| 2026-08-24 | OB-093 | bug | Autonomy checkbox visible beside a greyed tab; the notice now offers a download | - | [MT-177](tests.md#mt-177) |
+| 2026-08-24 | OB-092 | bug | Renaming a page to "5" excluded the page whose id is 5 and emptied it | - | [MT-161](tests.md#mt-161) |
+| 2026-08-24 | OB-090 | bug | Autonomy error count, and Fix it offered instead of Start | - | [MT-173](tests.md#mt-173) |
 | 2026-08-23 | FR-001 | feature request | Station unavailable while another point is in use, as lock edges | fixed unvalidated | - |
 | 2026-08-22 | FR-006 | feature request | Editor grid is a toggle, and hovering no longer resizes a tile | fixed unvalidated | - |
 | 2026-08-22 | FR-007 | feature request | Autonomy can be set up by importing, from the menu with nothing set up | fixed unvalidated | - |
