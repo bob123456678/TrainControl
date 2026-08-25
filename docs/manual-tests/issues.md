@@ -59,6 +59,54 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### OB-108 - 2026-08-25 - the layout editor writes the setup per gesture and the diagram only on Save
+
+**Kind:** bug  
+**Raised from:** the three-day review pass of 2026-08-25 (`AU-B8`)  
+**Filed:** 2026-08-25 by Claude
+
+**Filed rather than fixed, and the reason is that every fix for it is a judgement call about what to
+give up.** It is low probability and the highest kind of cost, which is the combination that deserves
+your decision rather than mine at the end of a long round.
+
+**The mechanism.** `LayoutEditor.rememberAutonomy` calls `saveQuietly()` after every drag, move and
+bulk edit - by design, because the autonomy session is rebuilt from disk after each one. The diagram
+itself is edited in memory only: `LayoutDiagram.addComponent` writes nothing, and discard works by
+re-reading the page files, so a diagram edit reaches disk at editor Save and not before.
+
+Cancel is handled correctly - `undoAutonomyEdits` restores the setup and saves it.
+
+The window is an ABNORMAL exit while an editor is open with unsaved diagram edits: the process killed,
+the power lost, the machine sleeping badly. Disk then holds a setup keyed to the squares as MOVED,
+and page files with the track where it was. On restart every page loads fine, so `pagesSafeToJudge` is
+true and the OB-068 hold does not apply - and the first reconciling save prunes the moved stations'
+names, lengths, facings and restrictions as settings for track that does not exist.
+
+Silent, and it is the loss the whole reconcile-guard mechanism exists to prevent, arriving through a
+door none of its four enforcement sites can see.
+
+**Why it is not obviously fixable.** The three shapes I can see all cost something:
+
+1. **Write the edited page's file beside the setup, per gesture.** Keeps the two halves together at
+   every moment. Costs: the editor stops being cancellable in the sense it is now - discard works by
+   re-reading the files, and the files would already have changed. That is a real feature being
+   traded away.
+2. **Journal the setup edits to a sidecar until Save.** Keeps cancel exactly as it is and closes the
+   window completely. Costs: a new file, a new format, and a recovery path that has to be right - and
+   an incomplete recovery path is a way to lose the same data by a new route.
+3. **Decline to reconcile when the setup is newer than the newest page file.** Cheap, no format
+   change, no feature lost. Costs: it is a heuristic, and I do not know its false-positive rate. A
+   normal save writes both, and which lands last depends on the order of two calls I have not traced.
+   A guard that fires on ordinary use is one you would learn to ignore.
+
+My inclination is 3 if it turns out to be false-positive free, and 2 if it is not - but that is worth
+ten minutes of measurement rather than a guess, and it is the kind of change that wants somebody
+watching it.
+
+**How likely, honestly.** It needs the process to die while an editor is open with unsaved diagram
+edits. You do close editors. But this railway lives under OneDrive on a machine that sleeps, and the
+window is every second an editor is open.
+
 ### OB-053 - 2026-08-23 - the diagram builds two labels per cell
 
 **Kind:** bug  
