@@ -134,9 +134,23 @@ public class testHomeAssignmentRules
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        assertTrue(source.contains("HomeStaging.canBeHome"),
+        // whyNotAHome, not canBeHome (LD-9).
+        //
+        // canBeHome answers false for two unrelated reasons and this panel is about one of them.
+        // Rolling them together made it warn "no train can come to rest here" about a square whose
+        // problem is that it is two places - and that dialog is warn-and-proceed, so agreeing walked
+        // into a throw and a second dialog contradicting the first.
+        //
+        // The message key is named as well as the method, because the method alone is satisfied by a
+        // panel that consults it and then acts on the wrong half.
+        assertTrue(source.contains("HomeStaging.whyNotAHome"),
             "rule 2's warning - a home the locomotive cannot reach - is decided by "
-            + "HomeStaging.canBeHome, and nothing in the panel consults it any more");
+            + "HomeStaging.whyNotAHome, and nothing in the panel consults it any more");
+
+        assertTrue(source.contains("autolayout.errorHomeCannotRestHere"),
+            "the panel consults whyNotAHome but no longer names the reason it is about, so it is "
+            + "warning about whichever reason came back - including the one the model refuses "
+            + "outright, which is what LD-9 was");
 
         // The CALL SITES, not only the bodies (TA-B4).
         //

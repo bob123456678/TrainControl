@@ -87,8 +87,17 @@ public class testEditorSwitchClearsPageState
     {
         String source = arriveAtSource();
 
-        assertTrue(source.contains("autonomyAsOpened = live == null ? null : live.snapshotSetup()"),
-            "arriveAt does not re-take the setup snapshot, so Cancel after a switch is undoing "
+        // Through takeTheUndoPoint, which takes BOTH halves - the in-memory snapshot Cancel restores
+        // and the on-disk note a restart restores (LD-1).
+        //
+        // This used to look for the assignment itself.  The two halves were separate statements and
+        // drifted immediately: the disk half was taken in the constructor only, so a switch moved
+        // this one and left that one describing the window's opening - which would have reverted work
+        // the user was asked about and chose to save on the way here, the very fault this test's
+        // javadoc names as the first of its wrong answers.  They are one call now, so asking for the
+        // call asks for both.
+        assertTrue(source.contains("takeTheUndoPoint("),
+            "arriveAt does not re-take the setup undo point, so Cancel after a switch is undoing "
             + "against the wrong starting point");
     }
 

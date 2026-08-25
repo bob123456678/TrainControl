@@ -422,12 +422,6 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Puts the autonomy setup back the way it was when this window opened.
-     *
-     * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
-     * halves have to be undone together or they are left describing different railways.
-     */
-    /**
      * Takes the undo point: what the setup looks like right now, in memory and on disk.
      *
      * **Both halves in one call, because they were two and they drifted immediately.** The in-memory
@@ -488,6 +482,12 @@ public class LayoutEditor extends PositionAwareJFrame
         super.dispose();
     }
 
+    /**
+     * Puts the autonomy setup back the way it was when this window opened.
+     *
+     * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
+     * halves have to be undone together or they are left describing different railways.
+     */
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;

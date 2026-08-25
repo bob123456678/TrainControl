@@ -338,9 +338,17 @@ public class Edge
      * 118 (Layout says so, and counts them). Reasoning from symmetry here would be reasoning from
      * something the data contradicts.
      *
-     * What holds instead is the complementary pair: a route locks the edges it crosses AND checks the
-     * edges that lock it, so a train standing beyond a junction is stopped whichever direction the
-     * relation happens to have been written in. The parked train is stopped by the lock, which is what
+     * What holds instead is that the SAME list is used in both directions of the transaction: locking
+     * a path writes this flag onto every edge in each of its edges' lockEdges, and checking one reads
+     * the flag off every edge in each of its edges' lockEdges. So an asymmetric relation - X naming Y
+     * where Y does not name X - still refuses both orderings: one is caught by the write, the other by
+     * the read. A train standing beyond a junction is stopped whichever direction the relation happens
+     * to have been written in.
+     *
+     * That is not the same claim as "a route locks the edges it crosses AND checks the edges that lock
+     * it", which is what this said until review pointed out there is no reverse scan anywhere - both
+     * operations walk lockEdges forwards. The conclusion was right and the mechanism described was
+     * not, in a comment this repository treats as load-bearing. The parked train is stopped by the lock, which is what
      * a lock is for - not by being counted as an obstruction it is not standing on.
      *
      * Left as an occupancy question, a train parked next to a junction was a permanent roadblock for

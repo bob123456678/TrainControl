@@ -106,7 +106,23 @@ public class testStoreCollectionsAreHandledEverywhere
      * A registry entry answering "not applicable" for these would be pretending they are uniform, so
      * they are still checked the old way: name every collection, or say why not.
      */
-    private static final String[] SITES = { "reconcile", "applyTo" };
+    private static final String[] SITES = { "reconcile", "applyTo",
+        // The thirteenth site, and the one the registry does not cover (LD-11).
+        //
+        // heldFields says how each collection's entries are picked out of the file when their page is
+        // not loaded, and held back verbatim. It cannot be derived from the registry because it is
+        // about the SHAPE the entries have in the file rather than about the collection, and it is
+        // static, so kept() is not available to it.
+        //
+        // Before OB-025 it was shadowed by accident: sharedFields carried a literal list of the twelve
+        // names that this test read, so a collection missing from HELD_FIELDS was usually missing from
+        // that list too. sharedFields is a loop now, and the shadow went with it. Named explicitly so
+        // it is checked on purpose rather than by luck.
+        //
+        // The cost of an omission is in that constant's own javadoc: one save while a page's file is
+        // missing deletes that page's entries for the collection nobody listed.
+        "heldFields",
+    };
 
     /**
      * The sites that DO walk the registry, by the name of the method that performs them.
@@ -143,6 +159,9 @@ public class testStoreCollectionsAreHandledEverywhere
         // exemption each; now the collection says so once, in its own registry entry, and only the
         // hand-written pair still need it here.
         EXEMPT.put("reconcile:excludedPages", "reconcile compares SQUARES against the diagram");
+
+        // HELD_FIELDS is keyed by the name in the FILE, like everything else that reads or writes one.
+        EXEMPT.put("heldFields:disabledPortals", "listed by its JSON name, disabledLinks");
 
         // Handled by a helper of its own, called from here
         EXEMPT.put("reconcile:captions", "done by reconcileCaptions - a caption goes when either the "

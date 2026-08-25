@@ -104,9 +104,18 @@ public class testTheGoldenLayoutHoldsTogether
     /**
      * Reading Adam's railway does not write to it.
      *
-     * The assertion this class exists for, and the one that would have caught what nothing caught for
-     * two days. Two test classes start the real window, which opens whatever the saved UI state names,
-     * and a save on that path rewrote his configuration file on every battery.
+     * The assertion this class exists for, and its SUBJECT is what nothing caught for two days: two
+     * test classes start the real window, which opens whatever the saved UI state names, and a save on
+     * that path rewrote his configuration file on every battery.
+     *
+     * **Read the scope before relying on it.** Both captures are in this class's own JVM, and the
+     * suite runs one JVM per class - so a write by another class already happened before `before` was
+     * taken, and this cannot see it. What it does catch is this class's own reading writing, which is
+     * a real property and a narrower one. Review found the javadoc claiming the wider one.
+     *
+     * The protection against another class writing to that folder lives in `tools/battery.sh`, which
+     * fingerprints it around the whole run and says so explicitly - and which `ant test` does not
+     * use.
      *
      * That particular cause is fixed - the file was being written in a different ORDER each run,
      * because a set of locomotives was iterated in identity-hash order - but the class of problem is

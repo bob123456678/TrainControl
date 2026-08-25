@@ -3439,9 +3439,23 @@ public class AutonomyCompanionStore
      * is a list of lists that drifted - DD-A1 counted fourteen - and this is the one whose drift is
      * invisible until somebody's page is offline.
      */
-    private static final Map<String, Held> HELD_FIELDS;
+    private static final Map<String, Held> HELD_FIELDS = heldFields();
 
-    static
+    /**
+     * Which collections are held back when their page is not loaded, and in what shape.
+     *
+     * A METHOD rather than a static block, so that the guard which insists every kept collection is
+     * handled everywhere can address it by name (LD-11). This is the thirteenth bookkeeping site and
+     * the one the OB-025 registry does not cover - it is about the shape entries have in the FILE
+     * rather than about the collection, and it is static, so kept() is not available to it.
+     *
+     * Before the registry it was shadowed by accident: sharedFields carried a literal list of the
+     * twelve names that the same guard read, so a collection missing from here was usually missing
+     * from that list too. sharedFields is a loop now and the shadow went with it.
+     *
+     * @return the field names, by their names in the file, and how each is keyed
+     */
+    private static Map<String, Held> heldFields()
     {
         Map<String, Held> fields = new LinkedHashMap<>();
 
@@ -3458,7 +3472,7 @@ public class AutonomyCompanionStore
         fields.put("disabledLinks", Held.SQUARE_LIST);
         fields.put("excludedPages", Held.PAGE_LIST);
 
-        HELD_FIELDS = java.util.Collections.unmodifiableMap(fields);
+        return java.util.Collections.unmodifiableMap(fields);
     }
 
     /**
@@ -4345,11 +4359,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The setup as it stood before an editing session that never ended.
-     *
-     * @return the snapshot, or null when the last session closed properly - which is almost always
-     */
-    /**
      * Whether a pre-edit note is on disk at all, whatever this build can make of it.
      *
      * The other half of `unfinishedEdit` returning null, which means two different things: there was
@@ -4364,6 +4373,11 @@ public class AutonomyCompanionStore
         return beforeEditFile().isFile();
     }
 
+    /**
+     * The setup as it stood before an editing session that never ended.
+     *
+     * @return the snapshot, or null when the last session closed properly - which is almost always
+     */
     public JSONObject unfinishedEdit()
     {
         File was = beforeEditFile();
