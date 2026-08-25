@@ -9713,3 +9713,11 @@ Steps 5 and 6 are the half that decides whether this is safe rather than merely 
 behind by a clean Save would throw away the edit you just made, which is a worse failure than the one
 being fixed. Both are covered by tests as well; they are here because the tests drive the store
 directly and cannot restart an application.
+
+One more case, which is not separately testable without a display and so is listed here rather than
+covered: the revert deliberately does nothing while an editor is OPEN. `resetAutonomySession` throws
+the session away and the next caller rebuilds it - a page-set change, a diagram re-download - and if
+that happened with an editor open, the note that editor wrote on the way in would be found and acted
+on mid-edit. The revert would then undo the work in progress, which is the loss this exists to
+prevent, caused by the thing preventing it. If you can contrive that - open the editor, move
+something, then do whatever re-reads the pages wholesale - your edit should still be there.

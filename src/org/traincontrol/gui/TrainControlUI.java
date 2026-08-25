@@ -2402,7 +2402,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // After open, so that the pages are known and rebuild has something to build against, and
             // before anything can save - opening does not reconcile, only saving does.
-            if (session.revertUnfinishedEdit())
+            //
+            // And NOT while the layout editor is open, which is the one way this could do harm rather
+            // than prevent it. `resetAutonomySession` throws the session away and the next caller
+            // rebuilds it - a page-set change, a diagram re-download - and if that happened with an
+            // editor open, the note that editor wrote on the way in would be found and acted on
+            // mid-edit. The revert would then undo the work in progress: the exact loss this exists
+            // to prevent, caused by the thing preventing it.
+            //
+            // `openEditor != null && isDisplayable()` is the question the other four places that ask
+            // "is an editor open" already ask, rather than a fifth way of asking it.
+            boolean editorOpen = openEditor != null && openEditor.isDisplayable();
+
+            if (!editorOpen && session.revertUnfinishedEdit())
             {
                 this.model.log("The last layout edit did not finish; the autonomy setup has been put "
                     + "back to how it was before it started");

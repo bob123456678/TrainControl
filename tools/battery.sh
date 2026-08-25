@@ -106,9 +106,20 @@ do
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(pwd)/tools/reap.ps1" \
         -RunId "$RUN_ID" >/dev/null 2>&1
 
-    out=$("$JAVA" $JAVA_FLAGS -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" 2>&1 | tail -4)
+    # The WHOLE output, not its last few lines (found 2026-08-25).
+    #
+    # This was `| tail -4`, and it turned a green class into "DID NOT RUN". TestNG prints its summary
+    # and then anything the JVM still has to say - and core.testAutonomySimulationSanity ends with a
+    # Marklin packet dump from a socket timing out, so the summary had scrolled past by line four.
+    #
+    # That is the third harness defect in this round that reported a false result rather than an
+    # error, and they all have the same shape: the runner decided what a run meant by looking at part
+    # of it. It is cheap to read all of it.
+    out=$("$JAVA" $JAVA_FLAGS -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" 2>&1)
 
-    summary=$(echo "$out" | grep 'Total tests run')
+    # The LAST one, because a class can print the word before it finishes - and the last summary is
+    # the one that describes the whole run.
+    summary=$(echo "$out" | grep 'Total tests run' | tail -1)
 
     if [ -z "$summary" ]
     then
