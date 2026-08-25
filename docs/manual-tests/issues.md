@@ -547,13 +547,86 @@ that remembered which bundle keys carried a placeholder instead of reading them.
 "guards that assert less than they read" this entry is about, so the remainder is narrower than it was
 this morning - but the seven it lists have not been worked through.
 
+### OB-098 - 2026-08-24 - switch to cs layout is possible even when not connected to a cs
 
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:44  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
+switch to cs layout is possible even when not connected to a cs.  also, backup up files from cs should not be offered in this case.
 
+### OB-099 - 2026-08-24 - cs3 files still not backed up
 
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:46  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
+these are examples of files that should be downloaded when connected to a CS3 only (not CS2) (IP depends on what's being used) http://192.168.50.25/app/api/locos http://192.168.50.25/app/api/automatics http://192.168.50.25/app/api/mags
 
+### OB-100 - 2026-08-24 - cs download layout menu item toggle
 
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:48  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+download central station layout files should also be greyed out when not connected to a cs
+
+### OB-101 - 2026-08-24 - capture locomotive commands toggle
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:50  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+capture locomotive commands button can still be toggled while trains are returning home
+
+### OB-102 - 2026-08-24 - directions shown in timetable stations
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:51  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+timetable stations show (northbound) and (southbound) etc.
+
+### OB-103 - 2026-08-24 - failing to read layout from CS shows no error in UI
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:51  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI error notice shown.
+
+### OB-104 - 2026-08-24 - autonomy tab not greyed out when using CS layout
+
+**Kind:** bug  
+**Raised from:** MT-177 (Four menu and window details from the testing round)  
+**Filed:** 2026-08-24 23:53  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.
+
+### FR-022 - 2026-08-24 - crop function
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:57  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+add a crop / pan function to local locomotive icons at the time of image selection.
+
+### OB-105 - 2026-08-25 - no traincontrol window icon in IP prompt
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 00:11  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+no traincontrol window icon in IP prompt
 
 ## What has been picked up
 

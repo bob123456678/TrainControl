@@ -49,6 +49,7 @@ element
  .id=0xd
  .typ=gerade
  .artikel=-1
+ .text=Point:LowerBack
 element
  .id=0xe
  .typ=gerade
@@ -99,7 +100,7 @@ element
 element
  .id=0x105
  .artikel=-1
- .text=←17
+ .text=<- 17
 element
  .id=0x106
  .typ=bogen
@@ -204,7 +205,7 @@ element
 element
  .id=0x214
  .artikel=-1
- .text=Loop
+ .text=Loopback
 element
  .id=0x216
  .typ=gerade
@@ -1069,6 +1070,7 @@ element
  .id=0xe10
  .typ=gerade
  .artikel=-1
+ .text=Point:LowerFront
 element
  .id=0xe11
  .typ=gerade

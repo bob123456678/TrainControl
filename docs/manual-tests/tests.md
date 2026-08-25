@@ -1283,6 +1283,13 @@ the first and then turns the second".
 One thing writing it taught me, worth recording because it is easy to get backwards: STRAIGHT releases
 BOTH motors. It is the position neither of them chooses, so "the second command is the throw" is true of
 every position except that one.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+Use DEBUG_SIMULATE_PACKETS = true to simulate that there is a station, and confirm that way.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 <a id="mt-005"></a>
 
@@ -1439,6 +1446,12 @@ that takes the caret, and Escape closes it.
 #### Comments
 
 We tested this synthetically earlier.  I can retest if you changed anything.
+
+**Adam, 2026-08-25 (triage).** Works, with notes.
+
+Works, but below the last command, there is a long greyed out line where the + icon would normally be.  make this be white.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-012"></a>
@@ -6034,6 +6047,10 @@ to build. The new test asserts on the checks.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-136"></a>
@@ -7313,6 +7330,10 @@ was mutation-checked before being trusted.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-154"></a>
@@ -7392,6 +7413,10 @@ stopped and the run reported success.
 **Claude, 2026-08-24.** The dispatcher's `catch (Throwable)` stopped every train and never set `abandoned`, so
 `return !abandoned.get()` answered true - reproducing the exact symptom the comment beside that dialog
 says was fixed. A leg that threw is the clearest abandonment there is.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7755,6 +7780,10 @@ are in without spending a line on which station it is.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-163"></a>
@@ -7915,6 +7944,12 @@ The automated test replays the plan move by move and asserts, at each move, that
 free AND that nothing occupies a square holding it back - and it was mutation-checked to confirm that
 the FR-001 assertion is the one that fires, rather than a move-count check standing in front of it.
 
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+test this in a test case
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-166"></a>
@@ -8068,6 +8103,10 @@ Fixed with [MT-149](#mt-149); check it with [MT-175](#mt-175).
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-169"></a>
@@ -8196,6 +8235,12 @@ code compiles, guards a null station, uses endpoints that already existed, and d
 CS2 path.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+CS3 dedicated files are still mising, see other bug
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -8329,6 +8374,10 @@ is not the same as this entry having a test that would catch its return. The mov
 window.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -8471,6 +8520,10 @@ and go without anything else about the strip moving.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-174"></a>
@@ -8603,6 +8656,10 @@ checks. It now does both.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-175"></a>
@@ -8642,6 +8699,10 @@ attach the callback itself and end up testing its own wiring.
 Mutation-checked both ways. Deleting the two call sites - replaying `d8db4879` exactly - fails the
 guard. Disabling the mechanism fails the run test on "nothing was told" while the capture assertion
 still passes, which is the evidence that the two halves are genuinely independent.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -8720,6 +8781,10 @@ so a delete looked as though it half worked. It captures first now too.
 run, capturing afterwards loses it. Either assertion alone is a statement about one arrangement;
 together they say the difference is the ORDER and nothing else, which is the whole claim.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-177"></a>
@@ -8761,6 +8826,12 @@ construction. It does not - FlatLaf's label font is smaller than what this appli
 components - so the window came out smaller than its neighbours and Adam asked twice. Ninety-eight
 components in the gui package use size 14 against one at 12, so 14 is the standard here and that is
 what it uses now, keeping the family from the look and feel.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+Filed from this test: OB-104 (bug - autonomy tab not greyed out when using CS layout).  They are in `issues.md` until they are picked up.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
