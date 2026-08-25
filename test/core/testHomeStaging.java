@@ -1835,6 +1835,53 @@ public class testHomeStaging
         return null;
     }
 
+    /**
+     * Saving a layout that has not changed produces the same file it produced last time.
+     *
+     * Not a data defect - the set is the same set - but it cost three real things, and the third is
+     * how it was found. `Point.excludedLocs` is a set of Locomotive objects; Locomotive does not
+     * override hashCode, so iteration order is identity hashes and differs on every run of the JVM.
+     * Merely opening a layout and saving it rewrote the array in a new order, and the whole
+     * configuration file came out different with nothing changed.
+     *
+     * The cost: a sync on every launch for a layout that lives in OneDrive; a diff that says something
+     * happened when nothing did; and a test that opens the window quietly rewriting Adam’s own
+     * railway, which is what put this on the list at all.
+     *
+     * Written as "two sets built in opposite orders serialise identically", which is the property,
+     * rather than "run it twice and hope the hashes differ" - which is a coin toss dressed as a test.
+     *
+     * MUTATION: removing the `Collections.sort(locNames)` from `Point.toJSON` fails this.
+     */
+    @Test
+    public void testAnUnchangedLayoutSerialisesTheSameWayTwice() throws Exception
+    {
+        Layout one = load(ring(LOC_A, LOC_B, LOC_C));
+        Layout two = load(ring(LOC_A, LOC_B, LOC_C));
+
+        java.util.List<String> names = Arrays.asList(LOC_A, LOC_B, LOC_C);
+
+        // The same three locomotives, added in opposite orders.
+        java.util.Set<Locomotive> forward = new java.util.HashSet<>();
+        java.util.Set<Locomotive> backward = new java.util.HashSet<>();
+
+        for (String name : names) forward.add(loc(name));
+
+        for (int at = names.size() - 1; at >= 0; at--) backward.add(loc(names.get(at)));
+
+        one.getPoint("HS D").setExcludedLocs(forward);
+        two.getPoint("HS D").setExcludedLocs(backward);
+
+        assertEquals(one.getPoint("HS D").getExcludedLocs().size(), 3,
+            "the fixture did not take: with fewer than two excluded locomotives there is no order to "
+            + "get wrong");
+
+        assertEquals(one.getPoint("HS D").toJSON().toString(),
+            two.getPoint("HS D").toJSON().toString(),
+            "the same set of excluded locomotives wrote itself out two different ways, so saving a "
+            + "layout nothing has changed produces a different file every time");
+    }
+
     /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
     private static void assign(Layout layout, String locName, String stationName) throws Exception
     {

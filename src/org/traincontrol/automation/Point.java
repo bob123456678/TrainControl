@@ -1039,6 +1039,19 @@ public class Point
                 locNames.add(l.getName());
             }
 
+            // SORTED, so the file is the same file when nothing has changed.
+            //
+            // excludedLocs is a set of Locomotive objects, and Locomotive does not override hashCode -
+            // so the iteration order is identity hashes, which differ on every run of the JVM. Merely
+            // opening a layout and saving it therefore rewrote this array in a new order, and the
+            // whole configuration file came out different with nothing changed.
+            //
+            // That is not a data defect - the set is the same set - but it costs three real things: a
+            // sync on every launch for a layout that lives in OneDrive, a diff that says something
+            // happened when nothing did, and, in this repository, a test that opens the window quietly
+            // rewriting Adam's own railway.
+            java.util.Collections.sort(locNames);
+
             jsonObj.put("excludedLocs", locNames);
         }
 
