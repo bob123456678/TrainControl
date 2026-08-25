@@ -87,6 +87,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Debug mode
     private boolean debug = false;
+
+    /**
+     * Whether this session is simulating rather than talking to a Central Station.
+     *
+     * Distinct from `on`, which says whether the last sync SUCCEEDED, and that turns out not to answer
+     * the question the menus were asking. `syncWithCS2` reads its files through `CS2File`, which reads
+     * a local layout folder perfectly happily - so on a machine with a local layout the sync succeeds,
+     * `on` goes true, and a simulated session reports itself connected to a station that is not there.
+     *
+     * Adam, OB-098 on the second attempt: "switch to central station layout is NOT greyed out in
+     * debug/simulate mode." The first fix asked `getNetworkCommState()` and was right about everything
+     * except what that means.
+     */
+    private boolean simulation = false;
     
     // Do we print out packets in debug mode?
     public static boolean DEBUG_LOG_NETWORK = true;
@@ -3323,8 +3337,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * Whether this session is simulating rather than driving a real Central Station.
+     *
+     * Asked by anything that offers to fetch from the station: with no station there, the offer can
+     * only end in a wait and an error. See the field for why the sync's own success flag does not
+     * answer this.
+     *
+     * @return true when TrainControl was started in simulate mode
+     */
+    @Override
+    public boolean isSimulation()
+    {
+        return this.simulation;
+    }
+
+    /**
      * Returns whether debug mode is enabled
-     * @return 
+     * @return
      */
     @Override
     public boolean isDebug()
@@ -3852,6 +3881,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (simulate)
         {
             model.powerState = true;
+
+            // And remember that it is a simulation, so that anything offering to fetch from a
+            // Central Station can decline (OB-098).
+            model.simulation = true;
         }
                                     
         return model;

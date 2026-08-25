@@ -100,6 +100,12 @@ public interface ViewListener
     Accessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     Accessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public boolean getNetworkCommState();
+
+    /**
+     * Whether this session is simulating rather than driving a real Central Station.
+     * @return
+     */
+    public boolean isSimulation();
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);
     public void clearLayouts();

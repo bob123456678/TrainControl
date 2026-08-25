@@ -21348,7 +21348,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // getNetworkCommState is the connection, not the power: `on` and `powerState` are
             // separate fields, and this is the one that says whether the station is talking.
-            final boolean connected = this.model != null && this.model.getNetworkCommState();
+            // Connected AND not simulating (OB-098, second attempt).
+            //
+            // getNetworkCommState alone was wrong, and wrong in the direction that matters: it reports
+            // whether the last sync succeeded, and a sync reads through CS2File, which reads a local
+            // layout folder perfectly happily. So on a machine with a local layout a SIMULATED session
+            // syncs successfully, calls itself connected, and offers to switch to a Central Station
+            // that does not exist.
+            //
+            // Adam: "switch to central station layout is NOT greyed out in debug/simulate mode."
+            final boolean connected = this.model != null && this.model.getNetworkCommState()
+                && !this.model.isSimulation();
 
             // Set UI label
             if (!isLocalLayout())

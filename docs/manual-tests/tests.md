@@ -8846,6 +8846,22 @@ Filed from this test: OB-104 (bug - autonomy tab not greyed out when using CS la
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 **From [OB-093](issues.md), filed 2026-08-24 - "autonomy checkbox visible when it shouldn't be".** The entry as it stood when it was picked up:
@@ -8987,6 +9003,10 @@ that fills in the next free number and avoids one already in use, which is what 
 and the test fixture, so nothing that builds a model has been run against this. It compiles; it has
 not been exercised.
 
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-179"></a>
@@ -9045,6 +9065,28 @@ returning home; a live button that answers with a dialog reads as a control you 
 wrongly, where a greyed one says the railway is busy.
 
 **Not yet run**, for the same reason as [MT-178](#mt-178).
+
+**Adam, 2026-08-25 (triage).** Does not work.
+
+switch to central station layout is NOT greyed out in debug/simulate mode.
+
+**Claude, 2026-08-25.** Fixed, and my first attempt was right about everything except what the
+question meant.
+
+I asked `getNetworkCommState()`. That reports whether the last SYNC succeeded - and a sync reads its
+files through `CS2File`, which reads a local layout folder perfectly happily. So on a machine with a
+local layout a simulated session syncs successfully, sets that flag, and calls itself connected to a
+station that is not there.
+
+The model now records that it is simulating, and the menus ask both halves. Worth the extra field
+rather than inferring it: "the sync worked" and "there is a station" are different facts, and this is
+the second time treating them as one has produced a control that offers something impossible.
+
+His other half - "the unreachable failure error works" - is [OB-103](#mt-180), which is unaffected.  
+
+the unreachable failure error works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9121,6 +9163,10 @@ reasons it is.
 OB-105: the address prompt is the FIRST thing shown, before the main window exists, so it has no owner
 to inherit an icon from and Swing gives it the default coffee cup. Set quietly - a missing icon
 resource must not stop the application asking for an IP address.
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 01:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
