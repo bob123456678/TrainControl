@@ -394,6 +394,30 @@ Tab icons provided by Freepik.
         - On a layout read from the Central Station, the autonomy menu's "Autonomy needs a layout on
           this computer" is now something you can press: it downloads one.  Reading the sentence and
           then hunting the Layouts menu for the thing it was describing was a step too many
+        - A route will no longer throw a switch on track a train is running over.  Executing one that
+          would - from the Routes tab, from a route tile on the diagram, or automatically from a
+          sensor trigger - is refused and logged, naming the switch.  Routes that touch nothing a
+          train is using run exactly as before, and nothing changes at all when autonomy is stopped
+        - Dispatching a train by hand now sets the protecting signals of trains already standing
+          about, which is what starting autonomy and executing a timetable already did.  A train put
+          on a protected platform by hand made no signal move - correctly, because nothing was
+          running - and then stayed showing green through somebody else's dispatch
+        - Editing a page while another page of the layout cannot be read now asks about it by name
+          before anything happens, rather than quietly retiring that page's number.  Keep it and the
+          page comes back as itself with its setup intact; say it was deleted and the settings it
+          left behind are cleared out instead of being kept for ever.  With every page loading
+          normally, which is almost always, you will never see the question
+        - Local locomotive icons can be cropped and panned when you pick them.  There is a tick box
+          in the file chooser - off until you turn it on - and the crop is written as a new file
+          beside the locomotive database, never over your own picture
+        - The mark shown while a track diagram is still drawing is now a grey hourglass rather than a
+          turning arc
+        - The window that asks about the signal protecting a station now opens beside the diagram
+          instead of over the middle of it, since it is describing something drawn behind it, and it
+          can no longer be dragged shorter than its own buttons
+        - Opening a layout and saving it no longer rewrites the configuration file when nothing has
+          changed.  The list of locomotives excluded from a station came out in a different order
+          every time, so the file looked edited on every start
         - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why is it not moving?" tool that answers the same question on the diagram: click the square a train is standing on, and every route it could take is drawn on the track while the reasons for the rest are listed underneath
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
