@@ -86,6 +86,14 @@ and the picture harness can render the page so the extra labels can be SEEN.
 **Why it matters beyond the number.** MT-014 carries Adam's note that the editor feels slow, and a grid
 built twice is the shape that would explain it.
 
+**Claude, 2026-08-24.** Still open, and deliberately untouched tonight.
+
+Adam asked for this one to be left alone, and nothing in this round went near the grid. It is worth
+recording that it is probably the thing underneath [OB-084](#ob-084): a grid built twice is exactly
+what would make `testRenderingCost` report two labels per cell, and tonight it reported 708 to 720
+against a bound of 672 in six runs and then passed in the battery. Fixing this would likely settle
+that measurement rather than the other way round.
+
 
 ### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
 
@@ -119,6 +127,16 @@ hand-written even if this lands.
 bookkeeping. The guard makes the omissions loud; it does not make them impossible, and it does not make
 the file shorter. Left open at Adam's request rather than closed on the strength of a test.
 
+**Claude, 2026-08-24.** Still open, still at Adam\u2019s request, and my recommendation is to hold it a
+little longer.
+
+The registry this describes only pays for itself if all eleven collections have the same shape, and
+one of them does not: `tileDirections` still carries the `#dx,dy` route suffix and four `*Suffixed`
+helpers that exist to be deleted by FR-013 stage two. Building the registry today means special-casing
+that collection on the day it is written, which is the opposite of the point.
+
+Nothing tonight changed the balance here. The guard test still makes an omission loud rather than
+impossible, which is what it was always doing.
 
 
 ### FR-013 - 2026-08-24 - The store should hold objects, not strings
@@ -420,6 +438,12 @@ whole budget to say maybe about something provable in a pairwise scan". The cycl
 it, as a second pairwise test, and wants a test whose fixture is a genuine two-home cycle and a
 mutation showing that the scan rather than the search is what answers.
 
+**Claude, 2026-08-24.** Still open, not started, and not touched tonight.
+
+Recording it so this entry is not silent: what would close it is a test whose fixture is a genuine
+two-home cycle, plus a mutation showing that the pairwise SCAN rather than the search is what answers
+it. That is the same shape as the test beside it, and until it exists this entry is analysis rather
+than a change.
 
 
 ### OB-086 - 2026-08-24 - the duplication review's remainder: six places one rule is written twice
@@ -514,6 +538,14 @@ it was filed - `reconcile`'s blocked-points keep-side IS guarded. And one premis
 the reviewer was wrong: I said no test drives a real event thread, and `testBusyDialogInteraction`
 pumps a real modal EDT. The genuine EDT hole is narrower than I claimed - blocking dialogs on the
 export path, and four test classes that call `setViewListener` off the event thread themselves.
+
+**Claude, 2026-08-24.** Still open, not started, and not touched tonight.
+
+Two of tonight\u2019s findings belong to its family and were fixed on their own tickets rather than
+here: the guard whose assertion its own comment satisfied (see the MT-153 work) and the surface rule
+that remembered which bundle keys carried a placeholder instead of reading them. Both are exactly the
+"guards that assert less than they read" this entry is about, so the remainder is narrower than it was
+this morning - but the seven it lists have not been worked through.
 
 
 ### OB-090 - 2026-08-24 - autonomy error count inconsistent, fix it button doesn't show

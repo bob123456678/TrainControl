@@ -21,8 +21,6 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 |---|---|---|---|---|
 | [MT-004](#mt-004) | 2026-08-20 | A three-way point in a route | fixed unvalidated | LT-B5 |
 | [MT-011](#mt-011) | 2026-08-20 | A Central Station route is read-only | needs test | hands-on testing |
-| [MT-022](#mt-022) | 2026-08-21 | A locomotive's settings from the tile menu | fixed unvalidated | LT-M1, LT-M2, LT-M3, LT-M4 |
-| [MT-023](#mt-023) | 2026-08-21 | Two signals on one station | fixed unvalidated | LT-C1, LT-M5, LT-M6, LT-M7 |
 | [MT-032](#mt-032) | 2026-08-21 | Two trains, one dispatched onto a long path | needs test | TR-A22 |
 | [MT-035](#mt-035) | 2026-08-21 | The Central Station switched off mid-session | needs test | hands-on testing |
 | [MT-043](#mt-043) | 2026-08-22 | A sensor nudged onto its own label | needs test | LT-A9 |
@@ -47,17 +45,11 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-151](#mt-151) | 2026-08-24 | A legacy import leaves one home per locomotive | fixed unvalidated | OB-075 |
 | [MT-152](#mt-152) | 2026-08-24 | Deleting a point clears it out of everything that watched it | fixed unvalidated | OB-080 |
 | [MT-153](#mt-153) | 2026-08-24 | A locomotive rename reaches the diagram labels | fixed unvalidated | OB-081, OB-074 |
-| [MT-154](#mt-154) | 2026-08-24 | The editor's Cancel cannot revert work done elsewhere | fixed unvalidated | OB-076 |
-| [MT-155](#mt-155) | 2026-08-24 | Closing the application asks about unsaved editor work | fixed unvalidated | OB-070 |
 | [MT-156](#mt-156) | 2026-08-24 | A timetable run that fails says so | fixed unvalidated | OB-072 |
-| [MT-158](#mt-158) | 2026-08-24 | The autonomy editor's title, and the blocked-points window | fixed unvalidated | OB-082, OB-083 |
 | [MT-161](#mt-161) | 2026-08-24 | A page may be called "2" without stealing page 2's settings | fixed unvalidated | OB-067, FR-013 |
 | [MT-162](#mt-162) | 2026-08-24 | The caption menu says which station a square is showing | fixed unvalidated | FR-014 |
 | [MT-165](#mt-165) | 2026-08-24 | Return Home stages a blocker out of the way instead of refusing | fixed unvalidated | OB-073, FBR-B1, FBR-B2 |
-| [MT-166](#mt-166) | 2026-08-24 | The backup dialog offers to show the file | fixed unvalidated | FR-019 |
-| [MT-167](#mt-167) | 2026-08-24 | The application does not freeze while trains are running | fixed unvalidated | OB-087 |
 | [MT-168](#mt-168) | 2026-08-24 | Capture records what full autonomy does, not only hand-driven moves | fixed unvalidated | OB-088 |
-| [MT-169](#mt-169) | 2026-08-24 | The three things Adam asked for after running MT-159, MT-160 and MT-163 | fixed unvalidated | MT-159, MT-160, MT-163 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
 | [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
 | [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
@@ -1687,7 +1679,7 @@ Doesn't work- only goes to the default route.
 
 ### MT-022 - 2026-08-21 - A locomotive's settings from the tile menu
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** LT-M1, LT-M2, LT-M3, LT-M4  
 **Written:** 2026-08-21
 
@@ -1725,7 +1717,7 @@ an arrival function and then actually hear it fire.
 
 ### MT-023 - 2026-08-21 - Two signals on one station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** LT-C1, LT-M5, LT-M6, LT-M7  
 **Written:** 2026-08-21
 
@@ -7302,7 +7294,7 @@ was mutation-checked before being trusted.
 
 ### MT-154 - 2026-08-24 - The editor's Cancel cannot revert work done elsewhere
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-076
 **Written:** 2026-08-24
 
@@ -7333,7 +7325,7 @@ mutually exclusive in the first place.
 
 ### MT-155 - 2026-08-24 - Closing the application asks about unsaved editor work
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-070
 **Written:** 2026-08-24
 
@@ -7442,7 +7434,7 @@ that is actually correct. Nothing here needs running.
 
 ### MT-158 - 2026-08-24 - The autonomy editor's title, and the blocked-points window
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-082, OB-083
 **Written:** 2026-08-24
 
@@ -7872,7 +7864,7 @@ the FR-001 assertion is the one that fires, rather than a move-count check stand
 
 ### MT-166 - 2026-08-24 - The backup dialog offers to show the file
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-019
 **Written:** 2026-08-24
 
@@ -7915,7 +7907,7 @@ not start is noise on top of the one just dismissed.
 
 ### MT-167 - 2026-08-24 - The application does not freeze while trains are running
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-087
 **Written:** 2026-08-24
 
@@ -8025,7 +8017,7 @@ Fixed with [MT-149](#mt-149); check it with [MT-175](#mt-175).
 
 ### MT-169 - 2026-08-24 - The three things Adam asked for after running MT-159, MT-160 and MT-163
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-159, MT-160, MT-163 (Adam's triage notes)
 **Written:** 2026-08-24
 
