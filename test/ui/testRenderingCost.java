@@ -468,12 +468,35 @@ public class testRenderingCost
         final LayoutDiagram drawing = page;
         final javax.swing.JPanel host = new javax.swing.JPanel();
 
-        org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.set(0);
-        org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.set(0);
+        // Counted ON the thread that builds, between the reset and the constructor returning
+        // (OB-084).
+        //
+        // This is what makes the number mean something. It was read from the test thread the instant
+        // invokeAndWait returned, and both LayoutGrid and LayoutLabel post further work with
+        // invokeLater - so the reading was a stable floor plus however much of the deferred work had
+        // landed, and five runs against one unchanged fixture gave 720, 621, 685, 720, 597 against a
+        // bound of 672. It failed or passed depending on nothing at all.
+        //
+        // Waiting for quiet instead was tried first and is worse: the deferred work rebuilds labels,
+        // so the longer you wait the more you count. Eight runs of that gave 756 to 1152 - the same
+        // coin toss with a bigger coin. There is no "total labels built" to measure, because the
+        // total depends on when you stop looking.
+        //
+        // Inside one EDT runnable there is nothing to race: invokeLater work cannot run while the
+        // event thread is busy with this, so what is counted is exactly what BUILDING THE GRID does,
+        // which is the question the test is asking.
+        final long[] built = new long[1];
+        final long[] applied = new long[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
+            org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.set(0);
+            org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.set(0);
+
             new org.traincontrol.gui.LayoutGrid(drawing, 30, host, null, true, ui[0]);
+
+            built[0] = org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get();
+            applied[0] = org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.get();
         });
 
         int cells = (drawing.getMaxx() - drawing.getMinx() + 2)
@@ -481,19 +504,39 @@ public class testRenderingCost
 
         System.out.println("RENDERCOST page=" + drawing.getName()
             + " cells=" + cells
-            + " labelsBuilt=" + org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get()
-            + " iconApplications=" + org.traincontrol.gui.LayoutLabel.COUNT_APPLIED.get());
+            + " labelsBuilt=" + built[0]
+            + " iconApplications=" + applied[0]);
 
         final org.traincontrol.gui.TrainControlUI toClose = ui[0];
         javax.swing.SwingUtilities.invokeAndWait(() -> toClose.dispose());
 
-        // Measured at 1.6 labels per cell (613 for 384) on 2026-08-19, which is a real overhead and
-        // the largest single lever on this page - see the rendering report.  The bound is TWICE the
-        // cell count: it is not asserting that the waste is gone, it is catching the day somebody
-        // makes it worse.
-        assertTrue(org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get() <= cells * 2,
-            "the grid built " + org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get()
-            + " labels for " + cells + " cells.  It was 1.6 per cell when this was written; more than "
-            + "two per cell means something has started building the grid twice over");
+        // Exactly ONE label per cell, and the bound is a quarter above that (OB-084).
+        //
+        // Measured six times, deterministically, at 384 for 384: building the grid constructs one
+        // label per cell of the bounding box and no more. The bound was twice the cell count, and the
+        // comment here said 1.6 per cell "when this was written" - but every figure in that history,
+        // from 613 up to the 720 and 1152 that made this a coin toss, was measuring construction PLUS
+        // however much deferred rebuilding had landed before somebody looked. That is a different
+        // quantity and it has no fixed value.
+        //
+        // So the ratio this test was written to watch was never 1.6; it is 1.0, and always was. The
+        // bound is tight now because the measurement finally deserves one: a grid that builds itself
+        // twice over goes to 2.0 and fails, where against the old bound of 2.0 it would have passed.
+        //
+        // WHAT IS NOT MEASURED HERE, and is the interesting number: after construction the diagram
+        // goes on rebuilding labels, and settles somewhere between 2.0 and 3.0 per cell depending on
+        // timing. That is real work and it is the subject of OB-053, which Adam has asked to be left
+        // alone for now. It is not asserted because there is nothing stable to assert - the total
+        // depends on when you stop watching.
+        //
+        // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes
+        // the count to 729 and fails this. Against the old bound of twice the cell count - 768 - the
+        // same mutation PASSED. So the assertion this test was named for could not catch the thing it
+        // was named for, and the tightening is not bookkeeping.
+        assertTrue(built[0] <= cells * 5 / 4,
+            "the grid built " + built[0]
+            + " labels for " + cells + " cells.  Building it constructs exactly one label per cell, "
+            + "measured six times; anything materially above that means the grid has started building "
+            + "itself more than once");
     }
 }

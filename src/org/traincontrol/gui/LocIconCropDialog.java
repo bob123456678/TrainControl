@@ -683,6 +683,16 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
+         * The picture being cropped, for a test that needs to know its size.
+         *
+         * @return the source image, exactly as it was handed in
+         */
+        public java.awt.image.BufferedImage source()
+        {
+            return this.source;
+        }
+
+        /**
          * The rectangle of the SOURCE picture the current view describes, in source pixels.
          *
          * Separated from the cut itself so that what the view amounts to can be examined without
@@ -693,16 +703,6 @@ public class LocIconCropDialog extends JDialog
          *
          * @return a rectangle wholly inside the source picture, never empty
          */
-        /**
-         * The picture being cropped, for a test that needs to know its size.
-         *
-         * @return the source image, exactly as it was handed in
-         */
-        public java.awt.image.BufferedImage source()
-        {
-            return this.source;
-        }
-
         public Rectangle sourceRect()
         {
             Rectangle window = cropWindow();

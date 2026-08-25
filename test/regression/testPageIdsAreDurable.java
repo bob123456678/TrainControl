@@ -1083,6 +1083,55 @@ public class testPageIdsAreDurable
             "after the prune the setup should know about exactly one page it cannot see");
     }
 
+    /**
+     * Two pages cannot come out of one write holding the same id (DR-B4).
+     *
+     * Nothing in the chain ever compared them. `writeLayoutIndex` wrote a duplicate straight back out;
+     * `setPageIds` inverts name-to-id into id-to-name, so the second page silently wins the number and
+     * the first page's settings resolve to the SECOND page's track; and `pageIdConflicts` - the one
+     * thing that reports a misnumbering - only fires when an id's name has changed, which for a
+     * straight duplicate it has not. Half of one page's setup attaches to another page with nothing to
+     * fire.
+     *
+     * The later claimant is the one that loses. Refusing the write would mean a page that cannot be
+     * saved, which is worse than the defect; and the first page keeps the id it has always had, so its
+     * settings stay where they are. The second page's settings were already unreachable, because the
+     * inversion was answering with the first page.
+     *
+     * MUTATION: removing the `issued` gate from the allocation loop fails this test.
+     */
+    @Test
+    public void testTwoPagesCannotShareAnId() throws IOException
+    {
+        // Written by hand, because writeLayoutIndex is the thing being tested and will not produce a
+        // duplicate to start from.  This is the state a corrupt file, or an older build, leaves.
+        Files.write(new File(new File(layout, "config"), "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+            + "seite\n .id=4\n .name=Alpha\n"
+            + "seite\n .id=4\n .name=Bravo\n").getBytes(StandardCharsets.UTF_8));
+
+        Map<String, Integer> read = ids();
+
+        assertEquals(read.get("Alpha"), read.get("Bravo"),
+            "the fixture is not a duplicate, so this test proves nothing: " + read);
+
+        // Any ordinary write - a page added, renamed, deleted - goes through here.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "Bravo")), null, 0);
+
+        Map<String, Integer> after = ids();
+
+        assertEquals(after.size(), 2, "a page went missing: " + after);
+
+        assertEquals(after.get("Alpha"), (Integer) 4,
+            "the FIRST claimant lost its id.  Its settings are keyed to 4 and would now be read as "
+            + "belonging to whatever page holds that number: " + after);
+
+        assertNotEquals(after.get("Bravo"), after.get("Alpha"),
+            "two pages still answer to one id, so half of one page's setup resolves to the other and "
+            + "nothing anywhere says so: " + after);
+    }
+
     private void write(String... pages) throws IOException
     {
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),

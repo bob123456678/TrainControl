@@ -32,14 +32,76 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class TileGraph
 {
     /**
+     * Something a setup collection is keyed by, which is always a square and sometimes more.
+     *
+     * FR-013 stage two. Ten of the eleven store collections are keyed by a bare {@link TileKey};
+     * `tileDirections` is keyed by a square AND a route across it, because a square can carry several
+     * routes and each has its own direction. Before this it was the one collection still keyed by a
+     * STRING, "page:x,y#state,index", parsed by hand at every site that touched it - and it had four
+     * helper methods of its own, duplicating the typed ones branch for branch, because erasure makes
+     * {@code Map<String, T>} and {@code Map<TileKey, T>} the same signature so they could not be
+     * overloaded.
+     *
+     * The '#' suffix was got wrong twice while it was a string: once as a `tileDirections.remove(key)`
+     * that could never match a suffixed key (DD-A1), and once in `forgetSquares`, which had to grow a
+     * loop of its own to handle it.
+     *
+     * The self type is what lets the bookkeeping helpers - move a square, rename a page, drop a key
+     * whose square is gone - be written once over both kinds of key and hand back the kind they were
+     * given. Every one of them does the same two things: ask which square a key is on, and produce the
+     * same key on a different square.
+     *
+     * @param <K> the implementing type itself
+     */
+    public interface SquareKeyed<K extends SquareKeyed<K>>
+    {
+        /**
+         * The square this key is on.
+         *
+         * @return the square, never null
+         */
+        TileKey square();
+
+        /**
+         * The same key, on a different square.
+         *
+         * @param square where it should be instead
+         * @return a new key, identical apart from its square
+         */
+        K withSquare(TileKey square);
+    }
+
+    /**
      * A tile's address: which page, and where on it.  Pages are named, so this survives the diagram being
      * reloaded as long as the tile is still there.
      */
-    public static class TileKey
+    public static class TileKey implements SquareKeyed<TileKey>
     {
         private final String page;
         private final int x;
         private final int y;
+
+        /**
+         * A square is its own square, so that a bare square and a square-plus-something can go through
+         * the same bookkeeping.
+         *
+         * @return this
+         */
+        @Override
+        public TileKey square()
+        {
+            return this;
+        }
+
+        /**
+         * @param square the square to move to
+         * @return that square, since a TileKey is nothing but its square
+         */
+        @Override
+        public TileKey withSquare(TileKey square)
+        {
+            return square;
+        }
 
         public TileKey(String page, int x, int y)
         {
@@ -186,6 +248,87 @@ public class TileGraph
         public int hashCode()
         {
             return state * 31 + index;
+        }
+    }
+
+    /**
+     * A square together with one route across it - what a recorded direction belongs to.
+     *
+     * FR-013 stage two, replacing the string "page:x,y#state,index" that `tileDirections` was keyed by.
+     * A square can carry several routes and each has its own direction, so the square alone is not
+     * enough to identify one; the string form is still what goes on disk, and is produced by
+     * {@link #toString()} at the boundary rather than assembled and picked apart at each site.
+     *
+     * @author Adam
+     */
+    public static class DirectionKey implements SquareKeyed<DirectionKey>
+    {
+        private final TileKey tile;
+        private final RouteId routeId;
+
+        /**
+         * @param tile the square
+         * @param routeId which route across it
+         */
+        public DirectionKey(TileKey tile, RouteId routeId)
+        {
+            this.tile = tile;
+            this.routeId = routeId;
+        }
+
+        /**
+         * @return which route across the square this is
+         */
+        public RouteId getRouteId()
+        {
+            return routeId;
+        }
+
+        @Override
+        public TileKey square()
+        {
+            return tile;
+        }
+
+        @Override
+        public DirectionKey withSquare(TileKey square)
+        {
+            return new DirectionKey(square, routeId);
+        }
+
+        /**
+         * The key as stored in the autonomy files: "page:x,y#state,index".
+         *
+         * Assembled here rather than at the call sites, which is half of what stage two buys: the
+         * suffix used to be built and parsed in a dozen places, and was got wrong in two of them.
+         *
+         * Note that RouteId's own toString puts a '#' between its two numbers, which is NOT the
+         * separator used here - the stored form has always been "#state,index" with a comma, and
+         * changing it would make every setup written before this build unreadable.
+         *
+         * @return the stored form
+         */
+        @Override
+        public String toString()
+        {
+            return tile.toString() + "#" + routeId.getState() + "," + routeId.getIndex();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof DirectionKey)) return false;
+
+            DirectionKey other = (DirectionKey) o;
+
+            return tile.equals(other.tile) && routeId.equals(other.routeId);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return tile.hashCode() * 31 + routeId.hashCode();
         }
     }
 

@@ -48,6 +48,9 @@ public class testAutonomyStoreSettingsMatrix
     private static final String PAGE = "main";
     private static final String OTHER_PAGE = "other";
 
+    /** A page no setting in this matrix is written on or points at, so deleting it is a no-op */
+    private static final String UNRELATED_PAGE = "spare";
+
     private static final TileKey ELSEWHERE = new TileKey(PAGE, 9, 9);
     private static final TileKey ON_ANOTHER_PAGE = new TileKey(OTHER_PAGE, 2, 2);
 
@@ -232,6 +235,81 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
+     * Every setting is forgotten when the page it is on is deleted.
+     *
+     * The column this matrix was missing, and the one with the worst consequence.  `deletePage`
+     * gathers the page's squares by naming all twelve collections one at a time - deliberately, so
+     * that testStoreCollectionsAreHandledEverywhere's textual guard governs it - and hands them to
+     * `forgetSquares`.  That guard only requires the collection's NAME to appear in the method.  A
+     * gathering loop that mentions `disabledPortals` and gathers nothing from it reads as covered and
+     * is not: the setting survives the page, keyed to track that no longer exists, and page-id reuse
+     * (testPageIdsAreDurable) then hands it to whatever page arrives next.
+     *
+     * Mutation this must fail: in `AutonomyCompanionStore.deletePage`, neuter one gathering loop while
+     * still naming its collection - `for (TileKey key : new LinkedHashSet<>(disabledPortals)) if
+     * (isOnPage(key, page)) squares.add(key);` becomes `... squares.size();`.  Before this test that
+     * mutant passed 85 tests across all four store guard classes.  It now fails one row here.
+     *
+     * The id-reuse half of the same loss is pinned separately and does not need repeating twelve
+     * times - see testPageIdsAreDurable.testAPageReusingARetiredIdInheritsNothing.  In this store the
+     * two are the same assertion anyway: keys carry the page NAME, so a page created again under the
+     * deleted page's name reads exactly the squares asserted absent below.
+     */
+    @Test
+    public void testEverySettingIsForgottenWhenItsPageIsDeleted()
+    {
+        for (Setting setting : SETTINGS)
+        {
+            AutonomyCompanionStore store = store();
+            TileKey doomed = on(OTHER_PAGE, 4, 4);
+
+            setting.write.accept(store, doomed);
+
+            // Assert the variable, not the control: without this a setting whose writer silently did
+            // nothing on a second page would read as absent afterwards and pass having tested nothing
+            assertNotEquals(setting.read.apply(store, doomed), absent(setting),
+                "the fixture wrote nothing onto the page it is about to delete: " + setting);
+
+            store.deletePage(OTHER_PAGE);
+
+            assertEquals(setting.read.apply(store, doomed), absent(setting),
+                setting + " survived the deletion of the page it was on.  It now describes track that "
+                + "does not exist, and the next page to take that name inherits it");
+        }
+    }
+
+    /**
+     * And deleting a page leaves every other page exactly as it was.
+     *
+     * The mirror, for the same reason the built-over test needs the moved test: "forget everything"
+     * passes the column above and empties the operator's whole setup because one page went.  The page
+     * deleted here holds nothing and is named by nothing, so the correct answer is that this store is
+     * untouched - which is the weakest form of the property and the only one that is free of the
+     * fixture's own cross-page values (the portal row pairs its square with a square on OTHER_PAGE, so
+     * deleting OTHER_PAGE is *meant* to break that pair).
+     */
+    @Test
+    public void testDeletingAPageLeavesEverySettingOnEveryOtherPageAlone()
+    {
+        for (Setting setting : SETTINGS)
+        {
+            AutonomyCompanionStore store = store();
+            TileKey kept = at(4, 4);
+
+            setting.write.accept(store, kept);
+
+            Object expected = setting.read.apply(store, kept);
+
+            assertNotEquals(expected, absent(setting), "the fixture writes nothing: " + setting);
+
+            store.deletePage(UNRELATED_PAGE);
+
+            assertEquals(setting.read.apply(store, kept), expected,
+                setting + " was forgotten because an unrelated page was deleted");
+        }
+    }
+
+    /**
      * Every setting comes back when a page is put back the way it was.
      *
      * What "exit without saving" is made of.  A setting the snapshot does not take is a setting the
@@ -293,6 +371,27 @@ public class testAutonomyStoreSettingsMatrix
 
     /**
      * Every setting survives being written to disk and read back.
+     *
+     * **With page ids set, which they had not been until DR-B8.** The store keys by page NAME in
+     * memory and by page ID on disk, and `setPageIds` is what tells it the mapping. Without that call
+     * `toStored` and `fromStored` pass keys through unchanged, `withoutAbsentPages` returns early on
+     * an empty index, and the held path never runs - so this test, whose whole charter is "every
+     * setting against every structural thing", round-tripped all twelve rows with the translation
+     * layer switched off.
+     *
+     * What that cost: a thirteenth collection whose author forgot the translate call passed all sixty
+     * cells of this matrix. The store has already had that defect once - `excludedPages` was written
+     * raw, and the comment where it was fixed says it "broke the rule setPageIds states".
+     *
+     * MUTATION: making `fromStored` return its argument unchanged fails this test. Before ids were
+     * set it did not, because with no ids to translate through, returning the argument unchanged is
+     * what the method already did.
+     *
+     * Recorded because it was measured rather than assumed: making `toStored` return its argument -
+     * the written-raw defect itself - does NOT fail this, and does not fail the renumber test either.
+     * A file written with page NAMES in it round-trips perfectly well as long as the names do not
+     * change. What it cannot survive is a RENAME, which is the whole reason the file is keyed by id,
+     * and that is what the third test below is for.
      */
     @Test
     public void testEverySettingSurvivesASaveAndLoad() throws IOException
@@ -304,6 +403,8 @@ public class testAutonomyStoreSettingsMatrix
             try
             {
                 AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
 
                 store.createConfiguration(CONFIGURATION, null);
                 store.setActiveConfiguration(CONFIGURATION);
@@ -317,6 +418,8 @@ public class testAutonomyStoreSettingsMatrix
                 store.save();
 
                 AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(pageIds());
                 reloaded.load();
 
                 assertEquals(setting.read.apply(reloaded, was), expected,
@@ -473,9 +576,271 @@ public class testAutonomyStoreSettingsMatrix
         return new LinkedHashSet<>(Arrays.asList(sides));
     }
 
+    /**
+     * Every setting survives its page being RENUMBERED while the file sits on disk.
+     *
+     * DR-B8's real subject. The test above now exercises the translation layer, but it translates
+     * through the same numbering both ways, so a store that simply wrote names would still pass it.
+     * This one changes the numbers between the save and the load, which is the thing page ids exist
+     * for: the layout index is rewritten - a page added, deleted or combined - and the number a page
+     * answers to is not the one it had when the setup was written.
+     *
+     * That is the MT-135 loss in miniature, and it cost Adam 19 point names, 14 stations, 22
+     * directions and 15 captions to a single rename on 23 August. It was found one setting at a time,
+     * which is the history this matrix's own javadoc warns about, and `testPageIdsAreDurable` still
+     * covers this ground for `pointNames` only.
+     *
+     * MUTATION: making `fromStored` return its argument unchanged fails this test, and does NOT fail
+     * the save-and-load test above - which is exactly the gap DR-B8 named.
+     */
+    @Test
+    public void testEverySettingSurvivesItsPageBeingRenumbered() throws IOException
+    {
+        for (Setting setting : SETTINGS)
+        {
+            File folder = Files.createTempDirectory("tc-matrix-renumber").toFile();
+
+            try
+            {
+                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
+
+                store.createConfiguration(CONFIGURATION, null);
+                store.setActiveConfiguration(CONFIGURATION);
+
+                TileKey was = at(4, 4);
+
+                setting.write.accept(store, was);
+
+                Object expected = setting.read.apply(store, was);
+
+                store.save();
+
+                // The layout index is rewritten and every page comes back under a different number.
+                // The NAMES are unchanged, which is the point: the setup is keyed by name in memory
+                // and by number on disk, so nothing the operator can see has moved.
+                Map<String, String> renumbered = new LinkedHashMap<>();
+
+                renumbered.put(PAGE, "7");
+                renumbered.put(OTHER_PAGE, "8");
+                renumbered.put(UNRELATED_PAGE, "9");
+
+                AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(renumbered);
+                reloaded.load();
+
+                assertEquals(setting.read.apply(reloaded, was), expected,
+                    setting + " did not survive its page being renumbered.  It is keyed by page ID on "
+                    + "disk, so a setup read through the wrong number lands on whatever track holds "
+                    + "that number today - which is the MT-135 loss");
+            }
+            finally
+            {
+                delete(folder);
+            }
+        }
+    }
+
+    /**
+     * Every setting survives its page being RENAMED while the file sits on disk.
+     *
+     * The case page ids exist for, and the one the other two cannot see. A setup written with page
+     * names in it round-trips fine under renumbering, because names do not change when numbers do -
+     * so DR-B8's "written raw" defect class needs a rename to show itself, and a rename is exactly
+     * what cost Adam his setup on 23 August (MT-135).
+     *
+     * The store is keyed by name in memory and by id on disk. A rename changes the name and keeps the
+     * id, so the entries have to be found through the id and come back under whatever the page is
+     * called now.
+     *
+     * The rename is driven the way the application drives it - `renamePage` in memory, then a save,
+     * then a load under the new name - because that is the sequence a menu item performs and this
+     * matrix exists to check the real path rather than a convenient one.
+     *
+     * **What was measured on the way, and is worth knowing.** Skipping the in-memory `renamePage` and
+     * simply reloading under the new index passes for ELEVEN of the twelve settings and fails for the
+     * twelfth, "what a configuration says about the square". The eleven live in setup.json, which is
+     * keyed by page ID, so they are found whatever the page is called now. The configurations are
+     * keyed by page NAME on disk and are never translated - the opposite keying, in the same folder -
+     * so they survive a rename only because the application rekeys them in memory first. That is not
+     * a defect today; it is a dependency nothing states, and it means a rename performed by any path
+     * that does not call `renamePage` orphans the configuration and nothing else.
+     *
+     * MUTATION: making `toStored` return its argument unchanged - writing page NAMES into setup.json,
+     * which is the defect `excludedPages` really had - fails this test, and fails neither of the two
+     * above.
+     */
+    @Test
+    public void testEverySettingSurvivesItsPageBeingRenamedOnDisk() throws IOException
+    {
+        for (Setting setting : SETTINGS)
+        {
+            File folder = Files.createTempDirectory("tc-matrix-rename").toFile();
+
+            try
+            {
+                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
+
+                store.createConfiguration(CONFIGURATION, null);
+                store.setActiveConfiguration(CONFIGURATION);
+
+                TileKey was = at(4, 4);
+
+                setting.write.accept(store, was);
+
+                Object expected = setting.read.apply(store, was);
+
+                // The rename, then the save, then the load - the order the menu item does it in.
+                store.renamePage(PAGE, "main renamed");
+
+                store.save();
+
+                // Same id, different name: what the index reports after a rename, and the one case a
+                // name-keyed file cannot survive on its own.
+                Map<String, String> afterRename = new LinkedHashMap<>();
+
+                afterRename.put("main renamed", "3");
+                afterRename.put(OTHER_PAGE, "4");
+                afterRename.put(UNRELATED_PAGE, "5");
+
+                AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(afterRename);
+                reloaded.load();
+
+                Object now = setting.read.apply(reloaded, new TileKey("main renamed", 4, 4));
+
+                assertEquals(String.valueOf(now), String.valueOf(renamed(expected)),
+                    setting + " did not survive its page being renamed on disk.  Its entries are "
+                    + "keyed by page id in the file precisely so that a rename cannot orphan them - "
+                    + "which is the loss MT-135 was");
+            }
+            finally
+            {
+                delete(folder);
+            }
+        }
+    }
+
+    /**
+     * Every id-keyed setting survives a rename that happened while nothing was running.
+     *
+     * The column that catches a raw write, and it took three attempts to find one that could. The
+     * other three all rename the page IN MEMORY first, which is what the menu item does - and a setup
+     * written with page names in it survives that perfectly well, because by the time it is saved the
+     * names in memory are already the new ones. Making `toStored` return its argument passes all
+     * three.
+     *
+     * What it cannot survive is a rename that the running application never saw: the page renamed
+     * with TrainControl closed, or on the other machine this layout syncs to, or through the Central
+     * Station. Then setup.json holds keys written under the OLD name and the index offers only the
+     * new one, and the only thing that can reunite them is the id - which is why the file is keyed by
+     * id and why `toStored` exists.
+     *
+     * **The configuration row is excluded, deliberately and by name.** `configurations` is keyed by
+     * page NAME on disk and is never translated - the opposite keying from setup.json, in the same
+     * folder - so it cannot survive this and is not expected to. That is not a defect today: every
+     * path that renames a page rekeys the configurations in memory first. It is a dependency that
+     * nothing stated until this test, and it means a rename by any path that does not call
+     * `renamePage` orphans the configuration and nothing else. Worth Adam knowing; not worth changing
+     * a file format over.
+     *
+     * MUTATION: making `toStored` return its argument unchanged fails this test on the eleven
+     * id-keyed settings, and fails none of the other three columns.
+     */
+    @Test
+    public void testEveryIdKeyedSettingSurvivesARenameNothingSaw() throws IOException
+    {
+        int checked = 0;
+
+        for (Setting setting : SETTINGS)
+        {
+            // See the javadoc: this one is name-keyed on disk by design.
+            if ("configurations".equals(setting.field)) continue;
+
+            checked++;
+
+            File folder = Files.createTempDirectory("tc-matrix-offline").toFile();
+
+            try
+            {
+                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
+
+                store.createConfiguration(CONFIGURATION, null);
+                store.setActiveConfiguration(CONFIGURATION);
+
+                TileKey was = at(4, 4);
+
+                setting.write.accept(store, was);
+
+                Object expected = setting.read.apply(store, was);
+
+                store.save();
+
+                // No renamePage: nothing was running when this happened.  All that changed is the
+                // index, which now gives id 3 a different name.
+                Map<String, String> afterRename = new LinkedHashMap<>();
+
+                afterRename.put("main renamed", "3");
+                afterRename.put(OTHER_PAGE, "4");
+                afterRename.put(UNRELATED_PAGE, "5");
+
+                AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(afterRename);
+                reloaded.load();
+
+                Object now = setting.read.apply(reloaded, new TileKey("main renamed", 4, 4));
+
+                assertEquals(String.valueOf(now), String.valueOf(renamed(expected)),
+                    setting + " did not survive a rename the application never saw.  setup.json is "
+                    + "keyed by page ID for exactly this: the name in the file is gone, and the id is "
+                    + "the only thing that can find these entries again");
+            }
+            finally
+            {
+                delete(folder);
+            }
+        }
+
+        assertEquals(checked, SETTINGS.size() - 1,
+            "this test skipped more than the one setting it means to skip, so it is checking less "
+            + "than it claims");
+    }
+
+    /**
+     * The numbering this matrix saves and loads through.
+     *
+     * Three pages, numbered from something other than one, so that a translation which happens to be
+     * the identity is not mistaken for one that works.
+     *
+     * @return page name to page id, in the string form the index hands out
+     */
+    private static Map<String, String> pageIds()
+    {
+        Map<String, String> ids = new LinkedHashMap<>();
+
+        ids.put(PAGE, "3");
+        ids.put(OTHER_PAGE, "4");
+        ids.put(UNRELATED_PAGE, "5");
+
+        return ids;
+    }
+
     private static TileKey at(int x, int y)
     {
         return new TileKey(PAGE, x, y);
+    }
+
+    private static TileKey on(String page, int x, int y)
+    {
+        return new TileKey(page, x, y);
     }
 
     private static void delete(File file)

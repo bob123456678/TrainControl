@@ -39,6 +39,16 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 # "Total tests run: 16, Failures: 0, Skips: 16" - zero failures, having tested nothing.
 JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
 
+# This run's own name, so the reaper can tell this battery's leftovers from anything else on the
+# machine - including another battery, and including a test somebody is running by hand.
+#
+# Without it the reaper matched every JVM carrying the receive-port flag, which is every test JVM
+# there is: a battery running in the background killed a hand-run test at exit 127 with no output,
+# which reads as the test hanging rather than as something else shooting it.
+RUN_ID="battery-$$"
+
+JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
+
 pass=0
 fail=0
 failed=""
@@ -53,8 +63,10 @@ do
     # hardcoded address" and blocks until that answers. It hung this runner for fourteen minutes.
     case "$cls" in *testAutoDetect) echo "SKIP $cls (needs a Central Station)"; continue;; esac
 
-    # Only OUR OWN leftover JVMs - reap.ps1 says why this is not "every java.exe".
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(pwd)/tools/reap.ps1" >/dev/null 2>&1
+    # Only THIS RUN's leftover JVMs - reap.ps1 says why that is narrower than "every test JVM", and
+    # narrower again than "every java.exe".
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(pwd)/tools/reap.ps1" \
+        -RunId "$RUN_ID" >/dev/null 2>&1
 
     out=$("$JAVA" $JAVA_FLAGS -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" 2>&1 | tail -4)
 

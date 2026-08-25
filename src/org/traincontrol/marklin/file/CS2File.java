@@ -2086,7 +2086,16 @@ public final class CS2File
 
                 Map<String, String> page = new java.util.LinkedHashMap<>();
                 page.put("name", name);
-                page.put("id", m.get("id") != null ? m.get("id") : String.valueOf(position));
+                // Through LayoutDiagram's rule rather than a second copy of it (DR-B4).
+                //
+                // This said `m.get("id") != null ? m.get("id") : position`, which is the same rule for
+                // an ABSENT id and a different one for a corrupt id: a `.id=` line that is not a
+                // number came through here unchanged and came out of readLayoutIndexIds as the page's
+                // position. The autonomy setup is keyed by whatever this says, and the id allocator by
+                // whatever that says, so the two disagreeing means a setup keyed to ids the index does
+                // not believe.
+                page.put("id", String.valueOf(
+                    org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 
                 out.add(page);
             }

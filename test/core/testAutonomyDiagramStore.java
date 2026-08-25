@@ -62,6 +62,62 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A direction belongs to one route across a square, and which route survives being written down.
+     *
+     * FR-013 stage two. `tileDirections` is keyed by a square AND a route across it - a crossing or a
+     * switch carries several, and each has its own direction - and until this conversion that key was
+     * the string "page:x,y#state,index", written and read back verbatim. Verbatim is why nothing
+     * needed to test it: whatever went out came back, correct or not.
+     *
+     * A typed key has to be PARSED on the way in, which is a new thing that can be wrong. It was found
+     * by breaking it: swapping the two route numbers in `readDirectionMap` passed all 64 tests in this
+     * class and all 9 in the settings matrix, because every fixture in the repository used
+     * `RouteId(0, 0)` - a pair that reads the same either way round.
+     *
+     * So this uses routes whose two numbers differ AND differ from each other's, on ONE square, which
+     * is the case the compound key exists for. A store that lost the route half would answer the same
+     * direction for both.
+     *
+     * MUTATIONS, both fail this test: swapping `route[0]` and `route[1]` in `readDirectionMap`; and
+     * keying by the square alone.
+     */
+    @Test
+    public void testTwoRoutesAcrossOneSquareKeepTheirOwnDirections() throws IOException
+    {
+        TileKey crossing = new TileKey("1 - Main", 6, 6);
+
+        // Deliberately asymmetric, and deliberately each other's mirror.
+        RouteId straight = new RouteId(1, 3);
+        RouteId turning = new RouteId(3, 1);
+
+        store.setTileDirection(crossing, straight, Direction.TOWARD_A);
+        store.setTileDirection(crossing, turning, Direction.TOWARD_B);
+
+        assertEquals(store.getTileDirection(crossing, straight), Direction.TOWARD_A,
+            "the two routes are sharing one entry before anything has even been written - the key is "
+            + "not distinguishing them at all");
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertEquals(reloaded.getTileDirection(crossing, straight), Direction.TOWARD_A,
+            "the direction of route 1,3 came back wrong - the route half of the key did not survive "
+            + "being written down and read back");
+
+        assertEquals(reloaded.getTileDirection(crossing, turning), Direction.TOWARD_B,
+            "the direction of route 3,1 came back wrong.  It is route 1,3 reversed, so a reader that "
+            + "swaps the two numbers answers this one with the other one's direction");
+
+        // And a route that was never given a direction still has none, so the two above are not
+        // simply the same answer handed to everybody.
+        assertNull(reloaded.getTileDirection(crossing, new RouteId(2, 2)),
+            "a route nobody set a direction for has one, so the key is answering more broadly than it "
+            + "should");
+    }
+
+    /**
      * Autonomy needs somewhere to put its files, and a layout read from the Central Station has no folder
      * until it is downloaded.  The store says so rather than pretending to save.
      */

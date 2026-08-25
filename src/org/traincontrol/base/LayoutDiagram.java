@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
@@ -826,6 +827,40 @@ public class LayoutDiagram
     }
 
     /**
+     * What id a page in the index has, given what its `.id=` line said and where it sits.
+     *
+     * The one statement of a rule that had two implementations (DR-B4). Both this file and `CS2File`
+     * parse `gleisbild.cs2`, both apply "no id means the page's position", and they were connected by
+     * a sentence in the javadoc below - *"which is what CS2File does with the same file"*. One feeds
+     * the id allocator; the other feeds `setPageIds` and therefore every stored key. Where they
+     * disagree, the setup is keyed by ids the index does not believe, which is the misattachment
+     * class with no rename anywhere in sight.
+     *
+     * They already disagreed. On a corrupt `.id=` line this file fell back to the position and
+     * `CS2File` passed the unparsed string straight through, so the same page had two different ids
+     * depending on who was asking. Falling back is the right answer of the two - a page's position is
+     * at least a number, and a number is what everything downstream expects - so that is what both do
+     * now.
+     *
+     * @param idText what the `.id=` line said, or null when the page had none
+     * @param position the page's place in the file, counting from one
+     * @return the id to use
+     */
+    public static int pageIdOrPosition(String idText, int position)
+    {
+        if (idText == null) return position;
+
+        try
+        {
+            return Integer.parseInt(idText.trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return position;
+        }
+    }
+
+    /**
      * The page id each name has in the index as it stands on disk.
      *
      * Parsed rather than taken from the running model, because this is about what the FILE says: the
@@ -850,7 +885,7 @@ public class LayoutDiagram
         try
         {
             int position = 0;
-            Integer id = null;
+            String idText = null;
 
             for (String line : readIndexLines(index))
             {
@@ -859,22 +894,16 @@ public class LayoutDiagram
                 if ("seite".equals(trimmed))
                 {
                     position++;
-                    id = null;
+                    idText = null;
                 }
                 else if (trimmed.startsWith(".id="))
                 {
-                    try
-                    {
-                        id = Integer.parseInt(trimmed.substring(4).trim());
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        id = null;
-                    }
+                    idText = trimmed.substring(4);
                 }
                 else if (trimmed.startsWith(".name="))
                 {
-                    out.put(trimmed.substring(6), id == null ? position : id);
+                    // Through the shared rule rather than inline (DR-B4).
+                    out.put(trimmed.substring(6), pageIdOrPosition(idText, position));
                 }
             }
         }
@@ -1144,6 +1173,20 @@ public class LayoutDiagram
             if (taken != null && taken >= next) next = taken + 1;
         }
 
+        // Every id issued so far in THIS write, so that two pages cannot leave holding one (DR-B4).
+        //
+        // Nothing in the chain compared them. A duplicate in the file was written straight back out;
+        // `setPageIds` inverts name->id into id->name, so the second page silently wins and the first
+        // page's settings resolve to it; and `pageIdConflicts`, the one thing that reports a
+        // misnumbering, only fires when an id's NAME has changed. Half of one page's setup would
+        // attach to the other with nothing to fire.
+        //
+        // Reissued rather than refused. Refusing means a page that cannot be saved, which is worse
+        // than the thing being fixed, and the page that loses the argument is the LATER one - so the
+        // first claimant keeps its settings and the second gets a number of its own. Its settings were
+        // already unreachable before this, since the inversion was answering with the other page.
+        Set<Integer> issued = new java.util.LinkedHashSet<>();
+
         for (String layout : layoutList)
         {
             Integer id = existing.get(layout);
@@ -1159,6 +1202,12 @@ public class LayoutDiagram
             }
 
             if (id == null) id = next++;
+
+            // Taken already, by a page written a moment ago in this same loop.
+            while (!issued.add(id))
+            {
+                id = next++;
+            }
 
             contents.append("seite\n");
 
@@ -1186,6 +1235,10 @@ public class LayoutDiagram
                 Integer id = existing.get(held);
 
                 if (id == null || layoutList.contains(held)) continue;
+
+                // The same gate as the loop above.  A held-back page whose id has since been issued to
+                // a loaded page would otherwise reintroduce exactly the duplicate that was just closed.
+                if (!issued.add(id)) continue;
 
                 contents.append("seite\n");
                 contents.append(" .id=").append(id).append("\n");
