@@ -290,6 +290,41 @@ public class MarklinRoute extends Route
     }
     
     /**
+     * The first accessory this route would set that autonomy has locked, or null if none.
+     *
+     * Asked of `getActiveAccs`, which is the same set the diagram's tile click asks and whose own
+     * javadoc says it exists "to WARN before throwing an accessory on an active route". Route
+     * execution never asked it (AU-A2).
+     *
+     * Silent when autonomy is not running, which is when routes are most of what this application is
+     * for - nothing about ordinary route use changes.
+     *
+     * @return the accessory's name, for the log, or null when the route is safe to run
+     */
+    private String accessoryHeldByAutonomy()
+    {
+        if (!this.network.hasAutoLayout() || !this.network.isAutonomyRunning()) return null;
+
+        java.util.Collection<Accessory> locked = this.network.getAutoLayout().getActiveAccs();
+
+        if (locked == null || locked.isEmpty()) return null;
+
+        for (RouteCommand rc : this.route)
+        {
+            if (rc == null || !rc.isAccessory()) continue;
+
+            // By address AND protocol, which is how the route names it and how the station resolves
+            // it - a bare address is ambiguous across decoder types on this railway.
+            MarklinAccessory accessory =
+                this.network.getAccessoryByAddressIfPresent(rc.getAddress(), rc.getProtocol());
+
+            if (accessory != null && locked.contains(accessory)) return accessory.getName();
+        }
+
+        return null;
+    }
+
+    /**
      * Executes the route
      * @param auto - was the route triggered automatically?
      * @param recursionLimit - the maximum number of other routes that can be triggered from this route
@@ -323,6 +358,37 @@ public class MarklinRoute extends Route
                 // route silently returned false for the rest of the session.
                 try
                 {
+                    // Not onto track a train is running over (AU-A2).
+                    //
+                    // Route execution and autonomy path locking each worked exactly as designed and
+                    // neither consulted the other. `configureAndLockPath` reserves every accessory on
+                    // a path, commands it and validates it; a route then set the same accessory back,
+                    // with no refusal and nothing said. The train is routed off its protected path.
+                    //
+                    // Three doors reached it and the automatic one is the worst: an s88 trigger route
+                    // left over from manual operation fires when an AUTONOMY train crosses the trigger
+                    // sensor - sensors are shared and reused on this railway - so no person is
+                    // involved at all. The diagram's route tile looked guarded and was not: that guard
+                    // asks `activeAccs.contains(c.getAccessory())`, and a route component's accessory
+                    // is null.
+                    //
+                    // REFUSED rather than confirmed, and refused WHOLE. This class is the model half
+                    // and has no business showing a dialog - the tile-click door already asks, for the
+                    // one case where a person is present - and a route half executed leaves the layout
+                    // in a state nobody chose. Adam's rule for a running layout is the same shape:
+                    // "Never allow any modifications to a running layout."
+                    //
+                    // Only the accessories that are actually on a locked path, so a route that turns
+                    // on the lights or stops the power runs during autonomy exactly as before.
+                    String held = accessoryHeldByAutonomy();
+
+                    if (held != null)
+                    {
+                        this.network.logf("route.refusedAccessoryOnActivePath", this.getName(), held);
+
+                        return;
+                    }
+
                     for (RouteCommand rc : this.route)
                     {
                         if (rc != null)

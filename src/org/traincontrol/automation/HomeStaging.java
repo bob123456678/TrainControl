@@ -1372,6 +1372,32 @@ public final class HomeStaging
      *
      * The same rule canEnter enforces between a train and the section it wants to enter, asked here
      * between two goals instead.
+     *
+     * **A review argued this should ask the BLOCK, like the proof below it, and I have left it asking
+     * the sensor. Recorded because the argument is good and the decision is Adam's.**
+     *
+     * The case for changing it: the railway's own mutual exclusion is `getBlockLocomotive`, and
+     * AutonomyBuilder says outright that a station, its approach guard and a reversing point can be
+     * three Points on one feedback - so "one sensor" is not "one piece of track". On Adam's own graph
+     * BottomMainC and BottomMainCTerm share feedback 4 with no block between them, and homing two
+     * locomotives there answers IMPOSSIBLE naming both. That is the same false-proof shape as AU-A1,
+     * twelve lines away, and it was found by the pass that validated the AU-A1 fix.
+     *
+     * The case against changing it, which is why it has not been: `canEnter` enforces the sensor rule
+     * deliberately and structurally, so the planner genuinely will not produce that arrangement. The
+     * claim "no arrangement exists" is therefore true of every arrangement this planner can reach -
+     * self-consistent, if narrower than the railway. Removing it does not make the plan appear; it
+     * turns an instant IMPOSSIBLE naming both locomotives into a search that burns its whole budget
+     * and answers "maybe". Adam's layout has eleven shared sensors, so that is a real cost on every
+     * Return Home, and `testTwoActivePointsSharingASensorAreNeverBothOccupied` argues exactly that.
+     *
+     * **It is the same decision as the sensor-versus-block divergence in `plannedOccupancy`,** and
+     * both should move together or not at all - which is precisely why neither moved at the end of an
+     * autonomous round. See MT-187.
+     *
+     * @param a one home
+     * @param b the other
+     * @return true when the planner treats a train at one as a train at the other
      */
     private boolean sharesSection(Point a, Point b)
     {
