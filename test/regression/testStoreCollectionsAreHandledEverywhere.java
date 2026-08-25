@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 
 /**
- * Every collection the store keeps is handled everywhere the store does bookkeeping.
+ * Every collection the store keeps is in the registry, and the registry is what the sites walk.
  *
  * DD-A1 / OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection
  * shape at fourteen sites - saving, loading, clearing, renaming a page, moving squares, forgetting
@@ -33,13 +33,23 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  * `captions` missing from `KNOWN_SHARED`, which reverted every caption edit on the next save;
  * directions left behind by every move; captions rekeyed on one side only.
  *
- * **What this test does, and what it deliberately does not.** The review's own recommendation is a
- * registry of kept collections, each knowing how to do the bookkeeping to itself - roughly 830 lines
- * restructured. That is the better end state and it is also the biggest blast radius in the file, so it
- * is not what this is. This closes the defect CLASS by a cheaper route: it reads the source, and a
- * collection missing from a site fails the build with the site named.
+ * **This test used to be the whole answer, and now it is half of one.** For as long as each site
+ * listed the collections by hand, this read the source and failed the build when a collection was
+ * missing from one of them - every omission above would have been caught on the commit that
+ * introduced it. The registry the review actually recommended landed in OB-025, so the sites no longer
+ * list anything: they walk `kept()`. Adding a collection is one entry.
  *
- * Every omission listed above would have been caught by it on the commit that introduced it.
+ * So what is left to check is different, and smaller:
+ *
+ *   - Nothing the store holds is unclassified. Unchanged, and still the first line of defence: a
+ *     collection nobody classified is how the eleventh one took five commits to finish adding.
+ *   - Every kept collection is IN the registry. This is the new single point of failure and it is the
+ *     only one that a compiler cannot check - a `Kept` subclass that forgets a method will not build,
+ *     but a collection that is simply never registered builds perfectly and does nothing.
+ *   - Every site that used to list them walks the registry instead. Guards against a collection being
+ *     quietly re-inlined at one site, which would put the divergence back.
+ *   - `reconcile` and `applyTo` still name every collection, because those two are still written by
+ *     hand on purpose (DD-D9): each asks a question the registry cannot express.
  *
  * The exemptions below are the other half of the value. DD-A1's complaint about `reconcile` was not
  * only that two collections were missing, but that "there is no comment claiming this is deliberate,
@@ -85,16 +95,38 @@ public class testStoreCollectionsAreHandledEverywhere
     }
 
     /**
-     * The bookkeeping sites, by the name of the method or constant that performs them.
+     * The two bookkeeping sites still written out by hand, and why they are.
+     *
+     * DD-D9, carried into OB-025's ticket as a condition on doing it at all: these must stay
+     * hand-written. Each asks a question a registry cannot express. `reconcile` decides what a
+     * square's absence from the diagram MEANS, and the answer differs per collection - a caption goes
+     * when either the square it is drawn on or the sensor it is about goes, which is a rule of its
+     * own. `applyTo` populates the tile GRAPH, which models track and has nowhere to put a name.
+     *
+     * A registry entry answering "not applicable" for these would be pretending they are uniform, so
+     * they are still checked the old way: name every collection, or say why not.
      */
-    private static final String[] SITES =
+    private static final String[] SITES = { "reconcile", "applyTo" };
+
+    /**
+     * The sites that DO walk the registry, by the name of the method that performs them.
+     *
+     * Each of these used to carry its own list of the twelve collections. What is checked now is that
+     * they still walk `kept()` - a collection re-inlined at one of them would put the divergence back,
+     * one site at a time, which is exactly how the file got into the state OB-025 was raised about.
+     */
+    private static final String[] REGISTRY_SITES =
     {
-        "sharedFields", "KNOWN_SHARED", "readShared", "clear", "clearShared", "renamePage",
-        "moveTiles", "forgetSquares", "snapshotPage", "restorePage", "reconcile", "applyTo",
+        "sharedFields", "readShared", "clear", "clearShared", "renamePage", "moveTiles",
+        "forgetSquares", "snapshotPage", "restorePage",
         // deletePage gathers the page's squares and hands them to forgetSquares. It is on this list
         // because the GATHERING has to know every collection: one missed means a page's worth of that
         // one setting survives the page, keyed to track that is gone.
         "deletePage",
+        // Not a bookkeeping site but the same failure: the file's known-field list. A collection
+        // missing from it is read into its own collection AND kept as an unknown field, so the next
+        // save writes both and the stale copy wins. That is what reverted every caption edit.
+        "knownShared",
     };
 
     /**
@@ -107,16 +139,10 @@ public class testStoreCollectionsAreHandledEverywhere
 
     static
     {
-        // excludedPages is keyed by PAGE, not by square, so the square-level sites have nothing to say
-        // about it.
-        EXEMPT.put("moveTiles:excludedPages", "keyed by page, and moving squares does not move a page");
-        EXEMPT.put("forgetSquares:excludedPages", "keyed by page; deleting squares never deletes one");
-        EXEMPT.put("snapshotPage:excludedPages", "the page's own exclusion is not part of its contents");
-        EXEMPT.put("restorePage:excludedPages", "as snapshotPage");
+        // excludedPages is keyed by PAGE, not by square.  The square-level sites used to need an
+        // exemption each; now the collection says so once, in its own registry entry, and only the
+        // hand-written pair still need it here.
         EXEMPT.put("reconcile:excludedPages", "reconcile compares SQUARES against the diagram");
-
-        // Written under a different name in the file than in the code
-        EXEMPT.put("KNOWN_SHARED:disabledPortals", "listed by its JSON name, disabledLinks");
 
         // Handled by a helper of its own, called from here
         EXEMPT.put("reconcile:captions", "done by reconcileCaptions - a caption goes when either the "
@@ -157,14 +183,68 @@ public class testStoreCollectionsAreHandledEverywhere
 
         assertTrue(unclassified.isEmpty(),
             "the store holds collections this test has never been told about: " + unclassified
-            + ". Add each to KEPT - and then to all " + SITES.length + " bookkeeping sites, which is "
-            + "what the rest of this test will insist on - or to NOT_KEPT with the reason it is not "
-            + "part of the setup. A collection nobody classified is how the eleventh one took five "
-            + "commits to finish adding");
+            + ". Add each to KEPT - and then to the store's registry, which is what the rest of this "
+            + "test will insist on - or to NOT_KEPT with the reason it is not part of the setup. A "
+            + "collection nobody classified is how the eleventh one took five commits to finish "
+            + "adding");
     }
 
     /**
-     * And every kept collection is named at every site.
+     * Every kept collection is in the registry.
+     *
+     * The one thing the compiler cannot check about this design. A `Kept` subclass that forgets a
+     * method will not build; a collection that is simply never registered builds perfectly, and does
+     * nothing at ten sites at once - which is worse than the state this replaced, not better, because
+     * there is now nowhere else it could have been handled.
+     */
+    @Test
+    public void testEveryKeptCollectionIsRegistered() throws Exception
+    {
+        String body = withoutComments(bodyOf(source(), "kept"));
+
+        assertNotNull(body, "no kept() in the store - if the registry was renamed, rename it here "
+            + "too, because this test is the only thing checking every collection is in it");
+
+        List<String> missing = new ArrayList<>();
+
+        for (String kept : KEPT)
+        {
+            if (!body.contains(kept)) missing.add(kept);
+        }
+
+        assertEquals(missing, new ArrayList<String>(),
+            missing + ": a collection the store keeps is not in the registry, so nothing clears it, "
+            + "saves it, loads it, renames it, moves it, forgets it, snapshots it or deletes it with "
+            + "its page. That is every bookkeeping site at once");
+    }
+
+    /**
+     * And every site that used to list the collections walks the registry instead.
+     */
+    @Test
+    public void testEverySiteWalksTheRegistry() throws Exception
+    {
+        List<String> notWalking = new ArrayList<>();
+
+        for (String site : REGISTRY_SITES)
+        {
+            String body = withoutComments(bodyOf(source(), site));
+
+            assertNotNull(body, "no site called " + site + " in the store - if it was renamed, rename "
+                + "it in REGISTRY_SITES too, because this test is the only thing checking it still "
+                + "covers everything");
+
+            if (!body.contains("kept()")) notWalking.add(site);
+        }
+
+        assertEquals(notWalking, new ArrayList<String>(),
+            notWalking + ": a bookkeeping site has stopped walking the registry. Whatever it does "
+            + "instead is a list of collections that can now fall out of step with the other nine - "
+            + "which is the state OB-025 was raised about, arriving one site at a time");
+    }
+
+    /**
+     * And every kept collection is named at the sites still written by hand.
      */
     @Test
     public void testEveryKeptCollectionIsHandledAtEverySite() throws Exception
@@ -254,6 +334,25 @@ public class testStoreCollectionsAreHandledEverywhere
      * tests that do this - a test helper reaching into another test class is a dependency between
      * things that are supposed to fail independently.
      */
+    /**
+     * The store's source, or a failure that says so.
+     *
+     * A test that reads the source cannot pass by not finding it. This used to be three copies of the
+     * same two lines; the assertion inside is the reason they existed and it is kept.
+     *
+     * @return the file's text
+     * @throws Exception if it cannot be read
+     */
+    private String source() throws Exception
+    {
+        assertTrue(SOURCE.isFile(),
+            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass "
+            + "by not finding it. Renaming or moving that file would otherwise have taken this rule "
+            + "with it and said nothing");
+
+        return new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+    }
+
     private String withoutComments(String body)
     {
         if (body == null) return null;

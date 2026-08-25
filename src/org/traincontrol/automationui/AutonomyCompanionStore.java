@@ -1643,21 +1643,16 @@ public class AutonomyCompanionStore
 
         root.put("pages", new JSONObject(pages));
 
-        root.put("pointNames", new JSONObject(translateKeys(pointNames)));
-        root.put("stations", new JSONArray(translateSet(stations)));
-        root.put("tileLengths", new JSONObject(translateLengths()));
-        root.put("tileDirections", new JSONObject(translateKeys(tileDirections)));
-        root.put("barredArrivals", new JSONObject(translateKeys(barredArrivals)));
-        root.put("stationSignals", new JSONObject(translateTileListMap(stationSignals)));
-        root.put("blockedPoints", new JSONObject(translateTileListMap(blockedPoints)));
-        root.put("portals", new JSONObject(translatePortals()));
-        root.put("captions", new JSONObject(translateTileMap(captions)));
-        root.put("linkNames", new JSONObject(translateKeys(linkNames)));
-        // By page ID, like the other nine.  This was the one collection written raw, and it broke the
-        // rule setPageIds states: a rename orphaned it, so an excluded page silently rejoined autonomy
-        // and its old name sat in the set for ever because nothing prunes it.
-        root.put("excludedPages", new JSONArray(translatePages(excludedPages)));
-        root.put("disabledLinks", new JSONArray(translateSet(disabledPortals)));
+        // Each collection writes itself under the name it has in the FILE, which is not always the
+        // name it has in the code - `disabledPortals` goes out as `disabledLinks`, and that mismatch
+        // used to need an exemption in the textual guard because the name appeared in only one of the
+        // two places.  It is stated once now, in the registry.
+        //
+        // Every one of these is keyed by page ID.  `excludedPages` was for a long time the single
+        // exception, written raw, and it broke the rule setPageIds states: a rename orphaned it, so an
+        // excluded page silently rejoined autonomy and its old name sat in the set for ever because
+        // nothing prunes it.
+        for (Kept k : kept()) k.write(root);
 
         // Whatever was held back because its page is not loaded goes back in exactly as it came
         // (OB-067).  Without this, one save while a page's file is missing deletes that page's whole
@@ -1955,18 +1950,8 @@ public class AutonomyCompanionStore
      */
     private void clearShared()
     {
-        pointNames.clear();
-        stations.clear();
-        tileLengths.clear();
-        tileDirections.clear();
-        barredArrivals.clear();
-        stationSignals.clear();
-        blockedPoints.clear();
-        portals.clear();
-        captions.clear();
-        linkNames.clear();
-        excludedPages.clear();
-        disabledPortals.clear();
+        for (Kept k : kept()) k.clear();
+
         unknownSharedFields.clear();
         pageNamesWhenWritten.clear();
         heldForAbsentPages.clear();
@@ -2234,51 +2219,17 @@ public class AutonomyCompanionStore
      */
     public void renamePage(String from, String to)
     {
-        rekey(pointNames, from, to);
-        rekey(tileLengths, from, to);
-        rekey(tileDirections, from, to);
-        rekey(barredArrivals, from, to);
-
-        // Both halves, like the captions: the key is the station's square and the value is the
-        // signal's, and a rename moves both.
-        rekeyListValues(stationSignals, from, to);
-        rekey(stationSignals, from, to);
-        rekeyListValues(blockedPoints, from, to);
-        rekey(blockedPoints, from, to);
-        rekeyValues(portals, from, to);
-        rekey(portals, from, to);
-        rekey(linkNames, from, to);
-
-        // Captions are keyed by the square the text sits on AND point at the square of the station -
-        // both are tile keys, so both move.  Rekeying only the keys left every caption on the page
-        // pointing at a station on a page that no longer exists, and the next save deleted them for
-        // good as unreconcilable.
-        rekeyValues(captions, from, to);
-        rekey(captions, from, to);
-
-        // And a link switched off is remembered by its square, so a rename turned every one of them
-        // back on - silently, and only on the renamed page.
-        Set<TileKey> renamedPortals = new LinkedHashSet<>();
-
-        for (TileKey key : disabledPortals)
-        {
-            renamedPortals.add(rekeyOne(key, from, to));
-        }
-
-        disabledPortals.clear();
-        disabledPortals.addAll(renamedPortals);
-
-        Set<TileKey> renamedStations = new LinkedHashSet<>();
-
-        for (TileKey key : stations)
-        {
-            renamedStations.add(rekeyOne(key, from, to));
-        }
-
-        stations.clear();
-        stations.addAll(renamedStations);
-
-        if (excludedPages.remove(from)) excludedPages.add(to);
+        // Each collection knows which of its halves name a square.  Both of the bugs this method
+        // records were a half left behind:
+        //
+        //   Captions are keyed by the square the text sits on AND point at the square of the station.
+        //   Rekeying only the keys left every caption on the page pointing at a station on a page that
+        //   no longer existed, and the next save deleted them for good as unreconcilable.
+        //
+        //   A link switched off is remembered by its square, so a rename turned every one of them back
+        //   on - silently, and only on the renamed page.  That collection was simply not in this
+        //   method: it was the eleventh added, and this was one of the four sites it was missed at.
+        for (Kept k : kept()) k.renamePage(from, to);
 
         // AND the numbering, which this did not touch and which every translation asks (OB-092).
         //
@@ -2366,53 +2317,17 @@ public class AutonomyCompanionStore
 
         Set<TileKey> squares = new LinkedHashSet<>();
 
-        // Every collection keyed by square.  Named individually rather than gathered by a helper so
-        // that testStoreCollectionsAreHandledEverywhere governs this method too - a collection added
-        // later has to be added here, and the test says so before anybody notices in the field.
-        for (TileKey key : new LinkedHashSet<>(pointNames.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(tileLengths.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(barredArrivals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(linkNames.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(stationSignals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(blockedPoints.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(portals.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(captions.keySet())) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(stations)) if (isOnPage(key, page)) squares.add(key);
-        for (TileKey key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);
-
-        // tileDirections is keyed by the square AND a route across it, so the square has to be asked
-        // for rather than assumed - this list is of bare squares.  Since FR-013 stage two that is one
-        // method call rather than a string split; it was the same distinction the eleventh member of
-        // forgetSquares' own list got wrong.
-        for (DirectionKey key : new LinkedHashSet<>(tileDirections.keySet()))
-        {
-            TileKey bare = key.square();
-
-            if (bare != null && isOnPage(bare, page)) squares.add(bare);
-        }
-
-        // And squares on this page that only ever appear as a VALUE.
+        // Every square this page names, as a key OR as a value.
         //
-        // A protecting signal, a blocker or the far end of a portal can sit on this page while having
-        // no entry of its own - nothing is recorded ABOUT that square, it is only pointed AT. Gathering
-        // by key alone missed those, so the pointer survived the page and dangled until the next
-        // reconcile happened to tidy it.
+        // The value half matters and was missed once: a protecting signal, a blocker or the far end of
+        // a portal can sit on this page while having no entry of its own - nothing is recorded ABOUT
+        // that square, it is only pointed AT.  Gathering by key alone left the pointer behind when the
+        // page went, dangling until some later reconcile happened to tidy it.
         //
-        // renamePage handles the value half explicitly, by rekeying values as well as keys. This is
-        // the same half, and this method's own contract already claimed to cover it. Found by review.
-        for (List<TileKey> signals : stationSignals.values())
-        {
-            for (TileKey signal : signals) if (isOnPage(signal, page)) squares.add(signal);
-        }
-
-        for (List<TileKey> blockers : blockedPoints.values())
-        {
-            for (TileKey blocker : blockers) if (isOnPage(blocker, page)) squares.add(blocker);
-        }
-
-        for (TileKey far : portals.values()) if (isOnPage(far, page)) squares.add(far);
-
-        for (TileKey station : captions.values()) if (isOnPage(station, page)) squares.add(station);
+        // And a direction is keyed by the square AND a route across it, so the square has to be asked
+        // for rather than assumed.  That is the same distinction the eleventh member of forgetSquares'
+        // own list once got wrong.  Both facts now live with the collection they are about.
+        for (Kept k : kept()) k.squaresOn(page, squares);
 
         forgetSquares(squares);
 
@@ -2591,37 +2506,19 @@ public class AutonomyCompanionStore
 
         if (byKey.isEmpty()) return;
 
-        moveKeys(pointNames, byKey);
-        moveKeys(tileLengths, byKey);
-        // A direction belongs to a square AND a route across it, and for as long as that was written
-        // as a string this line could not be here at all: moveKeys matched whole keys, so it never
-        // matched one of these, and a moved tile left every facing behind on the square the track had
-        // walked away from - dropped by the next reconcile, which did know about the suffix.  That is
-        // the same loss moveTiles exists to prevent, hiding behind a key shape.
-        //
-        // It took a second map of the moves in string form to fix, kept in step with this one by
-        // being rebuilt from it.  Since FR-013 stage two there is one map of moves and one method,
-        // because moveKeys asks a key which square it is on rather than assuming the key IS one.
-        moveKeys(tileDirections, byKey);
-        moveKeys(barredArrivals, byKey);
-        moveKeys(linkNames, byKey);
-
-        // Key and value both name a square, so both follow.  The value is REPOINTED rather than
+        // Where both halves name a square, both follow - and the value is REPOINTED rather than
         // moved: a caption on a square that stayed put, naming a station that moved, still names that
         // station.
-        moveListValues(stationSignals, byKey);
-        moveKeys(stationSignals, byKey);
-        moveListValues(blockedPoints, byKey);
-        moveKeys(blockedPoints, byKey);
-
-        moveValues(portals, byKey);
-        moveKeys(portals, byKey);
-
-        moveValues(captions, byKey);
-        moveKeys(captions, byKey);
-
-        moveMembers(stations, byKey);
-        moveMembers(disabledPortals, byKey);
+        //
+        // A direction belongs to a square AND a route across it, and for as long as that was written
+        // as a string it could not be moved at all: moveKeys matched whole keys, so it never matched
+        // one of these, and a moved tile left every facing behind on the square the track had walked
+        // away from - dropped by the next reconcile, which did know about the suffix.  That is the
+        // same loss moveTiles exists to prevent, hiding behind a key shape.  It took a second map of
+        // the moves in string form to fix, kept in step with this one by eye.  Since FR-013 stage two
+        // there is one map of moves and one method, because moveKeys asks a key which square it is on
+        // rather than assuming the key IS one.
+        for (Kept k : kept()) k.move(byKey);
 
         // The configurations key by tile as well - setPointProperty and captureFromLayout both write
         // "page:x,y" - and that is where the facings, the placements, the homes, the termini and the
@@ -2687,22 +2584,15 @@ public class AutonomyCompanionStore
 
         if (page == null) return out;
 
-        out.put("pointNames", onPage(pointNames, page));
-        out.put("tileLengths", onPage(tileLengths, page));
-        out.put("tileDirections", onPage(tileDirections, page));
-        out.put("barredArrivals", onPage(barredArrivals, page));
-        out.put("linkNames", onPage(linkNames, page));
-        // COPIED, not shared.  Every other collection here holds strings and numbers, which cannot
-        // change underneath a snapshot; this one holds LISTS, and forgetTiles calls removeAll on them
-        // in place - so deleting the signal's square emptied the snapshot's list too and undo restored
-        // the deletion.
-        out.put("stationSignals", copyLists(onPage(stationSignals, page)));
-        out.put("blockedPoints", copyLists(onPage(blockedPoints, page)));
-        out.put("portals", onPage(portals, page));
-        out.put("captions", onPage(captions, page));
-
-        out.put("stations", membersOnPage(stations, page));
-        out.put("disabledPortals", membersOnPage(disabledPortals, page));
+        // Keyed by the collection's file name, which is what restorePage asks for.  A collection with
+        // nothing to snapshot - `excludedPages`, whose exclusion is not part of the page's contents -
+        // simply puts null, and restorePage does nothing with it.
+        //
+        // The lists are COPIED, not shared.  Most of these hold strings and numbers, which cannot
+        // change underneath a snapshot; the two that hold LISTS are written into in place by
+        // forgetSquares, so deleting the signal's square emptied the snapshot's list too and undo
+        // restored the deletion.  That rule now lives on the one kind it applies to.
+        for (Kept k : kept()) out.put(k.json, k.snapshotOf(page));
 
         // The configurations key by tile too, and that is where the facings, the placements, the
         // homes and the maximum lengths live - the half of a station's setup that is not in the
@@ -2752,18 +2642,10 @@ public class AutonomyCompanionStore
     {
         if (page == null || snapshot == null) return;
 
-        putBack(pointNames, page, (Map<TileKey, String>) snapshot.get("pointNames"));
-        putBack(tileLengths, page, (Map<TileKey, Integer>) snapshot.get("tileLengths"));
-        putBack(tileDirections, page, (Map<DirectionKey, String>) snapshot.get("tileDirections"));
-        putBack(barredArrivals, page, (Map<TileKey, String>) snapshot.get("barredArrivals"));
-        putBack(linkNames, page, (Map<TileKey, String>) snapshot.get("linkNames"));
-        putBack(stationSignals, page, copyLists((Map<TileKey, List<TileKey>>) snapshot.get("stationSignals")));
-        putBack(blockedPoints, page, copyLists((Map<TileKey, List<TileKey>>) snapshot.get("blockedPoints")));
-        putBack(portals, page, (Map<TileKey, TileKey>) snapshot.get("portals"));
-        putBack(captions, page, (Map<TileKey, TileKey>) snapshot.get("captions"));
-
-        putMembersBack(stations, page, (Set<TileKey>) snapshot.get("stations"));
-        putMembersBack(disabledPortals, page, (Set<TileKey>) snapshot.get("disabledPortals"));
+        // By the same names snapshotPage wrote, which are the collections' file names.  A snapshot
+        // taken by an older build simply has no entry for a collection added since, and each kind's
+        // put-back already treats absent as "this page had none".
+        for (Kept k : kept()) k.restoreTo(page, snapshot.get(k.json));
 
         Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
 
@@ -2980,87 +2862,18 @@ public class AutonomyCompanionStore
     {
         if (squares == null || squares.isEmpty()) return;
 
-        for (TileKey key : squares)
-        {
-            pointNames.remove(key);
-            tileLengths.remove(key);
-            barredArrivals.remove(key);
-            linkNames.remove(key);
-            stationSignals.remove(key);
-            blockedPoints.remove(key);
-            portals.remove(key);
-
-            TileKey names = captions.get(key);
-
-            if (names == null || arriving == null || !key.equals(arriving.get(names)))
-            {
-                captions.remove(key);
-            }
-
-            stations.remove(key);
-            disabledPortals.remove(key);
-        }
-
-        // A direction is keyed by the square and a route across it, so it is stored suffixed.
+        // Each collection drops what it knows about these squares AND anything POINTING at them.
         //
-        // This loop is the only thing that removes them. The list above used to carry a
-        // `tileDirections.remove(key)` as its eleventh member - written because everything else was
-        // there, and dead from the day it was written, because a bare square never matches a suffixed
-        // key (DD-A1). It is gone, and this handles a bare key too, so nothing depends on every
-        // direction having been written with a suffix.
-        for (java.util.Iterator<DirectionKey> keys = tileDirections.keySet().iterator();
-            keys.hasNext();)
-        {
-            // The square is asked for rather than picked out of a string (FR-013 stage two).  The
-            // previous version split the key on a '#' and parsed the front of it, and the version
-            // before THAT did not exist at all: the list above carried a `tileDirections.remove(key)`
-            // as its eleventh member, written because everything else was there and dead from the day
-            // it was written, because a bare square never matches a suffixed key (DD-A1).
-            //
-            // Set.contains takes Object, so handing it the string form compiled and answered false for
-            // ever - which is the shape of defect a typed key removes rather than merely discourages.
-            if (squares.contains(keys.next().square())) keys.remove();
-        }
-
-        // And what named them
-        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = portals.entrySet().iterator();
-            pairs.hasNext();)
-        {
-            if (squares.contains(pairs.next().getValue())) pairs.remove();
-        }
-
-        // A caption elsewhere naming one of these squares named track that is gone.
+        // Both halves matter and both have been got wrong here. A pointer at track that is gone -
+        // a protecting signal, a blocker, the far end of a portal, a caption naming a station -
+        // is one nothing can satisfy or clear.
         //
-        // No exception for the arriving tiles, and none is possible: a square that is being vacated is
-        // never in this set - moveTiles builds it by excluding them - so a caption naming one of those
-        // is not looked at here at all.  It is repointed afterwards instead.
-        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = captions.entrySet().iterator();
-            pairs.hasNext();)
-        {
-            if (squares.contains(pairs.next().getValue())) pairs.remove();
-        }
-
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-            = stationSignals.entrySet().iterator(); pairs.hasNext();)
-        {
-            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
-
-            pair.getValue().removeAll(squares);
-
-            if (pair.getValue().isEmpty()) pairs.remove();
-        }
-
-        // The same for the squares a station is held back by: a restriction naming track that has been
-        // built over is one nothing can satisfy or clear.
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-            = blockedPoints.entrySet().iterator(); pairs.hasNext();)
-        {
-            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
-
-            pair.getValue().removeAll(squares);
-
-            if (pair.getValue().isEmpty()) pairs.remove();
-        }
+        // The captions are the one exception in the whole registry, and it is not a special case so
+        // much as a different question: a platform whose name is written on the square below it,
+        // nudged down one, lands ON its own label, and that label is not stale. It is about the tile
+        // that just arrived. That is what `arriving` is for, and it applies to the KEY half only - a
+        // square being vacated is never in this set, because moveTiles builds it by excluding them.
+        for (Kept k : kept()) k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
         for (JSONObject configuration : configurations.values())
@@ -3549,10 +3362,31 @@ public class AutonomyCompanionStore
      * had them overwritten with the empty copy read a moment earlier, and then stripped the labels they
      * had been migrated from.  Anything added to save() has to be added here in the same breath.
      */
-    private static final Set<String> KNOWN_SHARED = new LinkedHashSet<>(java.util.Arrays.asList(
-        "version", "activeConfiguration", "pointNames", "stations", "tileLengths", "tileDirections",
-        "barredArrivals", "stationSignals", "blockedPoints",
-        "portals", "captions", "linkNames", "excludedPages", "disabledLinks", "pages"));
+    private static final Set<String> KNOWN_SHARED_NOT_A_COLLECTION =
+        new LinkedHashSet<>(java.util.Arrays.asList("version", "activeConfiguration", "pages"));
+
+    /**
+     * Every field name this build understands in the shared file.
+     *
+     * Anything else is a field a NEWER build wrote, and is kept verbatim and written back untouched.
+     * That makes the list load-bearing in a direction that is easy to get backwards: a collection
+     * MISSING from it is not read as unknown-and-preserved, it is read as unknown-and-preserved AND
+     * also read into its own collection, so the next save writes both - and the stale copy wins.
+     * `captions` was missing from it once, and every caption edit was reverted on the next save.
+     *
+     * Derived rather than listed, now, so that cannot happen again: a collection that is in the
+     * registry is in here, because this is the registry read a different way.
+     *
+     * @return the field names, by their names in the FILE
+     */
+    private Set<String> knownShared()
+    {
+        Set<String> known = new LinkedHashSet<>(KNOWN_SHARED_NOT_A_COLLECTION);
+
+        for (Kept k : kept()) known.add(k.json);
+
+        return known;
+    }
 
 
     /**
@@ -3826,25 +3660,11 @@ public class AutonomyCompanionStore
         // the class reads as memory keys, which is the state OB-067 was about. Neither the agreement
         // nor the state exists now: a reader that does not translate cannot put anything into a
         // TileKey-keyed map.
-        readSquareMap(root, "pointNames", pointNames);
-        readSquareSet(root, "stations", stations);
-        readSquareMap(root, "barredArrivals", barredArrivals);
-        readSquareListMap(root, "stationSignals", stationSignals);
-        readSquareListMap(root, "blockedPoints", blockedPoints);
-        readSquarePairMap(root, "portals", portals);
-        readSquarePairMap(root, "captions", captions);
-        readSquareMap(root, "linkNames", linkNames);
-        readSquareIntMap(root, "tileLengths", tileLengths);
-
-        // Typed like the other ten since FR-013 stage two - it translates as it reads, the same as
-        // readSquareMap, so there is no window in which the collection holds stored keys in a
-        // memory-keyed field.  excludedPages is a set of page NAMES rather than of squares, so it is
-        // still read raw and translated afterwards.
-        readDirectionMap(root, "tileDirections", tileDirections);
-        readStringSet(root, "excludedPages", excludedPages);
-        readSquareSet(root, "disabledLinks", disabledPortals);
-
-        untranslatePages(excludedPages);
+        // Typed since FR-013 stage two, all of them: each reader translates as it reads, so there is
+        // no window in which a collection holds stored keys in a memory-keyed field - the state OB-067
+        // was about.  `excludedPages` is the exception and says why for itself: it holds page NAMES
+        // rather than squares, so it is read raw and translated in its own read().
+        for (Kept k : kept()) k.read(root);
 
         pageIdConflicts.clear();
 
@@ -3874,28 +3694,544 @@ public class AutonomyCompanionStore
         // and the filter has no business editing it.
         for (String key : wholeRoot.keySet())
         {
-            if (!KNOWN_SHARED.contains(key)) unknownSharedFields.put(key, wholeRoot.get(key));
+            if (!knownShared().contains(key)) unknownSharedFields.put(key, wholeRoot.get(key));
         }
+    }
+
+
+    // =============================================================================================
+    // The kept collections (OB-025 / DD-A1)
+    // =============================================================================================
+
+    /**
+     * One collection of settings the store keeps, and everything the bookkeeping sites need of it.
+     *
+     * **What this is for.** The store keeps twelve collections, and used to repeat the same
+     * per-collection shape at every site that does bookkeeping - saving, loading, clearing, renaming a
+     * page, moving squares, forgetting squares, snapshotting and restoring a page, deleting a page.
+     * Adding one collection meant finding all of them, and the record of what that costs is not a
+     * worry but a measurement: the eleventh, `disabledPortals`, arrived wired into eight sites and the
+     * other four were each found afterwards as a bug - the rename loop, the move, the snapshot and
+     * restore pair, and forgetting a square. `renamePage` still carries what the first of those cost:
+     * "a link switched off is remembered by its square, so a rename turned every one of them back on -
+     * silently, and only on the renamed page."
+     *
+     * At least four more came from the same shape and are all recorded in this file: `clear()` missing
+     * `stationSignals` while `clearShared()` had it, which threw a cancelled signal on real hardware;
+     * `captions` missing from the file's known-field list, which reverted every caption edit on the
+     * next save;
+     * directions left behind by every move; captions rekeyed on one side only.
+     *
+     * `testStoreCollectionsAreHandledEverywhere` was the cheaper half of the answer and it stays: it
+     * makes an omission loud. This is the other half - it makes most of them impossible, because there
+     * is one place to add a collection rather than a dozen.
+     *
+     * **What deliberately did NOT move in here.** `reconcile` and `applyTo` are still written out by
+     * hand, per DD-D9. Both ask a question the registry cannot express: reconcile decides what a
+     * square's absence from the diagram means, one collection at a time, and applyTo populates the
+     * tile GRAPH, which models track and has nowhere to put a name or a length. A registry entry that
+     * answered "not applicable" for those two sites would be pretending they are uniform.
+     */
+    private abstract class Kept
+    {
+        /**
+         * The name this collection has in the file, which is not always its name in the code.
+         */
+        final String json;
+
+        Kept(String json)
+        {
+            this.json = json;
+        }
+
+        /** Empties it. */
+        abstract void clear();
+
+        /** Writes it into the shared file's root object, translated to stored keys. */
+        abstract void write(JSONObject root);
+
+        /** Reads it back out, translating as it goes. */
+        abstract void read(JSONObject root);
+
+        /** Follows a page rename, on both halves of a collection that names squares twice. */
+        abstract void renamePage(String from, String to);
+
+        /** Follows squares being dragged somewhere else. */
+        abstract void move(Map<TileKey, TileKey> byKey);
+
+        /**
+         * Drops everything about squares that are gone, and everything POINTING at them.
+         *
+         * @param squares the squares being forgotten
+         * @param arriving the moves in progress, so a label being landed on by its own tile is spared
+         */
+        abstract void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving);
+
+        /** Everything on one page, in a form restore can put back. */
+        abstract Object snapshotOf(String page);
+
+        /** Puts one page back as snapshotOf found it. */
+        abstract void restoreTo(String page, Object snapshot);
+
+        /**
+         * Adds every square on this page that this collection names - as a key OR as a value.
+         *
+         * The value half matters and is easy to miss: a protecting signal, a blocker or the far end of
+         * a portal can sit on a page while having no entry of its own. Gathering by key alone left the
+         * pointer behind when the page went.
+         */
+        abstract void squaresOn(String page, Set<TileKey> into);
+    }
+
+    /**
+     * A map from a square to something that is not a square - a name, a length, a restriction.
+     *
+     * The value type is what differs between them, and it differs only in how it is written and read,
+     * so those two are left to the subclass and everything else is here.
+     */
+    private abstract class SquareMapKept<V> extends Kept
+    {
+        final Map<TileKey, V> map;
+
+        SquareMapKept(String json, Map<TileKey, V> map)
+        {
+            super(json);
+            this.map = map;
+        }
+
+        @Override void clear() { map.clear(); }
+
+        @Override void renamePage(String from, String to) { rekey(map, from, to); }
+
+        @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        {
+            for (TileKey key : squares) map.remove(key);
+        }
+
+        @Override Object snapshotOf(String page) { return onPage(map, page); }
+
+        @Override @SuppressWarnings("unchecked")
+        void restoreTo(String page, Object snapshot)
+        {
+            putBack(map, page, (Map<TileKey, V>) snapshot);
+        }
+
+        @Override void squaresOn(String page, Set<TileKey> into)
+        {
+            for (TileKey key : new LinkedHashSet<>(map.keySet()))
+            {
+                if (isOnPage(key, page)) into.add(key);
+            }
+        }
+    }
+
+    /** A square to a string: a name, a barred arrival, a link's label. */
+    private class StringMapKept extends SquareMapKept<String>
+    {
+        StringMapKept(String json, Map<TileKey, String> map) { super(json, map); }
+
+        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateKeys(map))); }
+
+        @Override void read(JSONObject root) { readSquareMap(root, json, map); }
+    }
+
+    /** A square to a length. */
+    private class IntMapKept extends SquareMapKept<Integer>
+    {
+        IntMapKept(String json, Map<TileKey, Integer> map) { super(json, map); }
+
+        @Override void write(JSONObject root)
+        {
+            root.put(json, new JSONObject(translateLengths(map)));
+        }
+
+        @Override void read(JSONObject root) { readSquareIntMap(root, json, map); }
+    }
+
+    /**
+     * A square AND a route across it, to the way the track faces on that route.
+     *
+     * The odd one out, and the one that made the rest of this worth writing rather than merely tidy:
+     * for as long as its key was a string with a `#dx,dy` suffix on the end, half the bookkeeping
+     * silently did nothing to it - a bare square never matched a suffixed key. `forgetSquares` carried
+     * a `tileDirections.remove(key)` that was dead from the day it was written, and `moveKeys` left
+     * every facing behind on the square the track had walked away from. Since FR-013 stage two the key
+     * is a type that can be asked which square it is on, so the only thing left that is special about
+     * this collection is that asking is necessary.
+     */
+    private class DirectionMapKept extends Kept
+    {
+        final Map<DirectionKey, String> map;
+
+        DirectionMapKept(String json, Map<DirectionKey, String> map)
+        {
+            super(json);
+            this.map = map;
+        }
+
+        @Override void clear() { map.clear(); }
+
+        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateKeys(map))); }
+
+        @Override void read(JSONObject root) { readDirectionMap(root, json, map); }
+
+        @Override void renamePage(String from, String to) { rekey(map, from, to); }
+
+        @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        {
+            for (java.util.Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
+            {
+                if (squares.contains(keys.next().square())) keys.remove();
+            }
+        }
+
+        @Override Object snapshotOf(String page) { return onPage(map, page); }
+
+        @Override @SuppressWarnings("unchecked")
+        void restoreTo(String page, Object snapshot)
+        {
+            putBack(map, page, (Map<DirectionKey, String>) snapshot);
+        }
+
+        @Override void squaresOn(String page, Set<TileKey> into)
+        {
+            for (DirectionKey key : new LinkedHashSet<>(map.keySet()))
+            {
+                TileKey bare = key.square();
+
+                if (bare != null && isOnPage(bare, page)) into.add(bare);
+            }
+        }
+    }
+
+    /**
+     * A square to another square: a portal to its far end, a caption to the station it names.
+     *
+     * Both halves are squares, so both halves follow a rename and a move. Rekeying only the keys left
+     * every caption on the page pointing at a station on a page that no longer existed, and the next
+     * save deleted them for good as unreconcilable.
+     */
+    private class PairMapKept extends Kept
+    {
+        final Map<TileKey, TileKey> map;
+
+        /**
+         * Whether a landing square keeps its entry when the tile arriving on it is the very thing the
+         * entry points at.
+         *
+         * True for captions only: a platform whose name is written on the square below it, nudged
+         * down one, lands ON its own label, and the label is not stale - it is about the tile that
+         * just arrived.
+         */
+        final boolean spareArriving;
+
+        PairMapKept(String json, Map<TileKey, TileKey> map, boolean spareArriving)
+        {
+            super(json);
+            this.map = map;
+            this.spareArriving = spareArriving;
+        }
+
+        @Override void clear() { map.clear(); }
+
+        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateTileMap(map))); }
+
+        @Override void read(JSONObject root) { readSquarePairMap(root, json, map); }
+
+        @Override void renamePage(String from, String to)
+        {
+            rekeyValues(map, from, to);
+            rekey(map, from, to);
+        }
+
+        @Override void move(Map<TileKey, TileKey> byKey)
+        {
+            moveValues(map, byKey);
+            moveKeys(map, byKey);
+        }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        {
+            for (TileKey key : squares)
+            {
+                if (spareArriving)
+                {
+                    TileKey names = map.get(key);
+
+                    if (names != null && arriving != null && key.equals(arriving.get(names))) continue;
+                }
+
+                map.remove(key);
+            }
+
+            // And anything pointing AT a square that is gone.  No exception for the arriving tiles
+            // here and none is possible: a square being vacated is never in this set - moveTiles
+            // builds it by excluding them - so an entry naming one of those is not looked at.
+            for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
+                pairs.hasNext();)
+            {
+                if (squares.contains(pairs.next().getValue())) pairs.remove();
+            }
+        }
+
+        @Override Object snapshotOf(String page) { return onPage(map, page); }
+
+        @Override @SuppressWarnings("unchecked")
+        void restoreTo(String page, Object snapshot)
+        {
+            putBack(map, page, (Map<TileKey, TileKey>) snapshot);
+        }
+
+        @Override void squaresOn(String page, Set<TileKey> into)
+        {
+            for (TileKey key : new LinkedHashSet<>(map.keySet()))
+            {
+                if (isOnPage(key, page)) into.add(key);
+            }
+
+            for (TileKey value : new ArrayList<>(map.values()))
+            {
+                if (isOnPage(value, page)) into.add(value);
+            }
+        }
+    }
+
+    /**
+     * A square to a list of squares: the signals protecting a station, the squares holding it back.
+     *
+     * The value is a live list, which is what makes the snapshot here different from every other one:
+     * `forgetSquares` calls removeAll on those lists in place, so a shared snapshot was emptied by the
+     * very deletion it was taken to undo.
+     */
+    private class ListMapKept extends Kept
+    {
+        final Map<TileKey, List<TileKey>> map;
+
+        ListMapKept(String json, Map<TileKey, List<TileKey>> map)
+        {
+            super(json);
+            this.map = map;
+        }
+
+        @Override void clear() { map.clear(); }
+
+        @Override void write(JSONObject root)
+        {
+            root.put(json, new JSONObject(translateTileListMap(map)));
+        }
+
+        @Override void read(JSONObject root) { readSquareListMap(root, json, map); }
+
+        @Override void renamePage(String from, String to)
+        {
+            rekeyListValues(map, from, to);
+            rekey(map, from, to);
+        }
+
+        @Override void move(Map<TileKey, TileKey> byKey)
+        {
+            moveListValues(map, byKey);
+            moveKeys(map, byKey);
+        }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        {
+            for (TileKey key : squares) map.remove(key);
+
+            // A pointer at track that has been built over is one nothing can satisfy or clear.
+            for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+                = map.entrySet().iterator(); pairs.hasNext();)
+            {
+                Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
+
+                pair.getValue().removeAll(squares);
+
+                if (pair.getValue().isEmpty()) pairs.remove();
+            }
+        }
+
+        @Override Object snapshotOf(String page) { return copyLists(onPage(map, page)); }
+
+        @Override @SuppressWarnings("unchecked")
+        void restoreTo(String page, Object snapshot)
+        {
+            putBack(map, page, copyLists((Map<TileKey, List<TileKey>>) snapshot));
+        }
+
+        @Override void squaresOn(String page, Set<TileKey> into)
+        {
+            for (TileKey key : new LinkedHashSet<>(map.keySet()))
+            {
+                if (isOnPage(key, page)) into.add(key);
+            }
+
+            for (List<TileKey> pointed : new ArrayList<>(map.values()))
+            {
+                for (TileKey one : pointed) if (isOnPage(one, page)) into.add(one);
+            }
+        }
+    }
+
+    /** A plain set of squares: which are stations, which links are switched off. */
+    private class SquareSetKept extends Kept
+    {
+        final Set<TileKey> set;
+
+        SquareSetKept(String json, Set<TileKey> set)
+        {
+            super(json);
+            this.set = set;
+        }
+
+        @Override void clear() { set.clear(); }
+
+        @Override void write(JSONObject root) { root.put(json, new JSONArray(translateSet(set))); }
+
+        @Override void read(JSONObject root) { readSquareSet(root, json, set); }
+
+        @Override void renamePage(String from, String to)
+        {
+            Set<TileKey> renamed = new LinkedHashSet<>();
+
+            for (TileKey key : set) renamed.add(rekeyOne(key, from, to));
+
+            set.clear();
+            set.addAll(renamed);
+        }
+
+        @Override void move(Map<TileKey, TileKey> byKey) { moveMembers(set, byKey); }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
+        {
+            set.removeAll(squares);
+        }
+
+        @Override Object snapshotOf(String page) { return membersOnPage(set, page); }
+
+        @Override @SuppressWarnings("unchecked")
+        void restoreTo(String page, Object snapshot)
+        {
+            putMembersBack(set, page, (Set<TileKey>) snapshot);
+        }
+
+        @Override void squaresOn(String page, Set<TileKey> into)
+        {
+            for (TileKey key : new LinkedHashSet<>(set))
+            {
+                if (isOnPage(key, page)) into.add(key);
+            }
+        }
+    }
+
+    /**
+     * A set of whole PAGES rather than of squares: which pages autonomy is told to ignore.
+     *
+     * The reason this is a kind of its own rather than an awkward member of the last one. Every
+     * square-level site has nothing to say about it - moving squares does not move a page, deleting
+     * them never deletes one, and a page's own exclusion is not part of its contents - so those sites
+     * do nothing here, and that is a decision rather than an omission. It is also why this collection
+     * was for a long time the one stored by NAME while the other eleven were stored by page id: a bare
+     * page name goes through the key translation unchanged, so nothing complained. A rename then
+     * orphaned it, an excluded page silently rejoined autonomy, and its old name sat in the set for
+     * ever because nothing prunes it.
+     */
+    private class PageSetKept extends Kept
+    {
+        final Set<String> set;
+
+        PageSetKept(String json, Set<String> set)
+        {
+            super(json);
+            this.set = set;
+        }
+
+        @Override void clear() { set.clear(); }
+
+        @Override void write(JSONObject root) { root.put(json, new JSONArray(translatePages(set))); }
+
+        @Override void read(JSONObject root)
+        {
+            // Read raw and translated afterwards - it holds page names, not squares, so the reader
+            // that translates as it goes has nothing to translate with.
+            readStringSet(root, json, set);
+            untranslatePages(set);
+        }
+
+        @Override void renamePage(String from, String to)
+        {
+            if (set.remove(from)) set.add(to);
+        }
+
+        @Override void move(Map<TileKey, TileKey> byKey) { }
+
+        @Override void forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving) { }
+
+        @Override Object snapshotOf(String page) { return null; }
+
+        @Override void restoreTo(String page, Object snapshot) { }
+
+        @Override void squaresOn(String page, Set<TileKey> into) { }
+    }
+
+    /**
+     * Built on first use rather than in a field initializer.
+     *
+     * The collections are declared across a thousand lines of this file, and a field initializer runs
+     * in declaration order - so a list built in one would capture whichever of them happened to be
+     * above it and hold nulls for the rest. Which collection is declared where is not something this
+     * registry should be able to be broken by.
+     */
+    private List<Kept> kept;
+
+    /**
+     * Every collection of settings the store keeps.
+     *
+     * **This is the list to add to.** A new setting needs one entry here and nothing else: clearing,
+     * saving, loading, renames, moves, deletions, snapshots and page deletion all walk this.
+     *
+     * @return the registry
+     */
+    private List<Kept> kept()
+    {
+        if (kept != null) return kept;
+
+        List<Kept> all = new ArrayList<>();
+
+        all.add(new StringMapKept("pointNames", pointNames));
+        all.add(new SquareSetKept("stations", stations));
+        all.add(new IntMapKept("tileLengths", tileLengths));
+        all.add(new DirectionMapKept("tileDirections", tileDirections));
+        all.add(new StringMapKept("barredArrivals", barredArrivals));
+        all.add(new ListMapKept("stationSignals", stationSignals));
+        all.add(new ListMapKept("blockedPoints", blockedPoints));
+        all.add(new PairMapKept("portals", portals, false));
+        all.add(new PairMapKept("captions", captions, true));
+        all.add(new StringMapKept("linkNames", linkNames));
+        all.add(new PageSetKept("excludedPages", excludedPages));
+        // Called disabledLinks in the file and disabledPortals in the code, which is the whole reason
+        // the file's known-field list needed an exemption in the textual guard.  Named once, here.
+        all.add(new SquareSetKept("disabledLinks", disabledPortals));
+
+        kept = all;
+
+        return kept;
     }
 
     private void clear()
     {
-        pointNames.clear();
-        stations.clear();
-        tileLengths.clear();
-        tileDirections.clear();
-        barredArrivals.clear();
-        // Was missing, and clearShared() below has always had it.  load() empties the store and then
-        // reads the file over it, and readShared only PUTS what the file holds - so a pairing made
-        // since the last save survived a discard, and the next save wrote it to disk.  A signal
-        // somebody had cancelled was then thrown on real hardware.
-        stationSignals.clear();
-        blockedPoints.clear();
-        portals.clear();
-        captions.clear();
-        linkNames.clear();
-        excludedPages.clear();
-        disabledPortals.clear();
+        // One of the two lists this used to keep by hand, and the pair of them is the reason the
+        // registry exists.  `stationSignals` was missing here while clearShared() had it: load()
+        // empties the store and then reads the file over it, and readShared only PUTS what the file
+        // holds - so a pairing made since the last save survived a discard, and the next save wrote it
+        // to disk.  A signal somebody had cancelled was then thrown on real hardware.
+        //
+        // Two lists of the same twelve things, kept in step by eye.  Now there is one list.
+        for (Kept k : kept()) k.clear();
+
         unknownSharedFields.clear();
         pageNamesWhenWritten.clear();
         heldForAbsentPages.clear();
@@ -4408,11 +4744,23 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    private Map<String, Integer> translateLengths()
+    /**
+     * Takes the map rather than reaching for the field.
+     *
+     * It reached for `tileLengths` while there was only ever one caller, which was true and would have
+     * stayed true right up until a second int-valued collection was registered - at which point it
+     * would have written the lengths out under the new collection's name and lost the new one, with
+     * nothing in the registry looking wrong.  The registry's whole promise is that one entry is
+     * enough, so a helper that only works for one particular entry breaks it quietly.
+     *
+     * @param lengths the collection to translate
+     * @return it, keyed by stored key
+     */
+    private Map<String, Integer> translateLengths(Map<TileKey, Integer> lengths)
     {
         Map<String, Integer> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, Integer> entry : tileLengths.entrySet())
+        for (Map.Entry<TileKey, Integer> entry : lengths.entrySet())
         {
             out.put(toStored(entry.getKey().toString()), entry.getValue());
         }
@@ -4553,18 +4901,6 @@ public class AutonomyCompanionStore
         }
 
         return dropped;
-    }
-
-    private Map<String, String> translatePortals()
-    {
-        Map<String, String> out = new LinkedHashMap<>();
-
-        for (Map.Entry<TileKey, TileKey> entry : portals.entrySet())
-        {
-            out.put(toStored(entry.getKey().toString()), toStored(entry.getValue().toString()));
-        }
-
-        return out;
     }
 
     // Package-private rather than private: the session prunes stale point data by tile, and has to be
