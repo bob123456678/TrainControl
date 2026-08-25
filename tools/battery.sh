@@ -63,7 +63,17 @@ fingerprint()
 {
     if [ -d "$LIVE" ]
     then
-        find "$LIVE" -type f -exec sha256sum {} \; 2>/dev/null | sort
+        # Carriage returns stripped before hashing.
+        #
+        # Git checks these files out with CRLF and the application writes them with LF, so a
+        # file rewritten with identical content still differs byte for byte.  Reporting that
+        # would make this guard fire on every run, and a guard that always fires is one nobody
+        # reads - which is the failure this whole check exists to prevent, arriving from the
+        # other side.
+        find "$LIVE" -type f -print0 2>/dev/null | sort -z | while IFS= read -r -d "" f
+        do
+            printf "%s  %s\n" "$(tr -d "\r" < "$f" | sha256sum | cut -d" " -f1)" "$f"
+        done
     fi
 }
 

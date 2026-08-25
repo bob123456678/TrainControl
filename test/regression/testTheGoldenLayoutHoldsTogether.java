@@ -378,6 +378,31 @@ public class testTheGoldenLayoutHoldsTogether
         return out;
     }
 
+    /**
+     * The same bytes without carriage returns.
+     *
+     * Git checks these files out with CRLF and the application writes them with LF, so a file
+     * rewritten with identical content still differs byte for byte. Reporting that would make this
+     * test fail on every run, and a test that always fails is one somebody switches off - which is the
+     * failure this check exists to prevent, arriving from the other side.
+     *
+     * @param raw the file
+     * @return the same, with every 0x0D removed
+     */
+    private static byte[] withoutCarriageReturns(byte[] raw)
+    {
+        byte[] out = new byte[raw.length];
+
+        int at = 0;
+
+        for (byte b : raw)
+        {
+            if (b != 13) out[at++] = b;
+        }
+
+        return Arrays.copyOf(out, at);
+    }
+
     private static void collect(File at, int strip, Map<String, String> into) throws Exception
     {
         File[] children = at.listFiles();
@@ -395,7 +420,7 @@ public class testTheGoldenLayoutHoldsTogether
 
             MessageDigest sha = MessageDigest.getInstance("SHA-256");
 
-            byte[] hash = sha.digest(Files.readAllBytes(child.toPath()));
+            byte[] hash = sha.digest(withoutCarriageReturns(Files.readAllBytes(child.toPath())));
 
             StringBuilder hex = new StringBuilder();
 
