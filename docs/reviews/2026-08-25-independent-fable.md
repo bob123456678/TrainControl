@@ -17,7 +17,7 @@ folding them together.
 measured that reading finds nothing that reading produced. Both A findings were reproduced with
 timestamped probes before being reported.
 
-**Version:** v3.0.0 Beta, branch `autonomy-diagram-r0`. A1, A2, C1 and C2 are fixed in `0e1d2c14`;
+**Version:** v3.0.0 Beta, branch `autonomy-diagram-r0`. A1, A2, C1 and C2 are fixed in `47870317`;
 all `fixed unvalidated` until Adam runs the layout.
 
 ---
@@ -36,8 +36,8 @@ Wrong behaviour on the layout, or data silently lost.
 
 | | Finding | Disposition |
 |---|---|---|
-| **A1** | The route guard was asked once, and a route takes seconds to run | fixed in `0e1d2c14` |
-| **A2** | The pre-edit note's "made harmless" fallback fails in the one case it exists for | fixed in `0e1d2c14` |
+| **A1** | The route guard was asked once, and a route takes seconds to run | fixed in `47870317` |
+| **A2** | The pre-edit note's "made harmless" fallback fails in the one case it exists for | fixed in `47870317` |
 
 ### FB-A1 — the route guard was asked once, and a route takes seconds to run
 
@@ -113,8 +113,8 @@ under Windows semantics also defeats the move.
 
 | | Finding | Disposition |
 |---|---|---|
-| **C1** | `battery.sh` always exits 0 | fixed in `0e1d2c14` |
-| **C2** | The LD-B1 relocation parks the shared switching worker on a modal dialog | fixed in `0e1d2c14` |
+| **C1** | `battery.sh` always exits 0 | fixed in `47870317` |
+| **C2** | The LD-B1 relocation parks the shared switching worker on a modal dialog | fixed in `47870317` |
 
 ### FB-C1 — `battery.sh` always exits 0
 
