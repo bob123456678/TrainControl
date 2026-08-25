@@ -58,8 +58,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-178](#mt-178) | 2026-08-25 | Importing a legacy autonomy file onto a layout with none | fixed unvalidated | OB-106 |
 | [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | fixed unvalidated | OB-098, OB-100, OB-101, OB-104 |
 | [MT-180](#mt-180) | 2026-08-25 | Three things the interface was not saying | fixed unvalidated | OB-102, OB-103, OB-105 |
+| [MT-181](#mt-181) | 2026-08-25 | Show Inactive Labels | fixed unvalidated | FR-023 |
 
-Everything else - 124 of 180 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 181 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -9149,3 +9150,43 @@ if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 no traincontrol window icon in IP prompt
+
+<a id="mt-181"></a>
+
+### MT-181 - 2026-08-25 - Show Inactive Labels
+
+**Disposition:** fixed unvalidated
+**From:** FR-023
+**Written:** 2026-08-25
+
+1. **Autonomy menu**: there should be a **Show Inactive Labels** item, ticked.
+2. Load a configuration and show the autonomy overlay. Untick it. Only the stations autonomy can
+   actually send a train to should keep their names; everything else loses its caption, and nothing
+   else about the diagram changes - the tiles, the trains and the overlay stay exactly as they were.
+3. Tick it again: every name comes back, immediately, without touching the diagram.
+4. Restart TrainControl. The setting should be where you left it.
+5. With it OFF, load a DIFFERENT configuration - one where a different set of stations is reachable.
+   The names should follow that, not stay as they were.
+6. Turn the autonomy overlay off entirely: all captions go, as before. This setting only decides
+   which ones come back when it is on.
+
+#### Comments
+
+**Claude, 2026-08-25.** Two things worth knowing about how it decides.
+
+**"Cannot be chosen" is asked of the RUNNING layout, not the setup.** A square can be a station in
+the setup and still be somewhere no train will ever be sent - not a destination, or on a page left out
+of autonomy - and it is the running answer that says what the diagram is about to do. With no running
+layout nothing is inactive yet, so everything is shown.
+
+**A square split into several Points shows its name if ANY of them is a destination.** Such a square is
+one place to the person looking at it, and hiding its name because one of its directions is a dead end
+would be a lie about the other.
+
+The visibility rule lives in one method that both the overlay switch and this setting ask, so the two
+cannot disagree - the overlay still wins, and this only decides which captions come back when it is
+on. Applied to labels already drawn rather than left for the next rebuild: the grid rebuilds for a
+dozen reasons and none of them is this one, so otherwise the setting would appear to do nothing until
+something unrelated redrew the diagram.
+
+---

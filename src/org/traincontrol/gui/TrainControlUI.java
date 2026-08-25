@@ -206,6 +206,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String MENUBAR_SETTING_PREF = "MenuBarOn";
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
     public static final String HIDE_REVERSING_PREF = "HideReversing";
+
+    /**
+     * Whether the diagram shows the captions of stations autonomy cannot choose.
+     *
+     * On by default, because a caption disappearing is a worse first impression than a crowded
+     * diagram, and because somebody who has not asked for this should see their railway as they drew
+     * it.  Turned off, only the stations autonomy can actually send a train to keep their names -
+     * which on a large layout is the difference between reading the diagram and searching it.
+     *
+     * Stored in the preferences, so it survives a restart the way the grid and always-on-top do.
+     */
+    public static final String SHOW_INACTIVE_LABELS_PREF = "ShowInactiveLabels";
+
+    public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
     public static final String HIDE_INACTIVE_PREF = "HideInactive";
     public static final String HIDE_REVERSING_EDGES_PREF = "HideReversingEdges";
     public static final String SHOW_STATION_LENGTH = "ShowStationLength";
@@ -785,6 +799,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         buildPathPreferenceMenu();
+        buildShowInactiveLabelsMenu();
         buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
@@ -1045,6 +1060,73 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether the caption on a square should be shown at all.
+     *
+     * Two independent reasons to hide one, and they are asked together here so that every caller gets
+     * both: the overlay switch, which hides all of them, and Show Inactive Labels, which hides the
+     * ones autonomy will never choose.
+     *
+     * "Cannot be chosen" is asked of the running layout rather than of the setup, and deliberately: a
+     * square can be a station in the setup and still be somewhere no train will ever be sent - not a
+     * destination, or on a page left out of autonomy - and it is the running answer that decides what
+     * the diagram is actually going to do. Where there is no running layout, nothing is inactive yet
+     * and everything is shown.
+     *
+     * @param station the sensor's square
+     * @return whether its caption belongs on screen
+     */
+    private boolean captionShouldShow(org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        if (autonomyOverlayToggle != null && !autonomyOverlayToggle.isOverlayShown()) return false;
+
+        if (prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT)) return true;
+
+        if (station == null || this.model == null || !this.model.hasAutoLayout()) return true;
+
+        // Any copy of this square that autonomy could send a train to is enough: a square split into
+        // several Points is one place to the person looking at it, and hiding its name because one of
+        // its directions is a dead end would be a lie about the other.
+        for (org.traincontrol.automation.Point point : getAutonomyPointsForTile(station))
+        {
+            if (point.isDestination()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Every Point standing for a square, occupied or not.
+     *
+     * getAutonomyOccupantsForTile answers about TRAINS; this answers about the square, which is what
+     * deciding whether to draw its name needs.
+     *
+     * @param station the sensor's square
+     * @return the Points, empty when the square is not in the running layout
+     */
+    private java.util.List<org.traincontrol.automation.Point> getAutonomyPointsForTile(
+        org.traincontrol.automationui.TileGraph.TileKey station)
+    {
+        java.util.List<org.traincontrol.automation.Point> out = new java.util.ArrayList<>();
+
+        if (station == null || this.model == null || !this.model.hasAutoLayout()) return out;
+
+        // The FIELD, never the lazy getter: this is asked once per label while the grid is being
+        // built, and getAutonomySession parses every page and can raise a dialog (SV-B2).
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session == null) return out;
+
+        for (String name : session.getStationIndex().pointNamesAt(station))
+        {
+            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(name);
+
+            if (point != null) out.add(point);
+        }
+
+        return out;
+    }
+
+    /**
      * Registers a track diagram label as showing the station on a square.
      *
      * @param station the sensor's square
@@ -1062,7 +1144,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Hiding the labels when the switch goes off only reaches the labels that exist at that
         // moment, and the grid rebuilds itself for a dozen reasons - a page change, a repaint, an
         // edit - so without this the names came back on their own with the switch still off.
-        value.setVisible(autonomyOverlayToggle == null || autonomyOverlayToggle.isOverlayShown());
+        // And whether this station is one autonomy can choose, when Show Inactive Labels is off.
+        value.setVisible(captionShouldShow(station));
 
         // The SET as well as the map.  Making only the map concurrent moved the hazard rather than
         // removing it: the iterator-with-removal below runs on the event thread while
@@ -4618,6 +4701,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void refreshAutonomyPrompt()
     {
+        // Which stations autonomy can choose has just changed, and the captions follow it (FR-023).
+        // Cheap when the setting is on, which is the default: the rule short-circuits.
+        refreshCaptionVisibility();
+
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         boolean waiting = session != null && session.exists()
@@ -6636,6 +6723,60 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public ExecutorService getImageLoader()
     {
         return this.ImageLoader;
+    }
+
+    /**
+     * "Show Inactive Labels" on the Autonomy menu.
+     *
+     * Built here rather than in the form, for the reason buildPathPreferenceMenu gives beside it: the
+     * generated block belongs to the GUI builder and hand edits to it do not survive the next time
+     * somebody opens the form.
+     *
+     * On by default. A caption vanishing is a worse surprise than a crowded diagram, and somebody who
+     * has not asked for this should see the railway as they drew it.
+     */
+    private void buildShowInactiveLabelsMenu()
+    {
+        if (autonomyToolbarMenu == null) return;
+
+        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
+            I18n.t("autolayout.ui.menuShowInactiveLabels"),
+            prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
+
+        show.setToolTipText(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels"));
+
+        show.addActionListener(event ->
+        {
+            prefs.putBoolean(SHOW_INACTIVE_LABELS_PREF, show.isSelected());
+
+            // Applied to what is already drawn, not left for the next rebuild.  The grid rebuilds for
+            // a dozen reasons and none of them is this one, so without this the setting appeared to do
+            // nothing until something unrelated happened to redraw the diagram.
+            refreshCaptionVisibility();
+        });
+
+        autonomyToolbarMenu.add(show);
+    }
+
+    /**
+     * Re-applies the caption rule to every label the diagram currently holds.
+     *
+     * Visibility is normally decided once, as each label is registered. This is for the moments when
+     * the ANSWER changes without the labels being rebuilt - the setting being toggled, and a
+     * configuration being loaded or unloaded, which changes which stations autonomy can choose.
+     */
+    void refreshCaptionVisibility()
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>>
+                square : layoutStations.entrySet())
+            {
+                boolean visible = captionShouldShow(square.getKey());
+
+                for (JLabel label : square.getValue()) label.setVisible(visible);
+            }
+        });
     }
 
     /**

@@ -59,6 +59,19 @@ looked, so I know this is not already here."
 
 ## Inbox
 
+### FR-023 - 2026-08-25 - Show Inactive Labels, so the diagram shows only what autonomy will use
+
+**Kind:** feature  
+**Raised from:** asked for directly
+**Filed:** 2026-08-25
+
+Adam: "under preferences -> autonomy, add a Show Inactive Labels option (default on) that hides the
+ONLY the labels of stations that cannot be chosen in autonomy.  This way, the user will only see
+active trains in the track diagram.  Have this persist between sessions and stored in the registry"
+
+**Claude, 2026-08-25.** Done, and tracked here rather than promoted, because there is nothing to
+reopen: see [MT-181](tests.md#mt-181) to check it.
+
 ### OB-053 - 2026-08-23 - the diagram builds two labels per cell
 
 **Kind:** bug  
