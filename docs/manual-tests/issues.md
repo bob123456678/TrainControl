@@ -625,6 +625,22 @@ test checks every collection, and checks the OTHER page as hard as the renamed o
 
 when using a CS2 layout and the autonomy tab is greyed out, the autonomy checkbox is still visible on the track diagram page.
 
+**Claude, 2026-08-24.** Fixed, together with [OB-095](#ob-095) - they are one fault seen from two
+states.
+
+The Autonomy Controls checkbox on the diagram strip is shown or hidden by `AutonomyOverlayToggle`'s
+`setLoaded`, and every legitimate caller reaches that through `refreshAutonomyPrompt`.
+`initializeTrackDiagram` - which runs for "Switch to Central Station Layout", "Choose Local Data
+Folder" and "Download CS Layout" - called `resetAutonomySession`, which correctly greys the Auto tab,
+and never called `refreshAutonomyPrompt`. So the checkbox kept whatever state it had before the
+switch. Which of the two bugs you saw depended only on what that state happened to be: visible beside
+a greyed tab is this one, visible with a setup available but not loaded is OB-095.
+`refreshAutonomyPrompt` already answers both correctly; it simply was not being asked.
+
+The second half of this entry - making the "autonomy needs a layout stored on this computer" notice
+clickable so it can download one - is a feature rather than a defect and is NOT done. It stays here,
+and this entry stays open for it.
+
 also, the "autonomy needs a layout stored on this computer" notice should be clickable and allow the user to download one.
 
 ### OB-094 - 2026-08-24 - switch to central station layout remains selectable
@@ -636,6 +652,17 @@ also, the "autonomy needs a layout stored on this computer" notice should be cli
 
 switch to central station layout remains selectable even when already using a central station layout.  it should be greyed out.
 
+**Claude, 2026-08-24.** Fixed. The enabling rule was already right and never ran in time.
+
+`repaintPathLabel` greys this item whenever the layout is not local, which is exactly what this asks
+for. It was being called from inside a submission to `LayoutGridRenderer`, a single-thread executor
+whose job is rebuilding the diagram grid - so it queued behind that rebuild. Switching to a Central
+Station layout is itself the biggest producer of that work, so the item stayed at its designer default
+of enabled for as long as the grid took, which is precisely when somebody would look at it.
+
+Called directly now. Safe from any thread: `repaintPathLabel` wraps its whole body in `invokeLater`,
+so it still touches Swing only on the event thread - it simply no longer waits for the grid.
+
 ### OB-095 - 2026-08-24 - show autonomy controls checkbox visibility
 
 **Kind:** bug  
@@ -645,6 +672,9 @@ switch to central station layout remains selectable even when already using a ce
 
 when autonomy is available but not loaded, the show autonomy controls checkbox should be hidden.
 
+**Claude, 2026-08-24.** Fixed by the same one-line change as [OB-093](#ob-093), where the reasoning is
+written out. Same missing call, different starting state.
+
 ### OB-096 - 2026-08-24 - background of no available paths window
 
 **Kind:** bug  
@@ -653,6 +683,20 @@ when autonomy is available but not loaded, the show autonomy controls checkbox s
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 make the text area of "no available paths window" with the text be white.
+
+**Claude, 2026-08-24.** Fixed, and with it the font size that [MT-163](tests.md#mt-163) and
+[MT-160](tests.md#mt-160) asked for twice.
+
+FlatLaf derives a non-editable text pane's background from the panel behind it, which is a grey; every
+other text area in this application sets white explicitly rather than trusting the look and feel.
+
+The font is the more interesting half. It had already been "fixed" once, by taking UIManager's
+`Label.font` whole, on the reasoning that asking the look and feel makes "the standard size of all
+other windows" true by construction. It does not: FlatLaf's label font is SMALLER than the size this
+application sets on its own components, so that change made this window smaller than its neighbours
+rather than the same as them - which is why the same request arrived twice. Measured instead:
+ninety-eight components in the gui package use Segoe UI at 14 against one at 12, so 14 is the standard
+here. The family still comes from the look and feel; only the size is pinned.
 
 ### OB-097 - 2026-08-24 - synchronization issue with autonomy UI
 
