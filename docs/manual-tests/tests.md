@@ -7995,6 +7995,15 @@ the Java Preferences store - so the test asserted whatever was last clicked on t
 for weeks because the preference defaults to on, and failed the moment you turned the grid off while
 testing this. It passes the state explicitly now and checks both.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+1/2. Confirmed works.
+3. Confirmed routes are present, but I also see autonomy.json in the root, and the "autorun" folder which I believe is a copy from the cs2_sample_layout folder.  Is the root autonomy.json a new file?
+
+4/5. will check later
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-173"></a>

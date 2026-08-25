@@ -369,6 +369,24 @@ result in this session should be read as evidence about `testRenderingCost` eith
    regression underneath, and it is invisible while the measurement is this noisy.
 3. The label duplication itself belongs to [OB-053](#ob-053), which Adam has asked to be left alone.
 
+**Claude, 2026-08-24.** Six more runs, and they change the picture: it is not behaving like a coin
+toss today, it is failing every time.
+
+Three runs against the current build gave 708, 720, 720 labels for 336 cells, against a bound of 672.
+Three runs against the build from before the OB-090 change - compiled from `c4a2b7bf` into a separate
+directory, so the two differ only in the code - gave 720, 720, 720.
+
+Two things follow. The first is the reason I measured: nothing in this round caused it, and the
+identical figure on both sides settles that rather than leaving it to judgement. The second is more
+useful. The earlier sample (720, 621, 685, 720, 597) straddled the bound; this one does not go near
+it. So the variance is real but the FLOOR may have risen, which is exactly the case step 2 above says
+is invisible while the measurement is noisy - and it is now visible enough to be worth someone
+looking. 720 for 336 cells is 2.14 labels per cell, and the comment in the test says more than two per
+cell means the grid is being built twice over.
+
+That is a statement about what the number is doing, not a diagnosis. The measurement still has to be
+made deterministic first, per step 1, or the next person will be reading tea leaves as I have been.
+
 
 ### OB-085 - 2026-08-24 - the staging scan could prove a blockedBy cycle impossible, and does not
 
