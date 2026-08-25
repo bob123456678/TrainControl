@@ -20,6 +20,31 @@ public class NetworkProxy
     // a failure while the reader thread is looping on it.
     private volatile DatagramSocket socket;
 
+    /**
+     * Whether this process may take ANY receive port instead of the Marklin one.
+     *
+     * Off, and it has to stay off for the application: a Central Station sends to 15730 and nowhere
+     * else, so a TrainControl bound anywhere else would transmit perfectly and hear nothing back -
+     * which looks like a railway that has stopped responding rather than like a misconfiguration.
+     * That is why this is not a silent fallback when the port is busy.
+     *
+     * It exists for tests. Every test class that builds a MarklinControlStation binds this port, so
+     * only one could run at a time, a hung class kept the port and made every class after it report a
+     * mass failure, and none of them could run at all while Adam had the application open. None of
+     * them receives anything from a Central Station either - there is none - so the port number is
+     * pure contention with no benefit.
+     *
+     * Read from a system property rather than set in code, so the battery turns it on for the whole
+     * run with one flag and no test has to remember anything:
+     *
+     *   java -Dtraincontrol.anyReceivePort=true ...
+     *
+     * Adam, 2026-08-24: "cant we have a mode where it runs without the ports so we stop being
+     * blocked?"
+     */
+    public static final boolean ANY_RECEIVE_PORT =
+        Boolean.getBoolean("traincontrol.anyReceivePort");
+
     // How long to wait after a recoverable receive error, so that a persistent fault cannot spin
     private static final long RECEIVE_ERROR_BACKOFF_MS = 50;
     
@@ -38,10 +63,26 @@ public class NetworkProxy
      * @throws IOException on error with the socket
      */
     public NetworkProxy(InetAddress transmitIP) throws IOException
-    { 
-        this.socket = new DatagramSocket(NetworkProxy.RX_PORT);
+    {
+        this.socket = openReceiveSocket();
         this.transmitIP = transmitIP;
-        this.transmitPort = NetworkProxy.TX_PORT;       
+        this.transmitPort = NetworkProxy.TX_PORT;
+    }
+
+    /**
+     * The receive socket: the Marklin port, or any free one when ANY_RECEIVE_PORT says so.
+     *
+     * One method rather than two call sites, because there are two - the constructor and the reopen
+     * in sendMessage - and a mode that applied to one of them would give a test a socket that worked
+     * until the first send failure and then quietly tried to take the real port back.
+     *
+     * @return a bound socket
+     * @throws IOException if even an ephemeral port cannot be had
+     */
+    private static DatagramSocket openReceiveSocket() throws IOException
+    {
+        // Port 0 asks the operating system for any free port.
+        return ANY_RECEIVE_PORT ? new DatagramSocket() : new DatagramSocket(NetworkProxy.RX_PORT);
     }
     
     /**
@@ -133,7 +174,7 @@ public class NetworkProxy
             // used to be unreachable and transmission stayed broken for the rest of the session
             if (this.socket.isClosed())
             {
-                this.socket = new DatagramSocket(NetworkProxy.RX_PORT);
+                this.socket = openReceiveSocket();
             }
 
             socket.send(packet);
