@@ -57,8 +57,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-177](#mt-177) | 2026-08-24 | Four menu and window details from the testing round | fixed unvalidated | OB-093, OB-094, OB-095, OB-096 |
 | [MT-178](#mt-178) | 2026-08-25 | Importing a legacy autonomy file onto a layout with none | fixed unvalidated | OB-106 |
 | [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | fixed unvalidated | OB-098, OB-100, OB-101, OB-104 |
+| [MT-180](#mt-180) | 2026-08-25 | Three things the interface was not saying | fixed unvalidated | OB-102, OB-103, OB-105 |
 
-Everything else - 124 of 179 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 180 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -8248,6 +8249,15 @@ CS3 dedicated files are still mising, see other bug
 
 <a id="mt-171"></a>
 
+**From [OB-099](issues.md) - "cs3 files still not backed up".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:46  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+these are examples of files that should be downloaded when connected to a CS3 only (not CS2) (IP depends on what's being used) http://192.168.50.25/app/api/locos http://192.168.50.25/app/api/automatics http://192.168.50.25/app/api/mags
+
 ### MT-171 - 2026-08-24 - Nothing about the railway changed when the store started holding objects
 
 **Disposition:** fixed unvalidated
@@ -9072,3 +9082,70 @@ capture locomotive commands button can still be toggled while trains are returni
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.
+
+<a id="mt-180"></a>
+
+### MT-180 - 2026-08-25 - Three things the interface was not saying
+
+**Disposition:** fixed unvalidated
+**From:** OB-102, OB-103, OB-105
+**Written:** 2026-08-25
+
+1. **The timetable names stations, not compass bearings.** Capture a few moves that involve a square
+   where trains can turn round. The Start and Destination columns should read "Platform 3", not
+   "Platform 3 (northbound)".
+2. **A layout that will not read says so.** Switch to a Central Station layout, or download one, in a
+   state where nothing comes back. A dialog should explain that no diagram could be read and what to
+   check. Before, it only reached the log.
+3. **The IP prompt wears the application icon.** Start TrainControl with no saved IP so the address
+   prompt appears: its title bar should carry the TrainControl icon, not the default Java one.
+
+#### Comments
+
+**Claude, 2026-08-25.** Three of Adam's entries, grouped because each is the interface failing to say
+something rather than doing something wrong.
+
+OB-102: the timetable printed `Point.getName()`, and a square where trains may turn round is emitted
+as several Points named "Platform 3 (northbound)" and so on. That distinction is machinery - it
+matters in a running log, where which copy a train is on decides what it can do next - and it is noise
+in a list whose job is "this train went from here to there". `baseNameOf` already existed for exactly
+this. The suffix is untouched everywhere else.
+
+OB-103: the end of switching to a Central Station layout, or downloading one, when nothing comes back.
+It logged and returned. The log is for afterwards; the person who pressed the button is still sitting
+there watching nothing happen. Worded for that moment rather than reusing the log-s own sentence -
+"no layout loaded" is a statement about the model, and what is needed is which of the two likely
+reasons it is.
+
+OB-105: the address prompt is the FIRST thing shown, before the main window exists, so it has no owner
+to inherit an icon from and Swing gives it the default coffee cup. Set quietly - a missing icon
+resource must not stop the application asking for an IP address.
+
+---
+
+**From [OB-102](issues.md) - "directions shown in timetable stations".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:51  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+timetable stations show (northbound) and (southbound) etc.
+
+**From [OB-103](issues.md) - "failing to read layout from CS shows no error in UI".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:51  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI error notice shown.
+
+**From [OB-105](issues.md) - "no traincontrol window icon in IP prompt".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 00:11  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+no traincontrol window icon in IP prompt

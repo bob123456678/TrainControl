@@ -3538,6 +3538,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                             // To ensure the text field is focused
                             JDialog dialog = optionPane.createDialog(I18n.t("ui.ipAddressInputTitle"));
+
+                            // The application's own icon (OB-105).
+                            //
+                            // Adam: "no traincontrol window icon in IP prompt." This dialog has no
+                            // owner window - it is the FIRST thing shown, before the main window
+                            // exists - so Swing gives it the default Java coffee cup, and the very
+                            // first thing a new user sees does not look like the application they
+                            // started. Every other window in the project sets this same icon.
+                            //
+                            // Quietly, if at all: an icon is decoration, and a missing resource must
+                            // not stop the application asking for an IP address.
+                            try
+                            {
+                                java.net.URL icon = org.traincontrol.gui.TrainControlUI.class
+                                    .getResource("resources/locicon.png");
+
+                                if (icon != null)
+                                {
+                                    dialog.setIconImage(
+                                        java.awt.Toolkit.getDefaultToolkit().getImage(icon));
+                                }
+                            }
+                            catch (RuntimeException noIcon)
+                            {
+                                // Decoration only - see above.
+                            }
                             dialog.addWindowFocusListener(new WindowAdapter() 
                             {
                                 @Override

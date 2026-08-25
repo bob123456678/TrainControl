@@ -548,34 +548,7 @@ that remembered which bundle keys carried a placeholder instead of reading them.
 this morning - but the seven it lists have not been worked through.
 
 
-### OB-099 - 2026-08-24 - cs3 files still not backed up
 
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:46  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-these are examples of files that should be downloaded when connected to a CS3 only (not CS2) (IP depends on what's being used) http://192.168.50.25/app/api/locos http://192.168.50.25/app/api/automatics http://192.168.50.25/app/api/mags
-
-
-
-### OB-102 - 2026-08-24 - directions shown in timetable stations
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:51  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-timetable stations show (northbound) and (southbound) etc.
-
-### OB-103 - 2026-08-24 - failing to read layout from CS shows no error in UI
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:51  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI error notice shown.
 
 
 ### FR-022 - 2026-08-24 - crop function
@@ -586,15 +559,6 @@ if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI
 **Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 add a crop / pan function to local locomotive icons at the time of image selection.
-
-### OB-105 - 2026-08-25 - no traincontrol window icon in IP prompt
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-25 00:11  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-no traincontrol window icon in IP prompt
 
 
 ## What has been picked up
@@ -609,6 +573,10 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-25 | OB-105 | bug | No application icon on the IP prompt | - | [MT-180](tests.md#mt-180) |
+| 2026-08-24 | OB-103 | bug | A layout that would not read showed no notice | - | [MT-180](tests.md#mt-180) |
+| 2026-08-24 | OB-102 | bug | Timetable stations carried their direction suffix | - | [MT-180](tests.md#mt-180) |
+| 2026-08-24 | OB-099 | bug | CS3 locomotive database was not downloaded | - | [MT-170](tests.md#mt-170) |
 | 2026-08-25 | OB-106 | bug | Legacy import made no configuration to load into | - | [MT-178](tests.md#mt-178) |
 | 2026-08-24 | OB-104 | bug | Autonomy could start over a Central Station layout | - | [MT-179](tests.md#mt-179) |
 | 2026-08-24 | OB-101 | bug | Capture toggle live while trains returned home | - | [MT-179](tests.md#mt-179) |

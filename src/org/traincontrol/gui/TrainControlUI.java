@@ -5825,6 +5825,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.logf(
                     "layout.ui.errorNoLayoutLoaded"
                 );
+
+                // And on screen, not only in the log (OB-103).
+                //
+                // Adam: "if we get Model error: no layout loaded., there is no UI error notice
+                // shown." This is the end of switching to a Central Station layout or downloading
+                // one - a thing he pressed, that appeared to do nothing. The log line is for
+                // afterwards; the person who pressed the button is still sitting there.
+                //
+                // Worded for that moment rather than as the log's own sentence: "no layout loaded" is
+                // a statement about the model, and what he needs is which of the two likely reasons
+                // it is - the station not answering, or the station having no diagram on it.
+                JOptionPane.showMessageDialog(this,
+                    I18n.t("layout.ui.errorNoLayoutFromCentralStation"));
             }
         });
     }
@@ -20006,6 +20019,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // synchronized UI method queued behind it.  The method has nothing left to guard: its only state,
     // lastTimetableState, is read and written solely inside the invokeLater below, which the EDT
     // already serialises, and the snapshot is a local.
+    /**
+     * What to call a Point in a list a person reads: the station, not the copy of it.
+     *
+     * OB-102, Adam: "timetable stations show (northbound) and (southbound) etc."
+     *
+     * A square where trains may turn round is emitted as several Points, one per side a train can
+     * arrive by, and they are named "Platform 3 (northbound)" and so on so that a running log can say
+     * which way round a train is. That distinction is machinery. In the timetable it is noise: the
+     * reader wants to know the train went from Platform 3 to the yard, and every row carrying a
+     * compass bearing makes the column wider and the list harder to scan for the one thing it is for.
+     *
+     * The suffix is not thrown away anywhere else - the editor, the logs and the path descriptions all
+     * still carry it, because that is where knowing which copy matters.
+     *
+     * Off the FIELD, never getAutonomySession(): this runs from repaintTimetable, which deliberately
+     * works off the event thread, and that getter is a lazy builder that parses every page, can write
+     * to disk and can raise a dialog (SV-B2). With no session - the JSON path - the emitted name is
+     * the only name there is, and it is returned unchanged.
+     *
+     * @param point a Point of the running configuration, or null
+     * @return the station's own name
+     */
+    private String stationLabel(org.traincontrol.automation.Point point)
+    {
+        if (point == null) return "";
+
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session == null) return point.getName();
+
+        String base = session.baseNameOf(point.getName());
+
+        return base == null ? point.getName() : base;
+    }
+
     private void repaintTimetable()
     {
         // The snapshot must not be taken on the EDT.
@@ -20084,7 +20132,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         
             for (TimetablePath path : timeTable)
             {
-                Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(), path.getStart().getName(), path.getEnd().getName(),
+                Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(),
+                stationLabel(path.getStart()), stationLabel(path.getEnd()),
                 path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start +" + (path.getSecondsToNext() / 1000) + "s"};
 
                 tableModel.addRow(data);
