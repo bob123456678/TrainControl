@@ -9353,6 +9353,15 @@ that is a real report and nothing will have caught it.
 "ok as is for now." So it stays unticked every time, and step 1 below is the current behaviour rather
 than an open question.
 
+**One step to add, from the review.** Give a locomotive a cropped icon. Then set its icon again,
+tick Crop, and press **Cancel** in the crop window - and again with **Escape**. Nothing should change:
+the locomotive keeps the crop it had, and the file behind it is still there.
+
+Until this was fixed, cancelling set the full uncropped photograph as the icon and deleted the crop it
+replaced. `cropLocIcon` returned null for "cancelled" and for "could not read the picture" alike, and
+the caller fell back to the uncropped file for both - while the crop dialog's own javadoc said null
+meant "leave everything exactly as it was, not a failure". The two were written the same day.
+
 1. Right-click a locomotive and choose to set its icon. The file chooser should now carry a
    **Crop / pan the image** tick box, and it should be UNTICKED the first time.
 2. Leave it unticked and pick a picture. Everything should behave exactly as it did before.
@@ -9575,6 +9584,10 @@ something that used to happen.
    should run with no dialog at all.**
 5. And a route that throws a switch the train has already gone PAST. **No dialog** - the train has
    finished with that track, and asking about it every time would be the guard crying wolf.
+5b. Then, with a train simply STANDING at a platform and nothing routed over it, run a route that sets
+   that platform's protecting signal to **red**. **No dialog, and it should just work** - red is what
+   protection itself commands, so there is nothing to warn about. Now run one that sets the same
+   signal **green**: that one should ask, because it is turning protection off with a train there.
 6. Do steps 2 to 5 again from the route TILE on the track diagram, which is a separate door and asks
    the same question the same way.
 7. Then the automatic door, which is the one that made this worth fixing. If you have an s88 trigger
@@ -9624,6 +9637,13 @@ Locking and clearance are different questions. The lock asks "may another train 
 guard asks "is there a train on top of this", and the railway already computed that: it is what decides
 when an edge may be released when atomic routes are off. It simply was not computed when nothing was
 going to be released. It is now, in both modes, by the same code.
+
+**Claude, 2026-08-25, after the review.** Step 5b is there because the first version of the
+protecting-signal half ignored the aspect entirely. It refused any route touching any protecting
+signal of any platform with a train parked at it - with nothing locked anywhere - and because
+accessories are skipped as a group, one such signal took every turnout in that route with it. On a
+railway with 39 s88-triggered routes and trains standing at platforms, which is all the time, that is
+most of your routes quietly not working. Review reproduced it.
 
 **The exact logic, since you asked for it.** An accessory is guarded when it is commanded by an edge
 that (a) is on a path a running locomotive holds, and (b) that locomotive's train has not yet cleared.
@@ -9694,8 +9714,29 @@ the whole folder, because a setup is keyed by page ID and half of it is no use.
    unfinished edit.
 6. And the other ending: open the editor, move something, and **Cancel**. Restart normally. The move
    should be gone - as it always was - and again no message.
+7. **Now the same three things in the AUTONOMY editor**, which is the half that was wrong when this
+   was first written and is worth doing carefully. Open the setup editor, name a station or place a
+   locomotive, press **Save**, and restart normally. **Your edit must still be there.** Then do it
+   again and **Cancel**, and restart: the setup should be as it was before you opened it, with no
+   message about an unfinished edit either time.
+8. And one that needs the process killed again: open the AUTONOMY editor, change something, and kill
+   TrainControl from Task Manager. On restart the change should be gone and the log should say the
+   last edit did not finish.
 
 #### Comments
+
+**Claude, 2026-08-25, after the review.** Steps 7 and 8 exist because the first version of this was
+wired only into the track editor. `beginEditSession` is called from the constructor, which serves both
+modes, and all three `endEditSession` calls sat on the track-editor side of an `if (isAutonomyMode())`.
+
+So every autonomy setup session left its note behind and the next start reverted the setup to before
+that editor opened. **Spend an evening naming stations and press Save, and the evening would be gone
+the next day** - which is worse than the defect being fixed, because it destroys saved work rather
+than unsaved work. Found independently by two reviewers, one of which reproduced it on a copy of your
+real configuration.
+
+Step 7 is therefore the most important thing on this page: it is the control, and it is the one that
+was broken.
 
 **Claude, 2026-08-25.** The editor writes the setup after every gesture, deliberately, because the
 autonomy session is rebuilt from disk after each one; the diagram is only written at Save. So an

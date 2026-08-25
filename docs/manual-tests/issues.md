@@ -297,6 +297,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-25 | LD-1..11 | bug | [The last day, reviewed](../reviews/2026-08-25-last-day.md) - nine defects, seven of them from that same day | fixed unvalidated | - |
 | 2026-08-25 | OB-108 | bug | A layout edit that never finished is put back to how it was | - | [MT-191](tests.md#mt-191) |
 | 2026-08-25 | OB-025 | bug | The store keeps a registry of what it keeps | fixed unvalidated | - |
 | 2026-08-25 | OB-107 | bug | The signal window opened over the diagram it describes | - | [MT-182](tests.md#mt-182) |
