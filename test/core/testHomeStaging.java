@@ -1735,6 +1735,55 @@ public class testHomeStaging
     }
 
     /**
+     * The cycle scan does not name a train that was already stuck for its own reasons (OB-085).
+     *
+     * The third over-claim found in this scan, and this one by rereading it rather than by a test -
+     * which is worth recording, because the first two also looked obviously right.
+     *
+     * The cycle argument is "whichever of the two arrives last finds the other already parked on the
+     * square that holds it". It rests on both of them actually parking. If one can never get home at
+     * all - no route, a home it cannot rest at - then it never parks there, the square stays clear,
+     * and the other is free to arrive.
+     *
+     * The plan is impossible either way, so no outcome changes. What changes is the LIST, and the list
+     * is the part the operator reads: naming a locomotive that could get home perfectly well sends
+     * them looking for a fault that is not there.
+     *
+     * MUTATION: removing the `unreachable.contains(...)` guard from the cycle scan fails this test.
+     */
+    @Test
+    public void testACycleDoesNotNameATrainThatWasAlreadyStuck() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assign(layout, LOC_A, "HS C");
+        assign(layout, LOC_B, "HS D");
+
+        layout.getPoint("HS C").setBlockedBy(Arrays.asList(layout.getPoint("HS D")));
+        layout.getPoint("HS D").setBlockedBy(Arrays.asList(layout.getPoint("HS C")));
+
+        // LOC_B cannot rest at HS D whatever anybody else does, so it never parks there - which means
+        // HS C is never actually held back.
+        layout.getPoint("HS D").setActive(false);
+
+        assertFalse(layout.getPoint("HS D").isActive(),
+            "the fixture did not take: HS D has to be somewhere LOC_B cannot come to rest");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "LOC_B has a home it cannot rest at, so this arrangement really is impossible");
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_B)),
+            "the locomotive that genuinely cannot get home is not named.  Got: " + plan.getBlocked());
+
+        assertFalse(plan.getBlocked().contains(loc(LOC_A)),
+            "a locomotive that could park at HS C perfectly well - because the train supposedly "
+            + "holding it back can never arrive - was named as blocked.  That sends the operator "
+            + "looking for a fault that is not there.  Got: " + plan.getBlocked());
+    }
+
+    /**
      * A hold in ONE direction is an ordering, not an impossibility (OB-085).
      *
      * The control, and the assertion that matters most in this pair. The scan above proves a cycle;

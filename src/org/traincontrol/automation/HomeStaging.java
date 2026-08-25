@@ -457,6 +457,20 @@ public final class HomeStaging
                 if (a.getValue().equals(locationOf(this.start, a.getKey()))
                     && b.getValue().equals(locationOf(this.start, b.getKey()))) continue;
 
+                // And neither of them already proved unreachable for its own reasons.
+                //
+                // The cycle argument is "whichever of the two arrives last finds the other already
+                // parked on the square that holds it". If one of them can never get home at all - no
+                // route, a home it cannot rest at, two homes on one section - then it never parks
+                // there, the square stays clear, and the other one is free to arrive.
+                //
+                // The plan is impossible either way, so this changes no outcome. What it changes is
+                // the LIST, and the list is the part the operator reads: naming a locomotive that
+                // could get home sends them looking for a fault that is not there. Found by rereading
+                // this scan rather than by a test, which is worth saying - it is the third over-claim
+                // in it, and the first two were also things that looked obviously right.
+                if (unreachable.contains(a.getKey()) || unreachable.contains(b.getKey())) continue;
+
                 if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
                 if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());
             }
