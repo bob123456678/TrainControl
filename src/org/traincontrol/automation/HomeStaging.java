@@ -437,6 +437,17 @@ public final class HomeStaging
         // Pairwise, like the scan above, and deliberately not generalised to longer cycles. A
         // three-station cycle is equally impossible and is still answered with NO_PLAN_FOUND, which
         // claims less than the truth and claims nothing false. Pairs are what a wrong click produces.
+        // A SNAPSHOT of what the scans above found, not the list this loop is extending.
+        //
+        // The skip below asks whether a locomotive was already proved stuck for its own reasons. Read
+        // against the live list, an entry this very loop had just added would answer that question too
+        // - so one proved cycle silently suppressed another. A review demonstrated it: three
+        // locomotives in two genuine mutual cycles, and the second cycle's pair went unnamed. The
+        // operator repairs both named relations, re-runs, and it is still impossible.
+        //
+        // Which is the same harm the skip was added to remove, pointing the other way.
+        List<Locomotive> alreadyStuck = new ArrayList<>(unreachable);
+
         for (Map.Entry<Locomotive, Point> a : this.homes.entrySet())
         {
             if (!this.start.containsValue(a.getKey())) continue;
@@ -469,7 +480,7 @@ public final class HomeStaging
                 // could get home sends them looking for a fault that is not there. Found by rereading
                 // this scan rather than by a test, which is worth saying - it is the third over-claim
                 // in it, and the first two were also things that looked obviously right.
-                if (unreachable.contains(a.getKey()) || unreachable.contains(b.getKey())) continue;
+                if (alreadyStuck.contains(a.getKey()) || alreadyStuck.contains(b.getKey())) continue;
 
                 if (!unreachable.contains(a.getKey())) unreachable.add(a.getKey());
                 if (!unreachable.contains(b.getKey())) unreachable.add(b.getKey());

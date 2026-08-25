@@ -54,6 +54,15 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     public static void setUpClass() throws Exception
     {
         model = init(null, true, false, false, true);
+
+        // So that a command comes back as an echo and the model's own power state follows it.
+        //
+        // Without this, `stop()` sends and nothing answers, so `getPowerState()` never changes and the
+        // test's oracle is dead - it would report the power still on however well the route worked.
+        // testAutonomyPathValidation sets up the same way and says why.
+        model.setNetworkCommState(false);
+
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
     }
 
     @AfterClass
@@ -179,6 +188,114 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         assertTrue(turnout.isSwitched(),
             "with autonomy not running the route did not switch the accessory either, so the guard is "
             + "refusing routes generally rather than refusing this one case");
+    }
+
+    /**
+     * A refused route still cuts the power, if that is what it also says.
+     *
+     * **The first version of the guard did not, and it is the worst thing this round produced.** The
+     * refusal returned before the command loop, so every command in the route was discarded - and a
+     * route that cuts the power AND sets a trap point, which is the shape a safety route on an s88
+     * trigger naturally has, was refused entirely because of the turnout. The emergency stop did not
+     * run, with nobody present, on the door that fires by itself.
+     *
+     * "Refused whole" is a good argument about accessories: setting three switches of five leaves the
+     * layout in a state nobody chose. It is not an argument for suppressing a stop, which is safe to
+     * obey whatever else is true. So the accessories go as a group and everything else runs.
+     *
+     * Found by the pass that validated the guard, which measured `getPowerState()` afterwards rather
+     * than reasoning about it.
+     *
+     * MUTATION: making the refusal `return` instead of setting `skipAccessories` fails this test - the
+     * power stays on.
+     */
+    @Test
+    public void testTheStopInARefusedRouteStillRuns() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("MX_A", false, null);
+        layout.createPoint("MX_B", true, S88);
+
+        Edge ab = layout.createEdge("MX_A", "MX_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("MX_A").setLocomotive(loc);
+
+        model.go();
+
+        assertTrue(model.getPowerState(),
+            "precondition: the power has to be ON, or the route's stop has nothing to turn off and "
+            + "this test passes without exercising anything");
+
+        final boolean[] powerAfter = {true};
+        final boolean[] switchedAfter = {false};
+
+        layout.setCallback("mixed route probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            // The route the whole finding is about: an emergency stop AND a locked accessory.
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+                Accessory.accessoryDecoderType.MM2, true));
+            commands.add(RouteCommand.RouteCommandStop());
+
+            new MarklinRoute(model, "MX emergency", 84903, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).execRoute(false);
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            if (!model.getPowerState()) powerAfter[0] = false;
+
+            if (turnout.isSwitched()) switchedAfter[0] = true;
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertFalse(powerAfter[0],
+                "a route carrying an emergency stop was discarded whole because one of its switches "
+                + "was on a locked path, so the power stayed on.  The switch is worth refusing; the "
+                + "stop is not");
+
+            assertFalse(switchedAfter[0],
+                "and the accessory half must still be refused - otherwise this test would pass by the "
+                + "guard doing nothing at all");
+        }
+        finally
+        {
+            model.go();
+            model.clearAutoLayout();
+        }
     }
 
     /**

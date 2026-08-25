@@ -312,7 +312,16 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testAHandDispatchProtectsAPlatformSomebodyIsAlreadyStandingIn() throws Exception
     {
-        for (String feedback : new String[] {"47431", "47432", "47433"})
+        // Its OWN addresses (validation pass, C-3).
+        //
+        // This took 47431-47433, which testAThrowWhileLockingReleasesTheTrack builds LK A/B/C on -
+        // and a simulated dispatch clears its feedback from a DETACHED thread, so on a loaded machine
+        // the clear had not landed when the sibling ran and its path read as occupied. Two failures in
+        // eighteen runs, with the reason in the log: "Expects feedback 47432 to be clear".
+        //
+        // The test next door already avoids this by using a range of its own and says so. This one
+        // took the busy addresses instead.
+        for (String feedback : new String[] {"47441", "47442", "47443"})
         {
             if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
 
@@ -326,9 +335,9 @@ public class testBothProtectingSignalsAreThrown
         layout.setSimulate(true);
 
         // The two the dispatch runs between, and a third where somebody is already standing.
-        layout.createPoint("HD A", true, "47431");
-        layout.createPoint("HD B", true, "47432");
-        layout.createPoint("HD P", true, "47433");
+        layout.createPoint("HD A", true, "47441");
+        layout.createPoint("HD B", true, "47442");
+        layout.createPoint("HD P", true, "47443");
 
         // Only the STANDING train's platform is protected, so nothing about the dispatch itself can
         // account for the signal moving.

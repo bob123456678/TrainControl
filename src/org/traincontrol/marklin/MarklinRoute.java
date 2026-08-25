@@ -307,7 +307,21 @@ public class MarklinRoute extends Route
 
         java.util.Collection<Accessory> locked = this.network.getAutoLayout().getActiveAccs();
 
-        if (locked == null || locked.isEmpty()) return null;
+        if (locked == null) return null;
+
+        // The signals protecting squares somebody is standing on, which getActiveAccs cannot see.
+        //
+        // It walks the config commands of active edges, and a protecting signal is not one - it is
+        // driven separately, by occupancy. So a route could turn a platform's signal green with a
+        // train standing at it, and nothing re-asserts it until the next occupancy change: a green
+        // aspect inviting a hand-driven train into an occupied platform, for as long as the train
+        // stays there. Found by the pass that validated the accessory half of this guard.
+        java.util.Set<String> protecting = new java.util.LinkedHashSet<>();
+
+        for (org.traincontrol.automation.Point point : this.network.getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) protecting.addAll(point.getProtectingSignals());
+        }
 
         for (RouteCommand rc : this.route)
         {
@@ -318,7 +332,11 @@ public class MarklinRoute extends Route
             MarklinAccessory accessory =
                 this.network.getAccessoryByAddressIfPresent(rc.getAddress(), rc.getProtocol());
 
-            if (accessory != null && locked.contains(accessory)) return accessory.getName();
+            if (accessory == null) continue;
+
+            if (locked.contains(accessory)) return accessory.getName();
+
+            if (protecting.contains(accessory.getName())) return accessory.getName();
         }
 
         return null;
@@ -380,13 +398,25 @@ public class MarklinRoute extends Route
                     //
                     // Only the accessories that are actually on a locked path, so a route that turns
                     // on the lights or stops the power runs during autonomy exactly as before.
-                    String held = accessoryHeldByAutonomy();
+                    // The ACCESSORY half only, never the whole route.
+                    //
+                    // The first version of this returned here, discarding every command in the route -
+                    // and a validation pass proved what that costs: a route that cuts the power AND
+                    // sets a trap point, which is the shape a safety route on an s88 trigger naturally
+                    // has, was refused entirely because of the turnout. The emergency stop did not
+                    // run. Measured, not reasoned: `getPowerState()` was still true afterwards.
+                    //
+                    // "Refused whole" is a good argument about accessories - setting three switches of
+                    // five leaves the layout in a state nobody chose - and it is not an argument for
+                    // suppressing a stop, which is safe to obey whatever else is true. So the
+                    // accessories go as a group and everything else runs: stop, functions off, lights,
+                    // locomotive speeds, chained routes.
+                    boolean skipAccessories = accessoryHeldByAutonomy() != null;
 
-                    if (held != null)
+                    if (skipAccessories)
                     {
-                        this.network.logf("route.refusedAccessoryOnActivePath", this.getName(), held);
-
-                        return;
+                        this.network.logf("route.refusedAccessoryOnActivePath", this.getName(),
+                            accessoryHeldByAutonomy());
                     }
 
                     for (RouteCommand rc : this.route)
@@ -395,6 +425,9 @@ public class MarklinRoute extends Route
                         {
                             if (rc.isAccessory())
                             {
+                                // Skipped as a group when any of them is on a locked path - see above.
+                                if (skipAccessories) continue;
+
                                 int idd = rc.getAddress();
                                 boolean state = rc.getSetting();
 
