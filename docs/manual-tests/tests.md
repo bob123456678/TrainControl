@@ -66,8 +66,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-186](#mt-186) | 2026-08-25 | Nothing about the railway changed when the last string key went | fixed unvalidated | FR-013 |
 | [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
 | [MT-188](#mt-188) | 2026-08-25 | The blocked-points picker names what it is offering | fixed unvalidated | OB-086 |
-| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | OB-108 |
-| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | OB-108 |
+| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | AU-A2 |
+| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | AU-B7 |
+| [MT-191](#mt-191) | 2026-08-25 | An edit that never finished | needs test | OB-108 |
 
 Everything else - 124 of 181 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -9348,6 +9349,10 @@ that is a real report and nothing will have caught it.
 **From:** FR-022
 **Written:** 2026-08-25
 
+**Adam, 2026-08-25, asked whether the tick box should be remembered between uses or default to on:**
+"ok as is for now." So it stays unticked every time, and step 1 below is the current behaviour rather
+than an open question.
+
 1. Right-click a locomotive and choose to set its icon. The file chooser should now carry a
    **Crop / pan the image** tick box, and it should be UNTICKED the first time.
 2. Leave it unticked and pick a picture. Everything should behave exactly as it did before.
@@ -9562,17 +9567,22 @@ something that used to happen.
 
 1. Start autonomy and let a train take a path that sets some switches - any ordinary run.
 2. While it is under way, go to the **Routes** tab and execute a route that throws one of the switches
-   on that train's path. Nothing should move, and the log should say the route was not run and name
-   the accessory.
-3. Now execute a route that touches nothing on any active path - lights on, or a switch elsewhere.
-   **It should run normally.** This is the half that matters most: the guard must refuse the one case
-   and nothing else.
-4. Do the same from the route TILE on the track diagram, which is a separate door.
-5. Then the automatic door, which is the one that made this worth fixing. If you have an s88 trigger
+   **in front of** that train. You should get a dialog naming the route and the accessory and asking
+   whether to run it anyway. Say **Cancel**: nothing should move.
+3. Run it again and say **OK**. It should run, and the accessory should move. This is the recovery
+   path and it is the reason a plain refusal was wrong - see the comments.
+4. Now execute a route that touches nothing on any active path - lights on, or a switch elsewhere. **It
+   should run with no dialog at all.**
+5. And a route that throws a switch the train has already gone PAST. **No dialog** - the train has
+   finished with that track, and asking about it every time would be the guard crying wolf.
+6. Do steps 2 to 5 again from the route TILE on the track diagram, which is a separate door and asks
+   the same question the same way.
+7. Then the automatic door, which is the one that made this worth fixing. If you have an s88 trigger
    route left over from manual operation whose trigger sensor an autonomy train will cross, enable it
-   and let a run go past. It should be refused and logged rather than throwing the switch.
-6. Finally, with autonomy STOPPED, run all of those routes again. Every one should work exactly as it
-   always has.
+   and let a run go past. There is nobody to ask, so it should be **refused and logged** rather than
+   throwing the switch - and the log line should name the accessory.
+8. Finally, with autonomy STOPPED, run all of those routes again. Every one should work exactly as it
+   always has, with no dialogs.
 
 #### Comments
 
@@ -9584,12 +9594,46 @@ train is routed off the path that was protecting it.
 The diagram's route tile looked guarded and was not: that guard asks whether the tile's own accessory
 is on an active path, and a route tile has no accessory, so it was checking nothing.
 
-Refused rather than asked. This is the model half of the application and has no business putting up a
-dialog - the tile click already asks, for the one case where a person is present - and a route half
-executed leaves the layout in a state nobody chose.
+**Adam, later the same day: "conflicting routes should still be executable in case of a transient
+accessory failure. Add a confirmation dialog to the UI similar to how individual clicks currently work
+when an accessory has an active route."**
 
-Step 3 and step 6 are the controls. A guard that simply refused routes during autonomy would pass
-steps 2, 4 and 5 and be useless.
+He is right, and the case is not obvious until it is said out loud: **a turnout that did not take its
+command is exactly when somebody needs to set it, and exactly when it will be on a locked path** -
+because the path is what commanded it. A guard with no way past it takes the recovery away at the
+moment it is wanted.
+
+So the shape is now: the two doors with a person at them ask, using the same dialog and the same
+wording as clicking an accessory on an active route has always used; the s88 trigger door still
+refuses, because nobody is there to ask. One method serves both human doors so they cannot drift.
+
+Note what a refusal skips and what it does not. Only the ACCESSORY commands are held back - the
+emergency stop, functions off, lights, locomotive speeds and any chained route still run. Refusing the
+whole thing suppressed the stop, which is the one command in a route you least want silently dropped.
+
+**And then: "be careful with auto disallowed routes to avoid regression. once a train passes, signals
+on the route, but behind the train, should still be allowed to be changed by auto routes."**
+
+Also right, and the first version was over-strict for exactly that reason. It asked whether the edge's
+LOCK was still held - and with `atomicRoutes` on, which is what your configuration uses, the lock is
+held for the whole path until the run ends, by design. So every accessory on the path was refused for
+the whole run, including the ones the train cleared in the first thirty seconds. You have 39
+s88-triggered routes.
+
+Locking and clearance are different questions. The lock asks "may another train be routed here". The
+guard asks "is there a train on top of this", and the railway already computed that: it is what decides
+when an edge may be released when atomic routes are off. It simply was not computed when nothing was
+going to be released. It is now, in both modes, by the same code.
+
+**The exact logic, since you asked for it.** An accessory is guarded when it is commanded by an edge
+that (a) is on a path a running locomotive holds, and (b) that locomotive's train has not yet cleared.
+Cleared means the train's LENGTH has gone past it, not its front - so a turnout under the middle of a
+train is still guarded. Where no tile lengths are configured the railway treats an edge as clear once
+the front passes, which is the same trade it has always made for unlocking. Plus the protecting signals
+of squares a locomotive is currently standing on.
+
+Steps 4, 5 and 8 are the controls. A guard that simply refused routes during autonomy would pass steps
+2, 6 and 7 and be useless.
 
 ---
 
@@ -9625,3 +9669,47 @@ Your own rule, quoted inside that method: "The same thing should happen in manua
 the same switches and signals set, and guards applied."
 
 ---
+
+---
+
+<a id="mt-191"></a>
+
+### MT-191 - 2026-08-25 - An edit that never finished
+
+**Disposition:** needs test
+**From:** OB-108, on your ruling "revert to pre save state"
+**Written:** 2026-08-25
+
+This one needs you to kill the application on purpose, so it is worth backing up `config/` first -
+the whole folder, because a setup is keyed by page ID and half of it is no use.
+
+1. Open the track diagram editor on a page that has stations, names, lengths or facings on it.
+2. **Move some of that track** - drag a station square somewhere else. Do not save.
+3. Kill TrainControl from Task Manager. Not File > Exit; end the process.
+4. Start it again. The log should say the last layout edit did not finish and that the setup has been
+   put back. **The page should look exactly as it did before step 2** - the track where it was, and
+   every station, name, length and facing still on it.
+5. Now the control, which matters more than step 4. Open the editor, move something, and **Save**
+   properly. Restart normally. The edit should still be there and there should be no message about an
+   unfinished edit.
+6. And the other ending: open the editor, move something, and **Cancel**. Restart normally. The move
+   should be gone - as it always was - and again no message.
+
+#### Comments
+
+**Claude, 2026-08-25.** The editor writes the setup after every gesture, deliberately, because the
+autonomy session is rebuilt from disk after each one; the diagram is only written at Save. So an
+abnormal exit left disk holding a setup keyed to the squares as moved and page files with the track
+where it was, and the first reconciling save afterwards pruned the difference as settings for track
+that does not exist. Silent, and it is the loss the whole reconcile guard exists to prevent, arriving
+through a door none of its enforcement sites can see.
+
+The editor already kept a snapshot for Cancel. But a snapshot that lives in memory is lost by exactly
+the event it exists to survive, so the same snapshot now also goes to disk as
+`config/autonomy/setup-before-edit.json` and is put back at startup if it is still there - which can
+only mean the last session did not finish.
+
+Steps 5 and 6 are the half that decides whether this is safe rather than merely useful. A note left
+behind by a clean Save would throw away the edit you just made, which is a worse failure than the one
+being fixed. Both are covered by tests as well; they are here because the tests drive the store
+directly and cannot restart an application.

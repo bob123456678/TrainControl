@@ -107,6 +107,24 @@ watching it.
 edits. You do close editors. But this railway lives under OneDrive on a machine that sleeps, and the
 window is every second an editor is open.
 
+**Adam, 2026-08-25: "ob-108 - revert to pre save state."** Shape 2, and the reasoning behind picking it
+turns out to be simpler than the three-way list above made it look. Shape 3 is a heuristic about file
+times, and a heuristic that fails safe as a refusal fails UNSAFE as a proof - it would be deciding not
+to reconcile on evidence that does not actually mean what it is being read as. Shape 1 trades away
+Cancel, which is a working feature.
+
+**Done, in `7a56d029`.** The editor already snapshots the setup in memory when it opens and puts it
+back on Cancel; the same snapshot now also goes to disk, as `config/autonomy/setup-before-edit.json`,
+and is put back at startup if it is still there - which can only mean the last session did not finish.
+A snapshot that lives in memory is lost by exactly the event it exists to survive.
+
+Both endings clear it, Save and Cancel, wired separately because the editor has them separately. That
+half is the one that decides whether the mechanism is safe rather than merely useful: a note left
+behind by a clean Save would throw away the edit you just made, which is worse than the bug. It is a
+test rather than a comment - see [MT-191](tests.md#mt-191).
+
+**State:** fixed unvalidated.
+
 ### OB-053 - 2026-08-23 - the diagram builds two labels per cell
 
 **Kind:** bug  
@@ -161,6 +179,25 @@ rebuilding afterwards, and that is both a different mechanism and a more tractab
 
 Your "i could see text labels adding overhead, but never 2x" still stands, and is still unanswered -
 but it is about the rebuilding rather than the building.
+
+**Adam, 2026-08-25: "ob-053 - so not a bug?"**
+
+Half of it is not. The thing this was FILED as - "something has started building the grid twice over" -
+is measurably not happening. Construction is exactly one label per cell, 384 for 384, six runs with no
+variance. Every figure that made it look like two was counting construction plus however much deferred
+rebuilding had landed before somebody read the counter, which is a quantity with no fixed value: wait
+longer and it grows.
+
+What is left is real but is a different question, and a smaller one: **the diagram rebuilds every label
+about twice more after it has been built.** That is wasted work on a page you have said feels slow, and
+it is the thing worth chasing - but it is a rebuild loop, not a double build, and it is not the
+correctness problem the title claims.
+
+Renaming it would be tidier than leaving it. Left as it is for now because you asked for this one to be
+looked at together, and the history above is the evidence for why the title is wrong.
+
+**State:** not a defect as filed; the rebuilding underneath it is still open.
+
 ### OB-025 - 2026-08-22 - DD-A1: the store says the same thing eleven times, fourteen times over
 
 **Kind:** bug  
@@ -219,6 +256,35 @@ anything on the day it is written.
 Not started, and deliberately not started late in an autonomous round: this is the class holding the
 data you have already lost twice, the ticket says "its own commit, nothing else in it", and it wants a
 green battery either side with somebody watching. It is the obvious first thing for the next session.
+
+**Adam, 2026-08-25: "fix it." Done, in `1d287202`, alone in its commit.**
+
+Each collection is now one entry in `kept()`, and the ten mechanical sites walk it. Seven kinds cover
+the twelve: a square to a string, to a length, to another square, to a list of squares; a square and a
+route across it; a set of squares; a set of pages. What is special about a collection lives with that
+collection - captions sparing a label its own tile lands on, lists being copied into a snapshot
+because `forgetSquares` writes through them, `excludedPages` being keyed by page so the square-level
+sites do nothing to it.
+
+`reconcile` and `applyTo` are still written out by hand, per DD-D9's condition. Both ask a question the
+registry cannot express, and an entry answering "not applicable" for them would be pretending they are
+uniform.
+
+Two smaller duplications went with it. `translatePortals` was `translateTileMap(portals)` letter for
+letter. And the file's known-field list is now derived from the registry rather than repeating it -
+which matters in a direction that is easy to get backwards: a collection MISSING from that list is
+read into its own collection *and* kept as an unknown field, so the next save writes both and the
+stale copy wins. That is what reverted every caption edit once.
+
+`testStoreCollectionsAreHandledEverywhere` stays and guards what is left: that every kept collection is
+IN the registry - the one thing the compiler cannot check - that every site still walks it, and that
+the two hand-written sites still name everything.
+
+**Both mutations were run.** A collection dropped from the registry fails the guard and nine of the
+twelve settings-matrix tests. A site re-inlined with identical behaviour fails the guard and nothing
+else - which is the case the textual guard exists for and the behavioural one is blind to.
+
+**State:** fixed unvalidated.
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -231,6 +297,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-25 | OB-108 | bug | A layout edit that never finished is put back to how it was | - | [MT-191](tests.md#mt-191) |
+| 2026-08-25 | OB-025 | bug | The store keeps a registry of what it keeps | fixed unvalidated | - |
 | 2026-08-25 | OB-107 | bug | The signal window opened over the diagram it describes | - | [MT-182](tests.md#mt-182) |
 | 2026-08-25 | OB-085 | bug | Two homes holding each other back are now proved impossible | - | [MT-187](tests.md#mt-187) |
 | 2026-08-25 | OB-086 | bug | The duplication review's remainder - six places one rule was written twice | - | [MT-187](tests.md#mt-187) |

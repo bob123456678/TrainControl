@@ -97,6 +97,51 @@ and the second call overwrote the first's verdict - by which time the accessory 
 thrown, so "unchanged since I last looked" was true. Found only by running the mutation the javadoc
 claimed. It accumulates now.
 
+#### Both of the sentences in bold above were wrong, and Adam corrected each of them
+
+This is the most useful thing in the document, so it is left in place rather than tidied: the finding
+was right, the fix was reasonable on its own terms, and both of the design decisions stated confidently
+above turned out to be over-reach that only somebody who runs the railway could see.
+
+**"Refused whole" was wrong twice over.** First in the small: refusing whole discarded the emergency
+stop, which is the one command in a route you least want silently dropped. That was caught by
+validation the same night and narrowed to the accessory commands only.
+
+Then in the large, by Adam: *"conflicting routes should still be executable in case of a transient
+accessory failure. Add a confirmation dialog to the UI similar to how individual clicks currently work
+when an accessory has an active route."*
+
+The case is not obvious until it is said out loud. **A turnout that did not take its command is exactly
+when somebody needs to set it, and exactly when it will be on a locked path** - because the path is
+what commanded it. A guard with no way past it takes the recovery away at the moment it is wanted. The
+two doors with a person at them now ask, using the dialog an accessory click has always used; the s88
+trigger door still refuses, because nobody is there to ask. Fixed in `5a9d57a6`.
+
+**"Only the accessories actually on a locked path" was too strict**, and Adam predicted the shape of it
+before seeing the code: *"be careful with auto disallowed routes to avoid regression. once a train
+passes, signals on the route, but behind the train, should still be allowed to be changed by auto
+routes."*
+
+The guard asked whether the edge's LOCK was still held - and with `atomicRoutes` on, which is what his
+configuration uses, the lock is held for the whole path until the run ends, **by design**. So every
+accessory on the path was refused for the whole run, including the ones the train cleared in the first
+thirty seconds. His railway has 39 s88-triggered routes.
+
+Locking and clearance are different questions. The lock asks *may another train be routed here*, and
+atomic means no for the whole run. The guard needs to ask *is there a train on top of this* - and the
+railway already computed that: it is what decides when an edge may be released when atomic routes are
+off. It simply was not computed when nothing was going to be released. Now it is, in both modes, by the
+same code, with the unlocking as one of two consumers rather than the owner. Fixed in `48f48bae`.
+
+**What this says about the round.** Two of the round's design decisions were made by reasoning from the
+code, and both were defensible from the code. Neither survived contact with somebody who knows what the
+railway is for. The first, "the model does not show dialogs", is a rule that is true in general and
+whose exception - a person recovering from a hardware fault - is invisible from inside `MarklinRoute`.
+The second is worse, because the information was there: `atomicRoutes` is read three hundred lines from
+the guard, and asking what it did to the guard's premise was one grep. What made it easy to skip was
+that the guard *looked* like it followed the train. It read `isLockHeld`, which does follow the train -
+in the other mode.
+
 ### AU-A1 - the OB-085 impossibility proof was built out of a rule the railway does not have
 
 **Found by:** the core pass. **Fixed:** `4419d1cf`, narrowed further in `6523a90b`.
