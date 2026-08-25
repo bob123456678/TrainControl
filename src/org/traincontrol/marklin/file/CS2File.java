@@ -1906,6 +1906,28 @@ public final class CS2File
         File magsFile = new File(configDir, "magnetartikel.cs2");
 
         copyAtomically(this.getMagURL(false), magsFile);
+
+        // And the ROUTES, which this did not fetch (FR-021).
+        //
+        // Adam asked whether the current route config is exported when a backup is requested. For a
+        // local layout it always was - the archive copies the whole `config` folder, and
+        // `fahrstrassen.cs2` sits in it. For a layout read from the Central Station the backup
+        // downloads a copy first, and this method is that download: it took the track diagram, the
+        // pages and the accessories, and left the routes behind. So a Central Station backup was
+        // missing them, and so was the local copy this menu makes when it switches over.
+        //
+        // Tolerated when absent, unlike the three above. A Central Station with no routes defined is
+        // an ordinary thing, and the whole download should not fail because there is nothing to
+        // fetch - which is a different judgement from the accessory file, whose absence would mean
+        // the station is not answering properly.
+        try
+        {
+            copyAtomically(this.getRouteURL(), new File(configDir, "fahrstrassen.cs2"));
+        }
+        catch (Exception noRoutes)
+        {
+            logMessage("No routes were downloaded from the Central Station.", noRoutes, false);
+        }
     }
     
     /**

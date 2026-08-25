@@ -15847,6 +15847,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the finally, whatever happens to the archive.
             File centralStationCopy = null;
 
+            // And TrainControl's OWN route database, exported (FR-021). Same treatment.
+            File routesExport = null;
+
             this.backupDataMenuItem.setEnabled(false);
 
             // Given back whatever happens.  It is switched off so a second backup cannot start while
@@ -15881,6 +15884,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 state.put(TrainControlUI.DATA_FILE_NAME, new File(TrainControlUI.DATA_FILE_NAME));
                 state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
                     new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
+
+                // TrainControl's OWN routes, exported as JSON (FR-021).
+                //
+                // Adam: "OB 90 should run an export of our route db." The `fahrstrassen.cs2` inside
+                // the config folder is the CENTRAL STATION's copy, and the two are not the same thing:
+                // routes are edited in this application, and its route database is what actually runs.
+                // A backup holding only the station's file would restore whatever the station last
+                // knew, not what the operator built.
+                //
+                // Written through the same door the Export Routes menu item uses, so the file in the
+                // archive is one that Import Routes will read back.
+                //
+                // A failure here is named and the rest of the archive still written: the routes are
+                // one of several things being saved, and losing the whole backup because one of them
+                // could not be serialised is the wrong trade.
+                try
+                {
+                    routesExport = java.io.File.createTempFile("tc-routes", ".json");
+
+                    java.nio.file.Files.write(routesExport.toPath(),
+                        this.model.exportRoutes().getBytes(StandardCharsets.UTF_8));
+
+                    state.put("routes.json", routesExport);
+                }
+                catch (Exception routes)
+                {
+                    unsaved.add("routes.json: " + routes);
+
+                    if (routesExport != null)
+                    {
+                        routesExport.delete();
+
+                        routesExport = null;
+                    }
+                }
 
                 // The LEGACY autonomy file (IAR-B1).
                 //
@@ -15978,6 +16016,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // the diagram left in a temporary folder is exactly the sort of second copy this
                 // application keeps being bitten by.
                 if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
+
+                if (routesExport != null) routesExport.delete();
 
                 this.backupDataMenuItem.setEnabled(true);
             }

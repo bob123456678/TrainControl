@@ -60,8 +60,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-169](#mt-169) | 2026-08-24 | The three things Adam asked for after running MT-159, MT-160 and MT-163 | fixed unvalidated | MT-159, MT-160, MT-163 |
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
 | [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
+| [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
 
-Everything else - 124 of 171 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 172 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7916,5 +7917,80 @@ none, a name neither forgotten nor reported, an orphaned station never removed.
 They were all caught by tests written over the past week. But the compiler could not see any of them,
 before or after the change, so the honest position is that the automated suite found the ones it
 covers and this entry is for the ones it does not.
+
+---
+
+<a id="mt-172"></a>
+
+### MT-172 - 2026-08-24 - The autonomy editor's grid, its hover outline, and the routes in a backup
+
+**Disposition:** fixed unvalidated
+**From:** OB-091, FR-021
+**Written:** 2026-08-24
+
+**The grid, in both editors.** Open the layout editor and the autonomy editor in turn, and toggle the
+grid in each.
+
+1. The diagram should widen by the same amount in both when the grid goes on. It always did in the
+   layout editor; the autonomy editor used to draw its line without making room for it, which is what
+   was truncating the tile art.
+2. With the grid OFF, tiles must sit flush in both - no white gap between them. That is MT-127 and it
+   must still hold.
+
+**The hover outline.** In the autonomy editor, move the pointer across the diagram. Each square should
+take a blue outline as you cross it, the way it does in the layout editor - and **nothing should move**
+while you do it, with the grid on or off.
+
+**The routes in a backup.** Two different things, and the first applies to every layout.
+
+3. File > Backup TrainControl Data, and open the zip. It should contain **`routes.json`** at the top
+   level - that is TrainControl's OWN route database, exported through the same door the Export Routes
+   menu item uses. Open it and check your routes are in it; File > Import Routes should read it back.
+4. If your layout is on the Central Station: say yes to including it, and the archive should also carry
+   `central-station-layout/config/fahrstrassen.cs2` alongside the track diagram and
+   `magnetartikel.cs2`.
+5. Also check "Download Central Station Layout Files" from the menu: the folder it writes should have
+   the route file in it too.
+
+For a LOCAL layout the station's own `fahrstrassen.cs2` was already in the archive - the whole `config`
+folder is copied - but that is the STATION's copy, not the database this application runs, which is
+why step 3 exists.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam, OB-091: "enabling the grid widens the track diagram in the layout editor
+(how it always was, because there is a double line in between cells), but not in the autonomy editor.
+Make the behavior of the autonomy editor match so that there are no tile truncations. also, add the
+blue outline hover effect to the autonomy editor."
+
+The autonomy editor drew its grid with a border that paints and reserves nothing, on the reasoning that
+MT-127 requires its tiles to sit flush. That read one rule across two states: MT-127 is about the grid
+being OFF, and it is answered by the branch that returns no border at all. With the grid ON, reserving
+nothing means the cell is sized as though there were no line and then has one painted over it.
+
+The hover was not weakened, it was absent - `receiveMoveEvent` returned immediately in autonomy mode,
+on the reasoning that the hover previews a placement and nothing is placed here. The outline is not a
+preview; it is the answer to "which square am I about to right-click", and this editor's menus act on
+exactly that square. The tooltip preview stays off.
+
+FR-021, Adam: "validate that the current route config is exported when a backup is requested", and
+then "OB 90 should run an export of our route db."
+
+Two separate gaps, and his second message is the one that matters. `fahrstrassen.cs2` is the CENTRAL
+STATION's copy of the routes; TrainControl has its own route database, edited in this application, and
+that is what actually runs. A backup holding only the station's file would restore whatever the station
+last knew rather than what the operator built. So the archive now carries `routes.json`, written
+through the same method the Export Routes menu item uses, which means Import Routes will read it back.
+
+The station's file was missing too, on one path. `downloadCS2Layout` - used by the backup for a Central
+Station layout, and by the download menu to make a local copy - fetched the track diagram, the pages
+and the accessories and left the routes behind. It is tolerated when absent, unlike the other three: a
+station with no routes defined is ordinary, and the whole download should not fail over it.
+
+**One thing this turned up that is worth knowing.** `testEditorSurfaceRules` asked
+`LayoutEditor.restingBorder(...)` in its two-argument form, which reads the live grid preference out of
+the Java Preferences store - so the test asserted whatever was last clicked on this computer. It passed
+for weeks because the preference defaults to on, and failed the moment you turned the grid off while
+testing this. It passes the state explicitly now and checks both.
 
 ---

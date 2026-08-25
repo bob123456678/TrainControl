@@ -743,8 +743,32 @@ public class LayoutEditor extends PositionAwareJFrame
    
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
-        // hover previews what a diagram edit would place; in autonomy mode nothing is being placed
-        if (isAutonomyMode()) return;
+        // In autonomy mode there is no PLACEMENT preview - nothing is being placed - but the blue
+        // outline still says where the pointer is (OB-091).
+        //
+        // Adam: "also, add the blue outline hover effect to the autonomy editor." Returning here took
+        // the whole gesture away, tooltip and outline together, on the reasoning that the preview had
+        // nothing to show. The outline is not a preview: it is the answer to "which square am I about
+        // to right-click", and this editor's menus act on exactly that square.
+        //
+        // `lastHoveredX/Y` are deliberately NOT set. They are where a paste would land, and nothing is
+        // pasted here - leaving them alone keeps this from teaching the placement code a position it
+        // has no business acting on.
+        //
+        // Nothing moves: highlightLabel sizes the outline to the room the resting border takes, which
+        // is a line when the grid is on and an overlay when it is off.
+        if (isAutonomyMode())
+        {
+            if (label == null || (this.popup != null && this.popup.isVisible())) return;
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                this.clearBordersFromChildren(this.grid.getContainer());
+                this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
+            });
+
+            return;
+        }
 
         if (this.popup != null && this.popup.isVisible()) return;
 
@@ -3193,20 +3217,23 @@ public class LayoutEditor extends PositionAwareJFrame
         // reserving anything.  See overlayLine.
         if (!grid) return null;
 
-        // The autonomy editor draws the grid ON its squares.
+        // BOTH editors reserve the room, and this used to be the one place they differed (OB-091).
         //
-        // It used to draw no grid at all, whatever the toggle said, and the toggle was on screen in
-        // both editors - Adam, OB-056: "grid on/off in autonomy editor - checkbox has no effect."
+        // The autonomy editor drew its grid with overlayLine - painted on the square, reserving
+        // nothing - on the reasoning that MT-127 requires its tiles to sit flush. That reads across
+        // two states as though it were one. MT-127 is about the grid being OFF: "the grid is correctly
+        // gone, but now there is a gap between tiles (essentially a white grid)", and the branch above
+        // answers it by returning null, which is unchanged.
         //
-        // What MT-127 actually required is that its tiles sit FLUSH, exactly as they do in the viewer:
-        // "The grid is correctly gone, but now there is a gap between tiles (essentially a white
-        // grid)".  That is a rule about ROOM, not about whether a line is drawn, and overlayLine draws
-        // a line while reserving none - so the grid can be offered here without the gap coming back.
+        // With the grid ON, reserving nothing means the cell is sized as though there were no line and
+        // then has one painted over it, so the line eats a pixel of the tile art. Adam: "enabling the
+        // grid widens the track diagram in the layout editor (how it always was, because there is a
+        // double line in between cells), but not in the autonomy editor. Make the behavior of the
+        // autonomy editor match so that there are no tile truncations."
         //
-        // A line border would bring it straight back, which is why this is not simply the branch below
-        // with the condition dropped.
-        if (autonomy) return overlayLine(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH);
-
+        // So the widening is not a defect to be avoided here - it is what makes room for the line, and
+        // the layout editor has always paid it. overlayLine is still what the HOVER outline uses, where
+        // the resting border is null and nothing may move.
         return BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH);
     }
 

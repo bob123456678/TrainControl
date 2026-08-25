@@ -344,13 +344,20 @@ public class AutonomyOverlayToggle extends JPanel
         findings.setForeground(totalErrors > 0
             ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
 
-        // One number, not two.  Split into errors and warnings it was four figures in a strip an inch
-        // tall, and the split says nothing a reader can act on differently - both mean "open the
-        // editor and look".  The WORDS still say which kinds are in there, because "warnings" and
-        // "errors and warnings" mean rather different things about whether the setup will run.
-        findings.setText(I18n.f(totalErrors > 0
-                ? "autosetup.ui.labelFindingsCountErrors" : "autosetup.ui.labelFindingsCount",
-            pageErrors + pageWarnings, totalErrors + totalWarnings));
+        // Errors and warnings said SEPARATELY when there are errors (OB-090).
+        //
+        // This showed one number - the two added together - on the argument that the split says
+        // nothing a reader can act on differently. Adam read it as the error count: "the autonomy
+        // error count is 4 but shows as 8", with four of each. The arithmetic was right and the label
+        // was not, and a number in red that means "errors and warnings" will be read as "errors" by
+        // anybody who is not thinking about the label.
+        //
+        // The page figure survives as the third number rather than the first, because "how many are
+        // here" is what you want AFTER knowing whether any of them stop the setup running.
+        findings.setText(totalErrors > 0
+            ? I18n.f("autosetup.ui.labelFindingsCountErrors", totalErrors, totalWarnings,
+                pageErrors + pageWarnings)
+            : I18n.f("autosetup.ui.labelFindingsCount", totalWarnings, pageWarnings));
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
     }

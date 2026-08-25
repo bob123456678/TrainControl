@@ -463,6 +463,7 @@ the reviewer was wrong: I said no test drives a real event thread, and `testBusy
 pumps a real modal EDT. The genuine EDT hole is narrower than I claimed - blocking dialogs on the
 export path, and four test classes that call `setViewListener` off the event thread themselves.
 
+
 ### OB-090 - 2026-08-24 - autonomy error count inconsistent, fix it button doesn't show
 
 **Kind:** bug  
@@ -472,23 +473,35 @@ export path, and four test classes that call `setViewListener` off the event thr
 
 in the current config, the autonomy error count is 4 but shows as 8.  also, the fix it button is not shown, rather just "start autonomy" when the config had worked before.
 
-### FR-021 - 2026-08-24 - export routes with backup
+**Claude, 2026-08-24. Two halves, and only one was arithmetic.**
 
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 18:11  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+**The count was right and the label was wrong.** The strip shows ONE number, deliberately -
+`totalErrors + totalWarnings` - under a red foreground when any of them are errors. With four of each
+it says 8, and there is nothing in the words to stop that being read as the error count. The comment
+beside it argued that splitting "says nothing a reader can act on differently"; you read it as errors,
+and you wrote the application, which settles that. It now reads `4 errors, 4 warnings - 3 on this
+page`.
 
-validate that the current route config is exported when a backup is requested.  include the file in the zip
+**The Fix button is a design question, so it is left for you.** It appears when
+`session.hasBlockingProblems()`, and that asks the GRAPH only - scissors crossings, unaddressed
+switches, unpaired links. Your four errors come from the CHECKS - unreachable stations, closed runs,
+unnamed points - which are ERROR severity in the lists but do not block a build. So the setup really
+does still load and run, which is why you were offered "start autonomy", and it is also why the
+config "had worked before".
 
-### OB-091 - 2026-08-24 - grid widens layout editor, not autonomy editor
+Three ways to go, and I did not pick one because each trades something real:
 
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 18:19  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+1. **Leave it.** The errors are listed, and clicking one opens the editor at that spot - which is what
+   the hint under the list says. Nothing is hidden; it just is not a button.
+2. **Offer Fix instead of Start whenever there are ERROR findings.** Matches what you expected. Costs
+   you the ability to start a setup that has an error you have decided to live with - and you have
+   run this one with them.
+3. **Offer both.** Truthful, and one more control on a panel that already has several.
 
-enabling the grid widens the track diagram in the layout editor (how it always was, because there is a double line in between cells), but not in the autonomy editor.  Make the behavior of the autonomy editor match so that there are no tile truncations.   also, add the blue outline hover effect to the autonomy editor.
+My inclination is 2 if you consider an ERROR finding something that should always be dealt with before
+running, and 1 if some of them are ones you knowingly ignore. That is a question about your railway
+rather than about the code.
+
 
 ### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
 
@@ -575,6 +588,8 @@ not, never both.
 | 2026-08-24 | FR-017 | feature request | The no-available-paths reasons, as a window | fixed unvalidated | [MT-163](tests.md#mt-163) |
 | 2026-08-24 | FR-019 | feature request | The backup dialog offers to show the file | fixed unvalidated | [MT-166](tests.md#mt-166) |
 | 2026-08-24 | FR-020 | feature request | Backing up a layout that lives on the Central Station | fixed unvalidated | [MT-170](tests.md#mt-170) |
+| 2026-08-24 | FR-021 | feature request | The route file is downloaded, so it reaches the backup | fixed unvalidated | [MT-172](tests.md#mt-172) |
+| 2026-08-24 | OB-091 | bug | The autonomy editor reserves the same room for the grid | - | [MT-172](tests.md#mt-172) |
 | 2026-08-24 | OB-087 | bug | A deadlock reported on an old build; a real one found and reverted | - | [MT-167](tests.md#mt-167) |
 | 2026-08-24 | OB-088 | bug | Capture stopped whenever the setup was rebuilt | - | [MT-168](tests.md#mt-168) |
 | 2026-08-23 | OB-045 | bug | Autonomy Setup greyed while trains run | - | [MT-137](tests.md#mt-137) |

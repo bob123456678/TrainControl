@@ -268,14 +268,28 @@ public class testEditorSurfaceRules
     @Test
     public void testTheAutonomyEditorHasNoVisibleGrid()
     {
+        // The GRID STATE is passed, never left to the machine (OB-091).
+        //
+        // These used the two-argument form, which asks `showGrid()` - and that reads a live user
+        // preference out of the Java Preferences store. So this test asserted whatever the person at
+        // this computer last clicked. It passed for weeks because the preference defaults to true, and
+        // failed the moment Adam turned the grid off while testing something else: the layout editor's
+        // border is legitimately null with the grid off, and the first assertion below calls that
+        // "the layout editor lost its grid".
+        //
+        // Same family as the carriage-return dependence (FBR-C8): a guard whose answer comes from the
+        // environment is not a guard. Both states are checked now, explicitly.
         javax.swing.border.Border editing =
-            org.traincontrol.gui.LayoutEditor.restingBorder(false, false);
+            org.traincontrol.gui.LayoutEditor.restingBorder(false, false, true);
 
         javax.swing.border.Border autonomy =
-            org.traincontrol.gui.LayoutEditor.restingBorder(false, true);
+            org.traincontrol.gui.LayoutEditor.restingBorder(false, true, true);
 
         javax.swing.border.Border palette =
-            org.traincontrol.gui.LayoutEditor.restingBorder(true, true);
+            org.traincontrol.gui.LayoutEditor.restingBorder(true, true, true);
+
+        assertNull(org.traincontrol.gui.LayoutEditor.restingBorder(false, false, false),
+            "with the grid off the layout editor must rest in no border at all (MT-127)");
 
         assertTrue(editing instanceof javax.swing.border.LineBorder,
             "the layout editor lost its grid - OB-028 asks for the borders to RETURN in the editor");
@@ -284,10 +298,17 @@ public class testEditorSurfaceRules
         // (essentially a white grid)" - and asserting null pinned the implementation that happened to
         // satisfy it, which then made the grid toggle undeliverable in this editor (OB-056). The grid
         // is drawn here now, by a border that paints and reserves nothing.
-        assertEquals(autonomy == null ? 0 : autonomy.getBorderInsets(new javax.swing.JLabel()).left, 0,
-            "the autonomy editor's tiles must sit flush, exactly as they do in the viewer. A border "
-            + "that takes up room shows the panel behind it in that room - which is a white grid where "
-            + "the grey one used to be (MT-127)");
+        // With the grid ON both editors reserve the same room, so no tile is truncated by a line
+        // drawn over art that was sized without it (OB-091). MT-127's rule is the assertion above,
+        // about the grid being OFF.
+        assertEquals(autonomy.getBorderInsets(new javax.swing.JLabel()).left,
+            editing.getBorderInsets(new javax.swing.JLabel()).left,
+            "the two editors reserve different room for the same grid, so a tile is a pixel narrower "
+            + "in one of them (OB-091)");
+
+        assertNull(org.traincontrol.gui.LayoutEditor.restingBorder(false, true, false),
+            "with the grid off the autonomy editor must rest in no border either - that is MT-127, "
+            + "and it is about this state rather than the one above");
 
         assertTrue(palette instanceof javax.swing.border.LineBorder,
             "the palette needs its borders in both modes - those tiles are a menu of things to place, "
@@ -550,12 +571,24 @@ public class testEditorSurfaceRules
             + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
             + "editor's own rule below pins");
 
+        // The two editors reserve the SAME room with the grid on (OB-091).
+        //
+        // This asserted the opposite - that the autonomy editor reserves none - citing MT-127. That
+        // read one rule across two states: MT-127 is about the grid being OFF, and the assertion above
+        // is the one that pins it. With the grid ON, reserving nothing means the cell is sized as
+        // though there were no line and then has one painted over it, so the line eats a pixel of the
+        // tile art. Adam: "make the behavior of the autonomy editor match so that there are no tile
+        // truncations."
         assertEquals(
-            LayoutEditor.restingBorder(false, true, true).getBorderInsets(square).left, 0,
-            "the autonomy editor draws its grid ON the squares (OB-056), so it must reserve no room. "
-            + "A border that takes up room shows the panel behind it in that room - a white grid where "
-            + "the grey one used to be, which is MT-127 and which the autonomy editor's own rule "
-            + "below pins");
+            LayoutEditor.restingBorder(false, true, true).getBorderInsets(square).left,
+            LayoutEditor.restingBorder(false, false, true).getBorderInsets(square).left,
+            "the two editors reserve different amounts of room for the same grid, so a tile is a "
+            + "pixel narrower in one of them and its art is truncated by the line drawn over it "
+            + "(OB-091)");
+
+        assertNull(LayoutEditor.restingBorder(false, true, false),
+            "with the grid OFF the autonomy editor must still rest in no border at all - that is what "
+            + "MT-127 is about, and it is the state the assertion above used to be applied to");
 
         assertTrue(LayoutEditor.restingBorder(false, false, true).getBorderInsets(square).left > 0,
             "the grid border takes up no room, so nothing above tests anything");
