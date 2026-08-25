@@ -7839,6 +7839,20 @@ regression through, since nothing had tested capture across a rebuild.
 
 I don't see any commands.  And the table headings are "Title 1", "Title 2", "Title 3", "Title 4", instead of what it should be.  Regression.
 
+**Claude, 2026-08-24.** Both halves of this are one cause, and the headings are the proof of it.
+
+"Title 1" to "Title 4" are the GUI Builder’s default column names, sitting in the generated
+model exactly as the designer left them. `repaintTimetable()` replaces that model the first time it
+runs - it checks `getColumnCount() != 5`, and four is not five - so seeing those headings means the
+method had never run once in the whole session.
+
+That is a stronger statement than "the table was empty". An empty table has two explanations: nothing
+captured, or nothing repainted. The designer headings have only one. Nothing was repainting it,
+because the callback that announced a path start or end was deleted with the GraphStream window in
+`d8db4879`. The entries were there the whole time.
+
+Fixed with [MT-149](#mt-149); check it with [MT-175](#mt-175).
+
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
