@@ -616,6 +616,66 @@ live id, because no fixture anywhere had a page named like a number - so the col
 arise. Same shape as TA-A1 and CR-C3: the fixture decided the answer before the assertions did. The new
 test checks every collection, and checks the OTHER page as hard as the renamed one.
 
+### OB-093 - 2026-08-24 - autonomy checkbox visible when it shouldn't be
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 21:05  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when using a CS2 layout and the autonomy tab is greyed out, the autonomy checkbox is still visible on the track diagram page.
+
+also, the "autonomy needs a layout stored on this computer" notice should be clickable and allow the user to download one.
+
+### OB-094 - 2026-08-24 - switch to central station layout remains selectable
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 21:07  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+switch to central station layout remains selectable even when already using a central station layout.  it should be greyed out.
+
+### OB-095 - 2026-08-24 - show autonomy controls checkbox visibility
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 21:08  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when autonomy is available but not loaded, the show autonomy controls checkbox should be hidden.
+
+### OB-096 - 2026-08-24 - background of no available paths window
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 21:10  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+make the text area of "no available paths window" with the text be white.
+
+### OB-097 - 2026-08-24 - synchronization issue with autonomy UI
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 21:11  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+a route finished, but the loc status panel under Locomotive Commands still indicated an active route.
+
+**Claude, 2026-08-24.** Not a synchronisation problem, and the same cause as the timetable one.
+
+The locomotive status panel redraws when the layout announces that a path has started or finished. The
+registration that made it do so lived inside the method that built the GraphStream graph window, which
+wanted the same notification, and was deleted with that window in `d8db4879`. So the panel showed
+whatever it last showed - a route that had finished went on reading as active until something else
+happened to repaint it.
+
+The timetable lost the other of that callback's two calls, which Adam reported separately as capture
+not working at all. Fixed together: `AutonomyRefreshCallback.attach`, called from the window after
+every `parseAuto`. See [MT-149](tests.md#mt-149) for the full account and
+[MT-175](tests.md#mt-175) to check it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

@@ -2551,6 +2551,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param name the configuration that loaded, for the log
      * @param resumed whether this was the startup resume rather than the user pressing the button
      */
+    /**
+     * Re-attaches the panels that describe a running railway to the layout that is running it.
+     *
+     * The timetable and the locomotive status panel are descriptions of path starts and path ends and
+     * of nothing else, so they redraw when the layout says one has happened and at no other time. That
+     * notification used to be registered by the code that built the GraphStream graph window, which
+     * wanted it too; when that window was deleted in `d8db4879` the registration went with it and both
+     * panels quietly stopped being true. Nothing failed - Adam found them separately, as the timetable
+     * "capturing nothing" (it was capturing perfectly and never being shown) and as OB-097, "a route
+     * finished, but the loc status panel still indicated an active route".
+     *
+     * Called after EVERY parseAuto, because parseAuto replaces the Layout object and callbacks live on
+     * the object. That is the same reason the diagram monitor is re-bound beside it.
+     *
+     * @param layout the layout just built, or null
+     */
+    void attachAutonomyRefresh(Layout layout)
+    {
+        org.traincontrol.automationui.AutonomyRefreshCallback.attach(layout, () ->
+        {
+            this.repaintTimetable();
+            this.repaintAutoLocListLite();
+        });
+    }
+
     public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
         // both from the JSON path, and for the same reasons: the route list repaints against the new
@@ -2568,6 +2593,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // it - a monitor left pointing at the old one would be watching a railway nobody runs
         getDiagramMonitorDriver().bind(session);
         getDiagramMonitorDriver().start();
+
+        // And the timetable's and the status panel's own notification, for the same reason and on the
+        // same object.  This line is the one the graph window used to carry.
+        attachAutonomyRefresh(this.model.getAutoLayout());
 
         ensureDiagramStrip();
 
@@ -17268,6 +17297,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.model.parseAuto(this.autonomyJSON.getText());
+
+            // The other way a Layout comes into being, and callbacks live on the object.
+            attachAutonomyRefresh(this.model.hasAutoLayout() ? this.model.getAutoLayout() : null);
 
             if (!this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
             {

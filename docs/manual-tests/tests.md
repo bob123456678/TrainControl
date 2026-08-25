@@ -63,8 +63,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
 | [MT-173](#mt-173) | 2026-08-24 | The diagram strip offers Fix, not Start, when the setup has errors | fixed unvalidated | OB-090 |
 | [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092 |
+| [MT-175](#mt-175) | 2026-08-24 | Capture fills the timetable, and the table shows it filling | fixed unvalidated | MT-149, OB-097 |
 
-Everything else - 124 of 174 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 175 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -6416,6 +6417,12 @@ Six guarded doors now, all through the one helper.
 with trains running to check that the Layouts menu refuses everything: delete, rename, duplicate,
 combine.
 
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+the requirements are too long.  I can't cleanly view the testing requirements for this in the triage app.  Need to mark what tests needs to be run cleanly, and support syntax like bullet lists.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-142"></a>
@@ -6968,6 +6975,49 @@ about a piece of state surviving something that looks unrelated to it. Mutation-
 **This entry stays open**, per his instruction: the original intent - that the timetable survives
 renaming a locomotive - still needs testing now that capture works.
 
+**Claude, 2026-08-24.** Found, and it is one cause for two of Adam's bug reports.
+
+**The capture was never broken.** A real autonomy run, with capture on, puts entries in the timetable
+and always has - `testTimetableCaptureThroughARealRun` now runs the sanity configuration through
+`parseAuto`, switches capture on where the window switches it, and lets autonomy pick its own paths;
+nine entries landed the first time I probed it. What had stopped was the REDRAW. The timetable is a
+description of path starts and ends and of nothing else, so it repaints when the layout announces one
+and at no other time.
+
+**The announcement was deleted with the graph window.** `d8db4879` - "The graph window is gone, and
+GraphStream with it" - removed the method that built the GraphStream view. Inside it, four lines
+registered a `Layout` callback named `GraphCallback` which fired at the beginning and end of every
+path and called `repaintTimetable()` and `repaintAutoLocListLite()`. That window wanted the
+notification for its own drawing and had registered it on everyone's behalf. Deleting the window took
+the registration with it. Nothing failed to compile and no test went red; two panels simply stopped
+being true.
+
+**Which also explains [OB-097](issues.md#ob-097)** - "a route finished, but the loc status panel under
+Locomotive Commands still indicated an active route". Same deleted callback, the other of its two
+calls, reported three days later as an unrelated bug.
+
+**Fixed** by giving the registration a name of its own -
+`AutonomyRefreshCallback.attach(layout, onPathEvent)` - and calling it from the window after every
+`parseAuto`, which is where the diagram monitor is already re-bound for exactly the same reason:
+callbacks live on the Layout object and `parseAuto` replaces that object. The work is posted to the
+event thread rather than done in the callback, because a layout fires these from the thread driving
+the trains while holding a lock, and taking a UI lock there is the DR-B7 deadlock.
+
+**Why the existing test was green throughout.** `testTimetableCapture` builds its own two-point Layout
+with `Layout.fromJSON`, sets the flag on that object, hands `executePath` a path it assembled itself,
+and asks whether an entry appeared. Every one of those differs from what the application does, and the
+one that matters is that it can only see the model - so it could not have seen this if it had been
+written perfectly. It is kept: it is a good, fast unit test of the flag. It just cannot stand in for a
+real run. [MT-175](#mt-175).
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+Was not unable to test this directly because "capture locomotive commands" is capturing neither manual locomotive commands nor full autonomy commands into the timetable.  Regression.  Fix and then reopen this bug to test the original intent.
+
+still an issue after testing- nothing gets captured.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-150"></a>
@@ -6994,6 +7044,12 @@ this one's whole setup - MT-135-class loss, triggered by touching something else
 Those two were the last sites still splitting on the first colon; the other three were fixed when the
 hazard was found and nobody came back for these. Covered by
 `testAPageNameContainingAColonKeepsItsOwnSetup`, mutation-checked.
+
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+can't test colons in names because the UI disallows colons.  test in a test case instead.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7105,6 +7161,12 @@ rewrite every route naming that locomotive into something that does not parse.
 The guard reads EVERY `renameLoc` call site rather than the first, because a rule that stopped at the
 first match would have reported the pair as covered after fixing one.
 
+**Adam, 2026-08-24 (triage).** Does not work.
+
+I renamed MY 1106 to MY Y1106.  It vanished from autonomy, with MY 1106 still placed and at location ???? in the UI.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-154"></a>
@@ -7131,6 +7193,10 @@ something else silently reverted the name and wrote the reversion to disk.
 Refused rather than repaired. The snapshot IS repaired for locomotive renames; doing the same for every
 setup edit would mean keeping two live editors in step, which is the trap that made the editors
 mutually exclusive in the first place.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7718,6 +7784,10 @@ keep it out of. Reverted to the live views, which is what has been running for w
 This entry exists because that class of fault is invisible to the automated battery: every test in it
 drives the model directly, and none of them has an event thread to freeze.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-168"></a>
@@ -7764,6 +7834,12 @@ The flag is read before the old layout is discarded and applied after the new on
 `test/regression/testTimetableCapture.java` covers it in three tests, and
 `testCaptureSurvivesTheLayoutBeingRebuilt` is about this case specifically - the gap that let the
 regression through, since nothing had tested capture across a rebuild.
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+I don't see any commands.  And the table headings are "Title 1", "Title 2", "Title 3", "Title 4", instead of what it should be.  Regression.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7863,6 +7939,12 @@ that is not local - "autonomy needs a local copy of the track diagram, because i
 alongside the diagram files" - so there is no setup to pair these pages with, and an archive holding
 only them is complete rather than half of something.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+Works.  But if the user confirms the CS download, we should also download CS3 data files if using a CS3.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-171"></a>
@@ -7919,6 +8001,14 @@ none, a name neither forgotten nor reported, an orphaned station never removed.
 They were all caught by tests written over the past week. But the compiler could not see any of them,
 before or after the change, so the honest position is that the automated suite found the ones it
 covers and this entry is for the ones it does not.
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+stations do not travel with a moved tile. they vanish until the tile is moved back, at which point the loc is vanished.
+
+renaming a page MOVES locomotives to othre stations, not just deleted them.  make a COMPREHENSIVE AND REALISTIC test case to reproduce these bugs, then fix them.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -8044,6 +8134,12 @@ There were two questions where there should be one. `hasBlockingProblems()` asks
 can be built; the checks ask whether the SETUP can be run. Four unnamed stations are four of the
 second and none of the first. `AutonomySession.errorCount()` is now the single answer both ask.
 
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+works, but I would like a shaded background in light yellow when fix it is active.  then change the color of the fix it button back to white.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-174"></a>
@@ -8090,5 +8186,51 @@ instead of saving without - fails it every time, and the clean code passes.
 **What it does not cover** is the four refusals above that call: an open editor, running trains, a
 remote layout, a name already taken. Those raise dialogs and stay in the window. They are decisions
 about whether to ask; everything about what then happens is covered.
+
+**Adam, 2026-08-24 (triage).** Does not work.
+
+Renaming to an ID no longer causes issues.  However, renaming a page with autonomy cofig still wipes it and adds errors.  Refer to the current state.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-175"></a>
+
+### MT-175 - 2026-08-24 - Capture fills the timetable, and the table shows it filling
+
+**Disposition:** fixed unvalidated
+**From:** MT-149, OB-097
+**Written:** 2026-08-24
+
+1. Load a configuration. Press **Capture Loc Commands** so it is lit, BEFORE starting - it is refused
+   while trains are running, deliberately.
+2. Start autonomy and watch the Timetable tab. Rows should appear as trains are dispatched, without
+   you clicking anything. That is the part that was broken: the rows were being recorded all along
+   and the table was never repainted, so it looked as though capture did nothing.
+3. Watch the locomotive status panel under Locomotive Commands as a route finishes. It should stop
+   saying the route is active on its own. That is OB-097, and it is the same fix.
+4. Switch capture off and run again: no new rows.
+5. Load a different configuration, then repeat step 2. Callbacks live on the layout object and a
+   configuration load replaces it, so this is the case that would break if only one of the two
+   attachment points were wired.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "Make sure you validate via REALISTIC tests for the timetable issue that
+still persists." The root cause and why the old test could not see it are written up in
+[MT-149](#mt-149).
+
+Two automated tests, and they cover different halves on purpose.
+`testTimetableCaptureThroughARealRun` runs the sanity configuration under real autonomy and asserts
+both that entries appear AND that something was told - the second assertion is the one no model-level
+test could make. `testTheWindowAttachesItsRefreshCallback` reads the source and fails the build if
+TrainControlUI stops calling `attach`, which is crude and is the only thing that would have caught the
+original deletion: the mechanism was fine, the caller was gone, and a behavioural test can always
+attach the callback itself and end up testing its own wiring.
+
+Mutation-checked both ways. Deleting the two call sites - replaying `d8db4879` exactly - fails the
+guard. Disabling the mechanism fails the run test on "nothing was told" while the capture assertion
+still passes, which is the evidence that the two halves are genuinely independent.
 
 ---

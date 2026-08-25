@@ -206,6 +206,8 @@
         <test-one-class class="testEditorSurfaceRules"/>
         <test-one-class class="testErrorsStopTheSetupRunning"/>
         <test-one-class class="testRenameRoundTripThroughTheUIPath"/>
+        <test-one-class class="testTimetableCaptureThroughARealRun"/>
+        <test-one-class class="testTheWindowAttachesItsRefreshCallback"/>
         <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>
         <test-one-class class="testFacingFollowsTheTrack"/>
         <test-one-class class="testBothProtectingSignalsAreThrown"/>
