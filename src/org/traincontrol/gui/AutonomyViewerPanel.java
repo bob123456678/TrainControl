@@ -1035,7 +1035,20 @@ public class AutonomyViewerPanel extends JPanel
 
             if (format == AutonomySession.ImportFormat.LEGACY_GRAPH)
             {
-                importLegacyGraph(file);
+                // WITH the name, which this branch used to discard (OB-106).
+                //
+                // Adam: "when a track diagram has no autonomy, and we import from a legacy file,
+                // there is no autonomy setup to view.  one should be created so that it's properly
+                // loaded into.  autonomy editor, controls are all greyed out."
+                //
+                // The user is asked for a configuration name a few lines above, for both kinds of
+                // file - and then this branch returned without ever using it. The import wrote its
+                // per-point settings into the ACTIVE configuration, and on a layout that has never
+                // had autonomy there is no active configuration and no configuration at all, so the
+                // placements, homes and termini had nowhere to land and the load afterwards was asked
+                // to load null. Hence a setup that appears to import successfully and then cannot be
+                // opened.
+                importLegacyGraph(file, name.trim());
                 return;
             }
 
@@ -1077,8 +1090,43 @@ public class AutonomyViewerPanel extends JPanel
      *
      * @param file the parsed autonomy.json
      */
-    private void importLegacyGraph(org.json.JSONObject file)
+    private void importLegacyGraph(org.json.JSONObject file, String name)
     {
+        // Somewhere for the import to land, before it starts (OB-106).
+        //
+        // The shared half of a setup - names, stations, lengths, directions - belongs to the TRACK and
+        // is written whether or not a configuration exists. The per-point half - placements, homes,
+        // termini, facings - belongs to a configuration, and importLegacy writes it through
+        // setPointProperty, which addresses the ACTIVE one. With none, that half was silently
+        // dropped: the dialog still reported everything it had matched, because matching is what it
+        // counts, and the setup then would not open.
+        //
+        // Created only when there is genuinely nothing. A layout that already has configurations
+        // keeps importing into the one in use, which is what somebody importing onto an existing
+        // railway means by it - and is the behaviour that has been in use.
+        try
+        {
+            if (session().getStore().getConfigurationNames().isEmpty())
+            {
+                // suggestedConfigurationName, not the bundle key directly: that value is
+                // "Autonomy {0}" and asking for it with I18n.t would put the placeholder on screen
+                // as the configuration's NAME.  The helper fills it with the next free number and
+                // avoids a name already in use, which createConfiguration refuses.
+                String created = name == null || name.trim().isEmpty()
+                    ? suggestedConfigurationName() : name.trim();
+
+                session().getStore().createConfiguration(created, null);
+                session().getStore().setActiveConfiguration(created);
+            }
+        }
+        catch (java.io.IOException e)
+        {
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+
+            return;
+        }
+
         // First, because an s88 on two squares is what stops an import deciding anything: those points
         // are refused and listed, and the user is left to work out that a repeated page is the reason.
         // Shutting the repeats before reading the file is what makes the import unambiguous instead.
@@ -1125,6 +1173,8 @@ public class AutonomyViewerPanel extends JPanel
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched);
 
+            // The active one, which after the block above is the one just created when there was
+            // none - so the import is loaded rather than left sitting on disk.
             loadAfterImport(session().getStore().getActiveConfiguration());
         }
         // RuntimeException alone: reading the file moved out to the one Import action that decides

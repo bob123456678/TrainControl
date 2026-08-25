@@ -547,14 +547,6 @@ that remembered which bundle keys carried a placeholder instead of reading them.
 "guards that assert less than they read" this entry is about, so the remainder is narrower than it was
 this morning - but the seven it lists have not been worked through.
 
-### OB-098 - 2026-08-24 - switch to cs layout is possible even when not connected to a cs
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:44  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-switch to cs layout is possible even when not connected to a cs.  also, backup up files from cs should not be offered in this case.
 
 ### OB-099 - 2026-08-24 - cs3 files still not backed up
 
@@ -565,23 +557,7 @@ switch to cs layout is possible even when not connected to a cs.  also, backup u
 
 these are examples of files that should be downloaded when connected to a CS3 only (not CS2) (IP depends on what's being used) http://192.168.50.25/app/api/locos http://192.168.50.25/app/api/automatics http://192.168.50.25/app/api/mags
 
-### OB-100 - 2026-08-24 - cs download layout menu item toggle
 
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:48  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-download central station layout files should also be greyed out when not connected to a cs
-
-### OB-101 - 2026-08-24 - capture locomotive commands toggle
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-24 23:50  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-capture locomotive commands button can still be toggled while trains are returning home
 
 ### OB-102 - 2026-08-24 - directions shown in timetable stations
 
@@ -601,14 +577,6 @@ timetable stations show (northbound) and (southbound) etc.
 
 if we get 2026-08-24 23:51:15.936 Model error: no layout loaded., there is no UI error notice shown.
 
-### OB-104 - 2026-08-24 - autonomy tab not greyed out when using CS layout
-
-**Kind:** bug  
-**Raised from:** MT-177 (Four menu and window details from the testing round)  
-**Filed:** 2026-08-24 23:53  
-**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.
 
 ### FR-022 - 2026-08-24 - crop function
 
@@ -628,6 +596,7 @@ add a crop / pan function to local locomotive icons at the time of image selecti
 
 no traincontrol window icon in IP prompt
 
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -640,6 +609,11 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-25 | OB-106 | bug | Legacy import made no configuration to load into | - | [MT-178](tests.md#mt-178) |
+| 2026-08-24 | OB-104 | bug | Autonomy could start over a Central Station layout | - | [MT-179](tests.md#mt-179) |
+| 2026-08-24 | OB-101 | bug | Capture toggle live while trains returned home | - | [MT-179](tests.md#mt-179) |
+| 2026-08-24 | OB-100 | bug | Download CS layout offered with no station connected | - | [MT-179](tests.md#mt-179) |
+| 2026-08-24 | OB-098 | bug | Switch to CS layout offered with no station connected | - | [MT-179](tests.md#mt-179) |
 | 2026-08-24 | OB-097 | bug | A finished route still read as active on the locomotive panel | - | [MT-175](tests.md#mt-175) |
 | 2026-08-24 | OB-096 | bug | The no-available-paths window: white text area, standard font size | - | [MT-177](tests.md#mt-177) |
 | 2026-08-24 | OB-095 | bug | Show autonomy controls checkbox visible with nothing loaded | - | [MT-177](tests.md#mt-177) |

@@ -55,8 +55,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-175](#mt-175) | 2026-08-24 | Capture fills the timetable, and the table shows it filling | fixed unvalidated | MT-149, OB-097 |
 | [MT-176](#mt-176) | 2026-08-24 | What a run did survives renaming or deleting a page | fixed unvalidated | DW-A1, DW-C1 |
 | [MT-177](#mt-177) | 2026-08-24 | Four menu and window details from the testing round | fixed unvalidated | OB-093, OB-094, OB-095, OB-096 |
+| [MT-178](#mt-178) | 2026-08-25 | Importing a legacy autonomy file onto a layout with none | fixed unvalidated | OB-106 |
+| [MT-179](#mt-179) | 2026-08-25 | Nothing that needs a Central Station is offered without one | fixed unvalidated | OB-098, OB-100, OB-101, OB-104 |
 
-Everything else - 124 of 177 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 179 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -8924,3 +8926,149 @@ application sets on its own components, so that change made this window smaller 
 rather than the same as them - which is why the same request arrived twice. Measured instead:
 ninety-eight components in the gui package use Segoe UI at 14 against one at 12, so 14 is the standard
 here. The family still comes from the look and feel; only the size is pinned.
+
+<a id="mt-178"></a>
+
+### MT-178 - 2026-08-25 - Importing a legacy autonomy file onto a layout with none
+
+**Disposition:** fixed unvalidated
+**From:** OB-106
+**Written:** 2026-08-25
+
+The critical one from the golden-data load. Do this on a layout that has NEVER had autonomy set up.
+
+1. Autonomy menu, Import, choose an old `autonomy.json`. When it asks for a name, give one.
+2. The import summary should appear as before.
+3. **The setup should then be open and usable** - the autonomy editor available, the controls live,
+   the configuration you named present and selected. Before this fix there was nothing to view and
+   everything was greyed.
+4. Check a placement and a home came across, not just the station names. That is the half that was
+   being dropped.
+5. Then repeat on a layout that ALREADY has autonomy: the import must still land in the configuration
+   in use, not make a new one.
+
+#### Comments
+
+**Claude, 2026-08-25.** Adam, OB-106: "when a track diagram has no autonomy, and we import from a
+legacy file, there is no autonomy setup to view.  one should be created so that it's properly loaded
+into.  autonomy editor, controls are all greyed out."
+
+`importConfiguration` asks for a configuration name for BOTH kinds of file, and then the legacy branch
+returned without ever using it. The import writes the shared half - names, stations, lengths - into
+the store, which needs no configuration; but the per-point half - placements, homes, termini, facings
+- goes through `setPointProperty`, which addresses the ACTIVE configuration. On a layout that has
+never had autonomy there is no active configuration and none to make active, so that half went
+nowhere and `loadAfterImport` was handed null.
+
+The dialog still reported everything it had matched, because matching is what it counts. So it looked
+like a successful import of a setup that then could not be opened.
+
+The name is passed through now, and a configuration is created when - and only when - there is not
+one already. A layout that has configurations keeps importing into the one in use, which is what
+importing onto an existing railway means.
+
+**One thing this nearly shipped with.** My first fallback for an empty name called
+`I18n.t("autosetup.ui.defaultConfigurationName")`, whose value is `Autonomy {0}` - so a configuration
+would have been created literally named "Autonomy {0}". There is already a `suggestedConfigurationName()`
+that fills in the next free number and avoids one already in use, which is what it uses.
+
+**Not yet run.** Adam is loading golden data into `cs2_sample_layout`, which is both his live railway
+and the test fixture, so nothing that builds a model has been run against this. It compiles; it has
+not been exercised.
+
+---
+
+<a id="mt-179"></a>
+
+**From [OB-106](issues.md) - "importing autonomy from legacy file doesnt work".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 00:30  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when a track diagram has no autonomy, and we import from a legacy file, there is no autonomy setup to view.  one should be created so that it's properly loaded into.  autonomy editor, controls are all greyed out.
+
+### MT-179 - 2026-08-25 - Nothing that needs a Central Station is offered without one
+
+**Disposition:** fixed unvalidated
+**From:** OB-098, OB-100, OB-101, OB-104
+**Written:** 2026-08-25
+
+Start TrainControl with NO Central Station reachable, on a local layout.
+
+1. **Layouts menu:** "Switch to Central Station Layout" must be greyed. It fetches the moment it is
+   pressed, and pressing it with nothing answering replaces the layout in use with one it cannot read.
+2. **"Download Central Station Layout Files"** must be greyed too, for the same reason.
+3. **Backup TrainControl Data** on a Central Station layout must NOT ask whether to include the
+   station's files when the station is unreachable - asking is a promise to fetch.
+4. Then connect a station and check all three come back.
+
+**The serious one.** On a layout read from the Central Station:
+
+5. The **Auto tab must be greyed**, and Start Autonomy must refuse even if you reach it another way.
+   Adam: "I was able to start autonomy, even though no trains on graph and even though layout was
+   being read from CS.  a defunct train started running, and switches were set."
+
+6. **Return Home**, then while trains are moving: the **Capture Loc Commands** button must be greyed,
+   not merely refuse when pressed.
+
+#### Comments
+
+**Claude, 2026-08-25.** Four of Adam's entries, all the same shape, which is why they are one test.
+
+OB-104 is the one that matters. `refreshAutonomyTabState` computed `loaded` as
+`getAutonomySession() == null || activeDiagramConfiguration != null` - and on a Central Station layout
+there IS no session, so the first half was true and the tab opened on whatever auto layout happened to
+be in memory: a blank default, or one left over from a local layout. The comment that stood there
+argued the JSON window is still how autonomy is set up where there is no local copy, so validity was
+the only answer available. That reasoning is what let a defunct configuration reach real switches.
+
+It is also not what the application says anywhere else - the autonomy menu's own notice reads
+"Autonomy needs a layout on this computer". The tab agrees with that sentence now, and the START
+refuses independently, because greying a tab is an affordance and this is the action.
+
+OB-098, OB-100 and OB-101 are the affordance-versus-guard distinction again, which is now the fourth,
+fifth and sixth time it has come up in two days. The capture toggle DID refuse while trains were
+returning home; a live button that answers with a dialog reads as a control you may use and used
+wrongly, where a greyed one says the railway is busy.
+
+**Not yet run**, for the same reason as [MT-178](#mt-178).
+
+---
+
+**From [OB-098](issues.md) - "switch to cs layout is possible even when not connected to a cs".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:44  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+switch to cs layout is possible even when not connected to a cs.  also, backup up files from cs should not be offered in this case.
+
+**From [OB-100](issues.md) - "cs download layout menu item toggle".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:48  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+download central station layout files should also be greyed out when not connected to a cs
+
+**From [OB-101](issues.md) - "capture locomotive commands toggle".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 23:50  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+capture locomotive commands button can still be toggled while trains are returning home
+
+**From [OB-104](issues.md) - "autonomy tab not greyed out when using CS layout".** The entry as filed:
+
+**Kind:** bug  
+**Raised from:** MT-177 (Four menu and window details from the testing round)  
+**Filed:** 2026-08-24 23:53  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 23:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+I was able to start autonomy, even though no trains on graph and even though layout was being read from CS.  a defunct train started running, and switches were set.

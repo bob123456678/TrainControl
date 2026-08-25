@@ -2775,12 +2775,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // auto layout left over from a blank default or from the JSON path, so asking only "is it
         // valid" left the tab open with no configuration behind it.
         //
-        // On the diagram path the question is whether a configuration is RUNNING.  Where there is no
-        // diagram session at all - a layout with no local copy - the JSON window is still how autonomy
-        // is set up, and validity is the only answer available.
+        // On the diagram path the question is whether a configuration is RUNNING.
         boolean loaded = getAutonomySession() == null || this.activeDiagramConfiguration != null;
 
-        setAutoTabEnabled(valid && loaded);
+        // AND the layout has to be on this computer (OB-104).
+        //
+        // Adam: "I was able to start autonomy, even though no trains on graph and even though layout
+        // was being read from CS.  a defunct train started running, and switches were set."
+        //
+        // The line above used to end at `loaded`, and on a Central Station layout there is no diagram
+        // session at all - so the first half of that disjunction was TRUE and the tab opened on
+        // whatever auto layout happened to be in memory: a blank default, or one left from a
+        // previous local layout. The comment that stood here said the JSON window is still how
+        // autonomy is set up where there is no local copy, so validity was the only answer available.
+        // That reasoning is what let a defunct configuration reach real track.
+        //
+        // It is also not what the application tells the user anywhere else: the autonomy menu's own
+        // notice reads "Autonomy needs a layout on this computer". This makes the tab agree with the
+        // sentence.
+        //
+        // The JSON window is unaffected on a LOCAL layout, which is where anybody using it is.
+        setAutoTabEnabled(valid && loaded && isLocalLayout());
     }
 
     private void setAutoTabEnabled(boolean enabled)
@@ -3866,6 +3881,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean refuseAutonomyStartWhileBroken()
     {
+        // Not over a layout that lives on the Central Station (OB-104).
+        //
+        // Checked HERE as well as on the tab, and deliberately so. Tonight has three separate
+        // findings whose shape is an affordance asking a narrower question than the action - the
+        // Start button over an errored setup, the download offer that could click to nothing, the
+        // strip that mirrored a refused Start. Greying the tab is an affordance. This is the action,
+        // and it is the last thing between a defunct configuration and real switches.
+        if (isRemoteLayout())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuNoSetupPossible"));
+
+            return true;
+        }
+
         if (getAutonomySession() == null) return false;
 
         // Asked of the session rather than counted here, so that the strip deciding what to OFFER and
@@ -16046,7 +16075,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // because its settings are stored alongside the diagram files" - so unlike the local
                 // case these pages stand alone, and an archive holding only them is complete rather
                 // than half of a pair.
+                // Not offered without a station answering (OB-098): "backup up files from cs should
+                // not be offered in this case".  Asking is a promise to fetch, and a question whose
+                // yes cannot be honoured is worse than the file being quietly absent - the archive
+                // would come back incomplete having asked permission to be complete.
                 if ((localLayout == null || localLayout.isEmpty()) && this.model != null
+                    && this.model.getNetworkCommState()
                     && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
                 {
                     try
@@ -17583,6 +17617,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setEnabled(false);
         this.executeTimetable.setEnabled(false);
 
+        // And the capture toggle (OB-101).
+        //
+        // Adam: "capture locomotive commands button can still be toggled while trains are returning
+        // home." Its handler DID refuse - isAutonomyBusy covers this flow - but refusing is not the
+        // same as not offering. A live button that answers with a dialog reads as a control you may
+        // use and happen to have used wrongly; a greyed one says the railway is busy, which is the
+        // true thing and the thing its two neighbours here have always said.
+        //
+        // The same distinction as OB-094 and OB-100 in his own list, and the third time tonight that
+        // the fix was to make the affordance agree with the guard rather than to add a guard.
+        this.timetableCapture.setEnabled(false);
+
         new Thread(() ->
         {
             // Whether this flow was the one that disabled those two buttons, so the finally can put
@@ -17680,6 +17726,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     this.refreshReturnHomeButton();
                     this.executeTimetable.setEnabled(true);
+
+                    // In the finally with its siblings: a toggle that never comes back needs a
+                    // restart to recover, which is worse than the state it was guarding against.
+                    this.timetableCapture.setEnabled(true);
                 });
 
                 // Off the EDT for the same reason as the pre-run repaint above: a path abandoned or
@@ -21063,19 +21113,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // Nothing that needs a Central Station is offered without one (OB-098, OB-100).
+            //
+            // Adam: "switch to cs layout is possible even when not connected to a cs", and "download
+            // central station layout files should also be greyed out when not connected to a cs".
+            //
+            // Both items fetch over the network the moment they are pressed. Offered with no station
+            // answering, the best case is a wait and an error; the worse case is Switch, which
+            // replaces the layout in use with one it cannot then read - which is how OB-103 gets to
+            // say "no layout loaded" with nothing on screen to explain it.
+            //
+            // getNetworkCommState is the connection, not the power: `on` and `powerState` are
+            // separate fields, and this is the one that says whether the station is talking.
+            final boolean connected = this.model != null && this.model.getNetworkCommState();
+
             // Set UI label
             if (!isLocalLayout())
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
                 this.modifyLocalLayoutMenu.setEnabled(false);
-                this.downloadCSLayoutMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
+                this.downloadCSLayoutMenuItem.setEnabled(connected
+                    && !this.model.getLayoutList().isEmpty());
                 this.popUpAllMenuItem.setEnabled(!this.model.getLayoutList().isEmpty());
             }
             else
             {
                 // LayoutPathLabel.setText(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
-                this.switchCSLayoutMenuItem.setEnabled(true);
+                this.switchCSLayoutMenuItem.setEnabled(connected);
                 this.modifyLocalLayoutMenu.setEnabled(true);
                 this.downloadCSLayoutMenuItem.setEnabled(false);
                 this.popUpAllMenuItem.setEnabled(true);

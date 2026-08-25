@@ -1968,6 +1968,28 @@ public final class CS2File
             {
                 logMessage("No CS3 route data was downloaded from the Central Station.", noCS3Routes, false);
             }
+
+            // And the locomotives (OB-099).
+            //
+            // Adam listed all three endpoints - /app/api/locos, /app/api/automatics, /app/api/mags -
+            // as "files that should be downloaded when connected to a CS3 only". Two were added; this
+            // was left out on the argument that downloadCS2Layout never fetched lokomotive.cs2 for a
+            // CS2 either, so adding only the CS3 side would put the two out of step.
+            //
+            // That argument is about tidiness and his is about what a backup is FOR. A CS3 keeps its
+            // locomotive database in this JSON and nowhere else this application reads, so an archive
+            // without it is missing the half a rebuilt railway would need most - and "the CS2 path
+            // does not have one either" is a reason to look at the CS2 path, not to leave this one
+            // short.
+            try
+            {
+                copyAtomically(this.getCS3LocDBUrl(), new File(configDir, "CS3_locos.json"));
+            }
+            catch (Exception noCS3Locs)
+            {
+                logMessage("No CS3 locomotive data was downloaded from the Central Station.",
+                    noCS3Locs, false);
+            }
         }
     }
 
