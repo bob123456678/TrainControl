@@ -97,7 +97,7 @@ public class testRouteInventory
     @Test
     public void testHandAuthoredRoutes() throws Exception
     {
-        File hand = new File("cs2_sample_layout/config/autorun/autonomy.json");
+        File hand = new File("test_layout/config/autorun/autonomy.json");
 
         if (!hand.isFile()) return;
 
@@ -110,7 +110,7 @@ public class testRouteInventory
      */
     private String build(File bundle) throws Exception
     {
-        File folder = new File("cs2_sample_layout");
+        File folder = new File("test_layout");
 
         // A bundle is imported into an EMPTY store, in a scratch copy of the layout folder.
         //
@@ -476,7 +476,7 @@ public class testRouteInventory
     private org.traincontrol.automationui.AutonomySession liveSession() throws Exception
     {
         org.traincontrol.automationui.AutonomySession session =
-            new org.traincontrol.automationui.AutonomySession(new File("cs2_sample_layout"));
+            new org.traincontrol.automationui.AutonomySession(new File("test_layout"));
 
         List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
 

@@ -19,6 +19,10 @@ import org.traincontrol.util.Util;
  * Adam, MT-159: "we are missing the folder name of the active layout (i.e., zip file contains 'config'
  * instead of 'cs2_sample_layout')."
  *
+ * (His words name `cs2_sample_layout`, which was the fixture at the time and is now his own live
+ * railway - the two were the same folder until they were separated. The test below builds its own
+ * throwaway layout folder and does not read either.)
+ *
  * The interesting part of this one is that the fix was already in the build he tested - it landed at
  * 10:21 and he ran a build compiled from a 14:12 commit - and he reported the symptom anyway. So
  * either the fix does not work or he was looking at an archive made before it. Nothing in the report
@@ -44,7 +48,7 @@ public class testBackupArchiveNamesTheLayout
         File work = temp();
 
         // A layout folder shaped like the real one: config, with files at two depths under it.
-        File layout = new File(work, "cs2_sample_layout");
+        File layout = new File(work, "test_layout");
         File config = new File(layout, "config");
         File autonomy = new File(config, "autonomy");
 
@@ -67,11 +71,11 @@ public class testBackupArchiveNamesTheLayout
 
         List<String> entries = entriesOf(archive);
 
-        assertTrue(entries.contains("cs2_sample_layout/config/gleisbild.cs2"),
+        assertTrue(entries.contains("test_layout/config/gleisbild.cs2"),
             "the layout's own name is not in the entry path, so two backups of two layouts are "
             + "indistinguishable once they are off the machine (MT-159).  Got: " + entries);
 
-        assertTrue(entries.contains("cs2_sample_layout/config/autonomy/setup.json"),
+        assertTrue(entries.contains("test_layout/config/autonomy/setup.json"),
             "the prefix was dropped somewhere below the first level, so the deeper files - which are "
             + "the autonomy setup - are filed under a name that does not say which layout they "
             + "describe.  Got: " + entries);

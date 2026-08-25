@@ -9208,4 +9208,8 @@ on. Applied to labels already drawn rather than left for the next rebuild: the g
 dozen reasons and none of them is this one, so otherwise the setting would appear to do nothing until
 something unrelated redrew the diagram.
 
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 25 Aug 00:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---

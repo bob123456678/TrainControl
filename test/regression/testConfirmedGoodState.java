@@ -36,10 +36,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * whatever it captured is by definition what it expects. The two answer different questions: a rule
  * says "this was never allowed", a baseline says "this changed since you approved it".
  *
- * **The layout is copied INTO the baseline.** Not referenced. `cs2_sample_layout` is the railway Adam
- * works on, edited between sessions and rewritten by the application itself, so a baseline pointing at
- * it would go stale the first time he moved a tile - and the failure would look like a regression in
- * TrainControl rather than a change he made on purpose.
+ * **The layout is copied INTO the baseline.** Not referenced. This was written when the fixture and
+ * Adam's own railway were the same folder: it was edited between sessions and rewritten by the
+ * application itself, so a baseline pointing at it would go stale the first time he moved a tile, and
+ * the failure would look like a regression in TrainControl rather than a change he made on purpose.
+ *
+ * `test_layout` is a frozen copy now, and his railway is `cs2_sample_layout`, so the hazard that
+ * motivated this is gone. The copy stays: a baseline that carries its own inputs is answerable on its
+ * own terms, and nothing about that depended on which folder was volatile.
  *
  * **To capture, or to bless a deliberate change:**
  *
@@ -156,12 +160,12 @@ public class testConfirmedGoodState
      */
     private AutonomySession openBaseline() throws Exception
     {
-        File from = capturing ? new File("cs2_sample_layout") : LAYOUT;
+        File from = capturing ? new File("test_layout") : LAYOUT;
 
         if (!from.isDirectory())
         {
             throw new SkipException(capturing
-                ? "no cs2_sample_layout to capture from"
+                ? "no test_layout to capture from"
                 : "no blessed baseline yet - capture one with -Dbaseline.capture=true once the "
                 + "railway is in a state you have confirmed is right");
         }

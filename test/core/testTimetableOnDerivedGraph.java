@@ -347,11 +347,11 @@ public class testTimetableOnDerivedGraph
      */
     private static Layout derivedLayout() throws Exception
     {
-        File folder = new File("cs2_sample_layout");
+        File folder = new File("test_layout");
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no cs2_sample_layout to derive a graph from");
+            throw new SkipException("no test_layout to derive a graph from");
         }
 
         AutonomySession session = new AutonomySession(folder);

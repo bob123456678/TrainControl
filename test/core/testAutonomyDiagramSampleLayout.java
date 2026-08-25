@@ -56,7 +56,7 @@ import org.traincontrol.marklin.file.CS2File;
  */
 public class testAutonomyDiagramSampleLayout
 {
-    private static final String LAYOUT = "cs2_sample_layout";
+    private static final String LAYOUT = "test_layout";
 
     private MarklinControlStation model;
     private List<LayoutDiagram> pages;

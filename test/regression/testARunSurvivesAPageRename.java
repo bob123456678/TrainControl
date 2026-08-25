@@ -290,7 +290,7 @@ public class testARunSurvivesAPageRename
 
     private static File aWorkingCopy() throws Exception
     {
-        File from = new File(System.getProperty("user.dir"), "cs2_sample_layout");
+        File from = new File(System.getProperty("user.dir"), "test_layout");
 
         assertTrue(from.isDirectory(), "sample layout not found");
 

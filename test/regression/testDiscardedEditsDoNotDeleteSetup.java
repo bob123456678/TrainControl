@@ -239,10 +239,10 @@ public class testDiscardedEditsDoNotDeleteSetup
 
     private static File findLayoutFolder()
     {
-        File here = new File("cs2_sample_layout");
+        File here = new File("test_layout");
 
         if (here.isDirectory()) return here;
 
-        return new File(System.getProperty("user.dir"), "cs2_sample_layout");
+        return new File(System.getProperty("user.dir"), "test_layout");
     }
 }

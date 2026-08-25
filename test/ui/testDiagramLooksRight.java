@@ -77,7 +77,7 @@ public class testDiagramLooksRight
 
         java.util.List<String> pages = model.getLayoutList();
 
-        assertFalse(pages.isEmpty(), "no pages to render - is cs2_sample_layout present?");
+        assertFalse(pages.isEmpty(), "no pages to render - is test_layout present?");
 
         int written = 0;
 

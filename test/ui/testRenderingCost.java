@@ -40,7 +40,7 @@ public class testRenderingCost
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        File folder = new File("cs2_sample_layout");
+        File folder = new File("test_layout");
 
         if (!folder.isDirectory())
         {
@@ -329,7 +329,7 @@ public class testRenderingCost
             throw new org.testng.SkipException("building labels needs a display");
         }
 
-        File folder = new File("cs2_sample_layout");
+        File folder = new File("test_layout");
 
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
