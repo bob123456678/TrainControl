@@ -638,6 +638,124 @@ public class testPageIdsAreDurable
     }
 
     /**
+     * Renaming a page to something that looks like another page's id moves nothing but that page.
+     *
+     * OB-092, and it is Adam's own words: "When I renamed '5 - Test' to 5, the main page (1 - Main,
+     * id 5) became excluded from autonomy and lost all its train placement."
+     *
+     * `renamePage` rekeyed every collection and then left the store's OWN numbering stale, so it still
+     * believed the page was called what it used to be. The next save asked `pageNameToId` about the
+     * new name, got nothing, and fell back to writing the bare NAME into `excludedPages` - where
+     * `untranslatePages` reads every value as an ID. A page called "5" came back as whichever page
+     * holds id 5. The exclusion is only the visible half: an excluded page is not in the graph, so
+     * every placement on it goes with it.
+     *
+     * **Why the existing rename tests did not catch it.** There are several, and they are thorough
+     * about what a rename must carry. Not one of them renamed a page to a string that is also a live
+     * id, because no fixture anywhere had a page named like a number - so the collision that makes
+     * this fail could not arise. That is the same shape as TA-A1 and CR-C3: the fixture decided the
+     * answer before the assertions did.
+     *
+     * So this checks every collection rather than the one that broke, and it checks the OTHER page as
+     * hard as the renamed one. A rename that carries everything correctly and quietly empties a
+     * different page is not a rename that worked.
+     */
+    @Test
+    public void testRenamingAPageToAnotherPagesIdMovesOnlyThatPage() throws IOException
+    {
+        // Five pages before it, so "Main" holds id 5 and the rename below can collide with it.
+        write("a", "b", "c", "d", "Main", "Test");
+
+        assertEquals(ids().get("Main"), Integer.valueOf(5),
+            "the fixture needs Main to hold id 5, since renaming the other page TO \"5\" is the "
+            + "collision under test.  Got: " + ids());
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey onMain = new TileKey("Main", 3, 3);
+        TileKey mainSignal = new TileKey("Main", 4, 4);
+        TileKey onTest = new TileKey("Test", 7, 7);
+
+        // Everything the store holds, on the page that must NOT move.
+        store.setPointName(onMain, "Main Platform");
+        store.setStation(onMain, true);
+        store.setTileLength(onMain, 42);
+        store.setPointName(mainSignal, "Main Signal");
+        store.setProtectingSignals(onMain, java.util.Arrays.asList(mainSignal));
+        store.setBlockingPoints(onMain, java.util.Arrays.asList(mainSignal));
+        store.setLinkName(onMain, "Main Link");
+
+        // And on the page being renamed, including the exclusion that broke.
+        store.setPointName(onTest, "Test Platform");
+        store.setStation(onTest, true);
+        store.setPageExcluded("Test", true);
+
+        store.createConfiguration("Only", null);
+        store.save();
+
+        // THE MUTATION: rename it to a string that is also a live id.
+        store.renamePage("Test", "5");
+
+        java.util.Map<String, String> renamed = new java.util.LinkedHashMap<>();
+        renamed.put("Test", "5");
+
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("a", "b", "c", "d", "Main", "5")),
+            renamed, store.highestPageIdSeen());
+
+        store.save();
+
+        // THE CHECK, before reloading: the rename took, in memory.
+        assertTrue(store.getExcludedPages().contains("5"),
+            "the renamed page lost its exclusion in memory.  Got: " + store.getExcludedPages());
+
+        assertFalse(store.getExcludedPages().contains("Main"),
+            "renaming one page excluded another, in memory.  Got: " + store.getExcludedPages());
+
+        // THE LOAD.
+        AutonomyCompanionStore back = new AutonomyCompanionStore(layout);
+
+        back.setPageIds(idsAsNameToId());
+        back.load();
+
+        // THE MUTATION IS STILL THERE.
+        assertTrue(back.getExcludedPages().contains("5"),
+            "the renamed page is no longer excluded after a save and load, so it has silently "
+            + "rejoined autonomy (OB-092).  Got: " + back.getExcludedPages());
+
+        assertEquals(back.getPointName(new TileKey("5", 7, 7)), "Test Platform",
+            "the renamed page lost its station name.  ");
+
+        assertTrue(back.isStation(new TileKey("5", 7, 7)),
+            "the renamed page lost its station");
+
+        // AND THE REST STAYED THE SAME. This is the half that failed on Adam's railway.
+        assertFalse(back.getExcludedPages().contains("Main"),
+            "the page whose ID matches the new NAME was excluded from autonomy, and it was never "
+            + "touched. Everything on it then disappears from the graph, which is how this arrived: "
+            + "\"the main page became excluded and lost all its train placement\" (OB-092).  Got: "
+            + back.getExcludedPages());
+
+        assertEquals(back.getPointName(onMain), "Main Platform", "Main lost its station name");
+        assertTrue(back.isStation(onMain), "Main lost its station");
+        assertEquals(back.getTileLength(onMain), 42, "Main lost its length");
+        assertEquals(back.getPointName(mainSignal), "Main Signal", "Main lost its signal's name");
+        assertEquals(back.getLinkName(onMain), "Main Link", "Main lost its link name");
+
+        assertEquals(back.getProtectingSignals(onMain), java.util.Arrays.asList(mainSignal),
+            "Main lost its protecting signal");
+
+        assertEquals(back.getBlockingPoints(onMain), java.util.Arrays.asList(mainSignal),
+            "Main lost the square that holds it back");
+
+        // And the id itself did not move: a rename is the one thing ids exist to survive.
+        assertEquals(ids().get("Main"), Integer.valueOf(5), "Main's id moved during another page's "
+            + "rename, which reattaches its whole setup.  Got: " + ids());
+    }
+
+    /**
      * The index as the store wants it: name -> id.
      */
     private Map<String, String> idsAsNameToId()

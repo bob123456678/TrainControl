@@ -2147,6 +2147,31 @@ public class AutonomyCompanionStore
 
         if (excludedPages.remove(from)) excludedPages.add(to);
 
+        // AND the numbering, which this did not touch and which every translation asks (OB-092).
+        //
+        // Adam: "When I renamed '5 - Test' to 5, the main page (1 - Main, id 5) became excluded from
+        // autonomy and lost all its train placement."
+        //
+        // Everything above rekeys a collection. None of it told the store that the page it knows as
+        // `from` now answers to `to`, so `pageNameToId` still held the old name - and the next save
+        // asked it about the new one and got nothing. `translatePages` then wrote the bare NAME into
+        // excludedPages, because that is its fallback for a page it cannot find an id for, and
+        // `untranslatePages` reads every value there as an ID. A page called "5" came back as
+        // whichever page holds id 5.
+        //
+        // The exclusion is the visible half. The rest follows from it: an excluded page is not in the
+        // graph, so every placement on it goes.
+        //
+        // A rename does not change any id - that is what ids are for - so this moves the name and
+        // leaves the number alone.
+        String renamedId = pageNameToId.remove(from);
+
+        if (renamedId != null)
+        {
+            pageNameToId.put(to, renamedId);
+            pageIdToName.put(renamedId, to);
+        }
+
         // Configurations DO key by tile - setPointProperty and captureFromLayout both write
         // "page:x,y" - so they are rewritten here too.  The note that used to stand in this place said
         // they were untouched and warned that anything growing a tile key must be handled; it grew one,
@@ -4077,7 +4102,17 @@ public class AutonomyCompanionStore
             // The same question as fromStored - an excluded page is named by id like everything else,
             // and a renumber moved it just the same.  This was the collection that used to be written
             // raw, and getting it wrong silently re-includes a page in autonomy.
-            out.add(pageOf(stored));
+            //
+            // But ONLY when the file itself recorded that id (OB-092). `translatePages` falls back to
+            // writing a bare page NAME when it cannot find an id, and a name that happens to look like
+            // a number was then read straight back as somebody else's id. The file's own `pages`
+            // record is the discriminator: an id this file wrote is in it, and a name is not.
+            //
+            // Defence rather than the fix. The fix is that renamePage keeps the numbering current, so
+            // the fallback is not reached; this is here because the fallback still exists for a page
+            // that is genuinely not in the index, and one silent transplant of a page's whole setup
+            // was enough.
+            out.add(pageNamesWhenWritten.containsKey(stored) ? pageOf(stored) : stored);
         }
 
         pages.clear();

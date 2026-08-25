@@ -463,6 +463,64 @@ the reviewer was wrong: I said no test drives a real event thread, and `testBusy
 pumps a real modal EDT. The genuine EDT hole is narrower than I claimed - blocking dialogs on the
 export path, and four test classes that call `setViewListener` off the event thread themselves.
 
+### OB-090 - 2026-08-24 - autonomy error count inconsistent, fix it button doesn't show
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 18:08  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the current config, the autonomy error count is 4 but shows as 8.  also, the fix it button is not shown, rather just "start autonomy" when the config had worked before.
+
+### FR-021 - 2026-08-24 - export routes with backup
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 18:11  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+validate that the current route config is exported when a backup is requested.  include the file in the zip
+
+### OB-091 - 2026-08-24 - grid widens layout editor, not autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-24 18:19  
+**Build:** commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+enabling the grid widens the track diagram in the layout editor (how it always was, because there is a double line in between cells), but not in the autonomy editor.  Make the behavior of the autonomy editor match so that there are no tile truncations.   also, add the blue outline hover effect to the autonomy editor.
+
+### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
+
+**Adam, testing MT-161 on commit 8db330da:** "When I renamed '5 - Test' to 5, the main page (1 - Main,
+id 5) became excluded from autonomy and lost all its train placement."
+
+**Reproduced before anything was touched**, with a probe on a six-page fixture: the file held
+`"excludedPages": ["6"]` before the rename - correctly, the id of the page being renamed - and
+`["5"]` after it. On reload the exclusion had moved to "1 - Main".
+
+**Cause.** `renamePage` rekeys eleven collections and then leaves the store's OWN numbering stale. It
+never told `pageNameToId` that the page it knows as "5 - Test" now answers to "5", so the next save
+asked about the new name, got nothing, and took `translatePages`' fallback: write the bare page NAME.
+`untranslatePages` reads every value in that array as an ID. A page called "5" comes back as whichever
+page holds id 5.
+
+The exclusion is only the visible half. An excluded page is not in the graph, so every placement on it
+goes with it - which is the "lost all its train placement" half of the report.
+
+**Fixed** in `renamePage`: the rename moves the page in `pageNameToId` and `pageIdToName` as well,
+leaving the id alone, since a rename is the one thing ids exist to survive. Plus a defence at the read
+side - a value the file never recorded as an id is read as a name, using the file's own `pages` record
+as the discriminator.
+
+**Test:** `testRenamingAPageToAnotherPagesIdMovesOnlyThatPage`, seen red for exactly Adam's symptom.
+
+**Why the existing rename tests missed it, which is the part worth keeping.** There are several and
+they are thorough about what a rename must CARRY. Not one renamed a page to a string that is also a
+live id, because no fixture anywhere had a page named like a number - so the collision could not
+arise. Same shape as TA-A1 and CR-C3: the fixture decided the answer before the assertions did. The new
+test checks every collection, and checks the OTHER page as hard as the renamed one.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

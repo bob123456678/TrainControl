@@ -5280,6 +5280,15 @@ are quoted at the code site.
 So this wants his eyes rather than work: a curved station with a train on it, in the editor and in the
 viewer.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+Previous: On a curve, the badge is perfectly over the sensor, but we decided to place those curved station dots offset on the other side when in the autonomy editor.  Move the * so it aligns with the offset placement.
+
+Now:
+Looks good!
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-125"></a>
@@ -5860,6 +5869,14 @@ and watching it fail.
 Item 1 and item 2 Adam has already run. What is left of this entry is "autonomy over a link", which he
 flagged as still to do.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+1. works, but because the track diagram right click control is rightly disabled
+2. works
+3. write a test case for this
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-135"></a>
@@ -5963,6 +5980,26 @@ real tiles - 249 references, no orphans - and is in the repository.
 
 **Still not covered by this:** duplicating a page does not copy the setup onto the copy. Same as before.
 
+**Adam, 2026-08-24 (triage).** Does not work.
+
+Renaming the page results in the following errors on the new page:    TopMainR2Inter holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   (Page 1 - Main) 6,4 holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   (Page 1 - Main) 14,3 holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   (Page 1 - Main) 13,11 holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+
+
+Then, renaming it back adds the following:
+
+   TunnelPre holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   BottomInnerOtherside holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   s88 1009 holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+   (Page 1 - Main2) 0,11 holds a locomotive that is also recorded as standing somewhere else.  A locomotive can only be in one place, and autonomy refuses the whole setup while it is in two - so take it off whichever square it is not on.
+
+
+So it looks like there is some station loss and locomotive mapping loss too.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-136"></a>
@@ -6038,6 +6075,18 @@ it; the dead branch is gone, and what is actually new here is the "no way out" r
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+1. is OK.
+
+BUT In the track diagram viewer: There is a condition where "place {locname}" is greyed out saying it can't possible leave so can be placed, but Place Locomotive still works.
+
+2/3 are OK but I still need to test autonomy over a link.
+----
+Update: I don't understand the steps to reproduce.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-137"></a>
@@ -6105,6 +6154,16 @@ at the ACTION now, which cannot go stale, and the dialog says how many errors th
 diagram edit that costs the station- in the current state, I can't validate, but I see no error.
 
 *Run against commit 62af99e6, build\classes, compiled 23 Aug 13:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-08-24 (triage).** Works.
+
+segment lengths are OK
+fix it start greyout does not work (see other bug)
+try not to bunch multiple bugs into a MT, this will reduce my accuracy.
+
+diagram edit that costs the station- in the current state, I can't validate, but I see no error.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -6962,6 +7021,12 @@ with nothing to say which had been theirs.
 Done the way the same method already handles PLACEMENTS: a set beside `placedAlready`, first one wins,
 and the rest counted so the choice is reported rather than made silently.
 
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+make a test case for this using a generated json file
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-152"></a>
@@ -6995,6 +7060,12 @@ view, so `removeIf` threw.
 actuated" - when interrupted, without looking. That is the answer that lets a train onto turnouts
 nothing confirmed. It asks `allConfirmed` now. Unreachable today; fixed because a fail-safe pointing
 the wrong way is a thing you find out about once.
+
+**Adam, 2026-08-24 (triage).** Could not run this.
+
+write a test case for this
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7080,6 +7151,10 @@ the editor except the biggest: `WindowClosed` never consulted it and went on to 
 
 In autonomy mode it was worse than a silent discard - the exit capture SAVES the setup, so work the
 user was about to Cancel could be committed on the way out.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7188,6 +7263,10 @@ that is actually correct. Nothing here needs running.
 square points AT the station and carries a name, so it appeared in the list as though it were somewhere
 else - choosing it would have held the station back with itself through the back door the existing
 check closes at the front. Adam asked for exactly that: "ensure self-selection is impossible".
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7346,6 +7425,12 @@ Two things the fix's own tests found:
   above depends on the index not having been rewritten while the file was away. Worth knowing; filed
   as its own question rather than changed here.
 
+**Adam, 2026-08-24 (triage).** Does not work.
+
+When I renamed "5 - Test" to 5, the main page (1 - Main, id 5) became excluded from autonomy and lost all its train placement.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-162"></a>
@@ -7381,6 +7466,12 @@ either call site. The deep menu already carries a title naming the station and t
 has none - so a fix written where the reader happens to be looking could have landed on the menu that
 was already fine. The test asserts the un-named key is used NOWHERE, which is the form a second copy of
 the menu cannot get past.
+
+**Adam, 2026-08-24 (triage).** Works, with notes.
+
+They both appear, but in show a different (currently <name>), you and remove the currently part since we have the "Stop showing <name>" already.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -7581,6 +7672,10 @@ then this dialog is gone, so the freeze would have had nothing on screen to expl
 it is silent beyond the log - the backup succeeded, and a second dialog saying the file manager would
 not start is noise on top of the one just dismissed.
 
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-167"></a>
@@ -7713,6 +7808,10 @@ matching the words would work in English and quietly do nothing in the other sev
 **Adam's fourth note is a question, not a fix,** and is filed as [FR-020](issues.md): what should the
 backup do when the layout is being read from the Central Station rather than from disk? Today it
 silently has nothing to put in the archive.
+
+**Adam, 2026-08-24 (triage).** Works.
+
+*Run against commit 8db330da, build\classes, compiled 24 Aug 17:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
