@@ -226,6 +226,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String SHOW_HOME_LOCOMOTIVES = "ShowHomeLocomotives";
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
+
+    /**
+     * FR-022 - whether the icon file chooser should offer to crop the picture that is picked.
+     *
+     * Remembered rather than asked for each time, and OFF until it is asked for.  Somebody who wants
+     * to crop wants to crop every icon they set, and somebody who has never wanted it must not have a
+     * dialog appear between picking a file and seeing the result - that path has worked one way since
+     * the feature existed and nobody asked for it to change.
+     */
+    public static final String CROP_LOC_ICON_PREF = "CropLocIcon";
+
     public static final String KEYBOARD_LAYOUT = "KeyboardLayout";
     public static final String SHOW_KEYBOARD_HINTS_PREF = "KeyboardHits";
     public static final String ACTIVE_LOC_IN_TITLE = "ActiveLocInTitle";
@@ -1591,6 +1602,119 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return yes[0];
+    }
+
+    /**
+     * Settles what happens to pages the layout index holds that nothing can see (FR-018).
+     *
+     * Writing the index retires the id of any page not in the list it is given, which is what stops a
+     * later page inheriting a deleted page's settings - the MT-135 loss. It cannot tell that case from
+     * a page that was never deleted: `CS2File` skips a page whose file will not parse or is not there,
+     * and this layout lives in OneDrive, where an unhydrated placeholder or a file the sync client has
+     * open is an ordinary Tuesday. Written during that window, the page's id is retired, and when the
+     * file comes back it is a NEW page with a new number whose settings attach to nothing.
+     *
+     * My three proposals for this all assumed the application had to guess which case it was in, and
+     * ranked themselves by how well each guessed. Adam dissolved that: "if we are talking about
+     * orphaned data, why not warn the user and then prune?" The application is the only participant
+     * that cannot tell the two apart. The person who just renamed a page knows perfectly well whether
+     * they deleted it.
+     *
+     * So the two answers are offered as what they actually mean, and the second does the half none of
+     * my options addressed - today a genuinely deleted page's settings are held verbatim under a
+     * retired id for ever, growing setup.json with data that can never attach to anything again.
+     *
+     * **Nothing is asked when nothing is absent,** which is every ordinary rename, delete and
+     * duplicate. This is a dialog nobody should ever see.
+     *
+     * @param layoutList the pages that are actually loaded
+     * @param renamedFromTo old name -&gt; new name, whose old names are not absences
+     * @param deliberatelyRemoved names being removed on purpose, which are not absences either
+     * @return the names to keep in the index, empty when there was nothing to ask about, and null
+     *         when the operator cancelled - in which case the index must not be written at all
+     */
+    private java.util.Collection<String> settleAbsentPages(java.util.List<String> layoutList,
+        java.util.Map<String, String> renamedFromTo,
+        java.util.Collection<String> deliberatelyRemoved)
+    {
+        final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
+            this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
+
+        if (absent.isEmpty()) return absent;
+
+        final int[] answer = {javax.swing.JOptionPane.CLOSED_OPTION};
+
+        // On the event thread, whichever thread asked.  Every caller of this runs on a worker - page
+        // edits parse the whole layout - and a modal dialog put up from one is a dialog that may never
+        // paint.
+        Runnable ask = () ->
+        {
+            StringBuilder names = new StringBuilder();
+
+            for (String name : absent) names.append("\n    ").append(name);
+
+            Object[] choices =
+            {
+                I18n.t("layout.ui.absentPageKeep"),
+                I18n.t("layout.ui.absentPageGone"),
+                I18n.t("layout.ui.absentPageCancel")
+            };
+
+            answer[0] = javax.swing.JOptionPane.showOptionDialog(this,
+                I18n.f("layout.ui.absentPageQuestion", names.toString()),
+                I18n.t("layout.ui.absentPageTitle"),
+                javax.swing.JOptionPane.DEFAULT_OPTION,
+                javax.swing.JOptionPane.WARNING_MESSAGE,
+                null, choices, choices[0]);
+        };
+
+        try
+        {
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
+            else javax.swing.SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
+        {
+            // Unanswerable, so answer it the safe way: keep everything.  Keeping a deleted page's id
+            // reserved costs a number nobody will notice; retiring a live page's id costs its settings.
+            this.model.log(couldNotAsk);
+
+            return absent;
+        }
+
+        // KEEP - the page is coming back.  Its id stays in the index, so the file that returns is the
+        // same page and its settings are still attached to it.
+        if (answer[0] == 0) return absent;
+
+        // CANCEL, or the window closed.  Nothing is written, which leaves the layout exactly as it was.
+        if (answer[0] != 1) return null;
+
+        // GONE - retire the id as before, AND prune what is being held under it, which is the half of
+        // this that had never been done at all.
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session != null && session.exists())
+        {
+            try
+            {
+                int pruned = session.getStore().forgetHeldPages(absent);
+
+                if (pruned > 0)
+                {
+                    this.model.logf("layout.infoAbsentPageSetupPruned", pruned, absent.size());
+                }
+
+                session.saveWithoutReconciling();
+            }
+            catch (Exception couldNotPrune)
+            {
+                // The page is going either way; only the record of it is at risk.  Same rule as the
+                // delete path above.
+                this.model.log(couldNotPrune);
+            }
+        }
+
+        return java.util.Collections.emptyList();
     }
 
     /**
@@ -18920,6 +19044,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
+                // Asked BEFORE the new page is written (FR-018), for the same reason as the delete
+                // path: a Cancel offered at the index write would come after a page file had already
+                // appeared on disk, leaving a page nothing references.  Nothing is being removed here,
+                // so every absence is a surprise.
+                java.util.Collection<String> keepAbsent = settleAbsentPages(
+                    this.model.getLayoutList(), null, null);
+
+                if (keepAbsent == null) return;
+
                 // MADE the way every other page is made: by saving an existing one under a new name.
                 //
                 // A LayoutDiagram built by hand cannot save itself.  It writes by resolving its new
@@ -18933,7 +19066,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 layoutList.add(combined);
 
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null, pageIdFloor());
+                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null,
+                    pageIdFloor(), keepAbsent);
 
                 // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk.
                 // Included for even one build, every sensor on it becomes a second Point for a sensor
@@ -19174,10 +19308,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // time renamePage rekeys it, so they travel with everything else.
                 captureRunningLayout();
 
+                // A rename makes the old name absent by construction, so it is told about that and
+                // asks only about the rest (FR-018).
+                java.util.Map<String, String> renaming = new java.util.LinkedHashMap<>();
+
+                if (rename) renaming.put(currentLayout, newLayoutName);
+
+                java.util.Collection<String> keepAbsent = settleAbsentPages(
+                    this.model.getLayoutList(), renaming, null);
+
+                if (keepAbsent == null) return;
+
                 org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
                     this.model.getLayoutList(), this.model.getLayout(currentLayout),
                     this.getLocalLayoutPath(), currentLayout, newLayoutName,
-                    rename, duplicate, blank, this.autonomySession, this.model);
+                    rename, duplicate, blank, this.autonomySession, this.model, keepAbsent);
 
                 this.layoutEditingComplete(() ->
                 {
@@ -19257,6 +19402,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     String going = this.LayoutList.getSelectedItem().toString();
 
+                    // Anything ELSE that is missing is asked about here, BEFORE the file goes
+                    // (FR-018).
+                    //
+                    // The order is the point. Everything below this line is irreversible - the page
+                    // file is deleted, the setup forgets it, the index is rewritten - so a Cancel
+                    // offered at the write would be a Cancel after the page had already gone, which
+                    // is not a cancel at all. Asked here, declining leaves the layout exactly as it
+                    // was.
+                    //
+                    // The page being deleted is named as a deliberate removal, which is what stops the
+                    // question being asked about the very thing the operator just did - and this is
+                    // the door it would fire on most often.
+                    java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
+                        java.util.Arrays.asList(going));
+
+                    if (keepAbsent == null) return;
+
                     // The setup FIRST, before the page or the file is gone.
                     //
                     // Deleting a page used to tell the setup nothing at all - the file went, the index
@@ -19321,7 +19483,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // No rename map: the deleted page's id is retired, and every surviving page keeps
                     // the one it had.  That is the whole reason a delete no longer disturbs anything.
-                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null, pageIdFloor());
+                    LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, null,
+                        pageIdFloor(), keepAbsent);
 
                     this.layoutEditingComplete();
                 }
@@ -20008,11 +20171,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
     
+    /**
+     * Removes the local icon override, so the Central Station's own picture is shown again.
+     * @param l the locomotive
+     */
     public void clearLocIcon(Locomotive l)
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // FR-022.  A crop of our own is only ever referenced by the locomotive it was made for,
+            // so clearing that reference is the moment it becomes unreachable.  Without this the
+            // folder would grow by one file for every icon the user ever set and never shrink, and
+            // there is nothing in the interface that would let them tidy it.  Only files inside our
+            // own folder qualify - the user's original picture is never ours to delete.
+            String superseded = l.getLocalImageURL();
+
             l.setLocalImageURL(null);
+
+            if (Util.isLocIconFile(superseded))
+            {
+                deleteLocIconFile(superseded);
+            }
+
             this.syncWithCS2();
             this.repaintLoc(true, null);
             this.repaintMappings(Collections.singletonList(l), true);
@@ -20064,21 +20244,163 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             fc.setAcceptAllFileFilterUsed(false);
 
+            // FR-022.  The offer lives in the chooser, beside the files, because that is where the
+            // user is when the question "will the whole of this picture fit?" occurs to them.  A
+            // menu item alongside "Set Local Locomotive Icon" would have been a second way to start
+            // the same job, and two entrances to one thing is how a menu stops being readable.
+            final JCheckBox crop = new JCheckBox(I18n.t("loc.ui.cropCheckbox"),
+                prefs.getBoolean(CROP_LOC_ICON_PREF, false));
+
+            crop.setToolTipText(I18n.t("loc.ui.tooltip.cropCheckbox"));
+
+            JPanel accessory = new JPanel();
+            accessory.setLayout(new javax.swing.BoxLayout(accessory, javax.swing.BoxLayout.Y_AXIS));
+            accessory.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 4));
+            accessory.add(crop);
+
+            fc.setAccessory(accessory);
+
             int i = fc.showOpenDialog(source);
 
             if (i == JFileChooser.APPROVE_OPTION)
             {
                 File f = fc.getSelectedFile();
 
-                l.setLocalImageURL(Paths.get(f.getAbsolutePath()).toUri().toString());
+                prefs.putBoolean(CROP_LOC_ICON_PREF, crop.isSelected());
+
+                // The file the user picked, unless cropping produced a file of our own.  Assigned
+                // before the crop is attempted so that every way the crop can fail - unreadable
+                // picture, cancelled dialog, unwritable folder - lands on exactly the behaviour this
+                // method had before FR-022 rather than on no icon at all.
+                String chosenURL = Paths.get(f.getAbsolutePath()).toUri().toString();
+
+                if (crop.isSelected())
+                {
+                    String cropped = cropLocIcon(source, l, f);
+
+                    if (cropped != null) chosenURL = cropped;
+                }
+
+                // The crop this icon is replacing, if the icon it is replacing was one of ours.  Read
+                // BEFORE the assignment and deleted after it, so a failure in between cannot leave
+                // the locomotive pointing at a file that has been removed.
+                String superseded = l.getLocalImageURL();
+
+                l.setLocalImageURL(chosenURL);
                 prefs.put(LAST_USED_ICON_FOLDER, f.getParent());
+
+                if (!chosenURL.equals(superseded) && Util.isLocIconFile(superseded))
+                {
+                    deleteLocIconFile(superseded);
+                }
 
                 this.repaintLoc(true, null);
                 this.repaintMappings(Collections.singletonList(l), true);
                 this.selector.refreshLocSelectorList();
                 // TODO - clear icon setting if load failed
-            } 
+            }
         });
+    }
+
+    /**
+     * FR-022 - runs the crop dialog over a picture the user has just picked, and stores what comes
+     * back as a locomotive icon of our own.
+     *
+     * The user's file is opened for READING and nothing else.  Adam picks these out of his own photo
+     * folders; a program that writes into them, or over the photograph it was shown, has done
+     * something he did not ask for and cannot undo.  The crop is a new picture and goes in the
+     * application's own folder.
+     *
+     * PNG regardless of what the source was.  A crop of a transparent icon - which is what the
+     * Central Station's own locomotive pictures are - would have its transparency flattened to black
+     * by JPEG, and the icons are drawn straight onto a coloured button where that is unmissable.
+     *
+     * @param parent the component the dialog should centre on
+     * @param l the locomotive the icon is for; its name is used to make the file recognisable
+     * @param chosen the picture the user picked, never written to
+     * @return the URL of the cropped icon, or null if there is nothing to use - the user cancelled,
+     *         the picture could not be read, or the folder could not be written - in which case the
+     *         caller must fall back to the uncropped original
+     */
+    private String cropLocIcon(Component parent, Locomotive l, File chosen)
+    {
+        BufferedImage picture;
+
+        try
+        {
+            picture = ImageIO.read(chosen);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            picture = null;
+        }
+
+        if (picture == null)
+        {
+            // ImageIO returns null rather than throwing for a file no reader claims - a .png that is
+            // really something else, which is common enough among pictures collected off the web.
+            this.model.logf("ui.errorFailedToLoadImage", chosen.getAbsolutePath());
+
+            return null;
+        }
+
+        BufferedImage cropped = LocIconCropDialog.crop(parent, picture, LOC_ICON_WIDTH,
+            LOC_ICON_HEIGHT);
+
+        if (cropped == null) return null;
+
+        // A fresh name every time, never the same file overwritten.  getLocImage caches by URL, and
+        // the cache has no way to know a file behind a URL it has already read has changed - reusing
+        // the name would show the OLD crop until the application was restarted, which reads as the
+        // crop dialog having done nothing.  The superseded file is deleted by the caller, so this
+        // accumulates one file per locomotive rather than one per attempt.
+        String name = Util.sanitizeFilename(l.getName()) + "_" + System.currentTimeMillis() + ".png";
+
+        File target = Util.getLocIconFile(name);
+
+        if (target == null)
+        {
+            this.model.logf("loc.ui.errorCropCouldNotBeSaved", Util.LOC_ICON_FOLDER);
+
+            return null;
+        }
+
+        try
+        {
+            Util.writeAtomically(target, out -> ImageIO.write(cropped, "png", out));
+        }
+        catch (IOException | RuntimeException e)
+        {
+            this.model.logf("loc.ui.errorCropCouldNotBeSaved", target.getAbsolutePath());
+            this.model.log(e);
+
+            return null;
+        }
+
+        return target.toPath().toUri().toString();
+    }
+
+    /**
+     * Removes a cropped icon file that nothing points at any more.
+     *
+     * Only ever called for a URL {@link Util#isLocIconFile} has already vouched for, so this cannot
+     * reach the user's own pictures.  Failure is ignored on purpose: a stale file in our own folder
+     * is untidy, and telling the user about it in the middle of setting an icon that worked would be
+     * worse than the untidiness.
+     *
+     * @param url the URL of the file to remove
+     */
+    private void deleteLocIconFile(String url)
+    {
+        try
+        {
+            new File(new java.net.URI(url)).delete();
+        }
+        catch (URISyntaxException | RuntimeException e)
+        {
+            // Nothing to do and nothing worth saying.  RuntimeException covers the
+            // IllegalArgumentException a URL that is not a file URL produces.
+        }
     }
     
     /**

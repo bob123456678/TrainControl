@@ -68,6 +68,22 @@ public class Util
     public static final String BACKUP_FOLDER = "tc_backup";
 
     /**
+     * Folder (relative to the working directory) that cropped locomotive icons are written to.
+     *
+     * Local locomotive icons had no storage of their own before FR-022: setLocIcon simply remembered
+     * the path of the file the user picked, and the picture stayed wherever the user keeps their
+     * pictures.  A CROP has to live somewhere, because it is a new picture that did not exist before,
+     * and it must not be written next to - still less over - the original.  Adam picks these out of
+     * his own photo folders, and a program that quietly deposits files there, or edits the photo it
+     * was shown, has done something he did not ask for and cannot easily undo.
+     *
+     * So it goes beside the application's own data, in the working directory, next to the locomotive
+     * database whose lifetime it shares: an icon is only meaningful while the locomotive that
+     * references it exists, and both are lost together if the folder is moved without the other.
+     */
+    public static final String LOC_ICON_FOLDER = "tc_loc_icons";
+
+    /**
      * Returns the path a backup file should be written to.  Backups go into a dedicated subfolder
      * ({@link #BACKUP_FOLDER}), which is created if it does not exist.  If the folder cannot be
      * created, the original file name is returned so the backup falls back to the current directory.
@@ -85,6 +101,67 @@ public class Util
 
         // Folder unavailable - fall back to the current directory (the original behaviour)
         return fileName;
+    }
+
+    /**
+     * Returns the file a cropped locomotive icon should be written to, creating
+     * {@link #LOC_ICON_FOLDER} if it is not there yet.
+     *
+     * Unlike getBackupPath there is no fall back to the current directory.  A backup that lands
+     * beside the file it protects is still a backup; an icon written into the working directory
+     * would sit among the application's own data files under a name nobody would recognise as ours,
+     * and it would never be cleaned up.  Null instead, so the caller can leave the locomotive
+     * pointing at the uncropped original - which is exactly what it did before this existed.
+     *
+     * @param fileName the intended file name, already sanitised
+     * @return the file to write to, or null if the folder could not be created
+     */
+    public static File getLocIconFile(String fileName)
+    {
+        File dir = new File(LOC_ICON_FOLDER);
+
+        if (dir.isDirectory() || dir.mkdirs())
+        {
+            return new File(dir, fileName);
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}.
+     *
+     * The one question that decides whether a locomotive icon file may be DELETED.  Everything in
+     * that folder was written by us and is disposable; everything outside it is the user's own
+     * picture, picked out of their own folders, and is never ours to touch.  Asked before replacing
+     * a crop and before clearing an icon, so that re-cropping a locomotive twenty times leaves one
+     * file rather than twenty.
+     *
+     * @param url the locomotive's local image URL, may be null
+     * @return true only if the URL resolves to a file inside the icon folder
+     */
+    public static boolean isLocIconFile(String url)
+    {
+        if (url == null) return false;
+
+        try
+        {
+            File file = new File(new URI(url));
+
+            File dir = new File(LOC_ICON_FOLDER).getCanonicalFile();
+
+            // Canonical on both sides, and the parent rather than the path: a name that walks out of
+            // the folder ("..") resolves before the comparison, so it cannot be smuggled past this.
+            File parent = file.getCanonicalFile().getParentFile();
+
+            return parent != null && parent.equals(dir);
+        }
+        catch (URISyntaxException | IllegalArgumentException | IOException e)
+        {
+            // Not a file URL, or unreadable.  Anything we cannot positively identify as ours is
+            // treated as the user's, which is the safe direction for a question that gates a delete.
+            return false;
+        }
     }
 
     /**

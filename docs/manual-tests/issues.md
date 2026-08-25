@@ -606,6 +606,22 @@ other cannot read as a pass.
 
 add a crop / pan function to local locomotive icons at the time of image selection.
 
+**Claude, 2026-08-25.** Done. The icon file chooser now carries a "Crop / pan the image" checkbox,
+remembered between uses and OFF until it is ticked, so picking an icon without it behaves exactly as
+it did before. Ticked, approving the chooser opens a crop dialog: the picture pans under a frame
+locked to 296x114 - the size `LOC_ICON_WIDTH` and `LOC_ICON_HEIGHT` say the icon is actually drawn at
+- with the slider and the mouse wheel to zoom, OK writing the crop and Cancel leaving the whole
+picture in use.
+
+The user's own file is opened for reading and never written to. The crop is a new PNG in
+`tc_loc_icons`, beside the locomotive database rather than in the folder the photograph came from,
+under a name carrying the locomotive and a timestamp - a fresh name every time, because `getLocImage`
+caches by URL and reusing the name would keep showing the previous crop. The superseded file is
+deleted when it is replaced and when the icon is cleared, and only ever if it is inside that folder.
+
+New: `src/org/traincontrol/gui/LocIconCropDialog.java`, hand written with no `.form`. Not covered by
+an automated test - the interesting part is a drag against a painted frame - so it needs eyes on it.
+
 ### OB-107 - 2026-08-25 - signal protecting this station popup usability
 
 **Kind:** bug  

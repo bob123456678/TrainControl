@@ -555,6 +555,127 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Drops everything being held for pages the operator has said are gone for good (FR-018).
+     *
+     * The half of FR-018 that none of my three proposed options touched. Entries belonging to a page
+     * the index cannot resolve are held out of memory and written back verbatim (OB-067), which is
+     * what makes a page's absence survivable - a OneDrive placeholder hydrates, the file comes back,
+     * and nothing was lost by being away. The cost is that a page which was genuinely DELETED is held
+     * on exactly the same terms, for ever, under an id that can never attach to anything again.
+     *
+     * Adam: "if we are talking about orphaned data, why not warn the user and then prune?"
+     *
+     * So this is only ever called with an answer from the person who knows - never inferred, never on
+     * a timer, and never from the startup path. The application cannot tell a deleted page from an
+     * unhydrated one and must not try.
+     *
+     * **An entry is dropped if it names a gone page ANYWHERE, key or value, not only if it is
+     * anchored on one.** A caption on a page that is still here, pointing at a station on a page that
+     * has been deleted, is a pointer to nothing. Leaving it held would be the leak this method exists
+     * to close; releasing it into memory would be worse, because the page part of its value would then
+     * stand in the live collections as a page NAME - the id-as-name pun the hold exists to prevent.
+     *
+     * The recorded name is dropped with it, so `pagesNotLoaded` stops naming the page and the operator
+     * is not asked about it again on the next save.
+     *
+     * @param goneByName the page names the operator has said are deleted rather than merely absent
+     * @return how many held entries were dropped
+     */
+    public int forgetHeldPages(java.util.Collection<String> goneByName)
+    {
+        if (goneByName == null || goneByName.isEmpty()) return 0;
+
+        // The page PARTS a stored key could carry for these pages: the ids the file recorded them
+        // under, and the names themselves for a setup old enough to be keyed by name.
+        Set<String> parts = new LinkedHashSet<>(goneByName);
+
+        for (Map.Entry<String, String> was : pageNamesWhenWritten.entrySet())
+        {
+            if (goneByName.contains(was.getValue())) parts.add(was.getKey());
+        }
+
+        int dropped = 0;
+
+        for (Map.Entry<String, Object> field : new LinkedHashMap<>(heldForAbsentPages).entrySet())
+        {
+            Object holding = field.getValue();
+
+            if (holding instanceof JSONObject)
+            {
+                JSONObject src = (JSONObject) holding;
+                JSONObject keep = new JSONObject();
+
+                for (String key : src.keySet())
+                {
+                    if (mentionsAny(key, parts) || mentionsAny(src.get(key), parts))
+                    {
+                        dropped++;
+                    }
+                    else
+                    {
+                        keep.put(key, src.get(key));
+                    }
+                }
+
+                if (keep.length() > 0) heldForAbsentPages.put(field.getKey(), keep);
+                else heldForAbsentPages.remove(field.getKey());
+            }
+            else if (holding instanceof JSONArray)
+            {
+                JSONArray src = (JSONArray) holding;
+                JSONArray keep = new JSONArray();
+
+                for (int at = 0; at < src.length(); at++)
+                {
+                    if (mentionsAny(src.get(at), parts)) dropped++;
+                    else keep.put(src.get(at));
+                }
+
+                if (keep.length() > 0) heldForAbsentPages.put(field.getKey(), keep);
+                else heldForAbsentPages.remove(field.getKey());
+            }
+        }
+
+        // And the record of what those ids were called, so the page stops being reported as one that
+        // is merely not loaded.  Written as a removal by value rather than by key because the caller
+        // knows names and the map is keyed by id.
+        pageNamesWhenWritten.values().removeAll(goneByName);
+
+        return dropped;
+    }
+
+    /**
+     * Whether a stored key, or a value that may itself be one or a list of them, names a gone page.
+     *
+     * @param held a key, a stored square, an array of them, or a value that is none of those
+     * @param parts the page parts being removed - ids and, for an old enough file, names
+     * @return true when any square in it belongs to one of those pages
+     */
+    private boolean mentionsAny(Object held, Set<String> parts)
+    {
+        if (held instanceof JSONArray)
+        {
+            JSONArray each = (JSONArray) held;
+
+            for (int at = 0; at < each.length(); at++)
+            {
+                if (mentionsAny(each.get(at), parts)) return true;
+            }
+
+            return false;
+        }
+
+        if (!(held instanceof String)) return false;
+
+        String stored = (String) held;
+
+        int colon = stored.lastIndexOf(':');
+
+        // A bare page name, for excludedPages, which is a list of whole pages rather than of squares.
+        return parts.contains(colon < 0 ? stored : stored.substring(0, colon));
+    }
+
+    /**
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
      * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map

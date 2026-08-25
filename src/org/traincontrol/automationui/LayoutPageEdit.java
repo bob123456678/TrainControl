@@ -105,6 +105,26 @@ public class LayoutPageEdit
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,
         boolean duplicate, boolean blank, AutonomySession session, ViewListener log) throws Exception
     {
+        renameOrDuplicate(layoutList, page, layoutPath, currentLayout, newLayoutName, rename,
+            duplicate, blank, session, log, null);
+    }
+
+    /**
+     * The same, told which absent pages the operator has said are coming back (FR-018).
+     *
+     * An overload rather than a parameter on the one signature, because the answer can only come from
+     * a person and every caller that is not the menu item - six tests and counting - has nobody to
+     * ask. They keep the shorter call and get the behaviour they always had: an absent page's id is
+     * retired, which is right when nothing is absent, and nothing is absent in a fixture.
+     *
+     * @param keepAbsent names to keep in the index though they are not in the list.  Null for the
+     *        behaviour above
+     */
+    public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
+        String layoutPath, String currentLayout, String newLayoutName, boolean rename,
+        boolean duplicate, boolean blank, AutonomySession session, ViewListener log,
+        java.util.Collection<String> keepAbsent) throws Exception
+    {
 
         // WHERE it sits, so the file stays in the order the user sees.
         //
@@ -242,6 +262,7 @@ public class LayoutPageEdit
 
         if (rename) renamed.put(currentLayout, newLayoutName);
 
-        LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session));
+        LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session),
+            keepAbsent);
     }
 }

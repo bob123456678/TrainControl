@@ -992,6 +992,83 @@ public class LayoutDiagram
     public static void writeLayoutIndex(String path, List<String> layoutList,
         Map<String, String> renamedFromTo, int floor) throws IOException
     {
+        writeLayoutIndex(path, layoutList, renamedFromTo, floor, null);
+    }
+
+    /**
+     * Which pages this index holds that a write would drop.
+     *
+     * The question the index cannot answer for itself, and the reason FR-018 exists. Retiring the id
+     * of a page that is not in the list is deliberate - it is what stops a later page inheriting a
+     * deleted page's settings, which is the MT-135 loss. What it cannot tell apart is a page that was
+     * never deleted: `CS2File` skips a page whose file will not parse or is not there, and on this
+     * railway, which lives in OneDrive, an unhydrated placeholder or a file held open by the sync
+     * client is enough. Written while a page is in that state, the index retires its id, and when the
+     * file comes back it is a NEW page with a new number. Its settings are safe under the old id and
+     * attach to nothing.
+     *
+     * Adam dissolved the guessing: "if we are talking about orphaned data, why not warn the user and
+     * then prune?" The application is the only party that cannot tell the two cases apart; the person
+     * who just renamed a page knows perfectly well whether they deleted it. So this reports, the
+     * caller asks, and the answer goes back in through `keepAbsent` below.
+     *
+     * Deliberate removals are subtracted here rather than at the call site, because every caller has
+     * some - a delete has the page it is deleting, a rename has the name it is renaming away from -
+     * and a caller that forgot to subtract its own would ask about the very thing the operator just
+     * did.
+     *
+     * @param path the layout folder
+     * @param layoutList the pages the caller can see
+     * @param renamedFromTo old name -&gt; new name, whose OLD names are not absences
+     * @param deliberatelyRemoved names the caller is removing on purpose, which are not absences
+     *        either.  May be null
+     * @return the names in the index that nobody has accounted for, in index order, empty when the
+     *         picture is complete
+     */
+    public static List<String> pagesTheIndexWouldDrop(String path, List<String> layoutList,
+        Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved)
+    {
+        List<String> dropped = new java.util.ArrayList<>();
+
+        Map<String, Integer> existing = readLayoutIndexIds(path);
+
+        // An index that could not be READ says nothing about what is absent.  writeLayoutIndex
+        // refuses that case outright (DR-B4); reporting an empty list here rather than every page in
+        // the layout is what keeps the two halves agreeing about it.
+        if (existing.isEmpty()) return dropped;
+
+        for (String known : existing.keySet())
+        {
+            if (layoutList != null && layoutList.contains(known)) continue;
+
+            if (deliberatelyRemoved != null && deliberatelyRemoved.contains(known)) continue;
+
+            if (renamedFromTo != null && renamedFromTo.containsKey(known)) continue;
+
+            dropped.add(known);
+        }
+
+        return dropped;
+    }
+
+    /**
+     * The same again, told which absent pages to hold on to rather than retire (FR-018).
+     *
+     * `keepAbsent` names pages the operator has said are coming back - a placeholder that has not
+     * hydrated, a file the sync client has open. They are written back out with the id they already
+     * have, so when the file returns it is the SAME page and its settings are still attached to it.
+     *
+     * Anything absent and NOT named here is retired exactly as before, which is the behaviour every
+     * existing caller gets by passing null. That default matters: this must stay callable from the
+     * startup path and from tests without anybody being asked anything.
+     *
+     * @param keepAbsent names to keep in the index though they are not in the list.  Null or empty
+     *        for the old behaviour
+     */
+    public static void writeLayoutIndex(String path, List<String> layoutList,
+        Map<String, String> renamedFromTo, int floor,
+        java.util.Collection<String> keepAbsent) throws IOException
+    {
         // Ensure the directory exists
         File directory = new File(Paths.get(path, "config").toString());
         if (!directory.exists())
@@ -1091,6 +1168,29 @@ public class LayoutDiagram
             // not any more - a retired id leaves a gap - and an omitted id would be read as 1.
             contents.append(" .id=").append(id).append("\n");
             contents.append(" .name=").append(layout).append("\n");
+        }
+
+        // Pages the operator said are coming back (FR-018).
+        //
+        // Written after the ones that are here, because position stopped meaning anything the day ids
+        // became a page's identity - the order pages appear in the window comes from getLayoutList,
+        // which sorts by name - so appending costs nothing and saves working out where in the file a
+        // page that is not loaded used to sit.
+        //
+        // Only a name the index already has an id for.  A name with no id would be issued a fresh one
+        // here, and inventing an id for a page nobody can see is the opposite of the point.
+        if (keepAbsent != null)
+        {
+            for (String held : keepAbsent)
+            {
+                Integer id = existing.get(held);
+
+                if (id == null || layoutList.contains(held)) continue;
+
+                contents.append("seite\n");
+                contents.append(" .id=").append(id).append("\n");
+                contents.append(" .name=").append(held).append("\n");
+            }
         }
 
         final byte[] bytes = contents.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);

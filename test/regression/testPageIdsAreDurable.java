@@ -851,6 +851,238 @@ public class testPageIdsAreDurable
 
     // ---------------------------------------------------------------------------------------------
 
+    /**
+     * The index can say which pages a write would drop, and does not count the ones somebody meant.
+     *
+     * The question FR-018 turns on. Retiring an absent page's id is correct for a page that was
+     * deleted and wrong for a page whose file merely would not load, and the index cannot tell the
+     * two apart - so it stops guessing and reports, and the caller asks the one participant who
+     * knows. What this holds is that the report is about SURPRISES only: a delete and a rename both
+     * make a page absent from the list on purpose, and asking Adam about the page he just deleted
+     * would make the dialog worthless in exactly the case it fires most often.
+     *
+     * MUTATION: dropping either the `deliberatelyRemoved` or the `renamedFromTo` test from
+     * pagesTheIndexWouldDrop fails this.
+     */
+    @Test
+    public void testTheIndexSaysWhichPagesAWriteWouldDrop() throws IOException
+    {
+        write("Alpha", "Bravo", "Charlie");
+
+        // Bravo's file did not load this time.  Nobody asked for that.
+        assertEquals(LayoutDiagram.pagesTheIndexWouldDrop(layout.getAbsolutePath(),
+            Arrays.asList("Alpha", "Charlie"), null, null),
+            Arrays.asList("Bravo"),
+            "a page that vanished from the list on its own was not reported");
+
+        // The same absence, this time because the operator deleted it.
+        assertTrue(LayoutDiagram.pagesTheIndexWouldDrop(layout.getAbsolutePath(),
+            Arrays.asList("Alpha", "Charlie"), null, Arrays.asList("Bravo")).isEmpty(),
+            "a page the caller said it was deleting was reported as a surprise");
+
+        // And renamed away, which is an absence under the old name by construction.
+        Map<String, String> renamed = new LinkedHashMap<>();
+        renamed.put("Bravo", "Bruno");
+
+        assertTrue(LayoutDiagram.pagesTheIndexWouldDrop(layout.getAbsolutePath(),
+            Arrays.asList("Alpha", "Bruno", "Charlie"), renamed, null).isEmpty(),
+            "a renamed page was reported as a surprise under its old name");
+    }
+
+    /**
+     * A page kept while its file is away comes back as the SAME page.
+     *
+     * This is the whole of what "Keep it" buys. Without it the id is retired, and the settings that
+     * are still sitting in setup.json under that number attach to nothing when the file returns -
+     * Adam gets a new page with a new number and a blank setup, and nothing anywhere says why.
+     *
+     * The second half matters as much: a page NOT named is retired exactly as before, because that is
+     * the behaviour protecting against MT-135, and a fix for one of these that quietly disabled the
+     * other would be a worse bug than the one being fixed.
+     *
+     * MUTATION: dropping the keepAbsent loop from writeLayoutIndex fails the first assertion; making
+     * it keep every absent page regardless fails the second.
+     */
+    @Test
+    public void testAKeptPageComesBackAsItself() throws IOException
+    {
+        write("Alpha", "Bravo", "Charlie");
+
+        // Bravo and Charlie are both missing from the list.  Only Bravo is coming back.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha")), null, 0, Arrays.asList("Bravo"));
+
+        assertEquals(ids(), map("Alpha", 1, "Bravo", 2),
+            "the page held back did not keep its number, or the page nobody held back kept one");
+
+        // Bravo's file hydrates and the layout is written again with everything present.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "Bravo")), null, 0, null);
+
+        assertEquals(ids(), map("Alpha", 1, "Bravo", 2),
+            "a page that came back was issued a fresh id, so its settings - still keyed to 2 - now "
+            + "belong to nothing");
+    }
+
+    /**
+     * Holding a page back does not let it collide with a page created while it was away.
+     *
+     * The failure this could have introduced. A held page keeps its number; a page added in the
+     * meantime is issued a fresh one, and if the fresh number were worked out from the list alone it
+     * would be the held page's. Two pages on one id is the misattachment class this whole file is
+     * about, arriving by a door the fix itself opened.
+     */
+    @Test
+    public void testAPageAddedWhileAnotherIsHeldDoesNotTakeItsNumber() throws IOException
+    {
+        write("Alpha", "Bravo");
+
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha", "Delta")), null, 0, Arrays.asList("Bravo"));
+
+        Map<String, Integer> after = ids();
+
+        assertEquals(after.size(), 3, "a page went missing: " + after);
+
+        assertEquals(after.get("Alpha"), (Integer) 1, "Alpha moved");
+        assertEquals(after.get("Bravo"), (Integer) 2, "the held page did not keep its number");
+
+        assertNotEquals(after.get("Delta"), after.get("Bravo"),
+            "the new page took the held page's number, so both answer to it and the held page's "
+            + "settings would be read as the new page's");
+    }
+
+    /**
+     * Told a page is gone for good, the setup lets go of it - and of nothing else (FR-018).
+     *
+     * The counterpart to {@link #testASaveWhileAPageIsAbsentLosesNothingOfIt}, and the two together
+     * are the whole of this feature: holding an absent page's settings for ever is what makes a
+     * OneDrive placeholder survivable, and it is also what leaves a genuinely deleted page's settings
+     * in setup.json for ever, under an id that can never attach to anything again.
+     *
+     * Adam settled which of the two it is by refusing the question as posed: "if we are talking about
+     * orphaned data, why not warn the user and then prune?" The application cannot tell the cases
+     * apart. The person who deleted the page can.
+     *
+     * **Two absent pages, and only one of them is being pruned.** That is what makes the fixture worth
+     * having. With a single absent page, forgetting the entire hold and forgetting the right entries
+     * produce the same file, so an implementation that simply emptied everything would pass - which is
+     * exactly what the first version of this test did allow.
+     *
+     * The three things asserted, in order of how easy they are to get wrong:
+     *
+     *   1. An entry anchored on a page that is STILL HERE, whose value points at the gone page, goes
+     *      too. It is a pointer to nothing. Leaving it held would be the same leak; releasing it into
+     *      memory would be worse, because the gone page's id would then stand in a page-NAME field -
+     *      the id-as-name pun the hold exists to prevent.
+     *   2. The OTHER absent page keeps everything. It is not gone, it is merely away.
+     *   3. Entries anchored on the gone page go, and the live page's own settings stay.
+     *
+     * MUTATIONS, all three run and all three fail this test: checking only the key and not the value
+     * leaves the caption behind; clearing the hold outright rather than filtering it takes the other
+     * absent page with it; and dropping the `pageNamesWhenWritten` removal leaves the deleted page
+     * still reported as one that is merely not loaded, so the operator would be asked about it again
+     * on every save for ever.
+     */
+    @Test
+    public void testAPageSaidToBeGoneStopsBeingHeld() throws IOException
+    {
+        write("Ghost", "Wraith", "Alpha");
+
+        AutonomyCompanionStore store = new AutonomyCompanionStore(layout);
+
+        store.setPageIds(idsAsNameToId());
+
+        TileKey ghost = new TileKey("Ghost", 3, 3);
+        TileKey ghostLink = new TileKey("Ghost", 5, 5);
+
+        // Absent as well, and NOT being pruned - the page that proves this filters rather than empties.
+        TileKey wraith = new TileKey("Wraith", 4, 4);
+
+        // On the page that is staying, so a prune that takes everything is not mistaken for one that
+        // takes the right things.
+        TileKey live = new TileKey("Alpha", 8, 8);
+
+        // On the page that is staying, POINTING at the page that is going.  Its key resolves; only its
+        // value names the page being pruned.
+        TileKey liveCaption = new TileKey("Alpha", 7, 7);
+
+        store.setPointName(ghost, "Ghost Platform");
+        store.setStation(ghost, true);
+        store.setLinkName(ghostLink, "Ghost Link");
+        store.setPointName(wraith, "Wraith Platform");
+        store.setStation(wraith, true);
+        store.setCaption(liveCaption, ghost);
+        store.setPointName(live, "Alpha Platform");
+        store.setStation(live, true);
+        store.save();
+
+        String before = read(setupFile());
+
+        for (String must : new String[] {"Ghost Platform", "Ghost Link", "Wraith Platform",
+            "Alpha Platform"})
+        {
+            assertTrue(before.contains(must),
+                "the fixture did not take - " + must + " is not in the file, so this test would pass "
+                + "by having written nothing.  File:\n" + before);
+        }
+
+        // Both files go away, and neither is kept in the index - so the setup is holding two pages it
+        // cannot resolve, which is the state a prune has to be selective inside.
+        //
+        // Note that keeping a page in the index is NOT this state: a page the index still lists
+        // resolves, its entries load normally and there is nothing held to prune.  That is what "Keep
+        // it" buys, and it is tested next door.
+        LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
+            new ArrayList<>(Arrays.asList("Alpha")), null, store.highestPageIdSeen());
+
+        AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
+
+        reopened.setPageIds(idsAsNameToId());
+        reopened.load();
+
+        // Both really are held, or the prune below is operating on an empty hold and proves nothing.
+        assertNull(reopened.getPointName(ghost), "the fixture did not hold the page being pruned");
+        assertNull(reopened.getPointName(wraith), "the fixture did not hold the page being kept");
+
+        int pruned = reopened.forgetHeldPages(Arrays.asList("Ghost"));
+
+        assertTrue(pruned > 0, "nothing was pruned, so this test has not exercised anything");
+
+        reopened.save();
+
+        String after = read(setupFile());
+
+        // (1) The caption is keyed "<Alpha's id>:7,7", so its coordinates appearing anywhere means it
+        // survived.  Nothing else in this fixture sits on 7,7.
+        assertFalse(after.contains("7,7"),
+            "a caption on a page that is still here, pointing at a station on the deleted page, "
+            + "survived - so it is either held for ever or about to come back into memory with a page "
+            + "id standing where a page name belongs.  File:\n" + after);
+
+        // (2) The page nobody said anything about is untouched.
+        assertTrue(after.contains("Wraith Platform"),
+            "the OTHER absent page lost its settings.  Nothing said that page was deleted - it is a "
+            + "file that has not come back yet, which is the case the whole hold exists for.  "
+            + "File:\n" + after);
+
+        // (3) The rest.
+        assertFalse(after.contains("Ghost Platform"),
+            "a deleted page's point name is still held, under an id no page can ever have again.  "
+            + "File:\n" + after);
+
+        assertFalse(after.contains("Ghost Link"),
+            "a deleted page's link name is still held.  File:\n" + after);
+
+        assertTrue(after.contains("Alpha Platform"),
+            "the live page's own settings were pruned along with the deleted page's.  File:\n" + after);
+
+        // And the deleted page stops being reported as one that is simply not loaded, so the operator
+        // is asked about it once rather than on every save from now on.  Wraith still is.
+        assertEquals(reopened.pagesNotLoaded(Arrays.asList("Alpha")), Arrays.asList("Wraith"),
+            "after the prune the setup should know about exactly one page it cannot see");
+    }
+
     private void write(String... pages) throws IOException
     {
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
