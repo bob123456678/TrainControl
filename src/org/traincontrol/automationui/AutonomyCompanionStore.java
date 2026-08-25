@@ -3919,16 +3919,41 @@ public class AutonomyCompanionStore
      * @param id the page id as stored in the file
      * @return the page name those settings belong to, or the id itself when nothing is known about it
      */
-    private String pageOf(String id)
+    /**
+     * The page a stored key names, or null when the index does not know it.
+     *
+     * The ONE place that answers "which page is this", asked two ways by the two methods below
+     * (DR-B5). They used to ask it separately, branch for branch, kept in step by a comment on the
+     * second saying it "has to agree with it exactly" - which is a comment doing a compiler's job,
+     * and the shape of finding this codebase has paid for more than once.
+     *
+     * FR-018 is the change that would have split them: it alters what happens to a page whose file is
+     * merely absent, and only one of the two would have been edited.
+     *
+     * @param stored the page part of a stored key - an id, or a name on a file old enough
+     * @return the page's current name, or null when neither question finds it
+     */
+    private String resolvePage(String stored)
     {
-        String whenWritten = pageNamesWhenWritten.get(id);
+        String whenWritten = pageNamesWhenWritten.get(stored);
 
-        // Renumbered: that page is still here, under a different number
+        // RENUMBERED: the name the file recorded is still in the index, under whatever number.
         if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return whenWritten;
 
-        String now = pageIdToName.get(id);
+        // RENAMED, or simply unmoved: the index knows this id.  This is the case page ids exist for,
+        // and leaving it out held back the whole of a renamed page - which is the MT-135 loss, caused
+        // by the mechanism written to prevent it.
+        return pageIdToName.get(stored);
+    }
 
-        return now == null ? id : now;
+    private String pageOf(String id)
+    {
+        String resolved = resolvePage(id);
+
+        // The id itself when nothing resolves it, which is what every caller of this has always been
+        // handed - and the reason pageIsHere exists, since an id is a legal page name and a caller
+        // cannot tell that fallback from a success by looking at it.
+        return resolved == null ? id : resolved;
     }
 
     /**
@@ -3942,22 +3967,11 @@ public class AutonomyCompanionStore
      */
     private boolean pageIsHere(String stored)
     {
-        String whenWritten = pageNamesWhenWritten.get(stored);
-
-        // The two ways pageOf succeeds, in its order, because this has to agree with it exactly.  It
-        // asks the same two questions and this asks whether either of them was answered - a third
-        // opinion about which pages exist is the last thing this class needs.
-        //
-        // RENUMBERED: the name the file recorded is still in the index, under whatever number.
-        if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return true;
-
-        // RENAMED, or simply unmoved: the index knows this id.  This is the case page ids exist for,
-        // and leaving it out held back the whole of a renamed page - which is the MT-135 loss, caused
-        // by the mechanism written to prevent it.
-        if (pageIdToName.containsKey(stored)) return true;
+        // Whether resolvePage answered at all, rather than the same two questions asked again.
+        if (resolvePage(stored) != null) return true;
 
         // The file names this id and neither question found it: the page is genuinely not loaded.
-        if (whenWritten != null) return false;
+        if (pageNamesWhenWritten.get(stored) != null) return false;
 
         // Otherwise it is a NAME, and an unambiguous one.  Files written before keys were stored by
         // id hold names, and a page added since the index was read has no id yet - both were always

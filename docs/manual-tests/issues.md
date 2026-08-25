@@ -508,6 +508,23 @@ hand-written (DD-D9), and the transient occupancy term stays out of any shared "
 predicate - `explainDestinations` separates standing bars from transient ones deliberately, and that
 separation is what makes the FR-017 window's two groups mean anything.
 
+**Claude, 2026-08-25.** DR-B5 done.
+
+`pageOf` and `pageIsHere` both encoded the same two-question resolution - is this page renumbered, or
+does the index know this id - branch for branch, kept in step by a comment on the second saying it
+"has to agree with it exactly". That is a comment doing a compiler’s job.
+
+There is one `resolvePage` now, returning the page name or null. `pageOf` falls back to the id, which
+is what its callers have always been handed and the reason `pageIsHere` exists at all: an id is a
+legal page name, so a caller cannot tell that fallback from a success by looking at it.
+
+The finding named the change that would have split them, and it is filed: FR-018 alters what happens
+to a page whose file is merely absent, and only one of the two would have been edited.
+
+Behaviour-preserving, and checked rather than asserted: 86 store and page-id tests pass, and removing
+the renumbered branch from the single answer fails two of them - so that branch is genuinely covered
+rather than merely present.
+
 ### OB-089 - 2026-08-24 - the test suite audit's remainder: seven guards that assert less than they read
 
 **Kind:** bug  
