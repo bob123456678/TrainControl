@@ -375,6 +375,12 @@ public class LayoutEditor extends PositionAwareJFrame
     private org.json.JSONObject autonomyAsOpened;
 
     /**
+     * The session the disk half of the undo point was written through, so dispose can give it back
+     * without asking for one.
+     */
+    private org.traincontrol.automationui.AutonomySession autonomySessionForTheNote;
+
+    /**
      * Follows a locomotive's new name into the snapshot Cancel would put back.
      *
      * This window holds the setup as it was when it opened, so that cancelling can undo every edit made
@@ -421,6 +427,61 @@ public class LayoutEditor extends PositionAwareJFrame
      * Called from the Cancel path, beside the re-read of the pages that undoes the diagram: the two
      * halves have to be undone together or they are left describing different railways.
      */
+    /**
+     * Takes the undo point: what the setup looks like right now, in memory and on disk.
+     *
+     * **Both halves in one call, because they were two and they drifted immediately.** The in-memory
+     * half is what Cancel restores. The disk half (OB-108) is what a restart restores, and it exists
+     * because a snapshot that lives in memory is lost by exactly the event it exists to survive - the
+     * process dying with an editor open, after the setup has been written per gesture and the diagram
+     * has not been written at all.
+     *
+     * They have to be taken at the same moments or the disk half describes a different edit from the
+     * one the window is showing. That is not hypothetical: the first version took the disk half in the
+     * constructor only, so a page or mode switch moved the in-memory undo point and left the disk one
+     * pointing at the window's opening - which would have reverted work the user was asked about and
+     * chose to SAVE on the way here.
+     *
+     * @param live the session to snapshot, or null when there is none
+     */
+    private void takeTheUndoPoint(org.traincontrol.automationui.AutonomySession live)
+    {
+        this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
+
+        this.autonomySessionForTheNote = live;
+
+        if (live != null) live.beginEditSession();
+    }
+
+    /**
+     * Gives the disk half back, because this window is closing.
+     *
+     * **In dispose, which is the only thing every ending passes through.** There are seven ways this
+     * window closes - Save, Cancel, the window X, closing autonomy mode, a jump to another page, a
+     * jump to a square, and a construction failure - and the first attempt at this wired three of
+     * them, all on the track-editor side of an `if (isAutonomyMode())`. So every autonomy edit left
+     * its note behind, and the next session build reverted the setup to before the editor opened.
+     * That is worse than the defect being fixed: it destroys saved work rather than unsaved work.
+     *
+     * A page or mode SWITCH does not come through here - the frame survives one - which is right,
+     * because the window is still open and still mid-edit. `arriveAt` re-takes the note instead.
+     *
+     * Held rather than asked for, so that closing cannot build a session just to delete a file. Any
+     * session on this layout folder writes the same note, so a stale one still clears it.
+     */
+    @Override
+    public void dispose()
+    {
+        if (this.autonomySessionForTheNote != null)
+        {
+            this.autonomySessionForTheNote.endEditSession();
+
+            this.autonomySessionForTheNote = null;
+        }
+
+        super.dispose();
+    }
+
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;
@@ -434,9 +495,6 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         this.autonomyAsOpened = null;
-
-        // The session ended properly, so there is nothing left to revert (OB-108).
-        if (autonomy != null) autonomy.endEditSession();
     }
 
     private void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
@@ -504,19 +562,7 @@ public class LayoutEditor extends PositionAwareJFrame
         org.traincontrol.automationui.AutonomySession opened = ui == null
             ? null : ui.getAutonomySession();
 
-        this.autonomyAsOpened = opened == null ? null : opened.snapshotSetup();
-
-        // And the same snapshot on DISK (OB-108).
-        //
-        // The one above is for Cancel and works for every ordinary ending. The case it cannot cover is
-        // the process dying while this editor is open: the setup has been written after every drag,
-        // deliberately, while the diagram is only written at Save - so disk would be left holding a
-        // setup keyed to squares the diagram never moved, and the next reconciling save would prune
-        // the difference as track that does not exist.
-        //
-        // A snapshot in memory is lost by exactly the event it exists to survive. Adam: "revert to
-        // pre save state."
-        if (opened != null) opened.beginEditSession();
+        takeTheUndoPoint(opened);
         
         // Mirror address preference
         this.showAddressCheckbox.setSelected(l.getShowAddress());
@@ -4777,9 +4823,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             //
             // The prompt at the top of leaveFor has already settled what happens to the previous
             // page's edits. Whatever the setup says now is what this page found.
-            org.traincontrol.automationui.AutonomySession live = parent.getAutonomySession();
-
-            this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
+            // Both halves of it - see takeTheUndoPoint.  The disk half used to be taken in the
+            // constructor and nowhere else, so a switch moved this one and left that one behind.
+            takeTheUndoPoint(parent.getAutonomySession());
 
             syncSidebar();
 
@@ -4838,9 +4884,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // Kept, so that undoAutonomyEdits below cannot put back a setup the user has just saved.
             // The snapshot exists for Cancel, and this is not one.
             this.autonomyAsOpened = null;
-
-            // And the disk note goes too: the diagram and the setup are in step again (OB-108).
-            if (parent.getAutonomySession() != null) parent.getAutonomySession().endEditSession();
 
             return true;
         }
@@ -5597,9 +5640,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             // Kept, so nothing can put them back.  The snapshot exists only for Cancel.
             this.autonomyAsOpened = null;
-
-            // And the disk note goes too (OB-108).
-            if (parent.getAutonomySession() != null) parent.getAutonomySession().endEditSession();
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {

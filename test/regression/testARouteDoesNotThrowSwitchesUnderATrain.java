@@ -58,6 +58,12 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /** A second accessory, so "behind" and "ahead" can be told apart at the same instant. */
     private static final int SWITCH_AHEAD = 85;
 
+    /** The protecting signal, which nothing else in this class touches. */
+    private static final int SIGNAL_ADDRESS = 86;
+
+    /** The protected platform's own sensor - a destination must have one. */
+    private static final String S88_PLATFORM = "48404";
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -196,6 +202,133 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         assertTrue(turnout.isSwitched(),
             "with autonomy not running the route did not switch the accessory either, so the guard is "
             + "refusing routes generally rather than refusing this one case");
+    }
+
+    /**
+     * A route may set a protecting signal RED over an occupied platform. It may not set it GREEN.
+     *
+     * The guard has two halves and they are not the same rule. A turnout on a locked path must not
+     * move at all - any position but the one the path configured is wrong for the train crossing it.
+     * A protecting signal is different: the only harmful command is the one that turns protection OFF.
+     *
+     * The first version asked neither. It refused any route touching any protecting signal of any
+     * platform with a train standing at it, whether or not a path was locked anywhere and whichever
+     * aspect the route was asking for - and because accessories are skipped as a GROUP, one such
+     * signal took every turnout in the route with it. Found by review, which reproduced it with
+     * nothing locked: `getActiveAccs` was empty and `conflictingAccessory` was not null.
+     *
+     * That is the over-strict guard Adam said he would rather not have at all, and it is broad enough
+     * to stop most of a layout's routes working while trains sit at platforms - which is all the time.
+     *
+     * The signal here is on a Point that is NOT on the dispatched path, so the accessory half of the
+     * guard cannot see it and this tests the protection half alone.
+     *
+     * MUTATION: dropping the `!rc.getSetting()` test - so the aspect stops mattering, as it did -
+     * fails this test on the RED half while the GREEN half still passes.
+     */
+    @Test
+    public void testASignalMayBeSetREDOverAnOccupiedPlatform() throws Exception
+    {
+        for (String s : new String[] {S88, S88_PLATFORM})
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("PS_A", false, null);
+        layout.createPoint("PS_B", true, S88);
+
+        // The platform, off to one side: nothing is routed over it, so nothing about it can reach
+        // getActiveAccs.  Only the protection half of the guard can see this signal.
+        layout.createPoint("PS_PLATFORM", true, S88_PLATFORM);
+
+        Edge ab = layout.createEdge("PS_A", "PS_B");
+
+        MarklinAccessory signal =
+            model.newSwitch(SIGNAL_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        signal.setState(Accessory.accessorySetting.GREEN);
+
+        layout.getPoint("PS_PLATFORM").setProtectingSignal(signal.getName());
+
+        Locomotive running = model.getLocByName(model.getLocList().get(0));
+        Locomotive parked = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("PS_A").setLocomotive(running);
+        layout.getPoint("PS_PLATFORM").setLocomotive(parked);
+
+        final List<String> redRefusals = new ArrayList<>();
+        final List<String> greenRefusals = new ArrayList<>();
+        final List<Boolean> redActuallySet = new ArrayList<>();
+
+        layout.setCallback("aspect probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            // true is RED / TURN, false is GREEN / STRAIGHT - see Accessory.
+            MarklinRoute toRed = signalRoute(84921, true);
+            MarklinRoute toGreen = signalRoute(84922, false);
+
+            redRefusals.add(toRed.conflictingAccessory());
+            greenRefusals.add(toGreen.conflictingAccessory());
+
+            signal.setState(Accessory.accessorySetting.GREEN);
+
+            toRed.execRoute(false);
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            redActuallySet.add(signal.isSwitched());
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc(running), 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertFalse(redRefusals.isEmpty(), "the probe never ran");
+
+            assertNull(redRefusals.get(0),
+                "a route was refused for setting a protecting signal RED - which is exactly what "
+                + "protection itself would command. Nothing is made less safe by it, and refusing it "
+                + "silently drops every other accessory in the route as well");
+
+            assertTrue(redActuallySet.get(0),
+                "the route was not refused but the signal did not go red either, so the assertion "
+                + "above is passing on a route that did nothing");
+
+            // The control, and the half that must not be lost: turning protection OFF is the hazard
+            // this guard was added for.
+            assertEquals(greenRefusals.get(0), signal.getName(),
+                "a route was allowed to turn a platform's protecting signal GREEN with a train "
+                + "standing at it. Nothing re-asserts it until the next occupancy change, so that is "
+                + "a green aspect inviting a hand-driven train into an occupied platform");
+        }
+        finally
+        {
+            layout.getPoint("PS_A").setLocomotive(null);
+            layout.getPoint("PS_PLATFORM").setLocomotive(null);
+
+            signal.setState(Accessory.accessorySetting.GREEN);
+
+            model.clearAutoLayout();
+        }
     }
 
     /**
@@ -564,6 +697,30 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
         return new MarklinRoute(model, "RG route " + id, id, commands, 0,
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /**
+     * A one-command route that sets the signal to a named aspect.
+     *
+     * @param id a route id nothing else uses
+     * @param red true for RED, false for GREEN - the sense RouteCommand and Accessory both use
+     * @return the route, not executed
+     */
+    private static MarklinRoute signalRoute(int id, boolean red)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandAccessory(SIGNAL_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, red));
+
+        return new MarklinRoute(model, "RG signal " + id, id, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /** The dispatched locomotive, by the name executePath wants. */
+    private static Locomotive loc(Locomotive l)
+    {
+        return l;
     }
 
     /**

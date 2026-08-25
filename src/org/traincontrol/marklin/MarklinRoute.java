@@ -322,7 +322,9 @@ public class MarklinRoute extends Route
      */
     public String conflictingAccessory()
     {
-        return accessoryHeldByAutonomy();
+        String[] why = accessoryHeldByAutonomy();
+
+        return why == null ? null : why[0];
     }
     
     /**
@@ -337,7 +339,7 @@ public class MarklinRoute extends Route
      *
      * @return the accessory's name, for the log, or null when the route is safe to run
      */
-    private String accessoryHeldByAutonomy()
+    private String[] accessoryHeldByAutonomy()
     {
         if (!this.network.hasAutoLayout() || !this.network.isAutonomyRunning()) return null;
 
@@ -347,11 +349,16 @@ public class MarklinRoute extends Route
 
         // The signals protecting squares somebody is standing on, which getActiveAccs cannot see.
         //
-        // It walks the config commands of active edges, and a protecting signal is not one - it is
-        // driven separately, by occupancy. So a route could turn a platform's signal green with a
-        // train standing at it, and nothing re-asserts it until the next occupancy change: a green
+        // It walks the config commands of active edges, and a protecting signal is usually not one -
+        // it is driven separately, by occupancy. So a route could turn a platform's signal green with
+        // a train standing at it, and nothing re-asserts it until the next occupancy change: a green
         // aspect inviting a hand-driven train into an occupied platform, for as long as the train
-        // stays there. Found by the pass that validated the accessory half of this guard.
+        // stays there.
+        //
+        // "Usually" rather than "never", which is how this comment first read. `refreshOneSignal` says
+        // outright that TilePorts gives a SIGNAL tile a GREEN configuration command, so a path
+        // configured across one drives it through getConfigCommands - the same Accessory. The two sets
+        // overlap; this one covers the platforms no active path happens to cross.
         java.util.Set<String> protecting = new java.util.LinkedHashSet<>();
 
         for (org.traincontrol.automation.Point point : this.network.getAutoLayout().getPoints())
@@ -370,9 +377,27 @@ public class MarklinRoute extends Route
 
             if (accessory == null) continue;
 
-            if (locked.contains(accessory)) return accessory.getName();
+            if (locked.contains(accessory))
+            {
+                return new String[] {accessory.getName(), "route.refusedAccessoryOnActivePath"};
+            }
 
-            if (protecting.contains(accessory.getName())) return accessory.getName();
+            // The ASPECT matters here, and it does not for the case above.
+            //
+            // A turnout on a locked path must not move at all - any position but the one the path
+            // configured is wrong for the train crossing it. A protecting signal is different: the
+            // only harmful command is the one that turns protection OFF. A route setting it red is
+            // doing exactly what protection would do, and refusing that was pure over-strictness -
+            // it fired for every route touching any signal of any platform with a train parked at it,
+            // and because accessories are skipped as a group, it took the whole route's turnouts with
+            // it. Found by review, which reproduced it with no path locked anywhere.
+            //
+            // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
+            if (!rc.getSetting() && protecting.contains(accessory.getName()))
+            {
+                return new String[] {accessory.getName(),
+                    "route.refusedSignalProtectingOccupiedPlatform"};
+            }
         }
 
         return null;
@@ -457,14 +482,17 @@ public class MarklinRoute extends Route
                     //
                     // So this stays the answer for the s88 trigger door, which fires with nobody
                     // present, and the two doors with a person at them ask first.
-                    String conflict = overrideConflicts ? null : accessoryHeldByAutonomy();
+                    String[] conflict = overrideConflicts ? null : accessoryHeldByAutonomy();
 
                     boolean skipAccessories = conflict != null;
 
                     if (skipAccessories)
                     {
-                        this.network.logf("route.refusedAccessoryOnActivePath", this.getName(),
-                            conflict);
+                        // The reason comes back with the accessory, because the two reasons are not
+                        // the same sentence.  "A train is running over it" is true of a locked path
+                        // and false of a platform with a train parked at it, and the log said the
+                        // first for both.
+                        this.network.logf(conflict[1], this.getName(), conflict[0]);
                     }
 
                     for (RouteCommand rc : this.route)

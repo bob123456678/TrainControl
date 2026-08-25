@@ -466,6 +466,87 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * A dispatch that is TURNED AWAY leaves the signals alone.
+     *
+     * Found by review, which reproduced it: the sweep the test above is about ran at the very top of
+     * `executePath`, before all eight of the checks that can refuse a dispatch. So asking for a bad one
+     * - a speed out of range, an empty path, a train that is not at the start, one that is already
+     * running - commanded every protecting signal on the layout on the way to being told no.
+     *
+     * And they stayed. The thread count falls straight back to zero, `isRunning()` goes false, and the
+     * per-occupancy refresh is deliberately silent while nothing runs - so nothing would correct them
+     * until something else started a run.
+     *
+     * The rule being broken is one this class's own subject states for itself: the railway is not
+     * commanded while the operator is still deciding what it should look like. A refusal is that
+     * moment.
+     *
+     * Speed zero is the refusal used here because it is the earliest one that needs no fixture of its
+     * own - `errorInvalidSpeed`, before anything is locked or reserved.
+     *
+     * MUTATION: moving `refreshAllProtectingSignals()` back above the checks in `executePath` - which
+     * is where it was - fails this test.
+     */
+    @Test
+    public void testARefusedDispatchCommandsNothing() throws Exception
+    {
+        if (!model.isFeedbackSet("47425")) model.newFeedback(47425, null);
+        if (!model.isFeedbackSet("47426")) model.newFeedback(47426, null);
+
+        model.setFeedbackState("47425", false);
+        model.setFeedbackState("47426", false);
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        layout.createPoint("RD A", true, "47425");
+        layout.createPoint("RD B", true, "47426");
+
+        layout.getPoint("RD B").setProtectingSignal(near.getName());
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("RD A", "RD B"));
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "RD A", false),
+            "precondition - the locomotive must be placed at the start");
+
+        // A train standing at the protected platform, so the sweep would have something to say: with
+        // the platform empty it would command GREEN, which is already the aspect, and refreshOneSignal
+        // sends nothing when the aspect does not change.  This test would then pass with the defect
+        // present, which is the shape of vacuous test this suite keeps finding.
+        layout.getPoint("RD B").setLocomotive(loc);
+
+        near.setState(Accessory.accessorySetting.GREEN);
+
+        assertFalse(near.isSwitched(), "the fixture did not take: the signal must start green");
+
+        try
+        {
+            // Speed zero: refused by errorInvalidSpeed, before anything is locked.
+            assertFalse(layout.executePath(path, loc, 0, null),
+                "precondition: this dispatch must be REFUSED, or the test is about an accepted one");
+
+            assertFalse(near.isSwitched(),
+                "a dispatch that was turned away commanded a protecting signal anyway, and nothing "
+                + "will move it back: the thread count is zero again, so the per-occupancy refresh is "
+                + "silent. The railway was commanded while the operator was still deciding what it "
+                + "should look like");
+        }
+        finally
+        {
+            layout.getPoint("RD A").setLocomotive(null);
+            layout.getPoint("RD B").setLocomotive(null);
+
+            near.setState(Accessory.accessorySetting.GREEN);
+        }
+    }
+
+    /**
      * A failure while LOCKING a path releases what it has taken.
      *
      * UR-11, from the uninformed review. The two returned-false failures of `configureAndLockPath` are
