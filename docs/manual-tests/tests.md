@@ -66,6 +66,8 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-186](#mt-186) | 2026-08-25 | Nothing about the railway changed when the last string key went | fixed unvalidated | FR-013 |
 | [MT-187](#mt-187) | 2026-08-25 | Return Home, after FR-001 became one rule | needs test | OB-085, OB-086 |
 | [MT-188](#mt-188) | 2026-08-25 | The blocked-points picker names what it is offering | fixed unvalidated | OB-086 |
+| [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | OB-108 |
+| [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | OB-108 |
 
 Everything else - 124 of 181 - is **fixed validated** and needs nothing from you unless the
 area changes again.
@@ -9544,5 +9546,82 @@ name it had just established was absent, which renders as a blank tick box.
 
 A source rule now pins all three of the picker's surviving filters, so this cannot be undone quietly.
 Mutation-checked: putting the old label back fails it.
+
+---
+
+<a id="mt-189"></a>
+
+### MT-189 - 2026-08-25 - A route while a train is running
+
+**Disposition:** needs test
+**From:** the whole-application review pass of 2026-08-25 (AU-A2)
+**Written:** 2026-08-25
+
+The most serious thing found this round, and it wants driving on the railway because the fix refuses
+something that used to happen.
+
+1. Start autonomy and let a train take a path that sets some switches - any ordinary run.
+2. While it is under way, go to the **Routes** tab and execute a route that throws one of the switches
+   on that train's path. Nothing should move, and the log should say the route was not run and name
+   the accessory.
+3. Now execute a route that touches nothing on any active path - lights on, or a switch elsewhere.
+   **It should run normally.** This is the half that matters most: the guard must refuse the one case
+   and nothing else.
+4. Do the same from the route TILE on the track diagram, which is a separate door.
+5. Then the automatic door, which is the one that made this worth fixing. If you have an s88 trigger
+   route left over from manual operation whose trigger sensor an autonomy train will cross, enable it
+   and let a run go past. It should be refused and logged rather than throwing the switch.
+6. Finally, with autonomy STOPPED, run all of those routes again. Every one should work exactly as it
+   always has.
+
+#### Comments
+
+**Claude, 2026-08-25.** Route execution and autonomy path locking each worked exactly as designed and
+neither consulted the other. `configureAndLockPath` reserves every accessory on a path, commands it
+and validates it - and a route then set the same accessory back, with no refusal and nothing said. The
+train is routed off the path that was protecting it.
+
+The diagram's route tile looked guarded and was not: that guard asks whether the tile's own accessory
+is on an active path, and a route tile has no accessory, so it was checking nothing.
+
+Refused rather than asked. This is the model half of the application and has no business putting up a
+dialog - the tile click already asks, for the one case where a person is present - and a route half
+executed leaves the layout in a state nobody chose.
+
+Step 3 and step 6 are the controls. A guard that simply refused routes during autonomy would pass
+steps 2, 4 and 5 and be useless.
+
+---
+
+<a id="mt-190"></a>
+
+### MT-190 - 2026-08-25 - Signals when a train is dispatched by hand
+
+**Disposition:** needs test
+**From:** the three-day review pass of 2026-08-25 (AU-B7)
+**Written:** 2026-08-25
+
+1. With nothing running, place a train by hand at a platform that has a protecting signal. The signal
+   should NOT move - that silence is deliberate, and is what stops a setup gesture driving real
+   signals.
+2. Now right-click a DIFFERENT train somewhere else and dispatch it by hand to somewhere else again.
+3. The moment that dispatch starts, the first platform's signal should go red. Before this it stayed
+   green for the whole dispatch, with a train standing at it.
+4. Check the same thing happens when you Start Autonomy instead, and when you Execute Timetable -
+   those two already did it, and should still.
+5. And check the ordinary case is unchanged: dispatch a train by hand with nothing else standing
+   anywhere protected, and no signal should move except the one for its own destination.
+
+#### Comments
+
+**Claude, 2026-08-25.** `runLocomotives` and `executeTimetableInternal` both sweep every protecting
+signal the moment a run starts, and both say why: while nothing is running the refresh is silent, so a
+train placed by hand produces no occupancy change and nothing will ever command its platform's signal.
+
+The right-click dispatch became a full run in the MT-139 work - it counts its thread, engages every
+guard and throws its own destination's signal - and did not inherit the sweep. Two doors of three.
+
+Your own rule, quoted inside that method: "The same thing should happen in manual operation vs auto -
+the same switches and signals set, and guards applied."
 
 ---

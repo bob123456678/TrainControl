@@ -29,6 +29,13 @@ omissions** rather than style:
 Then a validation pass over the fixes, and two independent passes: one over three days on a different
 model, and one over the whole application from first principles rather than from the diff.
 
+The whole-application pass was told not to start from the commits or the ledger. It began by reading
+what twelve prior passes had *declared they had not covered* and went there - the consist lock
+ordering, the eleven files an earlier review listed as "not read at all", the protocol layer nobody had
+ever run, and the seam where route execution crosses a running autonomy session. That last one is where
+the round's most serious finding was, and no diff-shaped review could have found it: both sides of it
+are old, correct, and unchanged.
+
 The three-day pass earned its place by NOT re-walking what the first three had covered. It went to the
 seams instead - the day nobody had reviewed, the protecting-signal mechanism, the fixes from the first
 round that no reviewer had seen, and two whole-tree sweeps for defect shapes rather than for files.
@@ -43,6 +50,33 @@ where not to look again.
 ---
 
 ## A - wrong behaviour on the layout, or data silently lost
+
+### AU-A2 - an executed route threw switches on track autonomy had locked
+
+**Found by:** the independent whole-application pass, which proved it by running it.
+**Fixed:** `7e2c6f81`.
+
+Route execution and autonomy path locking each worked exactly as designed, and neither consulted the
+other. `configureAndLockPath` reserves every accessory on a path, commands it and validates it. A
+route then set the same accessory back, with no refusal and nothing said. The train is routed off the
+path that was protecting it.
+
+**Three doors reached it, and the automatic one is why this is the most serious finding of the
+round.** An s88 trigger route left over from manual operation fires when an *autonomy* train crosses
+the trigger sensor - sensors are shared and reused on this railway - so no person is involved at any
+point. The routes tab is manual and silent. And the diagram's route tile *looked* guarded: that guard
+asks `activeAccs.contains(c.getAccessory())`, and a route component's accessory is null, so the one
+door that appeared to check was checking nothing.
+
+Refused rather than confirmed, and refused whole: `MarklinRoute` is the model half and has no business
+showing a dialog, and a route half executed leaves the layout in a state nobody chose. Only the
+accessories actually on a locked path, so a route that turns on the lights or cuts the power runs
+during autonomy exactly as before.
+
+**The test for it passed with the guard deleted, at first.** The started callback fires once per leg,
+and the second call overwrote the first's verdict - by which time the accessory had already been
+thrown, so "unchanged since I last looked" was true. Found only by running the mutation the javadoc
+claimed. It accumulates now.
 
 ### AU-A1 - the OB-085 impossibility proof was built out of a rule the railway does not have
 
@@ -269,6 +303,58 @@ The diagram strip decided from its own cached error count, while `canStartAutono
 firing the strip's listener would have left it offering Start where the guard refuses - the OB-057
 shape at the surface that was fixed for it. Fixed in `8117b2a7`.
 
+### AU-C8 - a stated mutation that did not fail its own test
+
+`testADeletedPageIsNotReportedAsMerelyMissing` named `pageNamesWhenWritten.values().remove(page)` as
+the line it guards. Removing that line leaves all nineteen tests green - the comment beside it in the
+source concedes as much, because `sharedFields` rebuilds the file's `"pages"` map from the live index.
+It is the index removal that does the work.
+
+That is the defect class this repository keeps finding, inside the fix for an instance of it. Corrected
+in `2ac2ee5e`, and the corrected mutation was run.
+
+### AU-C9 - a behaviour change with no guard
+
+Deleting the turn-around facing carve-out left every class green: nothing anywhere referenced
+`FACING_IMPOSSIBLE`. It has a test now, and it had to go in the class that parses the real fixture -
+the session's own tests use a synthetic three-square page with no berth on it, so the case cannot be
+built there at all.
+
+**Still unguarded, and recorded rather than hidden:** the staging audit's exemption changed from the
+planner's occupancy to the railway's, and no test distinguishes the two. Reverting it fails nothing. It
+is correct in direction and it can be undone silently.
+
+### AU-C10 - three more of the twin shape
+
+Swept for by pattern rather than by file, after AU-B1 showed the sweep was worth doing:
+
+- `LocomotiveFunctionAssign` still did `new File(url)` on a value produced by `.toUri().toString()`
+  twenty lines below, so its chooser never opened where the current icon is - the identical mistake
+  fixed one class over.
+- The backup offer still asked bare `getNetworkCommState`, which reports whether the last SYNC
+  succeeded; a sync reads a local layout folder perfectly happily, so a simulated session calls itself
+  connected. Adam found that once already, for a different offer.
+- `canStartAutonomy`'s own javadoc claimed "requestStartAutonomy asks it", which it does not - the same
+  false sentence removed from a comment forty lines away in the previous commit.
+
+### AU-C11 - `sharesSection` is AU-A1's shape, twelve lines above it, and is NOT changed
+
+**Found by:** the validation pass, proved on Adam's own graph. **Deliberately open.**
+
+The first of the two pairwise IMPOSSIBLE proofs asks whether two homes report the same feedback
+address, which is the planner's conservative notion of one piece of track and not the railway's.
+BottomMainC and BottomMainCTerm share feedback 4 with no block between them; homing two locomotives
+there answers IMPOSSIBLE naming both.
+
+By AU-A1's own thesis that is a false proof. It has not been changed, and the reasoning is written
+where the method is: `canEnter` enforces the sensor rule deliberately and structurally, so the claim is
+true of every arrangement this planner can reach - and removing it does not make a plan appear, it
+turns an instant answer naming both locomotives into a search that burns its whole budget. Adam's
+layout has eleven shared sensors.
+
+It is the same decision as the sensor-versus-block divergence in `plannedOccupancy`, and the two should
+move together or not at all. MT-187 asks it.
+
 ---
 
 ## D - not defects
@@ -297,6 +383,18 @@ facings byte-identical either way - rather than by "the tests still pass".
 Refused a plain sibling outside the folder, a `..` walk out of it, an `http:` URL, a `file://` URL with
 an authority, and a file one level deeper. Not defeasible on location. The remaining hole is ownership,
 recorded as a window-pass C finding.
+
+### AU-D8 - the old code, attacked and found sound
+
+The whole-application pass verified rather than read: all 101 speeds and both directions round-tripped
+through the protocol layer, 64 function frames, foreign-UID rejection. Consist lock ordering is
+strictly two-tier with no member-to-head path anywhere, so no deadlock cycle is constructible. Every
+store the operator accumulates - locomotive database, UI state, layout pages, the companion store, icon
+crops, Central Station downloads - goes through the atomic write; the raw writes left are user-chosen
+exports. The eleven files an earlier review had never read hold nothing new.
+
+Its verdict is worth quoting because it is calibration: *"nearly every hazard I went hunting for was
+already found by a prior pass, fixed, and annotated in place with the reasoning."*
 
 ### AU-D6 - the Escape-as-yes sweep, whole tree
 
@@ -348,6 +446,7 @@ own reasons should not make the other one impossible too. Fixed in `6523a90b`.
 | Finding | Disposition |
 |---|---|
 | AU-A1 | fixed, `4419d1cf` and `6523a90b`; counterexample kept as a fixture |
+| AU-A2 | fixed, `7e2c6f81` |
 | AU-A2 | fixed, `4419d1cf` |
 | AU-B1 | fixed, `4419d1cf` |
 | AU-B2 | fixed, `4419d1cf` |
@@ -361,7 +460,11 @@ own reasons should not make the other one impossible too. Fixed in `6523a90b`.
 | AU-B7 | fixed, `8117b2a7` |
 | AU-B8 | filed as OB-108 - three remedies, each trading something real away |
 | AU-C7 | fixed, `8117b2a7` |
+| AU-C8 | fixed, `2ac2ee5e` |
+| AU-C9 | fixed, `2ac2ee5e`; the audit exemption remains unguarded and says so |
+| AU-C10 | fixed, `2ac2ee5e` |
+| AU-C11 | **open, deliberately - Adam's decision, and the same one MT-187 asks** |
 | AU-C4 | open - recorded, unreachable from anything this application writes |
 | AU-C5 | open - pre-existing, needs a page name containing `#` |
 | AU-C6 | open - unreachable today; the contradictory comments are the live half |
-| AU-D1 to AU-D7 | not defects |
+| AU-D1 to AU-D8 | not defects |
