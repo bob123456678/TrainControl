@@ -8076,9 +8076,35 @@ tile. they vanish until the tile is moved back, at which point the loc is vanish
 round touched it. It is not a consequence of the rename fault and will not have been fixed by fixing
 it.
 
-Left open deliberately rather than closed on the strength of the half that is done. The next step is
-the same one that worked here: drive `moveTiles` through the call the editor makes, run the checks
-afterwards rather than comparing stored settings, and see what the operator would see.
+Left open deliberately rather than closed on the strength of the half that is done.
+
+**Claude, 2026-08-24, later.** I drove the moved-tile half the way the rename half was driven, and
+**it does not reproduce.** Saying so plainly, because a green test on this entry could otherwise be
+read as the bug being fixed, and it is not - it is unreproduced, which is a different thing.
+
+`testAMovedTileCarriesItsSetup` makes the editor's own gesture - clear the source square, set the
+component's coordinates, add it at the destination - then `moveTiles`, then the capture that runs when
+the editor closes, then the save, then re-reads everything from disk. Four variants, all correct in
+both directions with the error count unchanged:
+
+- to an isolated empty square, which disconnects the station from the run
+- one square along onto occupied track, which is the ordinary nudge
+- each move in its own sitting, as a restart between them would give
+- both moves in one sitting with a single capture at the end
+
+The station travels, its name travels, the locomotive travels, and everything comes back. Mutation
+checked - commenting out the line that moves the stations fails it - so it is not a test that cannot
+fail.
+
+**The lead I would follow next is the display, not the data.** Nothing is told to redraw when
+`moveTiles` rebuilds the graph: `touched()` rebuilds and notifies nobody. A station whose marker is
+not repainted looks exactly like a station that did not travel - which is word for word what this
+entry reports - and that is the same shape as the timetable fault, where the data was perfect
+throughout and the panel was simply never repainted.
+
+**What would settle it, Adam:** which gesture, exactly? A single tile dragged, or a multi-square
+selection dragged? And did the station reappear if you closed and reopened the editor without moving
+the tile back - because if it did, the data was there all along and this is a repaint.
 
 *Run against commit 8db330da, build\classes, compiled 24 Aug 20:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
