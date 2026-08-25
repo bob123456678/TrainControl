@@ -2784,6 +2784,38 @@ def _ledger_row_cells(line):
     return [p.strip() for p in parts[1:-1]]
 
 
+def entries_without_kind(issues_text):
+    """Inbox entries with no **Kind:** line.
+
+    The triage app defaults a missing Kind to "bug".  That is harmless for an OB, which is a bug
+    anyway, and wrong for an FR - so a feature request filed without one is silently filed as a bug
+    and shows up in the wrong list, which is how Adam found it on 2026-08-24: "the state of FR-018
+    seems odd, I see it in the bug list, not in the MT list."
+
+    Six of the ten open entries were in this state.  Only the FR was visible, because for the other
+    five the wrong default happened to be the right answer - which is exactly the kind of fault that
+    sits there until the one case where it matters.
+    """
+
+    import re as _re
+
+    inbox_at = issues_text.find("## Inbox")
+
+    if inbox_at < 0:
+        return []
+
+    end = issues_text.find("\n## ", inbox_at + 1)
+    inbox = issues_text[inbox_at:end if end > 0 else len(issues_text)]
+
+    out = []
+
+    for entry in _re.finditer(r"### ((?:OB|FR)-\d+) - .*?(?=\n### (?:OB|FR)-|\Z)", inbox, _re.S):
+        if "**Kind:**" not in entry.group(0):
+            out.append({"ref": entry.group(1)})
+
+    return out
+
+
 def undated_followups(issues_text):
     """Inbox entries whose later additions do not say who wrote them and when.
 
@@ -2970,6 +3002,7 @@ def cli_verify_ledger(_args):
                 duplicate_refs.append(ref)
 
     undated = undated_followups(read_text(ISSUES_MD)[0])
+    no_kind = entries_without_kind(read_text(ISSUES_MD)[0])
 
     out = {
         "duplicate_tags": doc.duplicate_tags,
@@ -2987,9 +3020,11 @@ def cli_verify_ledger(_args):
         "from_notes": from_notes,
         "invalid_disposition": invalid_disposition,
         "undated_followups": undated,
+        "entries_without_kind": no_kind,
         "clean": not (missing or stale or disposition_drift or date_drift or duplicate_refs
                       or doc.duplicate_tags or duplicate_ledger_rows or malformed_ledger_rows
-                      or bad_href or invalid_disposition or undated),
+                      or bad_href or invalid_disposition or undated
+                      or no_kind),
     }
 
     return out, (0 if out["clean"] else 3)

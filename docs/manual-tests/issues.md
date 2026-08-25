@@ -238,6 +238,7 @@ it is called on, and checking the argument's static type by hand.
 
 ### FR-018 - 2026-08-24 - a page whose file returns should get its old id back
 
+**Kind:** feature  
 **Found while fixing OB-067, and it needs your decision rather than a fix chosen for you.**
 
 `writeLayoutIndex` retires the id of any page that is not in the list it is given. That is deliberate
@@ -283,10 +284,39 @@ OneDrive placeholders are a normal state on this machine.
 Option 2 on its own would have prevented every instance of this that could have happened so far, and
 does not require the distinction. My recommendation is 2 now and 3 only if you meet it for real.
 
+**Adam, 2026-08-24.** "if we are talking about orphaned data, why not warn the user and then prune?
+maybe I am misunderstanding the distinction"
+
+**Claude, 2026-08-24.** He was not misunderstanding it - he dissolved it. My three options all
+assumed the application had to guess which case it was in, and ranked them by how well each guessed.
+It does not have to guess. It is the only party that cannot tell the two apart; the person who just
+renamed a page knows perfectly well whether they deleted it.
+
+**The agreed design.** When the index is about to be written and a page the setup knows about is not
+loaded, stop and say so by name, then offer the two answers as what they actually mean:
+
+- *Keep it* - the page is coming back (OneDrive has not hydrated it, the file is held open). The id
+  stays reserved, nothing is retired, and the settings reattach when the file returns.
+- *It is gone* - the page really was deleted. The id is retired as it is today, AND the orphaned
+  settings under it are pruned rather than held forever, which is the half option 3 never addressed.
+
+Cancel stays available and leaves the index unwritten.
+
+That is option 2 and option 3 at once, at a fraction of option 3's cost, because the distinction the
+index cannot make is supplied by the one participant who can. It also fixes something none of my
+three options touched: today a genuinely deleted page's settings are held verbatim under a retired id
+for ever, growing setup.json with data that can never attach to anything again.
+
+**Not built yet.** The design is settled; no code has been written. It needs the warning point in
+`writeLayoutIndex`'s callers rather than in `writeLayoutIndex` itself, which must stay callable from
+tests and from the startup path without a dialog - see IAR-A1, which already gave it a `renamedFromTo`
+parameter for the same reason.
+
 
 
 ### OB-084 - 2026-08-24 - testRenderingCost is a coin toss, and the battery number depends on it
 
+**Kind:** bug  
 **Not from this round.** Found while confirming a battery, and **re-diagnosed on 2026-08-24 after the
 first explanation turned out to be wrong** - the correction is below and is the more useful half.
 
@@ -342,6 +372,7 @@ result in this session should be read as evidence about `testRenderingCost` eith
 
 ### OB-085 - 2026-08-24 - the staging scan could prove a blockedBy cycle impossible, and does not
 
+**Kind:** bug  
 **Filed rather than fixed, deliberately.** Raised as FSR-C3 by the second review of the fix round.
 
 The impossibility scan in `HomeStaging.plan()` proves that no arrangement can park a locomotive at its
@@ -375,6 +406,7 @@ mutation showing that the scan rather than the search is what answers.
 
 ### OB-086 - 2026-08-24 - the duplication review's remainder: six places one rule is written twice
 
+**Kind:** bug  
 **From [2026-08-24-duplication-robustness.md](../reviews/2026-08-24-duplication-robustness.md), prefix
 DR.** That pass found one A and ten B findings. Five were fixed the same day - the held-field lists
 (DR-A1), the FR-001 reason that could never reach the window (DR-B3), the two silent name-resolution
@@ -423,6 +455,7 @@ separation is what makes the FR-017 window's two groups mean anything.
 
 ### OB-089 - 2026-08-24 - the test suite audit's remainder: seven guards that assert less than they read
 
+**Kind:** bug  
 **From [2026-08-24-test-suite-audit.md](../reviews/2026-08-24-test-suite-audit.md), prefix TA.** Adam
 asked for a pass over the tests looking for "false assumptions, missing ground truth, or incomplete
 coverage". It found one A and ten B, backed by twenty mutation experiments - eight of which
@@ -506,6 +539,7 @@ rather than about the code.
 
 ### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
 
+**Kind:** bug  
 **Adam, 2026-08-24, testing MT-161 on commit 8db330da:** "When I renamed '5 - Test' to 5, the main page (1 - Main,
 id 5) became excluded from autonomy and lost all its train placement."
 
