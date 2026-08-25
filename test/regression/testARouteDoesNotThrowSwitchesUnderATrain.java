@@ -191,6 +191,106 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * Somebody who says so can run the route anyway.
+     *
+     * Adam, 2026-08-25: "conflicting routes should still be executable in case of a transient
+     * accessory failure.  Add a confirmation dialog to the UI similar to how individual clicks
+     * currently work when an accessory has an active route."
+     *
+     * The case he is protecting is the reason a refusal on its own was wrong, and it is worth stating
+     * because it is not obvious: **a turnout that did not take the command is exactly when somebody
+     * needs to set it, and exactly when it will be on a locked path** - because the path is what
+     * commanded it. A guard with no way past it takes the recovery away at the moment it is wanted.
+     *
+     * So the shape is: the s88 trigger door refuses, because nobody is there to ask; the two doors
+     * with a person at them ask, the same way clicking an accessory on an active route has always
+     * asked, and call this when the answer is yes.
+     *
+     * This tests the MODEL half - that saying yes really does set the accessory. The dialog itself is
+     * `TrainControlUI.confirmRouteOverActivePath`, and it is one method for both doors so they cannot
+     * drift; MT-189 checks it by hand.
+     *
+     * MUTATION: making `execRouteOverridingConflicts` pass `false` - so the override does nothing -
+     * fails this test.
+     */
+    @Test
+    public void testSomebodyCanRunTheRouteAnyway() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("OV_A", false, null);
+        layout.createPoint("OV_B", true, S88);
+
+        Edge ab = layout.createEdge("OV_A", "OV_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("OV_A").setLocomotive(loc);
+
+        final boolean[] sawConflict = {false};
+        final boolean[] switchedAfter = {false};
+
+        layout.setCallback("override probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            MarklinRoute conflicting = route(84904);
+
+            // The question the two UI doors ask before they show the dialog.
+            if (conflicting.conflictingAccessory() != null) sawConflict[0] = true;
+
+            conflicting.execRouteOverridingConflicts();
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            if (turnout.isSwitched()) switchedAfter[0] = true;
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(sawConflict[0],
+                "precondition: the route has to REPORT the conflict, or the UI would never put the "
+                + "question up and there would be nothing to override");
+
+            assertTrue(switchedAfter[0],
+                "somebody said to run the route anyway and it still did not set the accessory.  That "
+                + "takes away the recovery from a turnout that did not take its command - which is "
+                + "the case the override exists for");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A refused route still cuts the power, if that is what it also says.
      *
      * **The first version of the guard did not, and it is the worst thing this round produced.** The

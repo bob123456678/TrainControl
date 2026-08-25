@@ -14397,10 +14397,84 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
         
+    /**
+     * Asks before running a route that would set an accessory a train is running over.
+     *
+     * The same question clicking that accessory's own tile has always asked, at the door that had no
+     * question at all. Adam, 2026-08-25: "conflicting routes should still be executable in case of a
+     * transient accessory failure.  Add a confirmation dialog to the UI similar to how individual
+     * clicks currently work when an accessory has an active route."
+     *
+     * The case is real and is why refusing outright was wrong: a turnout that did not take the
+     * command, or that reports the wrong position, is exactly when somebody needs to set it - and
+     * exactly when it will be on a locked path, because the path is what commanded it.
+     *
+     * Silent for a route that conflicts with nothing, which is almost every route. The s88 trigger
+     * door does not come through here and still refuses, because there is nobody to ask.
+     *
+     * @param route the route about to be run
+     * @param over what to hang the dialog off
+     * @return true when the route should run regardless of the conflict, false to leave it alone
+     */
+    public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
+        java.awt.Component over)
+    {
+        if (route == null) return false;
+
+        String conflict = route.conflictingAccessory();
+
+        if (conflict == null) return false;
+
+        Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
+
+        final int[] choice = {JOptionPane.CLOSED_OPTION};
+
+        Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
+            over == null ? this : over,
+            I18n.f("layout.ui.confirmRouteActiveRoute", route.getName(), conflict),
+            I18n.t("layout.ui.dialogPleaseConfirm"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+
+        try
+        {
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
+            else javax.swing.SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
+        {
+            this.model.log(couldNotAsk);
+
+            return false;
+        }
+
+        // Only an explicit OK.  Escape and the close box mean no, which is the whole of UR-1 and the
+        // six confirmations it was swept into this file for.
+        return choice[0] == 0;
+    }
+
     public void executeRoute(String route)
     {
         new Thread(() ->
         {
+            // Asked here rather than inside the model, which has no business showing a dialog - and
+            // asked BEFORE the run, so the answer is about the route the operator picked.
+            // The model is held as a ViewListener, whose getRoute is typed as the base Route; only a
+            // MarklinRoute knows about the autonomy graph, and every route the station holds is one.
+            org.traincontrol.base.Route found = this.model.getRoute(route);
+
+            org.traincontrol.marklin.MarklinRoute picked =
+                found instanceof org.traincontrol.marklin.MarklinRoute
+                ? (org.traincontrol.marklin.MarklinRoute) found : null;
+
+            if (picked != null && picked.conflictingAccessory() != null)
+            {
+                if (confirmRouteOverActivePath(picked, this)) picked.execRouteOverridingConflicts();
+
+                refreshRouteList();
+
+                return;
+            }
+
             this.model.execRoute(route);
             refreshRouteList();
         }).start();

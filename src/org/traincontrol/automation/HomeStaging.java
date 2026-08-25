@@ -1092,7 +1092,41 @@ public final class HomeStaging
      */
     public static boolean canBeHome(Locomotive loc, Point at)
     {
-        return canRest(loc, at);
+        return whyNotAHome(loc, at) == null;
+    }
+
+    /**
+     * Why this square cannot be a home, or null when it can.
+     *
+     * Split out of {@link #canBeHome} so the refusal can say which of the two reasons it is - a
+     * greyed item with no explanation is the thing OB-050 was about.
+     *
+     * @param loc the locomotive being assigned
+     * @param at the square
+     * @return a message key, or null when the assignment is fine
+     */
+    public static String whyNotAHome(Locomotive loc, Point at)
+    {
+        // A square that is more than one graph Point cannot be a home.
+        //
+        // Adam, 2026-08-25, asked whether the staging planner should stop treating a shared sensor as
+        // one square: "this is an invalid state - any home with two graph points should be refused."
+        //
+        // He is dissolving the question rather than answering it, which is the second time that has
+        // been the right move on this feature. The planner and the runtime disagreed about such a
+        // square because the square is genuinely ambiguous: "is the train home?" has no single answer
+        // when home is two places. Making the configuration impossible removes the disagreement
+        // instead of picking a winner for it.
+        //
+        // `getBlock()` is exactly this test and nothing else. AutonomyBuilder sets it on one condition
+        // - `if (nodes.size() > 1) json.put("block", ...)` - so a block is present precisely when a
+        // square was emitted as more than one Point, and absent otherwise.
+        //
+        // Measured before it was written: on Adam's own layout this refuses ONE square of fifty-seven,
+        // and he has no homes assigned at all, so nothing existing is invalidated.
+        if (at != null && at.getBlock() != null) return "autolayout.errorHomeSquareIsSeveralPoints";
+
+        return canRest(loc, at) ? null : "autolayout.errorHomeCannotRestHere";
     }
 
     /**

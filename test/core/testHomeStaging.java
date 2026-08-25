@@ -1931,6 +1931,74 @@ public class testHomeStaging
             + "layout nothing has changed produces a different file every time");
     }
 
+    /**
+     * A square that is more than one graph Point cannot be a home (Adam's ruling, 2026-08-25).
+     *
+     * Asked whether the staging planner should stop treating a shared sensor as one square for FR-001,
+     * he dissolved the question instead of answering it: "this is an invalid state - any home with two
+     * graph points should be refused."
+     *
+     * That is the right shape and it is the second time it has been on this feature. The planner and
+     * the runtime disagreed about such a square because the square is genuinely ambiguous - "is the
+     * train home?" has no single answer when home is two places - so making the configuration
+     * impossible removes the disagreement rather than picking a winner for it.
+     *
+     * `getBlock()` is exactly this test. `AutonomyBuilder` sets it on one condition,
+     * `if (nodes.size() > 1) json.put("block", ...)`, so a block is present precisely when a square
+     * was emitted as more than one Point.
+     *
+     * Measured before it was written: on Adam's own layout this refuses ONE square of fifty-seven, and
+     * he has no homes assigned at all, so nothing existing is invalidated.
+     *
+     * Refused at the MODEL door, not only in the menu - a hand-edited file, an imported configuration
+     * and the scripting API all come through here and none of them can be greyed out.
+     *
+     * MUTATION: removing the `p.getBlock() != null` refusal from `Layout.setHomeLocomotive` fails this
+     * test.
+     */
+    @Test
+    public void testAHomeCannotBeASquareThatIsSeveralPoints() throws Exception
+    {
+        Layout layout = load(blockOfTwoWatching(null, null));
+
+        Point copy = layout.getPoint("HS W2");
+
+        assertNotNull(copy.getBlock(),
+            "the fixture did not take: this test needs a square emitted as more than one Point, "
+            + "which is exactly what carrying a block means");
+
+        try
+        {
+            layout.setHomeLocomotive("HS W2", LOC_A);
+
+            fail("a home was accepted on a square that is two graph points.  Adam ruled that an "
+                + "invalid state: \"is the train home?\" would have more than one answer");
+        }
+        catch (Exception refused)
+        {
+            assertTrue(String.valueOf(refused.getMessage()).contains("HS W2"),
+                "the refusal should name the square, or the operator cannot act on it.  Got: "
+                + refused.getMessage());
+        }
+
+        assertNull(copy.getHomeLoc(), "the refused assignment was made anyway");
+
+        // And the control: an ordinary single-Point square is still assignable, so the rule is not
+        // simply refusing homes.
+        Point ordinary = layout.getPoint("HS C");
+
+        assertNull(ordinary.getBlock(),
+            "the fixture did not take: the control square must NOT be a multi-point square");
+
+        layout.setHomeLocomotive("HS C", LOC_A);
+
+        assertEquals(ordinary.getHomeLoc(), loc(LOC_A),
+            "an ordinary square stopped being assignable, so the rule is refusing far more than it "
+            + "was asked to");
+
+        layout.setHomeLocomotive("HS C", null);
+    }
+
     /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
     private static void assign(Layout layout, String locName, String stationName) throws Exception
     {

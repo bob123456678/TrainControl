@@ -417,6 +417,31 @@ public final class LayoutLabel extends JLabel
                                         }                                
                                     }
 
+                                    // And the same question for a ROUTE tile, which had none.
+                                    //
+                                    // The check above asks about the tile's OWN accessory, and a route
+                                    // tile has none - `activeAccs.contains(null)` is false - so the
+                                    // one door that looked guarded was not. A route sets several
+                                    // accessories, so the question is about those.
+                                    // getRoute() is typed as the base Route here; only a MarklinRoute
+                                    // knows about the autonomy graph, and every route this component
+                                    // can hold is one.
+                                    final org.traincontrol.marklin.MarklinRoute onTile =
+                                        c.isRoute()
+                                            && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
+                                        ? (org.traincontrol.marklin.MarklinRoute) c.getRoute() : null;
+
+                                    if (onTile != null && onTile.conflictingAccessory() != null)
+                                    {
+                                        if (!tcUI.confirmRouteOverActivePath(onTile, tcUI)) return;
+
+                                        lastClicked = System.currentTimeMillis();
+
+                                        new Thread(() -> onTile.execRouteOverridingConflicts()).start();
+
+                                        return;
+                                    }
+
                                     lastClicked = System.currentTimeMillis();
 
                                     // Everything below this point blocks, so none of it belongs on the

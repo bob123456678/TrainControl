@@ -907,6 +907,27 @@ public class Layout
                 p.getName()));
         }
 
+        // Refused at the MODEL door, not only in the menu.
+        //
+        // The menu asks canBeHome and greys the item, which stops a click. It does not stop a
+        // hand-edited file, an imported configuration or the scripting API, and this is a state Adam
+        // has ruled invalid rather than merely unwise - "any home with two graph points should be
+        // refused" - so the one door everything comes through is where it belongs.
+        //
+        // Only when a home is being SET. Clearing one is always allowed: a layout that has somehow
+        // reached the invalid state must be able to get out of it.
+        // ONLY the two-graph-points rule, not everything canBeHome refuses.
+        //
+        // Adam ruled that one state invalid; "no train can come to rest here" is a different thing -
+        // it is a warning the menu gives, and an assignment Return Home is expected to report rather
+        // than one the model forbids. testAnImpossibleAssignmentIsExactlyWhatReturnHomeWouldRefuse
+        // depends on being able to make it, and it is right to.
+        if (loc != null && p.getBlock() != null)
+        {
+            throw new Exception(I18n.f("autolayout.errorHomeSquareIsSeveralPoints",
+                loc.getName(), p.getName()));
+        }
+
         // One station per locomotive: assigning it somewhere new gives up wherever it was assigned
         // before, or two stations would be waiting for the same train and neither could be satisfied.
         if (loc != null)

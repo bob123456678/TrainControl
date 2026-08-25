@@ -286,7 +286,43 @@ public class MarklinRoute extends Route
     @Override
     public void execRoute(boolean auto)
     {
-        execRoute(auto, 1);
+        execRoute(auto, 1, false);
+    }
+
+    /**
+     * Runs the route even though one of its accessories is on track a train is running over.
+     *
+     * Adam, 2026-08-25: "conflicting routes should still be executable in case of a transient
+     * accessory failure.  Add a confirmation dialog to the UI similar to how individual clicks
+     * currently work when an accessory has an active route."
+     *
+     * The case he is protecting is real and is the reason a refusal alone is wrong: a turnout that did
+     * not take the command, or reported the wrong position, is exactly when somebody needs to set it -
+     * and it is exactly when it will be on a locked path, because the path is what commanded it.
+     *
+     * So the refusal is for the door with nobody at it. The two doors with a person at them ask, the
+     * same way clicking the tile of an accessory on an active route has always asked, and this is what
+     * they call when the answer is yes.
+     *
+     * Not passed down to chained routes: a route this one triggers is asked about on its own terms,
+     * because the operator agreed to THIS route's conflict and was never shown the other's.
+     */
+    public void execRouteOverridingConflicts()
+    {
+        execRoute(false, 1, true);
+    }
+
+    /**
+     * Which accessory of this route is on track a train is running over, or null if none.
+     *
+     * Public so that a menu can ask before it acts, rather than acting and being refused - the same
+     * shape as canStartAutonomy, and the same lesson (OB-050, OB-090).
+     *
+     * @return the accessory's name, or null when the route is free to run
+     */
+    public String conflictingAccessory()
+    {
+        return accessoryHeldByAutonomy();
     }
     
     /**
@@ -347,7 +383,7 @@ public class MarklinRoute extends Route
      * @param auto - was the route triggered automatically?
      * @param recursionLimit - the maximum number of other routes that can be triggered from this route
      */
-    private void execRoute(boolean auto, int recursionLimit)
+    private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)
     {
         if (recursionLimit < 0)
         {
@@ -411,12 +447,24 @@ public class MarklinRoute extends Route
                     // suppressing a stop, which is safe to obey whatever else is true. So the
                     // accessories go as a group and everything else runs: stop, functions off, lights,
                     // locomotive speeds, chained routes.
-                    boolean skipAccessories = accessoryHeldByAutonomy() != null;
+                    // Unless somebody has said to go ahead.
+                    //
+                    // Adam: "conflicting routes should still be executable in case of a transient
+                    // accessory failure." A turnout that did not take the command is exactly when it
+                    // needs setting, and exactly when it will be on a locked path - because the path
+                    // is what commanded it. A refusal with no way past it would take the recovery away
+                    // at the moment it is wanted.
+                    //
+                    // So this stays the answer for the s88 trigger door, which fires with nobody
+                    // present, and the two doors with a person at them ask first.
+                    String conflict = overrideConflicts ? null : accessoryHeldByAutonomy();
+
+                    boolean skipAccessories = conflict != null;
 
                     if (skipAccessories)
                     {
                         this.network.logf("route.refusedAccessoryOnActivePath", this.getName(),
-                            accessoryHeldByAutonomy());
+                            conflict);
                     }
 
                     for (RouteCommand rc : this.route)
@@ -561,7 +609,9 @@ public class MarklinRoute extends Route
                                         if (!this.equals(r))
                                         {
                                              // We allow the route to recurse at most once
-                                            r.execRoute(false, recursionLimit - 1);
+                                            // A chained route is asked about on its own terms: the operator agreed to THIS
+                                            // route's conflict and was never shown that one's.
+                                            r.execRoute(false, recursionLimit - 1, false);
                                         }
                                         else
                                         {
