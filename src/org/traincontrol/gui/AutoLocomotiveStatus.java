@@ -569,16 +569,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         area.setEditable(false);
         area.setMargin(new java.awt.Insets(6, 6, 6, 6));
 
-        // The look and feel's own label font, NOT a hardcoded one.
+        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a grey,
+        // not the white every other text area in the app uses (OB-096, Adam: "make the text area of
+        // 'no available paths window' with the text be white"). White is set explicitly here, the same
+        // way the rest of the app does it (e.g. AutonomyViewerPanel's `findings` list and RouteEditorFrame's
+        // panels all call setBackground(Color.WHITE) rather than trust the look and feel's default).
+        area.setBackground(Color.WHITE);
+
+        // The look and feel's font FAMILY, at the size the rest of this application actually uses.
         //
-        // It was "Segoe UI" at 12, which is smaller than everything around it and would stay 12 if the
-        // application's font ever changed. Asking the L&F is what makes "the standard size of all
-        // other windows" true by construction rather than by my matching it once.
+        // Asking the L&F for "Label.font" and using it whole was the previous attempt at "the standard
+        // size of all other windows", and it is why Adam asked for the same thing twice: FlatLaf's
+        // label font is smaller than the size this application sets on its own components, so taking it
+        // whole made this window smaller than its neighbours rather than the same.
+        //
+        // The number is not invented. Ninety-eight components in the gui package are built with a
+        // Segoe UI font at size 14, against a single one at 12, so 14 IS the standard in this
+        // application and matching it is what MT-160 and MT-163 asked for.
+        //
+        // The FAMILY still comes from the look and feel, so a theme with different typography is
+        // followed; only the size is pinned to what the rest of the window uses.
         java.awt.Font standard = javax.swing.UIManager.getFont("Label.font");
 
         if (standard == null) standard = new javax.swing.JLabel().getFont();
 
-        area.setFont(standard);
+        area.setFont(standard.deriveFont(14f));
 
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(area);
 
