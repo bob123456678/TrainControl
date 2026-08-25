@@ -536,6 +536,35 @@ My inclination is 2 if you consider an ERROR finding something that should alway
 running, and 1 if some of them are ones you knowingly ignore. That is a question about your railway
 rather than about the code.
 
+**Adam, 2026-08-24.** "090- wrong, the setup refuses to run when there are errors.  it runs on
+warnings, but on errors it should say fix it."
+
+**Claude, 2026-08-24.** He is right and the three options above were built on a false premise of mine.
+
+I wrote that these errors "do not block a build, so the setup really does still load and run". It does
+load. It does not RUN: `refuseAutonomyStartWhileBroken` has refused to start autonomy on any ERROR
+finding since OB-057, and all three ways of pressing Start - the button, the strip's mirror, the
+station right-click - go through it. I had read `hasBlockingProblems()`, seen that the check errors do
+not appear in it, and stopped there without looking at the press path. The question was never open;
+option 2 was already the law of the application, and asking Adam to choose it was asking him to
+re-decide something he had decided in OB-057.
+
+**What was actually broken** is that the things which OFFER to start it were never told. Two questions
+existed where there should be one:
+
+- `hasBlockingProblems()` - can the GRAPH be built? Scissors crossings, unaddressed switches, unpaired
+  links.
+- the checks - can the SETUP be run? Unnamed stations, unlabelled stations, duplicate locomotives, no
+  stations at all.
+
+Four unnamed stations are four of the second and none of the first, so the strip showed a live green
+Start over a setup that answered every press with a dialog. That is the OB-057 shape at a third site.
+
+**Fixed in `8ea781fe`.** `AutonomySession.errorCount()` is now the one definition, and both the refusal
+and the strip ask it. The strip offers "Fix it" in amber, going to the editor at the first finding.
+Stop still wins - an error appearing while trains are running is the moment stopping matters most.
+Warnings do nothing, per the second half of Adam's sentence. [MT-173](tests.md#mt-173).
+
 
 ### OB-092 - 2026-08-24 - renaming a page to "5" excluded the page whose id is 5, and emptied it
 

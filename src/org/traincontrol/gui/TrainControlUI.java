@@ -1518,9 +1518,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // No session means no floor, which is the behaviour this had before the floor existed. The
             // case the floor is FOR - a setup with page ids worth protecting - is exactly the case
             // where the session is already built.
-            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-            return session == null ? 0 : session.getStore().highestPageIdSeen();
+            //
+            // The arithmetic is LayoutPageEdit's, so that the rename path - which now works the floor
+            // out for itself, off a window - and the two paths still here cannot come to different
+            // answers. What stays here is the choice of WHICH session to ask, which is the part that
+            // was ever in doubt.
+            return org.traincontrol.automationui.LayoutPageEdit.pageIdFloor(this.autonomySession);
         }
         catch (RuntimeException e)
         {
@@ -18813,153 +18816,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                List<String> layoutList = this.model.getLayoutList();
+                // The sequence itself lives in LayoutPageEdit, and this hands it the session it has
+                // ALREADY BUILT (SV-B2) rather than letting it reach for the lazy getter.
+                //
+                // Everything above this line is about whether to ask at all - an open editor, running
+                // trains, a remote layout, a name already taken - and stays here, because it puts
+                // dialogs on screen. Everything below it was the ORDER in which a rename has to
+                // happen, which is where every rename defect this project has had actually lived, and
+                // which could not be reached by a test while it was in here.
+                //
+                // Adam: "trigger a rename via the same function that the UI calls... This is the only
+                // way to catch bugs across these complex types of features."
                 String currentLayout = this.LayoutList.getSelectedItem().toString();
 
-                // WHERE it sits, so the file stays in the order the user sees.
-                //
-                // This began as the fix for MT-135: writeLayoutIndex numbered pages by position, so
-                // removing the name and adding the new one put the renamed page last and gave every
-                // page after its old slot a different id.  Ids no longer come from the position, so
-                // this is no longer load-bearing - it is kept because a file whose order jumps around
-                // is harder to read, and because getLayoutList is sorted, so the slack costs nothing.
-                //
-                // The autonomy setup is keyed by page ID on disk.  So renaming one page silently
-                // reattached the whole setup to the wrong pages - and because ids that shift by one
-                // round-trip unchanged (id 1 reads as the page now called 1, writes back as 1), the
-                // file looked consistent while meaning something else entirely.  The coordinates of
-                // one page's settings do not exist on the next page along, so the following save
-                // reconciled them away as deleted squares.
-                //
-                // Adam, MT-135: "Immediately after rename, all stations are gone... Renaming the page
-                // back did not restore the stations."  It could not: they had already been pruned and
-                // written.  He lost 19 point names, 14 stations, 22 directions and 15 captions to one
-                // rename on 2026-08-23.
-                //
-                // renamePage below deals with the NAME, which is how configurations are keyed. This
-                // deals with the ID, which is how the setup is keyed. Both halves move on a rename and
-                // only one of them was being carried across.
-                int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;
+                org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
+                    this.model.getLayoutList(), this.model.getLayout(currentLayout),
+                    this.getLocalLayoutPath(), currentLayout, newLayoutName,
+                    rename, duplicate, blank, this.autonomySession, this.model);
 
-                if (rename)
-                {
-                    layoutList.remove(currentLayout);
-                }
-
-                if (blank)
-                {
-                    this.model.getLayout(currentLayout).clear();
-                }
-
-                this.model.getLayout(currentLayout).saveChanges(
-                    newLayoutName, duplicate
-                );
-
-                // Back in its own slot, so the page keeps its id.  A duplicate or a new page has no
-                // slot of its own and goes at the end, which is where a page that did not exist before
-                // belongs.
-                if (renamedAt >= 0 && renamedAt <= layoutList.size())
-                {
-                    layoutList.add(renamedAt, newLayoutName);
-                }
-                else
-                {
-                    layoutList.add(newLayoutName);
-                }
-
-                // The autonomy setup keys everything by PAGE NAME, so it has to be told (OB-049).
-                //
-                // AutonomyCompanionStore.renamePage rekeys all eleven collections and the tile keys
-                // inside every configuration, and its comments record two earlier defects it was
-                // extended to cover. It had no caller. Nothing in the application had ever invoked it,
-                // so a rename left every key pointing at a page that no longer exists - and the next
-                // reconcile, doing exactly what it should with a square that has been deleted, removed
-                // the point name and the station for every one of them.
-                //
-                // Adam: "CRITICAL: renaming a layout page disconnects its autonomy config. stations and
-                // links are broken." Renaming back could not undo it, because they were already gone.
-                //
-                // Here rather than after saveChanges succeeds: the rename has to reach the store before
-                // layoutEditingComplete below rebuilds the session from the renamed pages, because that
-                // rebuild is what reconciles - and reconciling against a store still keyed by the old
-                // name is the whole of the bug.
-                if (rename)
-                {
-                    // The session ALREADY BUILT, not the lazy getter - and only written to a setup
-                    // that is already there.
-                    //
-                    // getAutonomySession() builds one on demand: it opens every page, runs the caption
-                    // migration - which rewrites gleisbild files and can raise a dialog - and save()
-                    // then does folder().mkdirs() and writes setup.json unconditionally. So renaming a
-                    // page on a layout where autonomy had never been touched invented a setup out of
-                    // nothing and attributed it to a gesture with nothing to do with autonomy.
-                    //
-                    // repairAutonomyLocomotive guards exactly this, twice over, and says why. Its two
-                    // siblings - this and the delete below - were written in the same series and had
-                    // neither guard. Found by review.
-                    org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-                    if (session != null)
-                    {
-                        // In memory always: it costs nothing and is right either way.
-                        session.getStore().renamePage(currentLayout, newLayoutName);
-                    }
-
-                    try
-                    {
-                        if (session == null)
-                        {
-                            // No session: rewrite the file itself, which writes nothing at all unless
-                            // the setup is already there.
-                            org.traincontrol.automationui.AutonomyCompanionStore.renamePageOnDisk(
-                                new java.io.File(this.getLocalLayoutPath()),
-                                currentLayout, newLayoutName);
-                        }
-                        else if (session.exists())
-                        {
-                            // WITHOUT reconciling, like its twin below.
-                            //
-                            // save() prunes the setup against the pages this session holds - and those
-                            // pages still carry the OLD name at this moment. LayoutDiagram.saveChanges
-                            // writes a new FILE; it never renames the object, and refreshLayouts does
-                            // not run until layoutEditingComplete, later.
-                            //
-                            // So the store has just been rekeyed to the new name and reconcile is
-                            // handed a set of squares under the old one: every name, station, length,
-                            // direction, signal, caption and disabled link on the renamed page reads as
-                            // track that has been deleted, and is dropped and written. That is the
-                            // MT-135 loss exactly, by a second route - and the report that would have
-                            // said so is discarded at this call site.
-                            //
-                            // The delete path already used saveWithoutReconciling for this reason. I
-                            // rewrote this block in the same commit and left the reconciling call in
-                            // it; review caught it.
-                            session.saveWithoutReconciling();
-                        }
-                    }
-                    catch (java.io.IOException e)
-                    {
-                        // The rekey stands in memory either way; only the record of it is at risk, and
-                        // failing to write it must not stop the page being renamed.
-                        this.model.log(e);
-                    }
-                }
-
-                // Told what was renamed, so the page keeps its ID under the new name.
-                //
-                // Ids are a page's identity now rather than its place in the list, and they are read
-                // back from the index by NAME - so a rename is the one operation where the name the id
-                // belongs to changes.  Without this the renamed page would be a name nobody has seen,
-                // take a fresh id, and leave its whole setup keyed to an id that no page holds any
-                // more: orphaned, and pruned by the next reconcile.
-                Map<String, String> renamed = new java.util.LinkedHashMap<>();
-
-                if (rename) renamed.put(currentLayout, newLayoutName);
-
-                LayoutDiagram.writeLayoutIndex(this.getLocalLayoutPath(), layoutList, renamed, pageIdFloor());
-
-                // Selecting the new page has to wait for the page list to be rebuilt, which now
-                // happens after the background sync rather than before this line
                 this.layoutEditingComplete(() ->
                 {
                     this.LayoutList.setSelectedItem(newLayoutName);

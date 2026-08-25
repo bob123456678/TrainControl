@@ -61,8 +61,10 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-170](#mt-170) | 2026-08-24 | Backing up a layout that lives on the Central Station | fixed unvalidated | FR-020 |
 | [MT-171](#mt-171) | 2026-08-24 | Nothing about the railway changed when the store started holding objects | fixed unvalidated | FR-013 |
 | [MT-172](#mt-172) | 2026-08-24 | The autonomy editor's grid, its hover outline, and the routes in a backup | fixed unvalidated | OB-091, FR-021 |
+| [MT-173](#mt-173) | 2026-08-24 | The diagram strip offers Fix, not Start, when the setup has errors | fixed unvalidated | OB-090 |
+| [MT-174](#mt-174) | 2026-08-24 | A page renamed and renamed back, through the menu | fixed unvalidated | OB-092 |
 
-Everything else - 124 of 172 - is **fixed validated** and needs nothing from you unless the
+Everything else - 124 of 174 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -7992,5 +7994,92 @@ station with no routes defined is ordinary, and the whole download should not fa
 the Java Preferences store - so the test asserted whatever was last clicked on this computer. It passed
 for weeks because the preference defaults to on, and failed the moment you turned the grid off while
 testing this. It passes the state explicitly now and checks both.
+
+---
+
+<a id="mt-173"></a>
+
+### MT-173 - 2026-08-24 - The diagram strip offers Fix, not Start, when the setup has errors
+
+**Disposition:** fixed unvalidated
+**From:** OB-090
+**Written:** 2026-08-24
+
+You need a setup with at least one ERROR in it. The quickest is to take a station's name away in the
+autonomy editor - an unnamed station is an error - or use the four you already have.
+
+1. Load the configuration. With errors present, the button at the right of the diagram strip should
+   read **Fix it**, in amber, where it used to read Start Autonomous Operation in green.
+2. Press it. The autonomy editor should open at the first thing in the list.
+3. Fix the errors. The button should go back to Start on its own, without reloading anything.
+4. Start autonomy. While it is RUNNING, the button must show Graceful Stop as it always did - and if
+   an error appears while trains are moving, it must STILL show Graceful Stop. Losing the brake in
+   that moment would be much worse than the bug being fixed here.
+5. With warnings but no errors, the button must say Start and starting must work. Warnings never
+   block.
+6. The count beside it should read "N errors, M warnings - K on this page".
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam, OB-090: "the autonomy error count is 4 but shows as 8.  also, the fix it
+button is not shown, rather just start autonomy when the config had worked before." And then, when I
+had written the wrong thing into the ticket: "wrong, the setup refuses to run when there are errors.
+it runs on warnings, but on errors it should say fix it."
+
+He was right and my ticket was wrong. `refuseAutonomyStartWhileBroken` has refused to start on any
+ERROR finding since OB-057, and all three ways of pressing Start go through it. What had never
+happened is that the things which OFFER to start it were told: the strip mirrored the Start button
+whenever it was enabled, and enabled says nothing about the checks.
+
+There were two questions where there should be one. `hasBlockingProblems()` asks whether the GRAPH
+can be built; the checks ask whether the SETUP can be run. Four unnamed stations are four of the
+second and none of the first. `AutonomySession.errorCount()` is now the single answer both ask.
+
+---
+
+<a id="mt-174"></a>
+
+### MT-174 - 2026-08-24 - A page renamed and renamed back, through the menu
+
+**Disposition:** fixed unvalidated
+**From:** OB-092, and Adam's request for a real round-trip test
+**Written:** 2026-08-24
+
+This one is mostly automated now - see the note below - but the automated version cannot press a menu
+item, so the gesture itself is still worth doing once.
+
+1. Pick the page with the most autonomy settings on it. Note a few of them: a station name, a length,
+   a protecting signal, a train placement.
+2. Right-click the page tab, Rename, and give it a new name.
+3. Everything you noted should still be there, on the renamed page. Nothing on any OTHER page should
+   have changed - particularly not train placements, which is how OB-092 announced itself.
+4. Rename it back.
+5. Everything should still be there again. MT-135 was reported as "renaming the page back did not
+   restore the stations", so the way back is where a loss becomes visible.
+6. Also rename a page to a name that is just a number, like `5`, while another page holds id 5. That
+   is OB-092 exactly.
+
+#### Comments
+
+**Claude, 2026-08-24.** Adam: "Do you have tests that try to load an entire config, and then trigger a
+rename via the same function that the UI calls, and then rename it back and test along the way?  This
+is the only way to catch bugs across these complex types of features."
+
+We did not, and he is right about why it matters. The rename tests called
+`AutonomyCompanionStore.renamePage` and `LayoutDiagram.writeLayoutIndex` themselves, one layer below
+the sequence, in an order the test author chose - which reads as coverage and is not, because a test
+that supplies its own order agrees with itself no matter what the application does.
+
+The sequence now lives in `LayoutPageEdit.renameOrDuplicate`, which is what the menu item calls, and
+`testRenameRoundTripThroughTheUIPath` calls the same thing with the same arguments. It compares every
+square on the page and every square on every other page, before, after, and after the way back.
+
+**It earns its place by mutation.** Putting each historical defect back one at a time - not telling
+the store about the rename (OB-049), not telling the index (MT-135), reconciling on the way out
+instead of saving without - fails it every time, and the clean code passes.
+
+**What it does not cover** is the four refusals above that call: an open editor, running trains, a
+remote layout, a name already taken. Those raise dialogs and stay in the window. They are decisions
+about whether to ask; everything about what then happens is covered.
 
 ---
