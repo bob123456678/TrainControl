@@ -108,14 +108,6 @@ public class AutonomySession
     }
 
     /**
-     * @return whether a rename has happened since these pages were opened
-     */
-    public boolean arePagesStale()
-    {
-        return this.pagesStale;
-    }
-
-    /**
      * Reads the setup for these pages and derives everything from it.
      *
      * @param diagrams every page of the layout

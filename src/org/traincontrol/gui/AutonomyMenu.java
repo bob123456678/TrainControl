@@ -199,7 +199,18 @@ public class AutonomyMenu extends JMenu
             // download would not touch - no viewer panel yet, a session that failed to open - and an
             // offer that cannot help is worse than the greyed line it replaced, because pressing it
             // teaches the reader that the notice lies.
-            if (ui.isRemoteLayout())
+            // The handler's OWN question, both halves of it (DW-C2).
+            //
+            // This asked only whether the layout is remote. downloadCSLayoutMenuItemActionPerformed
+            // additionally requires a non-empty page list, so a remote layout with nothing downloaded
+            // yet - no station answering, or a fresh start - showed a live item whose press did
+            // nothing whatever: no dialog, no log line, no clue.
+            //
+            // Which is the OB-057 shape this same day's work named twice already: the affordance
+            // asking a narrower question than the guard. Twice was apparently not enough for me to
+            // check the third one I wrote, a few hours later, in a commit whose message is about that
+            // very rule.
+            if (ui.isRemoteLayout() && ui.hasPagesToDownload())
             {
                 JMenuItem offer = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossibleDownload"));
 

@@ -20937,6 +20937,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         ));
     
     /**
+     * Whether there is anything on the Central Station to download.
+     *
+     * The second half of the question the download handler asks, exposed for the autonomy menu's
+     * offer so that the two cannot ask different things (DW-C2). An offer that cannot be honoured is
+     * worse than no offer: pressing it teaches the reader that the notice lies.
+     *
+     * @return true when the station has pages that could be fetched
+     */
+    public boolean hasPagesToDownload()
+    {
+        return this.model != null && this.model.getLayoutList() != null
+            && !this.model.getLayoutList().isEmpty();
+    }
+
+    /**
      * Whether the track diagram in use lives on the Central Station rather than on this computer.
      *
      * Public because the autonomy menu has to ask it: autonomy needs a local layout, and the notice
