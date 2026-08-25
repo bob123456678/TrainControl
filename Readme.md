@@ -175,6 +175,10 @@ Monitor the usage of different locomotives.
     * Pair a station with a signal that is thrown to red while a train is standing there, and back to green when it leaves
     * Restrict which directions a station will accept trains from
     * Record and play back timetables
+    * Hide the names of stations autonomy will never send a train to, so a busy diagram shows only
+      the places trains actually go
+* Back up everything in one archive - locomotives, keyboard mappings, track diagrams, routes and
+  autonomy setups - and restore it on another machine
 * Programmatic layout control via Java API (uses CAN protocol - [see documentation](AutomationAPI.md)) 
 * Monitor locomotive usage stats
 
@@ -331,9 +335,11 @@ TrainControl uses your computer's language automatically.  To run it in a differ
 
 **Backing up and restoring your data:**
 
-To make a backup, select "Backup TrainControl Data" from the File menu.
+To make a backup, select "Backup TrainControl Data" from the File menu.  It writes a single zip file into the `tc_backup` folder holding everything TrainControl knows: your locomotives and their icons, your keyboard mappings, your routes, and - for a layout stored on this computer - the track diagrams and the autonomy setups that go with them, filed under the layout folder's own name so two backups of two layouts can be told apart.
 
-All of your data is stored in `LocDB.data`, `UIState.data`, and `autonomy.json`, in the same directory as the JAR file.  To restore a backup, close TrainControl, replace these files with the copies from your backup, then start TrainControl again.
+If your track diagram lives on the Central Station rather than on this computer, TrainControl offers to fetch it and include it, so the archive is complete either way.  On a CS3 it also collects the station's own locomotive, route and accessory data, which the older file format does not carry.
+
+To restore, close TrainControl, unpack the archive beside the JAR file, and start it again.  `LocDB.data` and `UIState.data` belong next to the JAR; a layout folder goes wherever you keep your layout, and is the folder you point TrainControl at with "Choose Local Data Folder".
 
 ## Support TrainControl
 
@@ -374,6 +380,20 @@ Tab icons provided by Freepik.
         - Stations can now say which directions trains are allowed to arrive from.  By default they accept trains from any direction; the autonomy editor has a new Arrivals view and a right-click setting, and the track diagram shows a small arrow where a station only takes trains one way
         - A link switched off in autonomy is now greyed out on the track diagram, not only while editing
         - The route drawn on the diagram now follows the track through curves and switches, instead of turning square corners across it
+        - Station names can now be hidden for stations autonomy will never choose - ones switched
+          off, ones set to reverse, and ones not marked as automatic destinations.  It is under
+          Autonomy - Show Inactive Labels, it is on to begin with so nothing changes until you ask,
+          and it is remembered between sessions.  On a large diagram it is the difference between
+          reading the railway and searching it: what is left on screen is the places trains are
+          actually sent
+        - When a setup has something wrong with it, the button on the track diagram now offers to Fix
+          it rather than to Start.  Autonomy has always refused to start with errors outstanding; the
+          button did not know that, so it stayed green and every press answered with a dialog saying
+          no.  Pressing Fix it opens the editor at the first thing to deal with.  Warnings still do
+          not stop anything
+        - On a layout read from the Central Station, the autonomy menu's "Autonomy needs a layout on
+          this computer" is now something you can press: it downloads one.  Reading the sentence and
+          then hunting the Layouts menu for the thing it was describing was a step too many
         - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why is it not moving?" tool that answers the same question on the diagram: click the square a train is standing on, and every route it could take is drawn on the track while the reasons for the rest are listed underneath
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
