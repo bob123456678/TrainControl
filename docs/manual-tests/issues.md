@@ -560,6 +560,22 @@ that remembered which bundle keys carried a placeholder instead of reading them.
 "guards that assert less than they read" this entry is about, so the remainder is narrower than it was
 this morning - but the seven it lists have not been worked through.
 
+**Claude, 2026-08-25.** TA-B6 done: `testCS3NotFoundDetection`, five tests, no model and no network.
+
+The branch that was covered is the one only NEWER firmware produces. A CS3 before 2.6.0 answers an
+unknown endpoint with HTTP 200 and `{"error": "Not Found"}` in the body - which is the entire reason
+the method reads the body instead of trusting the status - and nothing exercised that, because the
+mock station only ever sends real 404s. So the half deciding whether TrainControl talks correctly to
+Adam’s own station was the untested half.
+
+`fetchURL` reads any URL the JVM understands, including `file:`, which the application itself relies on
+for a local layout override - so the responses are written to disk and pointed at, and the test needs
+nothing running.
+
+Mutation-checked with the audit’s own experiment, adjusted to compile: neutering the JSON branch
+fails two of the five. The 404 case is kept alongside so that a change fixing one by breaking the
+other cannot read as a pass.
+
 
 
 
@@ -581,6 +597,15 @@ add a crop / pan function to local locomotive icons at the time of image selecti
 **Build:** commit 8db330da, build\classes, compiled 25 Aug 00:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 the signal protecting this station pops up over the middle of the diagram.  see if you can offset it.  also, the window can be resized below its minimum height.
+
+### FR-024 - 2026-08-25 - loading icon for track diagram
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-25 01:15  
+**Build:** commit 8db330da, build\classes, compiled 25 Aug 00:50 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+change the very large spinner shown on top of loading track diagrams to a large gray hourglass icon instead. animate if possible.
 
 ## What has been picked up
 
