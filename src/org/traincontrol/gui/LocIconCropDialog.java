@@ -66,7 +66,7 @@ public class LocIconCropDialog extends JDialog
      * soft long before this, which is its own signal that the crop is too small - a number cannot
      * tell the user that as well as their own eyes can.
      */
-    private static final double MAX_ZOOM = 8.0;
+    private static final double MAX_ZOOM = 32.0;
 
     /**
      * Margin, in pixels, between the crop window and the edge of the panel.
@@ -338,22 +338,40 @@ public class LocIconCropDialog extends JDialog
         private int dragFromX = 0;
         private int dragFromY = 0;
 
-        private static final Color BACKDROP = new Color(52, 54, 58);
-        private static final Color SHADE = new Color(0, 0, 0, 150);
-        private static final Color CHECKER_LIGHT = new Color(228, 228, 232);
-        private static final Color CHECKER_DARK = new Color(200, 200, 206);
-        private static final Color WINDOW_EDGE = new Color(255, 255, 255);
-        private static final Color WINDOW_SHADOW = new Color(0, 0, 0, 160);
-        private static final Color WINDOW_GUIDE = new Color(255, 255, 255, 90);
+        /**
+         * The whole surface, and what the crop is composed onto.
+         *
+         * It was a dark grey, with the area outside the frame darkened further on top - and once the
+         * frame was allowed to hang off the picture, those two produced exactly what Adam asked to be
+         * rid of: black bars above and below a wide frame. There is nothing dark in this dialog now
+         * except the frame itself and the text on the grip.
+         *
+         * White rather than a pale grey, because it is not a background: it is the colour the crop
+         * takes wherever the frame is not over the photograph, so the panel has to be showing the
+         * truth.
+         */
+        private static final Color PAPER = Color.WHITE;
 
         /**
-         * How far the white reaches beyond the picture, in panel pixels.
+         * What is outside the frame is faded, not darkened.
          *
-         * Enough that the frame can be pulled well clear of the photograph on any side and still land
-         * on white rather than on the backdrop - which is what tells the user the spill is a choice
-         * the dialog understands rather than a mistake.
+         * The dimming still earns its place - it is how the user tells what is being kept from what
+         * is being discarded, and how they know there is more photograph to drag towards. Doing it
+         * with white instead of black keeps that and removes the bars: over the picture it reads as
+         * "faded out", and over the paper it is invisible because there is nothing there to fade.
          */
-        private static final int SPILL = 400;
+        private static final Color VEIL = new Color(255, 255, 255, 165);
+        private static final Color CHECKER_LIGHT = new Color(228, 228, 232);
+        private static final Color CHECKER_DARK = new Color(200, 200, 206);
+        /**
+         * The frame and its furniture, dark so they are legible against white paper AND against a
+         * photograph. A white outline was right over a dark backdrop and disappears over this one.
+         */
+        private static final Color FRAME = new Color(28, 30, 34);
+
+        private static final Color GUIDE = new Color(0, 0, 0, 38);
+
+        private static final Color GRIP_FILL = new Color(255, 255, 255, 235);
 
         /**
          * @param source the picture to crop, must not be null
@@ -372,7 +390,7 @@ public class LocIconCropDialog extends JDialog
             this.centerX = source.getWidth() / 2.0;
             this.centerY = source.getHeight() / 2.0;
 
-            setBackground(BACKDROP);
+            setBackground(PAPER);
             setOpaque(true);
 
             // The only thing that says the picture can be dragged before the user tries it.  The
@@ -381,7 +399,7 @@ public class LocIconCropDialog extends JDialog
 
             // Wide enough to show the whole crop window at a useful size without being taller than a
             // laptop screen once the buttons and the instruction line are added underneath.
-            setPreferredSize(new Dimension(720, 420));
+            setPreferredSize(new Dimension(600, 420));
 
             addComponentListener(new java.awt.event.ComponentAdapter()
             {
@@ -748,7 +766,14 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The scale currently in force.
+         * How far in the zoom goes, as a multiple of the whole picture fitting the panel.
+         *
+         * Raised from 8 at Adam's request - "add more zoomability" - and it can be raised again
+         * without spoiling the control, because the slider is LOGARITHMIC: scale is
+         * `fit * MAX_ZOOM^fraction`, so equal movements of the slider are equal RATIOS rather than
+         * equal amounts. Extending the top therefore costs nothing at the bottom, which is where the
+         * dialog opens and where most of the adjusting happens.
+         *
          * @return panel pixels per source pixel
          */
         public double getScale()
@@ -950,12 +975,12 @@ public class LocIconCropDialog extends JDialog
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                     RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-                g2.setColor(BACKDROP);
+                g2.setColor(PAPER);
                 g2.fillRect(0, 0, getWidth(), getHeight());
 
                 startAtCover();
 
-            Rectangle window = cropWindow();
+                Rectangle window = cropWindow();
 
                 double scale = getScale();
 
@@ -967,18 +992,11 @@ public class LocIconCropDialog extends JDialog
 
                 Rectangle picture = new Rectangle(drawX, drawY, drawWidth, drawHeight);
 
-                // WHITE around the photograph, out to a generous margin (Adam: "add some white (not
-                // black) padding around the sides so that users can spill over onto it").
+                // The white the frame can be pulled out onto is the whole panel now, painted above.
+                // It used to be a rectangle around the picture over a dark backdrop, which meant the
+                // backdrop showed at the edges of a big panel - and those were half of what Adam saw
+                // as black bars.
                 //
-                // It is not decoration and it is not the backdrop lightened. It is a preview: white is
-                // exactly what the crop will contain wherever the frame hangs off the picture, so
-                // pulling the frame out over this area shows the result rather than describing it.
-                // Against the dark backdrop the same area read as "there is nothing here, you have
-                // gone wrong", which is the opposite of the truth.
-                g2.setColor(Color.WHITE);
-                g2.fillRect(picture.x - SPILL, picture.y - SPILL,
-                    picture.width + 2 * SPILL, picture.height + 2 * SPILL);
-
                 // The checkerboard only where the PICTURE is, and only inside the window.  Locomotive
                 // icons are routinely transparent PNGs, and a transparent area has to be
                 // distinguishable from a pale part of the photograph - the user would otherwise find
@@ -992,10 +1010,14 @@ public class LocIconCropDialog extends JDialog
 
                 g2.drawImage(this.source, drawX, drawY, drawWidth, drawHeight, null);
 
-                // Everything outside the window darkened rather than hidden.  What is being discarded
+                // Everything outside the window FADED rather than darkened.  What is being discarded
                 // is exactly as informative as what is being kept - it is how the user knows there is
-                // more picture to drag towards.
-                g2.setColor(SHADE);
+                // more picture to drag towards - so the dimming stays and only its colour changes.
+                //
+                // Over the photograph this reads as washed out; over the paper it does nothing at all,
+                // because white over white is white. That is the whole trick: the bars are gone
+                // without losing what they were for.
+                g2.setColor(VEIL);
                 g2.fillRect(0, 0, getWidth(), window.y);
                 g2.fillRect(0, window.y + window.height, getWidth(),
                     getHeight() - window.y - window.height);
@@ -1003,7 +1025,7 @@ public class LocIconCropDialog extends JDialog
                 g2.fillRect(window.x + window.width, window.y, getWidth() - window.x - window.width,
                     window.height);
 
-                g2.setColor(WINDOW_GUIDE);
+                g2.setColor(GUIDE);
 
                 for (int third = 1; third <= 2; third++)
                 {
@@ -1014,14 +1036,14 @@ public class LocIconCropDialog extends JDialog
                     g2.drawLine(window.x, y, window.x + window.width, y);
                 }
 
-                // White inside, dark immediately outside it.  A single white line disappears against
-                // a pale sky, which is the top half of most photographs of a locomotive, and the
-                // frame is the one thing in this dialog that must never be ambiguous.
-                g2.setColor(WINDOW_SHADOW);
-                g2.drawRect(window.x - 1, window.y - 1, window.width + 1, window.height + 1);
-
-                g2.setColor(WINDOW_EDGE);
+                // Dark, and two pixels of it.  The frame is the one thing in this dialog that must
+                // never be ambiguous, and it now has to stay legible over three different things: the
+                // photograph, the faded photograph, and white paper. A white line with a dark halo was
+                // right when everything behind it was dark; over paper it is the halo doing all the
+                // work, one pixel wide.
+                g2.setColor(FRAME);
                 g2.drawRect(window.x, window.y, window.width - 1, window.height - 1);
+                g2.drawRect(window.x + 1, window.y + 1, window.width - 3, window.height - 3);
 
                 paintHandles(g2, window);
 
@@ -1048,7 +1070,7 @@ public class LocIconCropDialog extends JDialog
             final int arm = 14;
             final int thick = 3;
 
-            g2.setColor(WINDOW_EDGE);
+            g2.setColor(FRAME);
 
             int midX = window.x + window.width / 2;
             int midY = window.y + window.height / 2;
@@ -1099,13 +1121,14 @@ public class LocIconCropDialog extends JDialog
 
             int half = PAN_GRIP - 8;
 
-            g2.setColor(WINDOW_SHADOW);
-            g2.fillRoundRect(cx - half - 1, cy - half - 1, half * 2 + 3, half * 2 + 3, 8, 8);
-
-            g2.setColor(new Color(255, 255, 255, 210));
+            g2.setColor(GRIP_FILL);
             g2.fillRoundRect(cx - half, cy - half, half * 2, half * 2, 7, 7);
 
-            g2.setColor(new Color(40, 42, 46));
+            // An outline rather than a drop shadow.  The shadow was what separated it from a dark
+            // backdrop; on white it would be the only dark smudge left in the dialog, and a border is
+            // what actually makes a white control visible on white.
+            g2.setColor(FRAME);
+            g2.drawRoundRect(cx - half, cy - half, half * 2, half * 2, 7, 7);
 
             int arm = half - 4;
             int head = 3;
