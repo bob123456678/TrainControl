@@ -75,8 +75,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-195](#mt-195) | 2026-08-26 | Picking what holds a station back by clicking it | needs test | FR-025 |
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
 | [MT-197](#mt-197) | 2026-08-26 | Station captions as blue ovals | needs test | FR-028 |
+| [MT-198](#mt-198) | 2026-08-26 | The sidebar icons | needs test | FR-029 |
 
-Everything else - 135 of 197 - is **fixed validated** and needs nothing from you unless the
+Everything else - 135 of 198 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -10212,3 +10213,36 @@ dumps every component's bounds for both builds and diffs them. Its verdict on th
 placements differ" on all ten page-and-size combinations, with every difference a caption. The control
 that made it trustworthy was running the same build twice - which disagreed with itself about forty
 tiles until it learnt to wait for the tile images.
+
+---
+
+<a id="mt-198"></a>
+
+### MT-198 - 2026-08-26 - The sidebar icons
+
+**Disposition:** needs test
+**From:** FR-029
+**Written:** 2026-08-26
+
+1. Look at the sidebar. All seven icons - locomotive, track, autonomy, signal, route, stats, log -
+   should be flat marks in one blue, the same blue the rest of the theme selects with.
+2. **Can you tell them apart at a glance?** That is the whole job of an icon and the only thing worth
+   your opinion here. The signal one is the one I would look at first: the first version had a single
+   lamp on a stick and read as a map pin, so it has two lamps and a base now.
+3. Check them against a dark background if you ever run the application that way, and at whatever
+   display scaling you use - they are drawn at 512 pixels and scaled to thirty, so a high-DPI screen
+   asks more of them, not less.
+4. Nothing else about the sidebar should have changed: same tabs, same order, same tooltips, same
+   behaviour. Only the seven pictures were replaced.
+
+#### Comments
+
+**Claude, 2026-08-26.** No code changed - `getTabIcon` still loads the same seven filenames and scales
+them to thirty pixels tall - so what could go wrong is entirely in the files, and that is what the two
+automated tests check: every icon is one flat colour and that colour is the theme's, and every icon
+still has a legible amount of ink once it has been scaled to the size it is actually seen at. The
+second one exists because an icon that is beautiful at 512 and a grey smudge at 30 is the commonest way
+this kind of change fails, and it is invisible to anybody looking at the source files.
+
+If you want to redraw any of them, the generator is `tools/tab-icons.py` and the size is free: the
+application scales whatever it finds.

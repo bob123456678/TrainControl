@@ -319,15 +319,6 @@ Seen 2026-08-26 during a full battery run while the application was open and dri
 
 Worth either waiting on the movement rather than on a clock, or skipping with a stated reason when the run does not start, which is what a test that cannot reach its subject should do.
 
-### FR-029 - 2026-08-26 - sidebar icon modernization
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 02:06  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 02:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the sidebar icons (locomotive, track, autonomy, signal, route, stats, log), while nice, date the application.  use modernized, simple icons with a plain blue color matching the flatlaf theme.
-
 ### FR-030 - 2026-08-26 - autonomy label content in editors.
 
 **Kind:** feature request  
@@ -358,6 +349,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-26 | FR-029 | feature request | Seven flat sidebar icons in the theme blue | - | [MT-198](tests.md#mt-198) |
 | 2026-08-26 | OB-115 | bug | Captions stopped voting on the row baseline, and stopped dragging their neighbours with them | - | [MT-197](tests.md#mt-197) |
 | 2026-08-26 | FR-028 | feature request | Station captions are blue ovals with arrow icons, placed against the track | - | [MT-197](tests.md#mt-197) |
 | 2026-08-26 | FR-027 | feature request | A locomotive on the square a train is running on, from a file you can replace | - | [MT-196](tests.md#mt-196) |
