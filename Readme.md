@@ -396,8 +396,10 @@ Tab icons provided by Freepik.
           then hunting the Layouts menu for the thing it was describing was a step too many
         - A route will no longer throw a switch on track a train is running over.  Executing one that
           would - from the Routes tab, from a route tile on the diagram, or automatically from a
-          sensor trigger - is refused and logged, naming the switch.  Routes that touch nothing a
-          train is using run exactly as before, and nothing changes at all when autonomy is stopped
+          sensor trigger - is caught and logged, naming the switch.  From the Routes tab and the
+          diagram you are asked whether to go ahead anyway; a route fired by a sensor stops, because
+          there is nobody there to ask.  Routes that touch nothing a train is using run exactly as
+          before, and nothing changes at all when autonomy is stopped
         - Dispatching a train by hand now sets the protecting signals of trains already standing
           about, which is what starting autonomy and executing a timetable already did.  A train put
           on a protected platform by hand made no signal move - correctly, because nothing was
@@ -424,8 +426,10 @@ Tab icons provided by Freepik.
         - The Autonomy Setup menu on the diagram now has a way straight into the full editor, on the page and the square you right-clicked.  It is greyed, with the reason on it, whenever the editor would refuse to open
         - "Unavailable while occupied" can now be answered by clicking the square on the diagram instead of finding it in a list, in the same way a station's signal is paired.  A square picked this way does not need a name first - the click is what identifies it
         - The autonomy editor's station labels now show the station's name rather than whichever train happens to be parked there, which is what that window is for.  A switch beside the other view controls puts the trains back, and it is remembered
+        - A page left out of autonomy no longer draws station names.  There is no station behind them - the railway is built without that page entirely - and neither of the two label switches could reach them, so the one case where autonomy will certainly never use a square was the one case whose label could not be turned off
         - The track diagram editor no longer draws station labels at all.  They cannot be edited from that window, they cover the squares being moved, and that editor is about where the rails are
     - Autonomy Bug Fixes
+        - Fixed a long-standing bug in how a train’s length is accounted for as it runs.  Track behind the locomotive was released as soon as the edges WAITING to be released added up to the train’s length - and the newest of those is one edge behind the engine, so any track section shorter than the train was handed back while the train was still standing on it.  With atomic routes off that offered occupied track to another train; with them on it stopped protecting the switches under the middle of a train.  It only bit layouts that have both track lengths and train lengths recorded, which is why it went unnoticed
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
         - Fixed bug where clearing a station's priority stopped that train from ever being sent anywhere again for the rest of the session, and made the layout impossible to save.  Emptying the priority box is the obvious way to say "no priority", and it left the station in a state nothing could read
         - Fixed bug where turning a standing train round moved the wrong locomotive.  Right-clicking a station and choosing a direction moved whichever locomotive was selected for keyboard control onto that platform instead - in the running layout and in the saved setup both - or did nothing at all if none was selected
@@ -435,6 +439,8 @@ Tab icons provided by Freepik.
         - Fixed bug where leaving a page out of autonomy while trains were running left the diagram and the railway disagreeing: the page went red and its stations stopped responding, while trains carried on being sent to them.  It is now refused while trains are running
         - Pressing Start twice quickly no longer starts twice
     - Routes
+        - The question above is asked once per route, whichever way you answer, and it is asked again if the conflict only appears while the route is part way through.  Refusing outright was the first version and was wrong: a turnout that did not take its command is exactly when somebody needs to set it, and exactly when it will be on a locked path, because the path is what commanded it
+        - Route commands are checked again immediately before each one is sent, not only before the route starts.  A route takes seconds to run, so a train dispatched while it was part way through used to be invisible to it
         - A new route editor that is built from dropdowns rather than typed commands.  Each command is a row - what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards - so a route can be built and read without knowing the command syntax.  Anywhere the right answers are known they are offered as a list: locomotives, routes, decoder types, and whether a switch goes straight or turns.  Rows are added, deleted and reordered from marks in the rows themselves
         - Conditions are written as an indented list.  Each line is either a condition or the word joining it to the line before, and both can be indented - so "sensor 1 occupied, and either sensor 2 or sensor 3" is written by indenting the two sensors under the word that joins them.  Every word at one level has to be the same word: two different ones side by side would mean two different things, so the odd one out is shown in red until it is indented or changed.  There are no brackets to balance and no rule about which word binds tighter
         - Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead - so "run this route when these points are already set the way I have just set them" can be built by setting them.  The older text editor is still there

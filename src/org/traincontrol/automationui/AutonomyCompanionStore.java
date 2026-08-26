@@ -2788,6 +2788,131 @@ public class AutonomyCompanionStore
         return out;
     }
 
+    /**
+     * One page's entries from a map whose VALUES are squares too (B5).
+     *
+     * `onPage` above asks only about the key, which is right for a map of squares to names and wrong
+     * for one that pairs squares with squares. Portals are stored symmetrically and their two ends are
+     * normally on DIFFERENT pages; protecting signals and blocked points cross pages the same way.
+     *
+     * `move` and `forget` have always reached both halves - the base class says "each collection drops
+     * what it knows about these squares AND anything POINTING at them. Both halves matter and both
+     * have been got wrong here" - and snapshot/restore was the one member of the interface that never
+     * got the message. So an edit that broke the far page's half had no record of it to put back.
+     *
+     * This is not "restoring one page reaches into another". It captures exactly the entries that
+     * MENTION this page, which are exactly the ones this page's edit can break.
+     *
+     * @param from the collection
+     * @param page the page wanted
+     * @return the entries either of whose ends is on that page
+     */
+    private static Map<TileKey, TileKey> onPageEitherEnd(Map<TileKey, TileKey> from, String page)
+    {
+        Map<TileKey, TileKey> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, TileKey> entry : from.entrySet())
+        {
+            if (isOnPage(entry.getKey(), page)
+                || (entry.getValue() != null && isOnPage(entry.getValue(), page)))
+            {
+                out.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The same, for a map of squares to LISTS of squares (B5).
+     */
+    private static Map<TileKey, List<TileKey>> onPageEitherEnd(
+        Map<TileKey, List<TileKey>> from, String page, boolean lists)
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, List<TileKey>> entry : from.entrySet())
+        {
+            boolean mentions = isOnPage(entry.getKey(), page);
+
+            if (!mentions && entry.getValue() != null)
+            {
+                for (TileKey held : entry.getValue())
+                {
+                    if (isOnPage(held, page))
+                    {
+                        mentions = true;
+                        break;
+                    }
+                }
+            }
+
+            if (mentions) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts back a page's entries in a collection whose values are squares too (B5).
+     *
+     * Everything MENTIONING the page goes, then the snapshot goes back - so an entry on another page
+     * that pointed at this one is restored to what it said before this page was edited, rather than
+     * being left pointing at a square the undo has just emptied.
+     *
+     * @param into the collection
+     * @param page the page being restored
+     * @param was what mentioned that page, or null
+     */
+    private static void putBackEitherEnd(Map<TileKey, TileKey> into, String page,
+        Map<TileKey, TileKey> was)
+    {
+        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = into.entrySet().iterator();
+            pairs.hasNext();)
+        {
+            Map.Entry<TileKey, TileKey> pair = pairs.next();
+
+            if (isOnPage(pair.getKey(), page)
+                || (pair.getValue() != null && isOnPage(pair.getValue(), page)))
+            {
+                pairs.remove();
+            }
+        }
+
+        if (was != null) into.putAll(was);
+    }
+
+    /**
+     * The same, for a map of squares to LISTS of squares (B5).
+     */
+    private static void putBackEitherEnd(Map<TileKey, List<TileKey>> into, String page,
+        Map<TileKey, List<TileKey>> was, boolean lists)
+    {
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+            = into.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
+
+            boolean mentions = isOnPage(pair.getKey(), page);
+
+            if (!mentions && pair.getValue() != null)
+            {
+                for (TileKey held : pair.getValue())
+                {
+                    if (isOnPage(held, page))
+                    {
+                        mentions = true;
+                        break;
+                    }
+                }
+            }
+
+            if (mentions) pairs.remove();
+        }
+
+        if (was != null) into.putAll(was);
+    }
+
     private static Set<TileKey> membersOnPage(Set<TileKey> from, String page)
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -4002,12 +4127,14 @@ public class AutonomyCompanionStore
             }
         }
 
-        @Override Object snapshotOf(String page) { return onPage(map, page); }
+        // BOTH ends (B5).  A portal's two halves are normally on different pages, and this map is
+        // the one that pairs them.
+        @Override Object snapshotOf(String page) { return onPageEitherEnd(map, page); }
 
         @Override @SuppressWarnings("unchecked")
         void restoreTo(String page, Object snapshot)
         {
-            putBack(map, page, (Map<TileKey, TileKey>) snapshot);
+            putBackEitherEnd(map, page, (Map<TileKey, TileKey>) snapshot);
         }
 
         @Override void squaresOn(String page, Set<TileKey> into)
@@ -4078,12 +4205,17 @@ public class AutonomyCompanionStore
             }
         }
 
-        @Override Object snapshotOf(String page) { return copyLists(onPage(map, page)); }
+        // BOTH ends (B5).  A station's protecting signal, and a point that holds a station back,
+        // are both routinely on another page from the thing they are about.
+        @Override Object snapshotOf(String page)
+        {
+            return copyLists(onPageEitherEnd(map, page, true));
+        }
 
         @Override @SuppressWarnings("unchecked")
         void restoreTo(String page, Object snapshot)
         {
-            putBack(map, page, copyLists((Map<TileKey, List<TileKey>>) snapshot));
+            putBackEitherEnd(map, page, copyLists((Map<TileKey, List<TileKey>>) snapshot), true);
         }
 
         @Override void squaresOn(String page, Set<TileKey> into)

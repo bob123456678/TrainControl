@@ -1045,11 +1045,64 @@ public class testEditorSurfaceRules
 
         String call = grid.substring(at, Math.min(grid.length(), at + 200));
 
+        assertTrue(call.contains("isPageExcludedFromAutonomy("),
+            "the rule is no longer asked whether this page is left out of autonomy, so a page nobody "
+            + "routes over draws station names again - and neither visibility switch can reach them");
+
         assertTrue(call.contains("isAutonomyMode()"),
             "the second thing the rule is asked is not whether the editor is the autonomy one. "
             + "layout.getEdit() is true in BOTH editors - it is the flag they share for their mutual "
             + "exclusion - so anything that asks it alone hides the captions in the window that "
             + "exists to set them");
+    }
+
+    /**
+     * The s88 trigger door never puts a question on the screen.
+     *
+     * Adam\u2019s ruling was "ask me, at the two human doors" - and the third door has nobody at it.
+     * A route fired by a sensor that raised a modal dialog would block its own thread forever, never
+     * reach the finally that clears isExecuting, and throw its turnout whenever somebody eventually
+     * happened past and pressed OK, against whatever was on the path by then.
+     *
+     * **A test-coverage review found that deleting the `!auto` term fails nothing in 1089 tests.**
+     * The model-side tests reach this code with `getGUI()` null, so the confirm branch is unreachable
+     * from them and passes for both values of `auto`. The rule with the worst consequence had no
+     * automated cover at all.
+     *
+     * So this reads the source, in the way this file already does for rules that are textual. It
+     * checks three things, because there are three ways to lose it: the ask must be gated on `!auto`,
+     * the chained-route call must pass `auto` on rather than a constant, and the door itself must
+     * still be `execRoute(true)`.
+     *
+     * MUTATION: deleting `!auto &&`, or hard-coding false in the chained call, fails this.
+     */
+    @Test
+    public void testTheS88DoorIsNeverAskedAnything() throws Exception
+    {
+        String route = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/marklin/MarklinRoute.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        int asks = route.indexOf("confirmRouteConflictMidway(");
+
+        assertTrue(asks > 0, "nothing in MarklinRoute asks the mid-route question any more");
+
+        String around = route.substring(Math.max(0, asks - 220), asks);
+
+        assertTrue(around.contains("!auto"),
+            "the mid-route confirmation is no longer gated on !auto, so a route fired by an s88 "
+            + "sensor would raise a modal dialog with nobody at the machine - blocking its own "
+            + "thread, never clearing isExecuting, and throwing the turnout whenever somebody "
+            + "eventually pressed OK");
+
+        assertTrue(route.contains("r.execRoute(auto, recursionLimit - 1, false)"),
+            "a chained route is no longer told which door it was reached through. Hard-coding this "
+            + "was harmless while auto meant only \"do not pop the emergency-stop notice\"; it stopped "
+            + "being harmless when auto came to mean \"a person is standing here to be asked\"");
+
+        assertTrue(route.contains("this.execRoute(true)"),
+            "the s88 trigger door no longer calls execRoute(true), so whatever it is now, it is not "
+            + "the door the rule above is about");
     }
 
     /**

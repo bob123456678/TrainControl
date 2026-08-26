@@ -73,6 +73,14 @@ public class LayoutGrid
      * The RUNNING diagram keeps them - that is where they say something - and so does the autonomy
      * editor, which is where they are set.
      *
+     * **And a page left out of autonomy draws none either** (B6, Adam: "hide captions"). There is no
+     * Point behind a caption on an excluded page - the graph is built without that page entirely - so
+     * it was a station name that named nothing, wired to nothing, and neither of the two visibility
+     * switches could reach it: both work by walking the registry of captions, and an excluded page's
+     * caption is never registered in it. So the one case where autonomy will most certainly never use
+     * a square was the one case whose label could not be turned off. That is FR-023's original
+     * complaint, surviving inside its own fix.
+     *
      * A method rather than a line of `&&`, so the rule can be asked its truth table without building a
      * window. What that leaves uncovered is whether the caller passes the right two booleans, which is
      * the usual price of pulling a rule out of its call site - `testEditorSurfaceRules` reads the call
@@ -82,9 +90,10 @@ public class LayoutGrid
      * @param autonomyMode whether that editor is the autonomy one
      * @return true when no caption should be drawn
      */
-    public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode)
+    public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode,
+        boolean pageExcluded)
     {
-        return inEditor && !autonomyMode;
+        return pageExcluded || (inEditor && !autonomyMode);
     }
 
     /**
@@ -371,7 +380,8 @@ public class LayoutGrid
         // a rule enforced at the point of use is a rule with four chances to be forgotten, and this
         // file has form.
         final boolean hidesCaptions = hidesStationCaptions(inEditor,
-            master instanceof LayoutEditor && ((LayoutEditor) master).isAutonomyMode());
+            master instanceof LayoutEditor && ((LayoutEditor) master).isAutonomyMode(),
+            ui != null && ui.isPageExcludedFromAutonomy(layout.getName()));
 
         boolean autonomyEditor = master instanceof LayoutEditor
             && ((LayoutEditor) master).isAutonomyMode();
@@ -771,7 +781,12 @@ public class LayoutGrid
                     {
                         text.setPill(true);
                         text.setBackground(StationCaption.restingFill());
-                        text.setForeground(StationCaption.readableOn(StationCaption.restingFill()));
+                        // onPill and not readableOn: the branches above choose a grey for a
+                        // placeholder and a black for a name, deliberately, and readableOn threw both
+                        // away because its condition is a superset of all of them. The distinction
+                        // survives now - a placeholder is drawn dimmer than a station that has one.
+                        text.setForeground(
+                            StationCaption.onPill(StationCaption.restingFill(), labelColour));
 
                         // A tenth smaller than the diagram's other text: the pill is taller than what
                         // it holds, and the rows of a diagram are one tile apart.
@@ -791,9 +806,53 @@ public class LayoutGrid
                             ? StationCaption.restingFill()
                             : new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
 
-                        text.setForeground(StationCaption.readableOn(text.getBackground()));
+                        text.setForeground(
+                            StationCaption.onPill(text.getBackground(), labelColour));
                     }
                     
+                    // Where a pill lands, and out of the row's baseline - for EVERY caption.
+                    //
+                    // This lived inside the branch below, which asks `c != null`: a caption drawn on a
+                    // BLANK square therefore kept the baseline anchor and got no placement at all,
+                    // which is both the wrong position and the live half of OB-115. Blank squares are
+                    // not a curiosity - the caption placer calls one "the most readable place of all"
+                    // and picks it second.
+                    if (text.isPill())
+                    {
+                        // Adam: "land them so that they align just below straight tracks if the track
+                        // goes east to west, or centered over the track if north to south." An
+                        // east-west rail runs across the middle of the square, so a caption on the
+                        // middle would sit on it; a north-south rail runs UP it, and a caption beneath
+                        // would be beside the track rather than on it. A blank square has no rails to
+                        // be placed against, so it takes the east-west answer.
+                        //
+                        // A border and not gbc.anchor: this cell is declared gridheight = 0 -
+                        // REMAINDER - so it runs from this row to the bottom of the diagram, and
+                        // anchoring SOUTH inside it means the bottom of the PAGE.
+                        //
+                        // NORTHWEST because a caption has no business voting on the row's baseline.
+                        // BASELINE_LEADING lines up every component anchored that way, so a caption
+                        // whose height changed moved the row's baseline and took its neighbours with
+                        // it - three pixels, on labels nobody had touched (OB-115).
+                        int down = StationCaption.captionOffset(
+                            size, text.lineHeight(), runsNorthSouth(c));
+
+                        // A column of room to the left, so the caption can be CENTRED on its square
+                        // rather than starting at it. Centring means beginning left of the square, and
+                        // no border can say that - insets cannot be negative - so the cell is moved
+                        // back a column and the label pays the difference back as a left inset.
+                        //
+                        // Not at the left edge, where there is no column to move into: a caption there
+                        // starts at its own square exactly as it did before.
+                        int backShift = x > 0 ? size : 0;
+
+                        gbc.gridx = x - (backShift > 0 ? 1 : 0);
+
+                        text.setTileGeometry(size, backShift, down);
+
+                        gbc.anchor = GridBagConstraints.NORTHWEST;
+                    }
+
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
                     // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
@@ -814,70 +873,7 @@ public class LayoutGrid
                         // &nbsp; stops it wrapping, so an OPAQUE label - which this is the only one of
                         // - painted its background as a block a tile tall and three wide, over
                         // whatever was beside it.
-                        if (text.isPill())
-                        {
-                            // Where the pill lands (FR-028).
-                            //
-                            // Adam: "land them so that they align just below straight tracks if the
-                            // track goes east to west, or centered over the track if north to south."
-                            // An east-west rail runs across the middle of the square, so a caption on
-                            // the middle would sit on it; a north-south rail runs UP it, and a caption
-                            // beneath would be beside the track rather than on it.
-                            //
-                            // **A border and not gbc.anchor**, which was the first attempt and put
-                            // captions in mid-air. This cell is declared gridheight = 0 - REMAINDER -
-                            // so it runs from this row to the bottom of the diagram, and anchoring
-                            // SOUTH inside it means the bottom of the PAGE. BASELINE_LEADING pins the
-                            // label to the top of that cell, which is its own row, and everything
-                            // below is measured from there.
-                            //
-                            // Which is what the multiline hack underneath has always been doing: a
-                            // leading <br> is an offset written in line heights.
-                            //
-                            // Anything that is neither east-west nor north-south - a switch, a
-                            // crossing, a curve - is left where captions have always been. It is a
-                            // judgement about a square with one clear direction, and those squares do
-                            // not have one.
-                            int down = StationCaption.captionOffset(
-                                size, text.lineHeight(), runsNorthSouth(c));
-
-                            // A column of room to the left, so the caption can be CENTRED on its
-                            // square rather than starting at it (FR-028).
-                            //
-                            // Centring means beginning left of the square, and no border can say that
-                            // - insets cannot be negative - so the cell is moved back a column and the
-                            // label pays the difference back as a left inset. One column is enough:
-                            // a caption is at most ten characters and an arrow, which overflows its
-                            // square by less than a square at every tile size this draws at.
-                            //
-                            // Not at the left edge, where there is no column to move back into. A
-                            // caption there starts at its own square exactly as it did before, which
-                            // is the one case the operator would notice a diagram shifting.
-                            int backShift = x > 0 ? size : 0;
-
-                            gbc.gridx = x - (backShift > 0 ? 1 : 0);
-
-                            text.setTileGeometry(size, backShift, down);
-
-                            // OUT of the row's baseline (OB-115).
-                            //
-                            // Adam: "check normal text label vertical alignment - it seems to have
-                            // drifted post FR-028 label cutover.  for example, Reset and Inner Loop
-                            // have a different vertical offset from the adjacent route tile."
-                            //
-                            // BASELINE_LEADING does what it says: GridBagLayout works out a baseline
-                            // for the row from every component anchored that way and lines them all up
-                            // on it. A caption is one of those components, so changing its height -
-                            // which a pill and a smaller font both do - moved the row's baseline, and
-                            // every OTHER label in that row went with it. Three pixels, on labels
-                            // nobody had touched.
-                            //
-                            // A caption has no business voting on that. Where it sits is decided by
-                            // the border above, measured from the top of its own square, so NORTHWEST
-                            // is both what it wants and what takes it out of the ballot.
-                            gbc.anchor = GridBagConstraints.NORTHWEST;
-                        }
-                        else if (!standingTrain)
+                        if (!text.isPill() && !standingTrain)
                         {
                             text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");
                         }
@@ -894,6 +890,20 @@ public class LayoutGrid
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
+
+                    // And back to this square's own column.
+                    //
+                    // Centring a caption moves gbc.gridx a column LEFT so the pill can start before
+                    // its square. gbc is then reused by the address label below, which pays nothing
+                    // back - so on every captioned, clickable square the sensor's number was drawn a
+                    // whole tile away from the sensor, over its neighbour's. Fifteen of them on one
+                    // page of the operator's layout.
+                    //
+                    // The bounds harness that checked FR-028 could not see this: it built its grids
+                    // with the address labels switched OFF, so it measured a diagram this cannot
+                    // happen on and reported that nothing had moved. A harness only answers about the
+                    // diagram you point it at.
+                    gbc.gridx = x;
                 }
                 
                 // Show address labels

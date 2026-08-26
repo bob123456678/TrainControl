@@ -14475,6 +14475,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.saveState(false);
         this.saveState(false);
         //model.stop();
+
+        // The EDITOR is closed too, and it has to be closed properly.
+        //
+        // LayoutEditor.dispose() is the only thing that clears config/autonomy/setup-before-edit.json,
+        // the note that says "an edit was in progress". It is an unowned top-level frame, so disposing
+        // this window does not dispose it, and exiting left the note behind - after which the next
+        // start finds no editor open, believes the process died mid-edit, and REVERTS the setup to
+        // before that editor was opened.
+        //
+        // The gesture that loses work needs no dialog and no crash: open the setup editor, name six
+        // platforms, press Save INSIDE the editor, leave the window open, and close TrainControl by
+        // its X. Nothing is dirty, so nothing asks anything, and the six names are gone on the next
+        // start. dispose()'s own javadoc lists seven ways this window closes and says the note is
+        // cleared down all of them; application exit was an eighth.
+        //
+        // Before saveState below it would be wrong - the editor may still have something to settle -
+        // and after System.exit it would never run at all, so it goes here.
+        if (openEditor != null && openEditor.isDisplayable())
+        {
+            openEditor.dispose();
+        }
+
         this.dispose();
         System.exit(0);
     }//GEN-LAST:event_WindowClosed
@@ -14569,6 +14591,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     /**
+     * What asking about a route's conflict came back with (A3).
+     *
+     * Three answers, because "there is nothing to confirm" and "the operator said run it anyway" are
+     * different things and used to be the same `true`. Both callers turned that `true` into a
+     * FULL-ROUTE override - every conflict check off for the route's whole duration - so when a
+     * conflict cleared in the moment between the caller's check and the dialog, the route ran
+     * completely unguarded and no dialog was ever shown. Seconds is long enough for a fresh dispatch
+     * to lock a turnout further along it, which the route then throws under a train.
+     */
+    public static enum RouteConflict
+    {
+        /** No conflict.  Run the route the ordinary, guarded way. */
+        NOTHING_TO_CONFIRM,
+
+        /** There was one and the operator said run it anyway. */
+        OVERRIDE,
+
+        /** There was one and the operator said no, or closed the dialog. */
+        REFUSED
+    }
+
+    /**
      * Asks before running a route that would set an accessory a train is running over.
      *
      * The same question clicking that accessory's own tile has always asked, at the door that had no
@@ -14590,30 +14634,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
         java.awt.Component over)
     {
-        return confirmRouteOverActivePath(route, over, null);
+        return askAboutRouteConflict(route, over, null) == RouteConflict.OVERRIDE;
     }
 
     /**
      * @param known the accessory to name, when the caller has already established it; null to ask
      */
-    public boolean confirmRouteOverActivePath(org.traincontrol.marklin.MarklinRoute route,
+    public RouteConflict askAboutRouteConflict(org.traincontrol.marklin.MarklinRoute route,
         java.awt.Component over, String known)
     {
-        if (route == null) return false;
+        if (route == null) return RouteConflict.REFUSED;
 
         String conflict = known != null ? known : route.conflictingAccessory();
 
-        // No conflict any more means YES, not no (LD-8).
+        // No conflict any more is its own answer (LD-8, then A3).
         //
-        // This returned false for "there is nothing to confirm" and for "the user said no", and both
-        // callers treat false as "do not run it". Autonomy releases accessories from its own threads
-        // as trains move, so the conflict really can clear between the caller's check and this one -
-        // and when it did, the route did nothing at all, with no dialog and no log line, because the
-        // model's own refusal was never reached either.
+        // LD-8: this returned false for "there is nothing to confirm" and for "the user said no", and
+        // both callers treat false as "do not run it". Autonomy releases accessories from its own
+        // threads as trains move, so the conflict really can clear between the caller's check and this
+        // one - and when it did, the route did nothing at all, with no dialog and no log line.
         //
-        // The question this method answers is "may this route run", and with no conflict the answer
-        // is plainly yes.
-        if (conflict == null) return true;
+        // A3: making it `true` instead fixed that and bought a worse one, because the callers' only
+        // action for `true` was to run the route with EVERY conflict check turned off for its whole
+        // duration. So the same clearing conflict now bought a full override that nobody had asked
+        // for. It is its own answer now, and the callers run such a route the ordinary guarded way -
+        // which is what "there was nothing to confirm" should always have meant.
+        if (conflict == null) return RouteConflict.NOTHING_TO_CONFIRM;
 
         Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
@@ -14634,12 +14680,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.model.log(couldNotAsk);
 
-            return false;
+            return RouteConflict.REFUSED;
         }
 
         // Only an explicit OK.  Escape and the close box mean no, which is the whole of UR-1 and the
         // six confirmations it was swept into this file for.
-        return choice[0] == 0;
+        return choice[0] == 0 ? RouteConflict.OVERRIDE : RouteConflict.REFUSED;
     }
 
     public void executeRoute(String route)
@@ -14656,15 +14702,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 found instanceof org.traincontrol.marklin.MarklinRoute
                 ? (org.traincontrol.marklin.MarklinRoute) found : null;
 
-            if (picked != null && picked.conflictingAccessory() != null)
+            // Asked once, and the answer decides HOW it runs (A3).
+            //
+            // The conflict used to be checked here and again inside, and a conflict that cleared
+            // between the two came back as "yes, override" - so the route ran with every guard off.
+            // One question now, with three answers, and only the operator's own yes overrides
+            // anything.
+            if (picked != null)
             {
-                if (confirmRouteOverActivePath(picked, this)) picked.execRouteOverridingConflicts();
+                RouteConflict answer = askAboutRouteConflict(picked, this, null);
 
-                refreshRouteList();
+                if (answer == RouteConflict.OVERRIDE)
+                {
+                    picked.execRouteOverridingConflicts();
 
-                return;
+                    refreshRouteList();
+
+                    return;
+                }
+
+                if (answer == RouteConflict.REFUSED)
+                {
+                    refreshRouteList();
+
+                    return;
+                }
             }
 
+            // Nothing to confirm: run it the ordinary way, guarded, so a conflict appearing while it
+            // runs still stops and asks.
             this.model.execRoute(route);
             refreshRouteList();
         }).start();
@@ -21408,7 +21474,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // itself onto the event thread, so this blocks that route and nothing else.
         if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
 
-        return confirmRouteOverActivePath((org.traincontrol.marklin.MarklinRoute) r, this, accessory);
+        // known != null, so there is always a conflict to ask about and NOTHING_TO_CONFIRM cannot
+        // come back here.
+        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, this, accessory)
+            == RouteConflict.OVERRIDE;
     }
 
     @Override

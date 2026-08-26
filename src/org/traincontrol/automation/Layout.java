@@ -755,10 +755,17 @@ public class Layout
                 //                safe to unlock - not a second opinion about the same thing.
                 //
                 // What this deliberately does NOT do is go by the train's position alone.  An edge is
-                // only cleared once a train's LENGTH has gone past it, so a turnout under the middle
-                // of a train is still refused.  Where no lengths are configured the railway already
-                // treats an edge as clear the moment the front passes (`lengthTraversed == 0`), which
-                // is the same trade it has always made for unlocking.
+                // only cleared once a train's LENGTH has gone past its END, so a turnout under the
+                // middle of a train is still refused.  Where no lengths are configured the railway
+                // treats an edge as clear the moment the front passes, which is the same trade it has
+                // always made for unlocking.
+                //
+                // That sentence was false for a day and this comment asserted it anyway. The tail
+                // bookkeeping released the whole batch of waiting edges as soon as THEY added up to
+                // the train's length, and the newest of them is one edge behind the locomotive - so
+                // on any edge shorter than the train, this guard stopped protecting turnouts the
+                // train was standing on. Found by a reviewer who built a railway of fifty-unit edges
+                // and a two-hundred-unit train and watched which accessories the guard offered.
                 if (!e.isLockHeld(active.getKey())) continue;
 
                 if (cleared != null && cleared.contains(e)) continue;
@@ -4625,8 +4632,23 @@ public class Layout
         );
 
         // When !this.atomicRoutes: track edges to unlock based on length of train
-        List<Integer> toUnlock = new LinkedList<>();
-        Integer lengthTraversed = 0;
+        // Edges waiting to be released, each with how far the HEAD has travelled since the end of it.
+        //
+        // Two numbers per edge, not one running total. The total was the sum of the edges WAITING, and
+        // the newest of those is one edge behind the locomotive - so the moment the batch added up to
+        // the train's length, everything in it was released, including track the train was standing
+        // on. Any edge shorter than the train reached that state, which on a real railway - block
+        // sensors a metre or two apart, a long consist - is the ordinary case and not the corner one.
+        //
+        // The distance from an edge's END to the head is the only thing that answers "has the tail
+        // gone by", because the tail is exactly the train's length behind the head.
+        //
+        //   { index into path, how far the head has gone since that edge ended }
+        List<int[]> waitingToClear = new LinkedList<>();
+
+        // How far this run has gone in total.  Zero means the path carries no lengths at all - see the
+        // fallback where an edge is released.
+        int travelledOnThisPath = 0;
 
         for (int i = 0; i < path.size(); i++)
         {
@@ -4722,49 +4744,72 @@ public class Layout
                 {
                     if (i > 0)
                     {       
-                        lengthTraversed += path.get(i - 1).getLength();
-                        toUnlock.add(i - 1);
-                        
-                        if (lengthTraversed >= loc.getTrainLength() || lengthTraversed == 0)
+                        // The head has just finished edge i-1, so everything already waiting is one
+                        // edge further behind, and edge i-1 joins the queue with the head still on
+                        // top of its far end.
+                        int justTravelled = path.get(i - 1).getLength();
+
+                        for (int[] waiting : waitingToClear) waiting[1] += justTravelled;
+
+                        waitingToClear.add(new int[] { i - 1, 0 });
+
+                        travelledOnThisPath += justTravelled;
+
+                        for (java.util.Iterator<int[]> pending = waitingToClear.iterator();
+                            pending.hasNext();)
                         {
-                            for (int index : toUnlock)
+                            int[] waiting = pending.next();
+
+                            // The tail is the train's length behind the head.
+                            //
+                            // Unless this path has no lengths on it at all, which is the ordinary case
+                            // on a railway where nobody has measured anything: then no distance can
+                            // ever accumulate, holding would hold forever, and the railway falls back
+                            // to "clear the moment the front passes" - the same trade it has always
+                            // made where lengths are not set.
+                            //
+                            // The first version of this rewrite dropped that fallback, and the suite
+                            // said so at once: a turnout the train had gone past stayed refused, and in
+                            // non-atomic mode every edge of every run would have been held for the
+                            // whole run. The old code expressed the same escape as "the batch sums to
+                            // zero"; this expresses it as "nothing on this path has a length".
+                            if (travelledOnThisPath > 0 && waiting[1] < loc.getTrainLength())
                             {
-                                Set<Edge> cleared = this.clearedEdges.get(loc);
-
-                                if (cleared != null) cleared.add(path.get(index));
-
-                                if (this.atomicRoutes) continue;
-
-                                synchronized (this.activeLocomotives)
-                                {
-                                    path.get(index).setLockedEdgeUnoccupied();
-                                    path.get(index).getStart().setLocomotive(null);
-                                    // path.get(index).getEnd().setLocomotive(null); // not necessary as this unlocks the second edge early
-                                }
-                                
-                                if (control.isDebug())
+                                // Still under the train.  In atomic mode nothing was going to be
+                                // unlocked anyway, so this only reports in the mode it can happen in.
+                                if (control.isDebug() && !this.atomicRoutes)
                                 {
                                     this.control.logf(
-                                        "autolayout.infoUnlockingTraversedEdge",
-                                        path.get(index).getName()
+                                        "autolayout.infoNotUnlockingTraversedEdgeDueToTrainLength",
+                                        loc.getTrainLength(),
+                                        waiting[1],
+                                        path.get(waiting[0]).getName()
                                     );
                                 }
+
+                                continue;
                             }
-                            
-                            toUnlock.clear();
-                            lengthTraversed = 0;
-                        }
-                        else
-                        {
-                            // Still under the train.  In atomic mode nothing was going to be unlocked
-                            // anyway, so this only reports in the mode it can happen in.
-                            if (control.isDebug() && !this.atomicRoutes)
+
+                            Set<Edge> cleared = this.clearedEdges.get(loc);
+
+                            if (cleared != null) cleared.add(path.get(waiting[0]));
+
+                            pending.remove();
+
+                            if (this.atomicRoutes) continue;
+
+                            synchronized (this.activeLocomotives)
+                            {
+                                path.get(waiting[0]).setLockedEdgeUnoccupied();
+                                path.get(waiting[0]).getStart().setLocomotive(null);
+                                // the far end is not cleared: that unlocks the next edge early
+                            }
+
+                            if (control.isDebug())
                             {
                                 this.control.logf(
-                                    "autolayout.infoNotUnlockingTraversedEdgeDueToTrainLength",
-                                    loc.getTrainLength(),
-                                    lengthTraversed,
-                                    path.get(i - 1).getName()
+                                    "autolayout.infoUnlockingTraversedEdge",
+                                    path.get(waiting[0]).getName()
                                 );
                             }
                         }

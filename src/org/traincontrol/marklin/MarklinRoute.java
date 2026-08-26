@@ -515,9 +515,7 @@ public class MarklinRoute extends Route
 
                     String[] conflict = override ? null : accessoryHeldByAutonomy();
 
-                    boolean skipAccessories = conflict != null;
-
-                    if (skipAccessories)
+                    if (conflict != null)
                     {
                         // The reason comes back with the accessory, because the two reasons are not
                         // the same sentence.  "A train is running over it" is true of a locked path
@@ -525,6 +523,22 @@ public class MarklinRoute extends Route
                         // first for both.
                         this.network.logf(conflict[1], this.getName(), conflict[0]);
                     }
+
+                    // NOT a decision, only a note (B7).
+                    //
+                    // This used to set skipAccessories, and the loop below skips every accessory
+                    // before the per-command check can ask about any of them. So the same conflict
+                    // produced two different outcomes decided by sub-second timing: present when the
+                    // route started, every accessory was dropped with only a log line; appearing a
+                    // moment later, the operator was asked. Adam's own ruling is that a conflicting
+                    // route must stay executable "in case of a transient accessory failure", and
+                    // dropping four turnouts silently is the version of that with no way past it.
+                    //
+                    // The per-command check makes the decision for both cases now, and it asks at most
+                    // ONCE per route: yes turns the override on for the rest of the run, no skips the
+                    // rest. So this costs exactly one dialog in the case that used to cost four
+                    // turnouts and a log line nobody was looking at.
+                    boolean skipAccessories = false;
 
                     for (RouteCommand rc : this.route)
                     {
@@ -719,9 +733,25 @@ public class MarklinRoute extends Route
                                         if (!this.equals(r))
                                         {
                                              // We allow the route to recurse at most once
-                                            // A chained route is asked about on its own terms: the operator agreed to THIS
-                                            // route's conflict and was never shown that one's.
-                                            r.execRoute(false, recursionLimit - 1, false);
+                                            //
+                                            // A chained route is asked about on its own terms - the
+                                            // operator agreed to THIS route's conflict and was never
+                                            // shown that one's - so the override stays false.
+                                            //
+                                            // `auto` is PASSED ON, and it was hard-coded false. That
+                                            // was harmless when auto meant only "do not pop the
+                                            // emergency-stop notice"; it stopped being harmless when
+                                            // auto gained its second meaning, that a person is
+                                            // standing here to be asked. A route fired by an s88
+                                            // sensor has nobody at the machine, and a chained route
+                                            // would put a modal dialog up in an empty room - blocking
+                                            // its own thread forever, never reaching the finally that
+                                            // clears isExecuting, and throwing the turnout whenever
+                                            // somebody eventually happened past and pressed OK.
+                                            //
+                                            // View.java says this in as many words: "The s88 trigger
+                                            // door has nobody to ask and stops on its own."
+                                            r.execRoute(auto, recursionLimit - 1, false);
                                         }
                                         else
                                         {

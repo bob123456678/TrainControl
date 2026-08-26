@@ -520,13 +520,22 @@ public final class LayoutLabel extends JLabel
                                             // costs nothing.
                                             new Thread(() ->
                                             {
-                                                if (onTile.conflictingAccessory() != null)
-                                                {
-                                                    if (tcUI.confirmRouteOverActivePath(onTile, tcUI))
-                                                    {
-                                                        onTile.execRouteOverridingConflicts();
-                                                    }
+                                                // One question, three answers (A3).  A conflict that
+                                                // cleared between the check and the dialog used to
+                                                // come back as "override", and the route then ran with
+                                                // every guard off without anybody being asked.
+                                                TrainControlUI.RouteConflict answer =
+                                                    tcUI.askAboutRouteConflict(onTile, tcUI, null);
 
+                                                if (answer == TrainControlUI.RouteConflict.OVERRIDE)
+                                                {
+                                                    onTile.execRouteOverridingConflicts();
+
+                                                    return;
+                                                }
+
+                                                if (answer == TrainControlUI.RouteConflict.REFUSED)
+                                                {
                                                     return;
                                                 }
 

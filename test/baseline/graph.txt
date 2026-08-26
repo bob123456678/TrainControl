@@ -1,0 +1,74 @@
+edge 1 - Main:0,11 -> 1 - Main:0,3 over 7 squares
+edge 1 - Main:0,3 -> 1 - Main:0,11 over 7 squares
+edge 1 - Main:12,9 -> 1 - Main:16,10 over 4 squares
+edge 1 - Main:16,10 -> 1 - Main:12,9 over 4 squares
+edge 1 - Main:2,1 -> 1 - Main:6,1 over 3 squares
+edge 1 - Main:20,6 -> 1 - Main:6,2 over 17 squares
+edge 1 - Main:21,6 -> 1 - Main:6,1 over 19 squares
+edge 1 - Main:3,3 -> 1 - Main:3,5 over 1 squares
+edge 1 - Main:3,5 -> 1 - Main:3,3 over 1 squares
+edge 1 - Main:4,4 -> 1 - Main:4,9 over 4 squares
+edge 1 - Main:4,9 -> 1 - Main:4,4 over 4 squares
+edge 1 - Main:5,4 -> 1 - Main:5,9 over 4 squares
+edge 1 - Main:5,9 -> 1 - Main:5,4 over 4 squares
+edge 1 - Main:6,1 -> 1 - Main:2,1 over 3 squares
+edge 1 - Main:6,1 -> 1 - Main:21,6 over 19 squares
+edge 1 - Main:6,2 -> 1 - Main:20,6 over 17 squares
+edge 2 - Bottom:14,10 -> 2 - Bottom:17,10 over 2 squares
+edge 2 - Bottom:17,10 -> 2 - Bottom:14,10 over 2 squares
+point 1 - Main:0,11 s88=1016 station=true name=TopMainR2Inter
+point 1 - Main:0,3 s88=1025 station=false name=1 - Main 0,3
+point 1 - Main:1,10 s88=1015 station=true name=TopMainR1Inter
+point 1 - Main:1,3 s88=1026 station=false name=1 - Main 1,3
+point 1 - Main:10,7 s88=1030 station=false name=TunnelPre
+point 1 - Main:11,7 s88=1008 station=false name=1 - Main 11,7
+point 1 - Main:12,11 s88=1009 station=true name=BottomSecondary
+point 1 - Main:12,9 s88=1011 station=true name=BottomInner
+point 1 - Main:13,3 s88=2011 station=true name=BottomInnerOtherside
+point 1 - Main:16,10 s88=8 station=false name=1 - Main 16,10
+point 1 - Main:17,7 s88=14 station=false name=BottomCrossover
+point 1 - Main:18,7 s88=15 station=false name=1 - Main 18,7
+point 1 - Main:19,12 s88=9 station=true name=BottomMainA
+point 1 - Main:19,13 s88=10 station=true name=BottomMainB
+point 1 - Main:19,14 s88=4 station=true name=BottomMainC
+point 1 - Main:2,1 s88=1027 station=false name=RampUp
+point 1 - Main:20,6 s88=2012 station=false name=RampDown
+point 1 - Main:21,6 s88=2013 station=false name=BottomMainPost
+point 1 - Main:3,3 s88=1021 station=false name=1 - Main 3,3
+point 1 - Main:3,5 s88=1010 station=true name=TopMainR0
+point 1 - Main:4,4 s88=1022 station=true name=TopMainR1
+point 1 - Main:4,9 s88=1012 station=false name=TopMainR1Pre
+point 1 - Main:5,4 s88=1023 station=true name=TopMainR2
+point 1 - Main:5,9 s88=1013 station=false name=TopMainR2Pre
+point 1 - Main:6,1 s88=2014 station=false name=1 - Main 6,1
+point 1 - Main:6,2 s88=2015 station=false name=TopMainPost
+point 1 - Main:6,7 s88=1032 station=true name=Tunnel
+point 1 - Main:7,6 s88=1028 station=true name=TunnelLeftPark
+point 1 - Main:8,12 s88=1007 station=false name=BottomMainAPre
+point 1 - Main:8,6 s88=1031 station=true name=TunnelCenterPark
+point 1 - Main:9,13 s88=1006 station=false name=BottomMainBCPre
+point 1 - Main:9,6 s88=1029 station=true name=TunnelRightPark
+point 1 - Main:9,9 s88=1018 station=true name=TunnelLongPark
+point 2 - Bottom:11,13 s88=1001 station=false name=LowerDownPre
+point 2 - Bottom:11,2 s88=2004 station=true name=ParkingTrack11
+point 2 - Bottom:13,13 s88=3 station=false name=2 - Bottom 13,13
+point 2 - Bottom:13,14 s88=5 station=true name=LowerFront
+point 2 - Bottom:13,5 s88=2016 station=true name=ParkingTrack10
+point 2 - Bottom:14,10 s88=2 station=false name=2 - Bottom 14,10
+point 2 - Bottom:14,4 s88=2007 station=true name=ParkingTrack9
+point 2 - Bottom:15,4 s88=2006 station=true name=ParkingTrack8
+point 2 - Bottom:16,13 s88=6 station=false name=2 - Bottom 16,13
+point 2 - Bottom:16,5 s88=2008 station=true name=ParkingTrack7
+point 2 - Bottom:16,9 s88=2002 station=true name=ParkingTrack4
+point 2 - Bottom:17,10 s88=2001 station=false name=LowerDown
+point 2 - Bottom:17,12 s88=7 station=false name=2 - Bottom 17,12
+point 2 - Bottom:17,6 s88=2009 station=true name=ParkingTrack6
+point 2 - Bottom:17,8 s88=2003 station=true name=ParkingTrack5
+point 2 - Bottom:19,0 s88=2005 station=true name=LowerBack
+point 2 - Bottom:22,10 s88=1 station=false name=LowerBackPre
+point 2 - Bottom:3,7 s88=1003 station=false name=LowerParkingReverse
+point 2 - Bottom:4,6 s88=1004 station=false name=2 - Bottom 4,6
+point 2 - Bottom:7,1 s88=2010 station=false name=2 - Bottom 7,1
+point 2 - Bottom:7,12 s88=1014 station=false name=2 - Bottom 7,12
+point 2 - Bottom:8,14 s88=1002 station=false name=LowerFrontPre
+point 2 - Bottom:8,7 s88=1020 station=true name=ParkingTrack12

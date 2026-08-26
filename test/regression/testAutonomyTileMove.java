@@ -209,6 +209,59 @@ public class testAutonomyTileMove
     }
 
     /**
+     * Undoing an edit on one page puts back the far end of a pairing it broke.
+     *
+     * B5. A portal\u2019s two halves are stored symmetrically and are normally on DIFFERENT pages;
+     * protecting signals and blocked points cross pages the same way. `move` and `forget` have always
+     * reached both halves - the base class says so in as many words - but the snapshot filtered on the
+     * key\u2019s square alone, so an edit that broke the far page\u2019s half had no record of it to
+     * put back.
+     *
+     * What that costs: delete one end of a page link, press undo, and the track comes back while the
+     * other page still points at the square the undo just emptied. `reconcile` cannot see it - both
+     * squares exist - so it survives every save, the far page\u2019s menu shows the link as unpaired,
+     * and unpairing from that side is a no-op.
+     *
+     * The sibling test above - testRestoringOnePageDoesNotTouchAnother - is the boundary this must not
+     * cross, and it does not: point NAMES have no square on the value side, so nothing about them is
+     * captured by the other page\u2019s snapshot. What is captured is exactly the entries that MENTION
+     * the page being restored.
+     *
+     * MUTATION: filtering the snapshot on the key alone again fails this.
+     */
+    @Test
+    public void testUndoPutsBackBothEndsOfACrossPagePairing()
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
+
+        TileKey here = new TileKey("1 - Main", 4, 4);
+        TileKey far = new TileKey("2 - Bottom", 7, 7);
+
+        store.pairPortals(here, far);
+
+        assertEquals(store.getPortalPartner(far), here, "precondition: the pairing is symmetric");
+
+        Map<String, Object> before = store.snapshotPage("1 - Main");
+
+        // The edit, made from THIS page: unpairing one end removes the far page's half too, which is
+        // the whole point - a pairing is symmetric, so any edit to one end is an edit to both.
+        store.unpairPortal(here);
+
+        assertNull(store.getPortalPartner(far),
+            "precondition: unpairing one end takes the other end's pointer with it - if it does not, "
+            + "there is nothing here for the restore to put back and this test proves nothing");
+
+        store.restorePage("1 - Main", before);
+
+        assertEquals(store.getPortalPartner(here), far, "this page's own end did not come back");
+
+        assertEquals(store.getPortalPartner(far), here,
+            "the FAR page still points nowhere. The undo brought this page's half of the link back "
+            + "and left the other page pointing at a square it had just emptied - which reconcile "
+            + "cannot see, because both squares exist, so it survives every save from then on");
+    }
+
+    /**
      * And putting one page back leaves the others alone.
      */
     @Test

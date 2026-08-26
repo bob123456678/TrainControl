@@ -338,6 +338,42 @@ public class StationCaption extends JLabel
         return getFontMetrics(font).getHeight();
     }
 
+    /**
+     * Only the pill takes the mouse - the room around it belongs to the diagram underneath.
+     *
+     * A caption is placed with INSETS: a left inset to centre it on its square, a top inset to put it
+     * below the rail. Insets are invisible to the eye and completely opaque to Swing, which hit-tests
+     * the whole component - and this component is z-ordered to the front, over the tiles, carrying
+     * click and hover listeners. So a caption bought a column of centring room and took every click in
+     * it, on the tile to its LEFT.
+     *
+     * At rest a station shows a single dash, so the left inset is almost the whole tile: the worst
+     * case is the ordinary state of most of the railway most of the time. What it cost was a switch
+     * that would not throw when clicked in the middle, and - because the caption's hover handler
+     * reports the STATION rather than the square under the pointer - a Ctrl+X that cut the train off
+     * a platform instead of the tile being pointed at.
+     *
+     * Found by a reviewer asking getDeepestComponentAt what was under the middle of each tile. The
+     * bounds harness could not see it: no tile MOVED, and nothing was asking what covered them.
+     *
+     * @param x in this component's coordinates
+     * @param y in this component's coordinates
+     * @return whether the pointer is on the part of this caption that is actually drawn
+     */
+    @Override
+    public boolean contains(int x, int y)
+    {
+        if (!pill) return super.contains(x, y);
+
+        java.awt.Insets pad = getInsets();
+
+        int top = pad == null ? 0 : pad.top;
+        int left = pad == null ? 0 : pad.left;
+
+        return x >= left && x < getWidth() - (pad == null ? 0 : pad.right)
+            && y >= top && y < getHeight() - (pad == null ? 0 : pad.bottom);
+    }
+
     @Override
     protected void paintComponent(Graphics g)
     {

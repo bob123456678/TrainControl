@@ -2940,7 +2940,30 @@ public class RouteEditorFrame extends JFrame
                     // it: the route is locked, so the + is not drawn either, and what is left is a
                     // full-width grey line under the last command with nothing in it. "make this be
                     // white."
-                    if (row >= rows.size()) return c;
+                    if (row >= rows.size())
+                    {
+                        // SET, not skipped.
+                        //
+                        // Returning here was the first attempt and it did not work, because a
+                        // DefaultTableCellRenderer is one shared component reused down the column: it
+                        // arrives carrying whatever the cell above left on it, and on a locked route
+                        // the cell above is grey-on-grey and disabled. Worse, setForeground and
+                        // setBackground latch into the renderer's unselectedForeground and
+                        // unselectedBackground, which super.getTableCellRendererComponent then puts
+                        // back on the next row - so the grey survived being "left alone".
+                        //
+                        // Adam's report was "a full-width grey line under the last command with
+                        // nothing in it ... make this be white", and it stayed grey.
+                        c.setEnabled(true);
+
+                        if (!selected)
+                        {
+                            c.setForeground(table.getForeground());
+                            c.setBackground(table.getBackground());
+                        }
+
+                        return c;
+                    }
 
                     // Both kinds of "you cannot type here": a whole row that is a kept command, and a
                     // single cell whose kind has no such thing - a stop has no address.  The second was

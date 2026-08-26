@@ -798,19 +798,37 @@ public class testDiagramLooksRight
     @Test
     public void testCaptionsAreHiddenOnlyInTheTrackEditor()
     {
-        assertTrue(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, false),
+        assertTrue(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, false, false),
             "the track diagram editor still draws station captions over the track being edited, "
             + "which is the window they are most in the way of");
 
-        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, true),
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, true, false),
             "the AUTONOMY editor lost its captions. That is the window where stations are named, so "
             + "hiding them there removes the thing being worked on");
 
-        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, false),
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, false, false),
             "the running diagram lost its captions, which is where they say what is standing where");
 
-        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, true),
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, true, false),
             "a diagram outside any editor lost its captions");
+
+        // And a page left out of autonomy, which overrides all of the above (B6).
+        //
+        // A caption there names nothing: the graph is built without that page, so there is no Point
+        // behind it, and neither visibility switch could reach it because both walk the registry of
+        // captions and an excluded page's caption is never registered. The one square autonomy will
+        // most certainly never use was the one whose label could not be turned off.
+        for (boolean inEditor : new boolean[] { true, false })
+        {
+            for (boolean autonomyMode : new boolean[] { true, false })
+            {
+                assertTrue(
+                    org.traincontrol.gui.LayoutGrid.hidesStationCaptions(inEditor, autonomyMode, true),
+                    "a page excluded from autonomy still draws captions (inEditor=" + inEditor
+                    + ", autonomyMode=" + autonomyMode + "). There is no Point behind them and no "
+                    + "switch that can reach them");
+            }
+        }
     }
 
     /**

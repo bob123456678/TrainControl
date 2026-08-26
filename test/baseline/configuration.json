@@ -1,0 +1,455 @@
+{
+  "minDelay": 1,
+  "atomicRoutes": true,
+  "maxActiveTrains": 0,
+  "preArrivalSpeedReduction": 0.5,
+  "defaultLocSpeed": 35,
+  "maxLatency": 0,
+  "edges": [
+    {
+      "start": "RampDown",
+      "length": 0,
+      "end": "TopMainPost"
+    },
+    {
+      "start": "BottomMainPost",
+      "length": 0,
+      "end": "1 - Main 6,1 (westbound)"
+    },
+    {
+      "start": "TopMainR0",
+      "length": 0,
+      "end": "1 - Main 3,3"
+    },
+    {
+      "start": "1 - Main 6,1 (westbound)",
+      "length": 0,
+      "end": "RampUp"
+    },
+    {
+      "start": "1 - Main 6,1 (eastbound)",
+      "length": 0,
+      "end": "BottomMainPost"
+    }
+  ],
+  "timetable": [],
+  "points": [
+    {
+      "loc": {"name": "EN57-947"},
+      "s88": 1016,
+      "name": "TopMainR2Inter",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": -1
+    },
+    {
+      "s88": 1025,
+      "name": "1 - Main 0,3",
+      "station": false
+    },
+    {
+      "loc": {"name": "EN57-203"},
+      "s88": 1015,
+      "name": "TopMainR1Inter",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": -2
+    },
+    {
+      "s88": 1026,
+      "name": "1 - Main 1,3",
+      "station": false
+    },
+    {
+      "s88": 1030,
+      "speedMultiplier": 0.9,
+      "name": "TunnelPre",
+      "station": false
+    },
+    {
+      "s88": 1008,
+      "name": "1 - Main 11,7",
+      "station": false
+    },
+    {
+      "s88": 1009,
+      "name": "BottomSecondary",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1011,
+      "name": "BottomInner",
+      "station": true,
+      "maxTrainLength": 0,
+      "excludedLocs": [
+        "ER 2035 DSB",
+        "SP45-204",
+        "EA 3005 DSB",
+        "MZ 1425 DSB",
+        "MY 1150 DSB",
+        "MF 5028 DSB"
+      ],
+      "priority": -3
+    },
+    {
+      "s88": 2011,
+      "name": "BottomInnerOtherside",
+      "station": true,
+      "maxTrainLength": 0,
+      "excludedLocs": [
+        "ER 2035 DSB",
+        "SP45-204",
+        "EA 3005 DSB",
+        "MZ 1425 DSB",
+        "MY 1150 DSB",
+        "MF 5028 DSB"
+      ],
+      "priority": -2
+    },
+    {
+      "s88": 8,
+      "name": "1 - Main 16,10",
+      "station": false
+    },
+    {
+      "s88": 14,
+      "mustReverse": true,
+      "name": "BottomCrossover",
+      "station": false,
+      "excludedLocs": [
+        "EA 3005 DSB",
+        "MZ 1425 DSB",
+        "MY 1150 DSB"
+      ],
+      "reversing": true
+    },
+    {
+      "s88": 15,
+      "name": "1 - Main 18,7",
+      "station": false
+    },
+    {
+      "s88": 9,
+      "name": "BottomMainA",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 10,
+      "name": "BottomMainB",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 4,
+      "name": "BottomMainC",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": 2
+    },
+    {
+      "s88": 1027,
+      "name": "RampUp",
+      "station": false
+    },
+    {
+      "s88": 2012,
+      "name": "RampDown",
+      "station": false,
+      "reversing": true
+    },
+    {
+      "s88": 2013,
+      "name": "BottomMainPost",
+      "station": false,
+      "reversing": true
+    },
+    {
+      "s88": 1021,
+      "name": "1 - Main 3,3",
+      "station": false
+    },
+    {
+      "s88": 1010,
+      "mustReverse": true,
+      "name": "TopMainR0",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "priority": 1
+    },
+    {
+      "loc": {"name": "2-8-4 3505 SP"},
+      "s88": 1022,
+      "name": "TopMainR1",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": 2
+    },
+    {
+      "s88": 1012,
+      "name": "TopMainR1Pre",
+      "station": false
+    },
+    {
+      "s88": 1023,
+      "name": "TopMainR2",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": 1
+    },
+    {
+      "s88": 1013,
+      "name": "TopMainR2Pre",
+      "station": false
+    },
+    {
+      "s88": 2014,
+      "name": "1 - Main 6,1 (westbound)",
+      "station": false,
+      "block": "1 - Main:6,1"
+    },
+    {
+      "s88": 2014,
+      "name": "1 - Main 6,1 (eastbound)",
+      "station": false,
+      "block": "1 - Main:6,1"
+    },
+    {
+      "s88": 2015,
+      "name": "TopMainPost",
+      "station": false
+    },
+    {
+      "loc": {"name": "ET22-245"},
+      "s88": 1032,
+      "name": "Tunnel",
+      "station": true,
+      "maxTrainLength": 0,
+      "priority": -2
+    },
+    {
+      "s88": 1028,
+      "mustReverse": true,
+      "name": "TunnelLeftPark",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 1007,
+      "name": "BottomMainAPre",
+      "station": false
+    },
+    {
+      "s88": 1031,
+      "mustReverse": true,
+      "name": "TunnelCenterPark",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 1006,
+      "name": "BottomMainBCPre",
+      "station": false
+    },
+    {
+      "s88": 1029,
+      "mustReverse": true,
+      "name": "TunnelRightPark",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 1018,
+      "mustReverse": true,
+      "name": "TunnelLongPark",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 1001,
+      "name": "LowerDownPre",
+      "station": false
+    },
+    {
+      "s88": 2004,
+      "mustReverse": true,
+      "name": "ParkingTrack11",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 3,
+      "name": "2 - Bottom 13,13",
+      "station": false
+    },
+    {
+      "s88": 5,
+      "name": "LowerFront",
+      "station": true,
+      "maxTrainLength": 0,
+      "active": false
+    },
+    {
+      "s88": 2016,
+      "mustReverse": true,
+      "name": "ParkingTrack10",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2,
+      "name": "2 - Bottom 14,10",
+      "station": false
+    },
+    {
+      "s88": 2007,
+      "mustReverse": true,
+      "name": "ParkingTrack9",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2006,
+      "mustReverse": true,
+      "name": "ParkingTrack8",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 6,
+      "name": "2 - Bottom 16,13",
+      "station": false
+    },
+    {
+      "s88": 2008,
+      "mustReverse": true,
+      "name": "ParkingTrack7",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2002,
+      "mustReverse": true,
+      "name": "ParkingTrack4",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2001,
+      "name": "LowerDown",
+      "station": false
+    },
+    {
+      "s88": 7,
+      "name": "2 - Bottom 17,12",
+      "station": false
+    },
+    {
+      "s88": 2009,
+      "mustReverse": true,
+      "name": "ParkingTrack6",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2003,
+      "mustReverse": true,
+      "name": "ParkingTrack5",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    },
+    {
+      "s88": 2005,
+      "name": "LowerBack",
+      "station": true,
+      "maxTrainLength": 0
+    },
+    {
+      "s88": 1,
+      "name": "LowerBackPre",
+      "station": false
+    },
+    {
+      "s88": 1003,
+      "mustReverse": true,
+      "name": "LowerParkingReverse",
+      "station": false,
+      "reversing": true
+    },
+    {
+      "s88": 1004,
+      "name": "2 - Bottom 4,6",
+      "station": false
+    },
+    {
+      "s88": 2010,
+      "name": "2 - Bottom 7,1",
+      "station": false
+    },
+    {
+      "s88": 1014,
+      "name": "2 - Bottom 7,12",
+      "station": false
+    },
+    {
+      "s88": 1002,
+      "name": "LowerFrontPre",
+      "station": false
+    },
+    {
+      "s88": 1020,
+      "mustReverse": true,
+      "name": "ParkingTrack12",
+      "station": true,
+      "maxTrainLength": 0,
+      "terminus": true,
+      "active": false,
+      "autoDestination": false
+    }
+  ],
+  "maxDelay": 5,
+  "turnOffFunctionsOnArrival": false,
+  "maxLocInactiveSeconds": 0,
+  "activateRoutes": false,
+  "activateRouteIDs": [],
+  "turnOnFunctionsOnDeparture": true
+}

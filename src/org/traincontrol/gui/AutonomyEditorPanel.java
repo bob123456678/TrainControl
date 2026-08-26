@@ -1528,18 +1528,34 @@ public class AutonomyEditorPanel extends JPanel
                 java.awt.Component afterNext = at + 2 < menu.getComponentCount()
                     ? menu.getComponent(at + 2) : null;
 
-                boolean nothingFollows = next == null
+                // TWO tests, because the two rules are asking different questions.
+                //
+                // A DIVIDER has nothing to separate when nothing follows it at all, or when what
+                // follows is another divider. That is the original rule and it is right.
+                //
+                // A HEADING is followed by its own divider always - title() writes the pair together -
+                // so for a heading the question has to be asked one component further along.
+                //
+                // These shared a variable for a day, and widening it for the heading quietly narrowed
+                // it for the divider: two dividers in a row stopped being collapsed unless a THIRD
+                // followed, which is the empty band between two lines that OB-054 was filed for. Same
+                // shape as the fault being fixed - a rule corrected for one caller, changed for
+                // another - one level down.
+                boolean nothingAfterTheDivider = next == null
+                    || next instanceof javax.swing.JSeparator;
+
+                boolean nothingAfterTheHeading = next == null
                     || (next instanceof javax.swing.JSeparator
                         && (afterNext == null || afterNext instanceof javax.swing.JSeparator));
 
-                if (separator && (at == 0 || nothingFollows))
+                if (separator && (at == 0 || nothingAfterTheDivider))
                 {
                     menu.remove(at);
                     again = true;
                     break;
                 }
 
-                if (heading && nothingFollows)
+                if (heading && nothingAfterTheHeading)
                 {
                     menu.remove(at);
                     again = true;
