@@ -136,16 +136,30 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // canStartAutonomy asks refuseAutonomyStartWhileBroken's own number now, which is the
                 // rule this repository has paid for six times in two days: the control that OFFERS an
                 // action asks the predicate the guard asks.
-                menuItem.setEnabled(ui.canStartAutonomy());
+                // Asked ONCE each, and this is not tidiness (LD-C6).
+                //
+                // Both of these reach AutonomySession.check(), which is not cached: it rebuilds the
+                // termini and turn-around sets over every point in the graph. Written out four times
+                // - canStartAutonomy twice, autonomyErrorCount twice - that is four full walks of the
+                // railway on the event thread, every time somebody right-clicks a station, to decide
+                // one enabled flag and one tooltip.
+                //
+                // The predicate is unchanged and still the guard's own, which is what the comment
+                // above is about. What changes is how many times it is asked.
+                boolean canStart = ui.canStartAutonomy();
 
-                if (!ui.canStartAutonomy())
+                menuItem.setEnabled(canStart);
+
+                if (!canStart)
                 {
                     // And say which of the two reasons it is.  The tooltip was hardcoded to the
                     // waiting-for-trains message, which is a lie whenever Start is off for any other
                     // reason - including the one immediately above.
+                    int errors = ui.autonomyErrorCount();
+
                     menuItem.setToolTipText(AutonomyEditorPanel.wrapped(
-                        ui.autonomyErrorCount() > 0
-                            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", ui.autonomyErrorCount())
+                        errors > 0
+                            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
                             : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
                 }
 

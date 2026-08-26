@@ -1109,6 +1109,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (station == null || this.model == null || !this.model.hasAutoLayout()) return true;
 
+        // And the SESSION, which is where the answer actually comes from (LD-C8).
+        //
+        // The line above asks the model; `getAutonomyPointsForTile` below reads the autonomySession
+        // FIELD and returns nothing when it is null. `resetAutonomySession` nulls that field without
+        // touching what the model thinks, so between a reset and whatever rebuilds the session the two
+        // disagree - and the loop below then finds no Points, falls out, and returns false. Every
+        // caption on the diagram would be hidden rather than only the inactive ones.
+        //
+        // Whether a grid rebuild really lands inside that window was never established, so this is a
+        // trap rather than a reported fault. It is closed the cheap way: an unanswerable question is
+        // not grounds for hiding anything, which is the same answer `mayRestHere` gives for the same
+        // reason a few thousand lines away.
+        if (this.autonomySession == null) return true;
+
         // Any copy of this square autonomy could choose is enough: a square split into several Points
         // is one place to the person looking at it, and hiding its name because one of its directions
         // is barred would be a lie about the other.
