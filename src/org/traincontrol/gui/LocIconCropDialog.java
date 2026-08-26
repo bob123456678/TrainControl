@@ -283,6 +283,11 @@ public class LocIconCropDialog extends JDialog
         private double zoomFraction = 0.0;
 
         /**
+         * Whether the opening zoom has been chosen yet - see {@link #startAtCover}.
+         */
+        private boolean viewStarted = false;
+
+        /**
          * The shape of the crop window, as width over height.
          *
          * Starts at the icon's own shape, which is what it used to be locked to. The user can pull an
@@ -342,6 +347,15 @@ public class LocIconCropDialog extends JDialog
         private static final Color WINDOW_GUIDE = new Color(255, 255, 255, 90);
 
         /**
+         * How far the white reaches beyond the picture, in panel pixels.
+         *
+         * Enough that the frame can be pulled well clear of the photograph on any side and still land
+         * on white rather than on the backdrop - which is what tells the user the spill is a choice
+         * the dialog understands rather than a mistake.
+         */
+        private static final int SPILL = 400;
+
+        /**
          * @param source the picture to crop, must not be null
          * @param outWidth width of the icon that will be produced - only its RATIO to outHeight is
          *        used here, and it is what locks the shape of the crop window
@@ -381,6 +395,7 @@ public class LocIconCropDialog extends JDialog
                 @Override
                 public void componentResized(java.awt.event.ComponentEvent e)
                 {
+                    CropPanel.this.startAtCover();
                     CropPanel.this.clampCenter();
                     CropPanel.this.repaint();
                 }
@@ -448,9 +463,24 @@ public class LocIconCropDialog extends JDialog
                 // One notch is a twentieth of the whole range, so the full span is reachable in a few
                 // flicks but a single notch is still a small adjustment.  Negative rotation is
                 // "away from the user", which every other program treats as zooming in.
-                setZoomFraction(this.zoomFraction - e.getWheelRotation() * 0.05);
+                //
+                // The PRECISE rotation where there is one: a trackpad reports fractions of a notch,
+                // and getWheelRotation() rounds those toward zero - so on a laptop a gentle scroll
+                // reported 0 over and over and the zoom did not move at all.  That is the likeliest
+                // reason this looked broken.
+                double notches = e.getPreciseWheelRotation();
+
+                if (notches == 0) notches = e.getWheelRotation();
+
+                if (notches == 0) return;
+
+                setZoomFraction(this.zoomFraction - notches * 0.05);
 
                 if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
+
+                // Consumed, so an ancestor scroll pane - this dialog has none today, but it is the
+                // ordinary way a wheel event goes missing - cannot also act on it.
+                e.consume();
             });
         }
 
@@ -650,9 +680,6 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Puts the crop window back to the icon's own shape, filling the panel.
-         */
-        /**
          * Sets the shape of the crop window directly.
          *
          * The dialog reshapes it by dragging an edge; this is the same change without a pointer, which
@@ -686,6 +713,9 @@ public class LocIconCropDialog extends JDialog
             return this.frameAspect;
         }
 
+        /**
+         * Puts the crop window back to the icon's own shape, filling the panel.
+         */
         public void resetFrame()
         {
             this.frameAspect = (double) this.outWidth / this.outHeight;
@@ -695,21 +725,26 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The scale at which the picture exactly covers the crop window - the zoomed-all-the-way-out
-         * position, and the floor for every other scale.
+         * The scale at which the whole picture fits inside the panel - zoom 0.
          *
-         * It is a floor rather than a starting point: below it the crop would include area that is
-         * not in the picture at all, which would have to be filled with something invented.  The user
-         * asked to choose part of their photograph, not to be given a border around it.
+         * **It depends on the PANEL and the picture, and on nothing else.** That is the point of it.
+         * It used to be derived from the crop window, so every reshape and every move of the frame
+         * silently rescaled the photograph underneath - Adam: "resizing or moving it also scales the
+         * background image. It should stay put unless zoomed."
+         *
+         * It is no longer a floor either. Below the old floor the crop would have taken in area that
+         * is not in the picture, which had to be filled with something invented; that is now a thing
+         * the user can ask for on purpose, and what gets invented is white.
          *
          * @return panel pixels per source pixel at zoom 0
          */
         public double getMinScale()
         {
-            Rectangle window = cropWindow();
+            int availableWidth = Math.max(1, getWidth() - 2 * WINDOW_MARGIN);
+            int availableHeight = Math.max(1, getHeight() - 2 * WINDOW_MARGIN);
 
-            return Math.max((double) window.width / this.source.getWidth(),
-                (double) window.height / this.source.getHeight());
+            return Math.min((double) availableWidth / this.source.getWidth(),
+                (double) availableHeight / this.source.getHeight());
         }
 
         /**
@@ -718,7 +753,53 @@ public class LocIconCropDialog extends JDialog
          */
         public double getScale()
         {
+            // The opening position is settled HERE, not only on a resize.
+            //
+            // It was only on a resize and on a paint, which is true of a dialog on a screen and false
+            // of everything else - so anything asking this panel a question before it had been shown
+            // got the zoomed-out view rather than the one it opens at. Its own tests found that: a
+            // crop taken with nobody having touched anything came back letterboxed on white.
+            //
+            // Safe against recursion: startAtCover asks cropWindow and getMinScale, and neither of
+            // those asks this.
+            startAtCover();
+
             return getMinScale() * Math.pow(MAX_ZOOM, this.zoomFraction);
+        }
+
+        /**
+         * Puts the zoom where the picture just covers the crop window, which is where this dialog
+         * has always opened.
+         *
+         * Done once, when the panel first has a size, rather than in the constructor - the zoom is
+         * expressed against the panel and there is no panel to express it against until then.
+         *
+         * Only the STARTING position depends on the frame. Everything after it is independent, which
+         * is the whole of what changed here: opening on a centre crop that fills the icon is right,
+         * and having the photograph jump every time the frame is nudged is not.
+         */
+        private void startAtCover()
+        {
+            if (this.viewStarted || getWidth() <= 0) return;
+
+            this.viewStarted = true;
+
+            Rectangle window = cropWindow();
+
+            double fit = getMinScale();
+
+            if (fit <= 0) return;
+
+            double cover = Math.max((double) window.width / this.source.getWidth(),
+                (double) window.height / this.source.getHeight());
+
+            // How many doublings of the fit scale that is, as a fraction of the range the slider
+            // covers. Below zero when the picture already covers the window at zoom 0.
+            double fraction = Math.log(cover / fit) / Math.log(MAX_ZOOM);
+
+            this.zoomFraction = Math.max(0.0, Math.min(1.0, fraction));
+
+            if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
         }
 
         /**
@@ -734,6 +815,15 @@ public class LocIconCropDialog extends JDialog
          */
         public void setZoomFraction(double fraction)
         {
+            // The opening position is settled FIRST, so that what the caller asked for lands on top
+            // of it rather than under it.
+            //
+            // Without this the order decided the outcome: a zoom set before anything had read the
+            // panel was silently replaced by the opening value the moment something did, because that
+            // is where startAtCover runs. Its own test caught it - the fixture asked for full
+            // zoom-out and got the covering crop.
+            startAtCover();
+
             this.zoomFraction = Math.max(0.0, Math.min(1.0, fraction));
 
             clampCenter();
@@ -758,6 +848,10 @@ public class LocIconCropDialog extends JDialog
          */
         public void resetView()
         {
+            // Back to how the dialog opened, which is the picture covering the frame - not to zoom 0,
+            // which is now "the whole photograph visible" and would leave white down two sides of an
+            // icon nobody asked to change.
+            this.viewStarted = false;
             this.zoomFraction = 0.0;
             this.centerX = this.source.getWidth() / 2.0;
             this.centerY = this.source.getHeight() / 2.0;
@@ -765,6 +859,8 @@ public class LocIconCropDialog extends JDialog
             // The frame's shape too, because it is now something the user can get wrong and this is
             // the only way back to the icon's own shape without eyeballing it.
             resetFrame();
+
+            startAtCover();
 
             clampCenter();
 
@@ -802,32 +898,38 @@ public class LocIconCropDialog extends JDialog
          */
         private void clampCenter()
         {
+            // The picture may now hang off the frame, so this no longer forces the frame to be
+            // covered - that rule is what stopped anybody spilling onto white, and Adam asked for
+            // the spill.
+            //
+            // What is left is the one thing that has to stay true: some of the picture must remain
+            // under the frame. Let it go entirely and the dialog shows a blank white rectangle and no
+            // way back except Reset, with nothing on screen saying which direction the photograph
+            // went.
             Rectangle window = cropWindow();
 
             double scale = getScale();
 
-            double halfWidth = window.width / (2.0 * scale);
-            double halfHeight = window.height / (2.0 * scale);
+            if (scale <= 0) return;
 
-            if (halfWidth * 2 >= this.source.getWidth())
-            {
-                this.centerX = this.source.getWidth() / 2.0;
-            }
-            else
-            {
-                this.centerX = Math.max(halfWidth,
-                    Math.min(this.source.getWidth() - halfWidth, this.centerX));
-            }
+            // A margin rather than a single pixel: a sliver of photograph at the very edge of the
+            // frame is not enough to drag back by.
+            double keep = Math.min(24.0, Math.min(window.width, window.height) / 3.0) / scale;
 
-            if (halfHeight * 2 >= this.source.getHeight())
-            {
-                this.centerY = this.source.getHeight() / 2.0;
-            }
-            else
-            {
-                this.centerY = Math.max(halfHeight,
-                    Math.min(this.source.getHeight() - halfHeight, this.centerY));
-            }
+            double halfW = window.width / (2.0 * scale);
+            double halfH = window.height / (2.0 * scale);
+
+            // Derived rather than guessed at. The picture is drawn with its `centerX` under the
+            // middle of the window, so its left edge sits at -centerX*scale from that middle and its
+            // right edge srcW*scale further on. Requiring `keep` of overlap at each side gives:
+            //
+            //     centerX  >  keep - halfW              (the right edge stays inside the frame)
+            //     centerX  <  srcW + halfW - keep       (the left edge does)
+            this.centerX = Math.max(keep - halfW,
+                Math.min(this.source.getWidth() + halfW - keep, this.centerX));
+
+            this.centerY = Math.max(keep - halfH,
+                Math.min(this.source.getHeight() + halfH - keep, this.centerY));
         }
 
         /**
@@ -851,13 +953,9 @@ public class LocIconCropDialog extends JDialog
                 g2.setColor(BACKDROP);
                 g2.fillRect(0, 0, getWidth(), getHeight());
 
-                Rectangle window = cropWindow();
+                startAtCover();
 
-                // A checkerboard only inside the window, and only under the picture.  Locomotive
-                // icons are routinely transparent PNGs, and against the flat backdrop a transparent
-                // area is indistinguishable from a dark part of the photograph - the user would find
-                // out what they had cropped only after it was on the button.
-                paintCheckerboard(g2, window);
+            Rectangle window = cropWindow();
 
                 double scale = getScale();
 
@@ -866,6 +964,31 @@ public class LocIconCropDialog extends JDialog
 
                 int drawX = (int) Math.round(window.getCenterX() - this.centerX * scale);
                 int drawY = (int) Math.round(window.getCenterY() - this.centerY * scale);
+
+                Rectangle picture = new Rectangle(drawX, drawY, drawWidth, drawHeight);
+
+                // WHITE around the photograph, out to a generous margin (Adam: "add some white (not
+                // black) padding around the sides so that users can spill over onto it").
+                //
+                // It is not decoration and it is not the backdrop lightened. It is a preview: white is
+                // exactly what the crop will contain wherever the frame hangs off the picture, so
+                // pulling the frame out over this area shows the result rather than describing it.
+                // Against the dark backdrop the same area read as "there is nothing here, you have
+                // gone wrong", which is the opposite of the truth.
+                g2.setColor(Color.WHITE);
+                g2.fillRect(picture.x - SPILL, picture.y - SPILL,
+                    picture.width + 2 * SPILL, picture.height + 2 * SPILL);
+
+                // The checkerboard only where the PICTURE is, and only inside the window.  Locomotive
+                // icons are routinely transparent PNGs, and a transparent area has to be
+                // distinguishable from a pale part of the photograph - the user would otherwise find
+                // out what they had cropped only after it was on the button.
+                //
+                // Not over the white: white is what a transparent pixel becomes out there, so a
+                // checkerboard would be saying the opposite of what will happen.
+                Rectangle transparent = window.intersection(picture);
+
+                if (!transparent.isEmpty()) paintCheckerboard(g2, transparent);
 
                 g2.drawImage(this.source, drawX, drawY, drawWidth, drawHeight, null);
 
@@ -1002,6 +1125,66 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
+         * Whether a rectangle lies wholly within the picture.
+         *
+         * The question the transparency shortcut turns on: a crop that is entirely photograph can be
+         * handed straight out and keeps whatever transparency the photograph had. One that reaches
+         * past the edge cannot, because what is past the edge is white.
+         *
+         * @param region a rectangle in source coordinates
+         * @return true when nothing outside the picture is included
+         */
+        private boolean wholelyInside(Rectangle region)
+        {
+            return region.x >= 0 && region.y >= 0
+                && region.x + region.width <= this.source.getWidth()
+                && region.y + region.height <= this.source.getHeight();
+        }
+
+        /**
+         * What the frame actually covers, at the picture's own resolution.
+         *
+         * Where the rectangle lies inside the photograph this is the photograph. Where it reaches
+         * past the edge - which the user can now ask for - the rest is white, because that is what
+         * the dialog has been showing them under the frame while they dragged it there.
+         *
+         * Drawn rather than sub-imaged: getSubimage throws on a rectangle that is not wholly inside,
+         * and clipping the rectangle to make it legal would quietly return a different crop.
+         *
+         * @param region the rectangle in source coordinates, possibly overhanging
+         * @return an image of exactly that rectangle
+         */
+        private BufferedImage contentOf(Rectangle region)
+        {
+            if (wholelyInside(region))
+            {
+                return ImageUtil.toTransparentBufferedImage(
+                    this.source.getSubimage(region.x, region.y, region.width, region.height));
+            }
+
+            BufferedImage out = new BufferedImage(region.width, region.height,
+                BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = out.createGraphics();
+
+            try
+            {
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, region.width, region.height);
+
+                // Offset so the photograph lands where the frame is standing over it.  Anything that
+                // falls outside is clipped by the image's own bounds and leaves the white showing.
+                g.drawImage(this.source, -region.x, -region.y, null);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            return out;
+        }
+
+        /**
          * Fills a rectangle with the grey checkerboard that stands for "nothing here".
          * @param g2 the graphics to paint into
          * @param area the rectangle to fill
@@ -1038,8 +1221,7 @@ public class LocIconCropDialog extends JDialog
         {
             Rectangle region = sourceRect();
 
-            BufferedImage cut = ImageUtil.toTransparentBufferedImage(
-                this.source.getSubimage(region.x, region.y, region.width, region.height));
+            BufferedImage cut = contentOf(region);
 
             // Unchanged at the icon's own shape, deliberately.
             //
@@ -1047,7 +1229,7 @@ public class LocIconCropDialog extends JDialog
             // common case - so the common case keeps its transparency and gains no border. Padding
             // everything onto white would flatten the transparent icons the Central Station itself
             // supplies, for the benefit of a case the user has not asked for.
-            if (isIconShaped())
+            if (isIconShaped() && wholelyInside(region))
             {
                 return ImageUtil.getScaledImage(cut, this.outWidth, this.outHeight);
             }
@@ -1122,15 +1304,18 @@ public class LocIconCropDialog extends JDialog
             int width = (int) Math.round(window.width / scale);
             int height = (int) Math.round(window.height / scale);
 
-            // Rounding four independent quantities can put the last row or column a pixel outside the
-            // picture, and getSubimage throws rather than clipping.  Clamped here, where losing a
-            // pixel is invisible, instead of at the top of a stack trace the user cannot act on.
-            x = Math.max(0, Math.min(this.source.getWidth() - 1, x));
-            y = Math.max(0, Math.min(this.source.getHeight() - 1, y));
-            width = Math.max(1, Math.min(this.source.getWidth() - x, width));
-            height = Math.max(1, Math.min(this.source.getHeight() - y, height));
-
-            return new Rectangle(x, y, width, height);
+            // NOT clamped into the picture any more.
+            //
+            // It used to be, and the comment here said why: rounding four quantities can put the last
+            // row a pixel outside, and getSubimage throws rather than clipping. That reasoning still
+            // holds for anything calling getSubimage - so getCroppedImage checks before it does, and
+            // composes instead when the rectangle reaches past the edge.
+            //
+            // Clamping here would defeat the point. The frame is allowed to hang off the photograph
+            // now, and this rectangle is how far off: flatten it back inside and the crop silently
+            // becomes a different, smaller one, stretched to the icon - which is exactly the failure
+            // this method's own javadoc warns about two paragraphs up.
+            return new Rectangle(x, y, Math.max(1, width), Math.max(1, height));
         }
     }
 }

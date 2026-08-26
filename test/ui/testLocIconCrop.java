@@ -79,13 +79,18 @@ public class testLocIconCrop
      * file is written.
      *
      * Checked at both ends of the zoom range and in both axes, because the clamp has a different
-     * amount of slack to work with at each: zoomed right out there is none at all in one direction,
-     * which is the case an off-by-one in the clamp survives.
+     * amount of slack to work with at each.
+     *
+     * **This test used to say the opposite,** and the change is Adam's: "add some white (not black)
+     * padding around the sides so that users can spill over onto it." The picture covering the frame
+     * at all times was the old rule, and it is what stopped anybody framing a locomotive against
+     * white. What is left of it is the part that is still true - some of the photograph has to stay
+     * under the frame, or the dialog shows a blank rectangle and no way back.
      *
      * MUTATION: removing the `clampCenter()` call from `panBy` fails this test.
      */
     @Test
-    public void testThePictureCannotBeDraggedOffTheWindow()
+    public void testThePictureCannotBeDraggedOffTheWindowENTIRELY()
     {
         for (double zoom : new double[] {0.0, 0.5, 1.0})
         {
@@ -97,42 +102,70 @@ public class testLocIconCrop
                 panel.setZoomFraction(zoom);
                 panel.panBy(shove[0], shove[1]);
 
-                assertTrue(coversItsWindow(panel),
+                assertTrue(stillTouchesItsWindow(panel),
                     "at zoom " + zoom + ", a drag of " + shove[0] + "," + shove[1]
-                    + " moved the picture off the crop window - the icon would be written with a "
-                    + "band of nothing along one side");
+                    + " pushed the picture completely out of the crop window. The dialog then shows "
+                    + "a blank white rectangle with nothing on screen saying which way the "
+                    + "photograph went, and Reset is the only way back");
             }
         }
     }
 
     /**
-     * Zooming cannot push the window off the picture either.
+     * Zooming right out uncovers the frame on purpose, and what shows through is white.
      *
-     * The other way to reach the same broken state, and it is reached differently: a pan moves the
-     * view, a zoom changes how much of the picture the window covers, so a view that was legal at 4x
-     * can be illegal at 1x. Clamping after a pan and not after a zoom would pass the test above.
+     * The inverse of what this test used to assert. Zooming out below the covering scale was refused
+     * outright - the scale had a floor at "the picture exactly fills the frame" - and that floor is
+     * what Adam removed: "add some white (not black) padding around the sides so that users can spill
+     * over onto it."
      *
-     * MUTATION: removing the `clampCenter()` call from `setZoomFraction` fails this test.
+     * So the interesting property is no longer "this cannot happen". It is that when it does happen
+     * the result is the white the dialog was showing under the frame, at the icon's exact size -
+     * rather than a smaller rectangle stretched to fit, which is the failure `sourceRect`'s javadoc
+     * describes and which clamping the cut back inside the picture would have produced silently.
+     *
+     * MUTATION: putting the clamp back into `sourceRect` - `x = max(0, ...)` and the rest - fails
+     * this test, because the cut then comes back inside the picture and there is no white.
      */
     @Test
-    public void testZoomingBackOutCannotUncoverTheWindow()
+    public void testZoomingRightOutFillsTheRestWithWhite()
     {
-        // Both corners.  Which one it is matters: sourceRect clamps a left or top overhang by moving
-        // the cut back to zero and keeping its size, and a right or bottom overhang by keeping the
-        // position and shortening it - so only one of the two can be caught at all.
-        for (int corner : new int[] {-100000, 100000})
-        {
-            LocIconCropDialog.CropPanel panel = panel(1200, 900);
+        BufferedImage source = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB);
 
-            // Right in, then as far into the corner as it will go, then all the way back out.
-            panel.setZoomFraction(1.0);
-            panel.panBy(corner, corner);
-            panel.setZoomFraction(0.0);
+        java.awt.Graphics2D paint = source.createGraphics();
+        paint.setColor(new java.awt.Color(20, 90, 200));
+        paint.fillRect(0, 0, 1200, 900);
+        paint.dispose();
 
-            assertTrue(coversItsWindow(panel),
-                "zooming back out from the " + (corner < 0 ? "top left" : "bottom right")
-                + " corner left the crop window off the edge of the picture");
-        }
+        LocIconCropDialog.CropPanel panel = new LocIconCropDialog.CropPanel(source, OUT_W, OUT_H);
+        panel.setSize(800, 500);
+
+        // All the way out, so the whole picture is visible and the frame - which is as wide as the
+        // panel allows - hangs off it left and right.
+        panel.setZoomFraction(0.0);
+
+        Rectangle cut = panel.sourceRect();
+
+        assertTrue(cut.x < 0 || cut.x + cut.width > source.getWidth(),
+            "the fixture did not take: at full zoom-out the frame has to reach past the picture, or "
+            + "there is no white in the result and this test is checking nothing. Cut was " + cut);
+
+        BufferedImage out = panel.getCroppedImage();
+
+        assertEquals(out.getWidth(), OUT_W, "the icon is not the right width");
+        assertEquals(out.getHeight(), OUT_H, "the icon is not the right height");
+
+        java.awt.Color edge = new java.awt.Color(out.getRGB(1, OUT_H / 2), true);
+
+        assertEquals(edge.getAlpha(), 255, "the spill is transparent rather than white");
+        assertEquals(edge.getRed(), 255, "the spill is not white");
+        assertEquals(edge.getGreen(), 255, "the spill is not white");
+        assertEquals(edge.getBlue(), 255, "the spill is not white");
+
+        java.awt.Color middle = new java.awt.Color(out.getRGB(OUT_W / 2, OUT_H / 2), true);
+
+        assertEquals(middle.getBlue(), 200,
+            "the middle is not the photograph, so the assertion above is describing a blank image");
     }
 
     /**
@@ -147,9 +180,10 @@ public class testLocIconCrop
         panel.panBy(9000, -9000);
         panel.resetView();
 
-        assertEquals(panel.getZoomFraction(), 0.0, 1e-9, "reset did not zoom back out");
-
-        assertTrue(coversItsWindow(panel), "reset left the picture off the crop window");
+        assertTrue(coversItsWindow(panel),
+            "reset did not go back to the view the dialog opens at - the picture covering the frame. "
+            + "Zoom 0 is now 'the whole photograph visible', which would leave white down two sides "
+            + "of an icon nobody asked to change");
     }
 
     /**
@@ -260,6 +294,17 @@ public class testLocIconCrop
      * @param panel the panel to check
      * @return true when the cut is inside the picture and still the icon's proportions
      */
+    private boolean stillTouchesItsWindow(LocIconCropDialog.CropPanel panel)
+    {
+        Rectangle cut = panel.sourceRect();
+
+        java.awt.image.BufferedImage source = panel.source();
+
+        // The cut may hang off the picture in any direction now. What must not happen is that it
+        // misses it entirely, which is what an intersection of zero area means.
+        return cut.intersects(new Rectangle(0, 0, source.getWidth(), source.getHeight()));
+    }
+
     private boolean coversItsWindow(LocIconCropDialog.CropPanel panel)
     {
         Rectangle cut = panel.sourceRect();
