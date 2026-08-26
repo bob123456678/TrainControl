@@ -9339,6 +9339,10 @@ curve the sand level follows as it falls. Both bulbs read the same number, so th
 same constant whatever curve it is, and no assertion here can see it. If the fall looks wrong to you,
 that is a real report and nothing will have caught it.
 
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 96dd12d6.*
+
 ---
 
 <a id="mt-184"></a>
@@ -9394,6 +9398,10 @@ the edge does not throw and does not leave a blank: it produces a smaller rectan
 stretched, so the only symptom is a locomotive that looks slightly wrong. Both clamp mutations fail
 them.
 
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 96dd12d6.*
+
 ---
 
 <a id="mt-185"></a>
@@ -9447,6 +9455,28 @@ emptying one.
 **Adam, 2026-08-25 (triage).** Could not run this.
 
 make a test case for this.
+
+**Claude, 2026-08-25. Tried, and it is already covered - by two things at once.**
+
+I wrote one: hold a page back, then rename and delete OTHER pages, then bring it back and check its
+settings. It passed. Then it passed under the mutation its javadoc claimed - `withoutAbsentPages`
+returning everything, so nothing is held - which killed four existing tests and not mine. A green test
+whose stated mutation does not kill it is the defect this suite keeps finding, so I took it out rather
+than leave it in the file looking like cover.
+
+What the probe showed is why. Entries for a page that is not loaded are protected TWICE over, and each
+protection alone is enough:
+
+- they are lifted out of the store before any edit runs, and put back verbatim - which is what
+  `testASaveWhileAPageIsAbsentLosesNothingOfIt` guards, and what the mutation above breaks;
+- and their keys are stored by page ID, which cannot be translated to a name while that page is out of
+  the index - so even unheld they do not answer to the square an edit is working on.
+
+The edit itself adds no risk beyond the save that follows it, and that save is covered. Steps 1 to 3 of
+this test - the dialog naming the missing page, with its three answers - still need you, because they
+need a file that will not open and a restart.
+
+**Disposition unchanged: still needs your run for the dialog.**
 
 *Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
