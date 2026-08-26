@@ -1529,6 +1529,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(autonomyPanel.getShowLengths());
 
+                // What the captions say, beside the other two view switches (FR-030).
+                //
+                // Off by default: this window is where a railway is named, so the captions name
+                // stations. Ticked, they name whichever train is parked there, which is what the
+                // running diagram shows and what this editor used to show.
+                autonomyPanel.getShowParkedTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+                visibility.add(autonomyPanel.getShowParkedTrains());
+
                 // A label, because unlike its neighbours this one is a choice rather than a switch and
                 // "All" alone does not say what it is about.
                 //

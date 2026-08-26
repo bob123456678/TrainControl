@@ -725,6 +725,97 @@ public class testDiagramLooksRight
     }
 
     /**
+     * Captions are left off the track editor and nowhere else.
+     *
+     * FR-030. Adam: "in the track diagram editor, hide autonomy labels completely."  Three of the four
+     * combinations must keep them, and it is those three that matter: a rule that hides too much is
+     * how the running diagram would stop saying where the trains are.
+     *
+     * MUTATION: dropping either half of the condition fails a row of this table.
+     */
+    @Test
+    public void testCaptionsAreHiddenOnlyInTheTrackEditor()
+    {
+        assertTrue(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, false),
+            "the track diagram editor still draws station captions over the track being edited, "
+            + "which is the window they are most in the way of");
+
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(true, true),
+            "the AUTONOMY editor lost its captions. That is the window where stations are named, so "
+            + "hiding them there removes the thing being worked on");
+
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, false),
+            "the running diagram lost its captions, which is where they say what is standing where");
+
+        assertFalse(org.traincontrol.gui.LayoutGrid.hidesStationCaptions(false, true),
+            "a diagram outside any editor lost its captions");
+    }
+
+    /**
+     * The autonomy editor's caption switch remembers itself.
+     *
+     * FR-030: "have an option to switch between showing station name and parked train in the labels."
+     * Off by default - the station's own name - and persisted, because a view preference that resets
+     * every time the window opens is one the user sets again every time the window opens.
+     *
+     * The rebuild matters as much as the flag. A caption's text is decided when the grid is BUILT, not
+     * when it is painted, so a switch that changed the flag and repainted would appear to do nothing
+     * until the next time something else rebuilt the diagram.
+     *
+     * MUTATION: dropping the onDiagramChanged call from the listener fails the rebuild assertion;
+     * dropping the preference write fails the last one.
+     */
+    @Test
+    public void testTheCaptionSwitchRemembersItselfAndRebuilds() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        if (session == null) throw new SkipException("no autonomy setup in the fixture layout");
+
+        final int[] rebuilds = {0};
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel =
+            new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> {}));
+
+        panel[0].setOnDiagramChanged(() -> rebuilds[0]++);
+
+        boolean was = panel[0].isShowingParkedTrains();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].getShowParkedTrains().doClick());
+
+        assertNotEquals(panel[0].isShowingParkedTrains(), was,
+            "pressing the switch did not change what the captions are asked for");
+
+        assertTrue(rebuilds[0] > 0,
+            "the switch changed the setting without rebuilding the diagram. A caption's text is "
+            + "decided when the grid is built, so the switch would appear to do nothing at all until "
+            + "something else happened to rebuild it");
+
+        // A second panel, built fresh, is the only honest way to ask whether it was remembered.
+        final org.traincontrol.gui.AutonomyEditorPanel[] again =
+            new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            again[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> {}));
+
+        boolean remembered = again[0].isShowingParkedTrains();
+
+        // Put it back before asserting, so a failure here does not leave the operator's own setting
+        // flipped.
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            if (panel[0].isShowingParkedTrains() != was) panel[0].getShowParkedTrains().doClick();
+        });
+
+        assertNotEquals(remembered, was,
+            "a new editor came up with the old setting, so the switch is not persisted and has to be "
+            + "set again every time the window is opened");
+    }
+
+    /**
      * A caption may move itself. It may not move anything else.
      *
      * OB-115. Adam, after FR-028 went in: "check normal text label vertical alignment - it seems to

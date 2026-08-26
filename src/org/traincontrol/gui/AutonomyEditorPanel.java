@@ -211,6 +211,18 @@ public class AutonomyEditorPanel extends JPanel
     private static final String PREF_LENGTHS = "autonomyEditorLengths";
 
     /**
+     * Whether the captions in this editor name the train parked at a station or the station itself.
+     *
+     * FR-030. Adam: "in the autonomy editor, have them show the station name by default ... rather
+     * than the parked train.  in the autonomy editor, have an option to switch between showing station
+     * name and parked train in the labels."
+     *
+     * Persisted beside the other two view switches, because a preference that resets every time the
+     * window opens is one the user sets again every time the window opens.
+     */
+    private static final String PREF_CAPTION_TRAINS = "autonomyEditorCaptionTrains";
+
+    /**
      * Restrictions only, by default.
      *
      * Open track is most of a layout and its arrows say what the reader can already assume, so a
@@ -219,6 +231,16 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static final int DIRECTIONS_DEFAULT = 1;
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
+
+    /**
+     * Names the parked train instead of the station (FR-030).
+     *
+     * Off by default, which is the change: this editor is where a railway is NAMED, and a caption that
+     * says which locomotive happens to be standing there answers a question about right now in a
+     * window about how things are arranged. The running diagram is where the trains are.
+     */
+    private final JCheckBox showParkedTrains =
+        new JCheckBox(I18n.t("autosetup.ui.btnShowParkedTrains"), false);
 
 
     // Built in the constructor, mounted by the window across the bottom of the diagram
@@ -485,6 +507,9 @@ public class AutonomyEditorPanel extends JPanel
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
 
+        showParkedTrains.setSelected(VIEW_PREFS.getBoolean(PREF_CAPTION_TRAINS, false));
+        showParkedTrains.setFocusable(false);
+
         // Not focusable, like every other control in this window (OB-019).
         //
         // It went through control(), which sets the font and nothing else, while excludePage beside it
@@ -503,6 +528,16 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
             refresh();
+        });
+
+        showParkedTrains.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_CAPTION_TRAINS, showParkedTrains.isSelected());
+
+            // The GRID, not a repaint.  A caption's text is decided when the grid is built - it is
+            // part of the tile art, as the note on setOnDiagramChanged says - so this switch changes
+            // nothing until the diagram is built again.
+            if (onDiagramChanged != null) onDiagramChanged.run();
         });
 
         hint.setFont(FONT_HINT);
@@ -6049,6 +6084,24 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowLengths()
     {
         return control(showLengths);
+    }
+
+    /**
+     * @return the parked-train toggle, for the window's visibility box (FR-030)
+     */
+    public JCheckBox getShowParkedTrains()
+    {
+        return control(showParkedTrains);
+    }
+
+    /**
+     * Whether captions in this editor should name the parked train rather than the station (FR-030).
+     *
+     * @return true to name the train
+     */
+    public boolean isShowingParkedTrains()
+    {
+        return showParkedTrains.isSelected();
     }
 
     /**

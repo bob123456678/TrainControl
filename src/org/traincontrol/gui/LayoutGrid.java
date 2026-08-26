@@ -63,6 +63,31 @@ public class LayoutGrid
     public static final int LAYOUT_STATION_OPACITY = 210;
 
     /**
+     * Whether station captions are left off this diagram entirely (FR-030).
+     *
+     * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
+     * where the rails are. A caption there is an autonomy object drawn over the thing being moved: it
+     * cannot be edited from that window, it covers the square underneath, and every one of them is in
+     * the way of the one job that window has.
+     *
+     * The RUNNING diagram keeps them - that is where they say something - and so does the autonomy
+     * editor, which is where they are set.
+     *
+     * A method rather than a line of `&&`, so the rule can be asked its truth table without building a
+     * window. What that leaves uncovered is whether the caller passes the right two booleans, which is
+     * the usual price of pulling a rule out of its call site - `testEditorSurfaceRules` reads the call
+     * for exactly that reason.
+     *
+     * @param inEditor whether this grid is inside an editor at all
+     * @param autonomyMode whether that editor is the autonomy one
+     * @return true when no caption should be drawn
+     */
+    public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode)
+    {
+        return inEditor && !autonomyMode;
+    }
+
+    /**
      * Whether the track on this square runs up and down rather than across (FR-028).
      *
      * Asked of the geometry rather than of the tile's name or its rotation number: the same question
@@ -335,6 +360,19 @@ public class LayoutGrid
         // diagram editor's edit flag for its mutual exclusion - so keying label rendering on it changed
         // the track diagram editor as well, where the raw "Point:" text is exactly what the user needs
         // to see and edit.
+        // No station captions at all in the TRACK diagram editor (FR-030).
+        //
+        // Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
+        // where the rails are, and a caption there is an autonomy object drawn over the thing being
+        // moved - it cannot be edited from that window, it covers the square underneath, and every
+        // one of them is in the way of the one job that window has.
+        //
+        // Decided before `captioned` is read rather than at each of the four places that draw one:
+        // a rule enforced at the point of use is a rule with four chances to be forgotten, and this
+        // file has form.
+        final boolean hidesCaptions = hidesStationCaptions(inEditor,
+            master instanceof LayoutEditor && ((LayoutEditor) master).isAutonomyMode());
+
         boolean autonomyEditor = master instanceof LayoutEditor
             && ((LayoutEditor) master).isAutonomyMode();
 
@@ -452,7 +490,7 @@ public class LayoutGrid
                         layout.getName(), x + offsetX, y + offsetY);
 
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
-                    ui == null ? null : ui.autonomyCaptionAt(square);
+                    hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor);
@@ -616,11 +654,36 @@ public class LayoutGrid
                     {
                         if (captioned != null && autonomyEditor)
                         {
+                            // The STATION by default, the parked train on request (FR-030).
+                            //
+                            // Adam: "in the autonomy editor, have them show the station name by
+                            // default ... rather than the parked train."  This is the window where a
+                            // railway is named, and a caption saying which locomotive happens to be
+                            // standing somewhere answers a question about right now in a window about
+                            // how things are arranged. The running diagram is where the trains are.
+                            boolean naming = !(master instanceof LayoutEditor)
+                                || ((LayoutEditor) master).getAutonomyPanel() == null
+                                || !((LayoutEditor) master).getAutonomyPanel().isShowingParkedTrains();
+
+                            if (naming)
+                            {
+                                // The station's own name, which is what the track editor used to show
+                                // and what this window is for. Greyed like the placeholder was: it is
+                                // a label on the diagram rather than something set here.
+                                text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
+
+                                labelColour = captionName == null
+                                    ? new Color(150, 150, 150) : Color.BLACK;
+
+                                standingTrain = captionName != null;
+                            }
+                            else
                             // What the SETUP puts on this square, which is the question the editor is
                             // about.  The running diagram shows what is on the rails; here there may be
                             // no run at all, and a platform with a train assigned to it was drawing the
                             // empty placeholder - so the one view where placements are made was the one
                             // view that did not show them.
+                            {
                             String placed = ui.autonomyCaptionTextAt(captioned);
 
                             if (placed != null)
@@ -654,6 +717,7 @@ public class LayoutGrid
                                 // A NAMED train is not that: it is the answer, not a placeholder, and
                                 // greying it would hide the thing the user just set.
                                 labelColour = new Color(150, 150, 150);
+                            }
                             }
                         }
                         else if (captioned != null)

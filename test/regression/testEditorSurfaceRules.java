@@ -1015,6 +1015,44 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The caption-hiding rule is asked about the right two things.
+     *
+     * `LayoutGrid.hidesStationCaptions` has its truth table checked elsewhere, and a truth table is
+     * exactly what an extracted rule cannot tell you the most important thing about: whether the
+     * caller hands it the right arguments. That has produced two defects in this repository already -
+     * a rule lifted out is a rule whose call site is the only untested part of it.
+     *
+     * So this reads the call. It must be asked whether this grid is in an editor AT ALL, and whether
+     * that editor is the autonomy one - not `layout.getEdit()` alone, which is the flag BOTH editors
+     * share for their mutual exclusion and which was wrong in the viewer for exactly this reason.
+     *
+     * MUTATION: passing `layout.getEdit()` instead of `inEditor`, or dropping the autonomy-mode test,
+     * fails this.
+     */
+    @Test
+    public void testTheCaptionHideRuleIsAskedWithTheRightTwoQuestions() throws Exception
+    {
+        String grid = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        int at = grid.indexOf("hidesStationCaptions(inEditor,");
+
+        assertTrue(at > 0,
+            "nothing asks hidesStationCaptions whether this grid is in an editor. Either the rule is "
+            + "no longer used or it is being asked something else, and both mean captions appear "
+            + "where FR-030 says they should not");
+
+        String call = grid.substring(at, Math.min(grid.length(), at + 200));
+
+        assertTrue(call.contains("isAutonomyMode()"),
+            "the second thing the rule is asked is not whether the editor is the autonomy one. "
+            + "layout.getEdit() is true in BOTH editors - it is the flag they share for their mutual "
+            + "exclusion - so anything that asks it alone hides the captions in the window that "
+            + "exists to set them");
+    }
+
+    /**
      * Java source with its // comments stripped, so a check reads code and not the prose about it.
      */
     private static String codeOnly(String source)

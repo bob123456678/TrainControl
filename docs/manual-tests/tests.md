@@ -76,8 +76,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
 | [MT-197](#mt-197) | 2026-08-26 | Station captions as blue ovals | needs test | FR-028 |
 | [MT-198](#mt-198) | 2026-08-26 | The sidebar icons | needs test | FR-029 |
+| [MT-199](#mt-199) | 2026-08-26 | What the captions say in each editor | needs test | FR-030 |
 
-Everything else - 135 of 198 - is **fixed validated** and needs nothing from you unless the
+Everything else - 135 of 199 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -10246,3 +10247,38 @@ this kind of change fails, and it is invisible to anybody looking at the source 
 
 If you want to redraw any of them, the generator is `tools/tab-icons.py` and the size is free: the
 application scales whatever it finds.
+
+---
+
+<a id="mt-199"></a>
+
+### MT-199 - 2026-08-26 - What the captions say in each editor
+
+**Disposition:** needs test
+**From:** FR-030
+**Written:** 2026-08-26
+
+1. Open the **track diagram** editor. There should be **no station captions at all** - no ovals, no
+   names, no dashes. Your own text labels stay exactly as they were.
+2. Move a station square around in that editor and save. Nothing about the captions should come back
+   while you are in there, and the setup should be unharmed when you look at it afterwards.
+3. Open the **autonomy** editor. Captions should name the **station**, not the train parked there.
+   That is the change: this is the window where the railway is named.
+4. In the visibility box on the right, tick **Show Parked Trains**. The captions should switch to
+   naming whichever locomotive is standing there - which is what this editor showed before - and the
+   diagram should redraw as you tick it, not on the next thing you happen to do.
+5. Close the editor and open it again. The switch should be where you left it.
+6. The **running diagram** is untouched by all of this: captions there still show the train, with the
+   destination in yellow and the rest as before.
+
+#### Comments
+
+**Claude, 2026-08-26.** The rebuild in step 4 is the part worth watching. A caption's text is decided
+when the grid is BUILT rather than when it is painted - it is part of the tile art - so a switch that
+changed the setting and repainted would appear to do nothing until something else rebuilt the diagram.
+
+Step 1 is enforced by one rule in one place rather than at the four points that draw a caption; a rule
+applied at the point of use is a rule with four chances to be forgotten, and this file has form. What
+that leaves is whether the rule is asked the right question, so a second test reads the call itself -
+it must ask whether this grid is in an editor and whether that editor is the autonomy one, because
+`layout.getEdit()` is true in BOTH and has been wrong here before.
