@@ -43,3 +43,7 @@ TrackDiagramEditor.exe
 /docs/manual-tests/.triage-backups/
 /docs/manual-tests/.triage-runs/
 /docs/manual-tests/__pycache__/
+
+# The triage store is BUILT from the markdown, so it is a derived file and not the record.
+# See docs/manual-tests/triagedb.py - the markdown is what git tracks.
+docs/manual-tests/triage.db
