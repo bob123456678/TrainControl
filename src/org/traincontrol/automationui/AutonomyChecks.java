@@ -127,6 +127,7 @@ public class AutonomyChecks
     public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
     public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
     public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
+    public static final String REVERSING_LEADS_NOWHERE = "autosetup.ui.checkReversingLeadsNowhere";
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
@@ -321,6 +322,8 @@ public class AutonomyChecks
 
         findings.addAll(checkNames(reducer));
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
+
+        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn));
         findings.addAll(checkTrappedArrivals(reducer, trapped));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
         findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn));
@@ -410,6 +413,85 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A square trains turn round at, from which nothing can be reached.
+     *
+     * Adam, closing OB-113: "We need to add a warning if a reversing point leads to nothing else."
+     * That report was a route he expected and did not get, and the cause was the reversing point - so
+     * the setup could already have told him.
+     *
+     * **The hole this fills is specifically one the other checks open.** `ARRIVAL_TRAPPED` fires when
+     * a train could reach a square and then not leave it, and its own wording tells the user what to
+     * do: "Either set 'trains may change direction here', or open the way ahead." Setting the flag
+     * silences it - whether or not the way ahead was ever opened. So the advice this application gives
+     * can turn a loud problem into a silent one, and that is the case here.
+     *
+     * `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` say the same thing for STATIONS and only for
+     * stations. A reversing point that is not a station had nothing watching it at all.
+     *
+     * Reachability is asked of the reducer with the same turn sets the station walk uses, so this
+     * agrees with what the runtime will actually do rather than with plain tile adjacency - a
+     * distinction the station check above had to learn the hard way.
+     *
+     * A NOTICE, not a warning. It is a real fault when it is one, but "reaches no station" is also
+     * true of a reversing point on a spur somebody is still drawing, and this list has been made
+     * useless before by ordinary things listed beside real problems.
+     *
+     * @param reducer the reduced graph
+     * @param mayTurn squares where a train may change direction
+     * @param mustTurn squares where it must
+     * @return one finding per reversing square that leads nowhere
+     */
+    private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        Set<TileKey> reversing = new LinkedHashSet<>();
+
+        reversing.addAll(mayTurn);
+        reversing.addAll(mustTurn);
+
+        Set<TileKey> stationTiles = new LinkedHashSet<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (point.isStation()) stationTiles.add(point.getTile());
+        }
+
+        for (TileKey tile : reversing)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            if (point == null) continue;
+
+            // Stations are the other two checks' business, and saying it twice about one square is
+            // how a list of findings stops being read.
+            if (point.isStation()) continue;
+
+            Set<TileKey> reachable = reducer.reachableTiles(tile, mayTurn, mustTurn);
+
+            boolean reachesAStation = false;
+
+            for (TileKey station : stationTiles)
+            {
+                if (reachable.contains(station))
+                {
+                    reachesAStation = true;
+                    break;
+                }
+            }
+
+            if (!reachesAStation)
+            {
+                findings.add(new Finding(Severity.NOTICE, REVERSING_LEADS_NOWHERE,
+                    point.getName() == null ? String.valueOf(tile) : point.getName(), tile));
+            }
         }
 
         return findings;

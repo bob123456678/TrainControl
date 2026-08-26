@@ -1005,8 +1005,69 @@ public final class LayoutLabel extends JLabel
 
         autonomyOverlay = effective;
 
+        // A square with a train running on it comes to the front (FR-027).
+        liftAboveLabels(effective != null && effective.isMoving());
+
         // repaint() is safe from any thread; the monitor publishes from its own worker
         this.repaint();
+    }
+
+    /**
+     * Whether this tile is currently in front of the labels that are normally drawn over it.
+     *
+     * Remembered so the reordering happens on the two transitions and not on every publish: the
+     * monitor republishes as often as the railway changes, and moving a component within its container
+     * on each of those would be real work for no change.
+     */
+    private boolean liftedForTrain = false;
+
+    /**
+     * Brings this tile in front of the address and caption labels, or puts it back behind them.
+     *
+     * Adam, looking at the locomotive icon: "make sure it renders on top of the S88's.  Right now,
+     * it's a coin toss."  It was not really a toss - it was fixed and wrong. The overlay is painted
+     * after `super.paintComponent`, so it is reliably over this tile's own icon, and the note above
+     * `paintComponent` says as much. What it also says is that the address and station labels are
+     * SEPARATE components, z-ordered to the front by LayoutGrid as they are added - and no painting
+     * order inside one component can reach over a sibling drawn after it. Which of the two you saw
+     * depended on where the number happened to fall, which is what looked like chance.
+     *
+     * So the fix is where the problem is: the component order. Index 0 is painted last, which is why
+     * the labels claim it; a tile with a train on it claims it for as long as the train is running and
+     * gives it back afterwards. Tiles do not overlap each other, so their order among themselves means
+     * nothing and the release can simply send this one to the back.
+     *
+     * On the event thread, because the monitor publishes from its own worker and container order is
+     * not thread-safe - the repaint above is, which is why it needs no such care.
+     *
+     * @param lift whether this tile should be in front
+     */
+    private void liftAboveLabels(final boolean lift)
+    {
+        if (lift == liftedForTrain) return;
+
+        liftedForTrain = lift;
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            java.awt.Container parent = getParent();
+
+            if (parent == null) return;
+
+            try
+            {
+                parent.setComponentZOrder(this, lift ? 0 : parent.getComponentCount() - 1);
+
+                // The PARENT, not this tile: the labels that were covering it have moved too, and a
+                // repaint of one component cannot clean up where another one used to be.
+                parent.repaint();
+            }
+            catch (RuntimeException e)
+            {
+                // The tile left its grid between the publish and this running - a page rebuilt under a
+                // running layout, which happens. There is nothing to lift and nothing to report.
+            }
+        });
     }
 
     /**

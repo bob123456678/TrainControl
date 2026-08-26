@@ -47,6 +47,12 @@ import org.traincontrol.gui.LayoutEditor;
  */
 public class testEditorSurfaceRules
 {
+    /**
+     * A double quote, as a string.  Named so the source-reading checks below can look for
+     * quoted Java without a line of escapes standing between the reader and what it matches.
+     */
+    private static final String QUOTE = String.valueOf((char) 34);
+
     private static final File PANEL =
         new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
 
@@ -815,6 +821,197 @@ public class testEditorSurfaceRules
             "addCaptionItems does not ask describeTile for the station's name. That is the method "
             + "that falls back to the s88 address or the coordinates when a square has no authored "
             + "name, which is the case where the user has least else to go on");
+    }
+
+    /**
+     * The shortcut to the full editor is greyed by the editor's own reasons for refusing.
+     *
+     * FR-026: "to the 'autonomy setup' right click menu on the track viewer, add a shortcut to open
+     * the full editor.  deactivate when inappropriate."
+     *
+     * "Inappropriate" is not a new judgement - `openLayoutEditor` already refuses four different ways,
+     * each with its own dialog. Writing those four conditions out again on the menu item is this
+     * application's most repeated defect, and this file exists because of it: a rule written in two
+     * places drifts, and the drift shows up as an item that is dead when it should work, or live and
+     * then followed by an error box.
+     *
+     * So the check is not that the item is disabled under some condition. It is that the item asks
+     * `whyAutonomyEditorCannotOpen`, and that `whyAutonomyEditorCannotOpen` answers for every refusal
+     * openLayoutEditor actually makes - matched by the MESSAGE KEY each refusal shows, because that is
+     * the thing the two methods must agree about and the thing a fifth guard added later would bring
+     * with it.
+     *
+     * MUTATION: adding a fifth refusal to openLayoutEditor without answering for it here fails this;
+     * so does replacing the menu item's `refusal == null` with any hand-written condition.
+     */
+    @Test
+    public void testTheFullEditorShortcutAsksTheEditorsOwnRefusals() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        String predicate = bodyOf(ui, "public String whyAutonomyEditorCannotOpen()");
+
+        assertFalse(predicate.isEmpty(),
+            "whyAutonomyEditorCannotOpen is gone. It is the one answer to 'would the editor open', "
+            + "and the menu item and openLayoutEditor are both supposed to be reading it");
+
+        // The last parameter rather than the first line: the three-argument overload above it
+        // begins with the same words, and indexOf would stop on that one.
+        String opener = bodyOf(ui, "reveal, boolean remember)");
+
+        assertFalse(opener.isEmpty(), "openLayoutEditor's four-argument form could not be found, so "
+            + "this test is reading nothing and would pass however far the two had drifted");
+
+        java.util.List<String> refusals = new java.util.ArrayList<>();
+
+        String opening = "I18n.t(" + QUOTE;
+
+        for (int at = opening.length(); (at = opener.indexOf(opening, at)) >= 0; at++)
+        {
+            int from = at + opening.length();
+            int to = opener.indexOf(QUOTE, from);
+
+            if (to > from) refusals.add(opener.substring(from, to));
+        }
+
+        assertTrue(refusals.size() >= 4,
+            "openLayoutEditor shows fewer messages than the four refusals it had when this was "
+            + "written, so what this test is matching against has changed shape: " + refusals);
+
+        for (String key : refusals)
+        {
+            assertTrue(predicate.contains(key),
+                "openLayoutEditor refuses with \"" + key + "\" and whyAutonomyEditorCannotOpen has "
+                + "nothing to say about it. The menu item that offers the editor is greyed by that "
+                + "method, so this refusal is one the user meets as an error box after pressing a "
+                + "live item - which is the state FR-026 asked for the item NOT to be in");
+        }
+
+        String menu = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        String setup = bodyOf(menu, "private void addSetupMenu()");
+
+        assertTrue(setup.contains("whyAutonomyEditorCannotOpen()"),
+            "the setup menu no longer asks the window whether the editor would open, so whatever "
+            + "greys the shortcut now is a second copy of the rule");
+
+        // Asking is not enough - the answer has to be the thing that decides.  Reading the variable
+        // back out rather than matching a literal name, so this says "what it asked for is what it
+        // used" and not "somebody once called it refusal".
+        int assignment = setup.indexOf(" = ui.whyAutonomyEditorCannotOpen()");
+        int names = setup.lastIndexOf(" ", assignment - 1);
+
+        String answer = setup.substring(names + 1, assignment);
+
+        assertTrue(setup.contains("if (" + answer + " == null)"),
+            "the shortcut asks whyAutonomyEditorCannotOpen and then decides on something else, so "
+            + "the refusal it was told about is not what greys it. That is the same rule in two "
+            + "places again, which is the whole reason the method exists");
+
+        assertTrue(setup.contains("setToolTipText(I18n.t(" + answer + "))"),
+            "the disabled shortcut no longer says WHY. A greyed menu item with no reason on it is "
+            + "indistinguishable from a broken one, which is the note LayoutRightclickAutonomyMenu "
+            + "already makes about the editor-open case above it");
+
+        assertTrue(setup.contains("menuOpenFullEditor"),
+            "the shortcut FR-026 asked for is not on the setup menu any more");
+    }
+
+    /**
+     * The text of one method, from its declaration to the brace that closes it.
+     *
+     * Brace counting rather than a regex, because both methods here contain nested blocks and a lambda,
+     * and a match that stopped at the first } would hand back a fragment that happens to contain
+     * whatever the assertions were looking for.
+     *
+     * @param source the file
+     * @param declaration the exact declaration line, or the first line of it
+     * @return the body, or "" when the declaration is not there
+     */
+    private static String bodyOf(String source, String declaration)
+    {
+        int at = source.indexOf(declaration);
+
+        if (at < 0) return "";
+
+        int open = source.indexOf('{', at + declaration.length());
+
+        if (open < 0) return "";
+
+        int depth = 0;
+
+        for (int i = open; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
+        }
+
+        return "";
+    }
+
+    /**
+     * Both autonomy menus head themselves with a name, and it is the same name.
+     *
+     * OB-112. Adam, right-clicking LowerBack on the diagram with a setup loaded: "nothing at the top
+     * there." The editor\u2019s menu had opened with a bold, disabled name since it was built; the
+     * diagram\u2019s - which is the one people actually reach for - had none.
+     *
+     * The fix that would have been wrong is three lines of naming copied into the second menu, which
+     * is this file\u2019s whole subject: one decision written twice drifts, and here the drift would be
+     * two menus calling one square different things while both are on screen. So the rule sits on the
+     * session and this asserts that neither menu has its own.
+     *
+     * The heading is also checked to go on AFTER the emptiness test. A heading is not an item, and a
+     * menu with nothing to offer must stay unshown rather than become a grey box with a station name
+     * in it - the exact fault showFor was centralised to prevent.
+     *
+     * MUTATION: inlining describeTile\u2019s body back into AutonomyEditorPanel fails the delegation
+     * check; moving menu.headline() above the getComponentCount test fails the ordering one.
+     */
+    @Test
+    public void testBothAutonomyMenusNameTheSquareTheSameWay() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        String describe = bodyOf(panel, "private String describeTile(TileKey tile)");
+
+        assertFalse(describe.isEmpty(), "the editor no longer has describeTile, which every heading "
+            + "and caption item in that window is named by");
+
+        assertTrue(describe.contains("session.describeTile(tile)"),
+            "AutonomyEditorPanel names squares itself again instead of asking the session. The "
+            + "diagram\u2019s menu asks the session, so this is one square with two names in two "
+            + "windows - which is the defect this whole file is about");
+
+        assertFalse(describe.contains("isFeedback()"),
+            "the sensor-address fallback is written out in the panel as well as in the session, so "
+            + "there are two copies of the rule again and only one of them will get the next fix");
+
+        String menu = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        assertTrue(bodyOf(menu, "private void headline()").contains("session.describeTile("),
+            "the diagram\u2019s menu names the clicked square some other way, so the heading OB-112 "
+            + "asked for can disagree with the one in the editor");
+
+        String show = bodyOf(menu, "static void showFor(");
+
+        int counted = show.indexOf("getComponentCount()");
+        int headed = show.indexOf("headline()");
+
+        assertTrue(counted >= 0 && headed > counted,
+            "the heading goes on before the menu is known to have anything in it, so a right-click "
+            + "with nothing to offer now opens a one-item grey box - which is what showFor was made "
+            + "the only way in to prevent");
     }
 
     /**

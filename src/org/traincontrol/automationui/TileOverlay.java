@@ -157,8 +157,71 @@ public class TileOverlay
 
     private static final float DOT_ALPHA = 0.9f;
 
+    /**
+     * The picture drawn where a train is moving (FR-027).
+     *
+     * **A file, so it can be replaced without touching this.** Adam: "it should also be easy to
+     * change/customize the icon.  Write it to the resources folder."  Drop any PNG over
+     * `src/org/traincontrol/gui/resources/running_train.png` and that is the new icon - it is scaled to
+     * the tile, so the size it is drawn at does not matter, only its shape and its transparency.
+     *
+     * The one shipped is a side-view locomotive in near-black with a white halo, because it has to read
+     * on whatever is underneath it: plain track, a red claimed path, a green reached one, a grey locked
+     * one. An icon with no halo disappears into the dark colours.
+     *
+     * If the file is missing or unreadable the dot is drawn instead, which is what was here before this
+     * existed - a diagram that stops saying where the trains are would be a worse fault than a plain
+     * marker.
+     */
+    private static final String TRAIN_ICON = "/org/traincontrol/gui/resources/running_train.png";
+
+    /**
+     * How much of the tile the icon takes.
+     *
+     * Not the whole square: the line showing which way the path runs is drawn underneath, and an icon
+     * that covers the tile hides the answer to "where is it going" in order to answer "where is it".
+     */
+    private static final double ICON_SCALE = 0.76;
+
+    /**
+     * Whether the icon is only for trains that are MOVING (FR-027), the dot serving for the rest.
+     *
+     * Adam's "(not while stationary)". A train with an active path can be sitting still - waiting at a
+     * platform, or held while another path clears - and the diagram already says where it is; what it
+     * could not say is which of the trains on it are actually running. Set this false and every train
+     * autonomy is holding a path for gets the icon, which is the other reasonable reading of the
+     * request and is one line away.
+     */
+    private static final boolean ICON_ONLY_WHILE_MOVING = true;
+
+    /**
+     * Whether the icon is turned to face the way the train is going (FR-027).
+     *
+     * Adam: "make the locomotive face the right direction by rotating it or flipping it."  The way it
+     * is going is read off the line already drawn through the square - the same geometry, so the
+     * locomotive and the path it is on cannot disagree about which way it is pointing.
+     *
+     * Westbound is MIRRORED rather than turned through half a circle, because a side view rotated 180
+     * degrees is upside down. North and south are quarter turns, which stand the locomotive on end -
+     * there is no way to draw a side view running up the page that does not, and standing on end at
+     * least says which end is the front.
+     *
+     * Set false and every locomotive faces the way the file draws it, which is what the first version
+     * did.
+     */
+    private static final boolean ICON_FOLLOWS_TRAVEL = true;
+
+    /**
+     * The icon, read once.  Null means "there is none" - either the file is absent or it would not
+     * decode - and is remembered, so a missing file is not re-read on every repaint of every tile.
+     */
+    private static java.awt.image.BufferedImage icon;
+
+    private static boolean iconRead = false;
+
     private final State state;
     private final boolean train;
+    private final boolean moving;
     private final java.util.List<Segment> segments;
 
     /**
@@ -167,7 +230,7 @@ public class TileOverlay
      */
     public TileOverlay(State state, boolean train)
     {
-        this(state, train, null);
+        this(state, train, false, null);
     }
 
     /**
@@ -179,8 +242,25 @@ public class TileOverlay
      */
     public TileOverlay(State state, boolean train, java.util.List<Segment> segments)
     {
+        this(state, train, false, segments);
+    }
+
+    /**
+     * @param state
+     * @param train whether the train itself is standing here
+     * @param moving whether it is actually running rather than standing still (FR-027)
+     * @param segments which way the path runs through this square
+     */
+    public TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments)
+    {
         this.state = state == null ? State.IDLE : state;
         this.train = train;
+
+        // Clamped, so "moving" cannot be true on a square with no train on it.  The two are one fact
+        // told in two halves, and a pair that can contradict is a pair somebody will one day read the
+        // wrong half of.
+        this.moving = train && moving;
+
         this.segments = segments == null || segments.isEmpty()
             ? java.util.Collections.<Segment>emptyList()
             : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(segments));
@@ -202,6 +282,14 @@ public class TileOverlay
     public boolean hasTrain()
     {
         return train;
+    }
+
+    /**
+     * @return whether the train on this square is actually running (FR-027)
+     */
+    public boolean isMoving()
+    {
+        return moving;
     }
 
     /**
@@ -243,7 +331,96 @@ public class TileOverlay
 
         return new TileOverlay(
             rank(state) >= rank(other.state) ? state : other.state,
-            train || other.train, both);
+            train || other.train, moving || other.moving, both);
+    }
+
+    /**
+     * Turns the graphics so that an icon drawn facing east ends up facing the way the train is going.
+     *
+     * Called with the origin already at the middle of the icon, so a rotation is about its own centre.
+     *
+     * @param g the tile's graphics, translated to where the icon goes
+     */
+    private void turnToTravel(Graphics2D g)
+    {
+        if (!ICON_FOLLOWS_TRAVEL) return;
+
+        org.traincontrol.automationui.TilePorts.Side heading = headingOf();
+
+        if (heading == null) return;
+
+        switch (heading)
+        {
+            // Mirrored, not turned half way round: a side view rotated 180 degrees is upside down.
+            case W: g.scale(-1, 1); break;
+
+            case N: g.rotate(-Math.PI / 2); break;
+            case S: g.rotate(Math.PI / 2); break;
+
+            // E is how the file draws it.
+            default: break;
+        }
+    }
+
+    /**
+     * Which way the train on this square is going, or null when this square cannot say.
+     *
+     * Read off the line already drawn through it, so the locomotive and its path cannot disagree.
+     * `to` is the side the run leaves by, which is where the train is headed. At the far end of a run
+     * there is no `to` - the line stops in the middle of the square - and the answer is then the
+     * opposite of the side it came IN by, which is the same direction said backwards.
+     *
+     * The first segment that can answer, because a square a path crosses twice carries two, and the
+     * train is on one of them: a locomotive pointing along one of the two arms of a crossing is right
+     * once and forgivable the other time, where no icon at all says nothing either time.
+     *
+     * @return the side the train is heading towards, or null
+     */
+    private org.traincontrol.automationui.TilePorts.Side headingOf()
+    {
+        for (Segment segment : segments)
+        {
+            if (segment.getTo() != null) return segment.getTo();
+
+            if (segment.getFrom() != null) return segment.getFrom().rotateClockwise(2);
+        }
+
+        return null;
+    }
+
+    /**
+     * The locomotive picture, read from the resources folder the first time it is wanted (FR-027).
+     *
+     * Read once and remembered, INCLUDING the answer "there is none": this is asked while painting a
+     * tile, and a missing file re-opened on every repaint of every square would be a real cost for a
+     * question whose answer cannot change while the application is running.
+     *
+     * Nothing is logged if it fails. A replaceable icon is a thing people will replace, and half of
+     * them will drop something in that ImageIO cannot read - the diagram falls back to the dot, which
+     * says the same thing less prettily, and that is a better answer than a stack trace behind a
+     * cosmetic feature.
+     *
+     * @return the icon, or null if there is not one to be had
+     */
+    private static java.awt.image.BufferedImage trainIcon()
+    {
+        if (!iconRead)
+        {
+            iconRead = true;
+
+            try
+            {
+                java.net.URL url = TileOverlay.class.getResource(TRAIN_ICON);
+
+                if (url != null) icon = javax.imageio.ImageIO.read(url);
+            }
+            catch (java.io.IOException | RuntimeException e)
+            {
+                icon = null;
+            }
+        }
+
+        return icon;
     }
 
     private static int rank(State state)
@@ -324,17 +501,59 @@ public class TileOverlay
             {
                 int[] on = middle(trackCentre, width, height);
 
-                // An outline says which track is claimed; it cannot say which part of it holds the
-                // train.  The dot is the diagram's equivalent of the graph labelling its node.
-                int diameter = Math.max(6, Math.min(width, height) / 3);
+                // A locomotive where one is actually running (FR-027), the dot everywhere else.
+                //
+                // Adam: "add little opaque locomotive icon at the s88 where a train is while autonomy
+                // is running (not while stationary)."  The dot said WHERE a train was and nothing more;
+                // on a layout with several paths out at once, which of them are moving and which are
+                // waiting is the thing a glance at the diagram could not answer.
+                java.awt.image.BufferedImage picture =
+                    moving || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
 
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
-                g.setColor(Color.BLACK);
-                g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+                if (picture != null)
+                {
+                    // Opaque, as asked.  The composite is reset because the outline above leaves a
+                    // partial alpha on the Graphics, and an icon drawn through that is a grey smudge.
+                    g.setComposite(java.awt.AlphaComposite.SrcOver);
 
-                g.setColor(Color.WHITE);
-                g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+                    int side = (int) Math.round(Math.min(width, height) * ICON_SCALE);
+
+                    // Never smaller than the dot it replaces: at the smallest tile size a shape scaled
+                    // by a fraction becomes a few grey pixels, which is less legible than the dot and
+                    // would make this a regression for anybody running a compact diagram.
+                    side = Math.max(side, Math.max(6, Math.min(width, height) / 3));
+
+                    java.awt.geom.AffineTransform wasAt = g.getTransform();
+
+                    try
+                    {
+                        g.translate(on[0], on[1]);
+
+                        turnToTravel(g);
+
+                        g.drawImage(picture, -side / 2, -side / 2, side, side, null);
+                    }
+                    finally
+                    {
+                        // Restored rather than undone step by step: the caller handed over a Graphics
+                        // it goes on using, and a transform left on it moves everything drawn after.
+                        g.setTransform(wasAt);
+                    }
+                }
+                else
+                {
+                    // An outline says which track is claimed; it cannot say which part of it holds the
+                    // train.  The dot is the diagram's equivalent of the graph labelling its node.
+                    int diameter = Math.max(6, Math.min(width, height) / 3);
+
+                    g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
+                    g.setColor(Color.BLACK);
+                    g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+
+                    g.setColor(Color.WHITE);
+                    g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
+                }
             }
         }
         finally
@@ -516,18 +735,24 @@ public class TileOverlay
 
         // The geometry counts.  A republish is suppressed when the picture has not changed, and a
         // train that has come to claim the same square from a different side is a changed picture.
-        return state == other.state && train == other.train && segments.equals(other.segments);
+        // moving counts, for the same reason the geometry does: a republish is suppressed when the
+        // picture has not changed, and a train that has just started or just stopped is a changed
+        // picture - it is the whole of what this flag draws.
+        return state == other.state && train == other.train && moving == other.moving
+            && segments.equals(other.segments);
     }
 
     @Override
     public int hashCode()
     {
-        return (state.hashCode() * 31 + (train ? 1 : 0)) * 31 + segments.hashCode();
+        return ((state.hashCode() * 31 + (train ? 1 : 0)) * 31 + (moving ? 1 : 0)) * 31
+            + segments.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return state + (train ? "+train" : "") + (segments.isEmpty() ? "" : segments.toString());
+        return state + (train ? (moving ? "+moving" : "+train") : "")
+            + (segments.isEmpty() ? "" : segments.toString());
     }
 }

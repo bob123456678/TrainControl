@@ -69,8 +69,46 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here);
 
             // An empty menu is not worth showing.
-            if (menu.getComponentCount() > 0) menu.show(at, x, y);
+            if (menu.getComponentCount() > 0)
+            {
+                // AFTER the count, and deliberately.  A heading is not an item, and putting one on
+                // first would turn "nothing to offer here" into a grey box with a station name in it -
+                // which is the fault the check above exists to prevent, arriving by a new road.
+                menu.headline();
+
+                menu.show(at, x, y);
+            }
         });
+    }
+
+    /**
+     * Puts the clicked square's name at the top, greyed.
+     *
+     * OB-112. Adam, right-clicking a station on the diagram with a setup loaded: "nothing at the top
+     * there." The autonomy editor's own menu has opened with a bold, disabled name since it was built,
+     * and this menu - the one on the diagram, which is where people actually right-click - never had
+     * one. With a setup loaded the whole menu is about a square: this train, these paths, that home.
+     * Which square was never said, and the menu covers it while it is open.
+     *
+     * The name comes from the session rather than from three lines written out again here, so the two
+     * menus cannot end up calling one square by different names while both are on screen.
+     *
+     * Inserted rather than added, because by the time this runs the menu is built - and it runs at all
+     * only once showFor knows there is something to head.
+     */
+    private void headline()
+    {
+        org.traincontrol.automationui.TileGraph.TileKey subject = station != null ? station : here;
+
+        if (subject == null || session == null) return;
+
+        JMenuItem heading = new JMenuItem(session.describeTile(subject));
+
+        heading.setEnabled(false);
+        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
+
+        insert(heading, 0);
+        insert(new JPopupMenu.Separator(), 1);
     }
 
     /**
@@ -540,6 +578,37 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             setup.add(part);
         }
+
+        // FR-026: the way out to the full editor, at the foot of the settings it is the deep end of.
+        //
+        // Adam: "to the 'autonomy setup' right click menu on the track viewer, add a shortcut to open
+        // the full editor.  deactivate when inappropriate."  Everything above this line is a single
+        // square's settings; the editor is where the diagram as a whole is worked on, and the way to
+        // it was the Edit button at the other end of the window.
+        //
+        // "Inappropriate" is not decided here.  It is asked of the window that does the opening, which
+        // hands back the reason its own refusal would give - so the item is live exactly when pressing
+        // it would work, and says why when it is not.  A menu item that offers an action and a guard
+        // that permits it have to ask one question; where they have asked two in this application, the
+        // answer has differed.
+        String refusal = ui.whyAutonomyEditorCannotOpen();
+
+        JMenuItem openEditor = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
+
+        if (refusal == null)
+        {
+            // On the square that was clicked, so the editor comes up on the right page with that tile
+            // found and flashing - the same landing a finding gets.
+            openEditor.addActionListener(event -> ui.openAutonomyEditor(here));
+        }
+        else
+        {
+            openEditor.setEnabled(false);
+            openEditor.setToolTipText(I18n.t(refusal));
+        }
+
+        setup.addSeparator();
+        setup.add(openEditor);
 
         if (getComponentCount() > 0) addSeparator();
 

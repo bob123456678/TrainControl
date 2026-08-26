@@ -279,6 +279,16 @@ public class AutonomyEditorPanel extends JPanel
     // The station whose protecting signal is being picked by clicking one, waiting for that click
     private TileKey signalFor;
 
+    /**
+     * The station waiting to be told which square holds it back, or null (FR-025).
+     *
+     * Adam: "the 'unavailable when occupied' dialog should allow users to select a s88 tile by
+     * clicking, similar to the signal guard popup." Kept exactly as `signalFor` is - one field saying
+     * "the next click on the diagram is the answer to this question" - so that the two gestures are
+     * cancelled, cleared and reasoned about in the same places rather than in parallel ones.
+     */
+    private TileKey blockingFor;
+
     /** Whether the "which signals protect this station" window is on screen - see isFocusedOnSignals */
     private boolean signalWindowOpen;
 
@@ -555,7 +565,7 @@ public class AutonomyEditorPanel extends JPanel
     private void cancelPendingGesture()
     {
         boolean pending = tool != Tool.NONE || testFrom != null || oneWayFrom != null
-            || pendingPortal != null || signalFor != null;
+            || pendingPortal != null || signalFor != null || blockingFor != null;
 
         if (!pending) return;
 
@@ -564,6 +574,7 @@ public class AutonomyEditorPanel extends JPanel
         oneWayFrom = null;
         pendingPortal = null;
         signalFor = null;
+        blockingFor = null;
         highlightedSignals.clear();
         traces.clear();
 
@@ -620,6 +631,7 @@ public class AutonomyEditorPanel extends JPanel
             // swallowed by a gesture the user had already moved on from.
             oneWayFrom = null;
             signalFor = null;
+            blockingFor = null;
 
             say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
@@ -1454,15 +1466,36 @@ public class AutonomyEditorPanel extends JPanel
 
                 // A heading: the disabled item title() leaves behind.  Disabled and NOT a separator -
                 // an ordinary item that happens to be disabled is a real offer the user cannot take
-                // right now, and removing those would hide them.  Only a heading is followed by a
-                // divider or by the end of the menu, which is the test below.
+                // right now, and removing those would hide them.
                 boolean heading = here instanceof javax.swing.JMenuItem
                     && !here.isEnabled();
 
                 java.awt.Component next = at + 1 < menu.getComponentCount()
                     ? menu.getComponent(at + 1) : null;
 
-                boolean nothingFollows = next == null || next instanceof javax.swing.JSeparator;
+                // PAST the divider, which is the whole of OB-112.
+                //
+                // This asked whether a divider followed the heading, and title() writes a heading and
+                // a divider TOGETHER - so the answer was yes for every heading ever written, and the
+                // name at the top of the right-click menu was deleted a line after it was added.
+                // Adam: "I still don't see the heading in the autonomy editor", with a picture of a
+                // menu whose first item is Add a Locomotive.
+                //
+                // The rule itself was right for what it was written for. An empty SECTION is a heading
+                // and a divider and then nothing - so what says the section is empty is what comes
+                // after the divider, not the divider itself. At the top of a menu what comes after it
+                // is the entire menu, which is as far from empty as it gets.
+                //
+                // This is the third time in this round that a rule has been correct where it was
+                // written and wrong one level out. OB-054, which put this here, was a heading over an
+                // empty section on a page link; it is still removed - a divider followed by another
+                // divider, or by the end, is still nothing at all.
+                java.awt.Component afterNext = at + 2 < menu.getComponentCount()
+                    ? menu.getComponent(at + 2) : null;
+
+                boolean nothingFollows = next == null
+                    || (next instanceof javax.swing.JSeparator
+                        && (afterNext == null || afterNext instanceof javax.swing.JSeparator));
 
                 if (separator && (at == 0 || nothingFollows))
                 {
@@ -2666,8 +2699,24 @@ public class AutonomyEditorPanel extends JPanel
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
-            JOptionPane.showMessageDialog(owner(),
-                I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith"));
+            // Nothing to LIST is no longer nothing to do (FR-025).
+            //
+            // This said "there is nothing else to block with" and stopped, which was true while the
+            // only way to answer was to read a list of names. A click needs no name, so on a railway
+            // where nothing else has been named yet - which is most railways early on - this message
+            // would now be hiding the only way in. That is the shape of half the defects in this file.
+            String pickNow = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
+
+            Object[] either = { pickNow,
+                javax.swing.UIManager.getString("OptionPane.cancelButtonText") };
+
+            int answer = JOptionPane.showOptionDialog(owner(),
+                wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
+                I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, either, pickNow);
+
+            if (answer == 0) armBlockerPick(station);
+
             return;
         }
 
@@ -2729,12 +2778,29 @@ public class AutonomyEditorPanel extends JPanel
         scroll.setPreferredSize(new java.awt.Dimension(460,
             Math.min(360, 80 + choices.size() * BLOCKED_ROW_HEIGHT)));
 
-        if (JOptionPane.showConfirmDialog(owner(), scroll,
+        // Three answers, not two (FR-025).
+        //
+        // Adam: "the 'unavailable when occupied' dialog should allow users to select a s88 tile by
+        // clicking, similar to the signal guard popup." A checklist is the faster way to answer "which
+        // of these", which is why it is still here and still the default button; it is the slower way
+        // to answer "that one, there", when the operator is looking at the square on the diagram and
+        // does not know what it is called.
+        //
+        // OK and Cancel take their words from the look and feel rather than from a message key, so
+        // they read the same as every other dialog in whatever language this is running in.
+        final String ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
+        final String cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
+        final String pick = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
+
+        Object[] answers = { ok, pick, cancel };
+
+        int chose = JOptionPane.showOptionDialog(owner(), scroll,
             I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
-        {
-            return;
-        }
+            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, answers, ok);
+
+        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes
+        // nothing, which is what Cancel has always meant here.
+        if (chose != 0 && chose != 1) return;
 
         java.util.List<TileKey> chosen = new java.util.ArrayList<>();
 
@@ -2753,6 +2819,73 @@ public class AutonomyEditorPanel extends JPanel
         // The restriction is built into the configuration as lock edges, so the running layout has to
         // be regenerated for it to mean anything - the same seam every other setup edit uses.
         placementChanged();
+
+        // Pick on the diagram: the ticks above are applied FIRST and then the next click is waited
+        // for.  Arming without applying would throw away whatever had just been ticked, which is a
+        // button that quietly undoes the work the operator did in the same dialog.
+        if (chose == 1) armBlockerPick(station);
+    }
+
+    /**
+     * Hands the next click on the diagram to this station's blocking list (FR-025).
+     *
+     * One method, because there are two doors into the same gesture - the checklist's button, and the
+     * "nothing is named yet" message that would otherwise be a dead end - and a gesture armed in two
+     * places is one that gets cancelled properly in only one of them.
+     *
+     * @param station the station being held back
+     */
+    private void armBlockerPick(TileKey station)
+    {
+        // In the deep menu the diagram is not this panel's to be clicked on - the same reason the
+        // signal gesture is left out there.  needsTheGrid jumps to the page instead, which is the
+        // useful half of the answer.
+        if (needsTheGrid(station)) return;
+
+        blockingFor = station;
+
+        waitFor(I18n.f("autosetup.ui.promptClickBlocker", describeTile(station)));
+
+        refresh();
+    }
+
+    /**
+     * Why a clicked square cannot hold this station back, or null if it can (FR-025).
+     *
+     * Deliberately SHORTER than the checklist's filter above, and the difference is the reason the
+     * checklist gives for its own rule: it offers named points only because "a square with no name is
+     * one the operator cannot recognise in a list". That reason is about a list. A square that has just
+     * been clicked needs no name to be recognised - the click IS the identification - and it comes back
+     * on the checklist labelled by describeTile, which is the fallback built for exactly that case.
+     *
+     * What survives from the filter is what is about the RAILWAY rather than about reading: a square
+     * autonomy does not route over cannot hold anything back, and a station cannot hold itself back
+     * (OB-083 - "ensure self-selection is impossible") whether it is picked by its own name or by a
+     * caption that points at it.
+     *
+     * A blocker is resolved by TILE - AutonomyBuilder.nodesFor takes the key, not the name - so an
+     * unnamed square is not silently dropped from the built configuration.
+     *
+     * @param station the station being held back
+     * @param tile the square that was clicked
+     * @return the message to show, or null to accept it
+     */
+    private String whyNotABlocker(TileKey station, TileKey tile)
+    {
+        if (tile == null || station == null) return I18n.t("autosetup.ui.errorNotABlockablePoint");
+
+        if (tile.equals(station) || station.equals(session.getCaptionTarget(tile)))
+        {
+            return I18n.f("autosetup.ui.errorBlockerIsTheStation", describeTile(station));
+        }
+
+        if (session.getReducer() == null
+            || !session.getReducer().getPoints().containsKey(tile))
+        {
+            return I18n.t("autosetup.ui.errorNotABlockablePoint");
+        }
+
+        return null;
     }
 
     private void promptHome(TileKey tile)
@@ -4192,6 +4325,45 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // A station is waiting to be told which square holds it back, and this is that click (FR-025).
+        //
+        // Before the ignored check, for the same reason the signal gesture is: a gesture that asked for
+        // a particular square has to be able to answer about that square, and the check below is about
+        // what an ORDINARY click does. It refuses on its own terms a line later, naming what it wanted.
+        if (blockingFor != null)
+        {
+            TileKey station = blockingFor;
+
+            String refusal = whyNotABlocker(station, tile);
+
+            if (refusal != null)
+            {
+                // The gesture STAYS ARMED on a refusal, unlike the signal one, which drops it.  Missing
+                // a small square is the ordinary way to get this wrong, and re-arming costs the whole
+                // right-click menu again.  Escape or a right-click still cancels.
+                say(hint, refusal);
+                return;
+            }
+
+            blockingFor = null;
+
+            java.util.List<TileKey> held =
+                new java.util.ArrayList<>(session.getStore().getBlockingPoints(station));
+
+            if (!held.contains(tile)) held.add(tile);
+
+            session.getStore().setBlockingPoints(station, held);
+
+            // Built into the configuration as lock edges, so the running layout has to be regenerated
+            // for it to mean anything - the same seam the checklist uses.
+            placementChanged();
+
+            // And back to the list, where the square just clicked is now ticked.  A second one is a
+            // button and another click rather than the whole right-click menu again.
+            promptBlockingPoints(station);
+            return;
+        }
+
         // Autonomy takes no notice of this square, so a click here changes nothing.  Route buttons are
         // the case that matters: their connections are INFERRED from the track around them, so letting
         // them be set by hand would offer a decision the next rebuild would silently discard.
@@ -5021,15 +5193,7 @@ public class AutonomyEditorPanel extends JPanel
 
     private String describeTile(TileKey tile)
     {
-        String named = session.getStore().getPointName(tile);
-
-        if (named != null && !named.trim().isEmpty()) return named.trim();
-
-        org.traincontrol.base.LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
-
-        return component != null && component.isFeedback()
-            ? "s88 " + component.getRawAddress() : tile.getX() + "," + tile.getY();
+        return session.describeTile(tile);
     }
 
     // --- state ------------------------------------------------------------------------------------

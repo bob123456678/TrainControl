@@ -2928,6 +2928,20 @@ public class RouteEditorFrame extends JFrame
                     java.awt.Component c = super.getTableCellRendererComponent(table, value, selected,
                         focused, row, column);
 
+                    // The row at the bottom is left alone (MT-011).
+                    //
+                    // It is not a row yet - it is the button that makes one - so `row < rows.size()`
+                    // is false for it and it fell straight into the "cannot be typed into" branch
+                    // below: disabled, and grey. greyWhatCannotBeEdited already exempts it from the
+                    // background wash for exactly this reason, and this renderer, which runs inside
+                    // that one, went on greying it anyway.
+                    //
+                    // On a route from the Central Station it is worse, and that is where Adam found
+                    // it: the route is locked, so the + is not drawn either, and what is left is a
+                    // full-width grey line under the last command with nothing in it. "make this be
+                    // white."
+                    if (row >= rows.size()) return c;
+
                     // Both kinds of "you cannot type here": a whole row that is a kept command, and a
                     // single cell whose kind has no such thing - a stop has no address.  The second was
                     // drawn in ordinary black, so an empty cell that could not be filled looked exactly

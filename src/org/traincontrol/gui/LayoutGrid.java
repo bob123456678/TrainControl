@@ -159,6 +159,14 @@ public class LayoutGrid
         return discarded;
     }
 
+    /**
+     * Whether this grid took its panel over from one that was already drawn on it.
+     *
+     * Read from the LIVE registry in the constructor, where the outgoing grid is discarded - so it
+     * costs nothing and cannot disagree with what actually happened.
+     */
+    private boolean replacing = false;
+
     private javax.swing.Timer failsafe;
 
     private javax.swing.Timer grace;
@@ -244,7 +252,9 @@ public class LayoutGrid
 
             LayoutGrid outgoing = was == null ? null : was.get();
 
-            if (outgoing != null && outgoing != this) outgoing.discard();
+            replacing = outgoing != null && outgoing != this;
+
+            if (replacing) outgoing.discard();
         }
 
         // Which editor this is.  layout.getEdit() is true in BOTH - the autonomy editor borrows the
@@ -823,7 +833,37 @@ public class LayoutGrid
     {
         if (ui == null) return;
 
-        container.setVisible(false);
+        // Nothing to wait for, so nothing to hide (OB-109).
+        //
+        // Adam: "when placing new tiles in the track diagram editor, the diagram sometimes flickers."
+        // Every placement rebuilds the whole grid, and on the second and every later build each tile
+        // is a cache hit - so this hid the diagram and whenTilesSettled gave it back on the next EDT
+        // pass. A paint landing between those two is the blink, and whether one does depends on where
+        // the event thread happens to be, which is the "sometimes".
+        //
+        // It has to be asked HERE and not earlier: LayoutLabel counts a decode before submitting it,
+        // deliberately, so that a grid asking this question after building its labels cannot see zero
+        // while work it caused is still on its way to the pool. Every label above is built by now.
+        //
+        // A cold build is untouched - the count is not zero, and the diagram is held back and the
+        // spinner armed exactly as before. Making the HIDE wait alongside the spinner instead would
+        // have cost that: 120ms of labels floating on nothing, which is the fault the hold-back was
+        // written to remove.
+        if (ui.tilesAreSettled()) return;
+
+        // And a diagram already on screen is not taken away to be rebuilt (OB-109).
+        //
+        // The hold-back was written for a page ARRIVING - "a diagram used to arrive in two stages" -
+        // and hiding one that is already drawn is the opposite of what it is for. The editor rebuilds
+        // the whole grid after every placement, so the first tile of a type nobody has drawn at this
+        // size is one decode, and one decode was taking the entire page off the screen.
+        //
+        // Not "never hide" on a replacement either: changing the tile SIZE re-keys every image, and a
+        // page arriving square by square is the thing the spinner exists for. So a replacement waits
+        // with the spinner instead. If the rebuild is quick - which every placement is - the reveal
+        // gets there first and nothing is ever hidden; if it is slow, the diagram goes behind the
+        // spinner 120ms in, exactly as a cold page does.
+        if (!replacing) container.setVisible(false);
 
         final LoadingSpinner spinner = new LoadingSpinner();
 
@@ -864,6 +904,10 @@ public class LayoutGrid
         grace = new javax.swing.Timer(120, e ->
         {
             if (revealed[0] || discarded) return;
+
+            // Idempotent on a grid that was hidden up front; the one that matters is a replacement,
+            // which was left showing and has now been slow enough to be worth a spinner.
+            container.setVisible(false);
 
             parent.add(spinner);
 

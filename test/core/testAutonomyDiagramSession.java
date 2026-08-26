@@ -618,6 +618,136 @@ public class testAutonomyDiagramSession
             "a caption nobody can see has to say so");
     }
 
+    /**
+     * A square trains turn round at, from which no station can be reached, is reported.
+     *
+     * Adam, closing OB-113 - a route he expected and did not get, whose cause was the reversing point:
+     * "We need to add a warning if a reversing point leads to nothing else."
+     *
+     * **What the check does NOT say, which is most of the value.** A reversing spur is a perfectly good
+     * thing: a train runs in, turns, and comes back out to take a different branch. From the square
+     * itself the whole railway is still reachable, so a healthy switchback never appears here - and
+     * `MAY_TURN_ON_DEAD_END` above already covers the one thing that is worth saying about a stub. What
+     * is left, and what this test builds, is a reversing square in a pocket of track with no station in
+     * it at all: a train sent there turns round and is still nowhere.
+     *
+     * `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` say this for STATIONS and only for stations, so
+     * a reversing point that is not one had nothing watching it.
+     *
+     * The second half is the half that keeps the list readable. Giving the pocket a station stops the
+     * notice - a check that also fires on finished layouts is one that gets scrolled past, which this
+     * list has been in before.
+     *
+     * MUTATION: dropping the `!reachesAStation` condition - so every reversing point is reported -
+     * fails the second half; removing the call to `checkReversingGoesSomewhere` fails the first.
+     */
+    @Test
+    public void testAReversingPointThatLeadsNowhereIsReported() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        // A second run of track, not joined to the first.  The station is over on the original one.
+        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey farEnd = new TileKey("main", 1, 3);
+        TileKey reversing = new TileKey("main", 4, 3);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setPointName(farEnd, "Siding End");
+        session.setPointName(reversing, "Turnback");
+
+        // Reversing is a property of the ACTIVE configuration, and setPointProperty returns quietly
+        // when there is none - so without these two lines the flag below does nothing at all.
+        session.getStore().createConfiguration("Reversing", null);
+        session.getStore().setActiveConfiguration("Reversing");
+
+        session.setPointFlag(reversing, AutonomyBuilder.CAN_REVERSE, true);
+
+        session.rebuild();
+
+        // Precondition, because the interesting failure and a fixture that never set the flag look
+        // exactly alike from the finding list.
+        assertTrue(session.mayTurnTiles().contains(reversing)
+            || session.mandatoryTurnTiles().contains(reversing),
+            "precondition: the square is not actually one where trains change direction");
+
+        if (!hasFinding(org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE))
+        {
+            // Said with the whole list, because a check that did not fire and a check that fired about
+            // some other square look identical from a boolean.
+            StringBuilder saw = new StringBuilder();
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding f : session.check())
+            {
+                saw.append("\n  ").append(f.getMessageKey()).append(" ").append(f.getSubject());
+            }
+
+            fail("a square trains turn round at, with no station reachable from it, was not reported. "
+                + "Turning round somewhere a train can never get to a station from is the shape of "
+                + "OB-113 - a route that does not exist and nothing on the diagram saying why. "
+                + "Findings were:" + saw);
+        }
+
+        // The control: give that pocket of track a station, and the notice has to go.  This is the half
+        // that separates the check from one that simply lists every reversing point on the railway.
+        session.getStore().setStation(farEnd, true);
+
+        session.rebuild();
+
+        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE),
+            "the notice stayed after a station appeared within reach of the reversing square, so it is "
+            + "reporting reversing points rather than reversing points that lead nowhere - which is how "
+            + "a findings list stops being read");
+    }
+
+    /**
+     * What a square is called, in the three cases there are.
+     *
+     * OB-112 put a name at the top of the diagram\u2019s right-click menu, and the menu in the editor
+     * has had one for months - so the rule moved to the session, where both can ask it. This is that
+     * rule: what somebody named it, then the sensor address printed on the diagram beside it, then
+     * where it is. Each fallback is a real choice - a square with no name still has an address the
+     * user can see on their own diagram, and one with neither has only its position - and each is a
+     * separate assertion, because a rule that only ever gets its first case tested is a rule with two
+     * untested branches under it.
+     *
+     * MUTATION: dropping the feedback branch - so an unnamed sensor square falls straight through to
+     * its coordinates - fails the second assertion; returning the coordinates always fails all three.
+     */
+    @Test
+    public void testASquareIsNamedByWhatIsKnownAboutIt() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey named = new TileKey("main", 1, 1);
+        TileKey sensor = new TileKey("main", 4, 1);
+        TileKey plain = new TileKey("main", 2, 1);
+
+        session.setPointName(named, "  Bahnhof  ");
+
+        assertEquals(session.describeTile(named), "Bahnhof",
+            "a square somebody named is called that - trimmed, because the name is going into a menu "
+            + "heading and the padding a text field leaves behind is not part of it");
+
+        String sensorName = session.describeTile(sensor);
+
+        assertTrue(sensorName.startsWith("s88 "),
+            "an unnamed sensor square is known by the address printed on the diagram next to it, "
+            + "which is the only thing about it the user can already see. Got: " + sensorName);
+
+        assertEquals(session.describeTile(plain), "2,1",
+            "a square with neither a name nor a sensor has only where it is");
+    }
+
     private boolean hasFinding(String messageKey)
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())

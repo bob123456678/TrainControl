@@ -201,6 +201,13 @@ then
     echo "That folder is Adam's real railway and holds his accumulated autonomy setup, which is"
     echo "not recoverable.  Find the class that did it before trusting anything above."
     echo ""
+    echo "BUT FIRST: was TrainControl open while this ran?  The application writes to that folder"
+    echo "too - every train that moves rewrites its placement - and this check hashes the folder"
+    echo "before and after the whole run, so it cannot tell the two apart.  Changes to 'loc' and"
+    echo "'facing' in configuration-*.json are what a running railway looks like; changes to"
+    echo "setup.json, or a file appearing or disappearing, are not.  Look at the diff before"
+    echo "hunting for a class."
+    echo ""
     diff <(echo "$live_before") <(echo "$live_after") | grep '^[<>]' | sed 's/^/  /'
 fi
 

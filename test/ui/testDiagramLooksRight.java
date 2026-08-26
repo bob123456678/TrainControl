@@ -36,6 +36,16 @@ public class testDiagramLooksRight
     private static MarklinControlStation model;
     private static TrainControlUI ui;
 
+    /**
+     * The operator’s railway is not this test’s to open (OB-111).
+     *
+     * Constructing the window opens whatever the saved layout preference names, which on his machine is
+     * his live layout - so this class rewrote his configuration on every battery, identical but for
+     * line endings, and left it showing as modified in git status. The sandbox points the preference
+     * at a copy of the fixture and puts it back afterwards.
+     */
+    private static support.LayoutSandbox sandbox;
+
     /** Where the pictures land, for anybody who wants to look at them */
     private static final File OUT = new File(System.getProperty("java.io.tmpdir"), "tc-diagram-shots");
 
@@ -49,6 +59,9 @@ public class testDiagramLooksRight
 
         model = init(null, true, false, false, true);
 
+        // BEFORE the window is built: it reads the layout preference in its constructor.
+        sandbox = support.LayoutSandbox.open();
+
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
@@ -60,6 +73,8 @@ public class testDiagramLooksRight
     public static void tearDownClass()
     {
         if (model != null) model.stop();
+
+        if (sandbox != null) sandbox.close();
     }
 
     /**
@@ -707,6 +722,223 @@ public class testDiagramLooksRight
             || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_CURVE
             || type == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
             || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+    }
+
+    /**
+     * The autonomy menu for a square opens with that square\u2019s name, disabled.
+     *
+     * OB-112, and written because reading the code and looking at the screen disagreed. Adam sent a
+     * picture of the editor\u2019s menu on LowerBack with no heading on it at all; `buildTileMenu`
+     * calls `title` unconditionally as its first act, and a probe against a copy of his layout
+     * computes "LowerBack" for exactly that square. One of those two is wrong and no amount of
+     * re-reading settles which, so this asks the menu itself.
+     *
+     * It goes through `buildAutonomyTileMenu`, which is the main window\u2019s door to the same
+     * builder the editor uses - one menu, built once, so a test on this side is a test on both.
+     *
+     * The assertion is about the FIRST component, not merely that a name appears somewhere: a
+     * heading that is not at the top is not a heading, and half the point of it is that the name is
+     * the first thing under the pointer.
+     *
+     * MUTATION: removing the `title` call from buildTileMenu fails this; so does putting tidy()'s
+     * heading test back the way it was, which is how the heading came to be missing at all.
+     */
+    @Test
+    public void testTheAutonomyMenuOpensWithTheSquaresName() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        if (session == null || session.getReducer() == null)
+        {
+            throw new SkipException("the fixture layout has no autonomy setup loaded");
+        }
+
+        org.traincontrol.automationui.TileGraph.TileKey point = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey tile
+            : session.getReducer().getPoints().keySet())
+        {
+            String name = session.getStore().getPointName(tile);
+
+            if (name != null && !name.trim().isEmpty())
+            {
+                point = tile;
+                break;
+            }
+        }
+
+        assertNotNull(point, "no named point in the fixture, so there is nothing to head a menu with");
+
+        final org.traincontrol.automationui.TileGraph.TileKey square = point;
+        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> menu[0] = ui.buildAutonomyTileMenu(square));
+
+        assertNotNull(menu[0], "no menu at all for a named point");
+        assertTrue(menu[0].getComponentCount() > 0, "the menu came out empty");
+
+        java.awt.Component first = menu[0].getComponent(0);
+
+        assertTrue(first instanceof javax.swing.JMenuItem,
+            "the first thing on the menu is a " + first.getClass().getSimpleName()
+            + ", not an item - so whatever heads this menu, it is not a heading");
+
+        javax.swing.JMenuItem heading = (javax.swing.JMenuItem) first;
+
+        assertFalse(heading.isEnabled(),
+            "the first item on the menu is live, so it is a command and not a name. A heading has to "
+            + "be unclickable or it is one more thing to press by accident");
+
+        assertEquals(heading.getText(), session.describeTile(square),
+            "the menu does not open with the name of the square it is about. That is OB-112, and it "
+            + "is the assertion that says whether the fault is in this code or in the build that was "
+            + "running when it was reported");
+
+        // And the shape tidy() is otherwise there for, which the fix for OB-112 must not undo.
+        //
+        // OB-054: "a heading, a divider, nothing at all, another divider" - a menu assembled from a
+        // dozen independent blocks, each of which leaves its divider behind when it has nothing to
+        // offer for this square. The heading was the half that went wrong; these three are the half
+        // that was right, and nothing was checking them.
+        java.awt.Component last = menu[0].getComponent(menu[0].getComponentCount() - 1);
+
+        assertFalse(menu[0].getComponent(0) instanceof javax.swing.JSeparator,
+            "the menu starts with a divider, which has nothing above it to separate");
+
+        assertFalse(last instanceof javax.swing.JSeparator,
+            "the menu ends with a divider, which has nothing below it to separate");
+
+        for (int at = 1; at < menu[0].getComponentCount(); at++)
+        {
+            boolean two = menu[0].getComponent(at) instanceof javax.swing.JSeparator
+                && menu[0].getComponent(at - 1) instanceof javax.swing.JSeparator;
+
+            assertFalse(two, "two dividers in a row at item " + at + " - an empty band between two "
+                + "lines, which is the shape a section with nothing to offer leaves behind");
+        }
+    }
+
+    /**
+     * A diagram that is already drawn is not taken off the screen to be rebuilt.
+     *
+     * OB-109. Adam: "when placing new tiles in the track diagram editor, the diagram sometimes
+     * flickers." Every placement rebuilds the whole grid, and a new grid hid itself until its tiles
+     * had decoded - so the page was taken away and given back, and whether an empty paint landed in
+     * between depended on where the event thread was. That is the "sometimes".
+     *
+     * Two rules came out of it, and this checks both, because each is what the other misses.
+     *
+     * **Nothing pending, nothing to hide.** On a warm cache there is no decode outstanding, so the
+     * hold-back has nothing to wait for. It still hid the diagram, and `whenTilesSettled` gave it back
+     * on the NEXT event-thread pass - a hide and a show a frame apart, which is the blink.
+     *
+     * **A replacement is not an arrival.** The hold-back was written for a page arriving in two stages;
+     * a page already on the screen being rebuilt is the opposite case. Placing the first tile of a
+     * type nobody has drawn at this size is ONE decode, and one decode was taking the whole page away.
+     * A slow replacement still ends up behind the spinner, 120ms in - that is what the second half
+     * here does not check and MT-194 does.
+     *
+     * Both assertions read `isVisible` inside the same event-thread block that built the grid, which is
+     * what makes them deterministic: the reveal can only arrive on a later pass, so the old behaviour
+     * cannot sneak past by being quick.
+     *
+     * MUTATION: removing the `tilesAreSettled` early return fails the first; removing the `replacing`
+     * condition - so every grid hides itself again - fails the second; hiding NOTHING, ever, fails the
+     * control at the end of the second.
+     */
+    @Test
+    public void testARebuiltDiagramIsNotTakenOffTheScreen() throws Exception
+    {
+        java.util.List<String> pages = model.getLayoutList();
+
+        assertFalse(pages.isEmpty(), "no pages to build - is test_layout present?");
+
+        final LayoutDiagram layout = model.getLayout(pages.get(0));
+
+        final javax.swing.JPanel first = new javax.swing.JPanel();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            new org.traincontrol.gui.LayoutGrid(layout, 30, first, null, true, ui));
+
+        // Everything that page needs, decoded and cached.
+        final java.util.concurrent.CountDownLatch settled =
+            new java.util.concurrent.CountDownLatch(1);
+
+        javax.swing.SwingUtilities.invokeLater(() -> ui.whenTilesSettled(settled::countDown));
+
+        assertTrue(settled.await(30, java.util.concurrent.TimeUnit.SECONDS),
+            "the tiles never finished decoding, so nothing below is a check");
+
+        assertTrue(ui.tilesAreSettled(), "precondition: the cache is warm at this size");
+
+        // One: a fresh panel, warm cache.  Nothing is pending, so nothing may be hidden.
+        final javax.swing.JPanel fresh = new javax.swing.JPanel();
+        final boolean[] visible = {false};
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            org.traincontrol.gui.LayoutGrid grid =
+                new org.traincontrol.gui.LayoutGrid(layout, 30, fresh, null, true, ui);
+
+            visible[0] = grid.getContainer().isVisible();
+        });
+
+        assertTrue(visible[0],
+            "a grid built with no decode outstanding hid itself anyway. It is given back on the next "
+            + "event-thread pass, which is a hide and a show one frame apart - the blink OB-109 is "
+            + "about, and the commonest case in the editor because every rebuild after the first is "
+            + "a cache hit");
+
+        // Two: a real wait, held open by the test.
+        //
+        // The first version of this hoped that a page of images at an unused size would still be
+        // decoding a statement later. It was not - the fixture is small - and the precondition said
+        // so rather than letting the assertion pass without meaning anything. tileDecodeStarted is
+        // what a LayoutLabel calls before it submits, so holding one open puts the grid in exactly
+        // the state it asks about, for as long as this test wants rather than as long as a pool takes.
+        ui.tileDecodeStarted();
+
+        final boolean[] onFresh = {false};
+
+        try
+        {
+            assertFalse(ui.tilesAreSettled(), "precondition: a decode is outstanding");
+
+            // The SAME panel, which already has a diagram on it.  A replacement, with a genuine wait.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.gui.LayoutGrid grid =
+                    new org.traincontrol.gui.LayoutGrid(layout, 37, fresh, null, true, ui);
+
+                visible[0] = grid.getContainer().isVisible();
+            });
+
+            // And the control, which is what makes the line above mean anything: a BRAND NEW panel,
+            // same wait, must still be held back.  Without this, "never hide anything" passes.
+            final javax.swing.JPanel arriving = new javax.swing.JPanel();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.gui.LayoutGrid grid =
+                    new org.traincontrol.gui.LayoutGrid(layout, 37, arriving, null, true, ui);
+
+                onFresh[0] = grid.getContainer().isVisible();
+            });
+        }
+        finally
+        {
+            ui.tileDecodeFinished();
+        }
+
+        assertTrue(visible[0],
+            "a rebuild over a panel that already had a diagram on it took that diagram off the "
+            + "screen. The hold-back is for a page ARRIVING; in the editor this is one placement, and "
+            + "one uncached tile was blanking the whole page");
+
+        assertFalse(onFresh[0],
+            "a diagram ARRIVING on a panel that had nothing on it was shown while its tiles were "
+            + "still decoding. That is the staging the hold-back exists to hide - labels floating on "
+            + "nothing - and giving it up would trade OB-109 for the report that came before it");
     }
 
     /**

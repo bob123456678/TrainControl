@@ -2092,6 +2092,32 @@ public class AutonomySession
         return getStationIndex().nameOf(tile);
     }
 
+    /**
+     * What to call a square in front of the user: its authored name, then its sensor, then where it is.
+     *
+     * This lived in AutonomyEditorPanel, which is the window the setup is done in - and OB-112 is about
+     * the diagram's own right-click menu, in the other window, which had no way to reach it. The
+     * choice is a real one and worth making once: a square somebody named is called that, a sensor
+     * square is known by the address printed on the diagram, and everything else has only its
+     * position. Copying those three lines into the second menu is how the two would come to disagree
+     * about a square while both were on screen.
+     *
+     * @param tile the square
+     * @return a name for it, never null
+     */
+    public String describeTile(TileKey tile)
+    {
+        String named = store == null ? null : store.getPointName(tile);
+
+        if (named != null && !named.trim().isEmpty()) return named.trim();
+
+        org.traincontrol.base.LayoutDiagramComponent component =
+            getGraph() == null ? null : getGraph().getTiles().get(tile);
+
+        return component != null && component.isFeedback()
+            ? "s88 " + component.getRawAddress() : tile.getX() + "," + tile.getY();
+    }
+
     public Set<TileKey> reversibleTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();

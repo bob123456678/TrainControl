@@ -69,8 +69,13 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-189](#mt-189) | 2026-08-25 | A route while a train is running | needs test | AU-A2 |
 | [MT-190](#mt-190) | 2026-08-25 | Signals when a train is dispatched by hand | needs test | AU-B7 |
 | [MT-191](#mt-191) | 2026-08-25 | An edit that never finished | needs test | OB-108 |
+| [MT-192](#mt-192) | 2026-08-26 | The diagram menu says which square it is about, and opens the editor | needs test | OB-112, FR-026 |
+| [MT-193](#mt-193) | 2026-08-26 | A reversing point that leads nowhere | needs test | OB-113 |
+| [MT-194](#mt-194) | 2026-08-26 | Placing tiles without the diagram blinking | needs test | OB-109 |
+| [MT-195](#mt-195) | 2026-08-26 | Picking what holds a station back by clicking it | needs test | FR-025 |
+| [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
 
-Everything else - 124 of 181 - is **fixed validated** and needs nothing from you unless the
+Everything else - 135 of 196 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -6385,6 +6390,12 @@ run and deferred, or it is waiting on something that does not exist yet", and th
 Adam. A fifth word would have to earn its place by saying something the four cannot, and this one does
 not.
 
+**Adam, 2026-08-26 (triage).** Works, with notes.
+
+You now have the materials- use the current page 1.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-141"></a>
@@ -9303,6 +9314,16 @@ could be tested without opening a modal dialog. Two automated tests cover it, bo
 returning the centred point fails them, and so does a dialog larger than the window it belongs to
 being pushed off the top-left, which is the half of the clamp the ordinary case never exercises.
 
+**Adam, 2026-08-25 (triage).** Does not work.
+
+Still opens smack in the middle.
+
+*Run against commit 96dd12d6.*
+
+**Adam, 2026-08-26 (triage).** Does not work.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-183"></a>
@@ -9342,6 +9363,14 @@ that is a real report and nothing will have caught it.
 **Adam, 2026-08-25 (triage).** Works.
 
 *Run against commit 96dd12d6.*
+
+**Adam, 2026-08-25 (triage).** Works.
+
+*Run against commit 96dd12d6.*
+
+**Adam, 2026-08-26 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -9885,3 +9914,227 @@ something, then do whatever re-reads the pages wholesale - your edit should stil
 
 *Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+---
+
+<a id="mt-192"></a>
+
+### MT-192 - 2026-08-26 - The diagram menu says which square it is about, and opens the editor
+
+**Disposition:** needs test
+**From:** OB-112 and FR-026, both about the right-click menu on the track diagram
+**Written:** 2026-08-26
+
+Two changes to one menu, so they are checked together. Both are on the **track diagram in the main
+window**, with a setup loaded - not in the editor.
+
+1. Load your setup and right-click **LowerBack** on page 2. The menu should now open with the
+   square's name at the top, in bold and greyed. It is a label, not an item: it should not respond to
+   the pointer.
+1. **And the same in the autonomy editor**, which is where you reported it missing. The heading is
+   written there and always was - it was being deleted a line later by the tidy pass that takes empty
+   sections out of the menu, so no menu in either window has had one since 16 August.
+2. Right-click a square you have never named - a plain sensor. The heading should read `s88 <address>`
+   rather than a name. On a piece of track with no sensor it should read the coordinates.
+3. Right-click somewhere the menu has nothing at all to offer. **No menu should appear.** A grey box
+   containing only a name would be the new way to get this wrong, so it is worth one deliberate try.
+4. Now with **no setup loaded**, right-click a square and open **Autonomy Setup**. At the foot of that
+   submenu there should be a new **Open the Full Editor...** item. Press it: the editor should open in
+   autonomy mode, on that page, with the square you clicked found and flashing.
+5. The greying. With trains running, the whole menu is replaced by a note that the editor is open or
+   busy - that is the old behaviour and is fine. What to look for instead is a case where the item is
+   live and pressing it gets you an error box: if that happens, say which error, because the item is
+   supposed to be greyed with that same reason on its tooltip.
+
+#### Comments
+
+**Claude, 2026-08-26, after your screenshot.** The heading was never missing from the code. `tidy()`
+removes "a heading with nothing under it", and asked that question by looking at whether a divider
+followed the heading - and `title()` writes the heading and its divider together, so the answer was yes
+for every heading there has ever been. It now looks PAST the divider, which is where the emptiness
+actually shows.
+
+Worth saying plainly: I read that code twice and reported it as working, because the call that adds the
+heading is unconditional and three lines from the top. What settled it was writing a test that asks the
+menu what its first item is. Reading found nothing three times; running found it once.
+
+**Claude, 2026-08-26.** Step 5 is the one worth your attention. The item asks the main window a single
+question - "would the editor open, and if not, why" - and that method is the four refusals
+`openLayoutEditor` already makes, in its order, handing back the same message key each one shows. A
+test reads both and fails if a refusal exists there with no answer here. What it cannot check is
+whether the four are still the right four, which is what step 5 is for.
+
+**Adam, 2026-08-26 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-193"></a>
+
+### MT-193 - 2026-08-26 - A reversing point that leads nowhere
+
+**Disposition:** needs test
+**From:** OB-113, on your note "we need to add a warning if a reversing point leads to nothing else"
+**Written:** 2026-08-26
+
+1. In the autonomy editor, open the findings list on your real setup. **Nothing new should appear.**
+   Your reversing points all reach stations, so a notice about any of them would be a false alarm -
+   and this check has been written specifically not to fire on a working switchback, where a train
+   runs in, turns, and comes back out to take another branch.
+2. Now make one fire on purpose. Take a piece of track that is not joined to the rest of your railway
+   - a siding you have drawn but not connected, or draw two squares somewhere empty - put a sensor on
+   it, and set that square to **trains may change direction here**.
+3. The list should gain a **notice** naming that square: trains turn round there, and no station can
+   be reached from it.
+4. Join it back to the railway, or make some square on it a station. The notice should go.
+
+#### Comments
+
+**Claude, 2026-08-26.** Why it is a notice rather than a warning: "reaches no station" is also true of
+a spur somebody is halfway through drawing, and this list stops being read the moment ordinary things
+are listed beside real problems.
+
+The gap it fills is one the application itself opens. `Arrival trapped` fires when a train could reach
+a square and then not leave, and its wording says: "Either set 'trains may change direction here', or
+open the way ahead." Taking the first half of that advice silences it - whether or not the way ahead
+was ever opened. So a loud problem could be turned quiet by following the app's own suggestion, and
+nothing was watching the result.
+
+**Adam, 2026-08-26 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-194"></a>
+
+### MT-194 - 2026-08-26 - Placing tiles without the diagram blinking
+
+**Disposition:** needs test
+**From:** OB-109
+**Written:** 2026-08-26
+
+1. Open the track diagram editor on a page with a good deal of track on it, and place a run of tiles -
+   a dozen or so, of a type already on the page. **The diagram should not blink at all** between
+   placements.
+2. Now place the first tile of a type nothing on that page uses, at this tile size. There is a real
+   decode behind that one, so it is the case that used to blink hardest. It should still not blink;
+   if the machine is slow enough, you may see the spinner instead, which is the intended ending.
+3. Change the **tile size** while the editor is open. Every image has to be decoded again, so this one
+   is allowed to show the spinner - what it must not do is show you a page arriving square by square.
+4. And the control: open a page you have not looked at since starting the application. That is a page
+   ARRIVING, and it should behave exactly as it always has - held back behind the spinner until its
+   track is drawn, rather than labels floating on empty squares.
+
+#### Comments
+
+**Claude, 2026-08-26.** Every placement rebuilds the whole grid, and a new grid used to hide itself
+until its tiles had decoded. On the second and every later build each tile is a cache hit, so it hid
+the diagram and got it back on the next pass of the event thread - a hide and a show a frame apart.
+Whether an empty paint landed in between depended on where that thread happened to be, which is your
+"sometimes".
+
+Two rules now: a grid with nothing outstanding is never hidden, and a grid REPLACING one that was
+already drawn waits with the spinner rather than blanking first. Step 4 is the control, because giving
+up the hold-back altogether would trade this report for the one it was written to fix.
+
+**Adam, 2026-08-26 (triage).** Works.
+
+*Run against commit 309b984f, build\classes, compiled 26 Aug 00:43 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-195"></a>
+
+### MT-195 - 2026-08-26 - Picking what holds a station back by clicking it
+
+**Disposition:** needs test
+**From:** FR-025
+**Written:** 2026-08-26
+
+1. In the autonomy editor, right-click a station and open **Advanced Parameters > Unavailable while
+   occupied**. The checklist is as it was, with a new **Pick on the Diagram...** button beside OK.
+2. Tick one or two entries and then press **Pick on the Diagram...**. The window closes and the banner
+   asks you to click a square. **What you ticked must still be ticked when the list comes back** - it
+   is applied before the click is waited for, on purpose.
+3. Click a sensor somewhere on the layout. The list should reopen with that square ticked, named by
+   its own name where it has one and by its s88 address where it does not.
+4. Click something autonomy does not route over - a lamp, a route button, blank space. It should
+   refuse and say so, **and stay waiting**, so a mis-aimed click costs you one more click and not the
+   whole menu again.
+5. Click the station itself, and then its caption if it has one somewhere else. Both should be refused:
+   a station held back by itself is a station nothing can ever be sent to.
+6. Right-click anywhere while it is waiting. That cancels, as it does for every other gesture in this
+   editor.
+7. And the case that used to be a dead end: find a station on a page where nothing else has been
+   named. The old message said there was nothing to block with and stopped; it should now offer
+   **Pick on the Diagram...** as well.
+
+#### Comments
+
+**Claude, 2026-08-26.** The click rule is deliberately looser than the checklist's. The list offers
+named points only, and says why: "a square with no name is one the operator cannot recognise in a
+list." That is a reason about reading a list, not about the railway - a square you have just clicked
+needs no name to be recognised, and a blocker is resolved by tile rather than by name, so it is not
+dropped from the built configuration. What survives is what is about the railway: autonomy has to route
+over the square, and a station cannot hold itself back.
+
+---
+
+<a id="mt-196"></a>
+
+### MT-196 - 2026-08-26 - A locomotive where a train is running
+
+**Disposition:** needs test
+**From:** FR-027
+**Written:** 2026-08-26
+
+1. Start autonomy and watch the diagram. A train that is **moving** should carry a small locomotive on
+   the sensor it has most recently reached, instead of the black dot.
+2. Watch one arrive and stop. As it comes to a stand the locomotive should go back to being a dot -
+   the train is still there and the diagram still says so, but it is no longer running.
+3. Two or three trains out at once is the case this is for: at a glance, which of them are moving?
+4. Try it at your smallest tile size. The icon is scaled to the tile and floored so it never comes out
+   smaller than the dot it replaces; if it is a smudge at that size, say so and it can be floored
+   higher.
+1. **On top of the address labels.** Turn s88 addresses on, and watch a train run over squares whose
+   number is drawn on them. The locomotive should be over the number every time, not sometimes - and
+   when the train stops and moves on, the number should come back out from under it.
+1. **Which way it faces.** Watch a train run east and then one running west: the locomotive should be
+   pointing the way it is going, mirrored rather than turned upside down. On a vertical run it stands
+   on end, nose towards where it is heading - there is no way to draw a side view running up the page
+   that does not, and it at least says which end is the front. If standing on end reads badly to you,
+   say so: the alternative is to leave vertical runs facing east, which says nothing but looks calm.
+5. **Now change it.** Put any PNG over `src/org/traincontrol/gui/resources/running_train.png`, rebuild,
+   and that is the new icon - it is scaled to the tile, so only its shape and its transparency matter.
+   Try one and tell me whether the size and position look right for the icons you would actually use.
+6. And the safety net: rename that file, rebuild, and start autonomy. The diagram should fall back to
+   the dot rather than throwing anything or drawing nothing.
+
+#### Comments
+
+**Claude, 2026-08-26.** Two things are deliberately one line each, because you asked for it to be easy
+to change:
+
+- `ICON_ONLY_WHILE_MOVING` in `TileOverlay`. True is what step 2 describes. **False gives every train
+  autonomy is holding a path for the locomotive, moving or not** - which is the other reading of
+  "while autonomy is running (not while stationary)", and if that is what you meant, that is the whole
+  change.
+- `ICON_FOLLOWS_TRAVEL`, whether it is turned to face the way the train is going. The direction comes
+  off the line already drawn through the square - the same geometry - so the locomotive and its path
+  cannot disagree about which way it points.
+- `ICON_SCALE`, how much of the tile it takes - 0.76, at your reading of the first version. Not the
+  whole square on purpose: the line showing which way the path runs is drawn underneath, and an icon
+  that covers the tile answers "where is it" by hiding "where is it going".
+
+**Claude, 2026-08-26, on "it's a coin toss".** It was not a toss, it was fixed and wrong, and it looked
+like chance because it depended on where the address number happened to fall on the tile. The overlay is
+painted after the tile draws itself, so it is reliably over the tile's OWN icon - but the address and
+station labels are SEPARATE components that LayoutGrid z-orders to the front, and no painting order
+inside one component reaches over a sibling drawn after it. A square now comes to the front while a
+train is running on it and goes back when it stops. Step 5 is the half worth watching: without the
+release, every square that ever held a moving train would end up permanently over its own address.
+
+"Moving" is asked of the locomotive's speed rather than of its path, because a train with a path can be
+standing - waiting at a platform, or held while another route clears - and those are the ones step 2 is
+about.

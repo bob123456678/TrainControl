@@ -974,6 +974,265 @@ public class testAutonomyDiagramMonitor
             false, traces, false, null);
     }
 
+    /**
+     * A train that is running is drawn as a locomotive; one that is standing still keeps the dot.
+     *
+     * FR-027. Adam: "add little opaque locomotive icon at the s88 where a train is while autonomy is
+     * running (not while stationary)."
+     *
+     * The dot said WHERE a train was and nothing else. On a layout with several paths out at once,
+     * which of those trains are moving and which are waiting at a platform is the question a glance at
+     * the diagram could not answer, and it is the one this adds.
+     *
+     * **What is asserted is ink in a ring the dot cannot reach.** Not "the two pictures differ", which
+     * a one-pixel change would satisfy, and not the colour of a particular pixel, which is a bet on the
+     * artwork - the icon is a FILE and is meant to be replaced. Whatever somebody draws, it is scaled
+     * to ICON_SCALE of the tile and the dot is a third of it, so ink between those two radii is the
+     * icon and nothing else.
+     *
+     * That also makes this the test that the resource is actually on the classpath: TileOverlay falls
+     * back to the dot when the file is missing, deliberately and silently, so a build that stopped
+     * copying the PNG would look exactly like a build with the feature turned off.
+     *
+     * MUTATION: setting ICON_ONLY_WHILE_MOVING false fails the standing half; renaming or deleting
+     * running_train.png fails the moving half; painting the icon for both fails the standing half.
+     */
+    @Test
+    public void testAMovingTrainIsDrawnAsALocomotive()
+    {
+        int size = 40;
+
+        java.awt.image.BufferedImage moving =
+            painted(new TileOverlay(State.IDLE, true, true, null), size);
+
+        java.awt.image.BufferedImage standing =
+            painted(new TileOverlay(State.IDLE, true, false, null), size);
+
+        // The dot is max(6, size/3) across, so nothing it draws reaches radius 8 at this size. The
+        // icon is round(size * 0.72) across, so it fills most of the way to 14.
+        int near = 9;
+        int far = 14;
+
+        int onMoving = inkInRing(moving, near, far);
+        int onStanding = inkInRing(standing, near, far);
+
+        assertTrue(onMoving > 0,
+            "nothing is drawn outside the dot for a train that is running, so either the locomotive "
+            + "icon was not painted or running_train.png is not on the classpath - TileOverlay falls "
+            + "back to the dot without saying so, which makes a missing resource look like a feature "
+            + "that was never switched on");
+
+        assertEquals(onStanding, 0,
+            "a train standing still was drawn with something bigger than the dot. Adam asked for the "
+            + "locomotive while autonomy is running and NOT while stationary, and a marker that looks "
+            + "the same either way answers the question it was added to answer with 'both'");
+    }
+
+    /**
+     * How many pixels carry ink between two radii of the tile's centre.
+     *
+     * A ring rather than a point, so this asks "is anything drawn out here" rather than betting on
+     * where a particular piece of an icon lands - the icon is meant to be replaceable.
+     */
+    private int inkInRing(java.awt.image.BufferedImage image, int from, int to)
+    {
+        int centre = image.getWidth() / 2;
+        int count = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                double away = Math.hypot(x - centre, y - centre);
+
+                if (away < from || away > to) continue;
+
+                // Anything at all, transparent included: the images start empty, so a non-zero alpha
+                // is ink somebody put there.
+                if (((image.getRGB(x, y) >>> 24) & 0xFF) != 0) count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * A square with a train running on it is drawn in front of the labels that sit over it.
+     *
+     * Adam, looking at the icon: "make sure it renders on top of the S88's.  Right now, it's a coin
+     * toss."  It was not a toss - it was fixed and wrong, and looked like chance because it depended on
+     * where the address number happened to fall on the tile.
+     *
+     * The overlay is painted after `super.paintComponent`, so it is reliably over the tile's OWN icon.
+     * What it can never reach is a SIBLING: LayoutGrid adds the address and station labels as separate
+     * components and z-orders them to the front, and no painting order inside one component gets over
+     * something drawn after it. So the fix is in the component order, and so is the test.
+     *
+     * Both halves matter. Coming to the front is the feature; going back afterwards is what stops a
+     * railway that has been run for an hour ending up with every square that ever held a train
+     * permanently over its own address label.
+     *
+     * MUTATION: removing the liftAboveLabels call from setAutonomyOverlay fails the first half;
+     * lifting unconditionally, or never releasing, fails the second.
+     */
+    @Test
+    public void testASquareWithARunningTrainComesToTheFront() throws Exception
+    {
+        javax.swing.JPanel grid = new javax.swing.JPanel();
+
+        org.traincontrol.gui.LayoutLabel tile =
+            new org.traincontrol.gui.LayoutLabel(null, null, 30, null, false);
+
+        javax.swing.JLabel address = new javax.swing.JLabel("16");
+
+        grid.add(tile);
+        grid.add(address);
+
+        // What LayoutGrid does with an address label: to index 0, which is painted LAST and therefore
+        // on top.  Without this line the test would be about a panel nothing covers.
+        grid.setComponentZOrder(address, 0);
+
+        assertEquals(grid.getComponentZOrder(address), 0,
+            "precondition: the address label is where LayoutGrid puts it");
+
+        assertTrue(grid.getComponentZOrder(tile) > 0,
+            "precondition: the tile starts behind that label, which is the situation being fixed");
+
+        tile.setAutonomyOverlay(new TileOverlay(State.IDLE, true, true, null));
+
+        settle();
+
+        assertEquals(grid.getComponentZOrder(tile), 0,
+            "a square with a train running on it is still behind the address label, so the locomotive "
+            + "is drawn and then covered by a number - which is what it looked like a coin toss "
+            + "between");
+
+        // And back down when it stops.
+        tile.setAutonomyOverlay(new TileOverlay(State.IDLE, true, false, null));
+
+        settle();
+
+        assertTrue(grid.getComponentZOrder(tile) > grid.getComponentZOrder(address),
+            "the square stayed in front after its train stopped. Every square that ever held a moving "
+            + "train would end up permanently over its own address label, which is a diagram that "
+            + "degrades the longer it is used");
+    }
+
+    /**
+     * Waits for anything already queued on the event thread.
+     *
+     * The lift is posted rather than done where it is decided, because the monitor publishes from its
+     * own worker and container order is not thread-safe. An empty task run to completion is the
+     * shortest way to say "and now everything before me has happened".
+     */
+    private void settle() throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * The locomotive is turned to face the way the train is going.
+     *
+     * Adam: "Minor: make the locomotive face the right direction by rotating it or flipping it."
+     *
+     * **The icon cannot simply be compared between two headings**, and that is the whole difficulty of
+     * this test: an overlay carrying a heading also draws the LINE for it, and the line for a train
+     * going east looks nothing like the line for one going north. Two pictures that differ would prove
+     * only that the lines differ, which they did before this feature existed.
+     *
+     * So each heading is rendered twice - once moving, once standing - and what is compared is the
+     * DIFFERENCE between them. The line is identical in both, and the dot is round, so what is left is
+     * the icon and the direction it faces.
+     *
+     * Two things are asserted, and the second is what makes the first mean something. East and west
+     * must differ, or nothing is being turned. And all four must carry about the same amount of ink,
+     * because a transform moves a picture rather than replacing it - a "fix" that drew a different
+     * icon per heading would pass the first and fail this.
+     *
+     * MUTATION: setting ICON_FOLLOWS_TRAVEL false makes every heading identical and fails the first.
+     */
+    @Test
+    public void testTheLocomotiveFacesTheWayTheTrainIsGoing()
+    {
+        int size = 40;
+
+        boolean[] east = iconOnly(Side.E, size);
+        boolean[] west = iconOnly(Side.W, size);
+        boolean[] north = iconOnly(Side.N, size);
+        boolean[] south = iconOnly(Side.S, size);
+
+        assertFalse(java.util.Arrays.equals(east, west),
+            "a train going east and one going west are drawn with the locomotive pointing the same "
+            + "way, so it is not being turned at all - half the trains on the layout face backwards");
+
+        assertFalse(java.util.Arrays.equals(east, north),
+            "a train going north is drawn exactly as one going east");
+
+        assertFalse(java.util.Arrays.equals(north, south),
+            "a train going north and one going south are drawn the same way, which is the pair a "
+            + "reader is most likely to be trying to tell apart on a vertical run");
+
+        int e = count(east);
+
+        assertTrue(e > 0, "nothing distinguishes a moving train from a standing one at all");
+
+        for (boolean[] other : new boolean[][] { west, north, south })
+        {
+            int n = count(other);
+
+            // A tenth, which is room for what antialiasing does to a rotated shape and not room for a
+            // different picture.
+            assertTrue(Math.abs(n - e) * 10 <= e,
+                "one heading draws " + n + " pixels where east draws " + e + ". That is not the same "
+                + "locomotive turned round, which is what rotating and flipping means - it is a "
+                + "different picture per direction, and it will not survive somebody replacing the "
+                + "icon file");
+        }
+    }
+
+    /**
+     * Which pixels a MOVING train adds to a square, for a train heading a given way.
+     *
+     * The same overlay twice, moving and standing, differenced. Both draw the same line - the heading
+     * is the same - so what is left is the locomotive rather than the path it is on, which is the only
+     * way to compare two headings without comparing their lines.
+     */
+    private boolean[] iconOnly(Side to, int size)
+    {
+        java.util.List<TileOverlay.Segment> along =
+            Arrays.asList(new TileOverlay.Segment(null, to, State.ACTIVE));
+
+        java.awt.image.BufferedImage moving =
+            painted(new TileOverlay(State.ACTIVE, true, true, along), size);
+
+        java.awt.image.BufferedImage standing =
+            painted(new TileOverlay(State.ACTIVE, true, false, along), size);
+
+        boolean[] differs = new boolean[size * size];
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                differs[y * size + x] = moving.getRGB(x, y) != standing.getRGB(x, y);
+            }
+        }
+
+        return differs;
+    }
+
+    private int count(boolean[] mask)
+    {
+        int total = 0;
+
+        for (boolean one : mask)
+        {
+            if (one) total++;
+        }
+
+        return total;
+    }
+
     private java.awt.image.BufferedImage painted(TileAnnotation annotation, int size)
     {
         java.awt.image.BufferedImage image =
@@ -982,6 +1241,25 @@ public class testAutonomyDiagramMonitor
         java.awt.Graphics2D g = image.createGraphics();
 
         annotation.paint(g, size, size);
+
+        g.dispose();
+
+        return image;
+    }
+
+    /**
+     * The same, for an overlay.  TileAnnotation and TileOverlay both paint into a tile's graphics and
+     * neither shares an interface with the other, so this is the second half of one idea rather than a
+     * copy of it.
+     */
+    private java.awt.image.BufferedImage painted(TileOverlay overlay, int size)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        overlay.paint(g, size, size);
 
         g.dispose();
 

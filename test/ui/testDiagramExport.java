@@ -36,6 +36,16 @@ public class testDiagramExport
     private static MarklinControlStation model;
     private static TrainControlUI ui;
 
+    /**
+     * The operator’s railway is not this test’s to open (OB-111).
+     *
+     * Constructing the window opens whatever the saved layout preference names, which on his machine is
+     * his live layout - so this class rewrote his configuration on every battery, identical but for
+     * line endings, and left it showing as modified in git status. The sandbox points the preference
+     * at a copy of the fixture and puts it back afterwards.
+     */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -47,6 +57,9 @@ public class testDiagramExport
         model = MarklinControlStation.init(null, true, false, false, true);
 
         model.stop();
+
+        // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
+        sandbox = support.LayoutSandbox.open();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -62,6 +75,8 @@ public class testDiagramExport
 
             SwingUtilities.invokeAndWait(() -> toClose.dispose());
         }
+
+        if (sandbox != null) sandbox.close();
     }
 
     /**

@@ -286,24 +286,6 @@ else - which is the case the textual guard exists for and the behavioural one is
 
 **State:** fixed unvalidated.
 
-### OB-109 - 2026-08-25 - flicker when placing tiles in editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-25 18:05  
-**Build:** commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when placing new tiles in the track diagram editor, the diagram sometimes flickers
-
-### FR-025 - 2026-08-25 - visually choose station exclusion
-
-**Kind:** feature request  
-**Raised from:** MT-188 (The blocked-points picker names what it is offering)  
-**Filed:** 2026-08-25 18:14  
-**Build:** commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the "unavailable when occupied" dialog should allow users to select a s88 tile by clicking, similar to the signal guard popup
-
 ### OB-110 - 2026-08-25 - switch to central station layout
 
 **Kind:** bug  
@@ -325,17 +307,26 @@ comment at that line.
 
 Please confirm on the current build; if it is greyed, this closes as a duplicate of MT-179.
 
-### OB-111 - 2026-08-25 - A test rewrites the real layout folder with identical content
+### FR-028 - 2026-08-26 - prettify autonomy labels
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-26 01:29  
+**Build:** commit 309b984f, build\classes, compiled 26 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+upgrade from [---] to blue ovals with white text, similar to what we have on the auto loc panels in the autonomy tab. use arrow icons instead of the crude > < ^ v for diretion.  land them so that they align just below straight tracks if the track goes east to west, or centered over the track if north to south.  slight opacity and clickable just like now.  show the upgraded ones across all editors and diagrams.
+
+### OB-114 - 2026-08-26 - testTimetableCaptureThroughARealRun is load-sensitive
 
 **Kind:** bug  
 **Raised from:** the triage API  
-**Filed:** 2026-08-25  
+**Filed:** 2026-08-26  
 
-During a full battery, cs2_sample_layout/config/autonomy/setup.json and configuration-Main.json are rewritten. The CONTENT is unchanged - they differ only in line endings, LF where git checked them out CRLF - so no data is lost and battery.sh's fingerprint correctly stays quiet about it, because it strips carriage returns before hashing and a guard that fires every run is one nobody reads.
+testARealRunCapturesNothingWithCaptureOff drives a real autonomy run and asserts a locomotive moved before checking that nothing was captured. On a loaded machine nothing moves inside its budget and it fails on its own precondition - 'no locomotive moved, so nothing was declined and nothing is proved' - which is the honest failure of a test that could not reach the state it tests, but it fails a whole battery to say so.
 
-What it costs is that 'git status' shows the operator's real railway as modified after every battery. On 2026-08-25 that masked a genuine change he had made himself while testing: three files showed as modified, and telling his edit apart from the churn took reading the JSON semantically rather than trusting the status.
+Seen 2026-08-26 during a full battery run while the application was open and driving trains; the class passes on its own, twice, in 22s. The precondition is right to be there. What is wrong is that a timing budget decides whether a battery is green, so the same suite says different things depending on what else the machine is doing.
 
-The fixture separation of b87c4f05 moved the suite onto test_layout for this reason and something still reaches the live folder. Worth finding which class, and pointing it at a copy.
+Worth either waiting on the movement rather than on a clock, or skipping with a stated reason when the run does not start, which is what a test that cannot reach its subject should do.
 
 ## What has been picked up
 
@@ -349,6 +340,13 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-26 | FR-027 | feature request | A locomotive on the square a train is running on, from a file you can replace | - | [MT-196](tests.md#mt-196) |
+| 2026-08-26 | FR-025 | feature request | What holds a station back can be picked by clicking it | - | [MT-195](tests.md#mt-195) |
+| 2026-08-26 | OB-111 | bug | The class that was rewriting your railway on every battery, found and given a sandbox | fixed unvalidated | - |
+| 2026-08-26 | OB-109 | bug | The diagram is not taken off the screen to be rebuilt | - | [MT-194](tests.md#mt-194) |
+| 2026-08-26 | OB-113 | bug | A reversing point that reaches no station is reported - your own case was a missing one, and nothing said so | - | [MT-193](tests.md#mt-193) |
+| 2026-08-26 | FR-026 | feature request | The full editor is one item away on the diagram’s own menu | - | [MT-192](tests.md#mt-192) |
+| 2026-08-26 | OB-112 | bug | The diagram’s autonomy menu says which square it is about | - | [MT-192](tests.md#mt-192) |
 | 2026-08-25 | FB-A1..C2 | bug | [Independent pass over the last day](../reviews/2026-08-25-independent-fable.md) - two more A, one of them a defect in an LD fix | fixed unvalidated | - |
 | 2026-08-25 | LD-A1..C5 | bug | [The last day, reviewed](../reviews/2026-08-25-last-day.md) - six A and seven B, seven of them from that same day; C6-C9 left open | fixed unvalidated | - |
 | 2026-08-25 | OB-108 | bug | A layout edit that never finished is put back to how it was | - | [MT-191](tests.md#mt-191) |

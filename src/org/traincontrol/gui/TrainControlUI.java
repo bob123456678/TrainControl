@@ -3656,6 +3656,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
     }
 
+    /**
+     * Why the autonomy editor would refuse to open right now, as a message key - or null for "it would
+     * open".
+     *
+     * FR-026 put a shortcut to the full editor on the diagram's own right-click menu, and Adam asked
+     * for it to "deactivate when inappropriate". A menu item that offers an action has to ask the
+     * question the action itself asks, or the two drift and the item is either dead when it should
+     * work or live when it will fail - the single commonest defect in this window's history.
+     *
+     * So this is openLayoutEditor's four refusals, in its order, and it hands back the SAME message
+     * key each one shows in its dialog. That is what makes the pairing checkable rather than merely
+     * intended: `testEditorSurfaceRules` reads both methods and fails if a refusal exists over there
+     * with no answer here, which is how a fifth guard added later gets noticed.
+     *
+     * An editor that is already open is not a refusal when there is a window to bring forward, because
+     * that is what pressing the button does - so the item stays live and raises it.
+     *
+     * @return the key of the reason, or null when the editor would open
+     */
+    public String whyAutonomyEditorCannotOpen()
+    {
+        if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
+
+        if (this.getAutonomySession() == null) return "autosetup.ui.errorNoSetupToEdit";
+
+        if (this.isAutonomyBusy()) return "autolayout.errorCannotEditWhileRunning";
+
+        if (!this.editLayoutButton.isEnabled()
+            && !(this.openEditor != null && this.openEditor.isDisplayable()))
+        {
+            return "autosetup.ui.errorEditorAlreadyOpen";
+        }
+
+        return null;
+    }
+
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal)
     {
@@ -7466,6 +7502,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private final java.util.List<Runnable> tilesSettledListeners
         = java.util.Collections.synchronizedList(new java.util.LinkedList<Runnable>());
+
+    /**
+     * Whether every tile image is decoded, so a grid built now has nothing to wait for.
+     *
+     * The same question whenTilesSettled answers by callback, asked without one. A caller that only
+     * wants to know whether to bother hiding anything cannot use the callback for it: with nothing
+     * pending that runs on the NEXT event-thread pass, and the gap between now and then is exactly
+     * the flicker of OB-109.
+     *
+     * @return true when no decode is outstanding
+     */
+    public boolean tilesAreSettled()
+    {
+        return tilesDecoding.get() == 0;
+    }
 
     public void tileDecodeStarted()
     {

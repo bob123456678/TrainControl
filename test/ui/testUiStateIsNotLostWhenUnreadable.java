@@ -55,6 +55,16 @@ public class testUiStateIsNotLostWhenUnreadable
     private static boolean weWroteIt;
 
     /**
+     * The operator’s railway is not this test’s to open (OB-111).
+     *
+     * Constructing the window opens whatever the saved layout preference names, which on his machine is
+     * his live layout - so this class rewrote his configuration on every battery, identical but for
+     * line endings, and left it showing as modified in git status. The sandbox points the preference
+     * at a copy of the fixture and puts it back afterwards.
+     */
+    private static support.LayoutSandbox sandbox;
+
+    /**
      * The same bytes, on DISK, for the whole time the live file is rubbish.
      *
      * Holding the only copy in a static field is holding it nowhere: this test overwrites the
@@ -119,6 +129,11 @@ public class testUiStateIsNotLostWhenUnreadable
 
         final TrainControlUI[] window = new TrainControlUI[1];
 
+        // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
+        // Opened here rather than in a @BeforeClass because this is the only place that builds one,
+        // and the finally below is already where this method puts things back.
+        sandbox = support.LayoutSandbox.open();
+
         SwingUtilities.invokeAndWait(() -> window[0] = new TrainControlUI());
 
         try
@@ -158,6 +173,8 @@ public class testUiStateIsNotLostWhenUnreadable
             final TrainControlUI closing = window[0];
 
             SwingUtilities.invokeAndWait(() -> closing.dispose());
+
+            sandbox.close();
         }
     }
 

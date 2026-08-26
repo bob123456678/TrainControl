@@ -298,7 +298,14 @@ public class DiagramMonitor
                 ? milestones.get(milestones.size() - 1)
                 : layout.getLocomotiveLocation(entry.getKey());
 
-            if (at != null) markTrain(overlays, at);
+            // Whether it is actually running, which is what decides the icon (FR-027).
+            //
+            // Asked of the LOCOMOTIVE rather than of the path: a train with a path can be standing
+            // still, waiting at a platform or held while another route clears, and those are exactly
+            // the ones Adam did not want marked as running.
+            boolean running = entry.getKey() != null && entry.getKey().getSpeed() > 0;
+
+            if (at != null) markTrain(overlays, at, running);
         }
 
         // everything held clear so those paths can run
@@ -393,7 +400,7 @@ public class DiagramMonitor
      * The running Layout knows a Point only by name, so the tile comes from the index the builder's
      * names produced rather than from the Point itself, which has never heard of tiles.
      */
-    private void markTrain(Map<TileKey, TileOverlay> into, Point at)
+    private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving)
     {
         if (at == null) return;
 
@@ -401,9 +408,10 @@ public class DiagramMonitor
 
         if (tile == null) return;
 
+        TileOverlay mark = new TileOverlay(State.IDLE, true, moving, null);
+
         TileOverlay existing = into.get(tile);
 
-        into.put(tile, existing == null ? new TileOverlay(State.IDLE, true)
-                                        : existing.merge(new TileOverlay(State.IDLE, true)));
+        into.put(tile, existing == null ? mark : existing.merge(mark));
     }
 }
