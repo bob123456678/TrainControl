@@ -221,8 +221,11 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     :return: (number of tests, number of issues)
     """
 
-    tests = triage.TestsDoc(tests_path)
-    issues = triage.IssuesDoc(issues_path)
+    tests_text, tests_crlf = triage.read_text(tests_path)
+
+    head, entries = triage.parse_tests_text(tests_text)
+
+    issues_doc = triage.IssuesDoc(issues_path)
 
     conn.execute("DELETE FROM test")
     conn.execute("DELETE FROM verdict")
@@ -233,10 +236,10 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     # the conventions, and this module has no business reformatting either.
     conn.execute(
         "INSERT INTO doc (name, head, tail, crlf) VALUES (?, ?, ?, ?)",
-        ("tests", tests.head, "", 1 if tests.crlf else 0),
+        ("tests", head, "", 1 if tests_crlf else 0),
     )
 
-    for i, e in enumerate(tests.entries):
+    for i, e in enumerate(entries):
         conn.execute(
             "INSERT OR REPLACE INTO test"
             " (tag, ordinal, anchor, date, title, disposition, origin, written, reopened, block)"
@@ -259,7 +262,7 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
         ("issues", issues_text, "", 1 if issues_crlf else 0),
     )
 
-    for i, it in enumerate(issues.pending):
+    for i, it in enumerate(issues_doc.pending):
         conn.execute(
             "INSERT OR REPLACE INTO issue"
             " (ref, ordinal, kind, title, filed, raised_from, build, block)"
@@ -269,7 +272,7 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
 
     conn.commit()
 
-    return len(tests.entries), len(issues.pending)
+    return len(entries), len(issues_doc.pending)
 
 
 def render_tests(conn):
@@ -473,7 +476,7 @@ def set_disposition(conn, tag, disposition, tests_path=TESTS_FILE):
     if not changed:
         raise IOError("%s has no Disposition line to change" % tag)
 
-    _replace_block(conn, tag.upper(), block)
+    replace_block(conn, tag.upper(), block)
 
     render_to_disk(conn, tests_path)
 
@@ -510,7 +513,7 @@ def add_comment(conn, tag, who, text, verdict=None, tests_path=TESTS_FILE):
     # application lands - above the rule that closes the entry, with the blank line it needs.
     entry = triage.Entry(tag.lower(), row["block"])
 
-    _replace_block(conn, tag.upper(), entry.with_comment(comment))
+    replace_block(conn, tag.upper(), entry.with_comment(comment))
 
     render_to_disk(conn, tests_path)
 
@@ -558,7 +561,7 @@ def file_issue(conn, kind, title, detail, issues_path=ISSUES_FILE, tests_path=TE
     return ref
 
 
-def _replace_block(conn, tag, block):
+def replace_block(conn, tag, block):
     """Puts a rewritten block back, re-parsing every field out of it.
 
     :param conn: an open connection

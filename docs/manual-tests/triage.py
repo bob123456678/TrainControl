@@ -331,39 +331,80 @@ class Entry(object):
         return prefix + text + self.block[cut + 1:]
 
 
+def parse_tests_text(text):
+    """tests.md's text, split into the head and one Entry per anchor.
+
+    The one parse of this file in the project. It lived inside TestsDoc.load until the store needed it
+    too, and a second copy of it would have been two definitions of what an entry is - which agree
+    until the day they do not, silently.
+
+    :param text: the whole file
+    :return: (head, list of Entry)
+    """
+
+    marks = [(m.start(), m.group(1)) for m in ANCHOR_RE.finditer(text)]
+
+    head = text[:marks[0][0]] if marks else text
+
+    entries = []
+
+    for i, (pos, anchor) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        entries.append(Entry(anchor, text[pos:end]))
+
+    return head, entries
+
+
 class TestsDoc(object):
-    """tests.md, parsed into a head and a list of entries."""
+    """tests.md, read through the store."""
 
     def __init__(self, path):
         self.path = path
         self.load()
 
     def load(self):
+        """Reloads from the STORE, which is built from the file.
+
+        The window used to parse the file here itself. It now goes through triagedb, so the
+        application and the API are looking at one set of rows rather than at two parses that have to
+        agree - and every write it makes comes back through the same door, re-parsed from the markdown
+        it just wrote.
+
+        The parsing still happens; `parse_tests_text` below is where, and the store calls the same
+        function. What is gone is the second copy of it.
+
+        Imported inside the method rather than at the top of the file: triagedb imports this module,
+        and doing it the other way round at import time would be a cycle. By the time any of this runs
+        both modules are loaded.
+        """
+
+        import triagedb
+
         self.text, self.crlf = read_text(self.path)
         self.stat = self._stat()
 
-        marks = [(m.start(), m.group(1)) for m in ANCHOR_RE.finditer(self.text)]
+        conn = triagedb.connect(":memory:")
 
-        self.head = self.text[:marks[0][0]] if marks else self.text
-        self.entries = []
+        triagedb.build(conn, self.path, ISSUES_MD)
 
-        for i, (pos, anchor) in enumerate(marks):
-            end = marks[i + 1][0] if i + 1 < len(marks) else len(self.text)
-            self.entries.append(Entry(anchor, self.text[pos:end]))
+        self.store = conn
+
+        self.head = conn.execute(
+            "SELECT head FROM doc WHERE name = 'tests'").fetchone()["head"]
+
+        self.entries = [Entry(r["anchor"], r["block"]) for r in
+                        conn.execute("SELECT anchor, block FROM test ORDER BY ordinal")]
 
         # A duplicate MT-### is a real defect in the file, not something to paper over - two
         # entries with the same iid used to crash the window at startup the moment both
         # populate calls ran (tree.insert raises TclError on an existing iid).  Surfaced here so
         # the caller can warn instead, and the second entry keeps its place in self.entries even
         # though by_tag can only ever point at one of them.
-        seen = set()
-        self.duplicate_tags = []
-
-        for e in self.entries:
-            if e.tag in seen:
-                self.duplicate_tags.append(e.tag)
-
-            seen.add(e.tag)
+        #
+        # Asked of the STORE now, which is a count rather than a scan - and which cannot disagree with
+        # what the window is about to display, because it is the same rows.
+        self.duplicate_tags = [r["tag"] for r in conn.execute(
+            "SELECT tag FROM test GROUP BY tag HAVING COUNT(*) > 1")]
 
         self.by_tag = dict((e.tag, e) for e in self.entries)
 
@@ -378,7 +419,19 @@ class TestsDoc(object):
             return True
 
     def append_comment(self, tag, comment):
-        """Rewrite the file with one comment added to one entry.  Raises if the file moved."""
+        """Adds one comment to one entry, through the store.  Raises if the file moved.
+
+        The rewrite is the store's: it replaces that entry's block, re-parses every field out of the
+        result, and renders the file. So the row and its markdown cannot drift apart, and a comment
+        written by this window is indistinguishable from one written by the API - which matters,
+        because Adam's verdicts arrive through this window and everything that reads them arrives
+        through the other door.
+
+        :param tag: MT-###
+        :param comment: the whole comment, already formatted
+        """
+
+        import triagedb
 
         if self.changed_on_disk():
             raise IOError(
@@ -388,12 +441,9 @@ class TestsDoc(object):
 
         entry = self.by_tag[tag]
 
-        pieces = []
+        triagedb.replace_block(self.store, tag, entry.with_comment(comment))
 
-        for e in self.entries:
-            pieces.append(e.with_comment(comment) if e is entry else e.block)
-
-        write_text(self.path, self.head + "".join(pieces), self.crlf)
+        triagedb.render_to_disk(self.store, self.path)
 
         self.load()
 
@@ -620,6 +670,20 @@ class IssueItem(object):
 class IssuesDoc(object):
     """issues.md: the pending Inbox (structured items, plus whatever does not parse) and the
     receipt table of items already picked up into tests.md.
+
+    **Where the store fits.** This class is the parse, and `triagedb` builds its `issue` table from
+    exactly these objects - so there is one reading of this file, not two, and the window and the API
+    cannot come to different conclusions about what is in the Inbox. What the store adds here is the
+    ability to ASK ("every open bug", "everything filed since the 24th") without anybody writing a
+    regular expression for the occasion, which is what it was asked for.
+
+    The tests half went further and reads its rows back out of the store, because that is where the
+    verdicts live and the querying actually pays. Doing the same here would mean extracting this
+    class's Inbox parsing - which is intricate, has had two boundary defects of its own, and covers
+    six rows. The store would learn nothing it does not already have.
+
+    Writes DO go through one door: `file`, below. That is what keeps the store from describing an
+    Inbox that has since gained an item.
     """
 
     def __init__(self, path):
@@ -648,6 +712,20 @@ class IssuesDoc(object):
         # since a Kind that could not be recognised is worth a person's eyes even though it did
         # not get dropped.
         self.unrecognized_kind_refs = [it.ref for it in self.pending if not it.kind_recognized]
+
+    def file(self, block):
+        """Puts one item at the bottom of the Inbox and re-reads.
+
+        The single write path for this file, so that everything which follows an append - re-reading
+        it, and refreshing the store built from it - happens every time rather than at the call sites
+        that remembered to.
+
+        :param block: the item's whole markdown, heading included
+        """
+
+        append_to_inbox(self.path, block)
+
+        self.load()
 
     def _inbox_span(self):
         return inbox_span(self.text)
@@ -1526,7 +1604,9 @@ class Triage(tk.Tk):
         )
 
         try:
-            append_to_inbox(ISSUES_MD, block)
+            # Through the document, not straight at the file: it re-reads afterwards, so the store
+            # built from it never describes an Inbox that has since gained an item.
+            self._issues().file(block)
 
         except Exception as bad:
             # Same failure modes as free_observation(): a missing '## Inbox' heading, or
@@ -2035,9 +2115,25 @@ class Triage(tk.Tk):
             ob["detail"].strip() or "(no further detail)",
         )
 
-        append_to_inbox(ISSUES_MD, block)
+        self._issues().file(block)
 
         self._refresh_issue_tabs()
+
+    def _issues(self):
+        """The Inbox document, made if the window started without one.
+
+        `issues_doc` is None when issues.md was missing at startup - which is a real state, and the
+        two filing paths would otherwise have to each decide what to do about it. Filing an item into
+        a file that is not there is what `append_to_inbox` already refuses, with a message the caller
+        shows; this just makes sure there is something to refuse it.
+
+        :return: an IssuesDoc
+        """
+
+        if self.issues_doc is None:
+            self.issues_doc = IssuesDoc(ISSUES_MD)
+
+        return self.issues_doc
 
     def _build_note(self):
         bits = []
