@@ -169,6 +169,79 @@ public class testLocIconCrop
     }
 
     /**
+     * At full zoom-out the picture sits inside the frame with white all round it.
+     *
+     * Adam: "now we can't zoom out beyond the image width to add white space.  Add a 0.5x zoom
+     * allowance."
+     *
+     * Zooming out until the whole picture fits was not far enough to be useful. The frame is as large
+     * as the panel allows, so at that point the two are about the same size - the picture touches the
+     * frame on its tight axis and there is nowhere to put white without dragging the photograph off to
+     * one side, which is a different gesture and loses the middle.
+     *
+     * The floor is half of fitting now, so the photograph shrinks well inside the frame and every side
+     * has white on it. That is the property here: not "there is some white somewhere", which panning
+     * already gave, but white on ALL FOUR sides at once, which only zooming out can produce.
+     *
+     * MUTATION: putting MIN_ZOOM back to 1.0 - zooming out no further than the picture fitting - fails
+     * this test.
+     */
+    @Test
+    public void testZoomingOutLeavesWhiteOnEverySide()
+    {
+        BufferedImage source = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D paint = source.createGraphics();
+        paint.setColor(new java.awt.Color(20, 90, 200));
+        paint.fillRect(0, 0, 1200, 900);
+        paint.dispose();
+
+        LocIconCropDialog.CropPanel panel = new LocIconCropDialog.CropPanel(source, OUT_W, OUT_H);
+        panel.setSize(800, 500);
+
+        panel.setZoomFraction(0.0);
+
+        Rectangle cut = panel.sourceRect();
+
+        // The cut reaching past the picture on every side is the same statement as the picture
+        // sitting inside the frame with a margin all round, said in source coordinates.
+        assertTrue(cut.x < 0, "the frame does not reach past the LEFT of the picture: " + cut);
+        assertTrue(cut.y < 0, "the frame does not reach past the TOP of the picture: " + cut);
+
+        assertTrue(cut.x + cut.width > source.getWidth(),
+            "the frame does not reach past the RIGHT of the picture: " + cut);
+
+        assertTrue(cut.y + cut.height > source.getHeight(),
+            "the frame does not reach past the BOTTOM of the picture: " + cut);
+
+        BufferedImage out = panel.getCroppedImage();
+
+        assertEquals(out.getWidth(), OUT_W, "the icon is not the right width");
+        assertEquals(out.getHeight(), OUT_H, "the icon is not the right height");
+
+        // All four corners, because a margin on one side only is what panning gives and is not what
+        // was asked for.
+        int[][] corners = {{1, 1}, {OUT_W - 2, 1}, {1, OUT_H - 2}, {OUT_W - 2, OUT_H - 2}};
+
+        for (int[] at : corners)
+        {
+            java.awt.Color c = new java.awt.Color(out.getRGB(at[0], at[1]), true);
+
+            assertEquals(c.getAlpha(), 255,
+                "corner " + at[0] + "," + at[1] + " is transparent rather than white");
+
+            assertTrue(c.getRed() == 255 && c.getGreen() == 255 && c.getBlue() == 255,
+                "corner " + at[0] + "," + at[1] + " is not white: " + c);
+        }
+
+        // And the middle is still the photograph, or every assertion above describes a blank icon.
+        java.awt.Color middle = new java.awt.Color(out.getRGB(OUT_W / 2, OUT_H / 2), true);
+
+        assertEquals(middle.getBlue(), 200,
+            "the middle of the icon is not the picture, so this test is checking a blank image");
+    }
+
+    /**
      * Reset returns the view to something legal, from wherever it had got to.
      */
     @Test

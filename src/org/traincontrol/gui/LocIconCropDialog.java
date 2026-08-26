@@ -69,6 +69,23 @@ public class LocIconCropDialog extends JDialog
     private static final double MAX_ZOOM = 32.0;
 
     /**
+     * How far OUT the zoom goes, as a fraction of the picture fitting the panel.
+     *
+     * Adam: "now we can't zoom out beyond the image width to add white space. Add a 0.5x zoom
+     * allowance."
+     *
+     * Zooming out to the point where the whole picture fits is not far enough, because the frame is
+     * as large as the panel allows - so at that point the two are roughly the same size and there is
+     * nowhere to put white without dragging the picture off to one side. Half again shrinks the
+     * photograph well inside the frame, and the margin all the way round is white.
+     *
+     * It is a separate constant from the reshaping and the panning: those move where the frame is,
+     * and this moves how big the picture is under it. Both can produce white and they are not the
+     * same gesture.
+     */
+    private static final double MIN_ZOOM = 0.5;
+
+    /**
      * Margin, in pixels, between the crop window and the edge of the panel.
      *
      * Not decoration: it is the only place the surrounding picture can be seen, and the surrounding
@@ -289,7 +306,7 @@ public class LocIconCropDialog extends JDialog
         private double centerY;
 
         /**
-         * 0 = the picture just fills the crop window, 1 = {@link #MAX_ZOOM} times that.
+         * 0 = {@link #MIN_ZOOM} of the picture fitting the panel, 1 = {@link #MAX_ZOOM} times it.
          */
         private double zoomFraction = 0.0;
 
@@ -754,20 +771,16 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The scale at which the whole picture fits inside the panel - zoom 0.
+         * The scale at which the whole picture fits inside the panel.
          *
          * **It depends on the PANEL and the picture, and on nothing else.** That is the point of it.
          * It used to be derived from the crop window, so every reshape and every move of the frame
          * silently rescaled the photograph underneath - Adam: "resizing or moving it also scales the
          * background image. It should stay put unless zoomed."
          *
-         * It is no longer a floor either. Below the old floor the crop would have taken in area that
-         * is not in the picture, which had to be filled with something invented; that is now a thing
-         * the user can ask for on purpose, and what gets invented is white.
-         *
-         * @return panel pixels per source pixel at zoom 0
+         * @return panel pixels per source pixel with the whole picture showing
          */
-        public double getMinScale()
+        private double fitScale()
         {
             int availableWidth = Math.max(1, getWidth() - 2 * WINDOW_MARGIN);
             int availableHeight = Math.max(1, getHeight() - 2 * WINDOW_MARGIN);
@@ -777,13 +790,30 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
+         * The smallest the picture can be drawn - zoom 0, and {@link #MIN_ZOOM} of fitting the panel.
+         *
+         * It is a floor on how far OUT the zoom goes, not on what the crop may contain. The old floor
+         * was the latter: the picture had to cover the frame, so below it the crop would have taken in
+         * area that is not in the photograph and something would have had to be invented. That is now
+         * a thing the user asks for on purpose, and what gets invented is white.
+         *
+         * @return panel pixels per source pixel at zoom 0
+         */
+        public double getMinScale()
+        {
+            return fitScale() * MIN_ZOOM;
+        }
+
+        /**
          * How far in the zoom goes, as a multiple of the whole picture fitting the panel.
          *
          * Raised from 8 at Adam's request - "add more zoomability" - and it can be raised again
-         * without spoiling the control, because the slider is LOGARITHMIC: scale is
-         * `fit * MAX_ZOOM^fraction`, so equal movements of the slider are equal RATIOS rather than
-         * equal amounts. Extending the top therefore costs nothing at the bottom, which is where the
-         * dialog opens and where most of the adjusting happens.
+         * without spoiling the control, because the slider is LOGARITHMIC: equal movements of it are
+         * equal RATIOS rather than equal amounts. Extending either end therefore costs nothing in the
+         * middle, which is where the dialog opens and where most of the adjusting happens.
+         *
+         * The span is MIN_ZOOM to MAX_ZOOM - half the picture fitting the panel, up to thirty-two
+         * times it - so the slider covers a ratio of sixty-four from end to end.
          *
          * @return panel pixels per source pixel
          */
@@ -800,7 +830,7 @@ public class LocIconCropDialog extends JDialog
             // those asks this.
             startAtCover();
 
-            return getMinScale() * Math.pow(MAX_ZOOM, this.zoomFraction);
+            return getMinScale() * Math.pow(MAX_ZOOM / MIN_ZOOM, this.zoomFraction);
         }
 
         /**
@@ -822,16 +852,18 @@ public class LocIconCropDialog extends JDialog
 
             Rectangle window = cropWindow();
 
-            double fit = getMinScale();
+            double floor = getMinScale();
 
-            if (fit <= 0) return;
+            if (floor <= 0) return;
 
             double cover = Math.max((double) window.width / this.source.getWidth(),
                 (double) window.height / this.source.getHeight());
 
-            // How many doublings of the fit scale that is, as a fraction of the range the slider
-            // covers. Below zero when the picture already covers the window at zoom 0.
-            double fraction = Math.log(cover / fit) / Math.log(MAX_ZOOM);
+            // Where the covering scale sits along the slider, which spans MIN_ZOOM to MAX_ZOOM and is
+            // logarithmic - so this is a ratio of ratios rather than a proportion of a distance.
+            // Below zero would mean the picture already covers the window at the smallest scale
+            // offered, which the clamp below handles.
+            double fraction = Math.log(cover / floor) / Math.log(MAX_ZOOM / MIN_ZOOM);
 
             this.zoomFraction = Math.max(0.0, Math.min(1.0, fraction));
 
