@@ -9579,6 +9579,26 @@ where sensors get shared. A test pins it in both directions, so it cannot drift 
 
 Make a test case for this.  Also, make a test case for the route executed during autonomy, by having a long route and manually triggering autonomy to a desgination that has the same switches.
 
+**Claude, 2026-08-25. Both asked for, both now measured rather than assumed.**
+
+The SECOND one is written, and is the more important of the two: a long route, fired while nothing is
+locked, with autonomy taking a path over one of its switches part way through. It is
+`testARouteAlreadyRunningDoesNotThrowTheSwitchEither`. It exists because an independent reviewer found
+the defect it catches a day after you asked for it - the guard was being asked once, before a command
+loop that takes seconds. That is the wrong order of events and it is worth recording: the test you
+asked for would have found it first.
+
+The FIRST one is covered already, and I checked rather than saying so:
+
+- **Steps 1 and 2**, the plain rule - a station held back while a watched square is occupied - are
+  guarded three times over. Making the planner ignore restrictions entirely fails three tests in
+  `testHomeStaging`.
+- **Step 3**, the one that changed, is `testThePlannerSeesATrainOnAnotherCopyOfTheWatchedSquare`,
+  mutation-checked against the exact clause the FR-001 consolidation added.
+
+So there is no new test to write here. What still needs you is driving it on the railway: the planner
+agreeing with the runtime is a property of the model, and the train actually stopping is not.
+
 *Run against commit 11b9ded6, build\classes, compiled 25 Aug 18:03 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
