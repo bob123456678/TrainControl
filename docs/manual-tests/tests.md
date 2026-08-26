@@ -74,8 +74,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-194](#mt-194) | 2026-08-26 | Placing tiles without the diagram blinking | needs test | OB-109 |
 | [MT-195](#mt-195) | 2026-08-26 | Picking what holds a station back by clicking it | needs test | FR-025 |
 | [MT-196](#mt-196) | 2026-08-26 | A locomotive where a train is running | needs test | FR-027 |
+| [MT-197](#mt-197) | 2026-08-26 | Station captions as blue ovals | needs test | FR-028 |
 
-Everything else - 135 of 196 - is **fixed validated** and needs nothing from you unless the
+Everything else - 135 of 197 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -10138,3 +10139,76 @@ release, every square that ever held a moving train would end up permanently ove
 "Moving" is asked of the locomotive's speed rather than of its path, because a train with a path can be
 standing - waiting at a platform, or held while another route clears - and those are the ones step 2 is
 about.
+
+---
+
+<a id="mt-197"></a>
+
+### MT-197 - 2026-08-26 - Station captions as blue ovals
+
+**Disposition:** needs test
+**From:** FR-028
+**Written:** 2026-08-26
+
+1. Start autonomy and look at a page with stations on it. Every caption should be a navy oval with
+   white text - the same blue as the station badge on an autonomy locomotive panel - and the tile art
+   should show through it.
+2. **Where they land.** On east-west track the oval sits just below the rail; on north-south track it
+   lies across it, centred on the square rather than starting at it. Switches, crossings and curves
+   have no single direction and are left where captions have always been. Look for one that reads
+   badly.
+1. **A caption at the left edge of a page** cannot be centred - there is no column to the left to move
+   into - so it starts at its own square as it always did. Find one and check it looks deliberate
+   rather than broken.
+1. **The rest of the diagram must not have moved** (OB-115). Compare a page against the same page in
+   the previous build if you still have it: route names like Reset and Inner Loop, the s88 address
+   numbers, and your own writing should all be exactly where they were.
+3. **At both tile sizes.** Switch between your sizes, including 60px. The oval and its offset are
+   computed from the tile, so nothing should need adjusting - if something does at one size and not
+   the other, that is the interesting case.
+4. **The arrows.** A train facing each of the four ways should show a solid triangle, not a box.
+   A box means the font has no glyph for it, which is the thing that went wrong first.
+5. **The states, which are still doing their old jobs in a new shape.** The destination is a yellow
+   oval with black text; where the train started is grey; a station on the route it has not reached
+   yet has red text; one it is passing through shows three dots; an empty station shows a dash.
+6. Captions are still clickable - left-click activates the locomotive standing there, double-click
+   opens the setup, right-click opens the menu - and hovering one still lets Control+V work over it.
+7. **Your own writing on the diagram must be untouched.** Yard names, notes, anything you typed on a
+   square is text and stays text. If any of it turned into a blue oval, that is a bug.
+8. The track diagram editor and the autonomy editor draw the same captions from the same place, so
+   check one of them too.
+
+#### Comments
+
+**Claude, 2026-08-26.** Three things worth knowing.
+
+**The arrows are U+25BA and U+25C4, not U+25B6 and U+25C0.** Segoe UI has no glyph for the second pair,
+so the first rendering drew proper triangles for trains facing north and south and a tofu box for every
+train facing east or west. Found by rendering the labels to a picture and looking at them; a test now
+asserts all four can be drawn, and also that the two rejected ones are still missing, so the reasoning
+cannot quietly stop being true.
+
+**The first placement attempt was wrong in an instructive way.** The caption's grid cell is declared
+REMAINDER - it runs from its own row to the bottom of the diagram - so anchoring it SOUTH put captions
+below the layout entirely and CENTER stacked them in mid-air. The offset lives inside the label now,
+which is what the old `<html><br>` hack was doing all along.
+
+**Centring, and what it cost.** A caption is wider than the square it names, so centring it means
+starting LEFT of that square - which no border can express, because insets cannot be negative. The
+caption's cell is moved back one column when the grid is built and the label pays the difference back
+as a left inset, recomputed every time its text changes. One column is enough at every tile size this
+draws at, and at the left edge of a page there is no column to move into, so a caption there starts at
+its own square exactly as it did before.
+
+**OB-115, which this caused and which is the more useful story.** Text labels are added with
+`BASELINE_LEADING`, and GridBagLayout does what that says: it works out a baseline for the row from
+every component anchored that way and lines them all up on it. A caption is one of those components,
+so giving it a pill and a smaller font moved the row's baseline and every other label in that row went
+with it - three pixels, on labels nobody had touched. Captions are anchored NORTHWEST now, which is
+both where they want to be and out of that ballot.
+
+It was found by measuring rather than by looking: `tools/README-bounds.md` describes the harness, which
+dumps every component's bounds for both builds and diffs them. Its verdict on the fix is "0 tile
+placements differ" on all ten page-and-size combinations, with every difference a caption. The control
+that made it trustworthy was running the same build twice - which disagreed with itself about forty
+tiles until it learnt to wait for the tile images.

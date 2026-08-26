@@ -4087,12 +4087,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The space belongs to the arrow, not to the caller.  Every caller appends this straight
         // onto a name that has just been cut to length, and a name cut mid-word ran into its own arrow.
+        // Arrow icons rather than the crude chevrons they replaced (FR-028).  Geometric triangles
+        // from the font rather than pictures: they survive being packed two-to-a-caption by
+        // crowdedLabel, they scale with the caption's font, and they need no artwork to go missing.
+        //
+        // U+25BA and U+25C4, the POINTERS, and not U+25B6/U+25C0, the triangles that would be the
+        // obvious partners of the two below.  Segoe UI has no glyph for either of those: the
+        // first rendering of this drew a tofu box for every train facing east or west and proper
+        // triangles for the two facing north and south, which is the sort of thing that reads as
+        // a broken font rather than as a wrong codepoint.  testCaptionArrowsCanBeDrawn pins it.
         switch (facing)
         {
-            case N: return " ^";
-            case S: return " v";
-            case E: return " >";
-            case W: return " <";
+            case N: return " \u25B2";
+            case S: return " \u25BC";
+            case E: return " \u25BA";
+            case W: return " \u25C4";
             default: return "";
         }
     }
@@ -4168,12 +4177,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // still pointing somewhere.
         if (facing == null) return facingArrow(square);
 
+        // Arrow icons rather than the crude chevrons they replaced (FR-028).  Geometric triangles
+        // from the font rather than pictures: they survive being packed two-to-a-caption by
+        // crowdedLabel, they scale with the caption's font, and they need no artwork to go missing.
         switch (facing)
         {
-            case N: return " ^";
-            case S: return " v";
-            case E: return " >";
-            case W: return " <";
+            case N: return " \u25B2";
+            case S: return " \u25BC";
+            case E: return " \u25BA";
+            case W: return " \u25C4";
             default: return "";
         }
     }
@@ -4219,7 +4231,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // This will exclude locked points
                 for (JLabel j : this.getLayoutStations(square))
                 {                    
-                    j.setOpaque(true);
+                    // A pill paints its own fill and stays transparent; anything else is a rectangle
+                    // of text and fills its own background as it always did (FR-028).
+                    boolean pill = j instanceof StationCaption && ((StationCaption) j).isPill();
+
+                    j.setOpaque(!pill);
 
                     // Two trains on one platform is a fact about the SQUARE, and none of the
                     // colouring below can speak for both of them: they have different destinations,
@@ -4230,7 +4246,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         j.setText(crowdedLabel(crowd, square));
 
                         j.setForeground(Color.BLACK);
-                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                        j.setBackground(StationCaption.PILL_AT_REST);
                     }
                     else if (current != null)
                     {
@@ -4272,7 +4288,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 if (!p.equals(start))
                                 {
                                     j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
-                                    j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                                    j.setBackground(StationCaption.PILL_AT_REST);
                                 }
                                 // Originating station highlighted differently
                                 else
@@ -4291,7 +4307,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             // Stationary locomotive
                             j.setForeground(Color.BLACK);
-                            j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                            j.setBackground(StationCaption.PILL_AT_REST);
                         }
                     }
                     else
@@ -4300,8 +4316,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
 
                         j.setForeground(Color.BLACK);
-                        j.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_STATION_OPACITY));
+                        j.setBackground(StationCaption.PILL_AT_REST);
                     }
+
+                    // Every fill above was chosen for a reason, and on a pill the text colour has
+                    // to follow it or the reason goes unread: black on navy is invisible (FR-028).
+                    if (pill) j.setForeground(StationCaption.onPill(j.getBackground(), j.getForeground()));
 
                     j.repaint();
                     j.getParent().revalidate();

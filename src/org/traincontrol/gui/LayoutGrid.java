@@ -43,17 +43,90 @@ public class LayoutGrid
     // still works; only where the string is defined has moved.
     public static final String LAYOUT_STATION_PREFIX =
         org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX;
-    public static final String LAYOUT_STATION_EMPTY = "[---]";
-    public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
+    /**
+     * A station with nothing standing on it.
+     *
+     * An em dash rather than "[---]" (FR-028).  The brackets were the caption's shape - "a caption is
+     * about the same width whatever is in it" - and the pill is its shape now, so what is left inside
+     * is only what the caption has to SAY, which for an empty platform is "nothing here".
+     */
+    public static final String LAYOUT_STATION_EMPTY = "\u2014";
+    /**
+     * A train passing through a station it was not sent to.
+     *
+     * Three dots rather than "[xxx]" (FR-028): the brackets were the caption’s shape and the
+     * pill is its shape now, and three dots say "something is here, and it is not stopping"
+     * without looking like a placeholder somebody forgot to fill in.
+     */
+    public static final String LAYOUT_STATION_OCCUPIED = "\u2022\u2022\u2022";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
     public static final int LAYOUT_STATION_OPACITY = 210;
 
     /**
+     * Whether the track on this square runs up and down rather than across (FR-028).
+     *
+     * Asked of the geometry rather than of the tile's name or its rotation number: the same question
+     * the autonomy graph asks when it works out which ways a train may leave a square, so a caption
+     * and the path drawn through it cannot disagree about which way the rails go.
+     *
+     * False for anything that is not clearly one or the other - a switch, a crossing, a curve - and
+     * false when the geometry cannot be had at all. Those squares have no single direction for a
+     * caption to be placed against, and the answer for them is where captions have always been.
+     *
+     * Public so the one thing worth checking about it can be checked - which way it answers for a
+     * straight rail and for the same rail turned a quarter - without building a grid and reading
+     * constraints off it. The same reason `stationCaption` above is public: where a caption goes is a
+     * question about geometry, and geometry can be asked without a window.
+     *
+     * @param c what is drawn on the square
+     * @return true when the rails run north to south and nothing else
+     */
+    public static boolean runsNorthSouth(LayoutDiagramComponent c)
+    {
+        if (c == null) return false;
+
+        boolean acrossTheSquare = false;
+        boolean upTheSquare = false;
+
+        try
+        {
+            for (org.traincontrol.automationui.TilePorts.Route route
+                : org.traincontrol.automationui.TilePorts.ports(
+                    c.getType(), c.getOrientation(), c.getState()))
+            {
+                if (route.touches(org.traincontrol.automationui.TilePorts.Side.E)
+                    || route.touches(org.traincontrol.automationui.TilePorts.Side.W))
+                {
+                    acrossTheSquare = true;
+                }
+
+                if (route.touches(org.traincontrol.automationui.TilePorts.Side.N)
+                    || route.touches(org.traincontrol.automationui.TilePorts.Side.S))
+                {
+                    upTheSquare = true;
+                }
+            }
+        }
+        catch (RuntimeException e)
+        {
+            // A tile type the port table does not describe.  Not knowing which way the rails run is a
+            // fine reason to leave the caption where it was, and no reason at all to stop drawing it.
+            return false;
+        }
+
+        return upTheSquare && !acrossTheSquare;
+    }
+
+    /**
      * How a station caption is spelled when a train is standing on it.
      *
-     * Square brackets, a name cut to LAYOUT_STATION_MAX_LENGTH, then the facing arrow - the brackets
-     * being the point: a caption is about the same width whatever is in it, which is what lets
-     * "[---]" and "[EN57-203 >]" sit on the same platform without the tile changing shape underneath.
+     * A name cut to LAYOUT_STATION_MAX_LENGTH, then the facing arrow.
+     *
+     * The brackets that used to be here were the caption's SHAPE, and the reason given for them was
+     * that "a caption is about the same width whatever is in it", so that an empty platform and an
+     * occupied one did not change the tile underneath. FR-028 gave the caption a shape of its own -
+     * a pill - and the width now belongs to that, so the brackets were two characters of a name that
+     * had already been cut to fit.
      *
      * Written down here because it was written down in the running diagram only, and the autonomy
      * editor - added later, drawing the same placements - spelled it as a bare untruncated name. That
@@ -70,7 +143,8 @@ public class LayoutGrid
 
         String cut = name.substring(0, Math.min(name.length(), LAYOUT_STATION_MAX_LENGTH)).trim();
 
-        return "[" + cut + (arrow == null ? "" : arrow) + "]";
+        // No brackets since FR-028: the pill draws the shape they were standing in for.
+        return cut + (arrow == null ? "" : arrow);
     }
     public static final int LAYOUT_ADDRESS_OPACITY = 200;
 
@@ -409,7 +483,13 @@ public class LayoutGrid
                 // Render text separately
                 if (drawsText)
                 {
-                    JLabel text = new JLabel();
+                    // A StationCaption, which is a JLabel that can draw itself as a pill (FR-028).
+                    //
+                    // Every text label on the diagram is built here - captions, station names, and the
+                    // user's own writing - and only the first of those becomes a pill. The rest are
+                    // JLabels behaving exactly as they did, which is why this is a subclass and not a
+                    // separate component: one place builds them, one place decides which is which.
+                    StationCaption text = new StationCaption();
 
                     // Set by the autonomy editor's placed-train branch below, and read after the
                     // generic label styling, which would otherwise take the translucency back.
@@ -619,13 +699,35 @@ public class LayoutGrid
                     text.setBackground(Color.WHITE);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
 
+                    // A caption is a pill; writing of the user's own is not (FR-028).
+                    //
+                    // `captioned` is the whole test: it is the square autonomy has been told to draw a
+                    // station on. A yard name somebody typed is text on a diagram and stays text.
+                    if (captioned != null)
+                    {
+                        text.setPill(true);
+                        text.setBackground(StationCaption.PILL_AT_REST);
+                        text.setForeground(StationCaption.readableOn(StationCaption.PILL_AT_REST));
+
+                        // A tenth smaller than the diagram's other text: the pill is taller than what
+                        // it holds, and the rows of a diagram are one tile apart.
+                        text.setFont(text.getFont().deriveFont(
+                            text.getFont().getSize2D() * StationCaption.FONT_SCALE));
+                    }
+
                     // The one label drawn ON something rather than beside it.  Opaque, so the name
                     // reads over the tile art; translucent, so the tile art still shows through.  It
                     // has to come after the WHITE above, which is the whole reason it is down here.
                     if (standingTrain)
                     {
-                        text.setOpaque(true);
-                        text.setBackground(new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+                        // A pill paints its own fill and must stay transparent, or Swing draws the
+                        // rectangle underneath it that the pill exists to replace.
+                        text.setOpaque(!text.isPill());
+                        text.setBackground(text.isPill()
+                            ? StationCaption.PILL_AT_REST
+                            : new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
+
+                        text.setForeground(StationCaption.readableOn(text.getBackground()));
                     }
                     
                     // Shift on-tile labels down
@@ -648,7 +750,70 @@ public class LayoutGrid
                         // &nbsp; stops it wrapping, so an OPAQUE label - which this is the only one of
                         // - painted its background as a block a tile tall and three wide, over
                         // whatever was beside it.
-                        if (!standingTrain)
+                        if (text.isPill())
+                        {
+                            // Where the pill lands (FR-028).
+                            //
+                            // Adam: "land them so that they align just below straight tracks if the
+                            // track goes east to west, or centered over the track if north to south."
+                            // An east-west rail runs across the middle of the square, so a caption on
+                            // the middle would sit on it; a north-south rail runs UP it, and a caption
+                            // beneath would be beside the track rather than on it.
+                            //
+                            // **A border and not gbc.anchor**, which was the first attempt and put
+                            // captions in mid-air. This cell is declared gridheight = 0 - REMAINDER -
+                            // so it runs from this row to the bottom of the diagram, and anchoring
+                            // SOUTH inside it means the bottom of the PAGE. BASELINE_LEADING pins the
+                            // label to the top of that cell, which is its own row, and everything
+                            // below is measured from there.
+                            //
+                            // Which is what the multiline hack underneath has always been doing: a
+                            // leading <br> is an offset written in line heights.
+                            //
+                            // Anything that is neither east-west nor north-south - a switch, a
+                            // crossing, a curve - is left where captions have always been. It is a
+                            // judgement about a square with one clear direction, and those squares do
+                            // not have one.
+                            int down = StationCaption.captionOffset(
+                                size, text.lineHeight(), runsNorthSouth(c));
+
+                            // A column of room to the left, so the caption can be CENTRED on its
+                            // square rather than starting at it (FR-028).
+                            //
+                            // Centring means beginning left of the square, and no border can say that
+                            // - insets cannot be negative - so the cell is moved back a column and the
+                            // label pays the difference back as a left inset. One column is enough:
+                            // a caption is at most ten characters and an arrow, which overflows its
+                            // square by less than a square at every tile size this draws at.
+                            //
+                            // Not at the left edge, where there is no column to move back into. A
+                            // caption there starts at its own square exactly as it did before, which
+                            // is the one case the operator would notice a diagram shifting.
+                            int backShift = x > 0 ? size : 0;
+
+                            gbc.gridx = x - (backShift > 0 ? 1 : 0);
+
+                            text.setTileGeometry(size, backShift, down);
+
+                            // OUT of the row's baseline (OB-115).
+                            //
+                            // Adam: "check normal text label vertical alignment - it seems to have
+                            // drifted post FR-028 label cutover.  for example, Reset and Inner Loop
+                            // have a different vertical offset from the adjacent route tile."
+                            //
+                            // BASELINE_LEADING does what it says: GridBagLayout works out a baseline
+                            // for the row from every component anchored that way and lines them all up
+                            // on it. A caption is one of those components, so changing its height -
+                            // which a pill and a smaller font both do - moved the row's baseline, and
+                            // every OTHER label in that row went with it. Three pixels, on labels
+                            // nobody had touched.
+                            //
+                            // A caption has no business voting on that. Where it sits is decided by
+                            // the border above, measured from the top of its own square, so NORTHWEST
+                            // is both what it wants and what takes it out of the ballot.
+                            gbc.anchor = GridBagConstraints.NORTHWEST;
+                        }
+                        else if (!standingTrain)
                         {
                             text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");
                         }

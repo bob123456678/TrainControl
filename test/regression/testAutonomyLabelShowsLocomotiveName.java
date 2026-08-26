@@ -145,21 +145,22 @@ public class testAutonomyLabelShowsLocomotiveName
      * platform is the same width whatever is on it.
      */
     @Test
-    public void testACaptionIsBracketedAndCutToLength()
+    public void testACaptionIsJustTheNameCutToLength()
     {
-        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", ""), "[EN57-203]",
-            "a caption is bracketed - this is the [---] the name goes inside");
+        // No brackets since FR-028: they were the caption's SHAPE, and the pill is its shape now.
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", ""), "EN57-203",
+            "a caption is the name and nothing else - the brackets went with the pill that replaced "
+            + "what they were doing");
 
         String longName = "065 001-0 DB Baureihe";
 
         String caption = org.traincontrol.gui.LayoutGrid.stationCaption(longName, "");
 
-        assertTrue(caption.length()
-            <= org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_MAX_LENGTH + 2,
-            "a caption must not grow with the name - that is what covered the neighbouring tiles. "
-            + "Got " + caption);
+        assertTrue(caption.length() <= org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_MAX_LENGTH,
+            "a caption must not grow with the name - that is what covered the neighbouring tiles, and "
+            + "it covers more of them now that the name is drawn on an oval. Got " + caption);
 
-        assertTrue(longName.startsWith(caption.substring(1, caption.length() - 1)),
+        assertTrue(longName.startsWith(caption),
             "what survives the cut is the beginning of the name: " + caption);
     }
 
@@ -169,10 +170,11 @@ public class testAutonomyLabelShowsLocomotiveName
     @Test
     public void testTheFacingArrowIsPartOfTheCaption()
     {
-        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", " >"), "[EN57-203 >]",
-            "the arrow belongs inside the brackets, after the name");
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", " \u25BA"),
+            "EN57-203 \u25BA",
+            "the arrow belongs at the end of the caption, after the name");
 
-        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", null), "[EN57-203]",
+        assertEquals(org.traincontrol.gui.LayoutGrid.stationCaption("EN57-203", null), "EN57-203",
             "no facing recorded is not the word null");
     }
 

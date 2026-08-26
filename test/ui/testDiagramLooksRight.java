@@ -725,6 +725,339 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A caption may move itself. It may not move anything else.
+     *
+     * OB-115. Adam, after FR-028 went in: "check normal text label vertical alignment - it seems to
+     * have drifted post FR-028 label cutover. for example, Reset and Inner Loop have a different
+     * vertical offset from the adjacent route tile."
+     *
+     * **The mechanism is worth knowing because nothing about it is visible in the caption code.**
+     * Text labels are added with `BASELINE_LEADING`, and GridBagLayout does what that says: it works
+     * out a baseline for the row from every component anchored that way and lines them all up on it.
+     * A caption is one of those components, so giving it a pill and a smaller font moved the row's
+     * baseline, and every other label in that row went with it. Three pixels, on labels nobody had
+     * touched. Captions are anchored NORTHWEST now, which is both where they want to be - their
+     * position is set by their own border - and out of that ballot.
+     *
+     * So the test changes the one thing a caption changes on its own - its TEXT, which goes from a
+     * dash to a locomotive's name and back as trains move - and insists that nothing else on the page
+     * has moved a pixel. That covers the baseline, the row heights, and the column widths at once, and
+     * it does not need a golden file to compare against.
+     *
+     * Found with a harness that dumps every component's bounds for both builds and diffs them - see
+     * tools/README-bounds.md. What it reported, once it had been made deterministic, was "0 tile
+     * placements differ, and these four named labels moved by three pixels".
+     *
+     * MUTATION: anchoring captions BASELINE_LEADING again fails this.
+     */
+    @Test
+    public void testACaptionNeverMovesAnythingElse() throws Exception
+    {
+        java.util.List<String> pages = model.getLayoutList();
+
+        assertFalse(pages.isEmpty(), "no pages - is test_layout present?");
+
+        java.awt.Container box = null;
+        org.traincontrol.gui.StationCaption caption = null;
+
+        // The first page that has a caption on it. A page with none cannot fail this and would make
+        // it look as though the rule had been checked.
+        for (String name : pages)
+        {
+            java.awt.Container built = laidOut(model.getLayout(name), 30);
+
+            for (java.awt.Component one : built.getComponents())
+            {
+                if (one instanceof org.traincontrol.gui.StationCaption
+                    && ((org.traincontrol.gui.StationCaption) one).isPill())
+                {
+                    box = built;
+                    caption = (org.traincontrol.gui.StationCaption) one;
+                    break;
+                }
+            }
+
+            if (caption != null) break;
+        }
+
+        assertNotNull(caption,
+            "no page in the fixture layout draws a station caption, so this test is not exercising "
+            + "the thing it is about");
+
+        // Everything that is not the caption, and where it is.
+        java.util.Map<java.awt.Component, java.awt.Rectangle> was = new java.util.LinkedHashMap<>();
+
+        for (java.awt.Component one : box.getComponents())
+        {
+            if (one instanceof org.traincontrol.gui.StationCaption
+                && ((org.traincontrol.gui.StationCaption) one).isPill())
+            {
+                continue;
+            }
+
+            was.put(one, one.getBounds());
+        }
+
+        assertTrue(was.size() > 10, "only " + was.size() + " components to watch, which is too few "
+            + "for this page to be the diagram it is meant to be");
+
+        // What happens on a running railway: the dash becomes a train and the caption gets wide.
+        //
+        // And TALLER, which the text alone does not do and which is the half that actually broke.
+        // OB-115 was a caption whose HEIGHT changed - a pill instead of a two-line label, at nine
+        // tenths of the font - and with a baseline anchor a height is a vote on where the whole row
+        // sits. The first version of this test only widened the caption, and it passed with the
+        // anchor put back the way that caused the fault. That is why the font is changed here too:
+        // a mutation that survives a test is the test being wrong, not the mutation being safe.
+        final org.traincontrol.gui.StationCaption changing = caption;
+        final java.awt.Container laid = box;
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            changing.setText("065 001-0 \u25BA");
+            changing.setFont(changing.getFont().deriveFont(
+                changing.getFont().getSize2D() * 2f));
+
+            laid.doLayout();
+            laid.doLayout();
+        });
+
+        int moved = 0;
+
+        StringBuilder detail = new StringBuilder();
+
+        for (java.util.Map.Entry<java.awt.Component, java.awt.Rectangle> one : was.entrySet())
+        {
+            if (one.getKey().getBounds().equals(one.getValue())) continue;
+
+            moved++;
+
+            if (moved <= 5)
+            {
+                String text = one.getKey() instanceof javax.swing.JLabel
+                    ? ((javax.swing.JLabel) one.getKey()).getText() : "(a tile)";
+
+                detail.append("\n  ").append(text).append(": ").append(one.getValue())
+                    .append(" -> ").append(one.getKey().getBounds());
+            }
+        }
+
+        assertEquals(moved, 0,
+            "putting a train's name on one caption moved " + moved + " other things on the diagram. "
+            + "A caption is drawn on top of a railway somebody has arranged; it does not get to "
+            + "rearrange it." + detail);
+    }
+
+    /**
+     * A grid for one page, built and laid out, with its tile images waited for.
+     *
+     * The wait is not optional. A tile's preferred size depends on whether its icon has arrived, the
+     * icons decode on a pool, and a grid measured before they land gives a different answer every
+     * time - which reads as the thing under test having moved something.
+     */
+    private java.awt.Container laidOut(final LayoutDiagram page, final int size) throws Exception
+    {
+        final javax.swing.JPanel panel = new javax.swing.JPanel();
+        final org.traincontrol.gui.LayoutGrid[] grid = new org.traincontrol.gui.LayoutGrid[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            grid[0] = new org.traincontrol.gui.LayoutGrid(page, size, panel, null, true, ui));
+
+        final java.util.concurrent.CountDownLatch settled =
+            new java.util.concurrent.CountDownLatch(1);
+
+        javax.swing.SwingUtilities.invokeLater(() -> ui.whenTilesSettled(settled::countDown));
+
+        assertTrue(settled.await(30, java.util.concurrent.TimeUnit.SECONDS),
+            "the tiles never finished decoding, so the bounds below are of a half-built grid");
+
+        final java.awt.Container box = grid[0].getContainer();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            box.setSize(box.getPreferredSize());
+            box.doLayout();
+            box.doLayout();
+        });
+
+        return box;
+    }
+
+    /**
+     * A caption lands on the right side of the rail whatever size the tiles are.
+     *
+     * Adam: "land them so that they align just below straight tracks if the track goes east to west,
+     * or centered over the track if north to south", and then "remember to adjust for the 60px view".
+     * The diagram is drawn at whatever size the operator picked, so an offset that is right at one
+     * size and wrong at another is a feature that works on my machine.
+     *
+     * The rail runs across the middle of the square, so the whole of this is where the caption's own
+     * middle falls relative to the square's. Below it for an east-west run, which is what "just below
+     * the track" means; on it for a north-south one, where the rail goes up the square and the caption
+     * lies across it.
+     *
+     * Line heights are taken as three fifths of the tile, which is what Segoe UI at the caption's size
+     * comes out at - close enough for a proportion, and the assertions below are about proportions.
+     *
+     * MUTATION: returning a fixed number of pixels from captionOffset fails this at every size but one.
+     */
+    @Test
+    public void testACaptionSitsRightAtEveryTileSize()
+    {
+        for (int tile : new int[] { 20, 30, 40, 60, 80 })
+        {
+            int line = Math.round(tile * 0.6f);
+
+            int rail = tile / 2;
+
+            int across = org.traincontrol.gui.StationCaption.captionOffset(tile, line, false);
+            int up = org.traincontrol.gui.StationCaption.captionOffset(tile, line, true);
+
+            assertTrue(across + line / 2 > rail,
+                "at " + tile + "px an east-west caption sits on the rail rather than below it - its "
+                + "middle is at " + (across + line / 2) + " and the rail is at " + rail);
+
+            assertTrue(Math.abs(up + line / 2 - rail) <= 2,
+                "at " + tile + "px a north-south caption is not on the track it is meant to lie "
+                + "across - its middle is at " + (up + line / 2) + " and the rail is at " + rail);
+
+            assertTrue(across >= 0 && up >= 0,
+                "at " + tile + "px a caption is pushed off the top of its own square");
+        }
+
+        // And the degenerate case, because a caption whose font has not been set yet asks this.
+        assertEquals(org.traincontrol.gui.StationCaption.captionOffset(40, 0, false), 0,
+            "a caption with no line height is given an offset, which is an opinion about a label "
+            + "whose size is not known yet");
+    }
+
+    /**
+     * Every arrow a caption can carry has a glyph in the font the caption is drawn in.
+     *
+     * FR-028 replaced the chevrons - > < ^ v - with geometric triangles, and the obvious four are
+     * U+25B6 U+25C0 U+25B2 U+25BC. **Segoe UI has the last two and not the first two.** The first
+     * rendering drew proper triangles for trains facing north and south and a tofu box for every train
+     * facing east or west, which reads as a broken font rather than as a wrong codepoint - and reads
+     * that way on the diagram, where nobody is looking for it.
+     *
+     * The pointers U+25BA and U+25C4 are in the font and match the two that were already right, so
+     * those are what the captions use. This exists so that swapping in a prettier codepoint fails here
+     * rather than on the railway.
+     *
+     * Found by rendering the labels to a picture and looking at it, which is the only way this kind of
+     * fault is ever found.
+     *
+     * MUTATION: putting U+25B6 or U+25C0 back fails this.
+     */
+    @Test
+    public void testCaptionArrowsCanBeDrawn()
+    {
+        java.awt.Font font = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 20);
+
+        String[] arrows = { "\u25BA", "\u25C4", "\u25B2", "\u25BC" };
+
+        for (String arrow : arrows)
+        {
+            assertTrue(font.canDisplay(arrow.codePointAt(0)),
+                "the caption font has no glyph for U+" + Integer.toHexString(arrow.codePointAt(0))
+                + ", so every train facing that way draws a tofu box on the diagram");
+        }
+
+        // And the two that look like the obvious choice and are not, so that the comment explaining
+        // why they were not chosen cannot quietly stop being true.
+        assertFalse(font.canDisplay(0x25B6) && font.canDisplay(0x25C0),
+            "Segoe UI has grown glyphs for U+25B6 and U+25C0, so the pointers this uses instead could "
+            + "now be the triangles that match the other two exactly. Worth changing, and worth "
+            + "checking on the machines this actually runs on before doing it");
+    }
+
+    /**
+     * A caption is an oval, not a rectangle of colour.
+     *
+     * FR-028: "upgrade from [---] to blue ovals with white text". The pill is painted by the label
+     * itself, which means the label has to stay TRANSPARENT - a JLabel that is opaque fills its own
+     * rectangle first, and the rounded shape would be drawn inside a square of the same colour, which
+     * is not an oval at all and is exactly what this replaced.
+     *
+     * So the corner is the assertion. Nothing painted there is the whole difference between the two.
+     *
+     * MUTATION: setting the label opaque, or filling a rectangle instead of a round one, fails this.
+     */
+    @Test
+    public void testACaptionIsAnOval() throws Exception
+    {
+        org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+        pill.setPill(true);
+        pill.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 20));
+        pill.setText("EN57-203");
+        pill.setBackground(org.traincontrol.gui.StationCaption.PILL_AT_REST);
+        pill.setForeground(java.awt.Color.WHITE);
+
+        java.awt.Dimension size = pill.getPreferredSize();
+
+        pill.setBounds(0, 0, size.width, size.height);
+
+        BufferedImage image = new BufferedImage(size.width, size.height,
+            BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        pill.paint(g);
+
+        g.dispose();
+
+        assertEquals((image.getRGB(0, 0) >>> 24) & 0xFF, 0,
+            "the top left corner is painted, so the caption is a rectangle with rounded ends drawn "
+            + "inside it rather than an oval - which is what a JLabel does when it is left opaque");
+
+        assertTrue(((image.getRGB(size.width / 2, size.height / 2) >>> 24) & 0xFF) > 0,
+            "nothing is painted in the middle of the caption, so there is no pill at all");
+
+        assertFalse(pill.isOpaque(),
+            "the caption is opaque, so Swing fills its rectangle before the pill is drawn - the "
+            + "corner check above only passes today because the fill happens to be transparent");
+    }
+
+    /**
+     * Which way the rails run, for the square a caption lands on.
+     *
+     * FR-028: "align just below straight tracks if the track goes east to west, or centered over the
+     * track if north to south." That decision is made from the tile's geometry, and this asks the
+     * geometry the two questions that matter: a straight rail answers one way, and the same rail
+     * turned a quarter answers the other.
+     *
+     * Deliberately not asserting WHICH orientation is which. The rotation convention is the layout
+     * format's, not this code's - a diagram tile rotates by (4 - o) - and a test that wrote it down
+     * would be pinning the wrong thing and would fail the day the format changed rather than the day
+     * the captions moved.
+     *
+     * MUTATION: making runsNorthSouth return a constant fails this whichever constant it returns.
+     */
+    @Test
+    public void testACaptionKnowsWhichWayTheRailsRun() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("orientation", 4, 4, null, null);
+
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
+            1, 1, 0, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
+            2, 2, 1, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+
+        boolean flat = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 1));
+        boolean turned = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(2, 2));
+
+        assertNotEquals(flat, turned,
+            "a straight rail and the same rail turned a quarter are given the same answer, so the "
+            + "caption lands in the same place on both - and one of those two is wrong");
+
+        assertFalse(org.traincontrol.gui.LayoutGrid.runsNorthSouth(null),
+            "a square with nothing on it is reported as running north to south, which is an opinion "
+            + "about a square that has no rails at all");
+    }
+
+    /**
      * The autonomy menu for a square opens with that square\u2019s name, disabled.
      *
      * OB-112, and written because reading the code and looking at the screen disagreed. Adam sent a

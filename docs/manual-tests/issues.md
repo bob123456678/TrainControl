@@ -307,15 +307,6 @@ comment at that line.
 
 Please confirm on the current build; if it is greyed, this closes as a duplicate of MT-179.
 
-### FR-028 - 2026-08-26 - prettify autonomy labels
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 01:29  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 01:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-upgrade from [---] to blue ovals with white text, similar to what we have on the auto loc panels in the autonomy tab. use arrow icons instead of the crude > < ^ v for diretion.  land them so that they align just below straight tracks if the track goes east to west, or centered over the track if north to south.  slight opacity and clickable just like now.  show the upgraded ones across all editors and diagrams.
-
 ### OB-114 - 2026-08-26 - testTimetableCaptureThroughARealRun is load-sensitive
 
 **Kind:** bug  
@@ -327,6 +318,33 @@ testARealRunCapturesNothingWithCaptureOff drives a real autonomy run and asserts
 Seen 2026-08-26 during a full battery run while the application was open and driving trains; the class passes on its own, twice, in 22s. The precondition is right to be there. What is wrong is that a timing budget decides whether a battery is green, so the same suite says different things depending on what else the machine is doing.
 
 Worth either waiting on the movement rather than on a clock, or skipping with a stated reason when the run does not start, which is what a test that cannot reach its subject should do.
+
+### FR-029 - 2026-08-26 - sidebar icon modernization
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-26 02:06  
+**Build:** commit 309b984f, build\classes, compiled 26 Aug 02:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the sidebar icons (locomotive, track, autonomy, signal, route, stats, log), while nice, date the application.  use modernized, simple icons with a plain blue color matching the flatlaf theme.
+
+### FR-030 - 2026-08-26 - autonomy label content in editors.
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-26 02:10  
+**Build:** commit 309b984f, build\classes, compiled 26 Aug 02:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the track diagram editor, hide autonomy labels completely. in the autonomy editor, have them show the station name by default (as currently in the track diagram editor) rather than the parked train.  in the autonomy editor, have an option to switch between showing station name and parked train in the labels.
+
+### FR-031 - 2026-08-26 - autonomy station label color
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-08-26 02:12  
+**Build:** commit 309b984f, build\classes, compiled 26 Aug 02:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+add a jmenu (preferences) setting for the station labels to be blue (default) or light gray (non default).  persist as with other settings.
 
 ## What has been picked up
 
@@ -340,6 +358,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-26 | OB-115 | bug | Captions stopped voting on the row baseline, and stopped dragging their neighbours with them | - | [MT-197](tests.md#mt-197) |
+| 2026-08-26 | FR-028 | feature request | Station captions are blue ovals with arrow icons, placed against the track | - | [MT-197](tests.md#mt-197) |
 | 2026-08-26 | FR-027 | feature request | A locomotive on the square a train is running on, from a file you can replace | - | [MT-196](tests.md#mt-196) |
 | 2026-08-26 | FR-025 | feature request | What holds a station back can be picked by clicking it | - | [MT-195](tests.md#mt-195) |
 | 2026-08-26 | OB-111 | bug | The class that was rewriting your railway on every battery, found and given a sandbox | fixed unvalidated | - |
