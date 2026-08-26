@@ -725,6 +725,68 @@ public class testDiagramLooksRight
     }
 
     /**
+     * Station captions are blue or light grey, whichever the operator asked for, and readable either
+     * way.
+     *
+     * FR-031. Adam: "add a jmenu (preferences) setting for the station labels to be blue (default) or
+     * light gray (non default).  persist as with other settings."
+     *
+     * The colour is ASKED FOR at the moment a caption is coloured rather than read once into a
+     * constant, which is what makes the menu switch take effect without restarting the application -
+     * and that is the whole of what "persist as with other settings" has to mean for a switch sitting
+     * in a menu.
+     *
+     * The readability half is not decoration. The text colour is derived from the fill by perceived
+     * brightness, so a grey chosen a few shades lighter would silently take the captions from white
+     * text to black - which is correct, and worth having a test say out loud, because a grey chosen a
+     * few shades DARKER would leave black text on a dark ground and nobody would notice until they
+     * looked at a diagram.
+     *
+     * The operator's own setting is put back at the end whatever happens. It is a real preference in a
+     * real preference node, not a fixture.
+     *
+     * MUTATION: making restingFill ignore the preference fails the second assertion; making
+     * readableOn return WHITE always fails the fourth.
+     */
+    @Test
+    public void testStationLabelsFollowTheColourPreference()
+    {
+        boolean was = TrainControlUI.stationLabelsAreGrey();
+
+        try
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, false);
+
+            assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
+                org.traincontrol.gui.StationCaption.PILL_AT_REST,
+                "the default is not the blue the request calls the default");
+
+            assertEquals(org.traincontrol.gui.StationCaption.readableOn(
+                org.traincontrol.gui.StationCaption.restingFill()), java.awt.Color.WHITE,
+                "white text on the blue is the look that was asked for");
+
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, true);
+
+            assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
+                org.traincontrol.gui.StationCaption.PILL_GREY,
+                "the preference was set and the captions are still blue, so the menu switch changes a "
+                + "stored value and nothing on the diagram");
+
+            assertEquals(org.traincontrol.gui.StationCaption.readableOn(
+                org.traincontrol.gui.StationCaption.restingFill()), java.awt.Color.BLACK,
+                "white text on the light grey, which cannot be read. The text colour is worked out "
+                + "from the fill for exactly this reason, and a grey this light has to take black");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, was);
+        }
+
+        assertEquals(TrainControlUI.stationLabelsAreGrey(), was,
+            "this test left the operator's own preference changed");
+    }
+
+    /**
      * Captions are left off the track editor and nowhere else.
      *
      * FR-030. Adam: "in the track diagram editor, hide autonomy labels completely."  Three of the four

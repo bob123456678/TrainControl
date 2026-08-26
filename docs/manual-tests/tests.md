@@ -77,8 +77,9 @@ Everything NOT in **fixed validated**. This is the whole of the outstanding work
 | [MT-197](#mt-197) | 2026-08-26 | Station captions as blue ovals | needs test | FR-028 |
 | [MT-198](#mt-198) | 2026-08-26 | The sidebar icons | needs test | FR-029 |
 | [MT-199](#mt-199) | 2026-08-26 | What the captions say in each editor | needs test | FR-030 |
+| [MT-200](#mt-200) | 2026-08-26 | Grey station labels | needs test | FR-031 |
 
-Everything else - 135 of 199 - is **fixed validated** and needs nothing from you unless the
+Everything else - 135 of 200 - is **fixed validated** and needs nothing from you unless the
 area changes again.
 
 ---
@@ -10282,3 +10283,35 @@ applied at the point of use is a rule with four chances to be forgotten, and thi
 that leaves is whether the rule is asked the right question, so a second test reads the call itself -
 it must ask whether this grid is in an editor and whether that editor is the autonomy one, because
 `layout.getEdit()` is true in BOTH and has been wrong here before.
+
+---
+
+<a id="mt-200"></a>
+
+### MT-200 - 2026-08-26 - Grey station labels
+
+**Disposition:** needs test
+**From:** FR-031
+**Written:** 2026-08-26
+
+1. **Interface > Layouts > Grey Station Labels.** Tick it. The station captions on the diagram should
+   turn light grey with black text, and the diagram should redraw as you tick it.
+2. Untick it. They go back to the theme blue with white text.
+3. Restart the application. The setting should be where you left it.
+4. **With trains running.** The destination is still yellow and the originating station still grey -
+   those colours say something and are unchanged. What the switch changes is the RESTING colour, which
+   is what most captions are most of the time.
+5. Look at a busy page with the grey on. That is what the setting is for: thirty blue ovals is a lot
+   of one colour, and grey captions stop competing with the signals and the running path.
+6. And the autonomy editor, which draws the same captions from the same place.
+
+#### Comments
+
+**Claude, 2026-08-26.** The colour is asked for at the moment a caption is coloured rather than read
+once into a constant, which is what lets the switch work without restarting.
+
+Worth knowing: the text colour is derived from the fill by perceived brightness rather than being
+paired with it by hand. That is why the grey takes black text and the blue takes white without anybody
+choosing, and it is also why the grey cannot be darkened much without the text following it - which a
+test says out loud, because a grey a few shades darker would leave black text on a dark ground and
+nobody would notice until they looked at a diagram.

@@ -47,6 +47,33 @@ public class StationCaption extends JLabel
         new Color(PILL.getRed(), PILL.getGreen(), PILL.getBlue(), LayoutGrid.LAYOUT_STATION_OPACITY);
 
     /**
+     * The other resting colour: light grey, for a diagram somebody wants quieter (FR-031).
+     *
+     * Adam: "add a jmenu (preferences) setting for the station labels to be blue (default) or light
+     * gray (non default)."  A page with thirty stations on it is thirty blue ovals, and on a busy
+     * diagram that is a lot of one colour - so the alternative is a caption that is still a caption
+     * and stops competing with the signals and the running path for attention.
+     *
+     * Light enough that the text on it goes black, which readableOn works out on its own.
+     */
+    public static final Color PILL_GREY =
+        new Color(196, 198, 202, LayoutGrid.LAYOUT_STATION_OPACITY);
+
+    /**
+     * Whichever resting colour the operator has chosen (FR-031).
+     *
+     * Asked rather than stored, and asked at the moment a caption is coloured: a preference read once
+     * into a constant is a preference that needs the application restarted, which is not what "persist
+     * as with other settings" means for a switch sitting in a menu.
+     *
+     * @return the fill for a caption with nothing else to say
+     */
+    public static Color restingFill()
+    {
+        return TrainControlUI.stationLabelsAreGrey() ? PILL_GREY : PILL_AT_REST;
+    }
+
+    /**
      * Room at the ends, so the text does not run into the curve.
      *
      * A fraction of the height rather than a fixed number of pixels: the caption font is sized from the

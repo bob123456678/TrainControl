@@ -770,8 +770,8 @@ public class LayoutGrid
                     if (captioned != null)
                     {
                         text.setPill(true);
-                        text.setBackground(StationCaption.PILL_AT_REST);
-                        text.setForeground(StationCaption.readableOn(StationCaption.PILL_AT_REST));
+                        text.setBackground(StationCaption.restingFill());
+                        text.setForeground(StationCaption.readableOn(StationCaption.restingFill()));
 
                         // A tenth smaller than the diagram's other text: the pill is taller than what
                         // it holds, and the rows of a diagram are one tile apart.
@@ -788,7 +788,7 @@ public class LayoutGrid
                         // rectangle underneath it that the pill exists to replace.
                         text.setOpaque(!text.isPill());
                         text.setBackground(text.isPill()
-                            ? StationCaption.PILL_AT_REST
+                            ? StationCaption.restingFill()
                             : new Color(255, 255, 255, LAYOUT_STATION_OPACITY));
 
                         text.setForeground(StationCaption.readableOn(text.getBackground()));

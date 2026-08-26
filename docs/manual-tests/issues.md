@@ -319,15 +319,6 @@ Seen 2026-08-26 during a full battery run while the application was open and dri
 
 Worth either waiting on the movement rather than on a clock, or skipping with a stated reason when the run does not start, which is what a test that cannot reach its subject should do.
 
-### FR-031 - 2026-08-26 - autonomy station label color
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-08-26 02:12  
-**Build:** commit 309b984f, build\classes, compiled 26 Aug 02:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-add a jmenu (preferences) setting for the station labels to be blue (default) or light gray (non default).  persist as with other settings.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -340,6 +331,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-08-26 | FR-031 | feature request | Station labels can be light grey, and it is remembered | - | [MT-200](tests.md#mt-200) |
 | 2026-08-26 | FR-030 | feature request | No captions in the track editor; station names in the autonomy one, with a switch | - | [MT-199](tests.md#mt-199) |
 | 2026-08-26 | FR-029 | feature request | Seven flat sidebar icons in the theme blue | - | [MT-198](tests.md#mt-198) |
 | 2026-08-26 | OB-115 | bug | Captions stopped voting on the row baseline, and stopped dragging their neighbours with them | - | [MT-197](tests.md#mt-197) |

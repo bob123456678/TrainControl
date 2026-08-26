@@ -180,6 +180,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
     /**
+     * Whether station captions are drawn light grey instead of the theme blue (FR-031).
+     *
+     * Not per folder: it is a preference about how the application looks, like the slider setting
+     * beside it, and somebody who wants quiet captions wants them on every layout they open.
+     */
+    public static final String STATION_LABELS_GREY = "StationLabelsGrey";
+
+    /**
      * How many locomotive mapping pages this installation has - see numLocMappings.
      *
      * Per FOLDER, like every other preference that describes one: the pages it counts live in that
@@ -345,6 +353,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // The teal the graph outlines a station with when its home locomotive is standing there, shared so
     // the locomotive list can say the same thing in the same colour
     public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
+
+    /**
+     * The Interface menu's switch for grey station captions (FR-031).  Built by hand - see where.
+     */
+    private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -837,6 +850,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
         this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
+
+        // The station-caption colour, and the menu item that sets it (FR-031).
+        //
+        // Built here rather than in the form: the form is generated, and a hand-written item in a
+        // generated block is a change the next round trip through the designer would silently drop.
+        this.greyStationLabelsMenuItem =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
+
+        this.greyStationLabelsMenuItem.setToolTipText(
+            I18n.t("ui.main.toolbar.tooltip.greyStationLabels"));
+
+        this.greyStationLabelsMenuItem.setSelected(prefs.getBoolean(STATION_LABELS_GREY, false));
+
+        this.greyStationLabelsMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(STATION_LABELS_GREY, this.greyStationLabelsMenuItem.isSelected());
+
+            // The grid, not a repaint: a caption's colour is chosen when it is built, in the same
+            // breath as its text, so nothing changes on screen until the diagram is built again.
+            repaintLayout();
+        });
+
+        this.layoutMenuItem.add(this.greyStationLabelsMenuItem);
  
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
@@ -1528,6 +1564,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.buttonMapping.put(KeyEvent.VK_Z, ZButton);
     }
         
+    /**
+     * Whether station captions should be light grey rather than the theme blue (FR-031).
+     *
+     * Static, and reading the preference node directly, because the thing that asks is a LABEL - it
+     * has no window to ask and there may be several windows anyway. The default is false, which is
+     * blue, which is what the request calls the default.
+     *
+     * @return true for grey captions
+     */
+    public static boolean stationLabelsAreGrey()
+    {
+        return getPrefs().getBoolean(STATION_LABELS_GREY, false);
+    }
+
     public static Preferences getPrefs()
     {
         return prefs;
@@ -4246,7 +4296,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         j.setText(crowdedLabel(crowd, square));
 
                         j.setForeground(Color.BLACK);
-                        j.setBackground(StationCaption.PILL_AT_REST);
+                        j.setBackground(StationCaption.restingFill());
                     }
                     else if (current != null)
                     {
@@ -4288,7 +4338,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 if (!p.equals(start))
                                 {
                                     j.setText(LayoutGrid.LAYOUT_STATION_OCCUPIED);
-                                    j.setBackground(StationCaption.PILL_AT_REST);
+                                    j.setBackground(StationCaption.restingFill());
                                 }
                                 // Originating station highlighted differently
                                 else
@@ -4307,7 +4357,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             // Stationary locomotive
                             j.setForeground(Color.BLACK);
-                            j.setBackground(StationCaption.PILL_AT_REST);
+                            j.setBackground(StationCaption.restingFill());
                         }
                     }
                     else
@@ -4316,7 +4366,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
 
                         j.setForeground(Color.BLACK);
-                        j.setBackground(StationCaption.PILL_AT_REST);
+                        j.setBackground(StationCaption.restingFill());
                     }
 
                     // Every fill above was chosen for a reason, and on a pill the text colour has
